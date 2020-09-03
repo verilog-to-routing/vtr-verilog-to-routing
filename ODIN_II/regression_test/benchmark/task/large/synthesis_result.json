@@ -25,7 +25,6 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "arm_core.v",
         "warnings": [
-            "arm_core.v:5745:7 [NETLIST] Could not resolve initial assignment to a constant value, skipping",
             "arm_core.v:7048:8 [NETLIST] This module port i_daddress_nxt[0] is unused in module a25_dcache",
             "arm_core.v:7048:8 [NETLIST] This module port i_daddress_nxt[1] is unused in module a25_dcache",
             "arm_core.v:7048:8 [NETLIST] This module port i_daddress_nxt[2] is unused in module a25_dcache",

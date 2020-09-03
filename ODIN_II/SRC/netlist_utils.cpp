@@ -277,7 +277,8 @@ nnet_t* allocate_nnet() {
     nnet_t* new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
 
     new_net->name = NULL;
-    new_net->driver_pin = NULL;
+    new_net->driver_pins = NULL;
+    new_net->num_driver_pins = 0;
     new_net->fanout_pins = NULL;
     new_net->num_fanout_pins = 0;
     new_net->combined = false;
@@ -299,6 +300,9 @@ nnet_t* free_nnet(nnet_t* to_free) {
 
         if (to_free->name)
             vtr::free(to_free->name);
+
+        if (to_free->num_driver_pins)
+            vtr::free(to_free->driver_pins);
 
         /* now free the net */
     }
@@ -398,7 +402,9 @@ void add_driver_pin_to_net(nnet_t* net, npin_t* pin) {
     oassert(pin != NULL);
     oassert(pin->type != INPUT);
     /* assumes the pin spots have been allocated and the pin */
-    net->driver_pin = pin;
+    net->num_driver_pins++;
+    net->driver_pins = (npin_t**)vtr::realloc(net->driver_pins, net->num_driver_pins * sizeof(npin_t*));
+    net->driver_pins[net->num_driver_pins - 1] = pin;
     /* record the node and pin spot in the pin */
     pin->net = net;
     pin->type = OUTPUT;
@@ -412,16 +418,17 @@ void add_driver_pin_to_net(nnet_t* net, npin_t* pin) {
  *-------------------------------------------------------------------------------------------*/
 void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
     /* copy the driver over to the new_net */
-    if (output_net->driver_pin) {
+    for (int i = 0; i < output_net->num_driver_pins; i++) {
         /* IF - there is a pin assigned to this net, then copy it */
-        add_driver_pin_to_net(input_net, output_net->driver_pin);
+        add_driver_pin_to_net(input_net, output_net->driver_pins[i]);
     }
-    /* in case there are any fanouts in output net (should only be zero and one nodes */
+    /* in case there are any fanouts in output net (should only be zero and one nodes) */
     join_nets(input_net, output_net);
     /* mark that this is combined */
     input_net->combined = true;
 
     /* Need to keep the initial value data when we combine the nets */
+    oassert(input_net->initial_value == init_value_e::undefined || input_net->initial_value == output_net->initial_value);
     input_net->initial_value = output_net->initial_value;
 
     /* special cases for global nets */
@@ -442,19 +449,31 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
  *-------------------------------------------------------------------------------------------*/
 void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
     if (join_to_net == other_net) {
-        if ((join_to_net->driver_pin) && (join_to_net->driver_pin->node != NULL) && join_to_net->driver_pin->node->related_ast_node != NULL)
-            error_message(NETLIST, join_to_net->driver_pin->node->loc, "%s", "This is a combinational loop\n");
+        for (int i = 0; i < join_to_net->num_driver_pins; i++) {
+            const char* pin_name = join_to_net->driver_pins[i]->name ? join_to_net->driver_pins[i]->name : "unknown";
+            if ((join_to_net->driver_pins[i]->node != NULL))
+                warning_message(NETLIST, join_to_net->driver_pins[i]->node->loc, "%s %s\n", "Combinational loop with driver pin", pin_name);
+            else
+                warning_message(NETLIST, unknown_location, "%s %s\n", "Combinational loop with driver pin", pin_name);
+        }
+        for (int i = 0; i < join_to_net->num_fanout_pins; i++) {
+            const char* pin_name = join_to_net->fanout_pins[i]->name ? join_to_net->fanout_pins[i]->name : "unknown";
+            if ((join_to_net->fanout_pins[i] != NULL) && (join_to_net->fanout_pins[i]->node != NULL))
+                warning_message(NETLIST, join_to_net->fanout_pins[i]->node->loc, "%s %s\n", "Combinational loop with fanout pin", pin_name);
+            else
+                warning_message(NETLIST, unknown_location, "%s %s\n", "Combinational loop with fanout pin", pin_name);
+        }
+
+        error_message(NETLIST, unknown_location, "%s", "Found a combinational loop");
+    } else if (other_net->num_driver_pins > 1) {
+        if (other_net->name && join_to_net->name)
+            error_message(NETLIST, unknown_location, "Tried to join net %s to %s but this would lose %d drivers for net %s", other_net->name, join_to_net->name, other_net->num_driver_pins - 1, other_net->name);
         else
-            error_message(NETLIST, unknown_location, "%s", "This is a combinational loop\n");
-        if ((join_to_net->fanout_pins[0] != NULL) && (join_to_net->fanout_pins[0]->node != NULL) && join_to_net->fanout_pins[0]->node->related_ast_node != NULL)
-            error_message(NETLIST, join_to_net->fanout_pins[0]->node->loc, "%s", "This is a combinational loop with more info\n");
-        else
-            error_message(NETLIST, unknown_location, "%s", "Same error - This is a combinational loop\n");
+            error_message(NETLIST, unknown_location, "Tried to join nets but this would lose %d drivers", other_net->num_driver_pins - 1);
     }
 
     /* copy the driver over to the new_net */
-    int i;
-    for (i = 0; i < other_net->num_fanout_pins; i++) {
+    for (int i = 0; i < other_net->num_fanout_pins; i++) {
         if (other_net->fanout_pins[i]) {
             add_fanout_pin_to_net(join_to_net, other_net->fanout_pins[i]);
         }
@@ -472,7 +491,10 @@ void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net) {
         add_fanout_pin_to_net(new_net, pin);
     } else if (pin->type == OUTPUT) {
         /* clean out the entry in the old net */
-        pin->net->driver_pin = NULL;
+        if (pin->net->num_driver_pins)
+            vtr::free(pin->net->driver_pins);
+        pin->net->num_driver_pins = 0;
+        pin->net->driver_pins = NULL;
         /* do the new addition */
         add_driver_pin_to_net(new_net, pin);
     }
@@ -918,7 +940,8 @@ void mark_clock_node(
         error_message(NETLIST, unknown_location, "clock input does not exist (%s)\n", clock_name);
     }
     clock_net = (nnet_t*)netlist->nets_sc->data[sc_spot];
-    clock_node = clock_net->driver_pin->node;
+    oassert(clock_net->num_driver_pins == 1);
+    clock_node = clock_net->driver_pins[0]->node;
 
     netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
     netlist->clocks[netlist->num_clocks] = clock_node;

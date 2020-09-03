@@ -314,28 +314,30 @@ void backward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnod
             if (current_node->input_pins[j] == NULL)
                 continue;
 
-            if ((current_node->input_pins[j] == NULL) || (current_node->input_pins[j]->net == NULL) || (current_node->input_pins[j]->net->driver_pin == NULL))
+            if ((current_node->input_pins[j] == NULL) || (current_node->input_pins[j]->net == NULL) || (current_node->input_pins[j]->net->num_driver_pins == 0))
                 continue;
 
             /* visit the fanout point */
-            nnode_t* next_node = current_node->input_pins[j]->net->driver_pin->node;
 
-            if (next_node == NULL)
-                continue;
+            for (int k = 0; k < current_node->input_pins[j]->net->num_driver_pins; k++) {
+                nnode_t* next_node = current_node->input_pins[j]->net->driver_pins[k]->node;
+                if (next_node == NULL)
+                    continue;
 
-            temp_string = vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
-            temp_string2 = vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
+                temp_string = vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
+                temp_string2 = vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
 
-            fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string, current_node->input_pins[j]->name);
+                fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string, current_node->input_pins[j]->name);
 
-            vtr::free(temp_string);
-            vtr::free(temp_string2);
+                vtr::free(temp_string);
+                vtr::free(temp_string2);
 
-            if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE)) {
-                /* IF - not visited yet then add to list */
-                stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*) * (num_stack_of_nodes + 1));
-                stack_of_nodes[num_stack_of_nodes] = next_node;
-                num_stack_of_nodes++;
+                if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE)) {
+                    /* IF - not visited yet then add to list */
+                    stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*) * (num_stack_of_nodes + 1));
+                    stack_of_nodes[num_stack_of_nodes] = next_node;
+                    num_stack_of_nodes++;
+                }
             }
         }
 

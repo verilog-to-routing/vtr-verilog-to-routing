@@ -12,6 +12,7 @@
 #include "spatial_route_tree_lookup.h"
 #include "connection_router_interface.h"
 #include "heap_type.h"
+#include "routing_predictor.h"
 
 int get_max_pins_per_net();
 
@@ -40,7 +41,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted,
-                                 float worst_neg_slack);
+                                 float worst_neg_slack,
+                                 const RoutingPredictor& routing_predictor);
 
 template<typename ConnectionRouter>
 bool timing_driven_route_net(ConnectionRouter& router,
@@ -57,7 +59,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf,
-                             float worst_neg_slack);
+                             float worst_neg_slack,
+                             const RoutingPredictor& routing_predictor);
 
 void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        int** sink_order_ptr,

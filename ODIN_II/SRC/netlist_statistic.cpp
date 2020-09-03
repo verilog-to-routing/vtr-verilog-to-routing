@@ -232,10 +232,11 @@ static metric_t* get_upward_stat(nnet_t* net, netlist_t* netlist, uintptr_t trav
         if (traverse(net, traverse_mark_number)) {
             init(destination);
 
-            if (net->driver_pin) {
-                metric_t** parent_stat = (metric_t**)vtr::calloc(1, sizeof(metric_t*));
-                parent_stat[0] = get_upward_stat(net->driver_pin->node, netlist, traverse_mark_number);
-                aggregate(destination, parent_stat, 1);
+            if (net->num_driver_pins) {
+                metric_t** parent_stat = (metric_t**)vtr::calloc(net->num_driver_pins, sizeof(metric_t*));
+                for (int i = 0; i < net->num_driver_pins; i++)
+                    parent_stat[i] = get_upward_stat(net->driver_pins[i]->node, netlist, traverse_mark_number);
+                aggregate(destination, parent_stat, net->num_driver_pins);
                 vtr::free(parent_stat);
             }
         }

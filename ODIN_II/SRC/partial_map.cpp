@@ -48,7 +48,7 @@ void depth_first_traverse_partial_map(nnode_t* node, uintptr_t traverse_mark_num
 void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist);
 
 void instantiate_not_logic(nnode_t* node, short mark, netlist_t* netlist);
-void instantiate_buffer(nnode_t* node, short mark, netlist_t* netlist);
+bool eliminate_buffer(nnode_t* node, short, netlist_t*);
 void instantiate_bitwise_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
 void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
 void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
@@ -133,9 +133,8 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_not_logic(node, traverse_number, netlist);
             break;
         case BUF_NODE:
-            instantiate_buffer(node, traverse_number, netlist);
+            eliminate_buffer(node, traverse_number, netlist);
             break;
-
         case BITWISE_AND:
         case BITWISE_OR:
         case BITWISE_NAND:
@@ -344,23 +343,28 @@ void instantiate_not_logic(nnode_t* node, short mark, netlist_t* /*netlist*/) {
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: instantiate_buffer )
+ * (function: eliminate_buffer )
  * 	Buffers just pass through signals
+ * 	Returns true if the buffer could be eliminated
  *-------------------------------------------------------------------------------------------*/
-void instantiate_buffer(nnode_t* node, short /*mark*/, netlist_t* /*netlist*/) {
-    int width = node->num_input_pins;
-    int i;
-
+bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
+    bool buffer_is_removed = true;
     /* for now we just pass the signals directly through */
-    for (i = 0; i < width; i++) {
+    for (int i = 0; i < node->num_input_pins; i++) {
         int idx_2_buffer = node->input_pins[i]->pin_net_idx;
 
-        /* join all fanouts of the output net with the input pins net */
-        join_nets(node->input_pins[i]->net, node->output_pins[i]->net);
+        // Dont eliminate the buffer if there are multiple drivers or the AST included it
+        if (node->output_pins[i]->net->num_driver_pins <= 1) {
+            /* join all fanouts of the output net with the input pins net */
+            join_nets(node->input_pins[i]->net, node->output_pins[i]->net);
 
-        /* erase the pointer to this buffer */
-        node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
+            /* erase the pointer to this buffer */
+            node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
+        } else {
+            buffer_is_removed = false;
+        }
     }
+    return buffer_is_removed;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -961,15 +965,15 @@ void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short m
         remap_pin_to_new_node(node->output_pins[i], buf_node, i);
     }
     /* instantiate the buffer */
-    instantiate_buffer(buf_node, mark, netlist);
-
-    /* clean up */
-    for (i = 0; i < buf_node->num_input_pins; i++) {
-        buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
-        buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+    if (eliminate_buffer(buf_node, mark, netlist)) {
+        /* clean up */
+        for (i = 0; i < buf_node->num_input_pins; i++) {
+            buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
+            buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+        }
+        free_nnode(buf_node);
+        free_nnode(node);
     }
-    free_nnode(buf_node);
-    free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1013,13 +1017,13 @@ void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* ne
         remap_pin_to_new_node(node->output_pins[i], buf_node, i);
     }
     /* instantiate the buffer */
-    instantiate_buffer(buf_node, mark, netlist);
-
-    /* clean up */
-    for (i = 0; i < buf_node->num_input_pins; i++) {
-        buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
-        buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+    if (eliminate_buffer(buf_node, mark, netlist)) {
+        /* clean up */
+        for (i = 0; i < buf_node->num_input_pins; i++) {
+            buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
+            buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+        }
+        free_nnode(buf_node);
+        free_nnode(node);
     }
-    free_nnode(buf_node);
-    free_nnode(node);
 }

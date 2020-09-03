@@ -203,8 +203,9 @@ void look_for_clocks(netlist_t* netlist) {
     int i;
 
     for (i = 0; i < netlist->num_ff_nodes; i++) {
-        if (netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type != CLOCK_NODE) {
-            netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type = CLOCK_NODE;
+        oassert(netlist->ff_nodes[i]->input_pins[1]->net->num_driver_pins == 1);
+        if (netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type != CLOCK_NODE) {
+            netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type = CLOCK_NODE;
         }
     }
 }
@@ -1925,12 +1926,14 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                      * already been instantiated without any initial value. */
                     nnet_t* output_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
                     nnet_t* input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
-                    if (output_net->driver_pin && output_net->driver_pin->node && input_new_net) {
-                        output_net->driver_pin->node->initial_value = input_new_net->initial_value;
+                    for (int k = 0; k < output_net->num_driver_pins; k++) {
+                        if (output_net->driver_pins[k] && output_net->driver_pins[k]->node && input_new_net) {
+                            output_net->driver_pins[k]->node->initial_value = input_new_net->initial_value;
+                        }
                     }
 
                     /* clean up input_new_net */
-                    if (!(input_new_net) || !(input_new_net->driver_pin))
+                    if (!(input_new_net) || !(input_new_net->num_driver_pins))
                         input_new_net = free_nnet(input_new_net);
 
                     /* add this alias for the net */
@@ -2231,12 +2234,14 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
                 add_pin_to_signal_list(return_list, new_pin2);
                 nnet_t* input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
 
-                if (output_net->driver_pin && output_net->driver_pin->node && input_new_net) {
-                    output_net->driver_pin->node->initial_value = input_new_net->initial_value;
+                for (int k = 0; k < output_net->num_driver_pins; k++) {
+                    if (output_net->driver_pins[k] && output_net->driver_pins[k]->node && input_new_net) {
+                        output_net->driver_pins[k]->node->initial_value = input_new_net->initial_value;
+                    }
                 }
 
                 /* clean up input_new_net */
-                if (!(input_new_net) || !(input_new_net->driver_pin))
+                if (!(input_new_net) || !(input_new_net->num_driver_pins))
                     input_new_net = free_nnet(input_new_net);
 
                 /* add this alias for the net */
@@ -2533,7 +2538,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_pins)
- * 	Create pin creates the pins representing this naming isntance, adds them to the input
+ * 	Create pin creates the pins representing this naming instance, adds them to the input
  * 	nets list (if not already there), checks if a driver already exists (and hooks input
  * 	to output if needed), and adds the pin to the list.
  * 	Note: only for input paths...
@@ -2576,18 +2581,12 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
         } else {
             /* search for the input name  if already exists...needs to be added to
              * string cache in case it's an input pin */
-            if ((sc_spot = sc_lookup_string(input_nets_sc, pin_lists->strings[i])) == -1) {
-                new_in_net = allocate_nnet();
+            sc_spot = sc_lookup_string(input_nets_sc, pin_lists->strings[i]);
+            sc_spot_output = sc_lookup_string(output_nets_sc, pin_lists->strings[i]);
+            if (sc_spot != -1 && sc_spot_output != -1) {
+                /* store the pin in this net */
+                add_fanout_pin_to_net((nnet_t*)input_nets_sc->data[sc_spot], new_pin);
 
-                sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
-                input_nets_sc->data[sc_spot] = (void*)new_in_net;
-            }
-
-            /* store the pin in this net */
-            add_fanout_pin_to_net((nnet_t*)input_nets_sc->data[sc_spot], new_pin);
-
-            if ((sc_spot_output = sc_lookup_string(output_nets_sc, pin_lists->strings[i])) != -1) {
-                /* ELSE - we've found a matching net, so add this pin to the net */
                 nnet_t* net = (nnet_t*)output_nets_sc->data[sc_spot_output];
 
                 if ((net != (nnet_t*)input_nets_sc->data[sc_spot]) && net->combined) {
@@ -2604,6 +2603,19 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
                     /* since the driver net is deleted, copy the spot of the in_net over */
                     output_nets_sc->data[sc_spot_output] = (void*)input_nets_sc->data[sc_spot];
                 }
+            } else if (sc_spot_output != -1) {
+                sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
+                input_nets_sc->data[sc_spot] = output_nets_sc->data[sc_spot_output];
+                add_fanout_pin_to_net((nnet_t*)input_nets_sc->data[sc_spot], new_pin);
+            } else {
+                if (sc_spot == -1) {
+                    new_in_net = allocate_nnet();
+                    sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
+                    input_nets_sc->data[sc_spot] = (void*)new_in_net;
+                }
+
+                /* store the pin in this net */
+                add_fanout_pin_to_net((nnet_t*)input_nets_sc->data[sc_spot], new_pin);
             }
         }
 
@@ -2972,7 +2984,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
 
     signal_list_t* memory_inputs = init_signal_list();
     char* ref_string;
-    int i, j, dependence_variable_position;
+    int i, j;
     for (i = 0; i < assignment->count; i++) {
         npin_t* pin = assignment->pins[i];
         implicit_memory* memory = lookup_implicit_memory_input(pin->name);
@@ -2988,7 +3000,8 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             nnet_t* net = (nnet_t*)output_nets_sc->data[sc_spot];
             //looking for dependence according to with the type of statement (non-blocking or blocking)
             list_dependence_pin[i] = (pin);
-            if (pin->node) list_dependence_type[i] = pin->node->related_ast_node->type;
+            if (pin->node)
+                list_dependence_type[i] = pin->node->related_ast_node->type;
 
             /* clean up non-blocking */
             if (pin->node && pin->node->related_ast_node->type == NON_BLOCKING_STATEMENT) {
@@ -3014,13 +3027,14 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             strcat(ref_string, "_latch_initial_value");
 
             sc_spot = sc_lookup_string(local_ref->local_symbol_table_sc, ref_string);
-            if (sc_spot != -1) {
-                ff_node->initial_value = ((nnode_t*)local_ref->local_symbol_table_sc->data[sc_spot])->initial_value;
-            } else {
+            if (sc_spot == -1) {
                 sc_spot = sc_add_string(local_ref->local_symbol_table_sc, ref_string);
-                local_ref->local_symbol_table_sc->data[sc_spot] = (void*)ff_node->initial_value;
-                ff_node->initial_value = net->initial_value;
+                local_ref->local_symbol_table_sc->data[sc_spot] = (void*)net->initial_value;
             }
+            init_value_e init_value = (init_value_e)(uintptr_t)local_ref->local_symbol_table_sc->data[sc_spot];
+            oassert(ff_node->initial_value == init_value_e::undefined || ff_node->initial_value == init_value);
+            ff_node->initial_value = init_value;
+
             /* free the reference string */
             vtr::free(ref_string);
 
@@ -3043,10 +3057,6 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             npin_t* ff_output_pin = allocate_npin();
             add_output_pin_to_node(ff_node, ff_output_pin, 0);
 
-            if (net->driver_pin) {
-                error_message(NETLIST, always_node->loc,
-                              "You've defined the driver \"%s\" twice\n", get_pin_name(pin->name));
-            }
             add_driver_pin_to_net(net, ff_output_pin);
 
             verilog_netlist->ff_nodes = (nnode_t**)vtr::realloc(verilog_netlist->ff_nodes, sizeof(nnode_t*) * (verilog_netlist->num_ff_nodes + 1));
@@ -3057,15 +3067,18 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
 
     for (i = 0; i < assignment->count; i++) {
         npin_t* pin = assignment->pins[i];
-        dependence_variable_position = -1;
+        int dependence_variable_position = -1;
 
-        if (pin->net->driver_pin) {
-            ref_string = pin->net->driver_pin->node->name;
+        if (pin->net->num_driver_pins) {
+            ref_string = pin->net->driver_pins[0]->node->name;
 
             for (j = i - 1; j >= 0; j--) {
-                if (list_dependence_pin[j] && list_dependence_pin[j]->net->driver_pin && list_dependence_type[j] && list_dependence_type[j] == BLOCKING_STATEMENT && strcmp(ref_string, assignment->pins[j]->node->name) == 0) {
+                if (list_dependence_pin[j] && list_dependence_pin[j]->net->num_driver_pins && list_dependence_type[j] == BLOCKING_STATEMENT && strcmp(ref_string, assignment->pins[j]->node->name) == 0) {
+                    if (list_dependence_pin[j]->net->num_driver_pins > 1 || pin->net->num_driver_pins > 1) {
+                        error_message(NETLIST, unknown_location, "%s", "Multiple registered assignments to the same variable not supported for this use case");
+                    }
                     dependence_variable_position = j;
-                    ref_string = list_dependence_pin[j]->net->driver_pin->node->name;
+                    ref_string = list_dependence_pin[j]->net->driver_pins[0]->node->name;
                 }
             }
 
@@ -3152,12 +3165,6 @@ void terminate_continuous_assignment(ast_node_t* node, signal_list_t* assignment
                 npin_t* buf_output_pin = allocate_npin();
                 add_output_pin_to_node(buf_node, buf_output_pin, 0);
 
-                if (net->driver_pin != NULL) {
-                    error_message(NETLIST, node->loc,
-                                  "You've defined this driver %s twice. \n "
-                                  "\tNote that Odin II does not currently support combinational a = ? overiding for if and case blocks.\n",
-                                  pin->name);
-                }
                 add_driver_pin_to_net(net, buf_output_pin);
             }
         }
