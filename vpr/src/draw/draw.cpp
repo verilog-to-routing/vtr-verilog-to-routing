@@ -4085,13 +4085,13 @@ void manual_move_generator_window(std::string block_id) {
         //set margins
         gtk_widget_set_margin_bottom(grid, 20);
         gtk_widget_set_margin_top(grid, 20);
-        gtk_widget_set_margin_left(grid, 20);
-        gtk_widget_set_margin_right(grid, 20);
+        gtk_widget_set_margin_start(grid, 20);
+        gtk_widget_set_margin_end(grid, 20);
         gtk_widget_set_margin_bottom(block_label, 5);
         gtk_widget_set_margin_bottom(to_label, 5);
         gtk_widget_set_margin_top(button, 15);
-        gtk_widget_set_margin_left(x, 13);
-        gtk_widget_set_margin_left(y, 13);
+        gtk_widget_set_margin_start(x, 13);
+        gtk_widget_set_margin_start(y, 13);
         gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
 
         //connect signals
@@ -4139,8 +4139,8 @@ void cost_summary_window() {
     gtk_widget_set_halign(reject, GTK_ALIGN_CENTER);
     gtk_widget_set_margin_bottom(grid, 20);
     gtk_widget_set_margin_top(grid, 20);
-    gtk_widget_set_margin_right(grid, 20);
-    gtk_widget_set_margin_left(grid, 20);
+    gtk_widget_set_margin_end(grid, 20);
+    gtk_widget_set_margin_start(grid, 20);
     gtk_widget_set_margin_bottom(info, 15);
     gtk_widget_set_margin_bottom(dc, 5);
     gtk_widget_set_margin_bottom(dcn, 5);
@@ -4180,12 +4180,12 @@ ManualMoveInfo* get_manual_move_info() {
 
 //checks if the maual move checkbox is toggled and returns true if it was toggled
 bool get_manual_move_flag() {
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
     GObject* manual_move_button = application.get_object("ManualMove");
     return gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
-#    else
+#else
     return false;
-#    endif // NO_GRAPHICS
+#endif // NO_GRAPHICS
 }
 
 //after the user presses the calculate costs button, this function retrievs all the data in the window, such as block id and to location, checks if they are valid values, and if valid updates the draw_manual_move_info variable, highlights the indicated block id and proceeds in placement
