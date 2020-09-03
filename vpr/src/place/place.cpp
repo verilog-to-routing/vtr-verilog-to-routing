@@ -1445,7 +1445,8 @@ static e_move_result try_swap(float t,
     }
 
     bool manual_move = get_manual_move_flag();
-    ManualMoveInfo* manual_move_info;
+    ManualMoveInfo dummy;
+    ManualMoveInfo* manual_move_info = &dummy;
 
     if (manual_move) {
         manual_move_info_from_user_and_open_window(manual_move_info);
