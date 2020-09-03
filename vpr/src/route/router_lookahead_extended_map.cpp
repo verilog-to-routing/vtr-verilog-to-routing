@@ -45,10 +45,6 @@
 // Don't continue storing a path after hitting a lower-or-same cost entry.
 static constexpr bool BREAK_ON_MISS = false;
 
-// Distance penalties filling are calculated based on available samples, but can be adjusted with this factor.
-static constexpr float PENALTY_FACTOR = 1.f;
-static constexpr float PENALTY_MIN = 1e-12f;
-
 static constexpr int MIN_PATH_COUNT = 1000;
 
 template<typename Entry>
@@ -214,7 +210,7 @@ float ExtendedMapLookahead::get_map_cost(int from_node_ind,
     float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", from_node_ind, to_node_ind);
-    const std::string& segment_name = device_ctx.segment_inf[from_seg_index].name;
+    const std::string& segment_name = device_ctx.rr_segments[from_seg_index].name;
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%zd, %zd)\n",
                    segment_name.c_str(), from_seg_index,
                    dx, dy);
