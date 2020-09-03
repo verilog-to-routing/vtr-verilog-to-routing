@@ -1106,7 +1106,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
         profiling::conn_start();
 
         // build a branch in the route tree to the target
-    if (!timing_driven_route_sink(router,
+        if (!timing_driven_route_sink(router,
                                       net_id,
                                       itarget,
                                       target_pin,
@@ -1987,7 +1987,7 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
 bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& /*router_opts*/) {
     /* Checks to see if router should (re)calculate route budgets
      * It's currently set to only calculate after the first routing iteration */
-    
+
     if (itry == 1) return true;
     return false;
 }

@@ -68,9 +68,9 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(int node, 
         const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
 
         float cong_cost = num_segs_same_dir * same_data.base_cost
-                      + num_segs_ortho_dir * ortho_data.base_cost
-                      + ipin_data.base_cost
-                      + sink_data.base_cost;
+                          + num_segs_ortho_dir * ortho_data.base_cost
+                          + ipin_data.base_cost
+                          + sink_data.base_cost;
 
         float Tdel = num_segs_same_dir * same_data.T_linear
                      + num_segs_ortho_dir * ortho_data.T_linear

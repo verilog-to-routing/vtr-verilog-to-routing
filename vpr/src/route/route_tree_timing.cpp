@@ -283,7 +283,7 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
  * to the routing tree. target_net_pin_index is the net pin index correspinding
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
-static t_rt_node* 
+static t_rt_node*
 add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** sink_rt_node_ptr) {
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;

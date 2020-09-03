@@ -6,7 +6,7 @@
 #include <vector>
 
 #ifndef _PATH_MANAGER_H
-#define _PATH_MANAGER_H
+#    define _PATH_MANAGER_H
 
 /* Extra path data needed by RCV, seperated from t_heap struct for performance reasons
  * Can be accessed by a pointer, won't be initialized unless needed
@@ -29,7 +29,7 @@ struct t_heap_path {
  * It manages a set containing all the nodes that currently exist in the route tree
  * This class also manages the extra memory allocation required for the t_heap_path structure */
 class PathManager {
-    public:
+  public:
     PathManager();
     ~PathManager();
 
@@ -76,8 +76,7 @@ class PathManager {
     // Update the route tree set using the last routing
     void update_route_tree_set(t_heap_path* cheapest_path_struct);
 
-    private:
-
+  private:
     // Is RCV enabled and thus route_tree_nodes in use
     bool is_enabled_;
 

@@ -211,7 +211,6 @@ void push_back_node_with_info(
     float R_upstream,
     float backward_path_delay,
     PathManager* rcv_path_manager) {
-
     t_heap* hptr = heap->alloc();
     rcv_path_manager->alloc_path_struct(hptr->path_data);
 
@@ -221,6 +220,6 @@ void push_back_node_with_info(
     hptr->R_upstream = R_upstream;
 
     hptr->path_data->backward_delay = backward_path_delay;
-    
+
     heap->push_back(hptr);
 }

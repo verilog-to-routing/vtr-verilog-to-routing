@@ -107,7 +107,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     // Enable or disable RCV in connection router
     // Enabling this will utilize extra path structures, as well as the RCV cost function
-    // 
+    //
     // Ensure route budgets have been calculated before enabling this
     void set_rcv_enabled(bool enable) final;
 
@@ -218,14 +218,14 @@ class ConnectionRouter : public ConnectionRouterInterface {
     void add_route_tree_to_heap(t_rt_node* rt_node,
                                 int target_node,
                                 const t_conn_cost_params cost_params);
-    
-    // Evaluate node costs using the RCV algorith 
+
+    // Evaluate node costs using the RCV algorith
     float compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
-                                        const int to_node,
-                                        const int target_node,
-                                        const float backwards_delay,
-                                        const float backwards_cong,
-                                        const float R_upstream);
+                                      const int to_node,
+                                      const int target_node,
+                                      const float backwards_delay,
+                                      const float backwards_cong,
+                                      const float R_upstream);
 
     //Unconditionally adds rt_node to the heap
     //

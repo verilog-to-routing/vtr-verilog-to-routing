@@ -98,7 +98,7 @@ class ConnectionRouterInterface {
 
     // Enable or disable RCV in connection router
     // Enabling this will utilize extra path structures, as well as the RCV cost function
-    // 
+    //
     // Ensure route budgets have been calculated before enabling this
     virtual void set_rcv_enabled(bool enable) = 0;
 };

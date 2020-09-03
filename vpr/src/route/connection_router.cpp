@@ -40,7 +40,6 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     int sink_node,
     const t_conn_cost_params cost_params,
     t_bb bounding_box) {
-
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
     add_route_tree_to_heap(rt_root, sink_node, cost_params);
@@ -430,8 +429,6 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     }
 }
 
-
-
 //Conditionally adds to_node to the router heap (via path from from_node via from_edge).
 //RR nodes outside the expanded bounding box specified in bounding_box are not added
 //to the heap.
@@ -500,8 +497,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     // Other pruning methods have been disabled when RCV is on, so this method is required to prevent "loops" from being created
     bool node_exists = false;
     if (rcv_path_manager.is_enabled()) {
-        node_exists = rcv_path_manager.node_exists_in_tree(current->path_data, 
-                                                            to_node);
+        node_exists = rcv_path_manager.node_exists_in_tree(current->path_data,
+                                                           to_node);
     }
 
     if (!node_exists || !rcv_path_manager.is_enabled()) {
@@ -610,11 +607,11 @@ static bool same_non_config_node_set(int from_node, int to_node) {
 
 template<typename Heap>
 float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
-                                                            const int to_node,
-                                                            const int target_node,
-                                                            const float backwards_delay,
-                                                            const float backwards_cong,
-                                                            const float R_upstream) {
+                                                          const int to_node,
+                                                          const int target_node,
+                                                          const float backwards_delay,
+                                                          const float backwards_cong,
+                                                          const float R_upstream) {
     float expected_delay;
     float expected_cong;
 
@@ -627,7 +624,7 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
 
     float expected_total_cong = cost_params.astar_fac * expected_cong + backwards_cong;
     float expected_total_delay = cost_params.astar_fac * expected_delay + backwards_delay;
-    
+
     //If budgets specified calculate cost as described by RCV paper:
     //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
     //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
@@ -641,7 +638,7 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
     expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
     expected_total_cong_cost = expected_total_cong;
-    
+
     float total_cost = expected_total_delay_cost + expected_total_cong_cost;
 
     return total_cost;
