@@ -45,6 +45,7 @@
 // Don't continue storing a path after hitting a lower-or-same cost entry.
 static constexpr bool BREAK_ON_MISS = false;
 
+///@brief Threshold to set a limit the paths exploration during the dijkstra expansion for a particualr sample region.
 static constexpr int MIN_PATH_COUNT = 1000;
 
 template<typename Entry>
@@ -53,94 +54,76 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
                                           std::vector<util::Search_Path>* paths,
                                           util::RoutingCosts* routing_costs);
 
-template<class T>
-constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
-    return std::min(std::max(v, lo), hi);
-}
-
-template<typename T>
-static vtr::Point<T> closest_point_in_rect(const vtr::Rect<T>& r, const vtr::Point<T>& p) {
-    if (r.empty()) {
-        return vtr::Point<T>(0, 0);
-    } else {
-        return vtr::Point<T>(clamp<T>(p.x(), r.xmin(), r.xmax() - 1),
-                             clamp<T>(p.y(), r.ymin(), r.ymax() - 1));
-    }
-}
-
-std::pair<float, float> ExtendedMapLookahead::get_src_opin_delays(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const {
+float ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
-    e_rr_type from_type = rr_graph.node_type(from_node);
-    if (from_type == SOURCE || from_type == OPIN) {
-        //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
-        //cost to reach them) in f_src_opin_delays. Once we know what wire types are
-        //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
-        //delay to reach the sink.
+    //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
+    //cost to reach them) in f_src_opin_delays. Once we know what wire types are
+    //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
+    //delay to reach the sink.
 
-        t_physical_tile_type_ptr tile_type = device_ctx.grid[rr_graph.node_xlow(from_node)][rr_graph.node_ylow(from_node)].type;
-        auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
+    t_physical_tile_type_ptr tile_type = device_ctx.grid[rr_graph.node_xlow(from_node)][rr_graph.node_ylow(from_node)].type;
+    auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
 
-        auto from_ptc = rr_graph.node_ptc_num(from_node);
+    auto from_ptc = rr_graph.node_ptc_num(from_node);
 
-        if (this->src_opin_delays[tile_index][from_ptc].empty()) {
-            //During lookahead profiling we were unable to find any wires which connected
-            //to this PTC.
-            //
-            //This can sometimes occur at very low channel widths (e.g. during min W search on
-            //small designs) where W discretization combined with fraction Fc may cause some
-            //pins/sources to be left disconnected.
-            //
-            //Such RR graphs are of course unroutable, but that should be determined by the
-            //router. So just return an arbitrary value here rather than error.
+    if (this->src_opin_delays[tile_index][from_ptc].empty()) {
+        //During lookahead profiling we were unable to find any wires which connected
+        //to this PTC.
+        //
+        //This can sometimes occur at very low channel widths (e.g. during min W search on
+        //small designs) where W discretization combined with fraction Fc may cause some
+        //pins/sources to be left disconnected.
+        //
+        //Such RR graphs are of course unroutable, but that should be determined by the
+        //router. So just return an arbitrary value here rather than error.
 
-            return std::pair<float, float>(0.f, 0.f);
-        } else {
-            //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
-            //and then add the estimates from those wire types for the distance of interest.
-            //If there are multiple options we use the minimum value.
+        //We choose to return the largest (non-infinite) value possible, but scaled
+        //down by a large factor to maintain some dynaimc range in case this value ends
+        //up being processed (e.g. by the timing analyzer).
+        //
+        //The cost estimate should still be *extremely* large compared to a typical delay, and
+        //so should ensure that the router de-prioritizes exploring this path, but does not
+        //forbid the router from trying.
+        return std::numeric_limits<float>::max() / 1e12;
+    } else {
+        //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
+        //and then add the estimates from those wire types for the distance of interest.
+        //If there are multiple options we use the minimum value.
+        float expected_cost = std::numeric_limits<float>::infinity();
 
-            float delay = 0;
-            float congestion = 0;
-            float expected_cost = std::numeric_limits<float>::infinity();
+        for (const auto& kv : this->src_opin_delays[tile_index][from_ptc]) {
+            const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
-            for (const auto& kv : this->src_opin_delays[tile_index][from_ptc]) {
-                const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
-
-                util::Cost_Entry cost_entry;
-                if (reachable_wire_inf.wire_rr_type == SINK) {
-                    //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
-                    //In the lookahead, we treat such connections as 'special' wire types
-                    //with no delay/congestion cost
-                    cost_entry.delay = 0;
-                    cost_entry.congestion = 0;
-                } else {
-                    //For an actual accessible wire, we query the wire look-up to get it's
-                    //delay and congestion cost estimates
-                    cost_entry = cost_map_.find_cost(reachable_wire_inf.wire_seg_index, delta_x, delta_y);
-                }
-
-                float this_cost = (criticality_fac) * (reachable_wire_inf.delay + cost_entry.delay)
-                                  + (1. - criticality_fac) * (reachable_wire_inf.congestion + cost_entry.congestion);
-
-                if (this_cost < expected_cost) {
-                    delay = reachable_wire_inf.delay;
-                    congestion = reachable_wire_inf.congestion;
-                }
+            util::Cost_Entry cost_entry;
+            if (reachable_wire_inf.wire_rr_type == SINK) {
+                //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
+                //In the lookahead, we treat such connections as 'special' wire types
+                //with no delay/congestion cost
+                cost_entry.delay = 0;
+                cost_entry.congestion = 0;
+            } else {
+                //For an actual accessible wire, we query the wire look-up to get it's
+                //delay and congestion cost estimates
+                cost_entry = cost_map_.find_cost(reachable_wire_inf.wire_seg_index, delta_x, delta_y);
             }
 
-            return std::pair<float, float>(delay, congestion);
+            float this_cost = (criticality_fac) * (reachable_wire_inf.congestion + cost_entry.congestion)
+                              + (1. - criticality_fac) * (reachable_wire_inf.delay + cost_entry.delay);
+
+            expected_cost = std::min(this_cost, expected_cost);
         }
 
-        VTR_ASSERT_SAFE_MSG(false,
-                            vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(size_t(from_node)).c_str(),
-                                            describe_rr_node(size_t(from_node)).c_str())
-                                .c_str());
+        VTR_ASSERT(std::isfinite(expected_cost));
+        return expected_cost;
     }
 
-    return std::pair<float, float>(0.f, 0.f);
+    VTR_ASSERT_SAFE_MSG(false,
+                        vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
+                                        rr_node_arch_name(size_t(from_node)).c_str(),
+                                        describe_rr_node(size_t(from_node)).c_str())
+                            .c_str());
 }
 
 float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
@@ -186,8 +169,10 @@ float ExtendedMapLookahead::get_map_cost(int from_node_ind,
     dx = to_x - from_x;
     dy = to_y - from_y;
 
-    float extra_delay, extra_congestion;
-    std::tie(extra_delay, extra_congestion) = this->get_src_opin_delays(from_node, dx, dy, criticality_fac);
+    e_rr_type from_type = rr_graph.node_type(from_node);
+    if (from_type == SOURCE || from_type == OPIN) {
+        return this->get_src_opin_cost(from_node, dx, dy, criticality_fac);
+    }
 
     int from_seg_index = cost_map_.node_to_segment(from_node_ind);
     util::Cost_Entry cost_entry = cost_map_.find_cost(from_seg_index, dx, dy);
@@ -201,8 +186,8 @@ float ExtendedMapLookahead::get_map_cost(int from_node_ind,
         return std::numeric_limits<float>::infinity();
     }
 
-    float expected_delay = cost_entry.delay + extra_delay;
-    float expected_congestion = cost_entry.congestion + extra_congestion;
+    float expected_delay = cost_entry.delay;
+    float expected_congestion = cost_entry.congestion;
 
     float site_pin_delay = this->get_chan_ipin_delays(to_node);
     expected_delay += site_pin_delay;
@@ -435,14 +420,6 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
                         path_count / run_timer.elapsed_sec());
             }
 
-            /*
-             * if (path_count == 0) {
-             * for (auto node_ind : point.nodes) {
-             * VTR_LOG("Expanded node %s\n", describe_rr_node(node_ind).c_str());
-             * }
-             * }
-             */
-
             total_path_count += path_count;
             if (total_path_count > MIN_PATH_COUNT) {
                 break;
@@ -528,7 +505,7 @@ float ExtendedMapLookahead::get_expected_cost(
 
     t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
 
-    if (rr_type == CHANX || rr_type == CHANY) {
+    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         return get_map_cost(
             current_node, target_node, params.criticality);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */

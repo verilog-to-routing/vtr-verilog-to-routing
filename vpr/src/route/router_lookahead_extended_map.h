@@ -17,7 +17,7 @@ class ExtendedMapLookahead : public RouterLookahead {
     //Look-up table from CHANX/CHANY to SINK/IPIN of various types
     util::t_chan_ipins_delays chan_ipins_delays;
 
-    std::pair<float, float> get_src_opin_delays(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const;
+    float get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const;
     float get_chan_ipin_delays(RRNodeId to_node) const;
 
     template<typename Entry>
