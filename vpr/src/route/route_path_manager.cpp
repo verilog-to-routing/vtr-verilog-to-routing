@@ -39,10 +39,8 @@ void PathManager::mark_node_visited(RRNodeId node) {
     }
 }
 
-void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost) {
+void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost, RoutingContext& route_ctx) {
     if (!is_enabled_) return;
-
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     for (unsigned i = 1; i < path_data->edge.size() - 1; i++) {
         size_t node_2 = (size_t)path_data->path_rr[i];

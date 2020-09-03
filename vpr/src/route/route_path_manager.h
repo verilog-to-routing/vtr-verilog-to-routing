@@ -25,6 +25,9 @@ struct t_heap_path {
     float backward_cong = 0.;
 };
 
+// Forward declaration of RoutingContext needed for traceback insertion
+class RoutingContext;
+
 /* A class to manage the extra data required for RCV
  * It manages a set containing all the nodes that currently exist in the route tree
  * This class also manages the extra memory allocation required for the t_heap_path structure */
@@ -50,7 +53,7 @@ class PathManager {
     void set_enabled(bool enable);
 
     // Insert the backwards path back into the main route context traceback
-    void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost);
+    void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost, RoutingContext& route_ctx);
 
     // Dynamically create a t_heap_path structure to be used in the heap
     // Will return unless RCV is enabled

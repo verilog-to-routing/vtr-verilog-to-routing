@@ -203,6 +203,8 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         VTR_LOGV_DEBUG(router_debug_, "  Initial heap empty (no source)\n");
     }
 
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
     t_heap* cheapest = nullptr;
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
@@ -219,7 +221,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
             // This is then placed into the traceback so that the correct path is returned
             // TODO: This can be eliminated by modifying the actual traceback function in route_timing
             if (rcv_path_manager.is_enabled()) {
-                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost);
+                rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
             }
 
             VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(inode).c_str());
