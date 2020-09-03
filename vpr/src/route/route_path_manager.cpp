@@ -104,7 +104,7 @@ void PathManager::free_all_memory() {
     // Only delete freed nodes because doing a partial arena alloc scheme
     // Actually delete in heap_type
     for (t_heap_path* node : alloc_list_) {
-        if (node != nullptr) delete node;
+        delete node;
     }
 }
 

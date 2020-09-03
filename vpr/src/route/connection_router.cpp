@@ -216,7 +216,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
             // If we're running RCV, the path will be stored in the path_data->path_rr vector
             // This is then placed into the traceback so that the correct path is returned
             // TODO: This can be eliminated by modifying the actual traceback function in route_timing
-            if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
+            if (rcv_path_manager.is_enabled()) {
                 rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost);
             }
 
@@ -632,10 +632,14 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
     //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
     //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
+
+    // Normalization constant defined in RCV paper cited above
+    constexpr float NORMALIZATION_CONSTANT = 100e-12;
+
     expected_total_delay_cost = expected_total_delay;
     expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-    // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
-    expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
+    // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
+    expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
     expected_total_cong_cost = expected_total_cong;
     
     float total_cost = expected_total_delay_cost + expected_total_cong_cost;
