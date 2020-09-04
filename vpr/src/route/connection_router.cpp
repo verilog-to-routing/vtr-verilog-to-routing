@@ -263,7 +263,6 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
 
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
-
     add_route_tree_to_heap(rt_root, target_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
