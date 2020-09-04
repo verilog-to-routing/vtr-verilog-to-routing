@@ -517,9 +517,6 @@ void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affect
 void manual_move_info_from_user_and_open_window(ManualMoveInfo* manual_move_info);
 void update_manual_move_costs_and_open_window(ManualMoveInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
 
-void manual_move_info_from_user_and_open_window(ManualMoveInfo* manual_move_info);
-void update_manual_move_costs_and_open_window(ManualMoveInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
-
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
@@ -585,17 +582,16 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     /*bool manual_move = false;
-#ifndef NO_GRAPHICS
-    bool manual_move = get_manual_move_flag();
-#endif
-
-    if(manual_move)
-        move_generator = std::make_unique<ManualMoveGenerator>();
-    else
-        move_generator = std::make_unique<UniformMoveGenerator>();*/
+     * #ifndef NO_GRAPHICS
+     * bool manual_move = get_manual_move_flag();
+     * #endif
+     *
+     * if(manual_move)
+     * move_generator = std::make_unique<ManualMoveGenerator>();
+     * else
+     * move_generator = std::make_unique<UniformMoveGenerator>();*/
     move_generator = std::make_unique<UniformMoveGenerator>();
     manual_move_generator = std::make_unique<ManualMoveGenerator>();
-    
 
     width_fac = placer_opts.place_chan_width;
 
