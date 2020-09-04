@@ -45,7 +45,7 @@
 // Don't continue storing a path after hitting a lower-or-same cost entry.
 static constexpr bool BREAK_ON_MISS = false;
 
-///@brief Threshold to set a limit the paths exploration during the dijkstra expansion for a particualr sample region.
+///@brief Threshold indicating the minimum number of paths to sample for each point in a sample region
 static constexpr int MIN_PATH_COUNT = 1000;
 
 template<typename Entry>
@@ -64,7 +64,7 @@ float ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, i
     //delay to reach the sink.
 
     t_physical_tile_type_ptr tile_type = device_ctx.grid[rr_graph.node_xlow(from_node)][rr_graph.node_ylow(from_node)].type;
-    auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
+    auto tile_index = tile_type->index;
 
     auto from_ptc = rr_graph.node_ptc_num(from_node);
 
@@ -146,6 +146,13 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
 }
 
 // derive a cost from the map between two nodes
+// The criticality factor can range between 0 and 1 and weights the delay versus the congestion costs:
+//      - value == 0    : congestion is the only cost factor that gets considered
+//      - 0 < value < 1 : different weight on both delay and congestion
+//      - value == 1    : delay is the only cost factor that gets considered
+//
+//  The from_node_ind can be of one of the following types: CHANX, CHANY, SOURCE, OPIN
+//  The to_node_ind is always a SINK
 float ExtendedMapLookahead::get_map_cost(int from_node_ind,
                                          int to_node_ind,
                                          float criticality_fac) const {
@@ -218,7 +225,12 @@ float ExtendedMapLookahead::get_map_cost(int from_node_ind,
     return expected_cost;
 }
 
-// add a best cost routing path from start_node_ind to node_ind to routing costs
+// Adds a best cost routing path from start_node_ind to node_ind to routing costs
+//
+// This routine performs a backtrace from a destination node to the starting node of each path found during the dijkstra expansion.
+//
+// The Routing Costs table is updated for every partial path found between the destination and start nodes, only if the cost to reach
+// the intermediate node is lower than the one already stored in the Routing Costs table.
 template<typename Entry>
 bool ExtendedMapLookahead::add_paths(int start_node_ind,
                                      Entry current,
@@ -242,6 +254,11 @@ bool ExtendedMapLookahead::add_paths(int start_node_ind,
     }
     path.push_back(start_node_ind);
 
+    // The site_pin_delay gets subtracted from the current path as it might prevent the addition
+    // of the path to the final routing costs.
+    //
+    // The site pin delay (or CHAN -> IPIN delay) is a constant adjustment that is added when querying
+    // the lookahead.
     current.adjust_Tsw(-site_pin_delay);
 
     // add each node along the path subtracting the incremental costs from the current costs
@@ -282,12 +299,21 @@ bool ExtendedMapLookahead::add_paths(int start_node_ind,
         VTR_ASSERT(cost >= 0.f);
 
         // NOTE: implements REPRESENTATIVE_ENTRY_METHOD == SMALLEST
+        // This updates the Cost Entry relative to the current key.
+        // The unique key is composed by:
+        //      - segment_id
+        //      - delta_x/y
         auto result = routing_costs->insert(std::make_pair(key, cost));
         if (!result.second) {
             if (cost < result.first->second) {
                 result.first->second = cost;
                 new_sample_found = true;
             } else if (BREAK_ON_MISS) {
+                // This is an experimental feature to reduce CPU time.
+                // Storing all partial paths generates a lot of extra data and map lookups and, if BREAK_ON_MISS is active,
+                // the search for a minimum sample is stopped whenever a better partial path is not found.
+                //
+                // This can potentially prevent this routine to find the minimal sample though.
                 break;
             }
         } else {
@@ -379,10 +405,10 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     util::RoutingCosts all_base_costs;
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
-#if defined(VPR_USE_TBB)
+#if defined(VPR_USE_TBB) // Run parallely
     tbb::mutex all_costs_mutex;
     tbb::parallel_for_each(sample_regions, [&](const SampleRegion& region) {
-#else
+#else // Run serially
     for (const auto& region : sample_regions) {
 #endif
         // holds the cost entries for a run
@@ -392,6 +418,11 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
         std::vector<bool> node_expanded(device_ctx.rr_nodes.size());
         std::vector<util::Search_Path> paths(device_ctx.rr_nodes.size());
 
+        // Each point in a sample region contains a set of nodes. Each node becomes a starting node
+        // for the dijkstra expansions, and different paths are explored to reach different locations.
+        //
+        // If the nodes get exhausted or the minimum number of paths is reached (set by MIN_PATH_COUNT)
+        // the routine exits and the costs added to the collection of all the costs found so far.
         for (auto& point : region.points) {
             // statistics
             vtr::Timer run_timer;
@@ -399,6 +430,13 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
             float max_base_cost = 0.f;
             int path_count = 0;
             for (auto node_ind : point.nodes) {
+                // For each starting node, two different expansions are performed, one to find minimum delay
+                // and the second to find minimum base costs.
+                //
+                // NOTE: Doing two separate dijkstra expansions, each finding a minimum value leads to have an optimistic lookahead,
+                //       given that delay and base costs may not be simultaneously achievemnts.
+                //       Experiments have shown that the having two separate expansions lead to better results for Series 7 devices, but
+                //       this might not be true for Stratix ones.
                 {
                     auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &node_expanded, &paths, &delay_costs);
                     max_delay_cost = std::max(max_delay_cost, result.first);
@@ -427,6 +465,13 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
         }
 
 #if defined(VPR_USE_TBB)
+        // The mutex locks the common data structures that each worker uses to store the routing
+        // expansion data.
+        //
+        // This because delay_costs and base_costs are in the worker's scope, so they can be run parallely and
+        // no data is shared among workers.
+        // Instead, all_delay_costs and all_base_costs is a shared object between all the workers, hence the
+        // need of a mutex when modifying their entries.
         all_costs_mutex.lock();
 #endif
 
@@ -505,7 +550,7 @@ float ExtendedMapLookahead::get_expected_cost(
 
     t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
 
-    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
+    if (rr_type == CHANX || rr_type == CHANY) {
         return get_map_cost(
             current_node, target_node, params.criticality);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
