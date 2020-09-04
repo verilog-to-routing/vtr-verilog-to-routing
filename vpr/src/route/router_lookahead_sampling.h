@@ -11,7 +11,7 @@ struct SamplePoint {
     vtr::Point<int> location;
 
     // nodes to expand
-    std::vector<ssize_t> nodes;
+    std::vector<RRNodeId> nodes;
 };
 
 struct SampleRegion {

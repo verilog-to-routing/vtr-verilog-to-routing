@@ -21,20 +21,26 @@ static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b
 }
 
 // the smallest bounding box containing a node
-static vtr::Rect<int> bounding_box_for_node(int node_ind) {
+// This builds a rectangle from (x, y) to (x+1, y+1)
+static vtr::Rect<int> bounding_box_for_node(RRNodeId node) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
-    int x = rr_graph.node_xlow(RRNodeId(node_ind));
-    int y = rr_graph.node_ylow(RRNodeId(node_ind));
+    int x = rr_graph.node_xlow(node);
+    int y = rr_graph.node_ylow(node);
 
     return vtr::Rect<int>(vtr::Point<int>(x, y));
 }
 
+// Returns a sub-rectangle from bounding_box split into an n x n grid,
+// with sx and sy in [0, n-1] selecting the column and row, respectively.
 static vtr::Rect<int> sample_window(const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
     return vtr::Rect<int>(sample(bounding_box, sx, sy, n),
                           sample(bounding_box, sx + 1, sy + 1, n));
 }
 
+// Chooses all points within the sample window within the given count range,
+// sorted outward from the center by Manhattan distance, the result of which
+// is stored in the points member of a SampleRegion.
 static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
                                               const vtr::Rect<int>& window,
                                               int min_count,
@@ -80,7 +86,10 @@ static int quantile(const std::map<int, int>& histogram, float ratio) {
     return 0;
 }
 
-// select a good number of segments to find
+// Computes a histogram of counts within the box, where counts are nodes of a given segment type in this case.
+//
+// This is used to avoid choosing starting points where there extremely low or extremely high counts,
+// which lead to bad sampling or high runtime for little gain.
 static std::map<int, int> count_histogram(const vtr::Rect<int>& box, const vtr::Matrix<int>& counts) {
     std::map<int, int> histogram;
     for (int y = box.ymin(); y < box.ymax(); y++) {
@@ -101,6 +110,9 @@ static std::map<int, int> count_histogram(const vtr::Rect<int>& box, const vtr::
 // because it's just interleaving binary bits, so this
 // function interleaves with 0's so that the X and Y
 // dimensions can then be OR'ed together.
+//
+// This is used to order sample points to increase cache locality.
+// It achieves a ~5-10% run-time improvement.
 static uint64_t interleave(uint32_t x) {
     uint64_t i = x;
     i = (i ^ (i << 16)) & 0x0000ffff0000ffff;
@@ -122,8 +134,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
 
     // compute bounding boxes for each segment type
     std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
-    for (size_t i = 0; i < rr_nodes.size(); i++) {
-        auto& node = rr_nodes[i];
+    for (auto& node : rr_nodes) {
         if (node.type() != CHANX && node.type() != CHANY) continue;
         if (node.capacity() == 0 || node.num_edges() == 0) continue;
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
@@ -131,7 +142,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);
 
-        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(i));
+        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(node.id()));
     }
 
     // initialize counts
@@ -141,12 +152,12 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     }
 
     // count sample points
-    for (size_t i = 0; i < rr_nodes.size(); i++) {
-        auto& node = rr_nodes[i];
+    for (auto& node : rr_nodes) {
         if (node.type() != CHANX && node.type() != CHANY) continue;
         if (node.capacity() == 0 || node.num_edges() == 0) continue;
-        int x = rr_nodes.node_xlow(RRNodeId(i));
-        int y = rr_nodes.node_ylow(RRNodeId(i));
+
+        int x = rr_nodes.node_xlow(node.id());
+        int y = rr_nodes.node_ylow(node.id());
 
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
         segment_counts[seg_index][x][y] += 1;
@@ -206,13 +217,12 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     }
 
     // collect the node indices for each segment type at the selected sample points
-    for (size_t i = 0; i < rr_nodes.size(); i++) {
-        auto& node = rr_nodes[i];
+    for (auto& node : rr_nodes) {
         if (node.type() != CHANX && node.type() != CHANY) continue;
         if (node.capacity() == 0 || node.num_edges() == 0) continue;
 
-        int x = rr_nodes.node_xlow(RRNodeId(i));
-        int y = rr_nodes.node_ylow(RRNodeId(i));
+        int x = rr_nodes.node_xlow(node.id());
+        int y = rr_nodes.node_ylow(node.id());
 
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 
@@ -221,7 +231,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
 
         auto point = sample_point_index.find(std::make_tuple(seg_index, x, y));
         if (point != sample_point_index.end()) {
-            point->second->nodes.push_back(i);
+            point->second->nodes.push_back(node.id());
         }
     }
 

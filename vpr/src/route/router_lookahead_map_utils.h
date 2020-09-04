@@ -65,9 +65,9 @@ class Cost_Entry {
     }
 };
 
-/** 
+/**
  * @brief a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion.
- * 
+ *
  * Since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored
  * in the final lookahead cost map
  *
@@ -172,15 +172,15 @@ typedef std::unordered_map<RoutingCostKey, float, HashRoutingCostKey> RoutingCos
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry {
   public:
-    int rr_node_ind; //index in device_ctx.rr_nodes that this entry represents
-    float cost;      //the cost of the path to get to this node
+    RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
+    float cost;       //the cost of the path to get to this node
 
     /* store backward delay, R and congestion info */
     float delay;
     float R_upstream;
     float congestion_upstream;
 
-    PQ_Entry(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node, float Tsw_adjust);
+    PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node, float Tsw_adjust);
 
     bool operator<(const PQ_Entry& obj) const {
         /* inserted into max priority queue so want queue entries with a lower cost to be greater */
@@ -191,10 +191,10 @@ class PQ_Entry {
 // A version of PQ_Entry that only calculates and stores the delay.
 class PQ_Entry_Delay {
   public:
-    int rr_node_ind;  //index in device_ctx.rr_nodes that this entry represents
+    RRNodeId rr_node;  //index in device_ctx.rr_nodes that this entry represents
     float delay_cost; //the cost of the path to get to this node
 
-    PQ_Entry_Delay(int set_rr_node_ind, int /*switch_ind*/, const PQ_Entry_Delay* parent);
+    PQ_Entry_Delay(RRNodeId set_rr_node, int /*switch_ind*/, const PQ_Entry_Delay* parent);
 
     float cost() const {
         return delay_cost;
@@ -212,10 +212,10 @@ class PQ_Entry_Delay {
 // A version of PQ_Entry that only calculates and stores the base cost.
 class PQ_Entry_Base_Cost {
   public:
-    int rr_node_ind; //index in device_ctx.rr_nodes that this entry represents
+    RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
     float base_cost;
 
-    PQ_Entry_Base_Cost(int set_rr_node_ind, int /*switch_ind*/, const PQ_Entry_Base_Cost* parent);
+    PQ_Entry_Base_Cost(RRNodeId set_rr_node, int /*switch_ind*/, const PQ_Entry_Base_Cost* parent);
 
     float cost() const {
         return base_cost;
@@ -232,7 +232,7 @@ class PQ_Entry_Base_Cost {
 
 struct Search_Path {
     float cost;
-    int parent;
+    size_t parent;
     int edge;
 };
 
