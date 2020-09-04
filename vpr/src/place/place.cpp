@@ -568,8 +568,18 @@ void try_place(const t_placer_opts& placer_opts,
         }
     }
 
+    /*bool manual_move = false;
+#ifndef NO_GRAPHICS
+    bool manual_move = get_manual_move_flag();
+#endif
+
+    if(manual_move)
+        move_generator = std::make_unique<ManualMoveGenerator>();
+    else
+        move_generator = std::make_unique<UniformMoveGenerator>();*/
     move_generator = std::make_unique<UniformMoveGenerator>();
     manual_move_generator = std::make_unique<ManualMoveGenerator>();
+    
 
     width_fac = placer_opts.place_chan_width;
 
