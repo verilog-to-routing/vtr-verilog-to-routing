@@ -1,5 +1,17 @@
 #include "router_lookahead_map_utils.h"
 
+/*
+ * This file contains utility functions that can be shared among different
+ * lookahead computation strategies.
+ *
+ * In general, this utility library contains:
+ *
+ * - Different dijkstra expansion alogrithms used to perform specific tasks, such as computing the SROURCE/OPIN --> CHAN lookup tables
+ * - Cost Entries definitions used when generating and querying the lookahead
+ *
+ * To access the utility functions, the util namespace needs to be used.
+ */
+
 #include "globals.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
@@ -12,11 +24,30 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
 static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
 
-// Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs
+// Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
+// These are used when finding all the delays to get to the IPINs of all the different tile types
+// of the device.
+//
+// The node expansions to get to the center of the bounding box (where the IPINs are located) start from
+// the edge of the bounding box defined by these constants.
+//
+// E.g.: IPIN locations is found at (3,5). A bounding box around (3, 5) is generated with the following
+//       corners.
+//          x_min: 1 (x - X_OFFSET)
+//          x_max: 5 (x + X_OFFSET)
+//          y_min: 3 (y - Y_OFFSET)
+//          y_max: 7 (y + Y_OFFSET)
 #define X_OFFSET 2
 #define Y_OFFSET 2
 
 // Maximum dijkstra expansions when exploring the CHAN --> IPIN connections
+// This sets a limit on the dijkstra expansions to reach an IPIN connection. Given that we
+// want to have the data on the last delay to get to an IPIN, we do not want to have an unbounded
+// number of hops to get to the IPIN, as this would result in high run-times.
+//
+// E.g.: if the constant value is set to 2, the following expansions are perfomed:
+//          - CHANX --> CHANX --> exploration interrupted: Maximum expansion level reached
+//          - CHANX --> IPIN --> exploration interrupted: IPIN found, no need to expand further
 #define MAX_EXPANSION_LEVEL 1
 
 #define DIRECT_CONNECT_SPECIAL_SEG_TYPE -1;
@@ -448,7 +479,10 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
                 //This is a direct-connect path between an IPIN and OPIN,
                 //which terminated at a SINK.
                 //
-                //We treat this as a 'special' wire type
+                //We treat this as a 'special' wire type.
+                //When the src_opin_delays data structure is queried and a SINK rr_type
+                //is found, the lookahead is not accessed to get the cost entries
+                //as this is a special case of direct connections between OPIN and IPIN.
                 seg_index = DIRECT_CONNECT_SPECIAL_SEG_TYPE;
             }
 
