@@ -55,14 +55,14 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
 namespace util {
 
 PQ_Entry::PQ_Entry(
-    int set_rr_node_ind,
+    RRNodeId set_rr_node,
     int switch_ind,
     float parent_delay,
     float parent_R_upstream,
     float parent_congestion_upstream,
     bool starting_node,
     float Tsw_adjust) {
-    this->rr_node_ind = set_rr_node_ind;
+    this->rr_node = set_rr_node;
 
     auto& device_ctx = g_vpr_ctx.device();
     this->delay = parent_delay;
@@ -73,8 +73,8 @@ PQ_Entry::PQ_Entry(
         Tsw += Tsw_adjust;
         VTR_ASSERT(Tsw >= 0.f);
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
-        float Cnode = device_ctx.rr_nodes[set_rr_node_ind].C();
-        float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
+        float Cnode = device_ctx.rr_nodes[size_t(set_rr_node)].C();
+        float Rnode = device_ctx.rr_nodes[size_t(set_rr_node)].R();
 
         float T_linear = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
@@ -85,7 +85,7 @@ PQ_Entry::PQ_Entry(
 
         float base_cost = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
-            base_cost = get_single_rr_cong_base_cost(set_rr_node_ind);
+            base_cost = get_single_rr_cong_base_cost(size_t(set_rr_node));
         }
 
         VTR_ASSERT(T_linear >= 0.);
@@ -100,17 +100,17 @@ PQ_Entry::PQ_Entry(
 }
 
 util::PQ_Entry_Delay::PQ_Entry_Delay(
-    int set_rr_node_ind,
+    RRNodeId set_rr_node,
     int switch_ind,
     const util::PQ_Entry_Delay* parent) {
-    this->rr_node_ind = set_rr_node_ind;
+    this->rr_node = set_rr_node;
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
-        float Cnode = device_ctx.rr_nodes[set_rr_node_ind].C();
-        float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
+        float Cnode = device_ctx.rr_nodes[size_t(set_rr_node)].C();
+        float Rnode = device_ctx.rr_nodes[size_t(set_rr_node)].R();
 
         float T_linear = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
@@ -127,15 +127,15 @@ util::PQ_Entry_Delay::PQ_Entry_Delay(
 }
 
 util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
-    int set_rr_node_ind,
+    RRNodeId set_rr_node,
     int switch_ind,
     const util::PQ_Entry_Base_Cost* parent) {
-    this->rr_node_ind = set_rr_node_ind;
+    this->rr_node = set_rr_node;
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
         if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
-            this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(set_rr_node_ind);
+            this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(size_t(set_rr_node));
         } else {
             this->base_cost = parent->base_cost;
         }
@@ -248,9 +248,9 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
                                                     std::greater<Entry>>* pq) {
-    int parent_ind = size_t(parent_entry.rr_node_ind);
+    RRNodeId parent = parent_entry.rr_node;
 
-    auto& parent_node = rr_nodes[parent_ind];
+    auto& parent_node = rr_nodes[size_t(parent)];
 
     for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
         int child_node_ind = parent_node.edge_sink_node(iedge);
@@ -261,12 +261,12 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
             continue;
         }
 
-        Entry child_entry(child_node_ind, switch_ind, &parent_entry);
+        Entry child_entry(RRNodeId(child_node_ind), switch_ind, &parent_entry);
         VTR_ASSERT(child_entry.cost() >= 0);
 
         /* Create (if it doesn't exist) or update (if the new cost is lower)
          * to specified node */
-        Search_Path path_entry = {child_entry.cost(), parent_ind, iedge};
+        Search_Path path_entry = {child_entry.cost(), size_t(parent), iedge};
         auto& path = (*paths)[child_node_ind];
         if (path_entry.cost < path.cost) {
             pq->push(child_entry);

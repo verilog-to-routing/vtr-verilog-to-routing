@@ -20,8 +20,8 @@ class ExtendedMapLookahead : public RouterLookahead {
     /**
      * @brief Returns the cost to get to a input delta_x/y location when starting from a SOURCE or OPIN node
      * @param from_node starting node
-     * @param delta_x x delta value that is the distance between the current node to the target node 
-     * @param delta_y y delta value that is the distance between the current node to the target node 
+     * @param delta_x x delta value that is the distance between the current node to the target node
+     * @param delta_y y delta value that is the distance between the current node to the target node
      * @param criticality_fac criticality of the current connection
      * @return expected cost to get to the destination
      */
@@ -35,18 +35,18 @@ class ExtendedMapLookahead : public RouterLookahead {
     float get_chan_ipin_delays(RRNodeId to_node) const;
 
     template<typename Entry>
-    bool add_paths(int start_node_ind,
+    bool add_paths(RRNodeId start_node,
                    Entry current,
                    const std::vector<util::Search_Path>& paths,
                    util::RoutingCosts* routing_costs);
 
     template<typename Entry>
-    std::pair<float, int> run_dijkstra(int start_node_ind,
+    std::pair<float, int> run_dijkstra(RRNodeId start_node,
                                        std::vector<bool>* node_expanded,
                                        std::vector<util::Search_Path>* paths,
                                        util::RoutingCosts* routing_costs);
 
-    float get_map_cost(int from_node_ind, int to_node_ind, float criticality_fac) const;
+    float get_map_cost(RRNodeId from_node, RRNodeId to_node, float criticality_fac) const;
 
     CostMap cost_map_; ///<Cost map containing all data to extract the entry cost when querying the lookahead.
   public:
@@ -54,19 +54,19 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @brief Returns the expected cost to get to a destination node
      */
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
-   
+
     /**
-     * @brief Computes the extended lookahead map 
+     * @brief Computes the extended lookahead map
      */
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
-    
+
     /**
-     * @brief Reads the extended lookahead map 
+     * @brief Reads the extended lookahead map
      */
     void read(const std::string& file) override;
-    
+
     /**
-     * @brief Writes the extended lookahead map 
+     * @brief Writes the extended lookahead map
      */
     void write(const std::string& file) const override;
 };
