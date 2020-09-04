@@ -1683,13 +1683,21 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
-        .help("Controls which placement algorithm is used")
+        .help(
+            "Controls which placement algorithm is used. Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
         .default_value("criticality_timing")
         .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
-        .help("Controls which placement algorithm is used during placement quench")
+        .help(
+            "Controls which placement algorithm is used during placement quench. Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
         .default_value("criticality_timing")
         .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);

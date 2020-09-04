@@ -1251,7 +1251,7 @@ static void placement_inner_loop(float t,
             num_swap_rejected++;
         }
 
-        if (placer_opts.place_algorithm.is_timing_driven()) {
+        if (place_algorithm.is_timing_driven()) {
             /* Do we want to re-timing analyze the circuit to get updated slack and criticality values?
              * We do this only once in a while, since it is expensive.
              */
@@ -1688,11 +1688,11 @@ static e_move_result try_swap(float t,
             /*in this case we redefine delta_c as a combination of timing and bb.  *
              *additionally, we normalize all values, therefore delta_c is in       *
              *relation to 1*/
-
             delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
                       + timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
 
-        } else { //place_algorithm == BOUNDING_BOX_PLACE (wiring cost)
+        } else {
+            VTR_ASSERT(place_algorithm == BOUNDING_BOX_PLACE);
             delta_c = bb_delta_c;
         }
 
@@ -2010,7 +2010,7 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
     //Check the first pair of slack values that are different
     //If found, return their difference
     for (size_t idiff = 0; idiff < original_setup_slacks.size(); ++idiff) {
-        float slack_diff = original_setup_slacks[idiff] != proposed_setup_slacks[idiff];
+        float slack_diff = original_setup_slacks[idiff] - proposed_setup_slacks[idiff];
 
         if (slack_diff != 0) {
             return slack_diff;
