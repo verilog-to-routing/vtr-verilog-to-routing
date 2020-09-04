@@ -123,49 +123,36 @@ static uint64_t interleave(uint32_t x) {
     return i;
 }
 
-// for each segment type, find the nearest nodes to an equally spaced grid of points
-// within the bounding box for that segment type
-std::vector<SampleRegion> find_sample_regions(int num_segments) {
-    vtr::ScopedStartFinishTimer timer("finding sample regions");
-    std::vector<SampleRegion> sample_regions;
+// Used to get a valid segment index given an input rr_node.
+// If the node is not interesting an invalid value is returned.
+static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_segments) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_nodes = device_ctx.rr_nodes;
-    std::vector<vtr::Matrix<int>> segment_counts(num_segments);
 
-    // compute bounding boxes for each segment type
-    std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
-    for (auto& node : rr_nodes) {
-        if (node.type() != CHANX && node.type() != CHANY) continue;
-        if (node.capacity() == 0 || node.num_edges() == 0) continue;
-        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
-
-        VTR_ASSERT(seg_index != OPEN);
-        VTR_ASSERT(seg_index < num_segments);
-
-        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(node.id()));
+    if (node.type() != CHANX && node.type() != CHANY) {
+        return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
-    // initialize counts
-    for (int seg = 0; seg < num_segments; seg++) {
-        const auto& box = bounding_box_for_segment[seg];
-        segment_counts[seg] = vtr::Matrix<int>({size_t(box.width()), size_t(box.height())}, 0);
+    if (node.capacity() == 0 || node.num_edges() == 0) {
+        return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
-    // count sample points
-    for (auto& node : rr_nodes) {
-        if (node.type() != CHANX && node.type() != CHANY) continue;
-        if (node.capacity() == 0 || node.num_edges() == 0) continue;
+    int x = rr_nodes.node_xlow(node.id());
+    int y = rr_nodes.node_ylow(node.id());
 
-        int x = rr_nodes.node_xlow(node.id());
-        int y = rr_nodes.node_ylow(node.id());
+    int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 
-        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
-        segment_counts[seg_index][x][y] += 1;
+    VTR_ASSERT(seg_index != OPEN);
+    VTR_ASSERT(seg_index < num_segments);
 
-        VTR_ASSERT(seg_index != OPEN);
-        VTR_ASSERT(seg_index < num_segments);
-    }
+    return std::tuple<int, int, int>(seg_index, x, y);
+}
 
+// Fills the sample_regions vector
+static void compute_sample_regions(std::vector<SampleRegion>& sample_regions,
+                                   std::vector<vtr::Matrix<int>>& segment_counts,
+                                   std::vector<vtr::Rect<int>>& bounding_box_for_segment,
+                                   int num_segments) {
     // select sample points
     for (int i = 0; i < num_segments; i++) {
         const auto& counts = segment_counts[i];
@@ -201,6 +188,47 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
             }
         }
     }
+}
+
+// for each segment type, find the nearest nodes to an equally spaced grid of points
+// within the bounding box for that segment type
+std::vector<SampleRegion> find_sample_regions(int num_segments) {
+    vtr::ScopedStartFinishTimer timer("finding sample regions");
+    std::vector<SampleRegion> sample_regions;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_nodes = device_ctx.rr_nodes;
+    std::vector<vtr::Matrix<int>> segment_counts(num_segments);
+
+    // compute bounding boxes for each segment type
+    std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
+    for (auto& node : rr_nodes) {
+        if (node.type() != CHANX && node.type() != CHANY) continue;
+        if (node.capacity() == 0 || node.num_edges() == 0) continue;
+        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+
+        VTR_ASSERT(seg_index != OPEN);
+        VTR_ASSERT(seg_index < num_segments);
+
+        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(node.id()));
+    }
+
+    // initialize counts
+    for (int seg = 0; seg < num_segments; seg++) {
+        const auto& box = bounding_box_for_segment[seg];
+        segment_counts[seg] = vtr::Matrix<int>({size_t(box.width()), size_t(box.height())}, 0);
+    }
+
+    // count sample points
+    for (const auto& node : rr_nodes) {
+        int seg_index, x, y;
+        std::tie(seg_index, x, y) = get_node_info(node, num_segments);
+
+        if (seg_index == OPEN) continue;
+
+        segment_counts[seg_index][x][y] += 1;
+    }
+
+    compute_sample_regions(sample_regions, segment_counts, bounding_box_for_segment, num_segments);
 
     // sort regions
     std::sort(sample_regions.begin(), sample_regions.end(),
@@ -217,17 +245,11 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     }
 
     // collect the node indices for each segment type at the selected sample points
-    for (auto& node : rr_nodes) {
-        if (node.type() != CHANX && node.type() != CHANY) continue;
-        if (node.capacity() == 0 || node.num_edges() == 0) continue;
+    for (const auto& node : rr_nodes) {
+        int seg_index, x, y;
+        std::tie(seg_index, x, y) = get_node_info(node, num_segments);
 
-        int x = rr_nodes.node_xlow(node.id());
-        int y = rr_nodes.node_ylow(node.id());
-
-        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
-
-        VTR_ASSERT(seg_index != OPEN);
-        VTR_ASSERT(seg_index < num_segments);
+        if (seg_index == OPEN) continue;
 
         auto point = sample_point_index.find(std::make_tuple(seg_index, x, y));
         if (point != sample_point_index.end()) {
