@@ -2099,7 +2099,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "            architectures)\n"
             " * map: An advanced lookahead which accounts for diverse wire type\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
-            "                 exhaustive node sampling method")
+            "                 exhaustive node sampling method\n"
+            "\n"
+            " The extended map differs from the map lookahead in the lookahead computation.\n"
+            " It is better suited for architectures that have specialized routing for specific\n"
+            " kinds of connections, but note that the time and memory necessary to compute the\n"
+            " extended lookahead map are greater than the basic lookahead map.\n")
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
