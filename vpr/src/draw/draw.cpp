@@ -4127,13 +4127,13 @@ void manual_move_generator_window(std::string block_id) {
         //set margins
         gtk_widget_set_margin_bottom(grid, 20);
         gtk_widget_set_margin_top(grid, 20);
-        gtk_widget_set_margin_start(grid, 20);
-        gtk_widget_set_margin_end(grid, 20);
+        gtk_widget_set_margin_left(grid, 20);
+        gtk_widget_set_margin_right(grid, 20);
         gtk_widget_set_margin_bottom(block_label, 5);
         gtk_widget_set_margin_bottom(to_label, 5);
         gtk_widget_set_margin_top(button, 15);
-        gtk_widget_set_margin_start(x, 13);
-        gtk_widget_set_margin_start(y, 13);
+        gtk_widget_set_margin_left(x, 13);
+        gtk_widget_set_margin_left(y, 13);
         gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
 
         //connect signals
@@ -4181,8 +4181,8 @@ void cost_summary_window() {
     gtk_widget_set_halign(reject, GTK_ALIGN_CENTER);
     gtk_widget_set_margin_bottom(grid, 20);
     gtk_widget_set_margin_top(grid, 20);
-    gtk_widget_set_margin_end(grid, 20);
-    gtk_widget_set_margin_start(grid, 20);
+    gtk_widget_set_margin_right(grid, 20);
+    gtk_widget_set_margin_left(grid, 20);
     gtk_widget_set_margin_bottom(info, 15);
     gtk_widget_set_margin_bottom(dc, 5);
     gtk_widget_set_margin_bottom(dcn, 5);
