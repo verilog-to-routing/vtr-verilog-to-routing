@@ -13,7 +13,6 @@
 #include <array>
 #include <iostream>
 
-<<<<<<< HEAD
 /** debugger functions **/
 void draw_debug_window();
 void refresh_bpList();
@@ -31,13 +30,6 @@ void close_debug_window();
 void close_advanced_window();
 void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window);
 void invalid_breakpoint_entry_window(std::string error);
-<<<<<<< HEAD
 bool valid_expression(std::string exp);
 void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state, bool in_placer);
-=======
->>>>>>> fixed errors and formatting
-=======
-//debugger functions
-void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window);
-void invalid_breakpoint_entry_window(std::string error);
->>>>>>> 926d2a63b57bd6a586f305673e035bf0745b237d
+
