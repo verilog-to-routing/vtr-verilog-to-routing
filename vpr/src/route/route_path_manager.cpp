@@ -68,7 +68,6 @@ void PathManager::alloc_path_struct(t_heap_path*& tptr) {
         return;
     }
 
-    VTR_ASSERT(tptr == nullptr);
 
     // if (tptr == nullptr) {
     // Use a free node list to avoid unnecessary data allocation
