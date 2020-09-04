@@ -15,6 +15,17 @@ enum e_move_result {
     ABORTED
 };
 
+//This is to list all the abailable moves
+enum class e_move_type {
+    UNIFORM,
+    MEDIAN,
+    W_CENTROID,
+    CENTROID,
+    W_MEDIAN,
+    CRIT_UNIFORM,
+    FEASIBLE_REGION 
+};
+
 enum class e_create_move {
     VALID, //Move successful and legal
     ABORT, //Unable to perform move
@@ -68,7 +79,9 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          const t_pl_loc centeroid,
-                         t_pl_loc& to);
+                         t_pl_loc& to,
+                         int dm_rlim);
 
+std::string move_type_to_string (e_move_type);
 
 #endif

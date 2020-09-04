@@ -7,7 +7,7 @@ bool sort_by_weights(const std::pair<int,float> &a, const std::pair<int,float> &
 
 
 e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int ,const PlacerCriticalities* criticalities ) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities ) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -108,7 +108,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     centroid.x = center_x;
     centroid.y = center_y;
 
-    if (!find_to_loc_centroid(cluster_from_type, rlim, from, centroid, to)) {
+    if (!find_to_loc_centroid(cluster_from_type, rlim, from, centroid, to, placer_opts.place_dm_rlim)) {
         return e_create_move::ABORT;
     }
 

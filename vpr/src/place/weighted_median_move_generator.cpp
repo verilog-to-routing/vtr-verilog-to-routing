@@ -12,7 +12,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
 //static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id);
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim ,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &,int place_high_fanout_net, const PlacerCriticalities* criticalities) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -54,7 +54,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
-        if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) >  place_high_fanout_net)
+        if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) >  placer_opts.place_high_fanout_net)
             continue;
 /*
         //if the moving block is a sink, weight all the terminals of the input net by the criticality of the moving block net pin
@@ -119,7 +119,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax)/2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax)/2;
-    if(!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to)){
+    if(!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to, placer_opts.place_dm_rlim)){
         return e_create_move::ABORT;
     }
     return ::create_move(blocks_affected, b_from, to);

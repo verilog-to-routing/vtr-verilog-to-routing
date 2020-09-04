@@ -13,7 +13,7 @@ class KArmedBanditAgent {
   public:
     virtual ~KArmedBanditAgent() {}
     virtual void set_k(size_t k) = 0;
-    virtual void process_outcome(double ) = 0;
+    virtual void process_outcome(double , int) = 0;
     virtual size_t propose_action() = 0;
 #if 0
     virtual void debug() = 0;
@@ -25,7 +25,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     EpsilonGreedyAgent(size_t k, float epsilon);
     ~EpsilonGreedyAgent();
 
-    void process_outcome(double reward) override; //Updates the agent based on the reward of the last proposed action
+    void process_outcome(double reward, int reward_num) override; //Updates the agent based on the reward of the last proposed action
     size_t propose_action() override;            //Returns the next action the agent wants to
 
 
@@ -63,7 +63,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
     SoftmaxAgent(size_t k);
     ~SoftmaxAgent();
 
-    void process_outcome(double reward) override; //Updates the agent based on the reward of the last proposed action
+    void process_outcome(double reward, int reward_num) override; //Updates the agent based on the reward of the last proposed action
     size_t propose_action() override;            //Returns the next action the agent wants to
 
 
@@ -105,7 +105,7 @@ public:
 	SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
     e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim,
         std::vector<int>& X_coord, std::vector<int>& Y_coord,
-        int& type, int high_fanout_net, const PlacerCriticalities* /*criticalities*/);
-    void process_outcome(double reward);
+        int& type, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/);
+    void process_outcome(double reward, int reward_num);
 };
 #endif

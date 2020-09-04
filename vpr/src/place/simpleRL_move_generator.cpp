@@ -50,7 +50,7 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
         }
 }
 
-void EpsilonGreedyAgent::process_outcome(double reward) {
+void EpsilonGreedyAgent::process_outcome(double reward, int reward_num) {
     ++n_[last_action_];
     if(reward_num == 1 || reward_num == 4 ){
         reward = reward / time_elapsed_per_move[last_action_];
@@ -259,14 +259,14 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 
 
 e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
-	, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, int high_fanout_net, const PlacerCriticalities* criticalities) {
+	, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
 
 	type = karmed_bandit_agent->propose_action();
-	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, type, high_fanout_net, criticalities);
+	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, type, placer_opts, criticalities);
 }
 
-void SimpleRLMoveGenerator::process_outcome(double reward){
-	karmed_bandit_agent->process_outcome(reward);
+void SimpleRLMoveGenerator::process_outcome(double reward, int reward_num){
+	karmed_bandit_agent->process_outcome(reward, reward_num);
 }
 /*                                  *
  *                                  *
@@ -286,7 +286,7 @@ SoftmaxAgent::~SoftmaxAgent() {
     if (f_) vtr::fclose(f_);
 }
 
-void SoftmaxAgent::process_outcome(double reward){
+void SoftmaxAgent::process_outcome(double reward, int reward_num){
 
     ++n_[last_action_];
     if(reward_num == 1 || reward_num == 4 ){

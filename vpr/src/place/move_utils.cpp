@@ -811,7 +811,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          const t_pl_loc centroid,
-                         t_pl_loc& to) {
+                         t_pl_loc& to,
+                         int dm_rlim) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -949,4 +950,20 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     VTR_ASSERT_MSG(grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
     return true;
+}
+
+//Array of move type strings
+std::vector<std::string> move_type_strings = {
+    "Uniform",
+    "Median",
+    "W. Centroid",
+    "Centroid",
+    "W. Median",
+    "Crit. Uniform",
+    "Feasible Region"
+};
+
+//To convert enum move type to string
+std::string move_type_to_string (e_move_type move){
+    return move_type_strings[int(move)];
 }

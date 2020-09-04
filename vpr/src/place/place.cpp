@@ -71,23 +71,11 @@ std::vector<double> time_of_moves (7,0);
 #include "draw_color.h"
 #endif
 
-int timing_cost_func;
+//int timing_cost_func;
 
 using std::max;
 using std::min;
 
-
-
-//map of the available move types and their corresponding type number
-std::map<int,std::string> available_move_types = {
-        {0,"Uniform"},
-        {1,"Median"},
-        {2,"Weighted_centroid"},
-        {3,"Centroid"},
-        {4,"Weighted_median"},
-        {5,"Critical_uniform"},
-        {6,"Feasible_region"}
-};
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 void print_place_statisitics(const int&, const float &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &);
 #endif
@@ -536,7 +524,7 @@ void try_place(const t_placer_opts& placer_opts,
         move_generator2= std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
     }
     else{
-        if(agent_algorithm == E_GREEDY){
+        if(placer_opts.place_agent_algorithm == E_GREEDY){
             VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
             karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(4, placer_opts.place_agent_epsilon);
@@ -551,7 +539,7 @@ void try_place(const t_placer_opts& placer_opts,
             move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
         }
 
-        if(agent_algorithm == E_GREEDY){
+        if(placer_opts.place_agent_algorithm == E_GREEDY){
             VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
             karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(7, placer_opts.place_agent_epsilon);
@@ -567,7 +555,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
 
 
-        VTR_LOG("The reward function used is reward num: %d \n", reward_num);
+        VTR_LOG("The reward function used is reward num: %d \n", placer_opts.place_reward_num);
     }
     width_fac = placer_opts.place_chan_width;
 
@@ -1028,7 +1016,7 @@ quench:
             accepted = accepted_moves[i];
             aborted = aborted_moves[i];
             rejected = moves - (accepted + aborted);
-            move_name = available_move_types[int(i)];
+            move_name = move_type_to_string(e_move_type(i));
             VTR_LOG("\t%.17s move: %2.2f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n", move_name.c_str(), 100*moves/total_moves,100*accepted/moves, 100*rejected/moves, 100*aborted/moves);
         }
     }
@@ -1142,15 +1130,12 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              delay_model,
                                              criticalities,
                                              setup_slacks,
-                                             placer_opts.rlim_escape_fraction,
-                                             placer_opts.place_algorithm,
-                                             placer_opts.timing_tradeoff,
+                                             placer_opts,
                                              X_coord,
                                              Y_coord,
                                              num_moves,
                                              accepted_moves,
                                              aborted_moves,
-                                             placer_opts.place_high_fanout_net,
                                              timing_bb_factor);
 
         if (swap_result == ACCEPTED) {
@@ -1272,13 +1257,11 @@ static float starting_t(const t_annealing_state* state,
                         MoveGenerator& move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
-                        const t_placer_opts& placer_opts,
                         std::vector<int>& X_coord,
                         std::vector<int>& Y_coord,
                         std::vector<int>& num_moves,
                         std::vector<int>& accepted_moves,
-                        std::vector<int>& aborted_moves,
-                        int high_fanout_net) {
+                        std::vector<int>& aborted_moves) {
     /* Finds the starting temperature (hot condition).              */
 
     int i, num_accepted, move_lim;
@@ -1310,15 +1293,12 @@ static float starting_t(const t_annealing_state* state,
                                              delay_model,
                                              criticalities,
                                              setup_slacks,
-                                             placer_opts.rlim_escape_fraction,
-                                             placer_opts.place_algorithm,
-                                             placer_opts.timing_tradeoff,
+                                             placer_opts,
                                              X_coord,
                                              Y_coord,
                                              num_moves,
                                              accepted_moves,
                                              aborted_moves,
-                                             high_fanout_net,
                                              HI_LIMIT);
 
         if (swap_result == ACCEPTED) {
@@ -1406,21 +1386,22 @@ static e_move_result try_swap(const t_annealing_state* state,
                               const PlaceDelayModel* delay_model,
                               PlacerCriticalities* criticalities,
                               PlacerSetupSlacks* setup_slacks,
-                              float rlim_escape_fraction,
-                              const t_place_algorithm& place_algorithm,
-                              float timing_tradeoff,
+                              const t_placer_opts& placer_opts,
                               std::vector<int>& X_coord,
                               std::vector<int>& Y_coord,
                               std::vector<int>& num_moves,
                               std::vector<int>& accepted_moves,
                               std::vector<int>& aborted_moves,
-                              int high_fanout_net,
                               float timing_bb_factor) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
+
+    float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
+    enum e_place_algorithm place_algorithm = placer_opts.place_algorithm;
+    float timing_tradeoff = placer_opts.timing_tradeoff;
 
     int type; //move type number
 
@@ -1449,7 +1430,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     auto start = std::chrono::high_resolution_clock::now();
 #endif
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected
-      , rlim, X_coord, Y_coord, type, high_fanout_net, criticalities);
+      , rlim, X_coord, Y_coord, type, placer_opts, criticalities);
 
     ++num_moves[type];
 #if 0
@@ -1645,24 +1626,25 @@ static e_move_result try_swap(const t_annealing_state* state,
     else
         move_generator.process_outcome(0);
 */
+    int reward_num = placer_opts.place_reward_num;
     if(reward_num == 0){
-        move_generator.process_outcome(-1*delta_c);
+        move_generator.process_outcome(-1*delta_c, reward_num);
 
     }
     else if(reward_num == 2 || reward_num == 1 || reward_num ==3 ){
         if(delta_c < 0){
-            move_generator.process_outcome(-1*delta_c);
+            move_generator.process_outcome(-1*delta_c, reward_num);
         }
         else
-            move_generator.process_outcome(0);
+            move_generator.process_outcome(0, reward_num);
     }
     else{
         if(delta_c < 0){
             float reward = -1*(move_outcome_stats.delta_cost_norm) -0.5*((1-timing_bb_factor)*move_outcome_stats.delta_timing_cost_norm + timing_bb_factor *  move_outcome_stats.delta_bb_cost_norm);
-         move_generator.process_outcome(reward);
+         move_generator.process_outcome(reward, reward_num);
         }
         else
-            move_generator.process_outcome(0);
+            move_generator.process_outcome(0, reward_num);
     }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
