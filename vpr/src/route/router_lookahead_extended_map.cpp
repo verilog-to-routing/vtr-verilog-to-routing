@@ -394,7 +394,6 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     /* free previous delay map and allocate new one */
     auto& device_ctx = g_vpr_ctx.device();
     cost_map_.set_counts(segment_inf.size());
-    cost_map_.build_segment_map();
 
     VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == util::SMALLEST);
     util::RoutingCosts all_delay_costs;

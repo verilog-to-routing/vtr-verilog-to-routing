@@ -30,12 +30,7 @@ class CostMap {
     void set_counts(size_t seg_count);
 
     /**
-     * @brief Builds a node to segments map for a fast lookup
-     */
-    void build_segment_map();
-
-    /**
-     * @brief Queries the segment map to get the segment index given the corresponding node index
+     * @brief Gets the segment index relative to the input node index
      *
      * @param from_node_ind index of the node to search in the segment map
      * @return The index of the segment corresponding to the input node id
@@ -102,8 +97,6 @@ class CostMap {
     vtr::Matrix<float> penalty_; ///<Penalty value corresponding to each segment type and used to penalize
                                  ///<delta locations that fall outside of a segment's bounding box.
                                  ///<The penalty map is addressed as follows penalty_[0][segment_index]
-
-    std::vector<int> segment_map_; ///<Segment map to lookup to the segment index given the node index
 
     size_t seg_count_; ///<Total segment count in the architecture
 
