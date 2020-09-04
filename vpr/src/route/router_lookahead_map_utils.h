@@ -42,10 +42,10 @@ enum e_representative_entry_method {
  */
 class Cost_Entry {
   public:
-    float delay; ///<Delay value of the cost entry
+    float delay;      ///<Delay value of the cost entry
     float congestion; ///<Base cost value of the cost entry
-    bool fill; ///<Boolean specifying whether this Entry was created as a result of the cost map
-               ///<holes filling procedure
+    bool fill;        ///<Boolean specifying whether this Entry was created as a result of the cost map
+                      ///<holes filling procedure
 
     Cost_Entry() {
         delay = std::numeric_limits<float>::infinity();
@@ -191,7 +191,7 @@ class PQ_Entry {
 // A version of PQ_Entry that only calculates and stores the delay.
 class PQ_Entry_Delay {
   public:
-    RRNodeId rr_node;  //index in device_ctx.rr_nodes that this entry represents
+    RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
     float delay_cost; //the cost of the path to get to this node
 
     PQ_Entry_Delay(RRNodeId set_rr_node, int /*switch_ind*/, const PQ_Entry_Delay* parent);
