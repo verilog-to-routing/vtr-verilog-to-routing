@@ -4,7 +4,7 @@
  * The router lookahead provides an estimate of the cost from an intermediate node to the target node
  * during directed (A*-like) routing.
  *
- * The VPR 7.0 lookahead (route/route_timing.c ==> get_timing_driven_expected_cost) lower-bounds the remaining delay and
+ * The VPR 7.0 classic lookahead (route/route_timing.c ==> get_timing_driven_expected_cost) lower-bounds the remaining delay and
  * congestion by assuming that a minimum number of wires, of the same type as the current node being expanded, can be used
  * to complete the route. While this method is efficient, it can run into trouble with architectures that use
  * multiple interconnected wire types.
@@ -37,13 +37,15 @@ enum e_representative_entry_method {
     MEDIAN
 };
 
-/* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
- * to travel relative x/y distances */
+/**
+ * @brief f_cost_map is an array of these cost entries that specifies delay/congestion estimates to travel relative x/y distances
+ */
 class Cost_Entry {
   public:
-    float delay;
-    float congestion;
-    bool fill;
+    float delay; ///<Delay value of the cost entry
+    float congestion; ///<Base cost value of the cost entry
+    bool fill; ///<Boolean specifying whether this Entry was created as a result of the cost map
+               ///<holes filling procedure
 
     Cost_Entry() {
         delay = std::numeric_limits<float>::infinity();
@@ -63,12 +65,21 @@ class Cost_Entry {
     }
 };
 
-/* a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion.
- * since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored
- * in the final lookahead cost map */
+/** 
+ * @brief a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion.
+ * 
+ * Since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored
+ * in the final lookahead cost map
+ *
+ * This class is used for the lookahead map implementation only
+ */
 class Expansion_Cost_Entry {
   private:
-    std::vector<Cost_Entry> cost_vector;
+    std::vector<Cost_Entry> cost_vector; ///<This vector is used to store different cost entries that are treated
+                                         ///<differently based on the below representative cost entry method computations
+                                         ///<Currently, only the smallest entry is stored in the vector, but this prepares
+                                         ///<the ground for other possible representative cost entry calculation methods.
+                                         ///<The vector is filled for a specific (chan_index, segment_index, delta_x, delta_y) cost entry.
 
     Cost_Entry get_smallest_entry() const;
     Cost_Entry get_average_entry() const;
@@ -250,6 +261,12 @@ struct t_reachable_wire_inf {
 // physical block type index                   |             Reachable wire info
 //                                             |
 //                                             SOURCE/OPIN ptc
+//
+// This data structure stores a set of delay and congestion values for each wire that can be reached from a given
+// SOURCE/OPIN of a given tile type.
+//
+// When querying this data structure, the minimum cost is computed for each delay/congestion pair, and returned
+// as the lookahead expected cost.
 typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_delays;
 
 //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1]
@@ -257,7 +274,10 @@ typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin
 // |                                           |
 // physical block type index                   |
 //                                             |
-//                                             SINK/IPIN ptc
+//                                             SINK ptc
+//
+// This data structure stores the minimum delay to reach a specific SINK from the last connection between the wire (CHANX/CHANY)
+// and the tile's IPIN. If there are many connections to the same IPIN, the one with the minimum delay is selected.
 typedef std::vector<std::vector<t_reachable_wire_inf>> t_chan_ipins_delays;
 
 t_src_opin_delays compute_router_src_opin_lookahead();
