@@ -275,8 +275,7 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     }
 }
 
-std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    (void)R_upstream;
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
@@ -357,7 +356,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
                                             describe_rr_node(size_t(inode)).c_str())
                                 .c_str());
 
-    } else {
+    } else if (from_type == CHANX || from_type == CHANY) {
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
@@ -380,6 +379,10 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
                                             rr_node_arch_name(size_t(inode)).c_str(),
                                             describe_rr_node(size_t(inode)).c_str())
                                 .c_str());
+    } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
+        return std::make_pair(0., device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+    } else { /* Change this if you want to investigate route-throughs */
+        return std::make_pair(0., 0.);
     }
 
     return std::make_pair(expected_delay_cost, expected_cong_cost);
