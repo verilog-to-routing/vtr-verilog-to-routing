@@ -711,7 +711,6 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment, st
         // Check if it's within a PERCENTAGE_CHANGE_THRESHOLD% difference
         float d_slack = negative_hold_slacks.back() - negative_hold_slacks.front();
         if (std::abs(d_slack) < std::abs(negative_hold_slacks.front() * PERCENT_CHANGE_THRESHOLD) && negative_hold_slacks.front() != 0) {
-
             /*Increase the budgets by a delay increment when the congested times is high enough*/
             for (auto net_id : cluster_ctx.clb_nlist.nets()) {
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
