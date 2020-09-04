@@ -346,7 +346,7 @@ if (VPR_USE_EZGL STREQUAL "auto")
         message(STATUS "VPR Graphics: Enabled")
     else()
         set(VPR_USE_EZGL "off")
-        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debia/ubuntu try: sudo apt install libgtk-3 libx11-dev")
+        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debian/ubuntu try: sudo apt install libgtk-3-dev libx11-dev")
     endif()
 endif()
 
