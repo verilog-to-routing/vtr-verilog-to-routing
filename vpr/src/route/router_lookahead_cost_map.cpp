@@ -46,20 +46,6 @@ static vtr::Point<T> closest_point_in_rect(const vtr::Rect<T>& r, const vtr::Poi
     }
 }
 
-// build the segment map
-void CostMap::build_segment_map() {
-    const auto& device_ctx = g_vpr_ctx.device();
-    segment_map_.resize(device_ctx.rr_nodes.size());
-    for (size_t i = 0; i < segment_map_.size(); ++i) {
-        auto& from_node = device_ctx.rr_nodes[i];
-
-        int from_cost_index = from_node.cost_index();
-        int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
-
-        segment_map_[i] = from_seg_index;
-    }
-}
-
 // resize internal data structures
 void CostMap::set_counts(size_t seg_count) {
     cost_map_.clear();
@@ -73,7 +59,12 @@ void CostMap::set_counts(size_t seg_count) {
 
 // cached node -> segment map
 int CostMap::node_to_segment(int from_node_ind) const {
-    return segment_map_[from_node_ind];
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    auto& from_node = device_ctx.rr_nodes[from_node_ind];
+
+    int from_cost_index = from_node.cost_index();
+    return device_ctx.rr_indexed_data[from_cost_index].seg_index;
 }
 
 static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
@@ -425,7 +416,6 @@ static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
 }
 
 void CostMap::read(const std::string& file) {
-    build_segment_map();
     MmapFile f(file);
 
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
