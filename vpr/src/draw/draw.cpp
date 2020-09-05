@@ -214,6 +214,7 @@ ezgl::application::settings settings("/ezgl/main.ui",
                                      setup_default_ezgl_callbacks);
 ezgl::application application(settings);
 
+bool disp_is_on = false;
 bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0, 0);
@@ -319,6 +320,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
  * NO_PICTURE_to_PLACEMENT */
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
     if (!is_new_window) return;
+    disp_is_on = true;
 
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -905,6 +907,7 @@ void free_draw_structs() {
         free(draw_state->draw_rr_node);
         draw_state->draw_rr_node = nullptr;
     }
+    disp_is_on = false;
 #else
     ;
 #endif /* NO_GRAPHICS */
@@ -4222,11 +4225,10 @@ ManualMoveInfo* get_manual_move_info() {
 
 //checks if the maual move checkbox is toggled and returns true if it was toggled
 bool get_manual_move_flag() {
-    if(window_mode) {
+    if (disp_is_on) {
         GObject* manual_move_button = application.get_object("ManualMove");
         return gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
-    }
-    else
+    } else
         return false;
 }
 
