@@ -17,11 +17,18 @@
  *              (to avoid round-offs) while doing incremental updates.
  *
  * Calculating criticalities:
- *      All the raw setup slack values across a single clock domain are gathered, shifted,
- *      and rated from best to worst. The best shifted slack value (the most positive one)
- *      will have a criticality of 0, while the worse shifted slack value (always 0)
- *      will have a criticality of 1. Criticalities are used to calculated timing costs
- *      for each connection (delay * criticality).
+ *      All the raw setup slack values across a single clock domain are gathered
+ *      and rated from the best to the worst in terms of criticalities. In order
+ *      to calculate criticalities, all the slack values need to be non-negative.
+ *      Hence, if the worst slack is negative, all the slack values are shifted
+ *      by the value of the worst slack so that the value is at least 0. If the
+ *      worst slack is positive, then no shift happens.
+ *
+ *      The best (shifted) slack (the most positive one) will have a criticality of 0.
+ *      The worst (shifted) slack value will have a criticality of 1.
+ *
+ *      Criticalities are used to calculated timing costs for each connection.
+ *      The formula is cost = delay * criticality.
  *
  *      For a more detailed description on how criticalities are calculated, see
  *      calc_relaxed_criticality() in `timing_util.cpp`.
@@ -63,9 +70,10 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_di
  *
  * Therefore, if SetupTimingInfo is updated twice in succession without criticalities
  * getting updated (update_enabled = false), the returned set cannot account for all
- * the connections that have been modified, in which case a recomputation is required.
- * Hence, each time update_setup_slacks_and_criticalities() is called, we assign
- * `recompute_required` the opposite value of `update_enabled`.
+ * the connections that have been modified. In this case, we flag `recompute_required`
+ * as false, and we recompute the criticalities for every connection to ensure that
+ * they are all up to date. Hence, each time update_setup_slacks_and_criticalities()
+ * is called, we assign `recompute_required` the opposite value of `update_enabled`.
  *
  * This class also maps/transforms the modified atom connections/pins returned by the
  * timing info into modified clustered netlist connections/pins after calling
@@ -110,11 +118,16 @@ class PlacerCriticalities {
     /**
      * @brief Updates criticalities based on the atom netlist criticalitites
      *        provided by timing_info and the provided criticality_exponent.
+     *
+     * Should consistently call this method after the most recent timing analysis to
+     * keep the criticalities stored in this class in sync with the timing analyzer.
+     * If out of sync, then the criticalities cannot be incrementally updated on
+     * during the next timing analysis iteration.
      */
     void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent);
 
     ///@brief Override the criticality of a particular connection.
-    void set_criticality(ClusterNetId net, int ipin, float val);
+    void set_criticality(ClusterNetId net, int ipin, float crit_val);
 
     ///@brief Set `update_enabled` to true.
     void enable_update() { update_enabled = true; }
@@ -145,14 +158,21 @@ class PlacerCriticalities {
     ///@brief Set of pins with criticaltites modified by last call to update_criticalities().
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
 
-    ///@brief Updates criticalities: incremental V.S. from scratch
+    ///@brief Incremental update. See timing_place.cpp for more.
     void incr_update_criticalities(const SetupTimingInfo* timing_info);
+
+    ///@brief From scratch update. See timing_place.cpp for more.
     void recompute_criticalities();
 
     ///@brief Flag that turns on/off the update_criticalities() routine.
     bool update_enabled = true;
 
-    ///@brief Flag that checks if criticalities needs to be recomputed for all connections.
+    /**
+     * @brief Flag that checks if criticalities need to be recomputed for all connections.
+     *
+     * Used by the method update_criticalities(). They incremental update is not possible
+     * if this method wasn't called updated after the previous timing info update.
+     */
     bool recompute_required = true;
 };
 
@@ -197,11 +217,19 @@ class PlacerSetupSlacks {
     pin_range pins_with_modified_setup_slack() const;
 
   public: //Modifiers
-    ///@brief Updates setup slacks based on the atom netlist setup slacks provided by timing_info.
+    /**
+     * @brief Updates setup slacks based on the atom netlist setup slacks provided
+     *        by timing_info.
+     *
+     * Should consistently call this method after the most recent timing analysis to
+     * keep the setup slacks stored in this class in sync with the timing analyzer.
+     * If out of sync, then the setup slacks cannot be incrementally updated on
+     * during the next timing analysis iteration.
+     */
     void update_setup_slacks(const SetupTimingInfo* timing_info);
 
     ///@brief Override the setup slack of a particular connection.
-    void set_setup_slack(ClusterNetId net, int ipin, float val);
+    void set_setup_slack(ClusterNetId net, int ipin, float slack_val);
 
     ///@brief Set `update_enabled` to true.
     void enable_update() { update_enabled = true; }
@@ -223,14 +251,21 @@ class PlacerSetupSlacks {
     ///@brief Set of pins with raw setup slacks modified by last call to update_setup_slacks()
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_setup_slack_;
 
-    ///@brief Updates setup slacks: incremental V.S. from scratch.
+    ///@brief Incremental update. See timing_place.cpp for more.
     void incr_update_setup_slacks(const SetupTimingInfo* timing_info);
+
+    ///@brief Incremental update. See timing_place.cpp for more.
     void recompute_setup_slacks();
 
     ///@brief Flag that turns on/off the update_setup_slacks() routine.
     bool update_enabled = true;
 
-    ///@brief Flag that checks if setup slacks needs to be recomputed for all connections.
+    /**
+     * @brief Flag that checks if setup slacks need to be recomputed for all connections.
+     *
+     * Used by the method update_setup_slacks(). They incremental update is not possible
+     * if this method wasn't called updated after the previous timing info update.
+     */
     bool recompute_required = true;
 };
 
@@ -283,7 +318,7 @@ class PlacerSetupSlacks {
  *
  * It is important to note that due to limited floating point precision, floating point
  * arithmetic has an order dependence (due to round-off). Using a binary tree to total
- * the timing connection costs allows us to incrementally update the total timign cost while
+ * the timing connection costs allows us to incrementally update the total timing cost while
  * maintianing the *same order of operations* as if it was re-computed from scratch. This
  * ensures we *always* get consistent results regardless of what/when connections are changed.
  *
@@ -292,7 +327,7 @@ class PlacerSetupSlacks {
  * NetProxy is returned by PlacerTimingCost's operator[], and stores a pointer to the start of
  * internal storage of that net's connection costs.
  *
- * ConnectionProxy is returnd by NetProxy's operator[], and holds a reference to a particular
+ * ConnectionProxy is returned by NetProxy's operator[], and holds a reference to a particular
  * element of the internal storage pertaining to a specific connection's cost. ConnectionProxy
  * supports assignment, allowing clients to modify the connection cost. It also detects if the
  * assigned value differs from the previous value and if so, calls PlacerTimingCosts's

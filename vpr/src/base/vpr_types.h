@@ -859,7 +859,7 @@ enum e_place_algorithm {
 /**
  * @brief Provides a wrapper around enum e_place_algorithm.
  *
- * Supports the method isTimingDriven(), which allows flexible updates
+ * Supports the method is_timing_driven(), which allows flexible updates
  * to the placer algorithms if more timing driven placement strategies
  * are added in tht future. This method is used across various placement
  * setup files, and it can be useful for major placer routines as well.
@@ -879,8 +879,14 @@ class t_place_algorithm {
     ~t_place_algorithm() = default;
 
     //Assignment operators
-    void operator=(const t_place_algorithm& rhs) { algo = rhs.algo; }
-    void operator=(e_place_algorithm rhs) { algo = rhs; }
+    t_place_algorithm& operator=(const t_place_algorithm& rhs) {
+        algo = rhs.algo;
+        return *this;
+    }
+    t_place_algorithm& operator=(e_place_algorithm rhs) {
+        algo = rhs;
+        return *this;
+    }
 
     //Equality operators
     bool operator==(const t_place_algorithm& rhs) const { return algo == rhs.algo; }
@@ -953,11 +959,10 @@ enum class e_place_delta_delay_algorithm {
  *   @param place_chan_width
  *              The channel width assumed if only one placement is performed.
  *   @param pad_loc_type
- *              Are pins FREE, fixed randomly, or fixed from a file.
- *   @param block_loc_type
- *              Are blocks fixed from a file.
+ *              Are pins FREE or fixed randomly.
  *   @param constraints_file
- *              File to read block locations from if block_loc_type is LOCKED.
+ *              File that specifies locations of locked down (constrained)
+ *              blocks for placement. Empty string means no constraints file.
  *   @param pad_loc_file
  *              File to read pad locations from if pad_loc_type is USER.
  *   @param place_freq
@@ -965,16 +970,20 @@ enum class e_place_delta_delay_algorithm {
  *              for each channel width in the binary search.
  *   @param recompute_crit_iter
  *              How many temperature stages pass before we recompute
- *              criticalities based on average point to point delay.
+ *              criticalities based on the current placement and its
+ *              estimated point-to-point delays.
  *   @param inner_loop_crit_divider
  *              (move_lim/inner_loop_crit_divider) determines how
  *              many inner_loop iterations pass before a recompute
  *              of criticalities is done.
  *   @param td_place_exp_first
  *              Exponent that is used in the CRITICALITY_TIMING_PLACE
- *              mode. It is the value that the crit_exponent starts at.
+ *              mode to specify the initial value of `crit_exponent`.
+ *              After we map the slacks to criticalities, this value
+ *              is used to `sharpen` the criticalities, making connections
+ *              with worse slacks more critical.
  *   @param td_place_exp_last
- *              Value that the criticality exponent will be at the end.
+ *              Value that the crit_exponent will be at the end.
  *   @param doPlacement
  *              True if placement is supposed to be done in the CAD flow.
  *              False if otherwise.

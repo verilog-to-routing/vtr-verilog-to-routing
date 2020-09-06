@@ -19,9 +19,6 @@
 
 #include "timing_info.h"
 
-///@brief Use an incremental approach to updating criticalities and setup slacks?
-static constexpr bool INCR_UPDATE_CRITICALITIES = true, INCR_UPDATE_SETUP_SLACKS = true;
-
 ///@brief Allocates space for the timing_place_crit_ data structure.
 PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
@@ -48,7 +45,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
     }
 
     /* Determine what pins need updating */
-    if (!recompute_required && crit_exponent == last_crit_exponent_ && INCR_UPDATE_CRITICALITIES) {
+    if (!recompute_required && crit_exponent == last_crit_exponent_) {
         incr_update_criticalities(timing_info);
     } else {
         recompute_criticalities();
@@ -123,8 +120,11 @@ void PlacerCriticalities::recompute_criticalities() {
 }
 
 ///@brief Override the criticality of a particular connection.
-void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float val) {
-    timing_place_crit_[net_id][ipin] = val;
+void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float crit_val) {
+    VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin = 0)");
+    VTR_ASSERT_SAFE_MSG(ipin < clb_nlist_.net_pins(net_id).size(), "The pin index in net should be smaller than fanout");
+
+    timing_place_crit_[net_id][ipin] = crit_val;
 }
 
 /**
@@ -163,7 +163,7 @@ void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) 
     }
 
     /* Determine what pins need updating */
-    if (!recompute_required && INCR_UPDATE_SETUP_SLACKS) {
+    if (!recompute_required) {
         incr_update_setup_slacks(timing_info);
     } else {
         recompute_setup_slacks();
@@ -223,8 +223,11 @@ void PlacerSetupSlacks::recompute_setup_slacks() {
 }
 
 ///@brief Override the setup slack of a particular connection.
-void PlacerSetupSlacks::set_setup_slack(ClusterNetId net_id, int ipin, float val) {
-    timing_place_setup_slacks_[net_id][ipin] = val;
+void PlacerSetupSlacks::set_setup_slack(ClusterNetId net_id, int ipin, float slack_val) {
+    VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin = 0)");
+    VTR_ASSERT_SAFE_MSG(ipin < clb_nlist_.net_pins(net_id).size(), "The pin index in net should be smaller than fanout");
+
+    timing_place_setup_slacks_[net_id][ipin] = slack_val;
 }
 
 /**

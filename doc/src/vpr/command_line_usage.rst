@@ -715,7 +715,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 .. option:: --place_quench_algorithm {bounding_box | criticality_timing | slack_timing}
 
     Controls the algorithm used by the placer during placement quench.
-    The algorithm options have identical functionality as the ones used by the option ``--place_algorithm``.
+    The algorithm options have identical functionality as the ones used by the option ``--place_algorithm``. If specified, it overrides the option ``--place_algorithm`` during placement quench.
 
     **Default:**  ``criticality_timing``
 

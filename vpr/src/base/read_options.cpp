@@ -359,6 +359,13 @@ struct ParsePlaceAlgorithm {
         } else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+
+            //Deprecated option: "path_timing_driven" -> PATH_DRIVEN_TIMING_PLACE
+            //New option: "criticality_timing" -> CRITICALITY_TIMING_PLACE
+            if (str == "path_timing_driven") {
+                msg << "\nDeprecated option: 'path_timing_driven'. It has been renamed to 'criticality_timing'";
+            }
+
             conv_value.set_error(msg.str());
         }
         return conv_value;
@@ -1694,7 +1701,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
         .help(
-            "Controls which placement algorithm is used during placement quench. Valid options:\n"
+            "Controls which placement algorithm is used during placement quench.\n"
+            "If specified, it overrides the option --place_algorithm during placement quench.\n"
+            "Valid options:\n"
             " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
             " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
             " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")

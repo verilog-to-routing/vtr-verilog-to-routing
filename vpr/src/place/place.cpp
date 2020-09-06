@@ -1653,9 +1653,13 @@ static e_move_result try_swap(float t,
         std::vector<ClusterPinId> sink_pins_affected;
         find_affected_sink_pins(blocks_affected, sink_pins_affected);
 
+        //For setup slack analysis, we first do a timing analysis to get the newest slack values
+        //resulted from the proposed block moves. If the move turns out to be accepted, we keep
+        //the updated slack values and commit the block moves. If rejected, we reject the proposed
+        //block moves and revert this timing analysis.
         if (place_algorithm == SLACK_TIMING_PLACE) {
-            //Invalidates timing of modified connections for incremental timing updates
-            //This routine relies on comparing proposed_connection_delay and connection_delay
+            //Gather all the connections with modified delays for incremental timing updates.
+            //This routine relies on comparing proposed_connection_delay and connection_delay.
             invalidate_affected_connection_delays(sink_pins_affected,
                                                   pin_timing_invalidator,
                                                   timing_info);
@@ -1749,7 +1753,9 @@ static e_move_result try_swap(float t,
                 comp_td_connection_delays(delay_model);
                 comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
 
-                //Re-invalidate the affected sink pins
+                //Re-invalidate the affected sink pins since the proposed move is
+                //rejected, and the same blocks are reverted to their original
+                //positions. The affected sink pins should stay the same.
                 invalidate_affected_connection_delays(sink_pins_affected,
                                                       pin_timing_invalidator,
                                                       timing_info);
@@ -1946,19 +1952,23 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
     }
 }
 
+/**
+ * @brief Find all the sink pins with changed connection delays from the affected blocks.
+ *
+ * These sink pins will be passed into the pin_timing_invalidator for timing update.
+ * They will also be added to the pin invalidator when we wish to revert a timing update.
+ *
+ * It is possible that some connections may not have changed delay. For instance, if
+ * using a dx/dy delay model, this could occur if a sink moved to a new position with
+ * the same dx/dy from it's driver. To minimize work during the incremental STA update
+ * we do not invalidate such unchanged connections.
+ */
 static void find_affected_sink_pins(const t_pl_blocks_to_be_moved& blocks_affected,
                                     std::vector<ClusterPinId>& sink_pins_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
     for (ClusterPinId clb_pin : blocks_affected.affected_pins) {
-        //It is possible that some connections may not have changed delay.(e.g.
-        //For instance, if using a dx/dy delay model, this could occur if a sink
-        //moved to a new position with the same dx/dy from it's driver.
-        //
-        //To minimize work during the incremental STA update we do not invalidate
-        //such unchanged connections.
-
         ClusterNetId net = clb_nlist.pin_net(clb_pin);
         int ipin = clb_nlist.pin_net_index(clb_pin);
 
@@ -2178,8 +2188,13 @@ static bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks
     return true;
 }
 
-/* Update the connection_timing_cost values from the temporary *
- * values for all connections that have changed.               */
+/**
+ * @brief Update the connection_timing_cost values from the temporary
+ *        values for all connections that have/haven't changed.
+ *
+ * All the connections have already been gathered by blocks_affected.affected_pins
+ * after running the routine find_affected_nets_and_update_costs() in try_swap().
+ */
 static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
@@ -2217,10 +2232,15 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 #endif
 }
 
-//Invalidates the delays of connections effected by the specified move
-//
-//Relies on proposed_connection_delay and connection_delay to detect
-//which connections have actually had their delay changed.
+/**
+ * @brief Invalidates the delays of connections effected by the specified move.
+ *
+ * Relies on find_affected_sink_pins() to find all the connections with different
+ * `proposed_connection_delay` and `connection_delay`.
+ *
+ * Invalidate all the timing graph edges associated with these sink pins via the
+ * ClusteredPinTimingInvalidator class.
+ */
 static void invalidate_affected_connection_delays(const std::vector<ClusterPinId>& sink_pins_affected,
                                                   ClusteredPinTimingInvalidator* pin_tedges_invalidator,
                                                   TimingInfo* timing_info) {
@@ -2229,12 +2249,6 @@ static void invalidate_affected_connection_delays(const std::vector<ClusterPinId
 
     //Invalidate timing graph edges affected by the move
     for (ClusterPinId clb_pin : sink_pins_affected) {
-        //It is possible that some connections may not have changed delay.
-        //For instance, if using a dx/dy delay model, this could occur if a sink
-        //moved to a new position with the same dx/dy from it's driver.
-        //
-        //To minimize work during the incremental STA update we do not invalidate
-        //such unchanged connections.
         pin_tedges_invalidator->invalidate_connection(clb_pin, timing_info);
     }
 }
