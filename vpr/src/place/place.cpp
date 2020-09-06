@@ -505,7 +505,6 @@ static void print_resources_utilization();
 
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
-void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -1228,10 +1227,12 @@ static bool update_annealing_state(t_annealing_state* state,
                                    const t_placer_costs& costs,
                                    const t_placer_opts& placer_opts,
                                    const t_annealing_sched& annealing_sched) {
+#ifndef NO_GRAPHICS    
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0)
         //update temperature in the current information variable
         get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
+#endif
 
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
@@ -1534,7 +1535,9 @@ static e_move_result try_swap(float t,
     move_generator.process_outcome(move_outcome_stats);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
+#ifndef NO_GRAPHICS
     stop_placement_and_check_breakopints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+#endif
 #endif
     clear_move_blocks(blocks_affected);
 

@@ -6,7 +6,7 @@
 std::map<int, std::string> available_move_types = {
     {0, "Uniform"}};
 
-
+#ifndef NO_GRAPHICS
 //transforms the vector moved_blocks to a vector of ints and adds it in glob_breakpoint_state
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
     get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_by_move.clear();
@@ -47,4 +47,7 @@ void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affect
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
     }
 }
-#endif
+
+#endif //NO_GRAPHICS
+
+#endif //VTR_ENABLE_DEBUG_LOGGING
