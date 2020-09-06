@@ -44,12 +44,7 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
-/*
- * #    include "draw_types.h"
- * #    include "draw_global.h"
- * #    include "draw_color.h"
- */
-//#    include "breakpoint.h"
+#include "placer_breakpoint.h"
 
 using std::max;
 using std::min;
