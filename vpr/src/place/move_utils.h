@@ -4,7 +4,6 @@
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
-
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */
@@ -58,6 +57,6 @@ bool placer_breakpoint_reached();
 
 // setter for f_placer_breakpoint_reached
 // Should be setted in the breakpoint calculation algorithm
-void set_placer_breakpoint_reached(bool );
+void set_placer_breakpoint_reached(bool);
 
 #endif

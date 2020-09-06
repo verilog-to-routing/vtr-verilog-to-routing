@@ -659,8 +659,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 //Accessor for f_placer_breakpoint_reached
 bool placer_breakpoint_reached() {
     return f_placer_breakpoint_reached;
- }
+}
 
-void set_placer_breakpoint_reached(bool flag){
+void set_placer_breakpoint_reached(bool flag) {
     f_placer_breakpoint_reached = flag;
 }

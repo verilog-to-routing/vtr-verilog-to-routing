@@ -1,19 +1,19 @@
 /** This file contains all functions reagrding the graphics related to the setting of place and route breakpoints **/
 #ifndef NO_GRAPHICS
 
-#include "breakpoint.h"
-#include "draw_global.h"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+#    include "breakpoint.h"
+#    include "draw_global.h"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
 
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
+#    include <cstdio>
+#    include <cfloat>
+#    include <cstring>
+#    include <cmath>
+#    include <algorithm>
+#    include <sstream>
+#    include <array>
+#    include <iostream>
 
 /** debugger functions **/
 void draw_debug_window();

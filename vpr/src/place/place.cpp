@@ -45,10 +45,10 @@
 #include "tatum/TimingReporter.hpp"
 
 /*
-#    include "draw_types.h"
-#    include "draw_global.h"
-#    include "draw_color.h"
-*/
+ * #    include "draw_types.h"
+ * #    include "draw_global.h"
+ * #    include "draw_color.h"
+ */
 //#    include "breakpoint.h"
 
 using std::max;
@@ -1227,7 +1227,7 @@ static bool update_annealing_state(t_annealing_state* state,
                                    const t_placer_costs& costs,
                                    const t_placer_opts& placer_opts,
                                    const t_annealing_sched& annealing_sched) {
-#ifndef NO_GRAPHICS    
+#ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0)
         //update temperature in the current information variable
@@ -1535,9 +1535,9 @@ static e_move_result try_swap(float t,
     move_generator.process_outcome(move_outcome_stats);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#ifndef NO_GRAPHICS
+#    ifndef NO_GRAPHICS
     stop_placement_and_check_breakopints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
-#endif
+#    endif
 #endif
     clear_move_blocks(blocks_affected);
 

@@ -76,8 +76,8 @@
 /****************************** Define Macros *******************************/
 
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#   define OLD_BLK_LOC_COLOR blk_GOLD
-#   define NEW_BLK_LOC_COLOR blk_GREEN
+#    define OLD_BLK_LOC_COLOR blk_GOLD
+#    define NEW_BLK_LOC_COLOR blk_GREEN
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 /********************** Subroutines local to this module ********************/
@@ -993,7 +993,7 @@ static void drawplace(ezgl::renderer* g) {
                 /* Fill background for the clb. Do not fill if "show_blk_internal"
                  * is toggled.
                  */
-                if (bnum == INVALID_BLOCK_ID) 
+                if (bnum == INVALID_BLOCK_ID)
                     continue;
 
                 //Determine the block color and logical type
@@ -1003,12 +1003,11 @@ static void drawplace(ezgl::renderer* g) {
                 //flag whether the current location is highlighted with a special color or not
                 bool current_loc_is_highlighted = false;
 
-                
-                if(placer_breakpoint_reached())
-                    current_loc_is_highlighted = highlight_loc_with_specific_color(int(i),int(j),block_color);
-              
-                // No color specified at this location; use the block color. 
-                if(current_loc_is_highlighted == false){
+                if (placer_breakpoint_reached())
+                    current_loc_is_highlighted = highlight_loc_with_specific_color(int(i), int(j), block_color);
+
+                // No color specified at this location; use the block color.
+                if (current_loc_is_highlighted == false) {
                     if (bnum != EMPTY_BLOCK_ID) {
                         block_color = draw_state->block_color(bnum);
                         logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
@@ -4135,59 +4134,56 @@ static void run_graphics_commands(std::string commands) {
     ++draw_state->sequence_number;
 }
 
-
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
  * It also highlights the moved block input and output terminals       *
  * Currently, it is used in placer debugger when breakpoint is reached */
-void highlight_moved_block_and_its_terminals(const t_pl_blocks_to_be_moved& blocks_affected)
-{
-    auto& cluster_ctx = g_vpr_ctx.clustering(); 
+void highlight_moved_block_and_its_terminals(const t_pl_blocks_to_be_moved& blocks_affected) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //clear all selected blocks
     deselect_all();
 
     //highlight the input/output terminals of the moved block
-    draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num);     
-    
-    //highlight the old and new locations of the moved block     
+    draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num);
+
+    //highlight the old and new locations of the moved block
     clear_colored_locations();
     set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc, OLD_BLK_LOC_COLOR);
     set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc, NEW_BLK_LOC_COLOR);
 }
 
-
-// pass in an (x,y,subtile) location and the color in which it should be drawn. 
+// pass in an (x,y,subtile) location and the color in which it should be drawn.
 // This overrides the color of any block placed in that location, and also applies if the location is empty.
-void set_draw_loc_color(t_pl_loc loc, ezgl::color clr){
+void set_draw_loc_color(t_pl_loc loc, ezgl::color clr) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->colored_locations.push_back(std::make_pair(loc,clr));    
+    draw_state->colored_locations.push_back(std::make_pair(loc, clr));
 }
 
-// clear the colored_locations vector 
-void clear_colored_locations(){
+// clear the colored_locations vector
+void clear_colored_locations() {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->colored_locations.clear();
 }
 
-// This routine takes in a (x,y) location. 
+// This routine takes in a (x,y) location.
 // If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
 // otherwise, the function returns false (the location isn't among the highlighted locations)
-bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color){
+bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    //define a (x,y) location variable    
+    //define a (x,y) location variable
     t_pl_loc curr_loc;
     curr_loc.x = x;
     curr_loc.y = y;
-    
+
     //search for the current location in the vector of colored locations
     auto it = std::find_if(draw_state->colored_locations.begin(), draw_state->colored_locations.end(), [&curr_loc](const std::pair<t_pl_loc, ezgl::color>& vec_element) { return (vec_element.first.x == curr_loc.x && vec_element.first.y == curr_loc.y); });
-             
+
     if (it != draw_state->colored_locations.end()) {
-    /* found a colored location at the spot I am drawing *
-     * (currently used for drawing the current move).    *
-     * This overrides any block color.                   */   
+        /* found a colored location at the spot I am drawing *
+         * (currently used for drawing the current move).    *
+         * This overrides any block color.                   */
         loc_color = it->second;
         return true;
     }

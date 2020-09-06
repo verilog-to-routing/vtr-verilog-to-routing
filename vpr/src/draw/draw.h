@@ -90,14 +90,14 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
  * Currently, it is used in placer debugger when breakpoint is reached */
 void highlight_moved_block_and_its_terminals(const t_pl_blocks_to_be_moved&);
 
-// pass in an (x,y,subtile) location and the color in which it should be drawn. 
+// pass in an (x,y,subtile) location and the color in which it should be drawn.
 // This overrides the color of any block placed in that location, and also applies if the location is empty.
-void set_draw_loc_color(t_pl_loc , ezgl::color );
+void set_draw_loc_color(t_pl_loc, ezgl::color);
 
-// clear the colored_locations vector                                           
+// clear the colored_locations vector
 void clear_colored_locations();
 
-// This routine takes in a (x,y) location. 
+// This routine takes in a (x,y) location.
 // If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
 // otherwise, the function returns false (the location isn't among the highlighted locations)
 bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color);

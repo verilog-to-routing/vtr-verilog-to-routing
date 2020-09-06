@@ -215,7 +215,7 @@ struct t_draw_state {
     void reset_block_colors();
 
     std::vector<std::pair<t_pl_loc, ezgl::color>> colored_locations;
-  
+
   private:
     friend void alloc_draw_structs(const t_arch* arch);
     vtr::vector<ClusterBlockId, ezgl::color> block_color_;
