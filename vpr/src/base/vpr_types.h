@@ -936,6 +936,12 @@ struct t_placer_opts {
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
 
+    /*
+     * @brief enables the analytic placer.
+     *
+     * Once analytic placement is done, the result is passed through the quench phase
+     * of the annealing placer for local improvement
+     */
     bool enable_analytic_placer;
 };
 

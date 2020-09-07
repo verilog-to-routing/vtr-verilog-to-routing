@@ -1,7 +1,7 @@
 #ifndef VPR_SRC_PLACE_LEGALIZER_H_
 #define VPR_SRC_PLACE_LEGALIZER_H_
 
-// #ifdef ENABLE_ANALYTIC_PLACE
+#ifdef ENABLE_ANALYTIC_PLACE
 
 /**
  * @file
@@ -38,7 +38,7 @@
  * @see cut_region()
  * @see run()
  * In the second step, two cuts are generated: a source cut and a target cut. The source cut pertains to the blocks
- * being places; the target cut pertains to the area into which the blocks are placed. The source cut splits the
+ * being placed; the target cut pertains to the area into which the blocks are placed. The source cut splits the
  * blocks into two partitions, while the target cut splits the area into two sub-areas, into which the blocks in
  * each partition are spread. Two objectives are minimized during this process: the imbalance between the number of
  * blocks in each partition, and the difference in the utilization (Occupancy / Capacity) of each subarea.
@@ -57,12 +57,15 @@
  *
  * Next, the blocks in sub-areas are spread to distribute them evenly. We split the sub-area into 10 equally-sized
  * bins and logic blocks into 10 equal-capacity source bins. Then linearly interpolate to map blocks from their
- * original_locations in their source bins to new spread location in target bins.
+ * original locations in their source bins to new spread location in target bins.
  *
- * This cut and spreading is repeated recursively. The cut spreading process returns the left and right subareas,
- * which are pushed into a FIFO. Then a region is popped from the FIFO and goes through cut-spreading. This process
- * continues until a base case of only 1 block in the region is reached. At this point the placement is mostly not
- * overutilized and ready for strict legalization.
+ * This cutting and spreading is repeated recursively. The cut-spreading process returns the left and right
+ * (or top and bottom) subareas, which are pushed into a workqueue FIFO. Their direction of cut in the next
+ * cut-spreading process is alternated, i.e. if the first cut is in y direction, the resulting left and right
+ * sub-areas are further cut in x direction, each producing 2 subareas top and bottom, and so forth.
+ * The first region in the FIFO is then popped and goes through cut-spreading. This process is repeated until the base
+ * case of only 1 block in the region is reached. At this point the placement is mostly not overutilized and ready
+ * for strict legalization.
  *
  * **************************************************************************************************************
  *
@@ -79,7 +82,7 @@
  *   made computationally cheap by legal_pos data member in AnalyticPlacer)
  * * Within a radius (starting from 0) of the block's currently location, randomly choose a location as candidate.
  * * If the block is a single block (not in macro), multiple candidates are potentially chosen, and the one that
- *   results in the smallest input wirelength for the block is chosen.
+ *   results in the smallest input wirelength (sum of wirelengths to its inputs) for the block is chosen.
  * * If the block is a macro head, the location for all member blocks are calculated using member offsets. If all
  *   member locations have compatible sub_tile and does not overlap with another macro, then place the macro.
  * * In either case, if the candidate fails to satisfy legality constraints, the radius may increase (depending on
@@ -104,6 +107,7 @@
  *
  */
 #    include "vpr_context.h"
+#	 include <queue>
 
 // declaration of used types;
 class AnalyticPlacer;
@@ -146,14 +150,12 @@ class CutSpreader {
      *
      * 			Input illegal placement from data members (blk_locs) in analytic_placer
      *
-     * @return	result placement is passed to annealer by modifying vpr_ctx.mutable_placement()
+     * @return: both ap->blk_locs and vpr_ctx.mutable_placement() are modified with legal placement,
+     * 			to be used in next solve/spread/legalize iteration or to pass back to annealer.
      */
     void strict_legalize();
 
   private:
-    // marker for blocks that wasn't solved (blocks of different type, macro members)
-    int32_t dont_solve = std::numeric_limits<int32_t>::max();
-
     // pointer to analytic_placer to access its data members
     AnalyticPlacer* ap;
 
@@ -164,40 +166,44 @@ class CutSpreader {
     struct SpreaderRegion {
         int id;              // index of regions in regions vector
         vtr::Rect<int> bb; 	 // bounding box of the region
-        int n_blks, n_tiles; // number of blocks and compatible tiles
+        int n_blks, n_tiles; // number of netlist blocks and compatible tiles (placement locations)
         bool overused(float beta) const {
-            // determines whether region is overutilized:
-            // overused = (Occupancy / Capacity) > beta
-            if (n_blks > beta * n_tiles) return true;
-            return false;
+            // determines whether region is overutilized: overused = (Occupancy / Capacity) > beta
+            if (n_blks > beta * n_tiles)
+            	return true;
+            else
+            	return false;
         }
     };
 
     // Utilization of each tile, indexed by x, y
     vtr::Matrix<int> occupancy;
 
-    // Region ID of each tile, indexed by x, y. -1 if not covered by any region
+    // Region ID of each tile, indexed by x, y. AP_NO_REGION if not covered by any region
     // Used to check ownership of a grid position by region.
-    vtr::Matrix<int> groups;
+    vtr::Matrix<int> reg_id_at_grid;
 
-    // Extent of macro at x, y location. If blk is not in any macros, it only covers a single locations
-    vtr::Matrix<vtr::Rect<int>> macros;
+    // Extent of macro at x, y location. If blk is not in any macros, it only covers a single location
+    vtr::Matrix<vtr::Rect<int>> macro_extent;
 
     // List of logic blocks of blk_type at x, y location, indexed by x, y
-    std::vector<std::vector<std::vector<ClusterBlockId>>> blks_at_location;
+    // ex. to find all logic blocks occupying location x, y, blks_at_location[x][y] gives a vector of
+    // block IDs at that location
+    vtr::Matrix<std::vector<ClusterBlockId>> blks_at_location;
 
-    // List of sub_tiles compatible with blk_type at x, y location, indexed by x, y
-    std::vector<std::vector<std::vector<t_pl_loc>>> ft;
+    // List of all compatible sub_tiles for the type of blocks being cut-spread, at location x, y.
+    // usage: subtiles_at[x][y]
+    vtr::Matrix<std::vector<t_pl_loc>> subtiles_at_location;
 
     // List of all SpreaderRegion, index of vector members is the id of the region
     std::vector<SpreaderRegion> regions;
 
     // List of all merged_regions, these regions are merged in larger regions and should be skipped when
-    // recursively cur_spreading. Each entry is the region's ID, which is also the index into the regions vector
+    // recursively cut_spreading. Each entry is the region's ID, which is also the index into the regions vector
     std::unordered_set<int> merged_regions;
 
     // Lookup of macro's extent by block ID. If block is a single block, it contains only 1 tile location
-    std::map<ClusterBlockId, vtr::Rect<int>> blk_extents;
+    vtr::vector_map<ClusterBlockId, vtr::Rect<int>> blk_extents;
 
     // Setup CutSpreader data structures using information from AnalyticPlacer
     // including blks_at_location, macros, groups, etc.
@@ -210,6 +216,9 @@ class CutSpreader {
     int tiles_at(int x, int y);
 
     /*
+     * When expanding a region, it might overlop with another region, one of them (merger) will absorb
+     * the other (mergee) by merging. @see expand_regions() below;
+     *
      * Merge mergee into merged by:
      * * change group id at mergee grids to merged id
      * * adds all n_blks and n_tiles from mergee to merged region
@@ -224,19 +233,76 @@ class CutSpreader {
     void grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include, bool init = false);
 
     /*
-     * Expand all utilized regions until they satisfy n_tiles * beta >= n_blocks
+     * Expand all over-utilized regions until they satisfy n_tiles * beta >= n_blocks
      * If overutilized regions overlap in this process, they are merged
      */
     void expand_regions();
 
     /*
      * Find overutilized regions surrounded by non-overutilized regions
-     * Start off at an overutilized tile and expand in x, y directions until the region is surrounded by
-     * non-overutilized regions.
+     * Start off at an overutilized tile and expand in x, y directions 1 step at a time in both directions
+     * until the region is surrounded by non-overutilized regions.
      */
     void find_overused_regions();
 
+    // copy all logic blocks to cut into cut_blks
+    void init_cut_blks(SpreaderRegion& r, std::vector<ClusterBlockId>& cut_ctx);
+
+    /*
+     * generate the initial source_cut for region r, ensure there is enough clearance on either side of the
+     * initial cut to accommodate macros
+     * returns the initial source cut (index into cut_blks)
+     * returns the clearance in clearance_l, clearance_r
+     * returns -1 if cannot generate initial source_cut (not enough clearance for macros)
+     */
+    int initial_source_cut(SpreaderRegion& r,
+    					   std::vector<ClusterBlockId>& cut_blks,
+						   bool dir,
+						   int& clearance_l,
+						   int& clearance_r);
+
+    /*
+     * generate the initial target_cut for region r, ensure that utilization in 2 subareas are closest possible
+     * while meeting clearance requirements for macros
+     * returns best target cut
+     * returns the resulting number of blocks in left and right partitions in left_blks_n, right_blks_n
+     * returns the resulting number of tiles in left and right subareas in left_tiles_n, right_tiles_n
+     */
+    int initial_target_cut(SpreaderRegion& r,
+    		std::vector<ClusterBlockId>& cut_blks,
+    		int init_source_cut,
+			bool dir,
+			int trimmed_l,
+			int trimmed_r,
+			int clearance_l,
+			int clearance_r,
+			int& left_blks_n,
+			int& right_blks_n,
+			int& left_tiles_n,
+			int& right_tiles_n);
+
+    /*
+     * Trim the boundaries of the region in axis-of-interest, skipping any rows/cols without any tiles
+     * of the right type.
+     * Afterwards, move blocks in trimmed locations to new trimmed boundaries
+     */
     std::pair<int, int> trim_region(SpreaderRegion&r, bool dir);
+
+    /*
+     * Spread blocks in subarea by linear interpolation
+     * blks_start and blks_end are indices into cut_blks. The blks between these indices will be spread by:
+     * * first split the subarea boundaries (area_l and area_r)
+     *   into min(number_of_logic_blocks_in_subarea, 10) number of bins.
+     * * split the logic blocks into the corresponding number of groups
+     * * place the logic blocks from their group to their bin, by linear interpolation using their original
+     *   locations to map to a new location in the bin.
+     */
+    void linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
+    					   bool dir,
+    					   int blks_start,
+						   int blks_end,
+						   SpreaderRegion& sub_area);
+
 
     /*
      * Recursive cut-based spreading in HeAP paper
@@ -250,8 +316,66 @@ class CutSpreader {
      *  			{-1, -1} if cut unsuccessful, need to cut in the other direction
      */
     std::pair<int, int> cut_region(SpreaderRegion& r, bool dir);
-};
 
-// #endif /* ENABLE_ANALYTIC_PLACE */
+    /*
+     * Helper function in strict_legalize()
+     * Place blk on sub_tile location by modifying place_ctx.grid_blocks and place_ctx.block_locs
+     */
+    void bind_tile(t_pl_loc sub_tile, ClusterBlockId blk);
+
+    /*
+     * Helper function in strict_legalize()
+     * Remove placement at sub_tile location by clearing place_ctx.block_locs and place_Ctx.grid_blocks
+     */
+    void unbind_tile(t_pl_loc sub_tile);
+
+	/*
+	 * Helper function in strict_legalize()
+	 * Check if the block is placed in place_ctx (place_ctx.block_locs[blk] has a location that matches
+	 * the block in place_ctx.grid_blocks)
+	 */
+	bool is_placed(ClusterBlockId blk);
+
+	/*
+	 * Sub-routine of strict_legalize()
+	 * Tries to place a single block "blk" at a candidate location nx, ny. Returns whether the blk is succesfully placed.
+	 *
+	 * If number of iterations at current radius has exceeded the exploration limit (exceeds_explore_limit),
+	 * and a candidate sub_tile is already found (best_subtile), then candidate location is ignored, and blk is
+	 * placed in best_subtile.
+	 *
+	 * Else, if exploration limit is not exceeded, the subtiles at nx, ny are evaluated on the blk's resulting total
+	 * input wirelength (a heuristic). If this total input wirelength is shorter than current best_inp_len, it becomes
+	 * the new best_subtile.
+	 * If exploration limit is exceeded and no candidate sub_tile is available in (best_subtile), then blk is placed at
+	 * next sub_tile at candidate location nx, ny.
+	 *
+	 * If blk displaces a logic block by taking its sub_tile, the displaced logic block is put back into remaining queue.
+	 */
+	bool try_place_blk(ClusterBlockId blk,
+			   	   	   	  int nx,
+						  int ny,
+						  bool ripup_radius_met,
+						  bool exceeds_need_to_explore,
+						  int& best_inp_len,
+						  t_pl_loc& best_subtile,
+						  std::priority_queue<std::pair<int, ClusterBlockId>>& remaining);
+
+	/*
+	 * Sub-routine of strict_legalize()
+	 *
+	 * Tries to place the macro with the head block on candidate location nx, ny. Returns if the macro is successfully placed.
+	 *
+	 * For each possible macro placement starting from nx, ny, if any block's position in the macro does not have compatible
+	 * sub_tiles or overlaps with another macro, the placement is impossible.
+	 *
+	 * If a possible placement is found, it's applied to all blocks.
+	 */
+	bool try_place_macro(ClusterBlockId blk,
+			 	 	 	    int nx,
+							int ny,
+							std::priority_queue<std::pair<int, ClusterBlockId>>& remaining);
+};
+#endif /* ENABLE_ANALYTIC_PLACE */
 
 #endif /* VPR_SRC_PLACE_LEGALIZER_H_ */

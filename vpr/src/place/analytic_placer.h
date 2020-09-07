@@ -1,7 +1,7 @@
 #ifndef VPR_ANALYTIC_PLACEMENT_H
 #define VPR_ANALYTIC_PLACEMENT_H
 
-// #ifdef ENABLE_ANALYTIC_PLACE
+#ifdef ENABLE_ANALYTIC_PLACE
 /**
  * @file
  * @brief This file implements the analytic placer, described as lower-bound placement in SimPL. It formulates
@@ -46,7 +46,7 @@
  * overlaps in the placement.
  *
  * This process of formulating the system, solving, and legalizing is repeated until sufficiently good placement is
- * acquired. Currently the stopping criterion is 15 iterations without improvement in total_hpwl.
+ * acquired. Currently the stopping criterion is HEAP_STALLED_ITERATIONS_STOP iterations without improvement in total_hpwl.
  *
  *
  * Parameters to tweak & things to try out
@@ -85,8 +85,6 @@
 #    include "timing_place.h"
 #    include "PlacementDelayCalculator.h"
 
-typedef signed long int wirelen_t;
-
 /*
  * @brief Templated struct for constructing and solving matrix equations in analytic placer
  * Eigen library is used in EquationSystem::solve()
@@ -94,14 +92,25 @@ typedef signed long int wirelen_t;
 template<typename T>
 struct EquationSystem;
 
+// sentinel for blks not solved in current iteration
+extern int DONT_SOLVE;
+
+// sentinel for blks not part of a placement macro
+extern int NO_MACRO;
+
 /*
  * @brief helper function to find the index of macro that contains blk
- * returns index in placementCtx.pl_macros, -1 if blk not in any macros
+ * returns index in placementCtx.pl_macros, NO_MACRO if blk not in any macros
  */
 int imacro(ClusterBlockId blk);
 
 /*
- * @brief helper fucntion to find the head of macro containing blk
+ * @brief helper function to find the head block of the macro that contains blk
+ * placement macro head is the base of the macro, where the locations of the other macro members can be
+ * calculated using base.loc + member.offset.
+ * Only the placement of macro head is calculated directly from AP, the position of other macro members need
+ * to be calculated later using above formula.
+ *
  * returns the ID of the head block
  */
 ClusterBlockId macro_head(ClusterBlockId blk);
@@ -119,7 +128,7 @@ class AnalyticPlacer {
      * Takes the random initial placement from place.cpp through g_vpr_ctx
      * Repeat the following until stopping criteria is met:
      * 	* Formulate and solve equations in x, y directions for 1 type of logial block
-     * 	* Instantiate CutSpreader to spread and strict_legalize
+     * 	* Instantiate CutSpreader to spread and strict_legalize to strict_legalize
      *
      * The final legal placement is passed back to annealer in g_vpr_ctx.mutable_placement()
      */
@@ -136,45 +145,50 @@ class AnalyticPlacer {
         int criticalityExponent;            // not currently used, @see build_equations()
         int timingWeight;                   // not currently used, @see build_equations()
         float solverTolerance;              // parameter of the solver
+        int buildSolveIter;					// build_solve iterations for iterative solver
         int spread_scale_x, spread_scale_y; // see CutSpreader::expand_regions()
     };
 
-    AnalyticPlacerCfg tmpCfg; // TODO: PlacerHeapCfg should be externally configured & supplied
+    AnalyticPlacerCfg ap_cfg; // TODO: PlacerHeapCfg should be externally configured & supplied
 
-    // @see initial_placement.cpp load_legal_locations()
-    std::vector<std::vector<int>> num_legal_pos;
+    // Lokup of all subtiles by sub_tile type
+    // legal_pos[0..device_ctx.num_block_types-1][0..type_tsize - 1][0..num_sub_tiles - 1] = t_pl_loc for a sub_tile
     std::vector<std::vector<std::vector<t_pl_loc>>> legal_pos;
-
-    // marker for blks not solved in current iteration
-    int32_t dont_solve = std::numeric_limits<int32_t>::max();
 
     // row number in the system of linear equations for each block
     // which corresponds to the equation produced by differentiating objective function w.r.t that block location
-    std::unordered_map<ClusterBlockId, int32_t> row_num;
+    vtr::vector_map<ClusterBlockId, int32_t> row_num;
 
     // Encapsulates 3 types of locations for each logic block
     struct BlockLocation {
-        t_pl_loc loc;       // real, up-to-date location of the logic block
-        t_pl_loc legal_loc; // legalized location, used to create psudo connections
+        t_pl_loc loc;       // real, up-to-date location of the logic block in the AP process
+        					// first initiated with initial random placement from g_vpr_ctx
+        					// then, eath time after solving equations, it's updated with rounded
+        					// raw solutions from solver
+        					// finally, it is accessed and modified by legalizer to store legal placement
+        					// at the end of each AP iteration
+
+        t_pl_loc legal_loc; // legalized location, used to create psudo connections in the next AP iteration
+        					// updated in AP main loop in ap_place() at the end of each iteration
+
         double rawx, rawy;  // raw location storing float result from matrix solver
+        					// used by strict legalizer to linearly interpolate in strict-legalizer
     };
 
     // Lookup from blockID to block location
-    std::unordered_map<ClusterBlockId, BlockLocation> blk_locs;
-
-    // The set of blks actually placed.
-    // Excludes children of macros.
-    std::vector<ClusterBlockId> place_blks;
-
-    // blocks being solved in the current equation
-    // which are a subset of all blocks being placed
-    std::vector<ClusterBlockId> solve_blks;
+    vtr::vector_map<ClusterBlockId, BlockLocation> blk_locs;
 
     /*
-     * number of blocks on each tile
-     * used to print a simple placement graph in print_place
+     * The set of blks of different types to be placed by AnalyticPlacement process,
+     * i.e. the free variable blocks.
+     * Excludes non-head macro blocks (blocks part of placement macros but not the head), fixed blocks, and blocks
+     * with no connections.
      */
-    std::vector<std::vector<int>> overlap;
+    std::vector<ClusterBlockId> place_blks;
+
+    // blocks of only 1 type, to be solved in the current formulation of matrix equation
+    // which are a subset of place_blks
+    std::vector<ClusterBlockId> solve_blks;
 
     /*
      * Prints the location of each block, and a simple drawing of FPGA fabric, showing num of blocks on each tile
@@ -189,39 +203,101 @@ class AnalyticPlacer {
     // build num_legal_pos, legal_pos like in initial_placement.cpp
     void build_legal_locations();
 
-    // build blk_locs based on initial placement;
-    // build and place_blks for blocks that needs to be placed;
+    // build blk_locs based on initial placement.
+    // put blocks that needs to be placed in place_blks;
     void init();
 
-    wirelen_t get_net_hpwl(ClusterNetId net_id);
+    int get_net_hpwl(ClusterNetId net_id);
 
-    wirelen_t total_hpwl();
+    int total_hpwl();
 
-    // Setup the blocks of type blkTypes to be solved
-    // Returns the number of rows (number of blks to solve)
-    int setup_solve_blks(t_logical_block_type_ptr blkTypes);
+    // build matrix equations and solve for block type "run" in both x and y directions
+    // macro member positions are updated after solving
+    // iter is used to determine pseudo-connection strength
+    void build_solve_type(t_logical_block_type_ptr run, int iter);
 
-    // Update the location of all members of all macros based on location of macro_head
-    // Since only macro_head is solved (connections to macro members are also taken into account
-    // when formulating the matrix equations)
+    /*
+     * Setup the blocks of type blkTypes (ex. clb, io) to be solved. These blocks are put into
+     * solve_blks vector. Each of them is a free variable in the matrix equation (thus excluding
+     * macro members, as they are formulated into the equation for the macro's head)
+     * A row number is assigned to each of these blocks, which corresponds to its equation in
+     * the matrix (the equation acquired from differentiating the objective function w.r.t its
+     * x or y location).
+     */
+    void setup_solve_blks(t_logical_block_type_ptr blkTypes);
+
+    /*
+     * Update the location of all members of all macros based on location of macro_head
+     * since only macro_head is solved (connections to macro members are also taken into account
+     * when formulating the matrix equations), an update for members is necessary
+     */
     void update_macros();
 
-    // Build and solve in one direction
-    // Solved solutions are written back to block_locs in rawx, rawy
+    /*
+     * Build and solve in one direction
+     * yaxis chooses x or y location of each block from blk_locs to formulate the matrix equation
+     * Solved solutions are written back to block_locs[blk].rawx/rawy for double float raw solution
+     * rounded int solutions are written back to block_locs[blk].loc, for each blk in solve_blks
+     *
+     * iter is the number of AnalyticPlacement iterations (solving and legalizing all types of logic
+     * blocks once). When iter != -1, at least one iteration has completed. It signals build_equations()
+     * to create pseudo-connetions between each block and its prior legal position.
+     *
+     * build_solve_iter determines number of iterations of building and solving for the iterative solver
+     * (i.e. more build_solve_iter means better result, with runtime tradeoff. This parameter can be
+     * tuned for better performance)
+     * the solution from the previous build-solve iteration is used as a guess for the iterative solver
+     */
     void build_solve_direction(bool yaxis, int iter, int build_solve_iter);
 
-    // Build the system of equations for either X or Y
-    // When iter > 1, psudo-conenctions are formed, the strength is determined by alpha and iter
+    /*
+     * lambda function to stamp weight for 1 connection on matrix or rhs vector
+     * if var is movable objects, weight is added on matrix
+     * if var is immovable objects, weight*-var_pos is added on rhs
+     * if var is a macro member (not macro head), weight*-offset_from_macro_head is added on rhs
+     *
+     * for detailed derivation and examples, please read HeAP paper
+     */
+    void stamp_weight_on_matrix(EquationSystem<double>& es,
+    							bool dir,
+    							ClusterBlockId var,
+								ClusterBlockId eqn,
+								double weight);
+
+    void add_pin_to_pin_connection(EquationSystem<double>& es,
+    							   bool dir,
+								   int num_pins,
+								   ClusterPinId bound_pin,
+    							   ClusterPinId this_pin);
+
+    /*
+	 * Build the system of equations for either X or Y
+	 * When iter != -1, for each block, psudo-conenction to its prior legal location is formed,
+     * the strength is determined by alpha and iter
+	 */
     void build_equations(EquationSystem<double>& es, bool yaxis, int iter = -1);
 
-    // Solve the system of equations
+    /*
+     * Solve the system of equations passed in by es, for the set of blocks in data member solve_blks
+     * yaxis is used to select current x or y location of these blocks from blk_locs
+     * this current location is provided to iterative solver as a guess
+     * the solved location is written back to blk_locs, and is used as guess for the next
+     * iteration of solving (@see build_solve_direct())
+     */
     void solve_equations(EquationSystem<double>& es, bool yaxis);
 
-    // Debug use
-    float find_overlap();
+    /*
+     * Debug use
+     * finds # of blocks on each tile location, returned in overlap matrix
+     */
+    void find_overlap(vtr::Matrix<int>& overlap);
 
-    // Debug use
-    std::string print_overlap();
+    /*
+     * Debug use
+     * prints a simple figure of FPGA fabric, with numbers on each tile showing usage
+     * called in AnalyticPlacer::print_place()
+     */
+    std::string print_overlap(vtr::Matrix<int>& overlap, FILE* fp);
 
     // header of VTR_LOG for AP
     void print_AP_status_header();
@@ -234,17 +310,17 @@ class AnalyticPlacer {
                          const float solveTime,
                          const float spreadTime,
                          const float legalTime,
-                         const wirelen_t solvedHPWL,
-                         const wirelen_t spreadHPWL,
-                         const wirelen_t legalHPWL);
+                         const int solvedHPWL,
+                         const int spreadHPWL,
+                         const int legalHPWL);
 
     void print_iter_stats(const int iter,
                           const float iterTime,
                           const float time,
-                          const wirelen_t bestHPWL,
+                          const int bestHPWL,
                           const int stall);
 };
 
-// #endif /* ENABLE_ANALYTIC_PLACE */
+#endif /* ENABLE_ANALYTIC_PLACE */
 
 #endif /* VPR_ANALYTIC_PLACEMENT_H */
