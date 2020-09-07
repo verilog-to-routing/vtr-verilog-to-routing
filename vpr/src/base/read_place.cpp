@@ -234,10 +234,12 @@ void read_place_body(std::ifstream& placement_file,
 
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
-            	if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile) {
-            		VPR_THROW(VPR_ERROR_PLACE, "The location of cluster %d is specified %d times in the constraints file with conflicting locations. \n"
-            				"Its location was last specified with block %s. \n", blk_id, seen_blocks[blk_id] + 1, c_block_name);
-            	}
+                if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile) {
+                    VPR_THROW(VPR_ERROR_PLACE,
+                              "The location of cluster %d is specified %d times in the constraints file with conflicting locations. \n"
+                              "Its location was last specified with block %s. \n",
+                              blk_id, seen_blocks[blk_id] + 1, c_block_name);
+                }
             }
 
             //Check if block location is out of range of grid dimensions
@@ -270,7 +272,7 @@ void read_place_body(std::ifstream& placement_file,
                 place_ctx.block_locs[blk_id].is_fixed = true;
                 place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;
                 if (seen_blocks[blk_id] == 0) {
-                	place_ctx.grid_blocks[block_x][block_y].usage++;
+                    place_ctx.grid_blocks[block_x][block_y].usage++;
                 }
             }
 
