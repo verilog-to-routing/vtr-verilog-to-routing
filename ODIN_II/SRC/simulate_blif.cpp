@@ -557,11 +557,11 @@ static int is_node_ready(nnode_t* node, int cycle) {
         for (i = 0; i < node->num_input_pins; i++) {
             npin_t* pin = node->input_pins[i];
 
-            bool has_missing_driver = false;
-            for (int j = 0; j < pin->net->num_driver_pins && !has_missing_driver; j++)
+            bool has_missing_driver = pin->net == NULL;
+            for (int j = 0; !has_missing_driver && j < pin->net->num_driver_pins; j++)
                 has_missing_driver = pin->net->driver_pins[j]->node == NULL;
 
-            if (!pin->net || has_missing_driver) {
+            if (has_missing_driver) {
                 bool already_flagged = false;
                 int j;
                 for (j = 0; j < node->num_undriven_pins; j++) {
