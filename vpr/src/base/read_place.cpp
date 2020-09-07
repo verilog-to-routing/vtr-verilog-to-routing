@@ -32,14 +32,15 @@ void read_place(
     const char* net_file,
     const char* place_file,
     bool verify_file_digests,
-    const DeviceGrid& grid,
-    bool is_place_file) {
+    const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
     if (!fstream) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
                         "'%s' - Cannot open place file.\n",
                         place_file);
     }
+
+    bool is_place_file = true;
 
     VTR_LOG("Reading %s.\n", place_file);
     VTR_LOG("\n");
@@ -51,14 +52,15 @@ void read_place(
     VTR_LOG("\n");
 }
 
-void read_constraints(const char* constraints_file,
-                      bool is_place_file) {
+void read_constraints(const char* constraints_file) {
     std::ifstream fstream(constraints_file);
     if (!fstream) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
                         "'%s' - Cannot open constraints file.\n",
                         constraints_file);
     }
+
+    bool is_place_file = false;
 
     VTR_LOG("Reading %s.\n", constraints_file);
     VTR_LOG("\n");
@@ -226,13 +228,16 @@ void read_place_body(std::ifstream& placement_file,
                 if (atom_blk_id == AtomBlockId::INVALID()) {
                     VPR_THROW(VPR_ERROR_PLACE, "Block %s has an invalid name.\n", c_block_name);
                 } else {
-                    blk_id = atom_ctx.lookup.atom_clb(atom_blk_id);
+                    blk_id = atom_ctx.lookup.atom_clb(atom_blk_id); //getting the ClusterBlockId of the cluster that the atom is in
                 }
             }
 
-            //Check if block is listed twice in constraints file
-            if (seen_blocks[blk_id] != 0) {
-                VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is listed twice in the constraints file.\n", c_block_name, blk_id);
+            //Check if block is listed multiple times with conflicting locations in constraints file
+            if (seen_blocks[blk_id] > 0) {
+            	if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile) {
+            		VPR_THROW(VPR_ERROR_PLACE, "The location of cluster %d is specified %d times in the constraints file with conflicting locations. \n"
+            				"Its location was last specified with block %s. \n", blk_id, seen_blocks[blk_id] + 1, c_block_name);
+            	}
             }
 
             //Check if block location is out of range of grid dimensions
@@ -260,14 +265,17 @@ void read_place_body(std::ifstream& placement_file,
             }
 
             //need to lock down blocks  and mark grid block usage if it is a constraints file
+            //for a place file, grid usage is marked during initial placement instead
             if (!is_place_file) {
                 place_ctx.block_locs[blk_id].is_fixed = true;
                 place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;
-                place_ctx.grid_blocks[block_x][block_y].usage++;
+                if (seen_blocks[blk_id] == 0) {
+                	place_ctx.grid_blocks[block_x][block_y].usage++;
+                }
             }
 
             //mark the block as seen
-            seen_blocks[blk_id] = 1;
+            seen_blocks[blk_id]++;
 
         } else {
             //Unrecognized
@@ -278,6 +286,7 @@ void read_place_body(std::ifstream& placement_file,
     }
 
     //For place files, check that all blocks have been read
+    //For constraints files, not all blocks need to be read
     if (is_place_file) {
         for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
             if (seen_blocks[block_id] == 0) {
@@ -286,6 +295,7 @@ void read_place_body(std::ifstream& placement_file,
         }
     }
 
+    //Want to make a hash for place file to be used during routing for error checking
     if (is_place_file) {
         place_ctx.placement_id = vtr::secure_digest_file(place_file);
     }

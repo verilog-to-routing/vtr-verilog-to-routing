@@ -661,10 +661,9 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     const auto& filename_opts = vpr_setup.FileNameOpts;
-    bool is_a_placement_file = true;
 
     //Load an existing placement from a file
-    read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid, is_a_placement_file);
+    read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);
 
     //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
     place_ctx.pl_macros = alloc_and_load_placement_macros(arch.Directs, arch.num_directs);
