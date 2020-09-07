@@ -134,22 +134,22 @@ AnalyticPlacer::AnalyticPlacer() {
 
     // TODO: PlacerHeapCfg should be externally configured & supplied
     // TODO: tune these parameters for better performance
-    ap_cfg.alpha = 0.1;			   // anchoring strength, after first AP iteration the legal position of each block
-    							   // becomes anchors. In the next AP iteration, pseudo-connection between each blocks
-    							   // current location and its anchor is formed with strength (alph * iter)
-    							   // @see build_equations()
+    ap_cfg.alpha = 0.1; // anchoring strength, after first AP iteration the legal position of each block
+                        // becomes anchors. In the next AP iteration, pseudo-connection between each blocks
+                        // current location and its anchor is formed with strength (alph * iter)
+                        // @see build_equations()
 
-    ap_cfg.beta = 1;               // utilization factor, <= 1, used to determine if a cut-spreading region is
-    							   // overutilized with the formula: bool overutilized = (num_blks / num_tiles) > beta
-    							   // for beta < 1, a region must have more tiles than logical blks to not be overutilized
+    ap_cfg.beta = 1; // utilization factor, <= 1, used to determine if a cut-spreading region is
+                     // overutilized with the formula: bool overutilized = (num_blks / num_tiles) > beta
+                     // for beta < 1, a region must have more tiles than logical blks to not be overutilized
 
     ap_cfg.solverTolerance = 1e-5; // solver parameter, refers to residual error from solver, defined as |Ax-b|/|b|
 
-    ap_cfg.buildSolveIter = 5;	   // number of build-solve iteration when calculating placement, used in
-    							   // buils_sove_direction()
-    							   // for each build-solve iteration, the solution from previous build-solve iteration
-    							   // is used as a guess for the iterative solver. therefore more buildSolveIter should
-    							   // should improve result as the expense of runtime
+    ap_cfg.buildSolveIter = 5; // number of build-solve iteration when calculating placement, used in
+                               // buils_sove_direction()
+                               // for each build-solve iteration, the solution from previous build-solve iteration
+                               // is used as a guess for the iterative solver. therefore more buildSolveIter should
+                               // should improve result as the expense of runtime
 
     // following two parameters are used in CutSpreader::expand_regions().
     // they determine the number of steps to expand in x or y direction before swtiching to expand in the other direction.
@@ -176,7 +176,7 @@ void AnalyticPlacer::ap_place() {
 
     vtr::ScopedStartFinishTimer timer("Analytic Placement");
 
-    init();	// transfer placement from g_vpr_ctx to AnalyticPlacer data members
+    init(); // transfer placement from g_vpr_ctx to AnalyticPlacer data members
     build_legal_locations();
     int hpwl = total_hpwl();
     VTR_LOG("Creating analytic placement for %d cells, random placement hpwl = %d.\n",
@@ -216,7 +216,7 @@ void AnalyticPlacer::ap_place() {
     // main loop for AP
     // stopping criteria: stop after HEAP_STALLED_ITERATIONS_STOP iterations of no improvement
     while (stalled < HEAP_STALLED_ITERATIONS_STOP) {
-    // TODO: investigate better stopping criteria
+        // TODO: investigate better stopping criteria
         iter_start = timer.elapsed_sec();
         for (auto blk_type : ap_runs) { // for each type of logic blocks
             run_start = timer.elapsed_sec();
@@ -233,10 +233,10 @@ void AnalyticPlacer::ap_place() {
             spread_start = timer.elapsed_sec();
             CutSpreader spreader{this, blk_type}; // Legalizer
             if (strcmp(blk_type->name, "io") != 0) {
-            /* skip cut-spreading for IO blocks; they tend to cluster on 1 edge of the FPGA due to how cut-spreader works
-             * in HeAP, cut-spreading is invoked only on LUT, DSP, RAM etc.
-             * here, greedy legalization by spreader.strict_legalize() should be sufficient for IOs
-             */
+                /* skip cut-spreading for IO blocks; they tend to cluster on 1 edge of the FPGA due to how cut-spreader works
+                 * in HeAP, cut-spreading is invoked only on LUT, DSP, RAM etc.
+                 * here, greedy legalization by spreader.strict_legalize() should be sufficient for IOs
+                 */
                 spreader.cutSpread();
                 update_macros();
                 spread_hpwl = total_hpwl();
@@ -248,7 +248,7 @@ void AnalyticPlacer::ap_place() {
 
             // greedy legalizer for fully legal placement
             legal_start = timer.elapsed_sec();
-            spreader.strict_legalize();	// greedy legalization snaps blocks to the closest legal location
+            spreader.strict_legalize(); // greedy legalization snaps blocks to the closest legal location
             update_macros();
             legal_t = timer.elapsed_sec() - legal_start;
             legal_hpwl = total_hpwl();
@@ -281,13 +281,13 @@ void AnalyticPlacer::ap_place() {
 
 // build matrix equations and solve for block type "run" in both x and y directions
 // macro member positions are updated after solving
-void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter){
-	 setup_solve_blks(run);
-	 // build and solve matrix equation for both x, y
-	 // passing -1 as iter to build_solve_direction signals build_equation not to add pseudo-connections
-	 build_solve_direction(false, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter);
-	 build_solve_direction(true, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter);
-	 update_macros();	// update macro member locations, since only macro head is solved
+void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter) {
+    setup_solve_blks(run);
+    // build and solve matrix equation for both x, y
+    // passing -1 as iter to build_solve_direction signals build_equation not to add pseudo-connections
+    build_solve_direction(false, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter);
+    build_solve_direction(true, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter);
+    update_macros(); // update macro member locations, since only macro head is solved
 }
 
 // build legal_pos similar to initial_placement.cpp
@@ -295,7 +295,6 @@ void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter){
 // (stored in legal_pos). For a type of sub_tile_t found in tile_t, legal_pos[tile_t][sub_tile_t]
 // gives a vector containing all positions (t_pl_loc format) for this sub_tile_t.
 void AnalyticPlacer::build_legal_locations() {
-
     std::vector<std::vector<int>> num_legal_pos;
     // invoking same function used in initial_placement.cpp (can ignore function name)
     alloc_legal_placement_locations(legal_pos, num_legal_pos);
@@ -309,9 +308,9 @@ void AnalyticPlacer::init() {
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
 
     for (auto blk_id : clb_nlist.blocks()) {
-    	blk_locs.insert(blk_id, BlockLocation{});
+        blk_locs.insert(blk_id, BlockLocation{});
         blk_locs[blk_id].loc = place_ctx.block_locs[blk_id].loc; // transfer of initial placement
-        row_num.insert(blk_id, DONT_SOLVE); // no blocks are moved by default, until they are setup in setup_solve_blks()
+        row_num.insert(blk_id, DONT_SOLVE);                      // no blocks are moved by default, until they are setup in setup_solve_blks()
     }
 
     // only blocks with connections are considered
@@ -325,12 +324,12 @@ void AnalyticPlacer::init() {
     };
 
     for (auto blk_id : clb_nlist.blocks()) {
-    	if (!place_ctx.block_locs[blk_id].is_fixed && has_connections(blk_id)) // not fixed and has connections
-    	// matrix equation in formulated based on connections, so requires at least one connection
-    		if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id){ // not in macro or head of macro
-            // for macro, only the head (base) block of the macro is a free variable, the location of other macro
-    		// blocks can be calculated using offset of the head. They are not free variables in the equation system
-    			place_blks.push_back(blk_id);
+        if (!place_ctx.block_locs[blk_id].is_fixed && has_connections(blk_id)) // not fixed and has connections
+                                                                               // matrix equation in formulated based on connections, so requires at least one connection
+            if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id) {  // not in macro or head of macro
+                                                                               // for macro, only the head (base) block of the macro is a free variable, the location of other macro
+                                                                               // blocks can be calculated using offset of the head. They are not free variables in the equation system
+                place_blks.push_back(blk_id);
             }
     }
 }
@@ -346,15 +345,15 @@ int AnalyticPlacer::get_net_hpwl(ClusterNetId net_id) {
     // see place.cpp get_non_updateable_bb();
     // TODO: map net_pin to tile_pin and add pin offset to x, y locations (refer to place.cpp)
     ClusterBlockId bnum = clb_nlist.net_driver_block(net_id);
-    int x = std::max<int>(std::min<int>(blk_locs[bnum].loc.x, max_x-1), 1);
-    int y = std::max<int>(std::min<int>(blk_locs[bnum].loc.y, max_y-1), 1);
+    int x = std::max<int>(std::min<int>(blk_locs[bnum].loc.x, max_x - 1), 1);
+    int y = std::max<int>(std::min<int>(blk_locs[bnum].loc.y, max_y - 1), 1);
 
     vtr::Rect<int> bb = {x, y, x, y};
 
     for (auto pin_id : clb_nlist.net_sinks(net_id)) {
         bnum = clb_nlist.pin_block(pin_id);
-        x = std::max<int>(std::min<int>(blk_locs[bnum].loc.x, max_x-1), 1);
-        y = std::max<int>(std::min<int>(blk_locs[bnum].loc.y, max_y-1), 1);
+        x = std::max<int>(std::min<int>(blk_locs[bnum].loc.x, max_x - 1), 1);
+        y = std::max<int>(std::min<int>(blk_locs[bnum].loc.y, max_y - 1), 1);
 
         bb.expand_bounding_box({x, y, x, y});
     }
@@ -394,9 +393,9 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
     }
     // update blks to be placed, excluding macro members (macro head included)
     for (auto blk_id : place_blks) { // find blocks of type blkTypes in place_blks
-        if (blkTypes == (clb_nlist.block_type(blk_id))){
-        	row_num[blk_id] = row++;
-        	solve_blks.push_back(blk_id);
+        if (blkTypes == (clb_nlist.block_type(blk_id))) {
+            row_num[blk_id] = row++;
+            solve_blks.push_back(blk_id);
         }
     }
     // update row_num of macro members
@@ -456,10 +455,10 @@ void AnalyticPlacer::build_solve_direction(bool yaxis, int iter, int build_solve
  * for detailed derivation see comment for add_pin_to_pin_connection()
  */
 void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
-											bool dir,
-		  	  	  	  	  	  	  	  	    ClusterBlockId var,
-											ClusterBlockId eqn,
-											double weight) {
+                                            bool dir,
+                                            ClusterBlockId var,
+                                            ClusterBlockId eqn,
+                                            double weight) {
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
 
     // Return the x or y position of a block
@@ -467,7 +466,7 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
 
     int eqn_row = row_num[eqn];
     if (eqn_row == DONT_SOLVE) // if eqn is not of the right type or is locked down
-    	return;
+        return;
     int v_pos = blk_p(var);
     int var_row = row_num[var];
     if (var_row != DONT_SOLVE) { // var is movable, stamp weight on matrix
@@ -485,94 +484,94 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
 }
 
 /*
-	 * Add weights to matrix for the pin-to-pin connection between bound_blk and this_blk (bound2bound model)
-	 *
-	 * The matrix A in system of equation Ax=b is a symmetric sparse matrix.
-	 * Each row of A corresponds to an equation for a free variable. This equation is acquired by differentiating
-	 * the objective function with respect to the free variable (movable block's x or y location) and setting it
-	 * to 0.
-	 *
-	 * Pin-to-pin connection between 2 movable blocks (call them b1 and b2, with connection weight W12) is the
-	 * simplest case. Differentiating with respect to b1 and setting to 0 produces W12 * b1 - W12 * b2 = 0, where
-	 * b1, b2 are the location variables to calculate. When cast into matrix form, the row number of this equation
-	 * corresponds to b1. Let's assume b1 and b2's equations are in rows i, j. Row number for each free variable also
-	 * indicates its position in other variable's equation. In our example, assume there are 5 free variables (free
-	 * blocks), and i=2, j=4. Then, after adding weights to b1's equation, the system will look like the following:
-	 * 									|   x   x   x   x   x   |   |x |  = | x |
-	 * 									|   0  W12  0 -W12  0   |   |b1|  = | 0 |
-	 * 									|   x   x   x   x   x   | * |x |  = | x |
-	 * 									|   x   x   x   x   x   |   |b2|  = | x |
-	 * 									|   x   x   x   x   x   |   |x |  = | x |
-	 * Differentiating with respect to b2 will result in same equation except flipped signs for the weight. This creates
-	 * symmetry in the matrix, resulting in:
-	 * 									|   x   x   x   x   x   |   |x |  = | x |
-	 * 									|   0  W12  0 -W12  0   |   |b1|  = | 0 |
-	 * 									|   x   x   x   x   x   | * |x |  = | x |
-	 * 									|   0 -W12  0  W12  0   |   |b2|  = | 0 |
-	 * 									|   x   x   x   x   x   |   |x |  = | x |
-	 * To generalize, for movable blocks b1, b2 in row i,j, with connection weight W, the W is added to matrix position
-	 * [i][i] and [j][j], -W added to [i][j] and [j][i]. This is why stamp_weight_on_matrix is invoked 4 times below.
-	 *
-	 * Special Case: immovable/fixed block.
-	 * Assume b2 in the move example is fixed, then it does not have an equation in the system as it's not a free variable.
-	 * The new equation is now W12 * b1 = W12 * b2, where b2 is just a constant. (This makes sense as b1=b2 is optimal,
-	 * since it has wirelength of 0). The matrix equation now looks like the following:
-	 * 									|   x   x   x   x   x   |   |x |  = |  x   |
-	 * 									|   0  W12  0   0   0   |   |b1|  = |W12*b2|
-	 * 									|   x   x   x   x   x   | * |x |  = |  x   |
-	 * 									|   x   x   x   x   x   |   |x |  = |  x   |
-	 * 									|   x   x   x   x   x   |   |x |  = |  x   |
-	 *
-	 * Special Case: connection to macro member.
-	 * Assume b1 is the head block of a macro, b3 is its macro member with offset d. b3 has a connection with movable block
-	 * b2, with weight W23. b3's location is then (b1 + d). The new equation w.r.t. b1 is W23 * (b1 + d - b2) = 0.
-	 * New equation w.r.t. b3 is symmetrical, producing matrix:
-	 * 									|   x   x   x   x   x   |   |x |  = |  x   |
-	 * 									|   0  W23  0 -W23  0   |   |b1|  = |-W23*d|
-	 * 									|   x   x   x   x   x   | * |x |  = |  x   |
-	 * 									|   0 -W23  0  W23  0   |   |b2|  = | W23*d|
-	 * 									|   x   x   x   x   x   |   |x |  = |  x   |
-	 * As shown here, connection to macro members are formulated into macro's head block's equation. This is why macro members
-	 * are not formulated in equation system.
-	 *
-	 * EquationSystem is passed in for adding weights, dir selects x/y direction, num_pins is used in weight calculation
-	 * (bound2bound model). bound_pin and this_pin specifies the 2 pins in the connection (one of them is always bound_pin).
-	 */
+ * Add weights to matrix for the pin-to-pin connection between bound_blk and this_blk (bound2bound model)
+ *
+ * The matrix A in system of equation Ax=b is a symmetric sparse matrix.
+ * Each row of A corresponds to an equation for a free variable. This equation is acquired by differentiating
+ * the objective function with respect to the free variable (movable block's x or y location) and setting it
+ * to 0.
+ *
+ * Pin-to-pin connection between 2 movable blocks (call them b1 and b2, with connection weight W12) is the
+ * simplest case. Differentiating with respect to b1 and setting to 0 produces W12 * b1 - W12 * b2 = 0, where
+ * b1, b2 are the location variables to calculate. When cast into matrix form, the row number of this equation
+ * corresponds to b1. Let's assume b1 and b2's equations are in rows i, j. Row number for each free variable also
+ * indicates its position in other variable's equation. In our example, assume there are 5 free variables (free
+ * blocks), and i=2, j=4. Then, after adding weights to b1's equation, the system will look like the following:
+ * 									|   x   x   x   x   x   |   |x |  = | x |
+ * 									|   0  W12  0 -W12  0   |   |b1|  = | 0 |
+ * 									|   x   x   x   x   x   | * |x |  = | x |
+ * 									|   x   x   x   x   x   |   |b2|  = | x |
+ * 									|   x   x   x   x   x   |   |x |  = | x |
+ * Differentiating with respect to b2 will result in same equation except flipped signs for the weight. This creates
+ * symmetry in the matrix, resulting in:
+ * 									|   x   x   x   x   x   |   |x |  = | x |
+ * 									|   0  W12  0 -W12  0   |   |b1|  = | 0 |
+ * 									|   x   x   x   x   x   | * |x |  = | x |
+ * 									|   0 -W12  0  W12  0   |   |b2|  = | 0 |
+ * 									|   x   x   x   x   x   |   |x |  = | x |
+ * To generalize, for movable blocks b1, b2 in row i,j, with connection weight W, the W is added to matrix position
+ * [i][i] and [j][j], -W added to [i][j] and [j][i]. This is why stamp_weight_on_matrix is invoked 4 times below.
+ *
+ * Special Case: immovable/fixed block.
+ * Assume b2 in the move example is fixed, then it does not have an equation in the system as it's not a free variable.
+ * The new equation is now W12 * b1 = W12 * b2, where b2 is just a constant. (This makes sense as b1=b2 is optimal,
+ * since it has wirelength of 0). The matrix equation now looks like the following:
+ * 									|   x   x   x   x   x   |   |x |  = |  x   |
+ * 									|   0  W12  0   0   0   |   |b1|  = |W12*b2|
+ * 									|   x   x   x   x   x   | * |x |  = |  x   |
+ * 									|   x   x   x   x   x   |   |x |  = |  x   |
+ * 									|   x   x   x   x   x   |   |x |  = |  x   |
+ *
+ * Special Case: connection to macro member.
+ * Assume b1 is the head block of a macro, b3 is its macro member with offset d. b3 has a connection with movable block
+ * b2, with weight W23. b3's location is then (b1 + d). The new equation w.r.t. b1 is W23 * (b1 + d - b2) = 0.
+ * New equation w.r.t. b3 is symmetrical, producing matrix:
+ * 									|   x   x   x   x   x   |   |x |  = |  x   |
+ * 									|   0  W23  0 -W23  0   |   |b1|  = |-W23*d|
+ * 									|   x   x   x   x   x   | * |x |  = |  x   |
+ * 									|   0 -W23  0  W23  0   |   |b2|  = | W23*d|
+ * 									|   x   x   x   x   x   |   |x |  = |  x   |
+ * As shown here, connection to macro members are formulated into macro's head block's equation. This is why macro members
+ * are not formulated in equation system.
+ *
+ * EquationSystem is passed in for adding weights, dir selects x/y direction, num_pins is used in weight calculation
+ * (bound2bound model). bound_pin and this_pin specifies the 2 pins in the connection (one of them is always bound_pin).
+ */
 void AnalyticPlacer::add_pin_to_pin_connection(EquationSystem<double>& es,
-		   	   	   	   	   	   	   	   	   	   bool dir,
-											   int num_pins,
-											   ClusterPinId bound_pin,
-											   ClusterPinId this_pin) {
+                                               bool dir,
+                                               int num_pins,
+                                               ClusterPinId bound_pin,
+                                               ClusterPinId this_pin) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
-	if (this_pin == bound_pin)
-		// no connection if 2 pins are the same
-		return;
+    if (this_pin == bound_pin)
+        // no connection if 2 pins are the same
+        return;
 
-	// this_blk and bound_blk locations may not be accurate for larger tiles spanning multiple grid locations
-	// need block_locs[blk_id].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum]
-	// however, in order to do so, need place_sync_external_block_connections(blk_id) for all blocks
-	// TODO: map logical pin to physical pin and add this offset for more accurate pin location
-	ClusterBlockId this_blk = clb_nlist.pin_block(this_pin);
-	int this_pos = dir ? blk_locs[this_blk].loc.y : blk_locs[this_blk].loc.x;
-	ClusterBlockId bound_blk = clb_nlist.pin_block(bound_pin);
-	int bound_pos = dir? blk_locs[bound_blk].loc.y : blk_locs[bound_blk].loc.x;
-	// implementing the bound-to-bound net model detailed in HeAP paper, where each bound blk has (num_pins - 1) connections
-	// (bound_pos - this_pos) in the denominator "linearizes" the quaratic term (bound_pos - this_pos)^2 in the objective function
-	// This ensures that the objective function target HPWL, rather than quaratic wirelength.
-	double weight = 1.0 / ((num_pins - 1) * std::max<double>(1, std::abs(bound_pos - this_pos)));
+    // this_blk and bound_blk locations may not be accurate for larger tiles spanning multiple grid locations
+    // need block_locs[blk_id].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum]
+    // however, in order to do so, need place_sync_external_block_connections(blk_id) for all blocks
+    // TODO: map logical pin to physical pin and add this offset for more accurate pin location
+    ClusterBlockId this_blk = clb_nlist.pin_block(this_pin);
+    int this_pos = dir ? blk_locs[this_blk].loc.y : blk_locs[this_blk].loc.x;
+    ClusterBlockId bound_blk = clb_nlist.pin_block(bound_pin);
+    int bound_pos = dir ? blk_locs[bound_blk].loc.y : blk_locs[bound_blk].loc.x;
+    // implementing the bound-to-bound net model detailed in HeAP paper, where each bound blk has (num_pins - 1) connections
+    // (bound_pos - this_pos) in the denominator "linearizes" the quaratic term (bound_pos - this_pos)^2 in the objective function
+    // This ensures that the objective function target HPWL, rather than quaratic wirelength.
+    double weight = 1.0 / ((num_pins - 1) * std::max<double>(1, std::abs(bound_pos - this_pos)));
 
-	/*
-	 * TODO: adding timing weights to matrix entries
-	 *if (this_pin != 0){
-	 * weight *= (1.0 + tmpCfg.timingWeight * std::pow(place_crit.criticality(net_id, this_pin), tmgCfg.criticalityExponent));
-	 * }
-	 */
+    /*
+     * TODO: adding timing weights to matrix entries
+     *if (this_pin != 0){
+     * weight *= (1.0 + tmpCfg.timingWeight * std::pow(place_crit.criticality(net_id, this_pin), tmgCfg.criticalityExponent));
+     * }
+     */
 
-	stamp_weight_on_matrix(es, dir, this_blk, this_blk, weight);
-	stamp_weight_on_matrix(es, dir, this_blk, bound_blk, -weight);
-	stamp_weight_on_matrix(es, dir, bound_blk, bound_blk, weight);
-	stamp_weight_on_matrix(es, dir, bound_blk, this_blk, -weight);
+    stamp_weight_on_matrix(es, dir, this_blk, this_blk, weight);
+    stamp_weight_on_matrix(es, dir, this_blk, bound_blk, -weight);
+    stamp_weight_on_matrix(es, dir, bound_blk, bound_blk, weight);
+    stamp_weight_on_matrix(es, dir, bound_blk, this_blk, -weight);
 }
 
 // Build the system of equations for either X or Y
@@ -593,24 +592,24 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
      */
     for (auto net_id : clb_nlist.nets()) {
         if (clb_nlist.net_is_ignored(net_id)
-        || clb_nlist.net_driver(net_id) == ClusterPinId::INVALID()
-        || clb_nlist.net_sinks(net_id).empty()) {
-        // ensure net is not ignored (ex. clk nets), has valid driver, has at least 1 sink
-        	continue;
+            || clb_nlist.net_driver(net_id) == ClusterPinId::INVALID()
+            || clb_nlist.net_sinks(net_id).empty()) {
+            // ensure net is not ignored (ex. clk nets), has valid driver, has at least 1 sink
+            continue;
         }
 
         // find the 2 bound pins (min and max pin)
         ClusterPinId min_pin = ClusterPinId::INVALID(), max_pin = ClusterPinId::INVALID();
         int min_pos = std::numeric_limits<int>::max(), max_pos = std::numeric_limits<int>::min();
         for (auto pin_id : clb_nlist.net_pins(net_id)) {
-        	int pos = blk_p(clb_nlist.pin_block(pin_id));
+            int pos = blk_p(clb_nlist.pin_block(pin_id));
             if (pos < min_pos) {
-            	min_pos = pos;
-             	min_pin = pin_id;
+                min_pos = pos;
+                min_pin = pin_id;
             }
             if (pos > max_pos) {
-            	max_pos = pos;
-             	max_pin = pin_id;
+                max_pos = pos;
+                max_pin = pin_id;
             }
         }
         VTR_ASSERT(min_pin != ClusterPinId::INVALID());
@@ -618,12 +617,12 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
 
         int num_pins = clb_nlist.net_pins(net_id).size();
         for (int ipin = 0; ipin < num_pins; ipin++) {
-        	ClusterPinId pin_id = clb_nlist.net_pin(net_id, ipin);
+            ClusterPinId pin_id = clb_nlist.net_pin(net_id, ipin);
             // for each pin in net, connect to 2 bound pins (bound2bound model)
             add_pin_to_pin_connection(es, yaxis, num_pins, min_pin, pin_id);
             if (pin_id != min_pin)
-            	// avoid adding min_pin to max_pin connection twice
-            	add_pin_to_pin_connection(es, yaxis, num_pins, max_pin, pin_id);
+                // avoid adding min_pin to max_pin connection twice
+                add_pin_to_pin_connection(es, yaxis, num_pins, max_pin, pin_id);
         }
     }
 
@@ -633,7 +632,7 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
     // As weight increases with number of iterations, solver's solution converges with the legal placement.
     if (iter != -1) { // if not the first AP iteration
         for (size_t row = 0; row < solve_blks.size(); row++) {
-            int l_pos = legal_p(solve_blks.at(row)); // legalized position from last iteration (anchors)
+            int l_pos = legal_p(solve_blks.at(row));        // legalized position from last iteration (anchors)
             int solver_blk_pos = blk_p(solve_blks.at(row)); // matrix solved block position from last iteration
 
             // weight increases with iteration --> psudo-connection strength increases to force convergence to legal placement
@@ -659,7 +658,7 @@ void AnalyticPlacer::solve_equations(EquationSystem<double>& es, bool yaxis) {
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
 
-    auto blk_pos = [&](ClusterBlockId blk_id) { return yaxis ? blk_locs[blk_id].rawy : blk_locs[blk_id].rawx;};
+    auto blk_pos = [&](ClusterBlockId blk_id) { return yaxis ? blk_locs[blk_id].rawy : blk_locs[blk_id].rawx; };
     std::vector<double> solve_blks_pos; // each row of solve_blks_pos is a free variable (movable block of the right type to be placed)
     // put current location of solve_blks into solve_blks_pos as guess for iterative solver
     std::transform(solve_blks.begin(), solve_blks.end(), std::back_inserter(solve_blks_pos), blk_pos);
@@ -699,15 +698,15 @@ std::string AnalyticPlacer::print_overlap(vtr::Matrix<int>& overlap, FILE* fp) {
     std::string out = "";
     fprintf(fp, "%5s", "");
     for (int i = 0; i < max_x; i++) {
-    	fprintf(fp, "%-5d", i);
+        fprintf(fp, "%-5d", i);
     }
     fprintf(fp, "\n%4s", "");
     fprintf(fp, "%s\n", std::string(5 * max_x + 2, '-').c_str());
     for (int i = 0; i < max_y; i++) {
         fprintf(fp, "%-4d|", i);
         for (int j = 0; j < max_x; j++) {
-        	int count = overlap[i][j];
-        	fprintf(fp, "%-5s", ((count == 0) ? "0" : std::to_string(count)).c_str());
+            int count = overlap[i][j];
+            fprintf(fp, "%-5s", ((count == 0) ? "0" : std::to_string(count)).c_str());
         }
         fprintf(fp, "|\n");
     }
@@ -737,38 +736,38 @@ void AnalyticPlacer::print_place(const char* place_file) {
             clb_nlist.netlist_id().c_str());
     fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
     fprintf(fp, "%-25s %-18s %-12s %-25s %-5s %-5s %-10s %-14s %-8s\n",
-    		"block name",
-			"logic block type",
-			"pb_type",
-			"pb_name",
-			"x",
-			"y",
-			"subblk",
-			"block number",
-			"is_fixed");
+            "block name",
+            "logic block type",
+            "pb_type",
+            "pb_name",
+            "x",
+            "y",
+            "subblk",
+            "block number",
+            "is_fixed");
     fprintf(fp, "%-25s %-18s %-12s %-25s %-5s %-5s %-10s %-14s %-8s\n",
-    		"----------",
-			"----------------",
-			"-------",
-			"-------",
-			"--",
-			"--",
-			"------",
-			"------------",
-			"--------");
+            "----------",
+            "----------------",
+            "-------",
+            "-------",
+            "--",
+            "--",
+            "------",
+            "------------",
+            "--------");
 
     if (!place_ctx.block_locs.empty()) { //Only if placement exists
         for (auto blk_id : clb_nlist.blocks()) {
-        	fprintf(fp, "%-25s %-18s %-12s %-25s %-5d %-5d %-10d #%-13zu %-8s\n",
-        			clb_nlist.block_name(blk_id).c_str(),
-					clb_nlist.block_type(blk_id)->name,
-					clb_nlist.block_type(blk_id)->pb_type->name,
-					clb_nlist.block_pb(blk_id)->name,
-					blk_locs[blk_id].loc.x,
-					blk_locs[blk_id].loc.y,
-					blk_locs[blk_id].loc.sub_tile,
-					size_t(blk_id),
-					(place_ctx.block_locs[blk_id].is_fixed ? "true" : "false"));
+            fprintf(fp, "%-25s %-18s %-12s %-25s %-5d %-5d %-10d #%-13zu %-8s\n",
+                    clb_nlist.block_name(blk_id).c_str(),
+                    clb_nlist.block_type(blk_id)->name,
+                    clb_nlist.block_type(blk_id)->pb_type->name,
+                    clb_nlist.block_pb(blk_id)->name,
+                    blk_locs[blk_id].loc.x,
+                    blk_locs[blk_id].loc.y,
+                    blk_locs[blk_id].loc.sub_tile,
+                    size_t(blk_id),
+                    (place_ctx.block_locs[blk_id].is_fixed ? "true" : "false"));
         }
         fprintf(fp, "\ntotal_HPWL: %d\n", total_hpwl());
         vtr::Matrix<int> overlap;

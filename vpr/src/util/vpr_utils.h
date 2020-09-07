@@ -216,7 +216,7 @@ void print_timing_stats(std::string name,
 // num_legal_pos is total number of each type of subtiles
 // num_legal[0..num_sub_tiles - 1][0..num_legal_pos-1] = total number of this type of subtile
 void alloc_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
-									 std::vector<std::vector<int>>& num_legal_pos);
+                                     std::vector<std::vector<int>>& num_legal_pos);
 
 void load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 

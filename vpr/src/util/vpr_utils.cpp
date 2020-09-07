@@ -2358,7 +2358,7 @@ void print_timing_stats(std::string name,
 }
 
 void alloc_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
-									 std::vector<std::vector<int>>& num_legal_pos){
+                                     std::vector<std::vector<int>>& num_legal_pos) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -2372,7 +2372,6 @@ void alloc_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_lo
 
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-
             auto tile = device_ctx.grid[i][j].type;
 
             for (auto sub_tile : tile->sub_tiles) {
@@ -2380,7 +2379,6 @@ void alloc_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_lo
 
                 for (int k = 0; k < capacity.total(); k++) {
                     if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
-
                         if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
                             num_legal_pos[tile->index][sub_tile.index]++;
                         }
@@ -2399,39 +2397,39 @@ void alloc_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_lo
     }
 }
 
-void load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos){
-	 auto& device_ctx = g_vpr_ctx.device();
-	    auto& place_ctx = g_vpr_ctx.placement();
+void load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
 
-	    std::vector<std::vector<int>> index;
+    std::vector<std::vector<int>> index;
 
-	    index.resize(device_ctx.physical_tile_types.size());
-	    for (const auto& tile : device_ctx.physical_tile_types) {
-	        index[tile.index].resize(tile.sub_tiles.size());
-	    }
+    index.resize(device_ctx.physical_tile_types.size());
+    for (const auto& tile : device_ctx.physical_tile_types) {
+        index[tile.index].resize(tile.sub_tiles.size());
+    }
 
-	    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-	        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-	            auto tile = device_ctx.grid[i][j].type;
+    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            auto tile = device_ctx.grid[i][j].type;
 
-	            for (auto sub_tile : tile->sub_tiles) {
-	                auto capacity = sub_tile.capacity;
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
 
-	                for (int k = 0; k < capacity.total(); k++) {
-	                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
-	                        continue;
-	                    }
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
+                        continue;
+                    }
 
-	                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-	                        int itype = tile->index;
-	                        int isub_tile = sub_tile.index;
-	                        legal_pos[itype][isub_tile][index[itype][isub_tile]].x = i;
-	                        legal_pos[itype][isub_tile][index[itype][isub_tile]].y = j;
-	                        legal_pos[itype][isub_tile][index[itype][isub_tile]].sub_tile = k + capacity.low;
-	                        index[itype][isub_tile]++;
-	                    }
-	                }
-	            }
-	        }
-	    }
+                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                        int itype = tile->index;
+                        int isub_tile = sub_tile.index;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].x = i;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].y = j;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].sub_tile = k + capacity.low;
+                        index[itype][isub_tile]++;
+                    }
+                }
+            }
+        }
+    }
 }

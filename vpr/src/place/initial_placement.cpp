@@ -30,7 +30,6 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
                                                     int num_needed_types,
                                                     std::vector<std::vector<int>>& free_locations);
 
-
 static void zero_initialize_grid_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -39,18 +38,18 @@ static void zero_initialize_grid_blocks() {
 
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-        	place_ctx.grid_blocks[i][j].usage = 0;
-        	auto tile = device_ctx.grid[i][j].type;
+            place_ctx.grid_blocks[i][j].usage = 0;
+            auto tile = device_ctx.grid[i][j].type;
 
-        	for (auto sub_tile : tile->sub_tiles) {
-        		auto capacity = sub_tile.capacity;
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
 
-        		for (int k = 0; k < capacity.total(); k++) {
-        			if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
-        				place_ctx.grid_blocks[i][j].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
-        			}
-        		}
-        	}
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
+                        place_ctx.grid_blocks[i][j].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
+                    }
+                }
+            }
         }
     }
 }

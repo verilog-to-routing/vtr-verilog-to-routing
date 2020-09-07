@@ -145,7 +145,7 @@ class AnalyticPlacer {
         int criticalityExponent;            // not currently used, @see build_equations()
         int timingWeight;                   // not currently used, @see build_equations()
         float solverTolerance;              // parameter of the solver
-        int buildSolveIter;					// build_solve iterations for iterative solver
+        int buildSolveIter;                 // build_solve iterations for iterative solver
         int spread_scale_x, spread_scale_y; // see CutSpreader::expand_regions()
     };
 
@@ -161,18 +161,18 @@ class AnalyticPlacer {
 
     // Encapsulates 3 types of locations for each logic block
     struct BlockLocation {
-        t_pl_loc loc;       // real, up-to-date location of the logic block in the AP process
-        					// first initiated with initial random placement from g_vpr_ctx
-        					// then, eath time after solving equations, it's updated with rounded
-        					// raw solutions from solver
-        					// finally, it is accessed and modified by legalizer to store legal placement
-        					// at the end of each AP iteration
+        t_pl_loc loc; // real, up-to-date location of the logic block in the AP process
+                      // first initiated with initial random placement from g_vpr_ctx
+                      // then, eath time after solving equations, it's updated with rounded
+                      // raw solutions from solver
+                      // finally, it is accessed and modified by legalizer to store legal placement
+                      // at the end of each AP iteration
 
         t_pl_loc legal_loc; // legalized location, used to create psudo connections in the next AP iteration
-        					// updated in AP main loop in ap_place() at the end of each iteration
+                            // updated in AP main loop in ap_place() at the end of each iteration
 
-        double rawx, rawy;  // raw location storing float result from matrix solver
-        					// used by strict legalizer to linearly interpolate in strict-legalizer
+        double rawx, rawy; // raw location storing float result from matrix solver
+                           // used by strict legalizer to linearly interpolate in strict-legalizer
     };
 
     // Lookup from blockID to block location
@@ -259,22 +259,22 @@ class AnalyticPlacer {
      * for detailed derivation and examples, please read HeAP paper
      */
     void stamp_weight_on_matrix(EquationSystem<double>& es,
-    							bool dir,
-    							ClusterBlockId var,
-								ClusterBlockId eqn,
-								double weight);
+                                bool dir,
+                                ClusterBlockId var,
+                                ClusterBlockId eqn,
+                                double weight);
 
     void add_pin_to_pin_connection(EquationSystem<double>& es,
-    							   bool dir,
-								   int num_pins,
-								   ClusterPinId bound_pin,
-    							   ClusterPinId this_pin);
+                                   bool dir,
+                                   int num_pins,
+                                   ClusterPinId bound_pin,
+                                   ClusterPinId this_pin);
 
     /*
-	 * Build the system of equations for either X or Y
-	 * When iter != -1, for each block, psudo-conenction to its prior legal location is formed,
+     * Build the system of equations for either X or Y
+     * When iter != -1, for each block, psudo-conenction to its prior legal location is formed,
      * the strength is determined by alpha and iter
-	 */
+     */
     void build_equations(EquationSystem<double>& es, bool yaxis, int iter = -1);
 
     /*

@@ -107,7 +107,7 @@
  *
  */
 #    include "vpr_context.h"
-#	 include <queue>
+#    include <queue>
 
 // declaration of used types;
 class AnalyticPlacer;
@@ -165,14 +165,14 @@ class CutSpreader {
     // struct describing regions on FPGA to cut_spread
     struct SpreaderRegion {
         int id;              // index of regions in regions vector
-        vtr::Rect<int> bb; 	 // bounding box of the region
+        vtr::Rect<int> bb;   // bounding box of the region
         int n_blks, n_tiles; // number of netlist blocks and compatible tiles (placement locations)
         bool overused(float beta) const {
             // determines whether region is overutilized: overused = (Occupancy / Capacity) > beta
             if (n_blks > beta * n_tiles)
-            	return true;
+                return true;
             else
-            	return false;
+                return false;
         }
     };
 
@@ -256,10 +256,10 @@ class CutSpreader {
      * returns -1 if cannot generate initial source_cut (not enough clearance for macros)
      */
     int initial_source_cut(SpreaderRegion& r,
-    					   std::vector<ClusterBlockId>& cut_blks,
-						   bool dir,
-						   int& clearance_l,
-						   int& clearance_r);
+                           std::vector<ClusterBlockId>& cut_blks,
+                           bool dir,
+                           int& clearance_l,
+                           int& clearance_r);
 
     /*
      * generate the initial target_cut for region r, ensure that utilization in 2 subareas are closest possible
@@ -269,24 +269,24 @@ class CutSpreader {
      * returns the resulting number of tiles in left and right subareas in left_tiles_n, right_tiles_n
      */
     int initial_target_cut(SpreaderRegion& r,
-    		std::vector<ClusterBlockId>& cut_blks,
-    		int init_source_cut,
-			bool dir,
-			int trimmed_l,
-			int trimmed_r,
-			int clearance_l,
-			int clearance_r,
-			int& left_blks_n,
-			int& right_blks_n,
-			int& left_tiles_n,
-			int& right_tiles_n);
+                           std::vector<ClusterBlockId>& cut_blks,
+                           int init_source_cut,
+                           bool dir,
+                           int trimmed_l,
+                           int trimmed_r,
+                           int clearance_l,
+                           int clearance_r,
+                           int& left_blks_n,
+                           int& right_blks_n,
+                           int& left_tiles_n,
+                           int& right_tiles_n);
 
     /*
      * Trim the boundaries of the region in axis-of-interest, skipping any rows/cols without any tiles
      * of the right type.
      * Afterwards, move blocks in trimmed locations to new trimmed boundaries
      */
-    std::pair<int, int> trim_region(SpreaderRegion&r, bool dir);
+    std::pair<int, int> trim_region(SpreaderRegion& r, bool dir);
 
     /*
      * Spread blocks in subarea by linear interpolation
@@ -298,11 +298,10 @@ class CutSpreader {
      *   locations to map to a new location in the bin.
      */
     void linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
-    					   bool dir,
-    					   int blks_start,
-						   int blks_end,
-						   SpreaderRegion& sub_area);
-
+                               bool dir,
+                               int blks_start,
+                               int blks_end,
+                               SpreaderRegion& sub_area);
 
     /*
      * Recursive cut-based spreading in HeAP paper
@@ -329,52 +328,52 @@ class CutSpreader {
      */
     void unbind_tile(t_pl_loc sub_tile);
 
-	/*
-	 * Helper function in strict_legalize()
-	 * Check if the block is placed in place_ctx (place_ctx.block_locs[blk] has a location that matches
-	 * the block in place_ctx.grid_blocks)
-	 */
-	bool is_placed(ClusterBlockId blk);
+    /*
+     * Helper function in strict_legalize()
+     * Check if the block is placed in place_ctx (place_ctx.block_locs[blk] has a location that matches
+     * the block in place_ctx.grid_blocks)
+     */
+    bool is_placed(ClusterBlockId blk);
 
-	/*
-	 * Sub-routine of strict_legalize()
-	 * Tries to place a single block "blk" at a candidate location nx, ny. Returns whether the blk is succesfully placed.
-	 *
-	 * If number of iterations at current radius has exceeded the exploration limit (exceeds_explore_limit),
-	 * and a candidate sub_tile is already found (best_subtile), then candidate location is ignored, and blk is
-	 * placed in best_subtile.
-	 *
-	 * Else, if exploration limit is not exceeded, the subtiles at nx, ny are evaluated on the blk's resulting total
-	 * input wirelength (a heuristic). If this total input wirelength is shorter than current best_inp_len, it becomes
-	 * the new best_subtile.
-	 * If exploration limit is exceeded and no candidate sub_tile is available in (best_subtile), then blk is placed at
-	 * next sub_tile at candidate location nx, ny.
-	 *
-	 * If blk displaces a logic block by taking its sub_tile, the displaced logic block is put back into remaining queue.
-	 */
-	bool try_place_blk(ClusterBlockId blk,
-			   	   	   	  int nx,
-						  int ny,
-						  bool ripup_radius_met,
-						  bool exceeds_need_to_explore,
-						  int& best_inp_len,
-						  t_pl_loc& best_subtile,
-						  std::priority_queue<std::pair<int, ClusterBlockId>>& remaining);
+    /*
+     * Sub-routine of strict_legalize()
+     * Tries to place a single block "blk" at a candidate location nx, ny. Returns whether the blk is succesfully placed.
+     *
+     * If number of iterations at current radius has exceeded the exploration limit (exceeds_explore_limit),
+     * and a candidate sub_tile is already found (best_subtile), then candidate location is ignored, and blk is
+     * placed in best_subtile.
+     *
+     * Else, if exploration limit is not exceeded, the subtiles at nx, ny are evaluated on the blk's resulting total
+     * input wirelength (a heuristic). If this total input wirelength is shorter than current best_inp_len, it becomes
+     * the new best_subtile.
+     * If exploration limit is exceeded and no candidate sub_tile is available in (best_subtile), then blk is placed at
+     * next sub_tile at candidate location nx, ny.
+     *
+     * If blk displaces a logic block by taking its sub_tile, the displaced logic block is put back into remaining queue.
+     */
+    bool try_place_blk(ClusterBlockId blk,
+                       int nx,
+                       int ny,
+                       bool ripup_radius_met,
+                       bool exceeds_need_to_explore,
+                       int& best_inp_len,
+                       t_pl_loc& best_subtile,
+                       std::priority_queue<std::pair<int, ClusterBlockId>>& remaining);
 
-	/*
-	 * Sub-routine of strict_legalize()
-	 *
-	 * Tries to place the macro with the head block on candidate location nx, ny. Returns if the macro is successfully placed.
-	 *
-	 * For each possible macro placement starting from nx, ny, if any block's position in the macro does not have compatible
-	 * sub_tiles or overlaps with another macro, the placement is impossible.
-	 *
-	 * If a possible placement is found, it's applied to all blocks.
-	 */
-	bool try_place_macro(ClusterBlockId blk,
-			 	 	 	    int nx,
-							int ny,
-							std::priority_queue<std::pair<int, ClusterBlockId>>& remaining);
+    /*
+     * Sub-routine of strict_legalize()
+     *
+     * Tries to place the macro with the head block on candidate location nx, ny. Returns if the macro is successfully placed.
+     *
+     * For each possible macro placement starting from nx, ny, if any block's position in the macro does not have compatible
+     * sub_tiles or overlaps with another macro, the placement is impossible.
+     *
+     * If a possible placement is found, it's applied to all blocks.
+     */
+    bool try_place_macro(ClusterBlockId blk,
+                         int nx,
+                         int ny,
+                         std::priority_queue<std::pair<int, ClusterBlockId>>& remaining);
 };
 #endif /* ENABLE_ANALYTIC_PLACE */
 
