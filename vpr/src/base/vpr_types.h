@@ -1018,10 +1018,10 @@ enum e_routing_failure_predictor {
 
 // How to allocate budgets, and if RCV should be enabled
 enum e_routing_budgets_algorithm {
-    MINIMAX,          // Use MINIMAX-PERT algorithm to allocate budgets
-    YOYO,             // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
+    MINIMAX, // Use MINIMAX-PERT algorithm to allocate budgets
+    YOYO,    // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
     SCALE_DELAY,
-    DISABLE           // Do not allocate budgets and run default router
+    DISABLE // Do not allocate budgets and run default router
 };
 
 enum class e_timing_report_detail {
