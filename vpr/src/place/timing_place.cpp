@@ -121,8 +121,8 @@ void PlacerCriticalities::recompute_criticalities() {
 
 ///@brief Override the criticality of a particular connection.
 void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float crit_val) {
-    VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin = 0)");
-    VTR_ASSERT_SAFE_MSG(ipin < clb_nlist_.net_pins(net_id).size(), "The pin index in net should be smaller than fanout");
+    VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin != 0)");
+    VTR_ASSERT_SAFE_MSG(ipin < int(clb_nlist_.net_pins(net_id).size()), "The pin index in net should be smaller than fanout");
 
     timing_place_crit_[net_id][ipin] = crit_val;
 }
@@ -224,8 +224,8 @@ void PlacerSetupSlacks::recompute_setup_slacks() {
 
 ///@brief Override the setup slack of a particular connection.
 void PlacerSetupSlacks::set_setup_slack(ClusterNetId net_id, int ipin, float slack_val) {
-    VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin = 0)");
-    VTR_ASSERT_SAFE_MSG(ipin < clb_nlist_.net_pins(net_id).size(), "The pin index in net should be smaller than fanout");
+    VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin != 0)");
+    VTR_ASSERT_SAFE_MSG(ipin < int(clb_nlist_.net_pins(net_id).size()), "The pin index in net should be smaller than fanout");
 
     timing_place_setup_slacks_[net_id][ipin] = slack_val;
 }

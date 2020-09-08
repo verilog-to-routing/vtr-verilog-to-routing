@@ -164,8 +164,8 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
  */
 static ClbNetPinsMatrix<float> connection_delay;          //Delays based on committed block positions
 static ClbNetPinsMatrix<float> proposed_connection_delay; //Delays for proposed block positions (only
-                                                          // for connections effected by move, otherwise
-                                                          // INVALID_DELAY)
+// for connections effected by move, otherwise
+// INVALID_DELAY)
 
 static ClbNetPinsMatrix<float> connection_setup_slack; //Setup slacks based on most recently updated timing graph
 
@@ -175,18 +175,18 @@ static ClbNetPinsMatrix<float> connection_setup_slack; //Setup slacks based on m
  */
 static PlacerTimingCosts connection_timing_cost;                 //Costs of committed block positions
 static ClbNetPinsMatrix<double> proposed_connection_timing_cost; //Costs for proposed block positions
-                                                                 // (only for connection effected by
-                                                                 // move, otherwise INVALID_DELAY)
+// (only for connection effected by
+// move, otherwise INVALID_DELAY)
 
 /*
  * Timing cost of nets (i.e. sum of criticality * delay for each net sink/connection).
  * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1]
  */
 static vtr::vector<ClusterNetId, double> net_timing_cost; //Like connection_timing_cost, but summed
-                                                          // accross net pins. Used to allow more
-                                                          // efficient recalculation of timing cost
-                                                          // if only a sub-set of nets are changed
-                                                          // while maintaining numeric stability.
+// accross net pins. Used to allow more
+// efficient recalculation of timing cost
+// if only a sub-set of nets are changed
+// while maintaining numeric stability.
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
@@ -403,9 +403,9 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
-static void invalidate_affected_connection_delays(const std::vector<ClusterPinId>& sink_pins_affected,
-                                                  ClusteredPinTimingInvalidator* pin_tedges_invalidator,
-                                                  TimingInfo* timing_info);
+static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected,
+                                            ClusteredPinTimingInvalidator* pin_tedges_invalidator,
+                                            TimingInfo* timing_info);
 
 static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_be_moved& blocks_affected);
 
@@ -416,9 +416,6 @@ static void comp_td_costs(const PlaceDelayModel* delay_model, const PlacerCritic
 static double comp_td_connection_cost(const PlaceDelayModel* delay_mode, const PlacerCriticalities& place_crit, ClusterNetId net, int ipin);
 static double sum_td_net_cost(ClusterNetId net);
 static double sum_td_costs();
-
-static void find_affected_sink_pins(const t_pl_blocks_to_be_moved& blocks_affected,
-                                    std::vector<ClusterPinId>& sink_pins_affected);
 
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks);
 
@@ -690,9 +687,9 @@ void try_place(const t_placer_opts& placer_opts,
         prev_inverse_costs.timing_cost = 1 / costs.timing_cost;
         prev_inverse_costs.bb_cost = 1 / costs.bb_cost;
         costs.cost = 1; /*our new cost function uses normalized values of           */
-                        /*bb_cost and timing_cost, the value of cost will be reset  */
-                        /*to 1 at each temperature when *_TIMING_DRIVEN_PLACE is true */
-    } else {            /*BOUNDING_BOX_PLACE */
+        /*bb_cost and timing_cost, the value of cost will be reset  */
+        /*to 1 at each temperature when *_TIMING_DRIVEN_PLACE is true */
+    } else { /*BOUNDING_BOX_PLACE */
         costs.cost = costs.bb_cost = comp_bb_cost(NORMAL);
         costs.timing_cost = 0;
         outer_crit_iter_count = 0;
@@ -1647,12 +1644,6 @@ static e_move_result try_swap(float t,
                                                                     bb_delta_c,
                                                                     timing_delta_c);
 
-        //Find all the sink pins with changed connection delays from the affected blocks.
-        //These sink pins will be passed into the pin_timing_invalidator for timing update.
-        //They will also be added to the pin invalidator when we wish to revert a timing update.
-        std::vector<ClusterPinId> sink_pins_affected;
-        find_affected_sink_pins(blocks_affected, sink_pins_affected);
-
         //For setup slack analysis, we first do a timing analysis to get the newest slack values
         //resulted from the proposed block moves. If the move turns out to be accepted, we keep
         //the updated slack values and commit the block moves. If rejected, we reject the proposed
@@ -1660,9 +1651,9 @@ static e_move_result try_swap(float t,
         if (place_algorithm == SLACK_TIMING_PLACE) {
             //Gather all the connections with modified delays for incremental timing updates.
             //This routine relies on comparing proposed_connection_delay and connection_delay.
-            invalidate_affected_connection_delays(sink_pins_affected,
-                                                  pin_timing_invalidator,
-                                                  timing_info);
+            invalidate_affected_connections(blocks_affected,
+                                            pin_timing_invalidator,
+                                            timing_info);
 
             //Update the connection_timing_cost and connection_delay
             //values from the temporary values.
@@ -1723,9 +1714,9 @@ static e_move_result try_swap(float t,
                 //This routine relies on comparing proposed_connection_delay and connection_delay
                 //If the setup slack analysis was not performed, the
                 //sink pins are yet to be invalidated.
-                invalidate_affected_connection_delays(sink_pins_affected,
-                                                      pin_timing_invalidator,
-                                                      timing_info);
+                invalidate_affected_connections(blocks_affected,
+                                                pin_timing_invalidator,
+                                                timing_info);
 
                 //update the connection_timing_cost and connection_delay
                 //values from the temporary values
@@ -1756,9 +1747,9 @@ static e_move_result try_swap(float t,
                 //Re-invalidate the affected sink pins since the proposed move is
                 //rejected, and the same blocks are reverted to their original
                 //positions. The affected sink pins should stay the same.
-                invalidate_affected_connection_delays(sink_pins_affected,
-                                                      pin_timing_invalidator,
-                                                      timing_info);
+                invalidate_affected_connections(blocks_affected,
+                                                pin_timing_invalidator,
+                                                timing_info);
 
                 /* Revert the timing update */
                 update_timing_classes(crit_exponent,
@@ -1845,7 +1836,7 @@ static int find_affected_nets_and_update_costs(const t_place_algorithm& place_al
             update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
 
             if (place_algorithm.is_timing_driven()) {
-                //Determine the change in timing costs if required
+                /* Determine the change in connection delay and timing cost */
                 update_td_delta_costs(delay_model, *criticalities, net_id, blk_pin, blocks_affected, timing_delta_c);
             }
         }
@@ -1907,6 +1898,35 @@ static void update_net_bb(const ClusterNetId net,
     }
 }
 
+/**
+ * @brief Calculate the new connection delay and timing cost of all the
+ *        sink pins affected by moving a specific pin to a new location.
+ *        Also calculates the total change in the timing cost.
+ *
+ * Assumes that the blocks have been moved to the proposed new locations.
+ * Otherwise, the routine comp_td_connection_delay() will not be able to
+ * calculate the most up to date connection delay estimation value.
+ *
+ * If the moved pin is a driver pin, then all the sink connections that are
+ * driven by this driver pin are considered.
+ *
+ * If the moved pin is a sink pin, then it is the only pin considered. But
+ * in some cases, the sink is already accounted for if it is also driven
+ * by a driver pin located on a moved block. Computing it again would double
+ * count its affect on the total timing cost change (delta_timing_cost).
+ *
+ * It is possible for some connections to have unchanged delays. For instance,
+ * if we are using a dx/dy delay model, this could occur if a sink pin moved
+ * to a new position with the same dx/dy from its net's driver pin.
+ *
+ * We skip these connections with unchanged delay values as their delay need
+ * not be updated. Their timing costs also do not require any update, since
+ * the criticalities values are always kept stale/unchanged during an block
+ * swap attempt. (Unchanged Delay * Unchanged Criticality = Unchanged Cost)
+ *
+ * This is also done to minimize the number of timing node/edge invalidations
+ * for incremental static timing analysis (incremental STA).
+ */
 static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
@@ -1916,65 +1936,46 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
-        //This pin is a net driver on a moved block.
-        //Re-compute all point to point connections for this net.
+        /* This pin is a net driver on a moved block. */
+        /* Recompute all point to point connection delays for the net sinks. */
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
             float temp_delay = comp_td_connection_delay(delay_model, net, ipin);
-            proposed_connection_delay[net][ipin] = temp_delay;
+            /* If the delay hasn't changed, do not mark this pin as affected */
+            if (temp_delay == connection_delay[net][ipin]) {
+                continue;
+            }
 
+            /* Calculate proposed delay and cost values */
+            proposed_connection_delay[net][ipin] = temp_delay;
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
+            /* Record this connection in blocks_affected.affected_pins */
             ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net, ipin);
             blocks_affected.affected_pins.push_back(sink_pin);
         }
     } else {
-        //This pin is a net sink on a moved block
+        /* This pin is a net sink on a moved block */
         VTR_ASSERT_SAFE(cluster_ctx.clb_nlist.pin_type(pin) == PinType::SINK);
 
-        //If this net is being driven by a moved block, we do not
-        //need to compute the change in the timing cost (here) since it will
-        //be computed by the net's driver pin (since the driver block moved).
-        //
-        //Computing it here would double count the change, and mess up the
-        //delta_timing_cost value.
+        /* Check if this sink's net is driven by a moved block */
         if (!driven_by_moved_block(net, blocks_affected)) {
-            int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
+            /* Get the sink pin index in the net */
+            int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
-            float temp_delay = comp_td_connection_delay(delay_model, net, net_pin);
-            proposed_connection_delay[net][net_pin] = temp_delay;
+            float temp_delay = comp_td_connection_delay(delay_model, net, ipin);
+            /* If the delay hasn't changed, do not mark this pin as affected */
+            if (temp_delay == connection_delay[net][ipin]) {
+                return;
+            }
 
-            proposed_connection_timing_cost[net][net_pin] = criticalities.criticality(net, net_pin) * temp_delay;
-            delta_timing_cost += proposed_connection_timing_cost[net][net_pin] - connection_timing_cost[net][net_pin];
+            /* Calculate proposed delay and cost values */
+            proposed_connection_delay[net][ipin] = temp_delay;
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
+            /* Record this connection in blocks_affected.affected_pins */
             blocks_affected.affected_pins.push_back(pin);
-        }
-    }
-}
-
-/**
- * @brief Find all the sink pins with changed connection delays from the affected blocks.
- *
- * These sink pins will be passed into the pin_timing_invalidator for timing update.
- * They will also be added to the pin invalidator when we wish to revert a timing update.
- *
- * It is possible that some connections may not have changed delay. For instance, if
- * using a dx/dy delay model, this could occur if a sink moved to a new position with
- * the same dx/dy from it's driver. To minimize work during the incremental STA update
- * we do not invalidate such unchanged connections.
- */
-static void find_affected_sink_pins(const t_pl_blocks_to_be_moved& blocks_affected,
-                                    std::vector<ClusterPinId>& sink_pins_affected) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
-
-    for (ClusterPinId clb_pin : blocks_affected.affected_pins) {
-        ClusterNetId net = clb_nlist.pin_net(clb_pin);
-        int ipin = clb_nlist.pin_net_index(clb_pin);
-
-        if (proposed_connection_delay[net][ipin] != connection_delay[net][ipin]) {
-            //Delay has changed. Must invalidate this sink pin.
-            sink_pins_affected.push_back(clb_pin);
         }
     }
 }
@@ -2233,23 +2234,23 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 }
 
 /**
- * @brief Invalidates the delays of connections effected by the specified move.
+ * @brief Invalidates the connections affected by the specified block moves.
  *
- * Relies on find_affected_sink_pins() to find all the connections with different
- * `proposed_connection_delay` and `connection_delay`.
+ * All the connections recorded in blocks_affected.affected_pins have different
+ * values for `proposed_connection_delay` and `connection_delay`.
  *
- * Invalidate all the timing graph edges associated with these sink pins via the
- * ClusteredPinTimingInvalidator class.
+ * Invalidate all the timing graph edges associated with these connections via
+ * the ClusteredPinTimingInvalidator class.
  */
-static void invalidate_affected_connection_delays(const std::vector<ClusterPinId>& sink_pins_affected,
-                                                  ClusteredPinTimingInvalidator* pin_tedges_invalidator,
-                                                  TimingInfo* timing_info) {
+static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected,
+                                            ClusteredPinTimingInvalidator* pin_tedges_invalidator,
+                                            TimingInfo* timing_info) {
     VTR_ASSERT_SAFE(timing_info);
     VTR_ASSERT_SAFE(pin_tedges_invalidator);
 
-    //Invalidate timing graph edges affected by the move
-    for (ClusterPinId clb_pin : sink_pins_affected) {
-        pin_tedges_invalidator->invalidate_connection(clb_pin, timing_info);
+    /* Invalidate timing graph edges affected by the move */
+    for (ClusterPinId pin : blocks_affected.affected_pins) {
+        pin_tedges_invalidator->invalidate_connection(pin, timing_info);
     }
 }
 
