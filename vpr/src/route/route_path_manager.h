@@ -38,7 +38,7 @@ class RoutingContext;
  * This means nodes that already exist in the current path, or current route tree could be expanded twice.
  * This would result in electrically illegal loops (example below)
  * 
- * IPIN--|----|             |-----------Sink 1
+ * OPIN--|----|             |-----------Sink 1
  *       |    |--------X----|     <--- The branch intersects with a previous routing
  *       |             |
  *       |-------------|                              Sink 2
