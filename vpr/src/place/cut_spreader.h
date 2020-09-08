@@ -20,7 +20,8 @@
  *
  * Cut-Spreader
  * ============
- * To resolve overutilization, a recursive partitioning-style placement approach is used.
+ * To resolve overutilization, a recursive partitioning-style placement approach is used. It consists of the following
+ * steps:
  *
  * find_overused_regions & expand_regions
  * --------------------------------------
@@ -119,14 +120,10 @@ class CutSpreader {
     /*
      * @brief: Constructor of CutSpreader
      *
-     * @param analytic_placer	pointer to the analytic_placer that invokes this instance of CutSpreader
+     * @param analytic_placer	pointer to the analytic_placer that invokes this instance of CutSpreader.
      * 							passed for CutSpreader to directly access data members in analytic_placer such as
      * 							blk_locs, blk_info, solve_blks, etc, without re-packaging the data to pass to
      * 							CutSpreader.
-     *
-     * @param vpr_context		legal placement is returned by modifying vpr_context.mutable_placement(), which
-     * 							annealer then operates on. CutSpreader also gets netlist & device info from
-     * 							vpr_context.clustering().clb_nlist and vpr_context.device().
      *
      * @param blk_t				logical_block_type for CutSpreader to legalize. Currently can only legalize one
      * 							type each time.
@@ -136,7 +133,7 @@ class CutSpreader {
     /*
      * @brief: 	Executes the cut-spreader algorithm described in algorithm overview above.
      * 			Does not include strict_legalize so placement result is not guaranteed to be legal.
-     * 			Strict_legalize must be run after for legal placement result, and for legal placement to
+     * 			Strict_legalize must run after for legal placement result, and for legal placement to
      * 			be passed to annealer through vpr_ctx.
      *
      * 			Input placement is passed by data members (blk_locs) in analytic_placer
@@ -148,7 +145,8 @@ class CutSpreader {
     /*
      * @brief: 	Greedy strict legalize using algorithm described in algorithm overview above.
      *
-     * 			Input illegal placement from data members (blk_locs) in analytic_placer
+     * 			Input illegal placement from data members (blk_locs) in analytic_placer,
+     * 			previously modified by cut_spreader
      *
      * @return: both ap->blk_locs and vpr_ctx.mutable_placement() are modified with legal placement,
      * 			to be used in next solve/spread/legalize iteration or to pass back to annealer.
@@ -192,7 +190,7 @@ class CutSpreader {
     vtr::Matrix<std::vector<ClusterBlockId>> blks_at_location;
 
     // List of all compatible sub_tiles for the type of blocks being cut-spread, at location x, y.
-    // usage: subtiles_at[x][y]
+    // usage: subtiles_at_location[x][y]
     vtr::Matrix<std::vector<t_pl_loc>> subtiles_at_location;
 
     // List of all SpreaderRegion, index of vector members is the id of the region
@@ -216,7 +214,7 @@ class CutSpreader {
     int tiles_at(int x, int y);
 
     /*
-     * When expanding a region, it might overlop with another region, one of them (merger) will absorb
+     * When expanding a region, it might overlap with another region, one of them (merger) will absorb
      * the other (mergee) by merging. @see expand_regions() below;
      *
      * Merge mergee into merged by:
@@ -245,8 +243,8 @@ class CutSpreader {
      */
     void find_overused_regions();
 
-    // copy all logic blocks to cut into cut_blks
-    void init_cut_blks(SpreaderRegion& r, std::vector<ClusterBlockId>& cut_ctx);
+    // copy all logic blocks that needs to be cut into cut_blks
+    void init_cut_blks(SpreaderRegion& r, std::vector<ClusterBlockId>& cut_blks);
 
     /*
      * generate the initial source_cut for region r, ensure there is enough clearance on either side of the
@@ -291,8 +289,8 @@ class CutSpreader {
     /*
      * Spread blocks in subarea by linear interpolation
      * blks_start and blks_end are indices into cut_blks. The blks between these indices will be spread by:
-     * * first split the subarea boundaries (area_l and area_r)
-     *   into min(number_of_logic_blocks_in_subarea, 10) number of bins.
+     * * first split the subarea (between boundaries area_l and area_r) into
+     *   min(number_of_logic_blocks_in_subarea, 10) number of bins.
      * * split the logic blocks into the corresponding number of groups
      * * place the logic blocks from their group to their bin, by linear interpolation using their original
      *   locations to map to a new location in the bin.
@@ -307,12 +305,12 @@ class CutSpreader {
      * Recursive cut-based spreading in HeAP paper
      * "left" denotes "-x, -y", "right" denotes "+x, +y" depending on dir
      *
-     *  @param r	regrion to cut & spread
+     *  @param r	region to cut & spread
      *  @param dir	direction, true for y, false for x
      *
      *  @return		a pair of sub-region IDs created from cutting region r.
-     *  			{-2, -2} if base case is reached
-     *  			{-1, -1} if cut unsuccessful, need to cut in the other direction
+     *  			BASE_CASE if base case is reached
+     *  			CUT_FAIL if cut unsuccessful, need to cut in the other direction
      */
     std::pair<int, int> cut_region(SpreaderRegion& r, bool dir);
 

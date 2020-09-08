@@ -69,7 +69,6 @@ struct EquationSystem {
     // (x must be of correct size, A and rhs must have their entries filled in)
     // tolerance is residual error from solver: |Ax-b|/|b|, 1e-5 works well,
     // can be tuned in ap_cfg in AnalyticPlacer constructor
-    //
     void solve(std::vector<T>& x, float tolerance) {
         using namespace Eigen;
 
@@ -79,7 +78,7 @@ struct EquationSystem {
         VectorXd vec_x_guess(x.size()), vec_rhs(rhs.size());
         SparseMatrix<T> mat(A.size(), A.size());
 
-        std::vector<int> colnnz;
+        std::vector<int> colnnz; // vector containing number of entries in each column
         for (auto& A_col : A)
             colnnz.push_back(int(A_col.size()));
         mat.reserve(colnnz); // reserve memory for mat depending on number of entries in each row
@@ -90,10 +89,9 @@ struct EquationSystem {
         }
 
         // use current value of x as guess for iterative solver
-        // feeding next solution back to solver and repeat can achieve better results
-        // the number of this iteration can be tuned in build_solve_direction()
         for (int i_row = 0; i_row < int(x.size()); i_row++)
             vec_x_guess[i_row] = x.at(i_row);
+
         for (int i_row = 0; i_row < int(rhs.size()); i_row++)
             vec_rhs[i_row] = rhs.at(i_row);
 
@@ -121,13 +119,13 @@ ClusterBlockId macro_head(ClusterBlockId blk) {
     return g_vpr_ctx.mutable_placement().pl_macros[macro_index].members[0].blk_index;
 }
 
-// Stop optimizing once this many iterations of solve + legalize lead to negligible wirelength improvement
+// Stop optimizing once this many iterations of solve-legalize lead to negligible wirelength improvement
 constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
 
 /*
  * AnalyticPlacer constructor
  * Currently only initializing AP configuration parameters
- * Placement & device info is accessed via g_vpr_ctx, doesn't need constructor to deal with it
+ * Placement & device info is accessed via g_vpr_ctx
  */
 AnalyticPlacer::AnalyticPlacer() {
     //Eigen::initParallel();
@@ -146,13 +144,13 @@ AnalyticPlacer::AnalyticPlacer() {
     ap_cfg.solverTolerance = 1e-5; // solver parameter, refers to residual error from solver, defined as |Ax-b|/|b|
 
     ap_cfg.buildSolveIter = 5; // number of build-solve iteration when calculating placement, used in
-                               // buils_sove_direction()
+                               // build_solve_direction()
                                // for each build-solve iteration, the solution from previous build-solve iteration
                                // is used as a guess for the iterative solver. therefore more buildSolveIter should
-                               // should improve result as the expense of runtime
+                               // should improve result at the expense of runtime
 
     // following two parameters are used in CutSpreader::expand_regions().
-    // they determine the number of steps to expand in x or y direction before swtiching to expand in the other direction.
+    // they determine the number of steps to expand in x or y direction before switching to expand in the other direction.
     ap_cfg.spread_scale_x = 1;
     ap_cfg.spread_scale_y = 1;
 
@@ -166,7 +164,7 @@ AnalyticPlacer::AnalyticPlacer() {
  * Main function of analytic placement
  * Takes the random initial placement from place.cpp through g_vpr_ctx
  * Repeat the following until stopping criteria is met:
- * 	* Formulate and solve equations in x, y directions for 1 type of logial block
+ * 	* Formulate and solve equations in x & y directions for 1 type of logical block
  * 	* Instantiate CutSpreader to spread and strict_legalize
  *
  * The final legal placement is passed back to annealer in g_vpr_ctx.mutable_placement()
@@ -198,8 +196,7 @@ void AnalyticPlacer::ap_place() {
 
     // setup and solve matrix multiple times for all logic block types before main loop
     // this helps eliminating randomness from initial placement (when placing one block type, the random placement
-    // of the other types may have residual effect on the result, since not all blocks are solved all at once in
-    // main loop)
+    // of the other types may have residual effect on the result, since not all blocks are solved at the same time)
     for (int i = 0; i < 1; i++) { // can tune number of iterations
         for (auto run : ap_runs) {
             build_solve_type(run, -1);
@@ -284,7 +281,7 @@ void AnalyticPlacer::ap_place() {
 void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter) {
     setup_solve_blks(run);
     // build and solve matrix equation for both x, y
-    // passing -1 as iter to build_solve_direction signals build_equation not to add pseudo-connections
+    // passing -1 as iter to build_solve_direction() signals build_equation() not to add pseudo-connections
     build_solve_direction(false, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter);
     build_solve_direction(true, (iter == 0) ? -1 : iter, ap_cfg.buildSolveIter);
     update_macros(); // update macro member locations, since only macro head is solved
@@ -293,7 +290,7 @@ void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter) {
 // build legal_pos similar to initial_placement.cpp
 // Go through the placement grid and saving all legal positions for each type of sub_tile
 // (stored in legal_pos). For a type of sub_tile_t found in tile_t, legal_pos[tile_t][sub_tile_t]
-// gives a vector containing all positions (t_pl_loc format) for this sub_tile_t.
+// gives a vector containing all positions (t_pl_loc type) for this sub_tile_t.
 void AnalyticPlacer::build_legal_locations() {
     std::vector<std::vector<int>> num_legal_pos;
     // invoking same function used in initial_placement.cpp (can ignore function name)
@@ -324,17 +321,20 @@ void AnalyticPlacer::init() {
     };
 
     for (auto blk_id : clb_nlist.blocks()) {
-        if (!place_ctx.block_locs[blk_id].is_fixed && has_connections(blk_id)) // not fixed and has connections
-                                                                               // matrix equation in formulated based on connections, so requires at least one connection
-            if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id) {  // not in macro or head of macro
-                                                                               // for macro, only the head (base) block of the macro is a free variable, the location of other macro
-                                                                               // blocks can be calculated using offset of the head. They are not free variables in the equation system
+        if (!place_ctx.block_locs[blk_id].is_fixed && has_connections(blk_id))
+            // not fixed and has connections
+            // matrix equation is formulated based on connections, so requires at least one connection
+            if (imacro(blk_id) == NO_MACRO || macro_head(blk_id) == blk_id) {
+                // not in macro or head of macro
+                // for macro, only the head (base) block of the macro is a free variable, the location of other macro
+                // blocks can be calculated using offset of the head. They are not free variables in the equation system
                 place_blks.push_back(blk_id);
             }
     }
 }
 
 // get hpwl of a net, taken from place.cpp get_bb_from_scratch()
+// TODO: factor out this function from place.cpp and put into vpr_util
 int AnalyticPlacer::get_net_hpwl(ClusterNetId net_id) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     int max_x = g_vpr_ctx.device().grid.width();
@@ -361,6 +361,7 @@ int AnalyticPlacer::get_net_hpwl(ClusterNetId net_id) {
     return (bb.ymax() - bb.ymin()) + (bb.xmax() - bb.xmin());
 }
 
+// get hpwl for all nets
 int AnalyticPlacer::total_hpwl() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -387,11 +388,11 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
 
     int row = 0;
     solve_blks.clear();
-    // clear row_num of all cells, so no blocks are moved
+    // clear row_num of all cells, so no blocks are solved
     for (auto& blk : row_num) {
         blk = DONT_SOLVE;
     }
-    // update blks to be placed, excluding macro members (macro head included)
+    // update blks to be solved/placed, excluding macro members (macro head included)
     for (auto blk_id : place_blks) { // find blocks of type blkTypes in place_blks
         if (blkTypes == (clb_nlist.block_type(blk_id))) {
             row_num[blk_id] = row++;
@@ -404,9 +405,11 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
             row_num[member.blk_index] = row_num[macro_head(member.blk_index)];
 }
 
-// Update the location of all members of all macros based on location of macro_head
-// since only macro_head is solved (connections to macro members are also taken into account
-// when formulating the matrix equations), an update for members is necessary
+/*
+ * Update the location of all members of all macros based on location of macro_head
+ * since only macro_head is solved (connections to macro members are also taken into account
+ * when formulating the matrix equations), an update for members is necessary
+ */
 void AnalyticPlacer::update_macros() {
     for (auto& macro : g_vpr_ctx.mutable_placement().pl_macros) {
         ClusterBlockId head_id = macro.members[0].blk_index;
@@ -426,7 +429,7 @@ void AnalyticPlacer::update_macros() {
  *
  * iter is the number of AnalyticPlacement iterations (solving and legalizing all types of logic
  * blocks once). When iter != -1, at least one iteration has completed. It signals build_equations()
- * to create pseudo-connetions between each block and its prior legal position.
+ * to create pseudo-connections between each block and its prior legal position.
  *
  * build_solve_iter determines number of iterations of building and solving for the iterative solver,
  * the solution from the previous build-solve iteration is used as a guess for the iterative solver.
@@ -513,7 +516,7 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
  * [i][i] and [j][j], -W added to [i][j] and [j][i]. This is why stamp_weight_on_matrix is invoked 4 times below.
  *
  * Special Case: immovable/fixed block.
- * Assume b2 in the move example is fixed, then it does not have an equation in the system as it's not a free variable.
+ * Assume b2 in the above example is fixed, then it does not have an equation in the system as it's not a free variable.
  * The new equation is now W12 * b1 = W12 * b2, where b2 is just a constant. (This makes sense as b1=b2 is optimal,
  * since it has wirelength of 0). The matrix equation now looks like the following:
  * 									|   x   x   x   x   x   |   |x |  = |  x   |
@@ -557,8 +560,8 @@ void AnalyticPlacer::add_pin_to_pin_connection(EquationSystem<double>& es,
     ClusterBlockId bound_blk = clb_nlist.pin_block(bound_pin);
     int bound_pos = dir ? blk_locs[bound_blk].loc.y : blk_locs[bound_blk].loc.x;
     // implementing the bound-to-bound net model detailed in HeAP paper, where each bound blk has (num_pins - 1) connections
-    // (bound_pos - this_pos) in the denominator "linearizes" the quaratic term (bound_pos - this_pos)^2 in the objective function
-    // This ensures that the objective function target HPWL, rather than quaratic wirelength.
+    // (bound_pos - this_pos) in the denominator "linearizes" the quadratic term (bound_pos - this_pos)^2 in the objective function
+    // This ensures that the objective function target HPWL, rather than quadratic wirelength.
     double weight = 1.0 / ((num_pins - 1) * std::max<double>(1, std::abs(bound_pos - this_pos)));
 
     /*
@@ -650,10 +653,12 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
     }
 }
 
-// Solve the system of equations
-// A formulated system of equation es is passed in
-// yaxis represents if it's x-directed or y-directed location problem
-// Solved solution is moved to loc, rawx, rawy in blk_locs for each block
+/*
+ * Solve the system of equations
+ * A formulated system of equation es is passed in
+ * yaxis represents if it's x-directed or y-directed location problem
+ * Solved solution is moved to loc, rawx, rawy in blk_locs for each block
+ */
 void AnalyticPlacer::solve_equations(EquationSystem<double>& es, bool yaxis) {
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();

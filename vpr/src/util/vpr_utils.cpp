@@ -2419,7 +2419,8 @@ void load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc
                     if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
                         continue;
                     }
-
+                    // If this is the anchor position of a block, add it to the legal_pos.
+                    // Otherwise don't, so large blocks aren't added multiple times.
                     if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
                         int itype = tile->index;
                         int isub_tile = sub_tile.index;

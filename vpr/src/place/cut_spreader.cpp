@@ -29,7 +29,7 @@ constexpr int AP_NO_REGION = -1;
 CutSpreader::CutSpreader(AnalyticPlacer* analytic_placer, t_logical_block_type_ptr blk_t)
     : ap(analytic_placer)
     , blk_type(blk_t) {
-    // builds n_subtiles_at_location data member, which is a quick lookup of number of compactible subtiles at x, y.
+    // builds n_subtiles_at_location data member, which is a quick lookup of number of compatible subtiles at x, y.
     size_t max_x = g_vpr_ctx.device().grid.width();
     size_t max_y = g_vpr_ctx.device().grid.height();
     subtiles_at_location.resize({max_x, max_y});
@@ -47,7 +47,7 @@ CutSpreader::CutSpreader(AnalyticPlacer* analytic_placer, t_logical_block_type_p
 }
 
 /*
- * @brief: 	Executes the cut-spreader algorithm described in algorithm overview above.
+ * @brief: 	Executes the cut-spreader algorithm described in algorithm overview in header file.
  * 			Does not include strict_legalize so placement result is not guaranteed to be legal.
  * 			Strict_legalize must be run after for legal placement result, and for legal placement to
  * 			be passed to annealer through vpr_ctx.
@@ -59,7 +59,7 @@ CutSpreader::CutSpreader(AnalyticPlacer* analytic_placer, t_logical_block_type_p
 void CutSpreader::cutSpread() {
     init();                  // initialize data members based on solved solutions from AnalyticPlacer
     find_overused_regions(); //find all overused regions bordered by non-overused regions
-    expand_regions();        // expand overused regions until they have enough sub_tiles to accomodate their logic blks
+    expand_regions();        // expand overused regions until they have enough sub_tiles to accommodate their logic blks
 
     /*
      * workqueue is a FIFO queue used to recursively cut-spread.
@@ -68,8 +68,9 @@ void CutSpreader::cutSpread() {
      * are the initial regions placed in workqueue to cut-spread.
      *
      * After each of these initial regions are cut and spread, their child sub-regions
-     * (left and right) are placed at the back of workqueue. This process continues until
-     * base case of region with only 1 block is reached, indicated by BASE_CASE return value.
+     * (left and right) are placed at the back of workqueue, with alternated cut direction.
+     * This process continues until base case of region with only 1 block is reached,
+     * indicated by BASE_CASE return value.
      *
      * Return value of CUT_FAIL indicates that cutting is unsuccessful. This usually happens
      * when regions are quite small: for example, region only has 1 column so a vertical cut
@@ -77,10 +78,12 @@ void CutSpreader::cutSpread() {
      */
     std::queue<std::pair<int, bool>> workqueue;
 
+    // put initial regions into workqueue
     for (auto& r : regions) {
         if (!merged_regions.count(r.id))
             workqueue.emplace(r.id, false);
     }
+
     while (!workqueue.empty()) {
         auto front = workqueue.front();
         workqueue.pop();
@@ -181,7 +184,13 @@ int CutSpreader::tiles_at(int x, int y) {
 }
 
 /*
- * Merge mergee into merged. Mergee is discarded in main loop
+ * When expanding a region, it might overlap with another region, one of them (merger) will absorb
+ * the other (mergee) by merging. @see expand_regions() below;
+ *
+ * Merge mergee into merged by:
+ * * change group id at mergee grids to merged id
+ * * adds all n_blks and n_tiles from mergee to merged region
+ * * grow merged to include all mergee grids
  */
 void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) {
     for (int x = mergee.bb.xmin(); x <= mergee.bb.xmax(); x++)
@@ -205,7 +214,7 @@ void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) 
  * this tile location is processed although it's technically included.
  */
 void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include, bool init) {
-    // when given location is whithin SpreaderRegion
+    // when given location is within SpreaderRegion
     if ((r.bb.contains(rect_to_include)) && !init)
         return;
 
@@ -249,7 +258,7 @@ void CutSpreader::find_overused_regions() {
     for (int x = 0; x < max_x; x++)
         for (int y = 0; y < max_y; y++) {
             if (reg_id_at_grid[x][y] != AP_NO_REGION || (occ_at(x, y) <= tiles_at(x, y)))
-                // already in a region or not over-utilied
+                // already in a region or not over-utilized
                 continue;
 
             // create new overused region
@@ -367,7 +376,7 @@ void CutSpreader::expand_regions() {
  * Recursive cut-based spreading in HeAP paper
  * "left" denotes "-x, -y", "right" denotes "+x, +y" depending on dir
  *
- *  @param r	regrion to cut & spread
+ *  @param r	region to cut & spread
  *  @param dir	direction, true for y, false for x
  *
  *  @return		a pair of sub-region IDs created from cutting region r.
@@ -413,7 +422,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
         return BASE_CASE;
     }
 
-    // sort blks based on raw loc
+    // sort blks based on raw location
     std::sort(cut_blks.begin(), cut_blks.end(), [&](const ClusterBlockId a, const ClusterBlockId b) {
         return dir ? (ap->blk_locs[a].rawy < ap->blk_locs[b].rawy) : (ap->blk_locs[a].rawx < ap->blk_locs[b].rawx);
     });
@@ -463,11 +472,11 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
         for (int y = rr.bb.ymin(); y <= rr.bb.ymax(); y++)
             reg_id_at_grid[x][y] = rr.id;
 
-    /* Perturb source cut to eliminate over-utilization
+    /*
+     * Perturb source cut to eliminate over-utilization
      * This is done by moving logic blocks from overused subarea to the other subarea one at a time
      * until they are no longer overused.
      */
-
     // while left subarea is over-utilized, move logic blocks to the right subarea one at a time
     while (pivot > 0 && rl.overused(ap->ap_cfg.beta)) {
         auto& move_blk = cut_blks.at(pivot);
@@ -507,7 +516,7 @@ void CutSpreader::init_cut_blks(SpreaderRegion& r, std::vector<ClusterBlockId>& 
 }
 
 /*
- * Trim the boundaries of the region r  in axis-of-interest dir, skipping any rows/cols without
+ * Trim the boundaries of the region r in axis-of-interest dir, skipping any rows/cols without
  * tiles of the right type.
  * Afterwards, move blocks in trimmed locations to new trimmed boundaries
  */
@@ -603,7 +612,7 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
 
     // Find clearance required on either side of the pivot
     // i.e. minimum distance from left and right bounds of region to pivot
-    // (no cut within clearance to accomodate macros)
+    // (no cut within clearance to accommodate macros)
     clearance_l = 0, clearance_r = 0;
     for (size_t i = 0; i < cut_blks.size(); i++) {
         int size;
@@ -664,7 +673,7 @@ int CutSpreader::initial_target_cut(SpreaderRegion& r,
         right_tiles_n -= slither_tiles;
 
         if (((i - trimmed_l) + 1) >= clearance_l && ((trimmed_r - i) + 1) >= clearance_r) {
-            // solution accommodates macro clearances
+            // if solution accommodates macro clearances
             // compare difference in utilization
             double tmpU = std::abs(double(left_blks_n) / double(std::max(left_tiles_n, 1)) - double(right_blks_n) / double(std::max(right_tiles_n, 1)));
             if (tmpU < best_deltaU) {
@@ -685,8 +694,9 @@ int CutSpreader::initial_target_cut(SpreaderRegion& r,
     for (int x = dir ? r.bb.xmin() : (best_tgt_cut + 1); x <= r.bb.xmax(); x++)
         for (int y = dir ? (best_tgt_cut + 1) : r.bb.ymin(); y <= r.bb.ymax(); y++)
             right_tiles_n += tiles_at(x, y);
-    // target cut failed since all tiles are still in one subarea
+
     if (left_tiles_n == 0 || right_tiles_n == 0)
+        // target cut failed since all tiles are still in one subarea
         return -1;
 
     return best_tgt_cut;
@@ -721,7 +731,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
         // Each block group has its original left and right bounds, the goal is to map this group's bound into
         // bin's bounds, and assign new locations to blocks using linear interpolation
         int K = std::min<int>(N, 10);                   // number of bins/groups
-        std::vector<std::pair<int, double>> bin_bounds; // [0-th group's first block, 0-th bin's left bound]
+        std::vector<std::pair<int, double>> bin_bounds; // (0-th group's first block, 0-th bin's left bound)
         bin_bounds.emplace_back(blks_start, area_l);
         for (int i_bin = 1; i_bin < K; i_bin++)
             // find i-th group's first block, i-th bin's left bound
@@ -737,7 +747,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
             double bin_left = bl.second;
             double bin_right = br.second;
             // mapping from i-th block group's original bounds to i-th bin's bounds
-            double mapping = (bin_right - bin_left) / std::max(0.00001, group_right - group_left); // prevent divide by 0
+            double mapping = (bin_right - bin_left) / std::max(0.00001, group_right - group_left); // prevent division by 0
             // map blks in i-th group to new location in i-th bin using linear interpolation
             for (int i_blk = bl.first; i_blk < br.first; i_blk++) {
                 // new location is stored back into rawx/rawy
@@ -968,13 +978,13 @@ bool CutSpreader::is_placed(ClusterBlockId blk) {
 
 /*
  * Sub-routine of strict_legalize()
- * Tries to place a single block "blk" at a candidate location nx, ny. Returns whether the blk is succesfully placed.
+ * Tries to place a single block "blk" at a candidate location nx, ny. Returns whether the blk is successfully placed.
  *
  * If number of iterations at current radius has exceeded the exploration limit (exceeds_explore_limit),
  * and a candidate sub_tile is already found (best_subtile), then candidate location is ignored, and blk is
  * placed in best_subtile.
  *
- * Else, if exploration limit is not exceeded, the subtiles at nx, ny are evaluated on the blk's resulting total
+ * Else, if exploration limit is not exceeded, the sub_tiles at nx, ny are evaluated on the blk's resulting total
  * input wirelength (a heuristic). If this total input wirelength is shorter than current best_inp_len, it becomes
  * the new best_subtile.
  * If exploration limit is exceeded and no candidate sub_tile is available in (best_subtile), then blk is placed at
@@ -1007,7 +1017,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     }
 
     // if exploration limit is not met or a candidate sub_tile is not found yet
-    for (auto sub_t : subtiles_at_location[nx][ny]) {                                              // for each available subtile at random location
+    for (auto sub_t : subtiles_at_location[nx][ny]) {                                              // for each available sub_tile at random location
         ClusterBlockId bound_blk = place_ctx.grid_blocks[sub_t.x][sub_t.y].blocks[sub_t.sub_tile]; // logic blk at [nx, ny]
         if (bound_blk == EMPTY_BLOCK_ID
             || ripup_radius_met
