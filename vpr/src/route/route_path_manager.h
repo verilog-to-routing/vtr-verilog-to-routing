@@ -9,9 +9,11 @@
 #    define _PATH_MANAGER_H
 
 /* Extra path data needed by RCV, seperated from t_heap struct for performance reasons
- * Can be accessed by a pointer, won't be initialized unless needed
+ * Can be accessed by a pointer, won't be initialized unless by RCV
+ * Use PathManager class to handle this structure's allocation and deallocation
  *
- * path_rr: The entire partial path up until the route tree
+ * path_rr: The entire partial path up until the route tree with the first node being the SOURCE,
+ *          or a part of the route tree that already exists for this net 
  * 
  * edge: A list of edges from each node in the partial path to reach the next node
  * 
@@ -30,7 +32,26 @@ class RoutingContext;
 
 /* A class to manage the extra data required for RCV
  * It manages a set containing all the nodes that currently exist in the route tree
- * This class also manages the extra memory allocation required for the t_heap_path structure */
+ * This class also manages the extra memory allocation required for the t_heap_path structure
+ * 
+ * When RCV is enabled, the router will not always be looking for minimal cost routing
+ * This means nodes that already exist in the current path, or current route tree could be expanded twice.
+ * This would result in electrically illegal loops (example below)
+ * 
+ * IPIN--|----|             |-----------Sink 1
+ *       |    |--------X----|     <--- The branch intersects with a previous routing
+ *       |             |
+ *       |-------------|                              Sink 2
+ * 
+ * To stop this, we keep track of the route tree (route_tree_nodes_), and each node keeps track of it's current partial routing up to the route tree
+ * Before expanding a node, we check to see if it exists in either the route tree, or the current partial path to eliminate these scenarios
+ * 
+ * 
+ * The t_heap_path structure was created to isolate the RCV specific data from the t_heap struct
+ * Having these in t_heap creates significant performance issues when RCV is disabled
+ * A t_heap_path pointer is instead stored in t_heap, which is selectively allocated only when RCV is enabled
+ * 
+ * If the _is_enabled flag is true, alloc_path_struct allocates t_heap_path structures, otherwise will be a NOOP */
 class PathManager {
   public:
     PathManager();
@@ -49,10 +70,10 @@ class PathManager {
     // Check if this structure is enabled/is RCV enabled
     bool is_enabled();
 
-    // Enable/disable path manager class
+    // Enable/disable path manager class and therefore RCV
     void set_enabled(bool enable);
 
-    // Insert the backwards path back into the main route context traceback
+    // Insert the partial path data into the main route context traceback
     void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost, RoutingContext& route_ctx);
 
     // Dynamically create a t_heap_path structure to be used in the heap
@@ -60,6 +81,7 @@ class PathManager {
     void alloc_path_struct(t_heap_path*& tptr);
 
     // Free the path structure pointer if it's initialized
+    // This will place it on the freed_nodes vector to be reused
     void free_path_struct(t_heap_path*& tptr);
 
     // Move the structure from src to dest while also invalidating the src pointer
@@ -77,6 +99,7 @@ class PathManager {
     void empty_route_tree_nodes();
 
     // Update the route tree set using the last routing
+    // Call this after each sink is routed
     void update_route_tree_set(t_heap_path* cheapest_path_struct);
 
   private:

@@ -43,7 +43,8 @@ struct t_heap {
 
     int index = OPEN;
 
-    // Management class to handle extra RCV structures
+    // Structure to handle extra RCV structures
+    // Managed by PathManager class
     t_heap_path* path_data;
 
     struct t_prev {
