@@ -63,12 +63,9 @@ float covariance(std::vector<size_t> x_values, std::vector<float> y_values, floa
     return cov;
 }
 
-float RoutingPredictor::get_slope() {
-    if (iterations_.size() > min_history_) {
-        auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
-        return model.get_slope();
-    }
-    return -1;
+float RoutingPredictor::get_slope() const {
+    //Return cached slope, computed in add_iteration_overuse()
+    return slope_;
 }
 
 LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values) {
@@ -155,7 +152,8 @@ LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overus
 
 RoutingPredictor::RoutingPredictor(size_t min_history, float history_factor)
     : min_history_(min_history)
-    , history_factor_(history_factor) {
+    , history_factor_(history_factor)
+    , slope_(-1) {
     //nop
 }
 
@@ -204,4 +202,10 @@ float RoutingPredictor::estimate_overuse_slope() {
 void RoutingPredictor::add_iteration_overuse(size_t iteration, size_t overused_rr_node_count) {
     iterations_.push_back(iteration);
     iteration_overused_rr_node_counts_.push_back(overused_rr_node_count);
+
+    //Update slope
+    if (iterations_.size() > min_history_) {
+        auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
+        slope_ = model.get_slope();
+    }
 }

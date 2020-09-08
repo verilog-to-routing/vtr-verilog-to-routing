@@ -52,10 +52,43 @@ void define_ff(nnode_t* node, FILE* out);
 void define_decoded_mux(nnode_t* node, FILE* out);
 void output_blif_pin_connect(nnode_t* node, FILE* out);
 
-static void print_input_pin(FILE* out, nnode_t* node, long pin_idx) {
-    oassert(pin_idx < node->num_input_pins);
-    nnet_t* net = node->input_pins[pin_idx]->net;
-    if (!net->driver_pin || !net->driver_pin->node) {
+static bool warn_undriven(nnode_t* node, nnet_t* net) {
+    if (!net->num_driver_pins) {
+        // Add a warning for an undriven net.
+        warning_message(NETLIST, node->loc,
+                        "Net %s driving node %s is itself undriven.",
+                        net->name, node->name);
+
+        return true;
+    }
+
+    return false;
+}
+
+// TODO Uncomment this for In Outs
+//static void merge_with_inputs(nnode_t* node, long pin_idx) {
+//    oassert(pin_idx < node->num_input_pins);
+//    nnet_t* net = node->input_pins[pin_idx]->net;
+//    warn_undriven(node, net);
+//    // Merge node with all inputs with fanout of 1
+//    if (net->num_fanout_pins <= 1) {
+//        for (int i = 0; i < net->num_driver_pins; i++) {
+//            npin_t* driver = net->driver_pins[i];
+//            if (driver->name != NULL && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY) || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
+//                vtr::free(driver->name);
+//                driver->name = vtr::strdup(node->name);
+//            } else {
+//                vtr::free(driver->node->name);
+//                driver->node->name = vtr::strdup(node->name);
+//            }
+//        }
+//    }
+//}
+
+static void print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long driver_idx) {
+    oassert(driver_idx < net->num_driver_pins);
+    npin_t* driver = net->driver_pins[driver_idx];
+    if (!driver->node) {
         // Add a warning for an undriven net.
         warning_message(NETLIST, node->loc,
                         "Net %s driving node %s is itself undriven.",
@@ -63,17 +96,28 @@ static void print_input_pin(FILE* out, nnode_t* node, long pin_idx) {
 
         fprintf(out, " %s", "unconn");
     } else if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED
-               && net->driver_pin->node->related_ast_node != NULL) {
+               && driver->node->related_ast_node != NULL) {
         fprintf(out, " %s^^%i-%i",
-                net->driver_pin->node->name,
-                net->driver_pin->node->related_ast_node->far_tag,
-                net->driver_pin->node->related_ast_node->high_number);
+                driver->node->name,
+                driver->node->related_ast_node->far_tag,
+                driver->node->related_ast_node->high_number);
     } else {
-        if (net->driver_pin->name != NULL && ((net->driver_pin->node->type == MULTIPLY) || (net->driver_pin->node->type == HARD_IP) || (net->driver_pin->node->type == MEMORY) || (net->driver_pin->node->type == ADD) || (net->driver_pin->node->type == MINUS))) {
-            fprintf(out, " %s", net->driver_pin->name);
+        if (driver->name != NULL && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY) || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
+            fprintf(out, " %s", driver->name);
         } else {
-            fprintf(out, " %s", net->driver_pin->node->name);
+            fprintf(out, " %s", driver->node->name);
         }
+    }
+}
+
+static void print_input_single_driver(FILE* out, nnode_t* node, long pin_idx) {
+    oassert(pin_idx < node->num_input_pins);
+    nnet_t* net = node->input_pins[pin_idx]->net;
+    if (warn_undriven(node, net)) {
+        fprintf(out, " unconn");
+    } else {
+        oassert(net->num_driver_pins == 1);
+        print_net_driver(out, node, net, 0);
     }
 }
 
@@ -89,15 +133,36 @@ static void print_output_pin(FILE* out, nnode_t* node) {
         fprintf(out, " %s", node->name);
 }
 
-static void print_input_pin_list(FILE* out, nnode_t* node) {
-    for (long i = 0; i < node->num_input_pins; i++) {
-        print_input_pin(out, node, i);
-    }
-}
-
 static void print_dot_names_header(FILE* out, nnode_t* node) {
+    char** names = (char**)vtr::calloc(node->num_input_pins, sizeof(char*));
+
+    // Create an implicit buffer if there are multiple drivers to the component
+    for (int i = 0; i < node->num_input_pins; i++) {
+        nnet_t* input_net = node->input_pins[i]->net;
+        if (input_net->num_driver_pins > 1) {
+            names[i] = op_node_name(BUF_NODE, node->name);
+            // Assign each driver to the implicit buffer
+            for (int j = 0; j < input_net->num_driver_pins; j++) {
+                fprintf(out, ".names");
+                print_net_driver(out, node, input_net, j);
+                fprintf(out, " %s\n1 1\n\n", names[i]);
+            }
+        }
+    }
+
+    // Print the actual header
     fprintf(out, ".names");
-    print_input_pin_list(out, node);
+    for (int i = 0; i < node->num_input_pins; i++) {
+        if (names[i]) {
+            // Use the implicit buffer we created before
+            fprintf(out, " %s", names[i]);
+            vtr::free(names[i]);
+        } else {
+            // Directly use the driver
+            print_input_single_driver(out, node, i);
+        }
+    }
+    vtr::free(names);
 
     oassert(node->num_output_pins == 1);
     print_output_pin(out, node);
@@ -141,7 +206,7 @@ void output_blif(FILE* out, netlist_t* netlist) {
     fprintf(out, ".outputs");
     for (long i = 0; i < netlist->num_top_output_nodes; i++) {
         nnode_t* top_output_node = netlist->top_output_nodes[i];
-        if (top_output_node->input_pins[0]->net->driver_pin == NULL) {
+        if (!top_output_node->input_pins[0]->net->num_driver_pins) {
             warning_message(NETLIST,
                             top_output_node->loc,
                             "This output is undriven (%s) and will be removed\n",
@@ -156,6 +221,15 @@ void output_blif(FILE* out, netlist_t* netlist) {
     fprintf(out, "\n.names gnd\n.names unconn\n.names vcc\n1\n");
     fprintf(out, "\n");
 
+    // TODO Uncomment this for In Outs
+    // connect all the outputs up to the last gate
+    // for (long i = 0; i < netlist->num_top_output_nodes; i++) {
+    //     nnode_t* node = netlist->top_output_nodes[i];
+    //     for (int j = 0; j < node->num_input_pins; j++) {
+    //         merge_with_inputs(node, j);
+    //     }
+    // }
+
     /* traverse the internals of the flat net-list */
     if (strcmp(configuration.output_type.c_str(), "blif") == 0) {
         depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
@@ -167,12 +241,19 @@ void output_blif(FILE* out, netlist_t* netlist) {
     for (long i = 0; i < netlist->num_top_output_nodes; i++) {
         nnode_t* node = netlist->top_output_nodes[i];
 
-        fprintf(out, ".names");
-        print_input_pin(out, node, 0);
-        print_output_pin(out, node);
-        fprintf(out, "\n");
+        // TODO Change this to > 1 for In Outs
+        if (node->input_pins[0]->net->num_fanout_pins > 0) {
+            nnet_t* net = node->input_pins[0]->net;
+            warn_undriven(node, net);
+            for (int j = 0; j < net->num_driver_pins; j++) {
+                fprintf(out, ".names");
+                print_net_driver(out, node, net, j);
+                print_output_pin(out, node);
+                fprintf(out, "\n");
 
-        fprintf(out, "1 1\n\n");
+                fprintf(out, "1 1\n\n");
+            }
+        }
     }
 
     /* finish off the top level module */
@@ -467,7 +548,7 @@ void define_ff(nnode_t* node, FILE* out) {
     fprintf(out, ".latch");
 
     /* input */
-    print_input_pin(out, node, 0);
+    print_input_single_driver(out, node, 0);
 
     /* output */
     print_output_pin(out, node);
@@ -476,7 +557,7 @@ void define_ff(nnode_t* node, FILE* out) {
     fprintf(out, " %s", edge_type_str);
 
     /* clock */
-    print_input_pin(out, node, 1);
+    print_input_single_driver(out, node, 1);
 
     /* initial value */
     fprintf(out, " %d\n\n", node->initial_value);

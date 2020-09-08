@@ -14,7 +14,7 @@
         "blif": "bgm.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~0 to a valid type."
+            "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~6 to a valid type."
         ]
     },
     "hard_logic/dscg/hard_fpu_arch_timing": {

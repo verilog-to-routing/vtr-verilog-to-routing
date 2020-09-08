@@ -535,7 +535,8 @@ struct nnet_t {
     char* name; // name for the net
     short combined;
 
-    npin_t* driver_pin; // the pin that drives the net
+    int num_driver_pins;
+    npin_t** driver_pins; // the pin that drives the net
 
     npin_t** fanout_pins; // the pins pointed to by the net
     int num_fanout_pins;  // the list size of pins

@@ -113,7 +113,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
     parse_to_ast();
     /**
      *  Note that the entry point for ast optimzations is done per module with the
-     * function void next_parsed_verilog_file(ast_node_t *file_items_list) 
+     * function void next_parsed_verilog_file(ast_node_t *file_items_list)
      */
 
     /* after the ast is made potentially do tagging for downstream links to verilog */
@@ -122,7 +122,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
 
     /**
      *  Now that we have a parse tree (abstract syntax tree [ast]) of
-     *	the Verilog we want to make into a netlist. 
+     *	the Verilog we want to make into a netlist.
      */
     printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
     create_netlist(verilog_ast);
@@ -162,7 +162,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
         //END ################# NETLIST OPTIMIZATION ############################
 
         if (configuration.output_netlist_graphs)
-            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 1, verilog_netlist); /* Path is where we are */
+            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, verilog_netlist); /* Path is where we are */
 
         /* point where we convert netlist to FPGA or other hardware target compatible format */
         printf("Performing Partial Map to target device\n");

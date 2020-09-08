@@ -139,7 +139,7 @@ Toggle Block Internal
 -------------------------------
 During placement and routing you can adjust the level of block detail you visualize by using the **Toggle Block Internal**. Each block can contain a number of flip flops (ff), look up tables (lut), and other primitives. The higher the number, the deeper into the hierarchy within the cluster level block you see. 
 
-.. figure:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/ToggleBlockInternal.gif
+.. figure:: https://www.verilogtorouting.org/img/ToggleBlockInternal.gif
     :align: center
 
     Visualizing Block Internals
