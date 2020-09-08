@@ -47,7 +47,7 @@ void HeapStorage::free_all_memory() {
         while (curr) {
             t_heap* tmp = curr;
             curr = curr->next_heap_item();
-            
+
             vtr::chunk_delete(tmp, &heap_ch_);
         }
 
