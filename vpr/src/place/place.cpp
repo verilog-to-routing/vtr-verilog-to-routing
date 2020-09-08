@@ -36,6 +36,7 @@
 #include "read_place.h"
 
 #include "uniform_move_generator.h"
+#include "manual_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -336,6 +337,7 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              ManualMoveGenerator& manual_move_generator,
                               TimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
@@ -367,6 +369,7 @@ static float starting_t(t_placer_costs* costs,
                         const PlacerCriticalities* criticalities,
                         TimingInfo* timing_info,
                         MoveGenerator& move_generator,
+                        ManualMoveGenerator& manual_move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
@@ -475,6 +478,7 @@ static void placement_inner_loop(float t,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities,
                                  MoveGenerator& move_generator,
+                                 ManualMoveGenerator& manual_move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info);
 
@@ -509,6 +513,9 @@ static void print_resources_utilization();
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
 void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
+
+void manual_move_info_from_user_and_open_window(ManualMoveInfo* manual_move_info);
+void update_manual_move_costs_and_open_window(ManualMoveInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -550,6 +557,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<MoveGenerator> move_generator;
+    std::unique_ptr<ManualMoveGenerator> manual_move_generator;
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
 
@@ -573,7 +581,17 @@ void try_place(const t_placer_opts& placer_opts,
         }
     }
 
+    /*bool manual_move = false;
+     * #ifndef NO_GRAPHICS
+     * bool manual_move = get_manual_move_flag();
+     * #endif
+     *
+     * if(manual_move)
+     * move_generator = std::make_unique<ManualMoveGenerator>();
+     * else
+     * move_generator = std::make_unique<UniformMoveGenerator>();*/
     move_generator = std::make_unique<UniformMoveGenerator>();
+    manual_move_generator = std::make_unique<ManualMoveGenerator>();
 
     width_fac = placer_opts.place_chan_width;
 
@@ -751,6 +769,7 @@ void try_place(const t_placer_opts& placer_opts,
                                placer_criticalities.get(),
                                timing_info.get(),
                                *move_generator,
+                               *manual_move_generator,
                                pin_timing_invalidator.get(),
                                blocks_affected,
                                placer_opts);
@@ -796,6 +815,7 @@ void try_place(const t_placer_opts& placer_opts,
                              place_delay_model.get(),
                              placer_criticalities.get(),
                              *move_generator,
+                             *manual_move_generator,
                              blocks_affected,
                              timing_info.get());
 
@@ -857,6 +877,7 @@ void try_place(const t_placer_opts& placer_opts,
                              place_delay_model.get(),
                              placer_criticalities.get(),
                              *move_generator,
+                             *manual_move_generator,
                              blocks_affected,
                              timing_info.get());
 
@@ -1048,6 +1069,7 @@ static void placement_inner_loop(float t,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities,
                                  MoveGenerator& move_generator,
+                                 ManualMoveGenerator& manual_move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info) {
     int inner_crit_iter_count, inner_iter;
@@ -1066,6 +1088,7 @@ static void placement_inner_loop(float t,
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
         e_move_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             manual_move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
                                              blocks_affected,
@@ -1299,6 +1322,7 @@ static float starting_t(t_placer_costs* costs,
                         const PlacerCriticalities* criticalities,
                         TimingInfo* timing_info,
                         MoveGenerator& move_generator,
+                        ManualMoveGenerator& manual_move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts) {
@@ -1323,6 +1347,7 @@ static float starting_t(t_placer_costs* costs,
     for (i = 0; i < move_lim; i++) {
         e_move_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             manual_move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
                                              blocks_affected,
@@ -1396,6 +1421,7 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              ManualMoveGenerator& manual_move_generator,
                               TimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
@@ -1427,14 +1453,29 @@ static e_move_result try_swap(float t,
         rlim = std::numeric_limits<float>::infinity();
     }
 
+    bool manual_move = get_manual_move_flag();
+    ManualMoveInfo dummy;
+    ManualMoveInfo* manual_move_info = &dummy;
+
+    if (manual_move) {
+        manual_move_info_from_user_and_open_window(manual_move_info);
+        manual_move_info = get_manual_move_info();
+        //sends info to the move generator class
+        mmg_get_manual_move_info(*manual_move_info);
+    }
+
+    e_create_move create_move_outcome;
     //Generate a new move (perturbation) used to explore the space of possible placements
-    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
+    if (manual_move)
+        create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+    else
+        create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
     e_move_result move_outcome = ABORTED;
 
-    if (create_move_outcome == e_create_move::ABORT) {
+    if (create_move_outcome == e_create_move::ABORT || (manual_move && !manual_move_info->valid_input)) {
         //Proposed move is not legal -- give up on this move
         clear_move_blocks(blocks_affected);
 
@@ -1483,6 +1524,10 @@ static e_move_result try_swap(float t,
 
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, t);
+
+        if (manual_move && manual_move_info->valid_input)
+            //update all the costs in the manual_move_info variable and open cost summary window
+            update_manual_move_costs_and_open_window(manual_move_info, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1546,6 +1591,8 @@ static e_move_result try_swap(float t,
     //Check that each accepted swap yields a valid placement
     check_place(*costs, delay_model, place_algorithm);
 #endif
+    if (manual_move)
+        manual_move_info->valid_input = true;
 
     return (move_outcome);
 }
@@ -3076,3 +3123,23 @@ void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affect
     }
 }
 #endif
+
+/** pops up the manual move window for the user to input set their move **/
+void manual_move_info_from_user_and_open_window(ManualMoveInfo* /*manual_move_info*/) {
+    manual_move_generator_window("");
+    update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+    //manual_move_info = get_manual_move_info();
+    //sends info to the move generator class
+    //mmg_get_manual_move_info(*manual_move_info);
+}
+
+/** updates all the costs in the manual_move_info variable and open cost summary window **/
+void update_manual_move_costs_and_open_window(ManualMoveInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double bb_delta_c, double timing_delta_c) {
+    manual_move_info->delta_c = delta_c;
+    manual_move_info->bb_delta_c = bb_delta_c;
+    manual_move_info->timing_delta_c = timing_delta_c;
+    manual_move_info->placer_move_outcome = move_outcome;
+    cost_summary_window();
+    update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+    move_outcome = manual_move_info->user_move_outcome;
+}

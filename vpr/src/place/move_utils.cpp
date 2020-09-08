@@ -657,3 +657,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     return true;
 }
+
+/** this function converts the type e_move_result to string. (e.g REJECTED to "Rejected") **/
+std::string e_move_result_to_string(e_move_result move_outcome) {
+    std::string move_result_to_string[] = {"Rejected", "Accepted", "Aborted"};
+    return move_result_to_string[move_outcome];
+}
