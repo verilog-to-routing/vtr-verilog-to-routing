@@ -49,11 +49,11 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
 }
 
 SetupSlackCrit::~SetupSlackCrit() {
-    // VTR_LOG("Incr Slack updates %zu in %g sec\n", incr_slack_updates_, incr_slack_update_time_sec_);
-    // VTR_LOG("Full Max Req/Worst Slack updates %zu in %g sec\n", full_max_req_worst_slack_updates_, full_max_req_worst_slack_update_time_sec_);
-    // VTR_LOG("Incr Max Req/Worst Slack updates %zu in %g sec\n", incr_max_req_worst_slack_updates_, incr_max_req_worst_slack_update_time_sec_);
-    // VTR_LOG("Incr Criticality updates %zu in %g sec\n", incr_criticality_updates_, incr_criticality_update_time_sec_);
-    // VTR_LOG("Full Criticality updates %zu in %g sec\n", full_criticality_updates_, full_criticality_update_time_sec_);
+    VTR_LOG("Incr Slack updates %zu in %g sec\n", incr_slack_updates_, incr_slack_update_time_sec_);
+    VTR_LOG("Full Max Req/Worst Slack updates %zu in %g sec\n", full_max_req_worst_slack_updates_, full_max_req_worst_slack_update_time_sec_);
+    VTR_LOG("Incr Max Req/Worst Slack updates %zu in %g sec\n", incr_max_req_worst_slack_updates_, incr_max_req_worst_slack_update_time_sec_);
+    VTR_LOG("Incr Criticality updates %zu in %g sec\n", incr_criticality_updates_, incr_criticality_update_time_sec_);
+    VTR_LOG("Full Criticality updates %zu in %g sec\n", full_criticality_updates_, full_criticality_update_time_sec_);
 }
 
 //Returns the worst (least) slack of connections through the specified pin
