@@ -205,7 +205,7 @@ void read_place_body(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if (tokens.size() == 4 || (tokens.size() == 5 && tokens[4][0] == '#')) {
+        } else if (tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) {
             //Load the block location
             //
             //We should have 4 tokens of actual data, with an optional 5th (commented) token indicating VPR's
