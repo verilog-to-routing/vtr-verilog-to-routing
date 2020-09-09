@@ -891,7 +891,11 @@ void try_place(const t_placer_opts& placer_opts,
     } while (update_annealing_state(&state, success_rat, costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
+#ifdef ENABLE_ANALYTIC_PLACE
+// guard quench label, otherwise compiler complains about unused label
 quench:
+#endif /* ENABLE_ANALYTIC_PLACE */
+
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
