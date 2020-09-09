@@ -101,6 +101,7 @@ class PlacerCriticalities {
     ///@brief Returns the criticality of the specified connection.
     float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
     
+    ///@brief Returns the normalized criticality of the specified connection
     float normalized_criticality(ClusterNetId net, int ipin) const { return timing_place_normalized_crit_[net][ipin]; }
 
     /**

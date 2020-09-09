@@ -53,8 +53,8 @@
 #include "placer_breakpoint.h"
 
 //define the reward function factor constants
-#define HI_LIMIT 0.8
-#define LOW_LIMIT 0.2
+#define HI_LIMIT 0.8 
+#define LOW_LIMIT 0.5
 #define TIMING_BB_STEP 0.005
 
 //Used to measure the execution time of different move types
@@ -71,7 +71,7 @@ std::vector<double> time_of_moves (7,0);
 #include "draw_color.h"
 #endif
 
-//int timing_cost_func;
+int timing_cost_func;
 
 using std::max;
 using std::min;
@@ -1842,14 +1842,17 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
-            /*
+            
             float delay_budget;
             if(timing_cost_func == 0)
                 delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
-            else
+            else if(timing_cost_func == 1)
                 delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, ipin));
-            */
-            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay ;
+            else
+                delay_budget = 0;
+           
+            //proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay ;
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0),temp_delay - delay_budget) ;
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
@@ -1873,14 +1876,16 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
-            /*
+            
             float delay_budget;
             if(timing_cost_func == 0)
                 delay_budget = temp_delay/(criticalities.normalized_criticality(net, net_pin) + 0.4);
-            else
+            else if(timing_cost_func == 1)
                 delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, net_pin));
-            */
-            proposed_connection_timing_cost[net][net_pin] = criticalities.criticality(net, net_pin) * temp_delay ;
+            else
+                delay_budget = 0;
+            
+            proposed_connection_timing_cost[net][net_pin] = criticalities.criticality(net, net_pin) * max(float(0), temp_delay - delay_budget);
             delta_timing_cost += proposed_connection_timing_cost[net][net_pin] - connection_timing_cost[net][net_pin];
 
             /* Record this connection in blocks_affected.affected_pins */
