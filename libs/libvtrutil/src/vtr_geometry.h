@@ -149,6 +149,12 @@ Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
 template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
 Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d);
 
+// clamps v to be between low (lo) and high (hi), inclusive.
+template<class T>
+static constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
+    return std::min(std::max(v, lo), hi);
+}
+
 //A 2D line
 template<class T>
 class Line {

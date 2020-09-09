@@ -45,7 +45,17 @@
 // Don't continue storing a path after hitting a lower-or-same cost entry.
 static constexpr bool BREAK_ON_MISS = false;
 
-///@brief Threshold indicating the minimum number of paths to sample for each point in a sample region
+/**
+ * @brief Threshold indicating the minimum number of paths to sample for each point in a sample region
+ *
+ * Each sample region contains a set of points containing the starting nodes from which the Dijkstra expansions
+ * are performed.
+ * Each node produces a number N of paths that are being explored exhaustively until no more expansions are possible,
+ * and the number of paths for each Dijkstra run is added to the total number of paths found when computing a sample region
+ * In case there are still points in a region that were not picked to perform the Dijkstra expansion, and the
+ * MIN_PATH_COUNT threshold has been reached, the sample region is intended to be complete and the computation of a next
+ * sample region begins.
+ */
 static constexpr int MIN_PATH_COUNT = 1000;
 
 template<typename Entry>
@@ -193,6 +203,16 @@ float ExtendedMapLookahead::get_map_cost(RRNodeId from_node,
     float expected_delay = cost_entry.delay;
     float expected_congestion = cost_entry.congestion;
 
+    // The CHAN -> IPIN delay was removed from the cost map calculation, as it might tamper the addition
+    // of a smaller cost to this node location. This might happen as not all the CHAN -> IPIN connection
+    // have a delay, therefore, a different cost than the correct one might have been added to the cost
+    // map location of the input node.
+    //
+    // The CHAN -> IPIN delay gets re-added to the final calculation as it effectively is a valid delay
+    // to reach the destination.
+    //
+    // TODO: Capture this delay as a funtion of both the current wire type and the ipin to have a more
+    //       realistic excpected cost returned.
     float site_pin_delay = this->get_chan_ipin_delays(to_node);
     expected_delay += site_pin_delay;
 
@@ -549,6 +569,8 @@ float ExtendedMapLookahead::get_expected_cost(
         return get_map_cost(
             RRNodeId(current_node), RRNodeId(target_node), params.criticality);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+        // This is to return only the cost between the IPIN and SINK. No need to
+        // query the cost map, as the routing of this connection is almost done.
         return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return (0.);
