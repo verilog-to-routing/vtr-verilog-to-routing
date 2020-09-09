@@ -822,7 +822,7 @@ void try_place(const t_placer_opts& placer_opts,
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
     // TODO: refactor goto label.
     if (placer_opts.enable_analytic_placer)
-    	goto quench;
+        goto quench;
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     //Table header
@@ -891,7 +891,7 @@ void try_place(const t_placer_opts& placer_opts,
     } while (update_annealing_state(&state, success_rat, costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
-    quench:
+quench:
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
