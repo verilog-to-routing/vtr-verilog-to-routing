@@ -545,7 +545,7 @@ float ExtendedMapLookahead::get_expected_cost(
 
     t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
 
-    if (rr_type == CHANX || rr_type == CHANY) {
+    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         return get_map_cost(
             RRNodeId(current_node), RRNodeId(target_node), params.criticality);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
