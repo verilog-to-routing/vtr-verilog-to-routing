@@ -29,6 +29,7 @@
 #include "place_macro.h"
 #include "histogram.h"
 #include "place_util.h"
+#include "analytic_placer.h"
 #include "initial_placement.h"
 #include "place_delay_model.h"
 #include "move_transactions.h"
@@ -619,6 +620,18 @@ void try_place(const t_placer_opts& placer_opts,
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
 
+#ifdef ENABLE_ANALYTIC_PLACE
+    /*
+     * Analytic Placer:
+     *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
+     *  both the clb_netlist and the gird.
+     *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
+     */
+    if (placer_opts.enable_analytic_placer) {
+        AnalyticPlacer{}.ap_place();
+    }
+#endif /* ENABLE_ANALYTIC_PLACE */
+
     // Update physical pin values
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
         place_sync_external_block_connections(block_id);
@@ -805,6 +818,13 @@ void try_place(const t_placer_opts& placer_opts,
     moves_since_cost_recompute = 0;
     int num_temps = 0;
 
+#ifdef ENABLE_ANALYTIC_PLACE
+    // Analytic placer: When enabled, skip most of the annealing and go straight to quench
+    // TODO: refactor goto label.
+    if (placer_opts.enable_analytic_placer)
+        goto quench;
+#endif /* ENABLE_ANALYTIC_PLACE */
+
     //Table header
     VTR_LOG("\n");
     print_place_status_header();
@@ -870,6 +890,11 @@ void try_place(const t_placer_opts& placer_opts,
 #endif
     } while (update_annealing_state(&state, success_rat, costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
+
+#ifdef ENABLE_ANALYTIC_PLACE
+// guard quench label, otherwise compiler complains about unused label
+quench:
+#endif /* ENABLE_ANALYTIC_PLACE */
 
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
