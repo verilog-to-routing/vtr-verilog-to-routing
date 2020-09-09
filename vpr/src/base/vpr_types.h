@@ -829,29 +829,82 @@ struct t_annealing_sched {
     float success_target;
 };
 
-/* Various options for the placer.                                           *
- * place_algorithm:  BOUNDING_BOX_PLACE or PATH_TIMING_DRIVEN_PLACE          *
- * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff     *
- *                   timing driven and BOUNDING_BOX_PLACE.                   *
- * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
- * place_chan_width:  The channel width assumed if only one placement is     *
- *                    performed.                                             *
- * pad_loc_type:  Are pins free to move during placement or fixed randomly.  *
- * constraints_file:  File used to lock block locations during placement.    *
- * place_freq:  Should the placement be skipped, done once, or done for each *
- *              channel width in the binary search.                          *
- * recompute_crit_iter: how many temperature stages pass before we recompute *
- *               criticalities based on average point to point delay         *
- * inner_loop_crit_divider: (move_lim/inner_loop_crit_divider) determines how*
- *               many inner_loop iterations pass before a recompute of       *
- *               criticalities is done.                                      *
- * td_place_exp_first: exponent that is used on the timing_driven criticlity *
- *               it is the value that the exponent starts at.                *
- * td_place_exp_last: value that the criticality exponent will be at the end *
- * doPlacement: true if placement is supposed to be done in the CAD flow, false otherwise */
+/******************************************************************
+ * Placer data types
+ *******************************************************************/
+
+/**
+ * @brief Types of placement algorithms used in the placer.
+ *
+ *   @param BOUNDING_BOX_PLACE
+ *              Focuses purely on minimizing the bounding
+ *              box wirelength of the circuit.
+ *   @param CRITICALITY_TIMING_PLACE
+ *              Focuses on minimizing both the wirelength and the
+ *              connection timing costs (criticality * delay).
+ *   @param SLACK_TIMING_PLACE
+ *              Focuses on improving the circuit slack values
+ *              to reduce critical path delay.
+ *
+ * The default is to use CRITICALITY_TIMING_PLACE. BOUNDING_BOX_PLACE
+ * is used when there is no timing information available (wiring only).
+ * SLACK_TIMING_PLACE is mainly feasible during placement quench.
+ */
 enum e_place_algorithm {
     BOUNDING_BOX_PLACE,
-    PATH_TIMING_DRIVEN_PLACE
+    CRITICALITY_TIMING_PLACE,
+    SLACK_TIMING_PLACE
+};
+
+/**
+ * @brief Provides a wrapper around enum e_place_algorithm.
+ *
+ * Supports the method is_timing_driven(), which allows flexible updates
+ * to the placer algorithms if more timing driven placement strategies
+ * are added in tht future. This method is used across various placement
+ * setup files, and it can be useful for major placer routines as well.
+ *
+ * More methods can be added to this class if the placement strategies
+ * will be further divided into more categories the future.
+ *
+ * Also supports assignments and comparisons between t_place_algorithm
+ * and e_place_algorithm so as not to break down previous codes.
+ */
+class t_place_algorithm {
+  public:
+    //Constructors
+    t_place_algorithm() = default;
+    t_place_algorithm(e_place_algorithm _algo)
+        : algo(_algo) {}
+    ~t_place_algorithm() = default;
+
+    //Assignment operators
+    t_place_algorithm& operator=(const t_place_algorithm& rhs) {
+        algo = rhs.algo;
+        return *this;
+    }
+    t_place_algorithm& operator=(e_place_algorithm rhs) {
+        algo = rhs;
+        return *this;
+    }
+
+    //Equality operators
+    bool operator==(const t_place_algorithm& rhs) const { return algo == rhs.algo; }
+    bool operator==(e_place_algorithm rhs) const { return algo == rhs; }
+    bool operator!=(const t_place_algorithm& rhs) const { return algo != rhs.algo; }
+    bool operator!=(e_place_algorithm rhs) const { return algo != rhs; }
+
+    ///@brief Check if the algorithm belongs to the timing driven category.
+    inline bool is_timing_driven() const {
+        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
+    }
+
+    ///@brief Accessor: returns the underlying e_place_algorithm enum value.
+    e_place_algorithm get() const { return algo; }
+
+  private:
+    ///@brief The underlying algorithm. Default set to CRITICALITY_TIMING_PLACE.
+    e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
 };
 
 enum e_pad_loc_type {
@@ -859,6 +912,7 @@ enum e_pad_loc_type {
     RANDOM
 };
 
+///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
     CIRCUIT,       ///<Effort scales based on circuit size only
     DEVICE_CIRCUIT ///<Effort scales based on both circuit and device size
@@ -889,8 +943,54 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+/**
+ * @brief Various options for the placer.
+ *
+ *   @param place_algorithm
+ *              Controls which placement algorithm is used.
+ *   @param place_quench_algorithm
+ *              Controls which placement algorithm is used
+ *              during placement quench.
+ *   @param timing_tradeoff
+ *              When in CRITICALITY_TIMING_PLACE mode, what is the
+ *              tradeoff between timing and wiring costs.
+ *   @param place_cost_exp
+ *              Power to which denominator is raised for linear_cong.
+ *   @param place_chan_width
+ *              The channel width assumed if only one placement is performed.
+ *   @param pad_loc_type
+ *              Are pins FREE or fixed randomly.
+ *   @param constraints_file
+ *              File that specifies locations of locked down (constrained)
+ *              blocks for placement. Empty string means no constraints file.
+ *   @param pad_loc_file
+ *              File to read pad locations from if pad_loc_type is USER.
+ *   @param place_freq
+ *              Should the placement be skipped, done once, or done
+ *              for each channel width in the binary search.
+ *   @param recompute_crit_iter
+ *              How many temperature stages pass before we recompute
+ *              criticalities based on the current placement and its
+ *              estimated point-to-point delays.
+ *   @param inner_loop_crit_divider
+ *              (move_lim/inner_loop_crit_divider) determines how
+ *              many inner_loop iterations pass before a recompute
+ *              of criticalities is done.
+ *   @param td_place_exp_first
+ *              Exponent that is used in the CRITICALITY_TIMING_PLACE
+ *              mode to specify the initial value of `crit_exponent`.
+ *              After we map the slacks to criticalities, this value
+ *              is used to `sharpen` the criticalities, making connections
+ *              with worse slacks more critical.
+ *   @param td_place_exp_last
+ *              Value that the crit_exponent will be at the end.
+ *   @param doPlacement
+ *              True if placement is supposed to be done in the CAD flow.
+ *              False if otherwise.
+ */
 struct t_placer_opts {
-    enum e_place_algorithm place_algorithm;
+    t_place_algorithm place_algorithm;
+    t_place_algorithm place_quench_algorithm;
     float timing_tradeoff;
     float place_cost_exp;
     int place_chan_width;

@@ -350,13 +350,22 @@ struct ParsePlaceDeltaDelayAlgorithm {
 struct ParsePlaceAlgorithm {
     ConvertedValue<e_place_algorithm> from_str(std::string str) {
         ConvertedValue<e_place_algorithm> conv_value;
-        if (str == "bounding_box")
+        if (str == "bounding_box") {
             conv_value.set_value(BOUNDING_BOX_PLACE);
-        else if (str == "path_timing_driven")
-            conv_value.set_value(PATH_TIMING_DRIVEN_PLACE);
-        else {
+        } else if (str == "criticality_timing") {
+            conv_value.set_value(CRITICALITY_TIMING_PLACE);
+        } else if (str == "slack_timing") {
+            conv_value.set_value(SLACK_TIMING_PLACE);
+        } else {
             std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+
+            //Deprecated option: "path_timing_driven" -> PATH_DRIVEN_TIMING_PLACE
+            //New option: "criticality_timing" -> CRITICALITY_TIMING_PLACE
+            if (str == "path_timing_driven") {
+                msg << "\nDeprecated option: 'path_timing_driven'. It has been renamed to 'criticality_timing'";
+            }
+
             conv_value.set_error(msg.str());
         }
         return conv_value;
@@ -364,17 +373,19 @@ struct ParsePlaceAlgorithm {
 
     ConvertedValue<std::string> to_str(e_place_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == BOUNDING_BOX_PLACE)
+        if (val == BOUNDING_BOX_PLACE) {
             conv_value.set_value("bounding_box");
-        else {
-            VTR_ASSERT(val == PATH_TIMING_DRIVEN_PLACE);
-            conv_value.set_value("path_timing_driven");
+        } else if (val == CRITICALITY_TIMING_PLACE) {
+            conv_value.set_value("criticality_timing");
+        } else {
+            VTR_ASSERT(val == SLACK_TIMING_PLACE);
+            conv_value.set_value("slack_timing");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"bounding_box", "path_timing_driven"};
+        return {"bounding_box", "criticality_timing", "slack_timing"};
     }
 };
 
@@ -1679,9 +1690,25 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
-        .help("Controls which placement algorithm is used")
-        .default_value("path_timing_driven")
-        .choices({"bounding_box", "path_timing_driven"})
+        .help(
+            "Controls which placement algorithm is used. Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
+        .help(
+            "Controls which placement algorithm is used during placement quench.\n"
+            "If specified, it overrides the option --place_algorithm during placement quench.\n"
+            "Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
@@ -2314,10 +2341,15 @@ void set_conditional_defaults(t_options& args) {
     //Which placement algorithm to use?
     if (args.PlaceAlgorithm.provenance() != Provenance::SPECIFIED) {
         if (args.timing_analysis) {
-            args.PlaceAlgorithm.set(PATH_TIMING_DRIVEN_PLACE, Provenance::INFERRED);
+            args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
+    }
+
+    //Which placement algorithm to use during placement quench?
+    if (args.PlaceQuenchAlgorithm.provenance() != Provenance::SPECIFIED) {
+        args.PlaceQuenchAlgorithm.set(args.PlaceAlgorithm, Provenance::INFERRED);
     }
 
     //Place chan width follows Route chan width if unspecified
