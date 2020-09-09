@@ -22,7 +22,7 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @param from_node starting node
      * @param delta_x x delta value that is the distance between the current node to the target node
      * @param delta_y y delta value that is the distance between the current node to the target node
-     * @param criticality_fac criticality of the current connection
+     * @param criticality_fac criticality of the current connection between 0 (all congestion) and 1 (all timing)
      * @return expected cost to get to the destination
      */
     float get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const;
@@ -31,6 +31,14 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
      * @param to_node target node for which we query the IPIN delay
      * @return IPIN delay relative to the input destination node
+     *
+     * The CHAN -> IPIN delay was removed from the cost map calculation, as it might tamper the addition
+     * of a smaller cost to this node location. This might happen as not all the CHAN -> IPIN connection
+     * have a delay, therefore, a different cost than the correct one might have been added to the cost
+     * map location of the input node.
+     * 
+     * The CHAN -> IPIN delay gets re-added to the final calculation as it effectively is a valid delay
+     * to reach the destination.
      */
     float get_chan_ipin_delays(RRNodeId to_node) const;
 

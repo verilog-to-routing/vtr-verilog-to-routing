@@ -3,6 +3,7 @@
 #include "router_lookahead_map_utils.h"
 #include "globals.h"
 #include "echo_files.h"
+#include "vtr_geometry.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -30,19 +31,13 @@ static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b
     return abs(b.x() - a.x()) + abs(b.y() - a.y());
 }
 
-// clamps v to be between low (lo) and high (hi), inclusive.
-template<class T>
-static constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
-    return std::min(std::max(v, lo), hi);
-}
-
 template<typename T>
 static vtr::Point<T> closest_point_in_rect(const vtr::Rect<T>& r, const vtr::Point<T>& p) {
     if (r.empty()) {
         return vtr::Point<T>(0, 0);
     } else {
-        return vtr::Point<T>(clamp<T>(p.x(), r.xmin(), r.xmax() - 1),
-                             clamp<T>(p.y(), r.ymin(), r.ymax() - 1));
+        return vtr::Point<T>(vtr::clamp<T>(p.x(), r.xmin(), r.xmax() - 1),
+                             vtr::clamp<T>(p.y(), r.ymin(), r.ymax() - 1));
     }
 }
 
@@ -57,7 +52,11 @@ void CostMap::set_counts(size_t seg_count) {
     seg_count_ = seg_count;
 }
 
-// cached node -> segment map
+/**
+ * @brief Gets the segment index corresponding to a node index
+ * @param from_node_ind node index
+ * @return segment index corresponding to the input node
+ */
 int CostMap::node_to_segment(int from_node_ind) const {
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -67,6 +66,26 @@ int CostMap::node_to_segment(int from_node_ind) const {
     return device_ctx.rr_indexed_data[from_cost_index].seg_index;
 }
 
+/**
+ * @brief Penalizes a specific cost entry based on its distance to the cost map bounds.
+ * @param entry cost entry to penalize
+ * @param distance distance to the cost map bounds (can be zero in case the entry is within the bounds)
+ * @param penalty penalty factor relative to the current segment type
+ *
+ * If a specific (delta_x, delta_y) coordinates pair falls out of a segment bounding box, the returned cost is a result of the following equation:
+ *
+ * delay + distance * penalty * PENALTY_FACTOR
+ *
+ * delay    : delay of the closest point in the bounding box for the specific wire segment
+ * distance : this can assume two values:
+ *              - 0     : in case the deltas fall within the bounding box (in this case no penalty is added)
+ *              - non-0 : in case the point is out of the bounding box, the value is the manhattan distance between the point and the closest point within the bounding box.
+ * penalty  : value determined when building the lookahead and relative to a specific segment type (meaning there is one penalty value for each segment type).
+ *            The base delay_penalty value is a calculated as follows:
+ *              (max_delay - min_delay) / max(1, manhattan_distance(max_location, min_location))
+ *
+ * PENALTY_FACTOR: impact of the penalty on the total delay cost.
+ */
 static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, float penalty) {
     penalty = std::max(penalty, PENALTY_MIN);
     return util::Cost_Entry(entry.delay + distance * penalty * PENALTY_FACTOR,
@@ -202,6 +221,15 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
     //
     // In case the lookahead is queried to return a cost that is outside of the bounding box, the closest
     // cost within the bounding box is returned, with the addition of a calculated penalty cost.
+    //
+    // The bounding boxes do have two dimensions and are specified as matrices.
+    // The first dimension though is unused and set to be constant as it is required to keep consistency
+    // with the lookahead map. The extended lookahead map and the normal one index the various costs as follows:
+    //      - Lookahead map         : [0..chan_index][seg_index][dx][dy]
+    //      - Extended lookahead map: [0][seg_index][dx][dy]
+    //
+    // The extended lookahead map does not require the first channel index distinction, therefore the first dimension
+    // remains unused.
     vtr::Matrix<vtr::Rect<int>> bounds({1, seg_count_});
     for (const auto& entry : delay_costs) {
         bounds[0][entry.first.seg_index].expand_bounding_box(vtr::Rect<int>(entry.first.delta));

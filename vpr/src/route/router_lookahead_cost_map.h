@@ -63,6 +63,8 @@ class CostMap {
      * @param cy y location of the cost map entry that needs to be filled
      * @param bounds bounds of the cost map corresponding to the current segment
      * @return A pair containing the nearby cost entry and the distance from the current location to the narby cost entry found.
+     *
+     * The coordinates identifying the cost map location to fill (cx, cy) need to fall within the bounding box provided as input (bounds). If the (cx, cy) point falls out of the bounds, a default cost entry is returned instead.
      */
     std::pair<util::Cost_Entry, int> get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
 
