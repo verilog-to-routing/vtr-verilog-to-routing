@@ -14,6 +14,10 @@ build_path = root_path / "build"
 abc_exe_path = root_path / "abc" / "abc"
 abc_rc_path = root_path / "abc" / "abc.rc"
 
+# ACE exe paths
+ace_exe_path = root_path / "ace2" / "ace"
+ace_extract_clk_from_blif_script_path = root_path / "ace2" / "scripts" / "extract_clk_from_blif.py"
+
 # Other scripts
 blackbox_latches_script_path = scripts_path / "blackbox_latches.pl"
 restore_multiclock_latch_old_script_path = scripts_path / "restore_multiclock_latch_information.pl"
