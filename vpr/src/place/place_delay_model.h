@@ -130,6 +130,21 @@ class OverrideDelayModel : public PlaceDelayModel {
     void compute_override_delay_model(RouterDelayProfiler& router,
                                       const t_router_opts& router_opts);
 
+    /**
+     * @brief Structure that allows delays to be queried from the delay model.
+     *
+     * Delay is calculated given the origin physical tile, the origin
+     * pin, the destination physical tile, and the destination pin.
+     * This structure encapsulates all these information.
+     *
+     *   @param from_type, to_type
+     *              Physical tile index (for easy array access)
+     *   @param from_class, to_class
+     *              The class that the pins belongs to.
+     *   @param to_x, to_y
+     *              The horizontal and vertical displacement
+     *              between two physical tiles.
+     */
     struct t_override {
         short from_type;
         short to_type;
@@ -139,9 +154,15 @@ class OverrideDelayModel : public PlaceDelayModel {
         short delta_y;
 
         /**
+         * @brief Comparison operator designed for performance.
+         *
+         * Operator< is important since t_override serves as the key into the
+         * map structure delay_overrides_. A default comparison operator would
+         * not be inlined by the compiler.
+         *
          * A combination of ALWAYS_INLINE attribute and std::lexicographical_compare
-         * is required for operator< to be inlined by compiler. Proper inlining of the
-         * function reduces place time by around 5%.
+         * is required for operator< to be inlined by compiler. Proper inlining of
+         * the function reduces place time by around 5%.
          *
          * For more information: https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1225
          */
@@ -153,6 +174,13 @@ class OverrideDelayModel : public PlaceDelayModel {
         }
     };
 
+    /**
+     * @brief Map data structure that returns delay values according to
+     *        specific delay model queries.
+     *
+     * Delay model queries are provided by the t_override structure, which
+     * encapsulates the information regarding the origin and the destination.
+     */
     vtr::flat_map2<t_override, float> delay_overrides_;
 
     /**

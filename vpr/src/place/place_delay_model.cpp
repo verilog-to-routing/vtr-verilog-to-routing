@@ -1,3 +1,9 @@
+/**
+ * @file place_delay_model.cpp
+ * @brief This file implements all the class methods and individual
+ *        routines related to the placer delay model.
+ */
+
 #include <queue>
 #include "place_delay_model.h"
 #include "globals.h"
