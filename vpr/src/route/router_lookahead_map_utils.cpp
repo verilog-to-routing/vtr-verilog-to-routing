@@ -50,6 +50,11 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
 //          - CHANX --> IPIN --> exploration interrupted: IPIN found, no need to expand further
 #define MAX_EXPANSION_LEVEL 1
 
+// The special segment type index used to identify a direct connection between an OPIN to IPIN that
+// does not go through the CHANX/CHANY nodes.
+//
+// This is used when building the SROURCE/OPIN --> CHAN lookup table that contains additional delay and
+// congestion data to reach the CHANX/CHANY nodes which is not present in the lookahead cost map.
 #define DIRECT_CONNECT_SPECIAL_SEG_TYPE -1;
 
 namespace util {
