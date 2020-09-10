@@ -176,7 +176,9 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           ClbNetPinsMatrix<float>& net_delay);
 
+#ifndef NO_GRAPHICS
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
+#endif
 
 // The reason that try_timing_driven_route_tmpl (and descendents) are being
 // templated over is because using a virtual interface instead fully templating
@@ -434,7 +436,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             if (was_rerouted) {
                 rerouted_nets.push_back(net_id);
+#ifndef NO_GRAPHICS
                 update_router_info_and_check_bp(BP_NET_ID, size_t(net_id));
+#endif
             }
         }
 
@@ -560,7 +564,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         if (legal_convergence_count >= router_opts.max_convergence_count
             || router_iteration_stats.connections_routed == 0
             || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics)) {
+#ifndef NO_GRAPHICS
             update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
+#endif
             break; //Done routing
         }
 
@@ -568,8 +574,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
          * Abort checks: Should we give-up because this routing problem is unlikely to converge to a legal routing?
          */
         if (itry == 1 && early_exit_heuristic(router_opts, wirelength_info)) {
-            //Abort
+#ifndef NO_GRAPHICS
             update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
+#endif
+            //Abort
             break;
         }
 
@@ -579,14 +587,18 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
                 VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
+#ifndef NO_GRAPHICS
                 update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
+#endif
                 break; //Abort
             }
         }
 
         if (itry == 1 && router_opts.exit_after_first_routing_iteration) {
             VTR_LOG("Exiting after first routing iteration as requested\n");
+#ifndef NO_GRAPHICS
             update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
+#endif
             break;
         }
 
@@ -2041,6 +2053,7 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
     }
 }
 
+#ifndef NO_GRAPHICS
 //updates router iteration information and checks for router iteration and net id breakpoints
 //stops after the specified router iteration or net id is encountered
 void update_router_info_and_check_bp(bp_router_type type, int net_id) {
@@ -2057,3 +2070,4 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
         }
     }
 }
+#endif
