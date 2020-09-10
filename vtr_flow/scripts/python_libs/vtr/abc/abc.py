@@ -4,7 +4,7 @@
 import shutil
 from collections import OrderedDict
 from pathlib import Path
-from vtr import find_vtr_file, determine_lut_size, verify_file, CommandRunner
+from vtr import determine_lut_size, verify_file, CommandRunner
 from vtr import paths
 from vtr.error import InspectError
 
@@ -79,7 +79,7 @@ def run(
     circuit_file = verify_file(circuit_file, "Circuit")
     output_netlist = verify_file(output_netlist, "Output netlist", should_exist=False)
 
-    blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
+    blackbox_latches_script = str(paths.blackbox_latches_script)
     clk_list = []
     #
     # Parse arguments
@@ -226,9 +226,9 @@ def run(
             )
         else:
             restore_multiclock_info_script = (
-                find_vtr_file("restore_multiclock_latch_information.pl")
+                str(paths.restore_multiclock_latch_old_script_path)
                 if use_old_latches_restoration_script
-                else find_vtr_file("restore_multiclock_latch.pl")
+                else str(paths.restore_multiclock_latch_script_path)
             )
             command_runner.run_system_command(
                 [
@@ -363,7 +363,7 @@ def run_lec(
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     if abc_exec is None:
-        abc_exec = find_vtr_file("abc", is_executable=True)
+        abc_exec = paths.abc_exe_path
 
         abc_script = ("dsec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
         abc_script = "; ".join(abc_script)
