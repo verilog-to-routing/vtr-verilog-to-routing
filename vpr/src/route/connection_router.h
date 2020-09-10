@@ -100,6 +100,17 @@ class ConnectionRouter : public ConnectionRouterInterface {
         router_debug_ = router_debug;
     }
 
+    // Empty the route tree set used for RCV node detection
+    // Will return if RCV is disabled
+    // Called after each net is finished routing to flush the set
+    void empty_rcv_route_tree_set() final;
+
+    // Enable or disable RCV in connection router
+    // Enabling this will utilize extra path structures, as well as the RCV cost function
+    //
+    // Ensure route budgets have been calculated before enabling this
+    void set_rcv_enabled(bool enable) final;
+
   private:
     // Mark that data associated with rr_node "inode" has been modified, and
     // needs to be reset in reset_path_costs.
@@ -208,6 +219,14 @@ class ConnectionRouter : public ConnectionRouterInterface {
                                 int target_node,
                                 const t_conn_cost_params cost_params);
 
+    // Evaluate node costs using the RCV algorith
+    float compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
+                                      const int to_node,
+                                      const int target_node,
+                                      const float backwards_delay,
+                                      const float backwards_cong,
+                                      const float R_upstream);
+
     //Unconditionally adds rt_node to the heap
     //
     //Note that if you want to respect rt_node->re_expand that is the caller's
@@ -234,6 +253,9 @@ class ConnectionRouter : public ConnectionRouterInterface {
     RouterStats* router_stats_;
     HeapImplementation heap_;
     bool router_debug_;
+
+    // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
+    PathManager rcv_path_manager;
 };
 
 // Construct a connection router that uses the specified heap type.
