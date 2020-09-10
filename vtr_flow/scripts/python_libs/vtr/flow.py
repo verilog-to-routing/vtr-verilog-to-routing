@@ -31,26 +31,26 @@ class VtrStage(Enum):
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
 def run(
-        architecture_file,
-        circuit_file,
-        power_tech_file=None,
-        start_stage=VtrStage.odin,
-        end_stage=VtrStage.vpr,
-        command_runner=vtr.CommandRunner(),
-        temp_dir=Path("./temp"),
-        odin_args=None,
-        abc_args=None,
-        vpr_args=None,
-        keep_intermediate_files=True,
-        keep_result_files=True,
-        min_hard_mult_size=3,
-        min_hard_adder_size=1,
-        check_equivalent=False,
-        check_incremental_sta_consistency=False,
-        use_old_abc_script=False,
-        relax_w_factor=1.3,
-        check_route = False,
-        check_place = False,
+    architecture_file,
+    circuit_file,
+    power_tech_file=None,
+    start_stage=VtrStage.odin,
+    end_stage=VtrStage.vpr,
+    command_runner=vtr.CommandRunner(),
+    temp_dir=Path("./temp"),
+    odin_args=None,
+    abc_args=None,
+    vpr_args=None,
+    keep_intermediate_files=True,
+    keep_result_files=True,
+    min_hard_mult_size=3,
+    min_hard_adder_size=1,
+    check_equivalent=False,
+    check_incremental_sta_consistency=False,
+    use_old_abc_script=False,
+    relax_w_factor=1.3,
+    check_route=False,
+    check_place=False,
 ):
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
@@ -252,7 +252,7 @@ def run(
             do_second_run = False
             second_run_args = vpr_args
 
-            if "write_rr_graph" in vpr_args or  "analysis" in vpr_args or "route" in vpr_args:
+            if "write_rr_graph" in vpr_args or "analysis" in vpr_args or "route" in vpr_args:
                 do_second_run = True
 
             vtr.vpr.run(

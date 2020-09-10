@@ -431,8 +431,8 @@ def vtr_command_main(arg_list, prog=None):
             check_incremental_sta_consistency=args.check_incremental_sta_consistency,
             use_old_abc_script=args.use_old_abc_script,
             relax_w_factor=args.relax_w_factor,
-            check_route = args.check_route,
-            check_place = args.check_place,
+            check_route=args.check_route,
+            check_place=args.check_place,
         )
         error_status = "OK"
     except vtr.VtrError as error:
