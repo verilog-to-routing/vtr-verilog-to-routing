@@ -14,6 +14,7 @@ import csv
 from collections import OrderedDict
 import vtr.error
 from vtr.error import VtrError, CommandError
+from vtr import paths
 
 VERBOSITY_CHOICES = range(5)
 
@@ -108,7 +109,7 @@ class CommandRunner:
                 + [
                     "valgrind",
                     "--leak-check=full",
-                    "--suppressions={}".format(find_vtr_file("valgrind.supp")),
+                    "--suppressions=" + str(paths.valgrind_supp),
                     "--error-exitcode=1",
                     "--errors-for-leak-kinds=none",
                     "--track-origins=yes",
@@ -462,9 +463,7 @@ def load_config_lines(filepath, allow_includes=True):
                             include_file_abs, allow_includes=allow_includes
                         )
                     else:
-                        raise vtr.error.InspectError(
-                            "@include not allowed in this file", filepath
-                        )
+                        raise vtr.error.InspectError("@include not allowed in this file", filepath)
                 else:
                     config_lines.append(line)
     except IOError as error:

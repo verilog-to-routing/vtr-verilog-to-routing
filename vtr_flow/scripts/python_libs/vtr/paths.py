@@ -22,4 +22,4 @@ ace_extract_clk_from_blif_script_path = root_path / "ace2" / "scripts" / "extrac
 blackbox_latches_script_path = scripts_path / "blackbox_latches.pl"
 restore_multiclock_latch_old_script_path = scripts_path / "restore_multiclock_latch_information.pl"
 restore_multiclock_latch_script_path = scripts_path / "restore_multiclock_latch.pl"
-
+valgrind_supp = root_path / "vpr" / "valgrind.supp"
