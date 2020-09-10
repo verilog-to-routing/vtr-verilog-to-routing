@@ -79,7 +79,7 @@ def run(
     circuit_file = verify_file(circuit_file, "Circuit")
     output_netlist = verify_file(output_netlist, "Output netlist", should_exist=False)
 
-    blackbox_latches_script = str(paths.blackbox_latches_script)
+    blackbox_latches_script = str(paths.blackbox_latches_script_path)
     clk_list = []
     #
     # Parse arguments

@@ -7,7 +7,7 @@ root_path = pathlib.Path(__file__).absolute().parent.parent.parent.parent.parent
 
 vtr_flow_path = root_path / "vtr_flow"
 
-scripts_path = root_path / "scripts"
+scripts_path = vtr_flow_path / "scripts"
 build_path = root_path / "build"
 
 # ABC exe paths
