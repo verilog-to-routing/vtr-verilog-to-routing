@@ -839,12 +839,35 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     int cy_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid.y);
 
     //Determine the valid compressed grid location ranges
-    int min_cx = std::max(0, cx_centroid - rlim_x);
-    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
-    int delta_cx = max_cx - min_cx;
+    int min_cx, max_cx, delta_cx;
+    int min_cy, max_cy;
+    if(rlim > 40)
+    {
+        min_cx = std::max(0, cx_centroid - rlim_x);
+        max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
 
-    int min_cy = std::max(0, cy_centroid - rlim_y);
-    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_centroid + rlim_y);
+        min_cy = std::max(0, cy_centroid - rlim_y);
+        max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_centroid + rlim_y);
+    }
+    else {
+        if(cx_centroid < cx_from){
+            min_cx = std::max(0, cx_from - rlim_x);
+            max_cx = cx_from;
+        }
+        else{
+            min_cx = cx_from;
+            max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
+        }
+        if(cy_centroid < cy_from){
+            min_cy = std::max(0, cy_from - rlim_y);
+            max_cy = cy_from;
+        }
+        else{
+            min_cy = cy_from;
+            max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
+        }
+    }
+    delta_cx = max_cx - min_cx;
 
     int cx_to = OPEN;
     int cy_to = OPEN;
