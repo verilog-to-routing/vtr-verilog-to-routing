@@ -1,19 +1,17 @@
 """
     Module to utilize many of the tools needed for VTR.
 """
-import os
 from pathlib import PurePath
 from pathlib import Path
 import sys
 import re
 import time
 import subprocess
-import distutils.spawn as distutils_spawn
 import argparse
 import csv
 from collections import OrderedDict
 import vtr.error
-from vtr.error import VtrError, CommandError
+from vtr.error import CommandError
 from vtr import paths
 
 VERBOSITY_CHOICES = range(5)
