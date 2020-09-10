@@ -5,6 +5,7 @@ import shutil
 from collections import OrderedDict
 from pathlib import Path
 from vtr import find_vtr_file, determine_lut_size, verify_file, CommandRunner
+from vtr import paths
 from vtr.error import InspectError
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -95,8 +96,8 @@ def run(
 
     populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir)
 
-    abc_exec = find_vtr_file("abc", is_executable=True) if abc_exec is None else abc_exec
-    abc_rc = Path(abc_exec).parent / "abc.rc" if abc_rc is None else abc_rc
+    abc_exec = str(paths.abc_exe_path) if abc_exec is None else abc_exec
+    abc_rc = str(paths.abc_rc_path) if abc_rc is None else abc_rc
 
     shutil.copyfile(str(abc_rc), str(temp_dir / "abc.rc"))
 
