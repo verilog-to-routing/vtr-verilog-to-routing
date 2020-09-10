@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#ifndef NO_GRAPHICS
 //if the user adds a "proceed move" breakpoint using the entry field in the UI, this function converts it to the equivalent expression and calls the expression evaluator. Returns true if a breakpoint is encountered
 //the way the proceed moves breakpoint works is that it proceeds the indicated number of moves from where the placer currently is i.e if at move 3 and proceed 4 ends up at move 7
 bool check_for_moves_breakpoints(int moves_to_proceed) {
@@ -92,3 +93,4 @@ void print_current_info(bool in_placer) {
     else
         std::cout << "\nrouter_iter: " << get_bp_state_globals()->get_glob_breakpoint_state()->router_iter << "\nnet_id: " << get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id << "\n----------------------------\n";
 }
+#endif

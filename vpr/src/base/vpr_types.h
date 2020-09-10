@@ -1035,6 +1035,14 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
+
+    /*
+     * @brief enables the analytic placer.
+     *
+     * Once analytic placement is done, the result is passed through the quench phase
+     * of the annealing placer for local improvement
+     */
+    bool enable_analytic_placer;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -1115,10 +1123,13 @@ enum e_routing_failure_predictor {
     SAFE,
     AGGRESSIVE
 };
+
+// How to allocate budgets, and if RCV should be enabled
 enum e_routing_budgets_algorithm {
-    MINIMAX,
+    MINIMAX, // Use MINIMAX-PERT algorithm to allocate budgets
+    YOYO,    // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
     SCALE_DELAY,
-    DISABLE
+    DISABLE // Do not allocate budgets and run default router
 };
 
 enum class e_timing_report_detail {

@@ -203,6 +203,8 @@ struct RouteBudgetsAlgorithm {
         ConvertedValue<e_routing_budgets_algorithm> conv_value;
         if (str == "minimax")
             conv_value.set_value(MINIMAX);
+        else if (str == "yoyo")
+            conv_value.set_value(YOYO);
         else if (str == "scale_delay")
             conv_value.set_value(SCALE_DELAY);
         else if (str == "disable")
@@ -220,6 +222,8 @@ struct RouteBudgetsAlgorithm {
         ConvertedValue<std::string> conv_value;
         if (val == MINIMAX)
             conv_value.set_value("minimax");
+        else if (val == YOYO)
+            conv_value.set_value("yoyo");
         else if (val == DISABLE)
             conv_value.set_value("disable");
         else {
@@ -1739,6 +1743,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.enable_analytic_placer, "--enable_analytic_placer")
+        .help(
+            "Enables the analytic placer. "
+            "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
@@ -2031,12 +2042,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
         .help(
-            "Controls how the routing budgets are created.\n"
-            " * slack: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
-            " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
+            "Controls how the routing budgets are created and applied.\n"
+            " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
+            " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
+            " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
-        .choices({"minimax", "scale_delay", "disable"})
+        .choices({"minimax", "scale_delay", "yoyo", "disable"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")

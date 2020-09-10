@@ -2356,3 +2356,81 @@ void print_timing_stats(std::string name,
             current.num_full_hold_updates - past.num_full_hold_updates,
             current.num_full_setup_hold_updates - past.num_full_setup_hold_updates);
 }
+
+void alloc_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
+                                     std::vector<std::vector<int>>& num_legal_pos) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    int num_tile_types = device_ctx.physical_tile_types.size();
+    legal_pos.resize(num_tile_types);
+    num_legal_pos.resize(num_tile_types);
+
+    for (const auto& tile : device_ctx.physical_tile_types) {
+        num_legal_pos[tile.index].resize(tile.sub_tiles.size());
+    }
+
+    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            auto tile = device_ctx.grid[i][j].type;
+
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
+
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
+                        if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                            num_legal_pos[tile->index][sub_tile.index]++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    for (const auto& type : device_ctx.physical_tile_types) {
+        legal_pos[type.index].resize(type.sub_tiles.size());
+
+        for (auto sub_tile : type.sub_tiles) {
+            legal_pos[type.index][sub_tile.index].resize(num_legal_pos[type.index][sub_tile.index]);
+        }
+    }
+}
+
+void load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    std::vector<std::vector<int>> index;
+
+    index.resize(device_ctx.physical_tile_types.size());
+    for (const auto& tile : device_ctx.physical_tile_types) {
+        index[tile.index].resize(tile.sub_tiles.size());
+    }
+
+    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            auto tile = device_ctx.grid[i][j].type;
+
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
+
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
+                        continue;
+                    }
+                    // If this is the anchor position of a block, add it to the legal_pos.
+                    // Otherwise don't, so large blocks aren't added multiple times.
+                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                        int itype = tile->index;
+                        int isub_tile = sub_tile.index;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].x = i;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].y = j;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].sub_tile = k + capacity.low;
+                        index[itype][isub_tile]++;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -110,6 +110,9 @@ class Rect {
     //Returns true if the point is coincident with the rectangle (including the top-right edges)
     bool coincident(Point<T> point) const;
 
+    //Returns true if other is contained within the rectangle (including all edges)
+    bool contains(const Rect<T>& other) const;
+
     //Returns true if no points are contained in the rectangle
     //  rect.empty() => not exists p. rect.contains(p)
     //  This also implies either the width or height is 0.

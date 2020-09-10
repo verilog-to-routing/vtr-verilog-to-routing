@@ -352,6 +352,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = DISABLE\n");
         } else if (RouterOpts.routing_budgets_algorithm == MINIMAX) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = MINIMAX\n");
+        } else if (RouterOpts.routing_budgets_algorithm == YOYO) {
+            VTR_LOG("RouterOpts.routing_budgets_algorithm = YOYO\n");
         } else if (RouterOpts.routing_budgets_algorithm == SCALE_DELAY) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = SCALE_DELAY\n");
         }
@@ -544,7 +546,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             VTR_LOG("PlacerOpts.td_place_exp_last: %f\n", PlacerOpts.td_place_exp_last);
             VTR_LOG("PlacerOpts.delay_offset: %f\n", PlacerOpts.delay_offset);
             VTR_LOG("PlacerOpts.delay_ramp_delta_threshold: %d\n", PlacerOpts.delay_ramp_delta_threshold);
-            VTR_LOG("PlacerOpts.delay_ramp_slope: %d\n", PlacerOpts.delay_ramp_slope);
+            VTR_LOG("PlacerOpts.delay_ramp_slope: %f\n", PlacerOpts.delay_ramp_slope);
             VTR_LOG("PlacerOpts.tsu_rel_margin: %f\n", PlacerOpts.tsu_rel_margin);
             VTR_LOG("PlacerOpts.tsu_abs_margin: %f\n", PlacerOpts.tsu_abs_margin);
             VTR_LOG("PlacerOpts.post_place_timing_report_file: %s\n", PlacerOpts.post_place_timing_report_file.c_str());
