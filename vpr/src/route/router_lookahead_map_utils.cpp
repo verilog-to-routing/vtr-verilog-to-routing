@@ -198,6 +198,10 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
     /* find median by binning the delays of all entries and then chosing the bin
      * with the largest number of entries */
 
+    // This is code that needs to be revisited. For the time being, if the median entry
+    // method calculation is used an assertion is thrown.
+    VTR_ASSERT_MSG(false, "Get median entry calculation method is not implemented!");
+
     int num_bins = 10;
 
     /* find entries with smallest and largest delays */
