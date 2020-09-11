@@ -96,12 +96,7 @@ struct t_placer_statistics {
 };
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
-
-constexpr double MAX_INV_TIMING_COST = 1.e9;
-/* Stops inverse timing cost from going to infinity with very lax timing constraints,
- * which avoids multiplying by a gigantic prev_inverse.timing_cost when auto-normalizing.
- * The exact value of this cost has relatively little impact, but should not be
- * large enough to be on the order of timing costs for normal constraints. */
+constexpr float INVALID_COST = std::numeric_limits<double>::quiet_NaN();
 
 /********************** Variables local to place.c ***************************/
 
@@ -265,7 +260,6 @@ static void reset_move_nets(int num_nets_affected);
 static e_move_result try_swap(float t,
                               float crit_exponent,
                               t_placer_costs* costs,
-                              t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
                               SetupTimingInfo* timing_info,
@@ -293,7 +287,6 @@ static int check_macro_placement_consistency();
 
 static float starting_t(float crit_exponent,
                         t_placer_costs* costs,
-                        t_placer_prev_inverse_costs* prev_inverse_costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
@@ -369,7 +362,6 @@ static void free_try_swap_arrays();
 
 static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           t_placer_costs* costs,
-                                          t_placer_prev_inverse_costs* prev_inverse_costs,
                                           int num_connections,
                                           float crit_exponent,
                                           int* outer_crit_iter_count,
@@ -388,7 +380,6 @@ static void placement_inner_loop(float t,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
-                                 t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  const PlaceDelayModel* delay_model,
@@ -458,8 +449,7 @@ void try_place(const t_placer_opts& placer_opts,
         outer_crit_iter_count, inner_recompute_limit;
     float success_rat, first_crit_exponent, first_rlim;
 
-    t_placer_costs costs;
-    t_placer_prev_inverse_costs prev_inverse_costs;
+    t_placer_costs costs(placer_opts.place_algorithm);
 
     tatum::TimingPathInfo critical_path;
     float sTNS = NAN;
@@ -573,7 +563,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         critical_path = timing_info->least_slack_critical_path();
 
-        //Write out the initial timing echo file
+        /* Write out the initial timing echo file */
         if (isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)) {
             tatum::write_echo(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
@@ -585,20 +575,27 @@ void try_place(const t_placer_opts& placer_opts,
 
         outer_crit_iter_count = 1;
 
-        prev_inverse_costs.timing_cost = 1 / costs.timing_cost;
-        prev_inverse_costs.bb_cost = 1 / costs.bb_cost;
-        costs.cost = 1; /*our new cost function uses normalized values of           */
-        /*bb_cost and timing_cost, the value of cost will be reset  */
-        /*to 1 at each temperature when *_TIMING_DRIVEN_PLACE is true */
-    } else { /*BOUNDING_BOX_PLACE */
-        costs.cost = costs.bb_cost = comp_bb_cost(NORMAL);
-        costs.timing_cost = 0;
+        /* Initialize the normalization factors. Calling costs.update_norm_factors() *
+         * here would fail the golden results of strong_sdc benchmark                */
+        costs.timing_cost_norm = 1 / costs.timing_cost;
+        costs.bb_cost_norm = 1 / costs.bb_cost;
+        costs.cost = 1;
+    } else {
+        VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
+
+        /* Total cost is the same as wirelength cost */
+        costs.bb_cost = comp_bb_cost(NORMAL);
+        costs.cost = costs.bb_cost;
+
+        /* Timing cost and normalization factors are not used */
+        costs.timing_cost = INVALID_COST;
+        costs.timing_cost_norm = INVALID_COST;
+        costs.bb_cost_norm = INVALID_COST;
+
+        /* Other initializations */
         outer_crit_iter_count = 0;
         num_connections = 0;
         first_crit_exponent = 0;
-
-        prev_inverse_costs.timing_cost = 0; /*inverses not used */
-        prev_inverse_costs.bb_cost = 0;
     }
 
     //Sanity check that initial placement is legal
@@ -683,7 +680,7 @@ void try_place(const t_placer_opts& placer_opts,
     first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
     float first_t = starting_t(first_crit_exponent,
-                               &costs, &prev_inverse_costs,
+                               &costs,
                                annealing_sched, move_lim, first_rlim,
                                place_delay_model.get(),
                                placer_criticalities.get(),
@@ -720,12 +717,9 @@ void try_place(const t_placer_opts& placer_opts,
     /* Outer loop of the simulated annealing begins */
     do {
         vtr::Timer temperature_timer;
-        if (placer_opts.place_algorithm.is_timing_driven()) {
-            costs.cost = 1;
-        }
 
         outer_loop_update_timing_info(placer_opts,
-                                      &costs, &prev_inverse_costs,
+                                      &costs,
                                       num_connections,
                                       state.crit_exponent,
                                       &outer_crit_iter_count,
@@ -737,7 +731,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
                              state.move_lim, state.crit_exponent, inner_recompute_limit, &stats,
-                             &costs, &prev_inverse_costs,
+                             &costs,
                              &moves_since_cost_recompute,
                              pin_timing_invalidator.get(),
                              place_delay_model.get(),
@@ -789,7 +783,7 @@ quench:
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
         outer_loop_update_timing_info(placer_opts,
-                                      &costs, &prev_inverse_costs,
+                                      &costs,
                                       num_connections,
                                       state.crit_exponent,
                                       &outer_crit_iter_count,
@@ -805,7 +799,7 @@ quench:
          * which reduce the cost of the placement */
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
                              move_lim, state.crit_exponent, quench_recompute_limit, &stats,
-                             &costs, &prev_inverse_costs,
+                             &costs,
                              &moves_since_cost_recompute,
                              pin_timing_invalidator.get(),
                              place_delay_model.get(),
@@ -928,7 +922,6 @@ quench:
 /* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
 static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           t_placer_costs* costs,
-                                          t_placer_prev_inverse_costs* prev_inverse_costs,
                                           int num_connections,
                                           float crit_exponent,
                                           int* outer_crit_iter_count,
@@ -964,11 +957,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
     }
     (*outer_crit_iter_count)++;
 
-    /*at each temperature change we update these values to be used     */
-    /*for normalizing the tradeoff between timing and wirelength (bb)  */
-    prev_inverse_costs->bb_cost = 1 / costs->bb_cost;
-    /*Prevent inverse timing cost from going to infinity */
-    prev_inverse_costs->timing_cost = min(1 / costs->timing_cost, MAX_INV_TIMING_COST);
+    /* Update the cost normalization factors */
+    costs->update_norm_factors();
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -981,7 +971,6 @@ static void placement_inner_loop(float t,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
-                                 t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  const PlaceDelayModel* delay_model,
@@ -1008,7 +997,6 @@ static void placement_inner_loop(float t,
         e_move_result swap_result = try_swap(t,
                                              crit_exponent,
                                              costs,
-                                             prev_inverse_costs,
                                              rlim,
                                              move_generator,
                                              timing_info,
@@ -1239,7 +1227,6 @@ static bool update_annealing_state(t_annealing_state* state,
 
 static float starting_t(float crit_exponent,
                         t_placer_costs* costs,
-                        t_placer_prev_inverse_costs* prev_inverse_costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
@@ -1275,7 +1262,6 @@ static float starting_t(float crit_exponent,
         e_move_result swap_result = try_swap(t,
                                              crit_exponent,
                                              costs,
-                                             prev_inverse_costs,
                                              rlim,
                                              move_generator,
                                              timing_info,
@@ -1350,7 +1336,6 @@ static void reset_move_nets(int num_nets_affected) {
 static e_move_result try_swap(float t,
                               float crit_exponent,
                               t_placer_costs* costs,
-                              t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
                               SetupTimingInfo* timing_info,
@@ -1472,8 +1457,8 @@ static e_move_result try_swap(float t,
             /*in this case we redefine delta_c as a combination of timing and bb.  *
              *additionally, we normalize all values, therefore delta_c is in       *
              *relation to 1*/
-            delta_c = (1 - timing_tradeoff) * bb_delta_c * prev_inverse_costs->bb_cost
-                      + timing_tradeoff * timing_delta_c * prev_inverse_costs->timing_cost;
+            delta_c = (1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm
+                      + timing_tradeoff * timing_delta_c * costs->timing_cost_norm;
 
         } else {
             VTR_ASSERT(place_algorithm == BOUNDING_BOX_PLACE);
@@ -1559,8 +1544,8 @@ static e_move_result try_swap(float t,
         }
 
         move_outcome_stats.delta_cost_norm = delta_c;
-        move_outcome_stats.delta_bb_cost_norm = bb_delta_c * prev_inverse_costs->bb_cost;
-        move_outcome_stats.delta_timing_cost_norm = timing_delta_c * prev_inverse_costs->timing_cost;
+        move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs->bb_cost_norm;
+        move_outcome_stats.delta_timing_cost_norm = timing_delta_c * costs->timing_cost_norm;
 
         move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
         move_outcome_stats.delta_timing_cost_abs = timing_delta_c;

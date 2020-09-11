@@ -34,3 +34,21 @@ static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
 
     return grid_blocks;
 }
+
+/**
+ * @brief Mutator: updates the norm factors in the outer loop iteration.
+ *
+ * At each temperature change we update these values to be used
+ * for normalizing the trade-off between timing and wirelength (bb)
+ */
+void t_placer_costs::update_norm_factors() {
+    if (place_algorithm.is_timing_driven()) {
+        bb_cost_norm = 1 / bb_cost;
+        //Prevent the norm factor from going to infinity
+        timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
+        cost = 1; //The value of cost will be reset to 1 if timing driven
+    } else {
+        VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
+        cost = bb_cost; //The cost value should be identical to the wirelength cost
+    }
+}
