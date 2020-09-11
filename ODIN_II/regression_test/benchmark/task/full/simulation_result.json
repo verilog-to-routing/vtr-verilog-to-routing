@@ -143,14 +143,14 @@
         "Latch Drivers": 1,
         "Pi": 13,
         "Po": 12,
-        "logic element": 32,
+        "logic element": 28,
         "latch": 12,
         "Memory": 4,
         "generic logic size": 4,
-        "Longest Path": 12,
-        "Average Path": 5,
-        "Estimated LUTs": 32,
-        "Total Node": 49
+        "Longest Path": 11,
+        "Average Path": 4,
+        "Estimated LUTs": 28,
+        "Total Node": 45
     },
     "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -433,7 +433,7 @@
         "Latch Drivers": 1,
         "Pi": 35,
         "Po": 356,
-        "logic element": 184389,
+        "logic element": 184388,
         "latch": 56235,
         "Adder": 24448,
         "Multiplier": 27,
@@ -441,8 +441,8 @@
         "generic logic size": 4,
         "Longest Path": 25520,
         "Average Path": 5,
-        "Estimated LUTs": 194394,
-        "Total Node": 265448
+        "Estimated LUTs": 194393,
+        "Total Node": 265447
     },
     "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -455,14 +455,12 @@
         "Latch Drivers": 1,
         "Pi": 18,
         "Po": 12,
-        "logic element": 12,
         "latch": 12,
         "Memory": 8,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 4,
-        "Estimated LUTs": 12,
-        "Total Node": 33
+        "Total Node": 21
     },
     "full/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -557,15 +555,15 @@
         "Latch Drivers": 1,
         "Pi": 92,
         "Po": 104,
-        "logic element": 16141,
+        "logic element": 16119,
         "latch": 13495,
         "Adder": 2920,
         "Memory": 1024,
         "generic logic size": 4,
-        "Longest Path": 203,
+        "Longest Path": 202,
         "Average Path": 5,
-        "Estimated LUTs": 22348,
-        "Total Node": 33581
+        "Estimated LUTs": 22326,
+        "Total Node": 33559
     },
     "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -578,15 +576,15 @@
         "Latch Drivers": 1,
         "Pi": 132,
         "Po": 145,
-        "logic element": 13812,
+        "logic element": 13761,
         "latch": 11789,
         "Adder": 2388,
         "Multiplier": 152,
         "generic logic size": 4,
-        "Longest Path": 211,
+        "Longest Path": 210,
         "Average Path": 5,
-        "Estimated LUTs": 20744,
-        "Total Node": 28142
+        "Estimated LUTs": 20693,
+        "Total Node": 28091
     },
     "full/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -599,15 +597,15 @@
         "Latch Drivers": 1,
         "Pi": 148,
         "Po": 182,
-        "logic element": 12100,
+        "logic element": 12012,
         "latch": 18416,
         "Adder": 14347,
         "Multiplier": 540,
         "generic logic size": 4,
-        "Longest Path": 145,
+        "Longest Path": 144,
         "Average Path": 5,
-        "Estimated LUTs": 14489,
-        "Total Node": 45404
+        "Estimated LUTs": 14401,
+        "Total Node": 45316
     },
     "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -620,14 +618,14 @@
         "Latch Drivers": 2,
         "Pi": 9,
         "Po": 30,
-        "logic element": 1256,
+        "logic element": 1254,
         "latch": 102,
         "Adder": 28,
         "generic logic size": 4,
         "Longest Path": 64,
         "Average Path": 6,
-        "Estimated LUTs": 2083,
-        "Total Node": 1388
+        "Estimated LUTs": 2081,
+        "Total Node": 1386
     },
     "DEFAULT": {
         "test_name": "n/a",

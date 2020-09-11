@@ -155,14 +155,14 @@
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 3.2,
         "simulation_time(ms)": 0.1,
-        "test_coverage(%)": 62.5,
+        "test_coverage(%)": 71.4,
         "Pi": 1,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "preprocessor/ifdef_undefined/no_arch": {
         "test_name": "preprocessor/ifdef_undefined/no_arch",
@@ -210,11 +210,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "preprocessor/nested_ifdef_alldef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_alldef/no_arch",
@@ -250,11 +250,11 @@
         "simulation_time(ms)": 0.6,
         "test_coverage(%)": 100,
         "Po": 3,
-        "logic element": 24,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 24,
-        "Total Node": 24
+        "logic element": 12,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "preprocessor/nested_ifdef_outsidedef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_outsidedef/no_arch",

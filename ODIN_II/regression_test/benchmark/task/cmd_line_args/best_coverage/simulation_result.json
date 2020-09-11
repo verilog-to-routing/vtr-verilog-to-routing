@@ -10,13 +10,13 @@
         "Latch Drivers": 2,
         "Pi": 4,
         "Po": 4,
-        "logic element": 144,
+        "logic element": 140,
         "latch": 34,
         "generic logic size": 6,
-        "Longest Path": 27,
-        "Average Path": 5,
-        "Estimated LUTs": 250,
-        "Total Node": 180
+        "Longest Path": 26,
+        "Average Path": 4,
+        "Estimated LUTs": 246,
+        "Total Node": 176
     },
     "DEFAULT": {
         "test_name": "n/a",

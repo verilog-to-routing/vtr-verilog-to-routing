@@ -10,14 +10,14 @@
         "Latch Drivers": 1,
         "Pi": 47,
         "Po": 78,
-        "logic element": 110,
+        "logic element": 63,
         "latch": 71,
         "Multiplier": 3,
         "generic logic size": 4,
-        "Longest Path": 9,
+        "Longest Path": 8,
         "Average Path": 4,
-        "Estimated LUTs": 110,
-        "Total Node": 185
+        "Estimated LUTs": 63,
+        "Total Node": 138
     },
     "mults_auto_full/bm_base_multiply/k6_N10_40nm": {
         "test_name": "mults_auto_full/bm_base_multiply/k6_N10_40nm",
@@ -30,13 +30,13 @@
         "Latch Drivers": 1,
         "Pi": 47,
         "Po": 78,
-        "logic element": 795,
+        "logic element": 748,
         "latch": 71,
         "generic logic size": 6,
-        "Longest Path": 26,
-        "Average Path": 6,
-        "Estimated LUTs": 795,
-        "Total Node": 867
+        "Longest Path": 25,
+        "Average Path": 5,
+        "Estimated LUTs": 748,
+        "Total Node": 820
     },
     "mults_auto_full/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_full/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -49,14 +49,14 @@
         "Latch Drivers": 1,
         "Pi": 88,
         "Po": 144,
-        "logic element": 144,
+        "logic element": 72,
         "latch": 72,
         "Multiplier": 3,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 4,
-        "Estimated LUTs": 144,
-        "Total Node": 220
+        "Estimated LUTs": 72,
+        "Total Node": 148
     },
     "mults_auto_full/bm_match1_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_full/bm_match1_str_arch/k6_N10_40nm",
@@ -69,13 +69,13 @@
         "Latch Drivers": 1,
         "Pi": 88,
         "Po": 144,
-        "logic element": 3872,
+        "logic element": 3800,
         "latch": 72,
         "generic logic size": 6,
-        "Longest Path": 74,
-        "Average Path": 6,
-        "Estimated LUTs": 3872,
-        "Total Node": 3945
+        "Longest Path": 73,
+        "Average Path": 5,
+        "Estimated LUTs": 3800,
+        "Total Node": 3873
     },
     "mults_auto_full/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_full/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -88,15 +88,15 @@
         "Latch Drivers": 1,
         "Pi": 54,
         "Po": 99,
-        "logic element": 99,
+        "logic element": 45,
         "latch": 54,
         "Adder": 173,
         "Multiplier": 4,
         "generic logic size": 4,
-        "Longest Path": 25,
+        "Longest Path": 24,
         "Average Path": 5,
-        "Estimated LUTs": 99,
-        "Total Node": 331
+        "Estimated LUTs": 45,
+        "Total Node": 277
     },
     "mults_auto_full/bm_match2_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_full/bm_match2_str_arch/k6_N10_40nm",
@@ -109,13 +109,13 @@
         "Latch Drivers": 1,
         "Pi": 54,
         "Po": 99,
-        "logic element": 3211,
+        "logic element": 3157,
         "latch": 54,
         "generic logic size": 6,
-        "Longest Path": 32,
-        "Average Path": 7,
-        "Estimated LUTs": 3211,
-        "Total Node": 3266
+        "Longest Path": 31,
+        "Average Path": 6,
+        "Estimated LUTs": 3157,
+        "Total Node": 3212
     },
     "mults_auto_full/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_full/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -128,15 +128,15 @@
         "Latch Drivers": 1,
         "Pi": 54,
         "Po": 54,
-        "logic element": 54,
+        "logic element": 18,
         "latch": 54,
         "Adder": 50,
         "Multiplier": 1,
         "generic logic size": 4,
-        "Longest Path": 24,
-        "Average Path": 5,
-        "Estimated LUTs": 54,
-        "Total Node": 160
+        "Longest Path": 23,
+        "Average Path": 4,
+        "Estimated LUTs": 18,
+        "Total Node": 124
     },
     "mults_auto_full/bm_match3_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_full/bm_match3_str_arch/k6_N10_40nm",
@@ -149,13 +149,13 @@
         "Latch Drivers": 1,
         "Pi": 54,
         "Po": 54,
-        "logic element": 375,
+        "logic element": 339,
         "latch": 54,
         "generic logic size": 6,
-        "Longest Path": 58,
-        "Average Path": 5,
-        "Estimated LUTs": 375,
-        "Total Node": 430
+        "Longest Path": 57,
+        "Average Path": 4,
+        "Estimated LUTs": 339,
+        "Total Node": 394
     },
     "mults_auto_full/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_full/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -168,15 +168,15 @@
         "Latch Drivers": 1,
         "Pi": 51,
         "Po": 216,
-        "logic element": 216,
+        "logic element": 108,
         "latch": 108,
         "Adder": 74,
         "Multiplier": 3,
         "generic logic size": 4,
-        "Longest Path": 42,
+        "Longest Path": 41,
         "Average Path": 4,
-        "Estimated LUTs": 216,
-        "Total Node": 402
+        "Estimated LUTs": 108,
+        "Total Node": 294
     },
     "mults_auto_full/bm_match4_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_full/bm_match4_str_arch/k6_N10_40nm",
@@ -189,13 +189,13 @@
         "Latch Drivers": 1,
         "Pi": 51,
         "Po": 216,
-        "logic element": 1367,
+        "logic element": 1259,
         "latch": 108,
         "generic logic size": 6,
-        "Longest Path": 49,
-        "Average Path": 5,
-        "Estimated LUTs": 1367,
-        "Total Node": 1476
+        "Longest Path": 48,
+        "Average Path": 4,
+        "Estimated LUTs": 1259,
+        "Total Node": 1368
     },
     "mults_auto_full/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_full/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -208,15 +208,13 @@
         "Latch Drivers": 1,
         "Pi": 90,
         "Po": 54,
-        "logic element": 54,
         "latch": 54,
         "Adder": 125,
         "Multiplier": 6,
         "generic logic size": 4,
-        "Longest Path": 27,
-        "Average Path": 5,
-        "Estimated LUTs": 54,
-        "Total Node": 240
+        "Longest Path": 26,
+        "Average Path": 4,
+        "Total Node": 186
     },
     "mults_auto_full/bm_match5_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_full/bm_match5_str_arch/k6_N10_40nm",
@@ -229,13 +227,13 @@
         "Latch Drivers": 1,
         "Pi": 90,
         "Po": 54,
-        "logic element": 2147,
+        "logic element": 2093,
         "latch": 54,
         "generic logic size": 6,
-        "Longest Path": 34,
-        "Average Path": 6,
-        "Estimated LUTs": 2147,
-        "Total Node": 2202
+        "Longest Path": 33,
+        "Average Path": 5,
+        "Estimated LUTs": 2093,
+        "Total Node": 2148
     },
     "mults_auto_full/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_full/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -266,14 +264,14 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 5,
-        "logic element": 12,
+        "logic element": 8,
         "latch": 4,
         "Multiplier": 1,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 12,
-        "Total Node": 18
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 14
     },
     "mults_auto_full/twobits_arithmetic_multiply/k6_N10_40nm": {
         "test_name": "mults_auto_full/twobits_arithmetic_multiply/k6_N10_40nm",
@@ -286,13 +284,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 5,
-        "logic element": 21,
+        "logic element": 17,
         "latch": 4,
         "generic logic size": 6,
-        "Longest Path": 9,
-        "Average Path": 5,
-        "Estimated LUTs": 21,
-        "Total Node": 26
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 17,
+        "Total Node": 22
     },
     "DEFAULT": {
         "test_name": "n/a",
