@@ -1,3 +1,9 @@
+/**
+ * @file place_delay_model.cpp
+ * @brief This file implements all the class methods and individual
+ *        routines related to the placer delay model.
+ */
+
 #include <queue>
 #include "place_delay_model.h"
 #include "globals.h"
@@ -10,6 +16,8 @@
 #include "vtr_math.h"
 #include "vpr_error.h"
 
+#include "placer_globals.h"
+
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
 #    include "place_delay_model.capnp.h"
@@ -18,10 +26,7 @@
 #    include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
-/*
- * DeltaDelayModel
- */
-
+///@brief DeltaDelayModel methods.
 float DeltaDelayModel::delay(int from_x, int from_y, int /*from_pin*/, int to_x, int to_y, int /*to_pin*/) const {
     int delta_x = std::abs(from_x - to_x);
     int delta_y = std::abs(from_y - to_y);
@@ -46,9 +51,11 @@ void DeltaDelayModel::dump_echo(std::string filepath) const {
     vtr::fclose(f);
 }
 
-/*
- * OverrideDelayModel
- */
+const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
+    return base_delay_model_.get();
+}
+
+///@brief OverrideDelayModel methods.
 float OverrideDelayModel::delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const {
     //First check to if there is an override delay value
     auto& device_ctx = g_vpr_ctx.device();
@@ -136,18 +143,14 @@ float OverrideDelayModel::get_delay_override(int from_type, int from_class, int 
     return iter->second;
 }
 
-const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
-    return base_delay_model_.get();
-}
-
 void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model_obj) {
     base_delay_model_ = std::move(base_delay_model_obj);
 }
 
-// When writing capnp targetted serialization, always allow compilation when
-// VTR_ENABLE_CAPNPROTO=OFF.  Generally this means throwing an exception
-// instead.
-//
+/**
+ * When writing capnp targetted serialization, always allow compilation when
+ * VTR_ENABLE_CAPNPROTO=OFF. Generally this means throwing an exception instead.
+ */
 #ifndef VTR_ENABLE_CAPNPROTO
 
 #    define DISABLE_ERROR                              \
@@ -300,3 +303,83 @@ void OverrideDelayModel::write(const std::string& file) const {
 }
 
 #endif
+
+///@brief Initialize the placer delay model.
+std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist chan_width_dist,
+                                                               const t_placer_opts& placer_opts,
+                                                               const t_router_opts& router_opts,
+                                                               t_det_routing_arch* det_routing_arch,
+                                                               std::vector<t_segment_inf>& segment_inf,
+                                                               const t_direct_inf* directs,
+                                                               const int num_directs) {
+    return compute_place_delay_model(placer_opts, router_opts, det_routing_arch, segment_inf,
+                                     chan_width_dist, directs, num_directs);
+}
+
+/**
+ * @brief Returns the delay of one point to point connection.
+ *
+ * Only estimate delay for signals routed through the inter-block routing network.
+ * TODO: Do how should we compute the delay for globals. "Global signals are assumed to have zero delay."
+ */
+float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    float delay_source_to_sink = 0.;
+
+    if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+        ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
+        ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
+
+        ClusterBlockId source_block = cluster_ctx.clb_nlist.pin_block(source_pin);
+        ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(sink_pin);
+
+        int source_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(source_pin);
+        int sink_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(sink_pin);
+
+        int source_x = place_ctx.block_locs[source_block].loc.x;
+        int source_y = place_ctx.block_locs[source_block].loc.y;
+        int sink_x = place_ctx.block_locs[sink_block].loc.x;
+        int sink_y = place_ctx.block_locs[sink_block].loc.y;
+
+        /**
+         * This heuristic only considers delta_x and delta_y, a much better
+         * heuristic would be to to create a more comprehensive lookup table.
+         *
+         * In particular this approach does not accurately capture the effect
+         * of fast carry-chain connections.
+         */
+        delay_source_to_sink = delay_model->delay(source_x,
+                                                  source_y,
+                                                  source_block_ipin,
+                                                  sink_x,
+                                                  sink_y,
+                                                  sink_block_ipin);
+        if (delay_source_to_sink < 0) {
+            VPR_ERROR(VPR_ERROR_PLACE,
+                      "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
+                      "in comp_td_single_connection_delay: Delay is less than 0\n",
+                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin).c_str(),
+                      source_x, source_y,
+                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin).c_str(),
+                      sink_x, sink_y,
+                      delay_source_to_sink);
+        }
+    }
+
+    return (delay_source_to_sink);
+}
+
+///@brief Recompute all point to point delays, updating `connection_delay` matrix.
+void comp_td_connection_delays(const PlaceDelayModel* delay_model) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& p_timing_ctx = g_placer_ctx.mutable_timing();
+    auto& connection_delay = p_timing_ctx.connection_delay;
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+            connection_delay[net_id][ipin] = comp_td_single_connection_delay(delay_model, net_id, ipin);
+        }
+    }
+}

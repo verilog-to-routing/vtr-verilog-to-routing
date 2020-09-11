@@ -237,16 +237,3 @@ void PlacerSetupSlacks::set_setup_slack(ClusterNetId net_id, int ipin, float sla
 PlacerSetupSlacks::pin_range PlacerSetupSlacks::pins_with_modified_setup_slack() const {
     return vtr::make_range(cluster_pins_with_modified_setup_slack_);
 }
-
-/**************************************/
-
-std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
-                                                                 const t_placer_opts& placer_opts,
-                                                                 const t_router_opts& router_opts,
-                                                                 t_det_routing_arch* det_routing_arch,
-                                                                 std::vector<t_segment_inf>& segment_inf,
-                                                                 const t_direct_inf* directs,
-                                                                 const int num_directs) {
-    return compute_place_delay_model(placer_opts, router_opts, det_routing_arch, segment_inf,
-                                     chan_width_dist, directs, num_directs);
-}
