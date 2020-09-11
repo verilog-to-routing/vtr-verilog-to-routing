@@ -64,7 +64,7 @@ static std::pair<float, int> run_dijkstra(RRNodeId start_node,
                                           std::vector<util::Search_Path>* paths,
                                           util::RoutingCosts* routing_costs);
 
-float ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const {
+std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
@@ -96,12 +96,14 @@ float ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, i
         //The cost estimate should still be *extremely* large compared to a typical delay, and
         //so should ensure that the router de-prioritizes exploring this path, but does not
         //forbid the router from trying.
-        return std::numeric_limits<float>::max() / 1e12;
+        float max = std::numeric_limits<float>::max() / 1e12;
+        return std::make_pair(max, max);
     } else {
         //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
         //and then add the estimates from those wire types for the distance of interest.
         //If there are multiple options we use the minimum value.
-        float expected_cost = std::numeric_limits<float>::infinity();
+        float expected_delay_cost = std::numeric_limits<float>::infinity();
+        float expected_cong_cost = std::numeric_limits<float>::infinity();
 
         for (const auto& kv : this->src_opin_delays[tile_index][from_ptc]) {
             const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
@@ -119,14 +121,15 @@ float ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, i
                 cost_entry = cost_map_.find_cost(reachable_wire_inf.wire_seg_index, delta_x, delta_y);
             }
 
-            float this_cost = (criticality_fac) * (reachable_wire_inf.congestion + cost_entry.congestion)
-                              + (1. - criticality_fac) * (reachable_wire_inf.delay + cost_entry.delay);
+            float this_delay_cost = (1. - params.criticality) * (reachable_wire_inf.delay + cost_entry.delay);
+            float this_cong_cost = (params.criticality) * (reachable_wire_inf.congestion + cost_entry.congestion);
 
-            expected_cost = std::min(this_cost, expected_cost);
+            expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
+            expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
         }
 
-        VTR_ASSERT(std::isfinite(expected_cost));
-        return expected_cost;
+        VTR_ASSERT(std::isfinite(expected_delay_cost) && std::isfinite(expected_cong_cost));
+        return std::make_pair(expected_delay_cost, expected_cong_cost);
     }
 
     VTR_ASSERT_SAFE_MSG(false,
@@ -163,12 +166,13 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
 //
 //  The from_node can be of one of the following types: CHANX, CHANY, SOURCE, OPIN
 //  The to_node is always a SINK
-float ExtendedMapLookahead::get_map_cost(RRNodeId from_node,
-                                         RRNodeId to_node,
-                                         float criticality_fac) const {
-    if (from_node == to_node) {
-        return 0.f;
+std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    if (inode == target_node) {
+        return std::make_pair(0., 0.);
     }
+
+    RRNodeId from_node(inode);
+    RRNodeId to_node(target_node);
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
@@ -185,7 +189,9 @@ float ExtendedMapLookahead::get_map_cost(RRNodeId from_node,
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
-        return this->get_src_opin_cost(from_node, dx, dy, criticality_fac);
+        return this->get_src_opin_cost(from_node, dx, dy, params);
+    } else if (from_type == IPIN) {
+        return std::make_pair(0., 0.);
     }
 
     int from_seg_index = cost_map_.node_to_segment(size_t(from_node));
@@ -197,7 +203,8 @@ float ExtendedMapLookahead::get_map_cost(RRNodeId from_node,
                        "Not connected %d (%s, %d) -> %d (%s)\n",
                        size_t(from_node), device_ctx.rr_nodes[size_t(from_node)].type_string(), from_seg_index,
                        size_t(to_node), device_ctx.rr_nodes[size_t(to_node)].type_string());
-        return std::numeric_limits<float>::infinity();
+        float infinity = std::numeric_limits<float>::infinity();
+        return std::make_pair(infinity, infinity);
     }
 
     float expected_delay = cost_entry.delay;
@@ -216,16 +223,19 @@ float ExtendedMapLookahead::get_map_cost(RRNodeId from_node,
     float site_pin_delay = this->get_chan_ipin_delays(to_node);
     expected_delay += site_pin_delay;
 
-    float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
+    float expected_delay_cost = params.criticality * expected_delay;
+    float expected_cong_cost = (1.0 - params.criticality) * expected_congestion;
+
+    float expected_cost = expected_delay_cost + expected_cong_cost;
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
     const std::string& segment_name = device_ctx.rr_segments[from_seg_index].name;
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%zd, %zd)\n",
                    segment_name.c_str(), from_seg_index,
                    dx, dy);
-    VTR_LOGV_DEBUG(f_router_debug, "Lookahead delay: %g\n", expected_delay);
-    VTR_LOGV_DEBUG(f_router_debug, "Lookahead congestion: %g\n", expected_congestion);
-    VTR_LOGV_DEBUG(f_router_debug, "Criticality: %g\n", criticality_fac);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead delay: %g\n", expected_delay_cost);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead congestion: %g\n", expected_cong_cost);
+    VTR_LOGV_DEBUG(f_router_debug, "Criticality: %g\n", params.criticality);
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead cost: %g\n", expected_cost);
     VTR_LOGV_DEBUG(f_router_debug, "Site pin delay: %g\n", site_pin_delay);
 
@@ -239,7 +249,7 @@ float ExtendedMapLookahead::get_map_cost(RRNodeId from_node,
         VTR_ASSERT(0);
     }
 
-    return expected_cost;
+    return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
 // Adds a best cost routing path from start_node_ind to node_ind to routing costs
@@ -560,20 +570,23 @@ float ExtendedMapLookahead::get_expected_cost(
     int current_node,
     int target_node,
     const t_conn_cost_params& params,
-    float /*R_upstream*/) const {
+    float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
-        return get_map_cost(
-            RRNodeId(current_node), RRNodeId(target_node), params.criticality);
+        float delay_cost, cong_cost;
+
+        // Get the total cost using the combined delay and congestion costs
+        std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+        return delay_cost + cong_cost;
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         // This is to return only the cost between the IPIN and SINK. No need to
         // query the cost map, as the routing of this connection is almost done.
-        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+        return device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost;
     } else { /* Change this if you want to investigate route-throughs */
-        return (0.);
+        return 0.;
     }
 }
 
