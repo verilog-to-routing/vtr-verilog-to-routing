@@ -234,7 +234,7 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
-    t_rr_type rr_type = rr_graph.node_type(current);
+    t_rr_type rr_type = rr_graph.node_type(RRNodeId(current_node));
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;

@@ -25,7 +25,7 @@ class ExtendedMapLookahead : public RouterLookahead {
      * @param criticality_fac criticality of the current connection between 0 (all congestion) and 1 (all timing)
      * @return expected cost to get to the destination
      */
-    float get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const;
+    std::pair<float, float> get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const;
 
     /**
      * @brief Returns the CHAN -> IPIN delay that gets added to the final expected delay
@@ -54,14 +54,17 @@ class ExtendedMapLookahead : public RouterLookahead {
                                        std::vector<util::Search_Path>* paths,
                                        util::RoutingCosts* routing_costs);
 
-    float get_map_cost(RRNodeId from_node, RRNodeId to_node, float criticality_fac) const;
-
     CostMap cost_map_; ///<Cost map containing all data to extract the entry cost when querying the lookahead.
   public:
     /**
      * @brief Returns the expected cost to get to a destination node
      */
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+
+    /**
+     * @brief Returns a pair of expected delay and congestion
+     */
+    std::pair<float, float> get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     /**
      * @brief Computes the extended lookahead map
