@@ -3,7 +3,6 @@
 """
 from .util import (
     load_config_lines,
-    find_vtr_file,
     CommandRunner,
     print_verbose,
     relax_w,
@@ -13,7 +12,6 @@ from .util import (
     format_elapsed_time,
     write_tab_delimitted_csv,
     load_list_file,
-    find_vtr_root,
     argparse_str2bool,
     get_next_run_dir,
     get_latest_run_dir,
