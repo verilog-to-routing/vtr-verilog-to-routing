@@ -363,7 +363,7 @@ def run_lec(
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     if abc_exec is None:
-        abc_exec = paths.abc_exe_path
+        abc_exec = str(paths.abc_exe_path)
 
         abc_script = ("dsec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
         abc_script = "; ".join(abc_script)
