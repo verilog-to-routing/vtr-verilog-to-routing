@@ -57,17 +57,84 @@ class t_placer_costs {
     t_place_algorithm place_algorithm;
 };
 
-// Used by update_annealing_state()
-struct t_annealing_state {
-    float t;                  // Temperature
-    float rlim;               // Range limit for swaps
-    float inverse_delta_rlim; // used to calculate crit_exponent
-    float alpha;              // Temperature decays by this factor each outer iteration
-    float restart_t;          // Temperature used after restart due to minimum success ratio
-    float crit_exponent;      // Used by timing-driven placement to "sharpen" timing criticality
-    int move_lim_max;         // Maximum move limit
-    int move_lim;             // Current move limit
+/**
+ * @brief Stores variables that are used by the annealing process.
+ *
+ * This structure is updated by update_annealing_state() on each outer
+ * loop iteration. It stores various important variables that need to
+ * be accessed during the placement inner loop.
+ *
+ * Public members:
+ *   @param t
+ *              Temperature for simulated annealing.
+ *   @param rlim
+ *              Range limit for block swaps.
+ *   @param alpha
+ *              Temperature decays factor (multiplied each outer loop iteration).
+ *   @param restart_t
+ *              Temperature used after restart due to minimum success ratio.
+ *   @param crit_exponent
+ *              Used by timing-driven placement to "sharpen" the timing criticality.
+ *   @param move_lim_max
+ *              Maximum block move limit.
+ *   @param move_lim
+ *              Current block move limit.
+ *
+ * Private members:
+ *   @param UPPER_RLIM
+ *              The upper limit for the range limiter value.
+ *   @param FINAL_RLIM
+ *              The final rlim (range limit) is 1, which is the smallest value that
+ *              can still make progress, since an rlim of 0 wouldn't allow any swaps.
+ *   @param INVERSE_DELTA_RLIM
+ *              Used to update crit_exponent. See update_rlim() for more.
+ *
+ * Mutators:
+ *   @param outer_loop_update()
+ *              Update the annealing state variables in the placement outer loop.
+ *   @param update_rlim(), update_crit_exponent(), update_move_lim()
+ *              Inline subroutines used by the main routine outer_loop_update().
+ */
+class t_annealing_state {
+  public:
+    float t;
+    float rlim;
+    float alpha;
+    float restart_t;
+    float crit_exponent;
+    int move_lim_max;
+    int move_lim;
+    float success_rate;
+    int num_temps = 0;
+
+  private:
+    float UPPER_RLIM;
+    float FINAL_RLIM = 1.;
+    float INVERSE_DELTA_RLIM;
+
+  public: //Constructor
+    t_annealing_state(const t_annealing_sched& annealing_sched,
+                      float first_t,
+                      float first_rlim,
+                      int first_move_lim,
+                      float first_crit_exponent);
+
+  public: //Mutator
+    bool outer_loop_update(const t_placer_costs& costs,
+                           const t_placer_opts& placer_opts,
+                           const t_annealing_sched& annealing_sched);
+
+  private: //Mutator
+    inline void update_rlim();
+    inline void update_crit_exponent(const t_placer_opts& placer_opts);
+    inline void update_move_lim(float success_target);
 };
 
-//Initialize the placement context
+///@brief Initialize the placement context.
 void init_placement_context();
+
+///@brief Get the initial limit for inner loop block move attempt limit.
+int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
+
+///@brief Returns the standard deviation of data set x.
+double get_std_dev(int n, double sum_x_squared, double av_x);

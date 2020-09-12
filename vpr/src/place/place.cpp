@@ -63,10 +63,6 @@ using std::min;
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
 #define ERROR_TOL .01
 
-/* The final rlim (range limit) is 1, which is the smallest value that can *
- * still make progress, since an rlim of 0 wouldn't allow any swaps.       */
-#define FINAL_RLIM 1
-
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
@@ -257,10 +253,8 @@ static double comp_bb_cost(e_cost_methods method);
 static void update_move_nets(int num_nets_affected);
 static void reset_move_nets(int num_nets_affected);
 
-static e_move_result try_swap(float t,
-                              float crit_exponent,
+static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
-                              float rlim,
                               MoveGenerator& move_generator,
                               SetupTimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
@@ -285,11 +279,9 @@ static int check_placement_consistency();
 static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
 
-static float starting_t(float crit_exponent,
+static float starting_t(const t_annealing_state* state,
                         t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
-                        int max_moves,
-                        float rlim,
                         const PlaceDelayModel* delay_model,
                         PlacerCriticalities* criticalities,
                         PlacerSetupSlacks* setup_slacks,
@@ -299,17 +291,7 @@ static float starting_t(float crit_exponent,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
-static bool update_annealing_state(t_annealing_state* state,
-                                   float success_rat,
-                                   const t_placer_costs& costs,
-                                   const t_placer_opts& placer_opts,
-                                   const t_annealing_sched& annealing_sched);
-
-static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid);
-
 static int count_connections();
-
-static double get_std_dev(int n, double sum_x_squared, double av_x);
 
 static double recompute_bb_cost();
 
@@ -371,12 +353,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info);
 
-static void placement_inner_loop(float t,
-                                 int temp_num,
-                                 float rlim,
+static void placement_inner_loop(const t_annealing_state* state,
                                  const t_placer_opts& placer_opts,
-                                 int move_lim,
-                                 float crit_exponent,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
@@ -395,7 +373,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const PlacerCriticalities* criticalities,
                                          t_placer_costs* costs);
 
-static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim);
+static void calc_placer_stats(t_placer_statistics& stats, double& std_dev, const t_placer_costs& costs);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
@@ -417,9 +395,6 @@ static void print_place_status(const size_t num_temps,
                                const float crit_exponent,
                                size_t tot_moves);
 static void print_resources_utilization();
-
-void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
-static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -447,7 +422,8 @@ void try_place(const t_placer_opts& placer_opts,
 
     int tot_iter, moves_since_cost_recompute, width_fac, num_connections,
         outer_crit_iter_count, inner_recompute_limit;
-    float success_rat, first_crit_exponent, first_rlim;
+    float first_crit_exponent, first_rlim, first_t;
+    int first_move_lim;
 
     t_placer_costs costs(placer_opts.place_algorithm);
 
@@ -634,65 +610,44 @@ void try_place(const t_placer_opts& placer_opts,
         print_place(nullptr, nullptr, filename.c_str());
     }
 
-    int move_lim = 1;
-    if (placer_opts.effort_scaling == e_place_effort_scaling::CIRCUIT) {
-        //This scales the move limit proportional to num_blocks ^ (4/3)
-        move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
-    } else if (placer_opts.effort_scaling == e_place_effort_scaling::DEVICE_CIRCUIT) {
-        //This scales the move limit proportional to device_size ^ (2/3) * num_blocks ^ (2/3)
-        //
-        //For highly utilized devices (device_size ~ num_blocks) this is the same as
-        //num_blocks ^ (4/3).
-        //
-        //For low utilization devices (device_size >> num_blocks) this performs more
-        //moves (device_size ^ (2/3)) to ensure better optimization. In this case,
-        //more moves than num_blocks ^ (4/3) may be required, since the search space
-        //is larger.
-        float device_size = device_ctx.grid.width() * device_ctx.grid.height();
-        move_lim = (int)(annealing_sched.inner_num * pow(device_size, 2. / 3.) * pow(cluster_ctx.clb_nlist.blocks().size(), 2. / 3.));
-    } else {
-        VPR_ERROR(VPR_ERROR_PLACE, "Unrecognized placer effort scaling");
-    }
-    VTR_LOG("Moves per temperature: %d\n", move_lim);
-
-    /* Sometimes I want to run the router with a random placement.  Avoid *
-     * using 0 moves to stop division by 0 and 0 length vector problems,  *
-     * by setting move_lim to 1 (which is still too small to do any       *
-     * significant optimization).                                         */
-    if (move_lim <= 0)
-        move_lim = 1;
+    first_move_lim = get_initial_move_lim(placer_opts, annealing_sched);
 
     if (placer_opts.inner_loop_recompute_divider != 0) {
-        inner_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.inner_loop_recompute_divider);
+        inner_recompute_limit = (int)(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
     } else {
         /*don't do an inner recompute */
-        inner_recompute_limit = move_lim + 1;
+        inner_recompute_limit = first_move_lim + 1;
     }
 
     int quench_recompute_limit;
     if (placer_opts.quench_recompute_divider != 0) {
-        quench_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
+        quench_recompute_limit = (int)(0.5 + (float)first_move_lim / (float)placer_opts.quench_recompute_divider);
     } else {
         /*don't do an quench recompute */
-        quench_recompute_limit = move_lim + 1;
+        quench_recompute_limit = first_move_lim + 1;
     }
 
+    /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    float first_t = starting_t(first_crit_exponent,
-                               &costs,
-                               annealing_sched, move_lim, first_rlim,
-                               place_delay_model.get(),
-                               placer_criticalities.get(),
-                               placer_setup_slacks.get(),
-                               timing_info.get(),
-                               *move_generator,
-                               pin_timing_invalidator.get(),
-                               blocks_affected,
-                               placer_opts);
+    /* Set the temperature high so essentially all swaps will be accepted   */
+    /* when trying to determine the starting temp for placement inner loop. */
+    first_t = HUGE_POSITIVE_FLOAT;
 
-    t_annealing_state state;
-    init_annealing_state(&state, annealing_sched, first_t, first_rlim, move_lim, first_crit_exponent);
+    t_annealing_state state(annealing_sched, first_t, first_rlim, first_move_lim, first_crit_exponent);
+
+    /* Update the starting temperature for placement annealing to a more appropriate value */
+    state.t = starting_t(&state,
+                         &costs,
+                         annealing_sched,
+                         place_delay_model.get(),
+                         placer_criticalities.get(),
+                         placer_setup_slacks.get(),
+                         timing_info.get(),
+                         *move_generator,
+                         pin_timing_invalidator.get(),
+                         blocks_affected,
+                         placer_opts);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(vtr::fopen(placer_opts.move_stats_file.c_str(), "w"), vtr::fclose);
@@ -701,7 +656,6 @@ void try_place(const t_placer_opts& placer_opts,
 
     tot_iter = 0;
     moves_since_cost_recompute = 0;
-    int num_temps = 0;
 
 #ifdef ENABLE_ANALYTIC_PLACE
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
@@ -729,8 +683,8 @@ void try_place(const t_placer_opts& placer_opts,
                                       pin_timing_invalidator.get(),
                                       timing_info.get());
 
-        placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
-                             state.move_lim, state.crit_exponent, inner_recompute_limit, &stats,
+        placement_inner_loop(&state, placer_opts,
+                             inner_recompute_limit, &stats,
                              &costs,
                              &moves_since_cost_recompute,
                              pin_timing_invalidator.get(),
@@ -744,9 +698,10 @@ void try_place(const t_placer_opts& placer_opts,
 
         tot_iter += state.move_lim;
 
-        calc_placer_stats(stats, success_rat, std_dev, costs, state.move_lim);
+        state.success_rate = ((float)stats.success_sum) / state.move_lim;
+        calc_placer_stats(stats, std_dev, costs);
 
-        ++num_temps;
+        ++state.num_temps;
 
         if (placer_opts.place_algorithm.is_timing_driven()) {
             critical_path = timing_info->least_slack_critical_path();
@@ -754,12 +709,12 @@ void try_place(const t_placer_opts& placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
-        print_place_status(num_temps,
+        print_place_status(state.num_temps,
                            temperature_timer.elapsed_sec(),
                            state.t, state.alpha,
                            stats,
                            critical_path.delay(), sTNS, sWNS,
-                           success_rat, std_dev, state.rlim, state.crit_exponent, tot_iter);
+                           state.success_rate, std_dev, state.rlim, state.crit_exponent, tot_iter);
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                 costs.cost, costs.bb_cost, costs.timing_cost, state.t);
@@ -770,13 +725,17 @@ void try_place(const t_placer_opts& placer_opts,
             print_clb_placement("first_iteration_clb_placement.echo");
         }
 #endif
-    } while (update_annealing_state(&state, success_rat, costs, placer_opts, annealing_sched));
+    } while (state.outer_loop_update(costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
 #ifdef ENABLE_ANALYTIC_PLACE
 // guard quench label, otherwise compiler complains about unused label
 quench:
 #endif /* ENABLE_ANALYTIC_PLACE */
+
+    /* Start Quench */
+    state.t = 0;                         //Freeze out: only accept solutions that improve placement.
+    state.move_lim = state.move_lim_max; //Revert the move limit to initial value.
 
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
@@ -793,12 +752,10 @@ quench:
                                       pin_timing_invalidator.get(),
                                       timing_info.get());
 
-        state.t = 0; /* freeze out */
-
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
-                             move_lim, state.crit_exponent, quench_recompute_limit, &stats,
+        placement_inner_loop(&state, placer_opts,
+                             quench_recompute_limit, &stats,
                              &costs,
                              &moves_since_cost_recompute,
                              pin_timing_invalidator.get(),
@@ -810,10 +767,11 @@ quench:
                              timing_info.get(),
                              placer_opts.place_quench_algorithm);
 
-        tot_iter += move_lim;
-        ++num_temps;
+        tot_iter += state.move_lim;
+        ++state.num_temps;
 
-        calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
+        state.success_rate = ((float)stats.success_sum) / state.move_lim;
+        calc_placer_stats(stats, std_dev, costs);
 
         if (placer_opts.place_quench_algorithm.is_timing_driven()) {
             critical_path = timing_info->least_slack_critical_path();
@@ -822,16 +780,16 @@ quench:
         }
 
         float quench_elapsed_sec = temperature_timer.elapsed_sec();
-        print_place_status(num_temps,
+        print_place_status(state.num_temps,
                            quench_elapsed_sec,
                            state.t, state.alpha, stats,
                            critical_path.delay(), sTNS, sWNS,
-                           success_rat, std_dev, state.rlim, state.crit_exponent, tot_iter);
+                           state.success_rate, std_dev, state.rlim, state.crit_exponent, tot_iter);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
-        std::string filename = vtr::string_fmt("placement_%03d_%03d.place", num_temps + 1, 0);
+        std::string filename = vtr::string_fmt("placement_%03d_%03d.place", state.num_temps + 1, 0);
         VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
         print_place(nullptr, nullptr, filename.c_str());
     }
@@ -899,7 +857,7 @@ quench:
     float reject_rate = (float)num_swap_rejected / total_swap_attempts;
     float accept_rate = (float)num_swap_accepted / total_swap_attempts;
     float abort_rate = (float)num_swap_aborted / total_swap_attempts;
-    VTR_LOG("Placement number of temperatures: %d\n", num_temps);
+    VTR_LOG("Placement number of temperatures: %d\n", state.num_temps);
     VTR_LOG("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
     VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100 * accept_rate);
     VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100 * reject_rate);
@@ -962,12 +920,8 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
 }
 
 /* Function which contains the inner loop of the simulated annealing */
-static void placement_inner_loop(float t,
-                                 int temp_num,
-                                 float rlim,
+static void placement_inner_loop(const t_annealing_state* state,
                                  const t_placer_opts& placer_opts,
-                                 int move_lim,
-                                 float crit_exponent,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
@@ -993,11 +947,9 @@ static void placement_inner_loop(float t,
     inner_crit_iter_count = 1;
 
     /* Inner loop begins */
-    for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
-        e_move_result swap_result = try_swap(t,
-                                             crit_exponent,
+    for (inner_iter = 0; inner_iter < state->move_lim; inner_iter++) {
+        e_move_result swap_result = try_swap(state,
                                              costs,
-                                             rlim,
                                              move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
@@ -1028,14 +980,14 @@ static void placement_inner_loop(float t,
              * We do this only once in a while, since it is expensive.
              */
             if (inner_crit_iter_count >= inner_recompute_limit
-                && inner_iter != move_lim - 1) { /*on last iteration don't recompute */
+                && inner_iter != state->move_lim - 1) { /*on last iteration don't recompute */
 
                 inner_crit_iter_count = 0;
 #ifdef VERBOSE
                 VTR_LOG("Inner loop recompute criticalities\n");
 #endif
                 //Update all timing related classes
-                perform_full_timing_update(crit_exponent,
+                perform_full_timing_update(state->crit_exponent,
                                            delay_model,
                                            criticalities,
                                            setup_slacks,
@@ -1066,14 +1018,13 @@ static void placement_inner_loop(float t,
 
         if (placer_opts.placement_saves_per_temperature >= 1
             && inner_iter > 0
-            && (inner_iter + 1) % (move_lim / placer_opts.placement_saves_per_temperature) == 0) {
-            std::string filename = vtr::string_fmt("placement_%03d_%03d.place", temp_num + 1, inner_placement_save_count);
-            VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n", inner_iter, move_lim, filename.c_str());
+            && (inner_iter + 1) % (state->move_lim / placer_opts.placement_saves_per_temperature) == 0) {
+            std::string filename = vtr::string_fmt("placement_%03d_%03d.place", state->num_temps + 1, inner_placement_save_count);
+            VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n", inner_iter, state->move_lim, filename.c_str());
             print_place(nullptr, nullptr, filename.c_str());
             ++inner_placement_save_count;
         }
     }
-    /* Inner loop ends */
 }
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
@@ -1119,117 +1070,10 @@ static int count_connections() {
     return (count);
 }
 
-static double get_std_dev(int n, double sum_x_squared, double av_x) {
-    /* Returns the standard deviation of data set x.  There are n sample points, *
-     * sum_x_squared is the summation over n of x^2 and av_x is the average x.   *
-     * All operations are done in double precision, since round off error can be *
-     * a problem in the initial temp. std_dev calculation for big circuits.      */
-
-    double std_dev;
-
-    if (n <= 1)
-        std_dev = 0.;
-    else
-        std_dev = (sum_x_squared - n * av_x * av_x) / (double)(n - 1);
-
-    if (std_dev > 0.) /* Very small variances sometimes round negative */
-        std_dev = sqrt(std_dev);
-    else
-        std_dev = 0.;
-
-    return (std_dev);
-}
-
-static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid) {
-    /* Update the range limited to keep acceptance prob. near 0.44.  Use *
-     * a floating point rlim to allow gradual transitions at low temps.  */
-
-    float upper_lim;
-
-    *rlim = (*rlim) * (1. - 0.44 + success_rat);
-    upper_lim = max(grid.width() - 1, grid.height() - 1);
-    *rlim = min(*rlim, upper_lim);
-    *rlim = max(*rlim, (float)1.);
-}
-
-/* Update the annealing state according to the annealing schedule selected.
- *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
- *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
- *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
- *                See doc/src/vpr/dusty_sa.rst for more details.
- *
- * Returns true until the schedule is finished. */
-static bool update_annealing_state(t_annealing_state* state,
-                                   float success_rat,
-                                   const t_placer_costs& costs,
-                                   const t_placer_opts& placer_opts,
-                                   const t_annealing_sched& annealing_sched) {
-#ifndef NO_GRAPHICS
-    t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->list_of_breakpoints.size() != 0)
-        //update temperature in the current information variable
-        get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
-#endif
-
-    /* Return `false` when the exit criterion is met. */
-    if (annealing_sched.type == USER_SCHED) {
-        state->t *= annealing_sched.alpha_t;
-        return state->t >= annealing_sched.exit_t;
-    }
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    /* Automatic annealing schedule */
-    float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-
-    if (annealing_sched.type == DUSTY_SCHED) {
-        bool restart_temp = state->t < t_exit || std::isnan(t_exit); //May get nan if there are no nets
-        if (success_rat < annealing_sched.success_min || restart_temp) {
-            if (state->alpha > annealing_sched.alpha_max) return false;
-            state->t = state->restart_t / sqrt(state->alpha); // Take a half step from the restart temperature.
-            state->alpha = 1.0 - ((1.0 - state->alpha) * annealing_sched.alpha_decay);
-        } else {
-            if (success_rat > annealing_sched.success_target) {
-                state->restart_t = state->t;
-            }
-            state->t *= state->alpha;
-        }
-        state->move_lim = std::max(1, std::min(state->move_lim_max, (int)(state->move_lim_max * (annealing_sched.success_target / success_rat))));
-    } else { /* annealing_sched.type == AUTO_SCHED */
-        if (success_rat > 0.96) {
-            state->alpha = 0.5;
-        } else if (success_rat > 0.8) {
-            state->alpha = 0.9;
-        } else if (success_rat > 0.15 || state->rlim > 1.) {
-            state->alpha = 0.95;
-        } else {
-            state->alpha = 0.8;
-        }
-        state->t *= state->alpha;
-
-        // Must be duplicated to retain previous behavior
-        if (state->t < t_exit || std::isnan(t_exit)) return false;
-    }
-
-    // Gradually changes from the initial crit_exponent to the final crit_exponent based on how much the range limit has shrunk.
-    // The idea is that as the range limit shrinks (indicating we are fine-tuning a more optimized placement) we can focus more on a smaller number of critical connections, which a higher crit_exponent achieves.
-    update_rlim(&state->rlim, success_rat, device_ctx.grid);
-
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        state->crit_exponent = (1 - (state->rlim - FINAL_RLIM) * state->inverse_delta_rlim)
-                                   * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
-                               + placer_opts.td_place_exp_first;
-    }
-
-    return true;
-}
-
-static float starting_t(float crit_exponent,
+///@brief Find the starting temperature for the annealing loop.
+static float starting_t(const t_annealing_state* state,
                         t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
-                        int max_moves,
-                        float rlim,
                         const PlaceDelayModel* delay_model,
                         PlacerCriticalities* criticalities,
                         PlacerSetupSlacks* setup_slacks,
@@ -1238,31 +1082,26 @@ static float starting_t(float crit_exponent,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts) {
-    /* Finds the starting temperature (hot condition).              */
-
-    int i, num_accepted, move_lim;
-    double std_dev, av, sum_of_squares; /* Double important to avoid round off */
-
-    if (annealing_sched.type == USER_SCHED)
+    /* Use user-specified value for the initial temperature. */
+    if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
+    }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    move_lim = min(max_moves, (int)cluster_ctx.clb_nlist.blocks().size());
+    /* Use to calculate the average of cost when swap is accepted. */
+    int num_accepted = 0;
 
-    num_accepted = 0;
-    av = 0.;
-    sum_of_squares = 0.;
+    /* Use double types to avoid round off. */
+    double av = 0., sum_of_squares = 0.;
 
-    /* Try one move per block. Set the temperature high so essentially all accepted. */
-    float t = HUGE_POSITIVE_FLOAT;
+    /* Determines the block swap loop count. */
+    int move_lim = std::min(state->move_lim_max, (int)cluster_ctx.clb_nlist.blocks().size());
 
-    for (i = 0; i < move_lim; i++) {
+    for (int i = 0; i < move_lim; i++) {
         //Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
-        e_move_result swap_result = try_swap(t,
-                                             crit_exponent,
+        e_move_result swap_result = try_swap(state,
                                              costs,
-                                             rlim,
                                              move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
@@ -1286,18 +1125,19 @@ static float starting_t(float crit_exponent,
         }
     }
 
-    if (num_accepted != 0)
-        av /= num_accepted;
-    else
-        av = 0.;
+    /* Take the average of the accepted swaps' cost values. */
+    av = num_accepted > 0 ? (av / num_accepted) : 0.;
 
-    std_dev = get_std_dev(num_accepted, sum_of_squares, av);
+    /* Get the standard deviation. */
+    double std_dev = get_std_dev(num_accepted, sum_of_squares, av);
 
+    /* Print warning if not all swaps are accepted. */
     if (num_accepted != move_lim) {
         VTR_LOG_WARN("Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
     }
 
 #ifdef VERBOSE
+    /* Print stats related to finding the initital temp. */
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
@@ -1333,10 +1173,24 @@ static void reset_move_nets(int num_nets_affected) {
     }
 }
 
-static e_move_result try_swap(float t,
-                              float crit_exponent,
+/**
+ * @brief Pick some block and moves it to another spot.
+ *
+ * If the new location is empty, directly move the block. If the new location
+ * is occupied, switch the blocks. Due to the different sizes of the blocks,
+ * this block switching may occur for multiple times. It might also cause the
+ * current swap attempt to abort due to inability to find suitable locations
+ * for moved blocks.
+ *
+ * The move generator will record all the switched blocks in the variable
+ * `blocks_affected`. Afterwards, the move will be assessed by the chosen
+ * cost formulation. Currently, there are three ways to assess move cost,
+ * which are stored in the enum type `e_place_algorithm`.
+ *
+ * @return Whether the block swap is accepted, rejected or aborted.
+ */
+static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
-                              float rlim,
                               MoveGenerator& move_generator,
                               SetupTimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
@@ -1347,30 +1201,27 @@ static e_move_result try_swap(float t,
                               float rlim_escape_fraction,
                               const t_place_algorithm& place_algorithm,
                               float timing_tradeoff) {
-    /* Picks some block and moves it to another spot.  If this spot is   *
-     * occupied, switch the blocks.  Assess the change in cost function. *
-     * rlim is the range limiter.                                        *
-     * Returns whether the swap is accepted, rejected or aborted.        *
-     * Passes back the new value of the cost functions.                  */
-
     num_ts_called++;
 
     MoveOutcomeStats move_outcome_stats;
 
-    /* I'm using negative values of proposed_net_cost as a flag, so DO NOT   *
-     * use cost functions that can go negative.                          */
+    /* I'm using negative values of proposed_net_cost as a flag, *
+     * so DO NOT use cost functions that can go negative.        */
 
-    double delta_c = 0; /* Change in cost due to this swap. */
-    double bb_delta_c = 0;
-    double timing_delta_c = 0;
+    double delta_c = 0;        //Change in cost due to this swap.
+    double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
 
-    //Allow some fraction of moves to not be restricted by rlim,
-    //in the hopes of better escaping local minima
+    /* Allow some fraction of moves to not be restricted by rlim, */
+    /* in the hopes of better escaping local minima.              */
+    float rlim;
     if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
+    } else {
+        rlim = state->rlim;
     }
 
-    //Generate a new move (perturbation) used to explore the space of possible placements
+    /* Generate a new move (perturbation) used to explore the space of possible placements. */
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
@@ -1378,9 +1229,6 @@ static e_move_result try_swap(float t,
     e_move_result move_outcome = ABORTED;
 
     if (create_move_outcome == e_create_move::ABORT) {
-        //Proposed move is not legal -- give up on this move
-        clear_move_blocks(blocks_affected);
-
         LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
                                std::numeric_limits<float>::quiet_NaN(),
                                std::numeric_limits<float>::quiet_NaN(),
@@ -1443,7 +1291,7 @@ static e_move_result try_swap(float t,
             //we need to revert block moves and restore the timing values.
             criticalities->disable_update();
             setup_slacks->enable_update();
-            update_timing_classes(crit_exponent,
+            update_timing_classes(state->crit_exponent,
                                   timing_info,
                                   criticalities,
                                   setup_slacks,
@@ -1466,7 +1314,7 @@ static e_move_result try_swap(float t,
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
-        move_outcome = assess_swap(delta_c, t);
+        move_outcome = assess_swap(delta_c, state->t);
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1526,7 +1374,7 @@ static e_move_result try_swap(float t,
                                                 timing_info);
 
                 /* Revert the timing update */
-                update_timing_classes(crit_exponent,
+                update_timing_classes(state->crit_exponent,
                                       timing_info,
                                       criticalities,
                                       setup_slacks,
@@ -1563,6 +1411,8 @@ static e_move_result try_swap(float t,
     stop_placement_and_check_breakopints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 #    endif
 #endif
+
+    /* Clear the data structure containing block move info */
     clear_move_blocks(blocks_affected);
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
@@ -2785,8 +2635,7 @@ static void free_try_swap_arrays() {
     g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
 }
 
-static void calc_placer_stats(t_placer_statistics& stats, float& success_rat, double& std_dev, const t_placer_costs& costs, const int move_lim) {
-    success_rat = ((float)stats.success_sum) / move_lim;
+static void calc_placer_stats(t_placer_statistics& stats, double& std_dev, const t_placer_costs& costs) {
     if (stats.success_sum == 0) {
         stats.av_cost = costs.cost;
         stats.av_bb_cost = costs.bb_cost;
@@ -2899,26 +2748,6 @@ static void print_resources_utilization() {
         }
     }
     VTR_LOG("\n");
-}
-
-static void init_annealing_state(t_annealing_state* state,
-                                 const t_annealing_sched& annealing_sched,
-                                 float t,
-                                 float rlim,
-                                 int move_lim_max,
-                                 float crit_exponent) {
-    state->alpha = annealing_sched.alpha_min;
-    state->t = t;
-    state->restart_t = t;
-    state->rlim = rlim;
-    state->inverse_delta_rlim = 1 / (rlim - FINAL_RLIM);
-    state->move_lim_max = std::max(1, move_lim_max);
-    if (annealing_sched.type == DUSTY_SCHED) {
-        state->move_lim = std::max(1, (int)(state->move_lim_max * annealing_sched.success_target));
-    } else {
-        state->move_lim = state->move_lim_max;
-    }
-    state->crit_exponent = crit_exponent;
 }
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
