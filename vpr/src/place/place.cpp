@@ -1254,10 +1254,12 @@ static bool update_annealing_state(t_annealing_state* state,
                                    const t_placer_costs& costs,
                                    const t_placer_opts& placer_opts,
                                    const t_annealing_sched& annealing_sched) {
+#ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0)
         //update temperature in the current information variable
         get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
+#endif
 
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
@@ -1453,9 +1455,11 @@ static e_move_result try_swap(float t,
         rlim = std::numeric_limits<float>::infinity();
     }
 
-    bool manual_move = get_manual_move_flag();
     ManualMoveInfo dummy;
     ManualMoveInfo* manual_move_info = &dummy;
+    bool manual_move = false;
+#ifndef NO_GRAPHICS
+    manual_move = get_manual_move_flag();
 
     if (manual_move) {
         manual_move_info_from_user_and_open_window(manual_move_info);
@@ -1463,6 +1467,7 @@ static e_move_result try_swap(float t,
         //sends info to the move generator class
         mmg_get_manual_move_info(*manual_move_info);
     }
+#endif
 
     e_create_move create_move_outcome;
     //Generate a new move (perturbation) used to explore the space of possible placements
@@ -3073,6 +3078,7 @@ bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
 }
 
+#ifndef NO_GRAPHICS
 //transforms the vector moved_blocks to a vector of ints and adds it in glob_breakpoint_state
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
     get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_by_move.clear();
@@ -3083,7 +3089,7 @@ void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
     }
 }
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
+#    ifdef VTR_ENABLE_DEBUG_LOGGING
 void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0) {
@@ -3122,7 +3128,7 @@ void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affect
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
     }
 }
-#endif
+#    endif
 
 /** pops up the manual move window for the user to input set their move **/
 void manual_move_info_from_user_and_open_window(ManualMoveInfo* /*manual_move_info*/) {
@@ -3143,3 +3149,4 @@ void update_manual_move_costs_and_open_window(ManualMoveInfo* manual_move_info, 
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_outcome = manual_move_info->user_move_outcome;
 }
+#endif

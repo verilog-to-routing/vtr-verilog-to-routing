@@ -51,7 +51,7 @@ bool check_for_expression_breakpoints(std::string expression, bool in_placer) {
 
     return result;
 }
-
+#ifndef NO_GRAPHICS
 //checks for all types of breakpoints
 bool check_for_breakpoints(bool in_placer) {
     //goes through the breakpoints vector
@@ -84,6 +84,7 @@ void delete_breakpoint_by_index(int index) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->list_of_breakpoints.erase(draw_state->list_of_breakpoints.begin() + index);
 }
+#endif
 
 //prints the current placer information to the terminal
 void print_current_info(bool in_placer) {

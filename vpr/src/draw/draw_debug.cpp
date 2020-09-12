@@ -1,4 +1,6 @@
-#include "draw_debug.h"
+#ifndef NO_GRAPHICS
+
+#    include "draw_debug.h"
 
 //keeps track of open windows to avoid reopenning windows that are alerady open
 struct open_windows {
@@ -604,3 +606,5 @@ void close_debug_window() {
 void close_advanced_window() {
     draw_debug_glob_vars.openWindows.advanced_window = false;
 }
+
+#endif

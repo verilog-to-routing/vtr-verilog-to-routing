@@ -1,17 +1,18 @@
 /** This file contains all functions reagrding the graphics related to the setting of place and route breakpoints **/
+#ifndef NO_GRAPHCS
 
-#include "draw_global.h"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+#    include "draw_global.h"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
 
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
+#    include <cstdio>
+#    include <cfloat>
+#    include <cstring>
+#    include <cmath>
+#    include <algorithm>
+#    include <sstream>
+#    include <array>
+#    include <iostream>
 
 /** debugger functions **/
 void draw_debug_window();
@@ -32,3 +33,5 @@ void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window);
 void invalid_breakpoint_entry_window(std::string error);
 bool valid_expression(std::string exp);
 void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state, bool in_placer);
+
+#endif

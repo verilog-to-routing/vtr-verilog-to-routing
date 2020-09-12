@@ -2044,6 +2044,7 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
 //updates router iteration information and checks for router iteration and net id breakpoints
 //stops after the specified router iteration or net id is encountered
 void update_router_info_and_check_bp(bp_router_type type, int net_id) {
+#ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0) {
         if (type == BP_ROUTE_ITER)
@@ -2056,4 +2057,9 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
             update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
         }
     }
+#else
+    //Suppress unused parameter warnings
+    (void)type;
+    (void)net_id;
+#endif
 }
