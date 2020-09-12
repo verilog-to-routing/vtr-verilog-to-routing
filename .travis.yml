@@ -248,9 +248,8 @@ before_script:
   - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
   - python3 get-pip.py
   - rm get-pip.py
-  - python3 -m pip install \
-      pylint \
-      black
+  - python3 -m pip install -r requirements.txt
+
   - source .github/travis/common.sh
   - ./.github/travis/setup.sh
 
