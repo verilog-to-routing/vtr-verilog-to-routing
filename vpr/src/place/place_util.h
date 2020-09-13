@@ -15,10 +15,11 @@
  * designs where the magnitude of a single move's delta cost is small
  * compared to the overall cost.
  *
- * The cost normalization factors are updated upon every temperature change
- * in the outer_loop_update_timing_info routine. They are the multiplicative
- * inverses of their respective cost values when the routine is called. They
- * serve to normalize the trade-off between timing and wirelength (bb).
+ * To balance the trade-off between timing and wirelength (bb) cost, the
+ * change in costs produced by block swaps are divided by the final cost
+ * values of the previous iteration. However, the divisions are expensive,
+ * so we store their multiplicative inverses when they are updated in
+ * the outer loop routines to speed up the normalization process.
  *
  *   @param cost The weighted average of the wiring cost and the timing cost.
  *   @param bb_cost The bounding box cost, aka the wiring cost.
