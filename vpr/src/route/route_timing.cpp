@@ -533,10 +533,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         /*
          * Are we finished?
          */
-
-        bool can_router_finish = rcv_finished_count == 0 || itry >= router_opts.max_router_iterations;
-
-        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, can_router_finish)) {
+        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_finished_count == 0)) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
@@ -1990,9 +1987,11 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
     //in addition to routing being legal and the correct budgeting algorithm being set.
 
     if (routing_is_feasible) {
+        bool can_router_finish = rcv_finished || itry >= router_opts.max_router_iterations;
+
         if (router_opts.routing_budgets_algorithm != YOYO) {
             return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
+        } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || can_router_finish) && itry != 1) {
             return true;
         }
     }
