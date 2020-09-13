@@ -87,10 +87,6 @@ jobs:
     - stage: Test
       name: "Python Lint"
       script:     
-        - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        - python3.6 get-pip.py   
-        - python3.6 -m pip install PrettyTable
-        - rm get-pip.py
         - python3 ./dev/pylint_check.py
     - stage: Test
       name: "C++ Unit Tests"
@@ -115,10 +111,6 @@ jobs:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
-        - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        - python3.6 get-pip.py   
-        - python3.6 -m pip install PrettyTable
-        - rm get-pip.py
         - ./.github/travis/build.sh
         - travis_wait 30 ./run_reg_test.py vtr_reg_basic -show_failures -j2
     - stage: Test
@@ -143,10 +135,6 @@ jobs:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
-        - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        - python3.6 get-pip.py   
-        - python3.6 -m pip install PrettyTable
-        - rm get-pip.py
         - ./.github/travis/build.sh
         - travis_wait 30 ./run_reg_test.py vtr_reg_strong -show_failures -j2
     - stage: Test
@@ -155,10 +143,6 @@ jobs:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
-        - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        - python3.6 get-pip.py   
-        - python3.6 -m pip install PrettyTable
-        - rm get-pip.py
         - ./.github/travis/build.sh
         - travis_wait 30 ./run_reg_test.py vtr_reg_valgrind_small -show_failures -j2
     - stage: Test
@@ -170,10 +154,6 @@ jobs:
         - LSAN_OPTIONS="exitcode=42" #Use a non-standard exit code to ensure LSAN errors are detected
       script:
         - ./.github/travis/build.sh
-        - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        - python3.6 get-pip.py   
-        - python3.6 -m pip install PrettyTable
-        - rm get-pip.py
         #We skip QoR since we are only checking for errors in sanitizer runs
         - travis_wait 50 ./run_reg_test.py vtr_reg_basic -show_failures -skip_qor -j2
     #Currently strong regression with sanitizers is disabled as it exceeds the maximum travis job run-time
@@ -195,10 +175,6 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
         - BUILD_TYPE=debug
       script:
-        - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        - python3.6 get-pip.py   
-        - python3.6 -m pip install PrettyTable
-        - rm get-pip.py
         - ./.github/travis/build.sh
         - ./run_reg_test.py odin_reg_micro -show_failures -j2
 
