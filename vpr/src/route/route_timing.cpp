@@ -533,7 +533,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         /*
          * Are we finished?
          */
-        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_finished_count == 0)) {
+
+        bool can_router_finish = rcv_finished_count == 0 || itry >= router_opts.max_router_iterations;
+
+        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, can_router_finish)) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
