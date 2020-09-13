@@ -5,5 +5,5 @@ for task in $tasks
 do
     striped="${task%/config}"
     striped="${striped#./}"
-    ~/vtr/vtr_flow/scripts/run_vtr_task.pl $striped
+    ~/vtr/vtr_flow/scripts/run_vtr_task.py $striped
 done

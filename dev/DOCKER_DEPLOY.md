@@ -36,7 +36,7 @@ First, use one of the terminals and compile VTR:
 make && make installation/
 
 Second, ensure that a basic regression test passes:
-./run_reg_test.pl vtr_reg_basic
+./run_reg_test.py vtr_reg_basic
 
 Third, run and/or modify VTR in the usual way.
 

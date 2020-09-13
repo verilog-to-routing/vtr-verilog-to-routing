@@ -45,7 +45,7 @@ The overall approach is similar, but we call out the differences below.
     At the bare minimum it is recommended to run:
     ```
     make                                                #Rebuild the code
-    ./run_reg_test.pl vtr_reg_basic vtr_reg_strong      #Run tests
+    ./run_reg_test.py vtr_reg_basic vtr_reg_strong      #Run tests
     ```
 
     See [Running Tests](#running-tests) for more details.
@@ -250,11 +250,11 @@ There are 4 main regression tests:
    QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
 
-These can be run with `run_reg_test.pl`:
+These can be run with `run_reg_test.py`:
 ```shell
 #From the VTR root directory
-$ ./run_reg_test.pl vtr_reg_basic
-$ ./run_reg_test.pl vtr_reg_strong
+$ ./run_reg_test.py vtr_reg_basic
+$ ./run_reg_test.py vtr_reg_strong
 ```
 
 The *nightly* and *weekly* regressions require the Titan and ISPD benchmarks
@@ -263,22 +263,22 @@ which can be integrated into your VTR tree with:
 make get_titan_benchmarks
 make get_ispd_benchmarks
 ```
-They can then be run using `run_reg_test.pl`:
+They can then be run using `run_reg_test.py`:
 ```shell
-$ ./run_reg_test.pl vtr_reg_nightly
-$ ./run_reg_test.pl vtr_reg_weekly
+$ ./run_reg_test.py vtr_reg_nightly
+$ ./run_reg_test.py vtr_reg_weekly
 ```
 
 To speed-up things up, individual sub-tests can be run in parallel using the `-j` option:
 ```shell
 #Run up to 4 tests in parallel
-$ ./run_reg_test.pl vtr_reg_strong -j4
+$ ./run_reg_test.py vtr_reg_strong -j4
 ```
 
 You can also run multiple regression tests together:
 ```shell
 #Run both the basic and strong regression, with up to 4 tests in parallel
-$ ./run_reg_test.pl vtr_reg_basic vtr_reg_strong -j4
+$ ./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 ```
 
 ## Odin Functionality Tests
@@ -291,8 +291,8 @@ Odin has its own set of tests to verify the correctness of its synthesis results
 These can be run with:
 ```shell
 #From the VTR root directory
-$ ./run_reg_test.pl odin_reg_micro
-$ ./run_reg_test.pl odin_reg_full
+$ ./run_reg_test.py odin_reg_micro
+$ ./run_reg_test.py odin_reg_full
 ```
 and should be used when making changes to Odin.
 
@@ -391,7 +391,7 @@ Lets assume we have a failure in `vtr_reg_basic`:
 
 ```shell
 #In the VTR root directory
-$ ./run_reg_test.pl vtr_reg_strong
+$ ./run_reg_test.py vtr_reg_strong
 #Output trimmed...
 regression_tests/vtr_reg_basic/basic_no_timing
 -----------------------------------------
@@ -421,7 +421,7 @@ latest  run002  run004  run005
 There we see there is a `config` directory (which defines the test), and a set of run-directories.
 Each time a test is run it creates a new `runXXX` directory (where `XXX` is an incrementing number).
 From the above we can tell that our last run was `run005` (the symbolic link `latest` also points to the most recent run directory).
-From the output of `run_reg_test.pl` we know that one of the failing architecture/circuit/parameters combinations was `k4_N10_memSize16384_memData64/ch_intrinsics/common`.
+From the output of `run_reg_test.py` we know that one of the failing architecture/circuit/parameters combinations was `k4_N10_memSize16384_memData64/ch_intrinsics/common`.
 Each architecture/circuit/parameter combination is run in its own sub-folder.
 Lets move to that directory:
 ```shell
@@ -561,12 +561,12 @@ A typical approach to evaluating an algorithm change would be to run `vtr_reg_qo
 $ cd vtr_flow/tasks
 
 #Run the VTR benchmarks
-$ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
 
 #Several hours later... they complete
 
 #Parse the results
-$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
 
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
@@ -596,12 +596,12 @@ $ make get_titan_benchmarks
 $ cd vtr_flow/tasks
 
 #Run the VTR benchmarks
-$ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_weekly/vtr_reg_titan
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/vtr_reg_titan
 
 #Several days later... they complete
 
 #Parse the results
-$ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_weekly/vtr_reg_titan
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/vtr_reg_titan
 
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
@@ -793,7 +793,7 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     ```shell
     #From the VTR root
     $ cd vtr_flow/tasks
-    $ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest
+    $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_strong/strong_mytest
 
     regression_tests/vtr_reg_strong/strong_mytest
     -----------------------------------------
@@ -801,14 +801,14 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     k6_frac_N10_mem32K_40nm/ch_intrinsics...OK
     ```
 
-    Next we can generate the golden reference results using `parse_vtr_task.pl` with the `-create_golden` option:
+    Next we can generate the golden reference results using `parse_vtr_task.py` with the `-create_golden` option:
     ```shell
-    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest -create_golden
+    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_strong/strong_mytest -create_golden
     ```
 
     And check that everything matches with `-check_golden`:
     ```shell
-    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_strong/strong_mytest -check_golden
+    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_strong/strong_mytest -check_golden
     regression_tests/vtr_reg_strong/strong_mytest...[Pass]
     ```
 
@@ -825,7 +825,7 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     Now, when we run `vtr_reg_strong`:
     ```shell
     #From the VTR root directory
-    $ ./run_reg_test.pl vtr_reg_strong
+    $ ./run_reg_test.py vtr_reg_strong
     #Output trimmed...
     regression_tests/vtr_reg_strong/strong_mytest
     -----------------------------------------

@@ -11,7 +11,7 @@ setup_WNS;vpr.out;Final setup Worst Negative Slack \(sWNS\): (.*) ns
 hold_TNS;vpr.out;Final hold Total Negative Slack \(hTNS\): (.*) ns
 hold_WNS;vpr.out;Final hold Worst Negative Slack \(hWNS\): (.*) ns
 
-crit_path_route_time;vpr.out;^#*\s*Routing took (.*) seconds
+crit_path_route_time;vpr.out;\s*Routing took (.*) seconds
 
 crit_path_total_timing_analysis_time;vpr.out;Flow timing analysis took (.*) seconds
 crit_path_total_sta_time;vpr.out;Flow timing analysis took .* seconds \((.*) STA

@@ -8,4 +8,4 @@ hostname;output.txt;hostname=(.*)
 rundir;output.txt;rundir=(.*)
 
 #Run-time Metrics
-max_vpr_mem;vpr.out;Maximum resident set size \(kbytes\): (\d+)
+max_vpr_mem;vpr.out;\s*Maximum resident set size \(kbytes\): (\d+)

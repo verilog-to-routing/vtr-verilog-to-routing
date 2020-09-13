@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+VTR_RUNTIME_ESTIMATE_SECONDS={estimated_time}
+VTR_MEMORY_ESTIMATE_BYTES={estimated_memory}
+
+VTR_RUNTIME_ESTIMATE_HUMAN_READABLE="{human_readable_time}"
+VTR_MEMORY_ESTIMATE_HUMAN_READABLE="{human_readable_memory}"
+
+#We redirect all command output to both stdout and the log file with 'tee'.
+
+#Begin I/O redirection
+{{
+
+    {script} {command}
+
+    #The IO redirection occurs in a sub-shell,
+    #so we need to exit it with the correct code
+    exit \$?
+
+}} |& tee vtr_flow.out
+#End I/O redirection
+
+#We used a pipe to redirect IO.
+#To get the correct exit status we need to exit with the
+#status of the first element in the pipeline (i.e. the real
+#command run above)
+exit \${{PIPESTATUS[0]}}

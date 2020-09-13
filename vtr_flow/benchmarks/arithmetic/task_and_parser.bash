@@ -16,7 +16,7 @@ popd
 
 if [ -z "$1" ] || [ "$1" == "task" ]; then
 	pushd .
-	"$VTR_SCRIPTS_DIR/run_vtr_task.pl" "$TASK_PATH" -p 4 || exit 1
+	"$VTR_SCRIPTS_DIR/run_vtr_task.py" "$TASK_PATH" -p 4 || exit 1
 
 	pushd .
 	cd "$ABS_TASK_PATH"
@@ -38,7 +38,7 @@ fi
 if [ -z "$1" ] || [ "$1" == "parse" ]; then
 	pushd .
 	echo "running parser"
-	"$VTR_SCRIPTS_DIR/parse_vtr_task.pl" "$TASK_PATH" || exit 1
+	"$VTR_SCRIPTS_DIR/parse_vtr_task.py" "$TASK_PATH" || exit 1
 	echo "parser done"
 	popd
 fi

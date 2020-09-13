@@ -87,7 +87,7 @@ ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#Need titan benchmarks for pgo_profile task
 	@+$(MAKE) -C $(BUILD_DIR) get_titan_benchmarks
 	#Note profiling must be done serially to avoid corrupting the generated profiles
-	./run_reg_test.pl pgo_profile
+	./run_reg_test.py pgo_profile
 	#
 	#Configure 2nd-stage build to use profiling data to guide compiler optimization
 	#

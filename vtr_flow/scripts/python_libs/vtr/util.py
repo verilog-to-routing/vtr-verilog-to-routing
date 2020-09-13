@@ -10,11 +10,10 @@ import subprocess
 import argparse
 import csv
 from collections import OrderedDict
+from prettytable import PrettyTable
 import vtr.error
 from vtr.error import CommandError
 from vtr import paths
-
-VERBOSITY_CHOICES = range(5)
 
 
 class RawDefaultHelpFormatter(
@@ -56,6 +55,7 @@ class CommandRunner:
         indent="\t",
         show_failures=False,
         valgrind=False,
+        expect_fail=None,
     ):
         if echo_cmd is None:
             echo_cmd = verbose
@@ -68,6 +68,7 @@ class CommandRunner:
         self._indent = indent
         self._show_failures = show_failures
         self._valgrind = valgrind
+        self._expect_fail = expect_fail
 
     def run_system_command(
         self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
@@ -191,19 +192,13 @@ class CommandRunner:
             for line in cmd_output:
                 print(indent_depth * self._indent + line, end="")
 
-        if self._show_failures and cmd_errored:
+        if self._show_failures and cmd_errored and not self._expect_fail:
             print("\nFailed log file follows({}):".format(str((temp_dir / log_filename).resolve())))
             for line in cmd_output:
                 print(indent_depth * self._indent + "<" + line, end="")
-            raise CommandError(
-                "Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name),
-                cmd=cmd,
-                log=str(temp_dir / log_filename),
-                returncode=cmd_returncode,
-            )
         if cmd_errored:
             raise CommandError(
-                "{}".format(PurePath(orig_cmd[0]).name),
+                "Executable {} failed".format(PurePath(orig_cmd[0]).name),
                 cmd=cmd,
                 log=str(temp_dir / log_filename),
                 returncode=cmd_returncode,
@@ -219,6 +214,29 @@ def check_cmd(command):
     """
 
     return Path(command).exists()
+
+
+def pretty_print_table(file, border=False):
+    """ Convert file to a pretty, easily read table """
+    table = PrettyTable()
+    table.border = border
+    reader = None
+    with open(file, "r") as csv_file:
+        reader = csv.reader(csv_file, delimiter="\t")
+        first = True
+        for row in reader:
+            row = [row_item.strip() + "\t" for row_item in row]
+            while row[-1] == "\t":
+                row = row[:-1]
+            if first:
+                table.field_names = list(row)
+                for head in list(row):
+                    table.align[head] = "l"
+                first = False
+            else:
+                table.add_row(row)
+    with open(file, "w+") as out_file:
+        print(table, file=out_file)
 
 
 def write_tab_delimitted_csv(filepath, rows):
@@ -430,6 +448,18 @@ def get_next_run_dir(base_dir):
     return str(PurePath(base_dir) / run_dir_name(get_next_run_number(base_dir)))
 
 
+def find_task_dir(config):
+    """
+    find the task directory
+    """
+    task_dir = None
+    # Task dir is just above the config directory
+    task_dir = Path(config.config_dir).parent
+    assert task_dir.is_dir
+
+    return str(task_dir)
+
+
 def get_latest_run_dir(base_dir):
     """
     Returns the run directory with the highest run number in base_dir
@@ -449,7 +479,7 @@ def get_next_run_number(base_dir):
     latest_run_number = get_latest_run_number(base_dir)
 
     if latest_run_number is None:
-        next_run_number = 0
+        next_run_number = 1
     else:
         next_run_number = latest_run_number + 1
 
@@ -460,14 +490,14 @@ def get_latest_run_number(base_dir):
     """
     Returns the highest run number of all run directories with in base_dir
     """
-    run_number = 0
+    run_number = 1
     run_dir = Path(base_dir) / run_dir_name(run_number)
 
-    if not run_dir.exists:
+    if not run_dir.exists():
         # No existing run directories
         return None
 
-    while run_dir.exists:
+    while run_dir.exists():
         run_number += 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
 
