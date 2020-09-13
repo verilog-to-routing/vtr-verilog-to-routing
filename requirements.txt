@@ -1,0 +1,4 @@
+black
+prettytable
+pylint
+lxml

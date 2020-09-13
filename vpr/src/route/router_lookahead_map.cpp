@@ -14,7 +14,7 @@
  * in Oleg Petelin's MASc thesis (2016) for more discussion.
  *
  * To handle estimates starting from SOURCE/OPIN's the lookahead also creates a small side look-up table of the wire types
- * which are reachable from each physical tile type's SOURCEs/OPINs (f_src_opin_reachable_wires). This is used for
+ * which are reachable from each physical tile type's SOURCEs/OPINs (f_src_opin_delays). This is used for
  * SRC/OPIN -> CHANX/CHANY estimates.
  *
  * In the case of SRC/OPIN -> SINK estimates the resuls from the two look-ups are added together (and the minimum taken
@@ -35,6 +35,7 @@
 #include "vtr_time.h"
 #include "vtr_geometry.h"
 #include "router_lookahead_map.h"
+#include "router_lookahead_map_utils.h"
 #include "rr_graph2.h"
 #include "rr_graph.h"
 #include "route_common.h"
@@ -182,25 +183,9 @@ class PQ_Entry {
     }
 };
 
-struct t_reachable_wire_inf {
-    e_rr_type wire_rr_type;
-    int wire_seg_index;
-
-    //Costs to reach the wire type from the current node
-    float congestion;
-    float delay;
-};
-
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
 typedef vtr::Matrix<Expansion_Cost_Entry> t_routing_cost_map; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
-
-typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_reachable_wires; //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1][wire_seg_index]
-                                                                                                  // ^                                           ^             ^
-                                                                                                  // |                                           |             |
-                                                                                                  // physical block type index                   |             Reachable wire info
-                                                                                                  //                                             |
-                                                                                                  //                                             SOURCE/OPIN ptc
 
 struct t_dijkstra_data {
     /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
@@ -214,20 +199,12 @@ struct t_dijkstra_data {
 
 /******** File-Scope Variables ********/
 
-constexpr int DIRECT_CONNECT_SPECIAL_SEG_TYPE = -1;
-
 //Look-up table from CHANX/CHANY (to SINKs) for various distances
 t_wire_cost_map f_wire_cost_map;
-
-//Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
-t_src_opin_reachable_wires f_src_opin_reachable_wires;
 
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
-static void compute_router_src_opin_lookahead();
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
-void dijkstra_flood_to_wires(int itile, RRNodeId inode, t_src_opin_reachable_wires& src_opin_reachable_wires);
 
 /* returns index of a node from which to start routing */
 static RRNodeId get_start_node(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
@@ -257,10 +234,7 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
-    RRNodeId current(current_node);
-    RRNodeId target(target_node);
-
-    t_rr_type rr_type = rr_graph.node_type(current);
+    t_rr_type rr_type = rr_graph.node_type(RRNodeId(current_node));
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
@@ -275,6 +249,9 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
     }
 }
 
+/******** Function Definitions ********/
+/* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
+ * from the specified source to the specified target */
 std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
@@ -293,7 +270,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
         //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
-        //cost to reach them) in f_src_opin_reachable_wires. Once we know what wire types are
+        //cost to reach them) in src_opin_delays. Once we know what wire types are
         //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
         //delay to reach the sink.
 
@@ -302,7 +279,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
-        if (f_src_opin_reachable_wires[tile_index][from_ptc].empty()) {
+        if (this->src_opin_delays[tile_index][from_ptc].empty()) {
             //During lookahead profiling we were unable to find any wires which connected
             //to this PTC.
             //
@@ -326,8 +303,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
             //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
             //and then add the estimates from those wire types for the distance of interest.
             //If there are multiple options we use the minimum value.
-            for (const auto& kv : f_src_opin_reachable_wires[tile_index][from_ptc]) {
-                const t_reachable_wire_inf& reachable_wire_inf = kv.second;
+            for (const auto& kv : this->src_opin_delays[tile_index][from_ptc]) {
+                const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
                 Cost_Entry wire_cost_entry;
                 if (reachable_wire_inf.wire_rr_type == SINK) {
@@ -389,7 +366,15 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
 }
 
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    compute_router_lookahead(segment_inf);
+    vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
+
+    //First compute the delay map when starting from the various wire types
+    //(CHANX/CHANY)in the routing architecture
+    compute_router_wire_lookahead(segment_inf);
+
+    //Next, compute which wire types are accessible (and the cost to reach them)
+    //from the different physical tile type's SOURCEs & OPINs
+    this->src_opin_delays = util::compute_router_src_opin_lookahead();
 }
 
 void MapLookahead::read(const std::string& file) {
@@ -397,7 +382,7 @@ void MapLookahead::read(const std::string& file) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    compute_router_src_opin_lookahead();
+    this->src_opin_delays = util::compute_router_src_opin_lookahead();
 }
 
 void MapLookahead::write(const std::string& file) const {
@@ -418,20 +403,6 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
     VTR_ASSERT_SAFE(delta_y < (int)f_wire_cost_map.dim_size(3));
 
     return f_wire_cost_map[chan_index][seg_index][delta_x][delta_y];
-}
-
-/* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
- * The rr graph must have been built before calling this function. */
-void compute_router_lookahead(const std::vector<t_segment_inf>& segment_inf) {
-    vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
-
-    //First compute the delay map when starting from the various wire types
-    //(CHANX/CHANY)in the routing architecture
-    compute_router_wire_lookahead(segment_inf);
-
-    //Next, compute which wire types are accessible (and the cost to reach them)
-    //from the different physical tile type's SOURCEs & OPINs
-    compute_router_src_opin_lookahead();
 }
 
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf) {
@@ -569,214 +540,6 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     }
 
     if (false) print_wire_cost_map(segment_inf);
-}
-
-static void compute_router_src_opin_lookahead() {
-    vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
-
-    f_src_opin_reachable_wires.clear();
-
-    f_src_opin_reachable_wires.resize(device_ctx.physical_tile_types.size());
-
-    std::vector<int> rr_nodes_at_loc;
-
-    //We assume that the routing connectivity of each instance of a physical tile is the same,
-    //and so only measure one instance of each type
-    for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
-        for (e_rr_type rr_type : {SOURCE, OPIN}) {
-            vtr::Point<int> sample_loc(-1, -1);
-
-            size_t num_sampled_locs = 0;
-            bool ptcs_with_no_reachable_wires = true;
-            while (ptcs_with_no_reachable_wires) { //Haven't found wire connected to ptc
-                ptcs_with_no_reachable_wires = false;
-
-                sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile], sample_loc);
-
-                if (sample_loc.x() == -1 && sample_loc.y() == -1) {
-                    //No untried instances of the current tile type left
-                    VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
-                                 (num_sampled_locs == 0) ? "" : "more ",
-                                 rr_node_typename[rr_type],
-                                 device_ctx.physical_tile_types[itile].name);
-                    break;
-                }
-
-                //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
-
-                rr_nodes_at_loc.clear();
-
-                get_rr_node_indices(device_ctx.rr_node_indices, sample_loc.x(), sample_loc.y(), rr_type, &rr_nodes_at_loc);
-                for (int inode : rr_nodes_at_loc) {
-                    if (inode < 0) continue;
-
-                    RRNodeId node_id(inode);
-
-                    int ptc = rr_graph.node_ptc_num(node_id);
-
-                    if (ptc >= int(f_src_opin_reachable_wires[itile].size())) {
-                        f_src_opin_reachable_wires[itile].resize(ptc + 1); //Inefficient but functional...
-                    }
-
-                    //Find the wire types which are reachable from inode and record them and
-                    //the cost to reach them
-                    dijkstra_flood_to_wires(itile, node_id, f_src_opin_reachable_wires);
-
-                    if (f_src_opin_reachable_wires[itile][ptc].empty()) {
-                        VTR_LOG_WARN("Found no reachable wires from %s (%s) at (%d,%d)\n",
-                                     rr_node_typename[rr_type],
-                                     rr_node_arch_name(inode).c_str(),
-                                     sample_loc.x(),
-                                     sample_loc.y());
-
-                        ptcs_with_no_reachable_wires = true;
-                    }
-                }
-
-                ++num_sampled_locs;
-            }
-            if (ptcs_with_no_reachable_wires) {
-                VPR_ERROR(VPR_ERROR_ROUTE, "Some SOURCE/OPINs have no reachable wires\n");
-            }
-        }
-    }
-}
-
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> prev) {
-    //Very simple for now, just pick the fist matching tile found
-    vtr::Point<int> loc(OPEN, OPEN);
-
-    //VTR_LOG("Prev: %d,%d\n", prev.x(), prev.y());
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
-
-    int y_init = prev.y() + 1; //Start searching next element above prev
-
-    for (int x = prev.x(); x < int(grid.width()); ++x) {
-        if (x < 0) continue;
-
-        //VTR_LOG("  x: %d\n", x);
-
-        for (int y = y_init; y < int(grid.height()); ++y) {
-            if (y < 0) continue;
-
-            //VTR_LOG("   y: %d\n", y);
-            if (grid[x][y].type == tile_type) {
-                loc.set_x(x);
-                loc.set_y(y);
-                break;
-            }
-        }
-
-        if (loc.x() != OPEN && loc.y() != OPEN) {
-            break;
-        } else {
-            y_init = 0; //Prepare to search next column
-        }
-    }
-    //VTR_LOG("Next: %d,%d\n", loc.x(), loc.y());
-
-    return loc;
-}
-
-void dijkstra_flood_to_wires(int itile, RRNodeId node, t_src_opin_reachable_wires& src_opin_reachable_wires) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
-
-    struct t_pq_entry {
-        float delay;
-        float congestion;
-        RRNodeId node;
-
-        bool operator<(const t_pq_entry& rhs) const {
-            return this->delay < rhs.delay;
-        }
-    };
-
-    std::priority_queue<t_pq_entry> pq;
-
-    t_pq_entry root;
-    root.congestion = 0.;
-    root.delay = 0.;
-    root.node = node;
-
-    int ptc = rr_graph.node_ptc_num(node);
-
-    /*
-     * Perform Djikstra from the SOURCE/OPIN of interest, stopping at the the first
-     * reachable wires (i.e until we hit the inter-block routing network), or a SINK
-     * (via a direct-connect).
-     *
-     * Note that typical RR graphs are structured :
-     *
-     *      SOURCE ---> OPIN --> CHANX/CHANY
-     *              |
-     *              --> OPIN --> CHANX/CHANY
-     *              |
-     *             ...
-     *
-     *   possibly with direct-connects of the form:
-     *
-     *      SOURCE --> OPIN --> IPIN --> SINK
-     *
-     * and there is a small number of fixed hops from SOURCE/OPIN to CHANX/CHANY or
-     * to a SINK (via a direct-connect), so this runs very fast (i.e. O(1))
-     */
-    pq.push(root);
-    while (!pq.empty()) {
-        t_pq_entry curr = pq.top();
-        pq.pop();
-
-        e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
-        if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
-            //We stop expansion at any CHANX/CHANY/SINK
-            int seg_index;
-            if (curr_rr_type != SINK) {
-                //It's a wire, figure out its type
-                int cost_index = rr_graph.node_cost_index(curr.node);
-                seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-            } else {
-                //This is a direct-connect path between an IPIN and OPIN,
-                //which terminated at a SINK.
-                //
-                //We treat this as a 'special' wire type
-                seg_index = DIRECT_CONNECT_SPECIAL_SEG_TYPE;
-            }
-
-            //Keep costs of the best path to reach each wire type
-            if (!src_opin_reachable_wires[itile][ptc].count(seg_index)
-                || curr.delay < src_opin_reachable_wires[itile][ptc][seg_index].delay) {
-                src_opin_reachable_wires[itile][ptc][seg_index].wire_rr_type = curr_rr_type;
-                src_opin_reachable_wires[itile][ptc][seg_index].wire_seg_index = seg_index;
-                src_opin_reachable_wires[itile][ptc][seg_index].delay = curr.delay;
-                src_opin_reachable_wires[itile][ptc][seg_index].congestion = curr.congestion;
-            }
-
-        } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
-            //We allow expansion through SOURCE/OPIN/IPIN types
-            int cost_index = rr_graph.node_cost_index(curr.node);
-            float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
-
-            for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
-                int iswitch = rr_graph.edge_switch(edge);
-                float incr_delay = device_ctx.rr_switch_inf[iswitch].Tdel;
-
-                RRNodeId next_node = rr_graph.edge_sink_node(edge);
-
-                t_pq_entry next;
-                next.congestion = curr.congestion + incr_cong; //Of current node
-                next.delay = curr.delay + incr_delay;          //To reach next node
-                next.node = next_node;
-
-                pq.push(next);
-            }
-        } else {
-            VPR_ERROR(VPR_ERROR_ROUTE, "Unrecognized RR type");
-        }
-    }
 }
 
 /* returns index of a node from which to start routing */

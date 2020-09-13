@@ -39,8 +39,6 @@
 #include "bucket.h"
 #include "connection_router.h"
 
-#include "router_lookahead_map.h"
-
 #include "tatum/TimingReporter.hpp"
 #include "overuse_report.h"
 

@@ -22,6 +22,7 @@ set(CAPNP_DEFS
     matrix.capnp
     gen/rr_graph_uxsdcxx.capnp
     map_lookahead.capnp
+    extended_map_lookahead.capnp
     )
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     ${CAPNP_DEFS}
