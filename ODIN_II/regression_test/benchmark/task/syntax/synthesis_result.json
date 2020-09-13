@@ -1702,7 +1702,7 @@
             "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
-            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~318 is itself undriven.",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~380 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
         ],
@@ -1735,7 +1735,7 @@
             "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
-            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~6774 is itself undriven.",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~8012 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
         ],
@@ -2792,6 +2792,39 @@
         "Po": 8,
         "Longest Path": 2,
         "Average Path": 2
+    },
+    "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "verilog": "multi_assignment.v",
+        "max_rss(MiB)": 55.2,
+        "exec_time(ms)": 90.6,
+        "synthesis_time(ms)": 5,
+        "Pi": 19,
+        "Po": 4,
+        "logic element": 53,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 53,
+        "Total Node": 53
+    },
+    "syntax/multi_assignment/no_arch": {
+        "test_name": "syntax/multi_assignment/no_arch",
+        "verilog": "multi_assignment.v",
+        "max_rss(MiB)": 35.1,
+        "exec_time(ms)": 14.5,
+        "synthesis_time(ms)": 11.7,
+        "Pi": 19,
+        "Po": 4,
+        "logic element": 53,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 53,
+        "Total Node": 53
     },
     "DEFAULT": {
         "test_name": "n/a",

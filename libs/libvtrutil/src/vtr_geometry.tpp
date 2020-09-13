@@ -152,6 +152,13 @@ bool Rect<T>::coincident(Point<T> point) const {
 }
 
 template<class T>
+bool Rect<T>::contains(const Rect<T>& other) const {
+    //Including all edges
+    return other.xmin() >= xmin() && other.xmax() <= xmax()
+           && other.ymin() >= ymin() && other.ymax() <= ymax();
+}
+
+template<class T>
 bool Rect<T>::empty() const {
     return xmax() <= xmin() || ymax() <= ymin();
 }

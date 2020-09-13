@@ -51,7 +51,25 @@ add_library(libvpr STATIC
              ${LIB_SOURCES}
 )
 
+
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
+
+#VPR_ANALYTIC_PLACE is inisitalized in the root CMakeLists
+#Check Eigen dependency
+if(${VPR_ANALYTIC_PLACE})
+	message(STATUS "VPR Analytic Placement: Requested")
+	find_package(Eigen3 3.3 NO_MODULE)
+	if (TARGET Eigen3::Eigen)
+		message(STATUS "VPR Analytic Placement dependency (Eigen3): Found")
+		message(STATUS "VPR Analytic Placement: Enabled")
+		target_link_libraries (libvpr Eigen3::Eigen)
+		target_compile_definitions(libvpr PUBLIC -DENABLE_ANALYTIC_PLACE)
+	else ()
+		message(STATUS "VPR Analytic Placement dependency (Eigen3): Not Found (Download manually with sudo apt install libeigen3-dev, and rebuild)")
+		message(STATUS "VPR Analytic Placement: Disabled")
+	endif(TARGET Eigen3::Eigen)
+endif()
+
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependancies
@@ -62,7 +80,8 @@ target_link_libraries(libvpr
                         libblifparse
                         libtatum
                         libargparse
-                        libpugixml)
+                        libpugixml
+)
 
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")

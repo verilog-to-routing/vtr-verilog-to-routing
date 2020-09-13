@@ -34,15 +34,15 @@ void Hashtable::destroy_free_items() {
 }
 
 void Hashtable::add(std::string key, void* item) {
-    this->my_map.insert({key, item});
+    this->my_map.emplace(key, item);
 }
 
 void* Hashtable::remove(std::string key) {
     void* value = NULL;
     auto v = this->my_map.find(key);
     if (v != this->my_map.end()) {
-        value = this->my_map[key];
-        this->my_map.erase(key);
+        value = v->second;
+        this->my_map.erase(v);
     }
     return value;
 }
@@ -51,11 +51,11 @@ void* Hashtable::get(std::string key) {
     void* value = NULL;
     auto v = this->my_map.find(key);
     if (v != this->my_map.end())
-        value = this->my_map[key];
+        value = v->second;
 
     return value;
 }
 
 bool Hashtable::is_empty() {
-    return (my_map.size() == 0);
+    return my_map.empty();
 }

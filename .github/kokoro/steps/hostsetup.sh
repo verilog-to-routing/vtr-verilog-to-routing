@@ -28,6 +28,7 @@ echo
 echo "========================================"
 echo "Host install packages"
 echo "----------------------------------------"
+
 sudo apt-get install -y \
         bash \
         bison \
@@ -57,6 +58,15 @@ sudo apt-get install -y \
         virtualenv \
         #Don't include libtbb-dev since it may increase memory usage
         #libtbb-dev \
+
+export PATH="$PATH:/home/kbuilder/.local/bin"
+
+pyenv install -f 3.6.3
+pyenv global 3.6.3
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python3 get-pip.py   
+rm get-pip.py
+python3 -m pip install -r requirements.txt
 
 if [ -z "${BUILD_TOOL}" ]; then
     export BUILD_TOOL=make

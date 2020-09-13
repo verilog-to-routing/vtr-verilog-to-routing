@@ -1,6 +1,7 @@
 #include "router_lookahead.h"
 
 #include "router_lookahead_map.h"
+#include "router_lookahead_extended_map.h"
 #include "vpr_error.h"
 #include "globals.h"
 #include "route_timing.h"
@@ -13,6 +14,8 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lo
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
         return std::make_unique<MapLookahead>();
+    } else if (router_lookahead_type == e_router_lookahead::EXTENDED_MAP) {
+        return std::make_unique<ExtendedMapLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
         return std::make_unique<NoOpLookahead>();
     }
@@ -42,53 +45,58 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(
 }
 
 float ClassicLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    auto& device_ctx = g_vpr_ctx.device();
+    float delay_cost, cong_cost;
+    std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
-    t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
-
-    if (rr_type == CHANX || rr_type == CHANY) {
-        return classic_wire_lookahead_cost(current_node, target_node, params.criticality, R_upstream);
-    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
-    } else { /* Change this if you want to investigate route-throughs */
-        return (0.);
-    }
+    return delay_cost + cong_cost;
 }
 
-float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, float criticality, float R_upstream) const {
+std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_ASSERT_SAFE(device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY);
+    t_rr_type rr_type = device_ctx.rr_nodes[node].type();
 
-    int num_segs_ortho_dir = 0;
-    int num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
+    if (rr_type == CHANX || rr_type == CHANY) {
+        VTR_ASSERT_SAFE(device_ctx.rr_nodes[node].type() == CHANX || device_ctx.rr_nodes[node].type() == CHANY);
 
-    int cost_index = device_ctx.rr_nodes[inode].cost_index();
-    int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+        int num_segs_ortho_dir = 0;
+        int num_segs_same_dir = get_expected_segs_to_target(node, target_node, &num_segs_ortho_dir);
 
-    const auto& same_data = device_ctx.rr_indexed_data[cost_index];
-    const auto& ortho_data = device_ctx.rr_indexed_data[ortho_cost_index];
-    const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
-    const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
+        int cost_index = device_ctx.rr_nodes[node].cost_index();
+        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
-    float cong_cost = num_segs_same_dir * same_data.base_cost
-                      + num_segs_ortho_dir * ortho_data.base_cost
-                      + ipin_data.base_cost
-                      + sink_data.base_cost;
+        const auto& same_data = device_ctx.rr_indexed_data[cost_index];
+        const auto& ortho_data = device_ctx.rr_indexed_data[ortho_cost_index];
+        const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
+        const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
 
-    float Tdel = num_segs_same_dir * same_data.T_linear
-                 + num_segs_ortho_dir * ortho_data.T_linear
-                 + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
-                 + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
-                 + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
-                 + ipin_data.T_linear;
+        float cong_cost = num_segs_same_dir * same_data.base_cost
+                          + num_segs_ortho_dir * ortho_data.base_cost
+                          + ipin_data.base_cost
+                          + sink_data.base_cost;
 
-    float expected_cost = criticality * Tdel + (1. - criticality) * cong_cost;
-    return (expected_cost);
+        float Tdel = num_segs_same_dir * same_data.T_linear
+                     + num_segs_ortho_dir * ortho_data.T_linear
+                     + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
+                     + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
+                     + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
+                     + ipin_data.T_linear;
+
+        return std::make_pair(params.criticality * Tdel, (1 - params.criticality) * cong_cost);
+    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+        return std::make_pair(0., device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+
+    } else { /* Change this if you want to investigate route-throughs */
+        return std::make_pair(0., 0.);
+    }
 }
 
 float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
+}
+
+std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(int /*node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+    return std::make_pair(0., 0.);
 }
 
 /* Used below to ensure that fractions are rounded up, but floating   *

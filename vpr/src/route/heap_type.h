@@ -6,6 +6,7 @@
 #include "vtr_memory.h"
 #include "vtr_array_view.h"
 #include "rr_graph_fwd.h"
+#include "route_path_manager.h"
 
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
@@ -33,7 +34,7 @@
  *
  * u.next:  pointer to the next s_heap structure in the free
  *          linked list.  Not used when on the heap.
- *
+ * 
  */
 struct t_heap {
     float cost = 0.;
@@ -41,6 +42,10 @@ struct t_heap {
     float R_upstream = 0.;
 
     int index = OPEN;
+
+    // Structure to handle extra RCV structures
+    // Managed by PathManager class
+    t_heap_path* path_data;
 
     struct t_prev {
         int node;

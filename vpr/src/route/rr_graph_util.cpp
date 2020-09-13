@@ -169,4 +169,11 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
             }
         }
     }
+
+    device_ctx.rr_node_metadata.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
+    device_ctx.rr_edge_metadata.remap_keys([&](std::tuple<int, int, short> edge) {
+        return std::make_tuple(size_t(dest_order[RRNodeId(std::get<0>(edge))]),
+                               size_t(dest_order[RRNodeId(std::get<1>(edge))]),
+                               std::get<2>(edge));
+    });
 }

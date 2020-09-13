@@ -25,7 +25,7 @@ class RoutingPredictor {
 
     void add_iteration_overuse(size_t iteration, size_t overused_rr_node_count);
 
-    float get_slope();
+    float get_slope() const;
 
   private:
     size_t min_history_;
@@ -33,6 +33,7 @@ class RoutingPredictor {
 
     std::vector<size_t> iterations_;
     std::vector<size_t> iteration_overused_rr_node_counts_;
+    float slope_;
 };
 
 #endif

@@ -1,3 +1,8 @@
+/**
+ * @file place_util.cpp
+ * @brief Definitions of structure routines declared in place_util.h.
+ */
+
 #include "place_util.h"
 #include "globals.h"
 

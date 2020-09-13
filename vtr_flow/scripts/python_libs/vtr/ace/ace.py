@@ -2,7 +2,7 @@
     Module to run ACE with its various options
 """
 from pathlib import Path
-from vtr import find_vtr_file, verify_file, CommandRunner
+from vtr import verify_file, CommandRunner, paths
 
 # pylint: disable=too-many-arguments
 def run(
@@ -62,9 +62,9 @@ def run(
     ace_clk_file = temp_dir / "ace_clk.txt"
     ace_raw = temp_dir / (circuit_file.with_suffix("").stem + ".raw.ace.blif")
     if ace_exec is None:
-        ace_exec = find_vtr_file("ace")
+        ace_exec = str(paths.ace_exe_path)
 
-    cmd = [find_vtr_file("extract_clk_from_blif.py"), ace_clk_file.name, circuit_file.name]
+    cmd = [str(paths.ace_extract_clk_from_blif_script_path), ace_clk_file.name, circuit_file.name]
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename="ace_clk_extraction.out", indent_depth=1
     )
@@ -89,7 +89,7 @@ def run(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
     )
 
-    clock_script = find_vtr_file("restore_multiclock_latch.pl")
+    clock_script = str(paths.restore_multiclock_latch_script_path)
 
     cmd = [clock_script, old_netlist.name, ace_raw.name, output_netlist.name]
     command_runner.run_system_command(

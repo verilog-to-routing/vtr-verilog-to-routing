@@ -307,6 +307,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 case e_router_lookahead::MAP:
                     VTR_LOG("MAP\n");
                     break;
+                case e_router_lookahead::EXTENDED_MAP:
+                    VTR_LOG("EXTENDED_MAP\n");
+                    break;
                 case e_router_lookahead::NO_OP:
                     VTR_LOG("NO_OP\n");
                     break;
@@ -352,6 +355,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = DISABLE\n");
         } else if (RouterOpts.routing_budgets_algorithm == MINIMAX) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = MINIMAX\n");
+        } else if (RouterOpts.routing_budgets_algorithm == YOYO) {
+            VTR_LOG("RouterOpts.routing_budgets_algorithm = YOYO\n");
         } else if (RouterOpts.routing_budgets_algorithm == SCALE_DELAY) {
             VTR_LOG("RouterOpts.routing_budgets_algorithm = SCALE_DELAY\n");
         }
@@ -442,6 +447,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 case e_router_lookahead::MAP:
                     VTR_LOG("MAP\n");
                     break;
+                case e_router_lookahead::EXTENDED_MAP:
+                    VTR_LOG("EXTENDED_MAP\n");
+                    break;
                 case e_router_lookahead::NO_OP:
                     VTR_LOG("NO_OP\n");
                     break;
@@ -499,12 +507,15 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
     if ((PLACE_ONCE == PlacerOpts.place_freq)
         || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
         VTR_LOG("PlacerOpts.place_algorithm: ");
-        switch (PlacerOpts.place_algorithm) {
+        switch (PlacerOpts.place_algorithm.get()) {
             case BOUNDING_BOX_PLACE:
                 VTR_LOG("BOUNDING_BOX_PLACE\n");
                 break;
-            case PATH_TIMING_DRIVEN_PLACE:
-                VTR_LOG("PATH_TIMING_DRIVEN_PLACE\n");
+            case CRITICALITY_TIMING_PLACE:
+                VTR_LOG("CRITICALITY_TIMING_PLACE\n");
+                break;
+            case SLACK_TIMING_PLACE:
+                VTR_LOG("SLACK_TIMING_PLACE\n");
                 break;
             default:
                 VTR_LOG_ERROR("Unknown placement algorithm\n");
@@ -533,7 +544,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 
         VTR_LOG("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 
-        if (PATH_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm) {
+        if (PlacerOpts.place_algorithm.is_timing_driven()) {
             VTR_LOG("PlacerOpts.inner_loop_recompute_divider: %d\n", PlacerOpts.inner_loop_recompute_divider);
             VTR_LOG("PlacerOpts.recompute_crit_iter: %d\n", PlacerOpts.recompute_crit_iter);
             VTR_LOG("PlacerOpts.timing_tradeoff: %f\n", PlacerOpts.timing_tradeoff);
@@ -541,7 +552,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             VTR_LOG("PlacerOpts.td_place_exp_last: %f\n", PlacerOpts.td_place_exp_last);
             VTR_LOG("PlacerOpts.delay_offset: %f\n", PlacerOpts.delay_offset);
             VTR_LOG("PlacerOpts.delay_ramp_delta_threshold: %d\n", PlacerOpts.delay_ramp_delta_threshold);
-            VTR_LOG("PlacerOpts.delay_ramp_slope: %d\n", PlacerOpts.delay_ramp_slope);
+            VTR_LOG("PlacerOpts.delay_ramp_slope: %f\n", PlacerOpts.delay_ramp_slope);
             VTR_LOG("PlacerOpts.tsu_rel_margin: %f\n", PlacerOpts.tsu_rel_margin);
             VTR_LOG("PlacerOpts.tsu_abs_margin: %f\n", PlacerOpts.tsu_abs_margin);
             VTR_LOG("PlacerOpts.post_place_timing_report_file: %s\n", PlacerOpts.post_place_timing_report_file.c_str());

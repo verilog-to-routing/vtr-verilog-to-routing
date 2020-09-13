@@ -23,7 +23,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     }
 
     if ((GLOBAL == RouterOpts.route_type)
-        && (BOUNDING_BOX_PLACE != PlacerOpts.place_algorithm)) {
+        && (PlacerOpts.place_algorithm.is_timing_driven())) {
         /* Works, but very weird.  Can't optimize timing well, since you're
          * not doing proper architecture delay modelling. */
         VTR_LOG_WARN(
@@ -32,7 +32,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     }
 
     if ((false == Timing.timing_analysis_enabled)
-        && (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE)) {
+        && (PlacerOpts.place_algorithm.is_timing_driven())) {
         /* May work, not tested */
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Timing analysis must be enabled for timing-driven placement.\n");

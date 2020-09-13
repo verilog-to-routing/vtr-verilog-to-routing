@@ -32,10 +32,14 @@ option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 
-#Allow the user to decide weather to compile the graphics library
+#Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
+
+#Allow the user to enable/disable VPR analytic placement
+#VPR option --enable_analytic_placer is also required for Analytic Placement
+option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
@@ -346,7 +350,7 @@ if (VPR_USE_EZGL STREQUAL "auto")
         message(STATUS "VPR Graphics: Enabled")
     else()
         set(VPR_USE_EZGL "off")
-        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debia/ubuntu try: sudo apt install libgtk-3 libx11-dev")
+        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debian/ubuntu try: sudo apt install libgtk-3-dev libx11-dev")
     endif()
 endif()
 

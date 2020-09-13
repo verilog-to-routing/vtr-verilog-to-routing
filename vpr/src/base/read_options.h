@@ -104,6 +104,7 @@ struct t_options {
     argparse::ArgValue<float> PlaceSuccessTarget;
     argparse::ArgValue<sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
+    argparse::ArgValue<e_place_algorithm> PlaceQuenchAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
     argparse::ArgValue<int> PlaceChanWidth;
     argparse::ArgValue<float> place_rlim_escape_fraction;
@@ -111,6 +112,7 @@ struct t_options {
     argparse::ArgValue<int> placement_saves_per_temperature;
     argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
+    argparse::ArgValue<bool> enable_analytic_placer;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
@@ -166,6 +168,7 @@ struct t_options {
     argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
     argparse::ArgValue<e_route_bb_update> route_bb_update;
     argparse::ArgValue<int> router_high_fanout_threshold;
+    argparse::ArgValue<float> router_high_fanout_max_slope;
     argparse::ArgValue<int> router_debug_net;
     argparse::ArgValue<int> router_debug_sink_rr;
     argparse::ArgValue<int> router_debug_iteration;

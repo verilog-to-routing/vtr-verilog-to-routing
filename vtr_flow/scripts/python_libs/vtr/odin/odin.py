@@ -4,13 +4,8 @@
 import shutil
 from collections import OrderedDict
 from pathlib import Path
-from vtr import (
-    find_vtr_file,
-    file_replace,
-    determine_memory_addr_width,
-    verify_file,
-    CommandRunner,
-)
+from vtr import file_replace, determine_memory_addr_width, verify_file, CommandRunner, paths
+
 
 # pylint: disable=too-many-arguments, too-many-locals
 def run(
@@ -83,10 +78,10 @@ def run(
     output_netlist = verify_file(output_netlist, "Output netlist", False)
 
     if odin_exec is None:
-        odin_exec = find_vtr_file("odin_II", is_executable=True)
+        odin_exec = str(paths.odin_exe_path)
 
     if odin_config is None:
-        odin_base_config = find_vtr_file("basic_odin_config_split.xml")
+        odin_base_config = str(paths.odin_cfg_path)
 
         # Copy the config file
         odin_config = "odin_config.xml"

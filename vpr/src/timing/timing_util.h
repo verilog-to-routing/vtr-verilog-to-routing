@@ -183,6 +183,9 @@ class ClusteredPinTimingInvalidator {
 //Return the criticality of a net's pin in the CLB netlist
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin);
 
+//Return the setup slack of a net's pin in the CLB netlist
+float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin);
+
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags
 //

@@ -203,6 +203,8 @@ struct RouteBudgetsAlgorithm {
         ConvertedValue<e_routing_budgets_algorithm> conv_value;
         if (str == "minimax")
             conv_value.set_value(MINIMAX);
+        else if (str == "yoyo")
+            conv_value.set_value(YOYO);
         else if (str == "scale_delay")
             conv_value.set_value(SCALE_DELAY);
         else if (str == "disable")
@@ -220,6 +222,8 @@ struct RouteBudgetsAlgorithm {
         ConvertedValue<std::string> conv_value;
         if (val == MINIMAX)
             conv_value.set_value("minimax");
+        else if (val == YOYO)
+            conv_value.set_value("yoyo");
         else if (val == DISABLE)
             conv_value.set_value("disable");
         else {
@@ -350,13 +354,22 @@ struct ParsePlaceDeltaDelayAlgorithm {
 struct ParsePlaceAlgorithm {
     ConvertedValue<e_place_algorithm> from_str(std::string str) {
         ConvertedValue<e_place_algorithm> conv_value;
-        if (str == "bounding_box")
+        if (str == "bounding_box") {
             conv_value.set_value(BOUNDING_BOX_PLACE);
-        else if (str == "path_timing_driven")
-            conv_value.set_value(PATH_TIMING_DRIVEN_PLACE);
-        else {
+        } else if (str == "criticality_timing") {
+            conv_value.set_value(CRITICALITY_TIMING_PLACE);
+        } else if (str == "slack_timing") {
+            conv_value.set_value(SLACK_TIMING_PLACE);
+        } else {
             std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+
+            //Deprecated option: "path_timing_driven" -> PATH_DRIVEN_TIMING_PLACE
+            //New option: "criticality_timing" -> CRITICALITY_TIMING_PLACE
+            if (str == "path_timing_driven") {
+                msg << "\nDeprecated option: 'path_timing_driven'. It has been renamed to 'criticality_timing'";
+            }
+
             conv_value.set_error(msg.str());
         }
         return conv_value;
@@ -364,17 +377,19 @@ struct ParsePlaceAlgorithm {
 
     ConvertedValue<std::string> to_str(e_place_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == BOUNDING_BOX_PLACE)
+        if (val == BOUNDING_BOX_PLACE) {
             conv_value.set_value("bounding_box");
-        else {
-            VTR_ASSERT(val == PATH_TIMING_DRIVEN_PLACE);
-            conv_value.set_value("path_timing_driven");
+        } else if (val == CRITICALITY_TIMING_PLACE) {
+            conv_value.set_value("criticality_timing");
+        } else {
+            VTR_ASSERT(val == SLACK_TIMING_PLACE);
+            conv_value.set_value("slack_timing");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"bounding_box", "path_timing_driven"};
+        return {"bounding_box", "criticality_timing", "slack_timing"};
     }
 };
 
@@ -758,6 +773,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::CLASSIC);
         else if (str == "map")
             conv_value.set_value(e_router_lookahead::MAP);
+        else if (str == "extended_map")
+            conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -773,15 +790,17 @@ struct ParseRouterLookahead {
         ConvertedValue<std::string> conv_value;
         if (val == e_router_lookahead::CLASSIC)
             conv_value.set_value("classic");
-        else {
-            VTR_ASSERT(val == e_router_lookahead::MAP);
+        else if (val == e_router_lookahead::MAP) {
             conv_value.set_value("map");
+        } else {
+            VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
+            conv_value.set_value("extended_map");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map"};
+        return {"classic", "map", "extended_map"};
     }
 };
 
@@ -1679,9 +1698,25 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
-        .help("Controls which placement algorithm is used")
-        .default_value("path_timing_driven")
-        .choices({"bounding_box", "path_timing_driven"})
+        .help(
+            "Controls which placement algorithm is used. Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
+        .help(
+            "Controls which placement algorithm is used during placement quench.\n"
+            "If specified, it overrides the option --place_algorithm during placement quench.\n"
+            "Valid options:\n"
+            " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
+            " * criticality_timing: Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).\n"
+            " * slack_timing: Focuses on improving the circuit slack values to reduce critical path delay.\n")
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
@@ -1710,6 +1745,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Controls how often VPR saves the current placement to a file per temperature (may be helpful for debugging)."
             " The value specifies how many times the placement should be saved (values less than 1 disable this feature).")
         .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.enable_analytic_placer, "--enable_analytic_placer")
+        .help(
+            "Enables the analytic placer. "
+            "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
+        .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
@@ -2004,12 +2046,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
         .help(
-            "Controls how the routing budgets are created.\n"
-            " * slack: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
-            " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
+            "Controls how the routing budgets are created and applied.\n"
+            " * yoyo: Allocates budgets using minimax algorithm, and enables hold slack resolution in the router using the RCV algorithm. [EXPERIMENTAL]\n"
+            " * minimax: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
+            " * scale_delay: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
-        .choices({"minimax", "scale_delay", "disable"})
+        .choices({"minimax", "scale_delay", "yoyo", "disable"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.save_routing_per_iteration, "--save_routing_per_iteration")
@@ -2041,12 +2084,27 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("64")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<float>(args.router_high_fanout_max_slope, "--router_high_fanout_max_slope")
+        .help(
+            "Minimum routing progress where high fanout routing is enabled."
+            " This is a ratio of the actual congestion reduction to what is expected based in the history.\n"
+            " 1.0 is normal progress, 0 is no progress.")
+        .default_value("0.1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<e_router_lookahead, ParseRouterLookahead>(args.router_lookahead_type, "--router_lookahead")
         .help(
             "Controls what lookahead the router uses to calculate cost of completing a connection.\n"
             " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
             "            architectures)\n"
-            " * map: A more advanced lookahead which accounts for diverse wire type\n")
+            " * map: An advanced lookahead which accounts for diverse wire type\n"
+            " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
+            "                 exhaustive node sampling method\n"
+            "\n"
+            " The extended map differs from the map lookahead in the lookahead computation.\n"
+            " It is better suited for architectures that have specialized routing for specific\n"
+            " kinds of connections, but note that the time and memory necessary to compute the\n"
+            " extended lookahead map are greater than the basic lookahead map.\n")
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2306,10 +2364,15 @@ void set_conditional_defaults(t_options& args) {
     //Which placement algorithm to use?
     if (args.PlaceAlgorithm.provenance() != Provenance::SPECIFIED) {
         if (args.timing_analysis) {
-            args.PlaceAlgorithm.set(PATH_TIMING_DRIVEN_PLACE, Provenance::INFERRED);
+            args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
+    }
+
+    //Which placement algorithm to use during placement quench?
+    if (args.PlaceQuenchAlgorithm.provenance() != Provenance::SPECIFIED) {
+        args.PlaceQuenchAlgorithm.set(args.PlaceAlgorithm, Provenance::INFERRED);
     }
 
     //Place chan width follows Route chan width if unspecified
