@@ -154,20 +154,28 @@
   <!-- Physical descriptions begin -->
   <layout>
     <auto_layout aspect_ratio="1.0">
+      <!-- Add I/O to the top/bottom side of FPGA only -->
       <region type="i" priority="100" startx="0" endx="W-1" starty="0"   endy="0"   incrx="2*w"/>
       <region type="i" priority="100" startx="0" endx="W-1" starty="H-1" endy="H-1" incrx="2*w"/>
       <region type="o" priority="101" startx="1" endx="W-1" starty="0"   endy="0"   incrx="2*w"/>
       <region type="o" priority="101" startx="1" endx="W-1" starty="H-1" endy="H-1" incrx="2*w"/>
-
-      <corners type="EMPTY" priority="102"/>
+  
+      <!-- Add EMPTY tiles to the left and right sides
+           Note that the clb (fill type) has pins on the left and right sides
+           Without EMPTY tiles, these pins may not be connected to any global routing architecture
+           This will cause unroutable solutions for some implementations 
+        -->
+      <col type="EMPTY" priority="102" startx="0"/>
+      <col type="EMPTY" priority="102" startx="W-1"/>
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
-      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <!--Column of 'mult_36' with 'clb' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
       <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
-      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
-      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="9"/>
+      <!--Column of 'memory' with 'clb' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.
+           -->
       <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
-      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="9"/>
     </auto_layout>
   </layout>
   <device>
