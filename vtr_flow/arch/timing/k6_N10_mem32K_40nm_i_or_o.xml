@@ -14,6 +14,17 @@
 
   Based on flagship k6_frac_N10_mem32K_40nm.xml architecture.  This architecture has no fracturable LUTs
 
+  Important Notes:
+  
+  -  This architecture is designed to test 
+     - the splitted I/O blocks (input and output blocks are individual blocks rather than an unified blocks)
+     - I/Os are located on two sides (top and bottom in this case) of a FPGA
+     - Fill tiles ('clb' in this case) are mixed with heterogeneous blocks ('DSP' and 'RAM' in this case) in the same columns
+
+  - It carries architecture features which may be challenging for physical layouts.
+    For example, the mixed clb, DSP and RAM in one column is rarely seen in modern FPGA architectures.
+    Please consider this not as popular architecture choices when doing architecture evaluation.
+
 
   Authors: Jason Luu, Jeff Goeders, Vaughn Betz
 -->
