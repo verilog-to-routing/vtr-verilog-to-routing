@@ -855,6 +855,22 @@ void try_place(const t_placer_opts& placer_opts,
         print_place_statisitics(num_temps, state.t,num_moves,accepted_moves,aborted_moves);
 #endif
 
+        
+        if(agent_state == 1 && state.alpha < 0.85 && state.alpha > 0.6){
+            //agent_state = 2;
+            if(cp_is_valid() == false || (critical_path.delay() < 0.95 * get_cp_cpd() && costs.bb_cost <= get_cp_bb_cost())){
+                save_placement(costs, critical_path.delay());
+                VTR_LOG("Checkpoint saved: bb_costs %g, TD costs %g, cpd %7.3f \n", costs.bb_cost, costs.timing_cost, 1e9 * critical_path.delay());
+            }
+            /*
+            else if (cp_is_valid() && critical_path.delay() > 1.05 * get_cp_cpd()){
+                restore_placement();
+                VTR_LOG("Checkpoint restored\n");
+            }
+            */
+            //VTR_LOG("Second state: \n");
+        }
+        
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                 costs.cost, costs.bb_cost, costs.timing_cost, state.t);
         update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
@@ -926,6 +942,11 @@ quench:
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
+            
+    if (cp_is_valid() && critical_path.delay() > 1.05 * get_cp_cpd()){
+        costs = restore_placement();
+        VTR_LOG("Checkpoint restored\n");
+    }
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", state.num_temps + 1, 0);

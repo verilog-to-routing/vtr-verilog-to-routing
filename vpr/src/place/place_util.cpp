@@ -9,6 +9,10 @@
 #include "draw_global.h"
 
 /* File-scope routines */
+
+//Placement Checkpoint 
+placement_checkpoint place_cp;
+
 static vtr::Matrix<t_grid_blocks> init_grid_blocks();
 
 /**
@@ -327,4 +331,26 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
 
     /* Very small variances sometimes round negative. */
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
+}
+
+float get_cp_cpd() {return place_cp.cpd;}
+double get_cp_bb_cost() {return place_cp.bb_cost;}
+bool cp_is_valid() {return place_cp.valid;}
+
+void save_placement(const t_placer_costs& costs, const float& cpd){
+    auto& place_ctx = g_vpr_ctx.placement();
+    place_cp.block_locs  = place_ctx.block_locs;
+    place_cp.physical_pins = place_ctx.physical_pins;
+    place_cp.grid_blocks = place_ctx.grid_blocks;
+    place_cp.valid = true;
+    place_cp.cpd = cpd;
+    place_cp.costs = costs;
+}
+
+t_placer_costs restore_placement(){
+    auto& mutable_place_ctx = g_vpr_ctx.mutable_placement();
+    mutable_place_ctx.block_locs = place_cp.block_locs;
+    mutable_place_ctx.physical_pins = place_cp.physical_pins;
+    mutable_place_ctx.grid_blocks = place_cp.grid_blocks;
+    return place_cp.costs;
 }
