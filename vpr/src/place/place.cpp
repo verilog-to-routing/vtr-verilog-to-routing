@@ -85,12 +85,6 @@ enum e_cost_methods {
     CHECK
 };
 
-struct t_placer_statistics {
-    double av_cost, av_bb_cost, av_timing_cost,
-        sum_of_squares;
-    int success_sum;
-};
-
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 constexpr float INVALID_COST = std::numeric_limits<double>::quiet_NaN();
 
@@ -373,26 +367,18 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const PlacerCriticalities* criticalities,
                                          t_placer_costs* costs);
 
-static void calc_placer_stats(t_placer_statistics& stats, double& std_dev, const t_placer_costs& costs);
-
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
 
 static void print_place_status_header();
-static void print_place_status(const size_t num_temps,
-                               const float elapsed_sec,
-                               const float t,
-                               const float alpha,
+static void print_place_status(const t_annealing_state& state,
                                const t_placer_statistics& stats,
-                               const float cpd,
-                               const float sTNS,
-                               const float sWNS,
-                               const float acc_rate,
-                               const float std_dev,
-                               const float rlim,
-                               const float crit_exponent,
+                               float elapsed_sec,
+                               float cpd,
+                               float sTNS,
+                               float sWNS,
                                size_t tot_moves);
 static void print_resources_utilization();
 
@@ -431,7 +417,6 @@ void try_place(const t_placer_opts& placer_opts,
     float sTNS = NAN;
     float sWNS = NAN;
 
-    double std_dev;
     char msg[vtr::bufsize];
     t_placer_statistics stats;
 
@@ -697,10 +682,6 @@ void try_place(const t_placer_opts& placer_opts,
                              placer_opts.place_algorithm);
 
         tot_iter += state.move_lim;
-
-        state.success_rate = ((float)stats.success_sum) / state.move_lim;
-        calc_placer_stats(stats, std_dev, costs);
-
         ++state.num_temps;
 
         if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -709,12 +690,7 @@ void try_place(const t_placer_opts& placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
-        print_place_status(state.num_temps,
-                           temperature_timer.elapsed_sec(),
-                           state.t, state.alpha,
-                           stats,
-                           critical_path.delay(), sTNS, sWNS,
-                           state.success_rate, std_dev, state.rlim, state.crit_exponent, tot_iter);
+        print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                 costs.cost, costs.bb_cost, costs.timing_cost, state.t);
@@ -725,7 +701,7 @@ void try_place(const t_placer_opts& placer_opts,
             print_clb_placement("first_iteration_clb_placement.echo");
         }
 #endif
-    } while (state.outer_loop_update(costs, placer_opts, annealing_sched));
+    } while (state.outer_loop_update(stats.success_rate, costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
 #ifdef ENABLE_ANALYTIC_PLACE
@@ -770,21 +746,13 @@ quench:
         tot_iter += state.move_lim;
         ++state.num_temps;
 
-        state.success_rate = ((float)stats.success_sum) / state.move_lim;
-        calc_placer_stats(stats, std_dev, costs);
-
         if (placer_opts.place_quench_algorithm.is_timing_driven()) {
             critical_path = timing_info->least_slack_critical_path();
             sTNS = timing_info->setup_total_negative_slack();
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
-        float quench_elapsed_sec = temperature_timer.elapsed_sec();
-        print_place_status(state.num_temps,
-                           quench_elapsed_sec,
-                           state.t, state.alpha, stats,
-                           critical_path.delay(), sTNS, sWNS,
-                           state.success_rate, std_dev, state.rlim, state.crit_exponent, tot_iter);
+        print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
 
@@ -938,11 +906,7 @@ static void placement_inner_loop(const t_annealing_state* state,
 
     int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
 
-    stats->av_cost = 0.;
-    stats->av_bb_cost = 0.;
-    stats->av_timing_cost = 0.;
-    stats->sum_of_squares = 0.;
-    stats->success_sum = 0;
+    stats->reset();
 
     inner_crit_iter_count = 1;
 
@@ -963,11 +927,7 @@ static void placement_inner_loop(const t_annealing_state* state,
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
-            stats->success_sum++;
-            stats->av_cost += costs->cost;
-            stats->av_bb_cost += costs->bb_cost;
-            stats->av_timing_cost += costs->timing_cost;
-            stats->sum_of_squares += (costs->cost) * (costs->cost);
+            stats->single_swap_update(*costs);
             num_swap_accepted++;
         } else if (swap_result == ABORTED) {
             num_swap_aborted++;
@@ -1025,6 +985,9 @@ static void placement_inner_loop(const t_annealing_state* state,
             ++inner_placement_save_count;
         }
     }
+
+    /* Calculate the success_rate and std_dev of the costs. */
+    stats->calc_iteration_stats(*costs, state->move_lim);
 }
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
@@ -2653,20 +2616,6 @@ static void free_try_swap_arrays() {
     g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
 }
 
-static void calc_placer_stats(t_placer_statistics& stats, double& std_dev, const t_placer_costs& costs) {
-    if (stats.success_sum == 0) {
-        stats.av_cost = costs.cost;
-        stats.av_bb_cost = costs.bb_cost;
-        stats.av_timing_cost = costs.timing_cost;
-    } else {
-        stats.av_cost /= stats.success_sum;
-        stats.av_bb_cost /= stats.success_sum;
-        stats.av_timing_cost /= stats.success_sum;
-    }
-
-    std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
-}
-
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
@@ -2700,18 +2649,12 @@ static void print_place_status_header() {
     VTR_LOG("---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
 }
 
-static void print_place_status(const size_t num_temps,
-                               const float elapsed_sec,
-                               const float t,
-                               const float alpha,
+static void print_place_status(const t_annealing_state& state,
                                const t_placer_statistics& stats,
-                               const float cpd,
-                               const float sTNS,
-                               const float sWNS,
-                               const float acc_rate,
-                               const float std_dev,
-                               const float rlim,
-                               const float crit_exponent,
+                               float elapsed_sec,
+                               float cpd,
+                               float sTNS,
+                               float sWNS,
                                size_t tot_moves) {
     VTR_LOG(
         "%4zu "
@@ -2720,16 +2663,16 @@ static void print_place_status(const size_t num_temps,
         "%7.3f %10.2f %-10.5g "
         "%7.3f % 10.3g % 8.3f "
         "%7.3f %7.4f %6.1f %8.2f",
-        num_temps,
+        state.num_temps,
         elapsed_sec,
-        t,
+        state.t,
         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
         1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
-        acc_rate, std_dev, rlim, crit_exponent);
+        stats.success_rate, stats.std_dev, state.rlim, state.crit_exponent);
 
     pretty_print_uint(" ", tot_moves, 9, 3);
 
-    VTR_LOG(" %6.3f\n", alpha);
+    VTR_LOG(" %6.3f\n", state.alpha);
     fflush(stdout);
 }
 

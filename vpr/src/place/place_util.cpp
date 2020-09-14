@@ -146,7 +146,8 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
  *
  * @return True->continues the annealing. False->exits the annealing.
  */
-bool t_annealing_state::outer_loop_update(const t_placer_costs& costs,
+bool t_annealing_state::outer_loop_update(float success_rate,
+                                          const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts,
                                           const t_annealing_sched& annealing_sched) {
 #ifndef NO_GRAPHICS
@@ -197,7 +198,7 @@ bool t_annealing_state::outer_loop_update(const t_placer_costs& costs,
         }
 
         /* Update move lim. */
-        update_move_lim(annealing_sched.success_target);
+        update_move_lim(annealing_sched.success_target, success_rate);
     } else {
         VTR_ASSERT_SAFE(annealing_sched.type == AUTO_SCHED);
         /* Automatically adjust alpha according to success rate. */
@@ -219,7 +220,7 @@ bool t_annealing_state::outer_loop_update(const t_placer_costs& costs,
     }
 
     /* Update the range limiter. */
-    update_rlim();
+    update_rlim(success_rate);
 
     /* If using timing driven algorithm, update the crit_exponent. */
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -236,7 +237,7 @@ bool t_annealing_state::outer_loop_update(const t_placer_costs& costs,
  * Use a floating point rlim to allow gradual transitions at low temps.
  * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
  */
-void t_annealing_state::update_rlim() {
+void t_annealing_state::update_rlim(float success_rate) {
     rlim *= (1. - 0.44 + success_rate);
     rlim = std::min(rlim, UPPER_RLIM);
     rlim = std::max(rlim, FINAL_RLIM);
@@ -271,10 +272,42 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
  *
  * The value is bounded between 1 and move_lim_max.
  */
-void t_annealing_state::update_move_lim(float success_target) {
+void t_annealing_state::update_move_lim(float success_target, float success_rate) {
     move_lim = move_lim_max * (success_target / success_rate);
     move_lim = std::min(move_lim, move_lim_max);
     move_lim = std::max(move_lim, 1);
+}
+
+void t_placer_statistics::reset() {
+    av_cost = 0.;
+    av_bb_cost = 0.;
+    av_timing_cost = 0.;
+    sum_of_squares = 0.;
+    success_sum = 0;
+    success_rate = 0.;
+    std_dev = 0.;
+}
+
+void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
+    success_sum++;
+    av_cost += costs.cost;
+    av_bb_cost += costs.bb_cost;
+    av_timing_cost += costs.timing_cost;
+    sum_of_squares += (costs.cost) * (costs.cost);
+}
+
+void t_placer_statistics::calc_iteration_stats(const t_placer_costs& costs, int move_lim) {
+    if (success_sum == 0) {
+        av_cost = costs.cost;
+        av_bb_cost = costs.bb_cost;
+        av_timing_cost = costs.timing_cost;
+    } else {
+        av_cost /= success_sum;
+        av_bb_cost /= success_sum;
+        av_timing_cost /= success_sum;
+    }
+    success_rate = success_sum / float(move_lim);
+    std_dev = get_std_dev(success_sum, sum_of_squares, av_cost);
 }
 
 /**
