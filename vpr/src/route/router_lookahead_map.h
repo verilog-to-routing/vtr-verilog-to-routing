@@ -12,8 +12,8 @@ class MapLookahead : public RouterLookahead {
     util::t_src_opin_delays src_opin_delays;
 
   protected:
-    float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    std::pair<float, float> get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
     void read(const std::string& file) override;

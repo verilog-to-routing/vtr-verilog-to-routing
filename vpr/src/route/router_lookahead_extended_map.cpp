@@ -169,13 +169,10 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
 //
 //  The from_node can be of one of the following types: CHANX, CHANY, SOURCE, OPIN
 //  The to_node is always a SINK
-std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
-    if (inode == target_node) {
+std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    if (from_node == to_node) {
         return std::make_pair(0., 0.);
     }
-
-    RRNodeId from_node(inode);
-    RRNodeId to_node(target_node);
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
@@ -570,13 +567,13 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 
 // get an expected minimum cost for routing from the current node to the target node
 float ExtendedMapLookahead::get_expected_cost(
-    int current_node,
-    int target_node,
+    RRNodeId current_node,
+    RRNodeId target_node,
     const t_conn_cost_params& params,
     float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
+    t_rr_type rr_type = device_ctx.rr_nodes.node_type(current_node);
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
