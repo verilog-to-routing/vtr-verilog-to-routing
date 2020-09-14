@@ -1,7 +1,7 @@
 /**
  * @file place_util.h
  * @brief Utility structures representing various states of the
- *        placement. Also contains declarations of related routines.
+ *        placement and utility functions used by the placer.
  */
 
 #pragma once
@@ -65,21 +65,31 @@ class t_placer_costs {
  * loop iteration. It stores various important variables that need to
  * be accessed during the placement inner loop.
  *
+ * Private variables are not given accessor functions. They serve as
+ * macros originally defined in place.cpp as global scope variables.
+ *
  * Public members:
  *   @param t
  *              Temperature for simulated annealing.
- *   @param rlim
- *              Range limit for block swaps.
- *   @param alpha
- *              Temperature decays factor (multiplied each outer loop iteration).
  *   @param restart_t
  *              Temperature used after restart due to minimum success ratio.
+ *              Currently only used and updated by DUSTY_SCHED.
+ *   @param alpha
+ *              Temperature decays factor (multiplied each outer loop iteration).
+ *   @param num_temps
+ *              The count of how many temperature iterations have passed.
+ *
+ *   @param rlim
+ *              Range limit for block swaps.
+ *              Currently only updated by DUSTY_SCHED and AUTO_SCHED.
  *   @param crit_exponent
  *              Used by timing-driven placement to "sharpen" the timing criticality.
- *   @param move_lim_max
- *              Maximum block move limit.
+ *              Depends on rlim. Currently only updated by DUSTY_SCHED and AUTO_SCHED.
  *   @param move_lim
  *              Current block move limit.
+ *              Currently only updated by DUSTY_SCHED.
+ *   @param move_lim_max
+ *              Maximum block move limit.
  *
  * Private members:
  *   @param UPPER_RLIM
@@ -99,14 +109,15 @@ class t_placer_costs {
 class t_annealing_state {
   public:
     float t;
-    float rlim;
-    float alpha;
     float restart_t;
+    float alpha;
+    int num_temps;
+
+    float rlim;
     float crit_exponent;
-    int move_lim_max;
     int move_lim;
+    int move_lim_max;
     float success_rate;
-    int num_temps = 0;
 
   private:
     float UPPER_RLIM;
@@ -131,7 +142,7 @@ class t_annealing_state {
     inline void update_move_lim(float success_target);
 };
 
-///@brief Initialize the placement context.
+///@brief Initialize the placer's block-grid dual direction mapping.
 void init_placement_context();
 
 ///@brief Get the initial limit for inner loop block move attempt limit.

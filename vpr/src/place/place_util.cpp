@@ -1,38 +1,54 @@
 /**
  * @file place_util.cpp
- * @brief Definitions of structure routines declared in place_util.h.
+ * @brief Definitions of structure methods and routines declared in place_util.h.
+ *        These are mainly utility functions used by the placer.
  */
 
 #include "place_util.h"
 #include "globals.h"
 #include "draw_global.h"
 
+/* File-scope routines */
 static vtr::Matrix<t_grid_blocks> init_grid_blocks();
 
+/**
+ * @brief Initialize the placer's block-grid dual direction mapping.
+ *
+ * Forward direction - block to grid: place_ctx.block_locs.
+ * Reverse direction - grid to block: place_ctx.grid_blocks.
+ *
+ * Initialize both of them to empty states.
+ */
 void init_placement_context() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    /* Intialize the lookup of CLB block positions */
     place_ctx.block_locs.clear();
     place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
 
+    /* Initialize the reverse lookup of CLB block positions */
     place_ctx.grid_blocks = init_grid_blocks();
 }
 
+/**
+ * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
+ *
+ * The container at each grid block location should have a length equal to the
+ * subtile capacity of that block. Unused subtile would be marked EMPTY_BLOCK_ID.
+ */
 static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
 
+    /* Structure should have the same dimensions as the grid. */
     auto grid_blocks = vtr::Matrix<t_grid_blocks>({device_ctx.grid.width(), device_ctx.grid.height()});
+
     for (size_t x = 0; x < device_ctx.grid.width(); ++x) {
         for (size_t y = 0; y < device_ctx.grid.height(); ++y) {
             auto type = device_ctx.grid[x][y].type;
-
-            int capacity = type->capacity;
-
-            grid_blocks[x][y].blocks.resize(capacity, EMPTY_BLOCK_ID);
+            grid_blocks[x][y].blocks.resize(type->capacity, EMPTY_BLOCK_ID);
         }
     }
-
     return grid_blocks;
 }
 
@@ -54,12 +70,13 @@ void t_placer_costs::update_norm_factors() {
     }
 }
 
-///@brief Constructor: Initialize all annealing state variables.
+///@brief Constructor: Initialize all annealing state variables and macros.
 t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
                                      float first_t,
                                      float first_rlim,
                                      int first_move_lim,
                                      float first_crit_exponent) {
+    num_temps = 0;
     alpha = annealing_sched.alpha_min;
     t = first_t;
     restart_t = first_t;
@@ -74,8 +91,10 @@ t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
         move_lim = move_lim_max;
     }
 
+    /* Store this inverse value for speed when updating crit_exponent. */
     INVERSE_DELTA_RLIM = 1 / (first_rlim - FINAL_RLIM);
 
+    /* The range limit cannot exceed the largest grid size. */
     auto& grid = g_vpr_ctx.device().grid;
     UPPER_RLIM = std::max(grid.width() - 1, grid.height() - 1);
 }
@@ -212,7 +231,7 @@ bool t_annealing_state::outer_loop_update(const t_placer_costs& costs,
 }
 
 /**
- * @brief Update the range limited to keep acceptance prob. near 0.44.
+ * @brief Update the range limiter to keep acceptance prob. near 0.44.
  *
  * Use a floating point rlim to allow gradual transitions at low temps.
  * The range is bounded by 1 (FINAL_RLIM) and the grid size (UPPER_RLIM).
