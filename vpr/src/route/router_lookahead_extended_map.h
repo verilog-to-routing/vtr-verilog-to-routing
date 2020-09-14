@@ -59,12 +59,12 @@ class ExtendedMapLookahead : public RouterLookahead {
     /**
      * @brief Returns the expected cost to get to a destination node
      */
-    float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     /**
      * @brief Returns a pair of expected delay and congestion
      */
-    std::pair<float, float> get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(RRNodeId inode, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     /**
      * @brief Computes the extended lookahead map

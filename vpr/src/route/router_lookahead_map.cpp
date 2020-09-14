@@ -230,11 +230,11 @@ static void print_wire_cost_map(const std::vector<t_segment_inf>& segment_inf);
 static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 
 /******** Interface class member function definitions ********/
-float MapLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
-    t_rr_type rr_type = rr_graph.node_type(RRNodeId(current_node));
+    t_rr_type rr_type = rr_graph.node_type(current_node);
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
@@ -252,12 +252,9 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
  * from the specified source to the specified target */
-std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
-
-    RRNodeId from_node(inode);
-    RRNodeId to_node(target_node);
 
     int delta_x, delta_y;
     get_xy_deltas(from_node, to_node, &delta_x, &delta_y);
@@ -329,8 +326,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(size_t(inode)).c_str(),
-                                            describe_rr_node(size_t(inode)).c_str())
+                                            rr_node_arch_name(size_t(from_node)).c_str(),
+                                            describe_rr_node(size_t(from_node)).c_str())
                                 .c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
@@ -353,8 +350,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(size_t(inode)).c_str(),
-                                            describe_rr_node(size_t(inode)).c_str())
+                                            rr_node_arch_name(size_t(from_node)).c_str(),
+                                            describe_rr_node(size_t(from_node)).c_str())
                                 .c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
