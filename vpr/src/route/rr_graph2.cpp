@@ -1175,7 +1175,7 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                      * As such, we only allocate a rr node when the pin is indeed located
                      * on at least one side
                      */
-                    if (true == assigned_to_rr_node) {
+                    if (assigned_to_rr_node) {
                         ++(*index);
                     }
                 }
