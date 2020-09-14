@@ -226,7 +226,8 @@ void read_place_body(std::ifstream& placement_file,
                 AtomBlockId atom_blk_id = atom_ctx.nlist.find_block(block_name);
 
                 if (atom_blk_id == AtomBlockId::INVALID()) {
-                    VPR_THROW(VPR_ERROR_PLACE, "Block %s has an invalid name.\n", c_block_name);
+                    VTR_LOG_WARN("Block %s has an invalid name and it is going to be skipped.\n", c_block_name);
+                    continue;
                 } else {
                     blk_id = atom_ctx.lookup.atom_clb(atom_blk_id); //getting the ClusterBlockId of the cluster that the atom is in
                 }
