@@ -117,7 +117,6 @@ class t_annealing_state {
     float crit_exponent;
     int move_lim;
     int move_lim_max;
-    float success_rate;
 
   private:
     float UPPER_RLIM;
@@ -132,14 +131,69 @@ class t_annealing_state {
                       float first_crit_exponent);
 
   public: //Mutator
-    bool outer_loop_update(const t_placer_costs& costs,
+    bool outer_loop_update(float success_rate,
+                           const t_placer_costs& costs,
                            const t_placer_opts& placer_opts,
                            const t_annealing_sched& annealing_sched);
 
   private: //Mutator
-    inline void update_rlim();
+    inline void update_rlim(float success_rate);
     inline void update_crit_exponent(const t_placer_opts& placer_opts);
-    inline void update_move_lim(float success_target);
+    inline void update_move_lim(float success_target, float success_rate);
+};
+
+/**
+ * @brief Stores statistics produced by a single annealing iteration.
+ *
+ * This structure is refreshed at the beginning of every annealing loop
+ * by calling reset(). Whenever a block swap move is accepted, this
+ * structure calls single_swap_update() to update its variables. At the
+ * end of the current iteration, it calls calc_iteration_stats() to
+ * summarize the results (success_rate & std_dev of the total costs).
+ *
+ * In terms of calculating statistics for total cost, we mean that we
+ * operate upon the set of placer cost values gathered after every
+ * accepted block move.
+ *
+ *   @param av_cost
+ *              Average total cost. Cost formulation depends on
+ *              the place algorithm currently being used.
+ *   @param av_bb_cost
+ *              Average bounding box (wiring) cost.
+ *   @param av_timing_cost
+ *              Average timing cost (delay * criticality).
+ *   @param sum_of_squares
+ *              Sum of squares of the total cost.
+ *   @param success_num
+ *              Number of accepted block swaps for the current iteration.
+ *   @param success_rate
+ *              num_accepted / total_trials for the current iteration.
+ *   @param std_dev
+ *              Standard deviation of the total cost.
+ *
+ */
+class t_placer_statistics {
+  public:
+    double av_cost;
+    double av_bb_cost;
+    double av_timing_cost;
+    double sum_of_squares;
+    int success_sum;
+    float success_rate;
+    double std_dev;
+
+  public: //Constructor
+    t_placer_statistics() { reset(); }
+
+  public: //Mutator
+    ///@brief Clear all data fields.
+    void reset();
+
+    ///@brief Update stats when a single swap move has been accepted.
+    void calc_iteration_stats(const t_placer_costs& costs, int move_lim);
+
+    ///@brief Calculate placer success rate and cost std_dev for this iteration.
+    void single_swap_update(const t_placer_costs& costs);
 };
 
 ///@brief Initialize the placer's block-grid dual direction mapping.
