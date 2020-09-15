@@ -169,6 +169,10 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
  * a different subset of IO pins, the various pins offsets must be correctly computed and assigned
  * to the physical pins vector, so that, when the net RR terminals are computed, the correct physical
  * tile IO pins are selected.
+ *
+ * This routine uses the x,y and sub_tile coordinates of the clb netlist, and expects those to place each netlist block
+ * at a legal location that can accomodate it.
+ * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
  */
 void place_sync_external_block_connections(ClusterBlockId iblk);
 
