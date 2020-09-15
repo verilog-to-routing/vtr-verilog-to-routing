@@ -100,7 +100,7 @@ class CostMap {
                                  ///<delta locations that fall outside of a segment's bounding box.
                                  ///<The penalty map is addressed as follows penalty_[0][segment_index]
 
-    size_t seg_count_; ///<Total segment count in the architecture
+    size_t seg_count_ = 0; ///<Total segment count in the architecture
 
     /**
      * @brief Get penalty delay for a segment type
