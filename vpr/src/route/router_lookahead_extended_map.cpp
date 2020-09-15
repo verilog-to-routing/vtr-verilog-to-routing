@@ -144,7 +144,7 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     auto& rr_graph = device_ctx.rr_nodes;
 
     e_rr_type to_type = rr_graph.node_type(to_node);
-    VTR_ASSERT(to_type == SINK);
+    VTR_ASSERT(to_type == SINK || to_type == IPIN);
 
     auto to_tile_type = device_ctx.grid[rr_graph.node_xlow(to_node)][rr_graph.node_ylow(to_node)].type;
     auto to_tile_index = to_tile_type->index;
