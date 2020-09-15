@@ -230,7 +230,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
     const std::string& segment_name = device_ctx.rr_segments[from_seg_index].name;
-    VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%zd, %zd)\n",
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n",
                    segment_name.c_str(), from_seg_index,
                    dx, dy);
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead delay: %g\n", expected_delay_cost);
