@@ -823,6 +823,11 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     //This ensures that such blocks don't get locked down too early during placement (as would be the
     //case with a physical distance rlim)
 
+    //catch the initial rlim
+    static float init_rlim = -1; 
+    if(init_rlim == -1) 
+        init_rlim = rlim;
+
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
@@ -841,7 +846,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     //Determine the valid compressed grid location ranges
     int min_cx, max_cx, delta_cx;
     int min_cy, max_cy;
-    if(rlim > 40)
+    if(rlim > 0.15 * init_rlim)
     {
         min_cx = std::max(0, cx_centroid - rlim_x);
         max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
