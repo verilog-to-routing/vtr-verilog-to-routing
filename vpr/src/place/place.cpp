@@ -714,6 +714,10 @@ void try_place(const t_placer_opts& placer_opts,
     int quench_recompute_limit;
     if (placer_opts.quench_recompute_divider != 0) {
         quench_recompute_limit = (int)(0.5 + (float)first_move_lim / (float)placer_opts.quench_recompute_divider);
+    if(placer_opts.quench_recompute_divider == -1){
+        quench_recompute_limit = 1;
+    } else if (placer_opts.quench_recompute_divider != 0) {
+        quench_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
     } else {
         /*don't do an quench recompute */
         quench_recompute_limit = first_move_lim + 1;
