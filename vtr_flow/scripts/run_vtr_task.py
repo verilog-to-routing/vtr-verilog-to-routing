@@ -326,7 +326,8 @@ def run_parallel(args, queued_jobs, run_dirs):
 
     num_failed = 0
     with Pool(processes=args.j) as pool:
-        pool.starmap(run_vtr_flow_process, queued_procs)
+        for proc in queued_procs:
+            pool.apply_async(run_vtr_flow_process, proc)
         pool.close()
         pool.join()
     for _ in queued_procs:
