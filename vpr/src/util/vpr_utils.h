@@ -155,7 +155,27 @@ void print_usage_by_wire_length();
 
 AtomBlockId find_memory_sibling(const t_pb* pb);
 
+/**
+ * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
+ * @param iblk cluster block ID to sync within the assigned physical tile
+ *
+ * This routine updates the physical pins vector of the place context after the placement step
+ * to syncronize the pins related to the logical block with the actual connection interface of
+ * the belonging physical tile with the RR graph.
+ *
+ * This step is required as the logical block can be placed at any compatible sub tile locations
+ * within a physical tile.
+ * Given that it is possible to have equivalent logical blocks within a specific sub tile, with
+ * a different subset of IO pins, the various pins offsets must be correctly computed and assigned
+ * to the physical pins vector, so that, when the net RR terminals are computed, the correct physical
+ * tile IO pins are selected.
+ *
+ * This routine uses the x,y and sub_tile coordinates of the clb netlist, and expects those to place each netlist block
+ * at a legal location that can accomodate it.
+ * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
+ */
 void place_sync_external_block_connections(ClusterBlockId iblk);
+
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 //Verifies whether a given logical block is compatible with a given physical tile
