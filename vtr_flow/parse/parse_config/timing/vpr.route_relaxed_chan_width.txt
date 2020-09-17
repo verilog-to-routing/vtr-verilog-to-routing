@@ -1,11 +1,11 @@
 #VPR Critical Path Routing Metrics
-crit_path_routed_wirelength;vpr.crit_path.out;Total wirelength: (.*), average
+crit_path_routed_wirelength;vpr.crit_path.out;\s*Total wirelength: (.*), average
 crit_path_route_success_iteration;vpr.crit_path.out;Successfully routed after (\d+) routing iterations
 
-crit_path_total_nets_routed;vpr.crit_path.out;total_nets_routed: (\d+)
-crit_path_total_connections_routed;vpr.crit_path.out;total_connections_routed: (\d+)
-crit_path_total_heap_pushes;vpr.crit_path.out;total_heap_pushes: (\d+)
-crit_path_total_heap_pops;vpr.crit_path.out;total_heap_pops: (\d+)
+crit_path_total_nets_routed;vpr.crit_path.out;.* total_nets_routed: (\d+)
+crit_path_total_connections_routed;vpr.crit_path.out;.* total_connections_routed: (\d+)
+crit_path_total_heap_pushes;vpr.crit_path.out;.* total_heap_pushes: (\d+)
+crit_path_total_heap_pops;vpr.crit_path.out;.* total_heap_pops: (\d+)
 
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.crit_path.out;Final critical path delay \(least slack\): (.*) ns
@@ -16,10 +16,10 @@ hold_TNS;vpr.crit_path.out;Final hold Total Negative Slack \(hTNS\): (.*) ns
 hold_WNS;vpr.crit_path.out;Final hold Worst Negative Slack \(hWNS\): (.*) ns
 
 #Area Metrics
-crit_path_routing_area_total;vpr.crit_path.out;Total routing area: (.*), per logic tile: .*
-crit_path_routing_area_per_tile;vpr.crit_path.out;Total routing area: .*, per logic tile: (.*)
+crit_path_routing_area_total;vpr.crit_path.out;\s*Total routing area: (.*), per logic tile: .*
+crit_path_routing_area_per_tile;vpr.crit_path.out;\s*Total routing area: .*, per logic tile: (.*)
 
 #Run-time Metrics
-crit_path_route_time;vpr.crit_path.out;^#*\s*Routing took (.*) seconds
+crit_path_route_time;vpr.crit_path.out;\s*Routing took (.*) seconds
 crit_path_total_timing_analysis_time;vpr.crit_path.out;Flow timing analysis took (.*) seconds
 crit_path_total_sta_time;vpr.crit_path.out;Flow timing analysis took .* seconds \((.*) STA

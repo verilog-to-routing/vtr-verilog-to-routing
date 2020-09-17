@@ -86,7 +86,7 @@ jobs:
         - ./dev/check-format-py.sh
     - stage: Test
       name: "Python Lint"
-      script:
+      script:     
         - python3 ./dev/pylint_check.py
     - stage: Test
       name: "C++ Unit Tests"
@@ -112,7 +112,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -j2
+        - travis_wait 30 ./run_reg_test.py vtr_reg_basic -show_failures -j2
     - stage: Test
       name: "Basic Regression Tests with NO_GRAPHICS"
       env:
@@ -136,7 +136,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
+        - travis_wait 30 ./run_reg_test.py vtr_reg_strong -show_failures -j2
     - stage: Test
       name: "Basic Valgrind Memory Tests"
       env:
@@ -144,7 +144,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
+        - travis_wait 30 ./run_reg_test.py vtr_reg_valgrind_small -show_failures -j2
     - stage: Test
       name: "Sanitized Basic Regression Tests"
       env:
@@ -155,7 +155,7 @@ jobs:
       script:
         - ./.github/travis/build.sh
         #We skip QoR since we are only checking for errors in sanitizer runs
-        - travis_wait 50 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2
+        - travis_wait 50 ./run_reg_test.py vtr_reg_basic -show_failures -skip_qor -j2
     #Currently strong regression with sanitizers is disabled as it exceeds the maximum travis job run-time
     #- stage: Test
       #name: "Sanitized Strong Regression Tests"
@@ -167,7 +167,7 @@ jobs:
       #script:
         #- ./.github/travis/build.sh
         ##We skip QoR since we are only checking for errors in sanitizer runs
-        #- travis_wait 60 ./run_reg_test.pl vtr_reg_strong -show_failures -skip_qor -j2
+        #- travis_wait 60 ./run_reg_test.py vtr_reg_strong -show_failures -skip_qor -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
       env:
@@ -176,7 +176,7 @@ jobs:
         - BUILD_TYPE=debug
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl odin_reg_micro -show_failures -j2
+        - ./run_reg_test.py odin_reg_micro -show_failures -j2
 
     - stage: Test
       name: "Build Compatibility: GCC 5 (Ubuntu Xenial - 16.04)"

@@ -1,5 +1,5 @@
 vpr_status;output.txt;vpr_status=(.*)
-total_wirelength;vpr.out;Total wirelength:\s*(\d+)
+total_wirelength;vpr.out;\s*Total wirelength:\s*(\d+)
 #crit_path_delay_(mcw);vpr.out;Final critical path: (.*) ns
 #crit_path_delay_(1.3mcw);vpr.crit_path.out;Final critical path: (.*) ns
 #total_wirelength_(mcw);vpr.out;Total wirelength:\s*(\d+)

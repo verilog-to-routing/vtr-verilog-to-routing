@@ -56,9 +56,9 @@ VTR provides a variety of standard tasks which can be found under::
 
 Tasks can be executed using :ref:`run_vtr_task`::
 
-    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.pl <task_name>
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.py <task_name>
 
-.. seealso:: :ref:`run_vtr_task` for the detailed command line options of ``run_vtr_task.pl``.
+.. seealso:: :ref:`run_vtr_task` for the detailed command line options of ``run_vtr_task.py``.
 
 .. seealso:: :ref:`vtr_tasks` for more information on creating, modifying and running tasks.
 

@@ -176,7 +176,7 @@ def main():
         ignore_list.append("C0330")
 
         # Build pylint command
-        cmd = ["pylint", path, "-s", "n", "--disable=C0330"]
+        cmd = ["pylint", path, "-s", "n"]
         if ignore_list:
             cmd.append("--disable=" + ",".join(ignore_list))
 

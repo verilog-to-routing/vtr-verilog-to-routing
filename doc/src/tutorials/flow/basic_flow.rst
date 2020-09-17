@@ -9,7 +9,7 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 
     .. code-block:: shell
 
-        ../scripts/run_vtr_task.pl basic_flow
+        ../scripts/run_vtr_task.py basic_flow
 
     This command will run the VTR flow on a single circuit and a single architecture.
     The files generated from the run are stored in ``basic_flow/run[#]`` where ``[#]`` is the number of runs you have done.
@@ -18,7 +18,7 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 
     .. code-block:: shell
 
-        ../scripts/parse_vtr_task.pl basic_flow/
+        ../scripts/python_libs/vtr/parse_vtr_task.py basic_flow/
 
     This parses out the information of the VTR run and outputs the results in a text file called ``run[#]/parse_results.txt``.
 
@@ -30,7 +30,7 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 
     .. code-block:: shell
 
-        ../scripts/parse_vtr_task.pl -check_golden basic_flow
+        ../scripts/python_libs/vtr/parse_vtr_task.py -check_golden basic_flow
 
     It should return: ``basic_flow...[Pass]``
 

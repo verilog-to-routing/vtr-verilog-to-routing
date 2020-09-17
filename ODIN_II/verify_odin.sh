@@ -1255,7 +1255,7 @@ FILTERED_VTR_TASK_PATH="${NEW_RUN_DIR}/vtr/task_list.txt"
 function run_vtr_reg() {
 	pushd "${VTR_DIR}"  &> /dev/null
 	RELATIVE_PATH_TO_TEST=$(realapath_from "${FILTERED_VTR_TASK_PATH}" "${VTR_REG_DIR}")
-	/usr/bin/env perl run_reg_test.pl -j "${_NUMBER_OF_PROCESS}" "${RELATIVE_PATH_TO_TEST}"
+	/usr/bin/env perl run_reg_test.py -j "${_NUMBER_OF_PROCESS}" "${RELATIVE_PATH_TO_TEST}"
 	popd  &> /dev/null
 }
 

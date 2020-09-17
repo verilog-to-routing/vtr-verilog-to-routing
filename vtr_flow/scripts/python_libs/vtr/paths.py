@@ -7,13 +7,13 @@ root_path = pathlib.Path(__file__).absolute().parent.parent.parent.parent.parent
 
 # VTR Paths
 vtr_flow_path = root_path / "vtr_flow"
-scripts_path = vtr_flow_path / "scripts"
-build_path = root_path / "build"
 
 # ODIN paths
 odin_path = root_path / "ODIN_II"
 odin_exe_path = odin_path / "odin_II"
 odin_cfg_path = vtr_flow_path / "misc" / "basic_odin_config_split.xml"
+odin_verify_path = odin_path / "verify_odin.sh"
+odin_output_on_error_path = odin_path / "regression_test" / ".library" / "output_on_error.conf"
 
 # ABC paths
 abc_path = root_path / "abc"
@@ -28,6 +28,20 @@ ace_extract_clk_from_blif_script_path = ace_path / "scripts" / "extract_clk_from
 # VPR paths
 vpr_path = root_path / "vpr"
 vpr_exe_path = vpr_path / "vpr"
+
+# Flow scripts
+scripts_path = vtr_flow_path / "scripts"
+run_vtr_flow_path = scripts_path / "run_vtr_flow.py"
+flow_template_path = scripts_path / "flow_script_template.txt"
+
+# Task files
+tasks_path = vtr_flow_path / "tasks"
+regression_tests_path = tasks_path / "regression_tests"
+
+# Parsing files
+parse_path = vtr_flow_path / "parse"
+vtr_benchmarks_parse_path = parse_path / "parse_config" / "common" / "vtr_benchmarks.txt"
+pass_requirements_path = parse_path / "pass_requirements"
 
 # Other scripts
 blackbox_latches_script_path = scripts_path / "blackbox_latches.pl"
