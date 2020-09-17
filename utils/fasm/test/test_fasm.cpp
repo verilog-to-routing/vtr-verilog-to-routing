@@ -279,6 +279,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     bool found_mux1 = false;
     bool found_mux2 = false;
     bool found_mux3 = false;
+    bool found_mux4 = false;
     while(fasm_string) {
         // Should see something like:
         // CLB.FLE0_X1Y1.N2_LUT5
@@ -286,6 +287,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         // FLE0_X3Y1.OUT_MUX.LUT
         // SLICE.FLE1_X4Y1.DISABLE_FF
         // CLB.FLE0_X1Y3.LUT6[63:0]=64'b0000000000000000000000000000000100000000000000000000000000000000
+        // CLB.FLE0_X1Y3.IN0_XBAR_I0
         // 3634_3690_0
         std::string line;
         std::getline(fasm_string, line);
@@ -305,6 +307,9 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             }
             if (std::regex_match(line, m, std::regex(".*FLE\\d?_X\\d+Y\\d+.IN\\d{1}$"))) {
                 found_mux3 = true;
+            }
+            if (std::regex_match(line, m, std::regex(".*FLE\\d?_X\\d+Y\\d+\\.IN0_XBAR_(I(\\d|1[01])|FLE[01]_OUT[01])$"))) {
+                found_mux4 = true;
             }
         }
 
@@ -410,6 +415,15 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                 }
             }
 
+            // Check "FLE" does not appear twice
+            int FLE_occurrences = 0;
+            pos = 0;
+            while ((pos = line.find("FLE", pos)) != std::string::npos) {
+                ++ FLE_occurrences;
+                pos += 3;   // length of substring "FLE"
+            }
+            CHECK(FLE_occurrences <= 1);
+
         } else {
             auto parts = vtr::split(line, "_");
             REQUIRE(parts.size() == 3);
@@ -466,6 +480,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     CHECK(found_mux1);
     CHECK(found_mux2);
     CHECK(found_mux3);
+    CHECK(found_mux4);
 
     vpr_free_all(arch, vpr_setup);
 }

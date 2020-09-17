@@ -24,7 +24,7 @@ The :ref:`run_vtr_flow` script is provided to execute the VTR flow for a single 
 
 .. code-block:: none
 
-    $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl <circuit_file> <architecture_file>
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py <circuit_file> <architecture_file>
 
 It requires two arguments:
 
@@ -41,7 +41,7 @@ Architecture files can be found under::
 
 The script can also be used to run parts of the VTR flow.
 
-.. seealso:: :ref:`run_vtr_flow` for the detailed command line options of ``run_vtr_flow.pl``.
+.. seealso:: :ref:`run_vtr_flow` for the detailed command line options of ``run_vtr_flow.py``.
 
 
 Running Multiple Benchmarks & Architectures with Tasks
@@ -56,9 +56,9 @@ VTR provides a variety of standard tasks which can be found under::
 
 Tasks can be executed using :ref:`run_vtr_task`::
 
-    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.pl <task_name>
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.py <task_name>
 
-.. seealso:: :ref:`run_vtr_task` for the detailed command line options of ``run_vtr_task.pl``.
+.. seealso:: :ref:`run_vtr_task` for the detailed command line options of ``run_vtr_task.py``.
 
 .. seealso:: :ref:`vtr_tasks` for more information on creating, modifying and running tasks.
 

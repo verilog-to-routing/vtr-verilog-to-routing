@@ -17,20 +17,33 @@
  *
  */
 AtomNetlist::AtomNetlist(std::string name, std::string id)
-    : Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>(name, id) {}
+    : Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>(name, id)
+    , inpad_model_(nullptr)
+    , outpad_model_(nullptr) {}
 
 /*
  *
  * Blocks
  *
  */
+void AtomNetlist::set_block_types(const t_model* inpad, const t_model* outpad) {
+    VTR_ASSERT(inpad != nullptr);
+    VTR_ASSERT(outpad != nullptr);
+
+    inpad_model_ = inpad;
+    outpad_model_ = outpad;
+}
+
 AtomBlockType AtomNetlist::block_type(const AtomBlockId id) const {
+    VTR_ASSERT(inpad_model_ != nullptr);
+    VTR_ASSERT(outpad_model_ != nullptr);
+
     const t_model* blk_model = block_model(id);
 
     AtomBlockType type = AtomBlockType::BLOCK;
-    if (blk_model->name == std::string(MODEL_INPUT)) {
+    if (blk_model == inpad_model_) {
         type = AtomBlockType::INPAD;
-    } else if (blk_model->name == std::string(MODEL_OUTPUT)) {
+    } else if (blk_model == outpad_model_) {
         type = AtomBlockType::OUTPAD;
     } else {
         type = AtomBlockType::BLOCK;

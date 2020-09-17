@@ -48,7 +48,7 @@ void depth_first_traverse_partial_map(nnode_t* node, uintptr_t traverse_mark_num
 void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist);
 
 void instantiate_not_logic(nnode_t* node, short mark, netlist_t* netlist);
-void instantiate_buffer(nnode_t* node, short mark, netlist_t* netlist);
+bool eliminate_buffer(nnode_t* node, short, netlist_t*);
 void instantiate_bitwise_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
 void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
 void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
@@ -133,9 +133,8 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_not_logic(node, traverse_number, netlist);
             break;
         case BUF_NODE:
-            instantiate_buffer(node, traverse_number, netlist);
+            eliminate_buffer(node, traverse_number, netlist);
             break;
-
         case BITWISE_AND:
         case BITWISE_OR:
         case BITWISE_NAND:
@@ -210,6 +209,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_GT(node, node->type, traverse_number, netlist);
             break;
         case SL:
+        case ASL:
         case SR:
             instantiate_shift_left_or_right(node, node->type, traverse_number, netlist);
             break;
@@ -220,17 +220,12 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_multi_port_mux(node, traverse_number, netlist);
             break;
         case MULTIPLY: {
-            int mult_size = std::max<int>(node->input_port_sizes[0], node->input_port_sizes[1]);
-            if (hard_multipliers && mult_size >= min_mult) {
-                instantiate_hard_multiplier(node, traverse_number, netlist);
-            } else if (!hard_adders) {
-                instantiate_simple_soft_multiplier(node, traverse_number, netlist);
-            }
+            mixer->partial_map_node(node, traverse_number, netlist);
             break;
         }
         case MEMORY: {
             ast_node_t* ast_node = node->related_ast_node;
-            char* identifier = ast_node->children[0]->types.identifier;
+            char* identifier = ast_node->identifier_node->types.identifier;
             if (find_hard_block(identifier)) {
                 long depth = is_sp_ram(node) ? get_sp_ram_depth(node) : get_dp_ram_depth(node);
                 long width = is_sp_ram(node) ? get_sp_ram_width(node) : get_dp_ram_width(node);
@@ -268,7 +263,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case DIVIDE:
         case MODULO:
         default:
-            error_message(NETLIST, 0, -1, "%s", "Partial map: node should have been converted to softer version.");
+            error_message(NETLIST, node->loc, "%s", "Partial map: node should have been converted to softer version.");
             break;
     }
 }
@@ -348,23 +343,28 @@ void instantiate_not_logic(nnode_t* node, short mark, netlist_t* /*netlist*/) {
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: instantiate_buffer )
+ * (function: eliminate_buffer )
  * 	Buffers just pass through signals
+ * 	Returns true if the buffer could be eliminated
  *-------------------------------------------------------------------------------------------*/
-void instantiate_buffer(nnode_t* node, short /*mark*/, netlist_t* /*netlist*/) {
-    int width = node->num_input_pins;
-    int i;
-
+bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
+    bool buffer_is_removed = true;
     /* for now we just pass the signals directly through */
-    for (i = 0; i < width; i++) {
+    for (int i = 0; i < node->num_input_pins; i++) {
         int idx_2_buffer = node->input_pins[i]->pin_net_idx;
 
-        /* join all fanouts of the output net with the input pins net */
-        join_nets(node->input_pins[i]->net, node->output_pins[i]->net);
+        // Dont eliminate the buffer if there are multiple drivers or the AST included it
+        if (node->output_pins[i]->net->num_driver_pins <= 1) {
+            /* join all fanouts of the output net with the input pins net */
+            join_nets(node->input_pins[i]->net, node->output_pins[i]->net);
 
-        /* erase the pointer to this buffer */
-        node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
+            /* erase the pointer to this buffer */
+            node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
+        } else {
+            buffer_is_removed = false;
+        }
     }
+    return buffer_is_removed;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -725,7 +725,7 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
         port_B_offset = 0;
         port_A_index = 0;
         port_B_index = 0;
-        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "Invalid node type %s in instantiate_GT\n",
+        error_message(NETLIST, node->loc, "Invalid node type %s in instantiate_GT\n",
                       node_name_based_on_op(node));
     }
 
@@ -915,12 +915,12 @@ void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short m
         shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
     } else {
         shift_size = 0;
-        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
+        error_message(NETLIST, node->loc, "%s\n", "Odin only supports constant shifts at present");
     }
 
     buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
 
-    if (type == SL) {
+    if (type == SL || type == ASL) {
         /* IF shift left */
 
         /* connect inputs to outputs */
@@ -965,15 +965,15 @@ void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short m
         remap_pin_to_new_node(node->output_pins[i], buf_node, i);
     }
     /* instantiate the buffer */
-    instantiate_buffer(buf_node, mark, netlist);
-
-    /* clean up */
-    for (i = 0; i < buf_node->num_input_pins; i++) {
-        buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
-        buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+    if (eliminate_buffer(buf_node, mark, netlist)) {
+        /* clean up */
+        for (i = 0; i < buf_node->num_input_pins; i++) {
+            buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
+            buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+        }
+        free_nnode(buf_node);
+        free_nnode(node);
     }
-    free_nnode(buf_node);
-    free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -992,7 +992,7 @@ void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* ne
         shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
     } else {
         shift_size = 0;
-        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
+        error_message(NETLIST, node->loc, "%s\n", "Odin only supports constant shifts at present");
     }
     buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
     /* connect inputs to outputs */
@@ -1017,13 +1017,13 @@ void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* ne
         remap_pin_to_new_node(node->output_pins[i], buf_node, i);
     }
     /* instantiate the buffer */
-    instantiate_buffer(buf_node, mark, netlist);
-
-    /* clean up */
-    for (i = 0; i < buf_node->num_input_pins; i++) {
-        buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
-        buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+    if (eliminate_buffer(buf_node, mark, netlist)) {
+        /* clean up */
+        for (i = 0; i < buf_node->num_input_pins; i++) {
+            buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
+            buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+        }
+        free_nnode(buf_node);
+        free_nnode(node);
     }
-    free_nnode(buf_node);
-    free_nnode(node);
 }

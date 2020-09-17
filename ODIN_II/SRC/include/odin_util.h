@@ -7,11 +7,11 @@
 
 #define MAX_BUF 2048
 
-long shift_left_value_with_overflow_check(long input_value, long shift_by);
+long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc);
 
 std::string get_file_extension(std::string input_file);
 void create_directory(std::string path);
-void assert_supported_file_extension(std::string input_file, int line_number, int file_number);
+void assert_supported_file_extension(std::string input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
 
 const char* name_based_on_op(operation_list op);

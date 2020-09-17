@@ -1,35 +1,22 @@
-['Latch Drivers']
-    regex = 'Number of <CLOCK_NODE> node: (\d+)'
-    default = -1
+["Latch Drivers"]
+    regex = "Number of <(?:CLOCK_NODE|CLK)> node: (\d+)"
+    default = 0
 
-['Pi']
-    regex = 'Number of <INPUT_NODE> node: (\d+)'
-    default = -1
+["Pi"]
+    regex = "Number of <(?:INPUT_NODE|IN)> node: (\d+)"
+    default = 0
 
-['Po']
-    regex = 'Number of <OUTPUT_NODE> node: (\d+)'
-    default = -1
+["Po"]
+    regex = "Number of <(?:OUTPUT_NODE|OUT)> node: (\d+)"
+    default = 0
 
-['logic element']
-    regex = 'Number of <GENERIC> node: (\d+)'
-    default = -1
+["logic element"]
+    regex = "Number of <(?:GENERIC|GEN)> node: (\d+)"
+    default = 0
 
-['latch']
-    regex = 'Number of <FF_NODE> node: (\d+)'
-    default = -1
+["latch"]
+    regex = "Number of <(?:FF_NODE|FF)> node: (\d+)"
+    default = 0
 
-['Adder']
-    regex = 'Number of <ADD> node: (\d+)'
-    default = -1
+#include hard_blocks.toml
 
-['Multiplier']
-    regex = 'Number of <MULTIPLY> node: (\d+)'
-    default = -1
-
-['Memory']
-    regex = 'Number of <MEMORY> node: (\d+)'
-    default = -1
-
-['Hard Ip']
-    regex = 'Number of <HARD_IP> node: (\d+)'
-    default = -1

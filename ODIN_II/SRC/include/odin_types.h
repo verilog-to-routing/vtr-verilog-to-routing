@@ -135,16 +135,23 @@ struct global_args_t {
 
     argparse::ArgValue<int> parralelized_simulation;
     argparse::ArgValue<bool> parralelized_simulation_in_batch;
+    // deprecated since this should be defined when compiled
     argparse::ArgValue<int> sim_initial_value;
     // The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
 
     argparse::ArgValue<bool> interactive_simulation;
+
+    // Arguments for mixing hard and soft logic
+    argparse::ArgValue<int> exact_mults;
+    argparse::ArgValue<float> mults_ratio;
 };
 
 /**
  * defined in enum_str.cpp
  */
+extern const char* ieee_std_STR[];
+
 extern const char* file_extension_supported_STR[];
 
 extern const char* ZERO_GND_ZERO;
@@ -157,6 +164,13 @@ extern const char* DUAL_PORT_RAM_string;
 extern const char* edge_type_e_STR[];
 extern const char* operation_list_STR[][2];
 extern const char* ids_STR[];
+
+enum ieee_std {
+    ieee_1995,
+    ieee_2001_noconfig,
+    ieee_2001,
+    ieee_2005
+};
 
 enum file_extension_supported {
     VERILOG,
@@ -178,6 +192,13 @@ enum circuit_type_e {
     COMBINATIONAL,
     SEQUENTIAL,
     circuit_type_e_END
+};
+
+enum init_value_e {
+    _0 = 0,
+    _1 = 1,
+    dont_care = 2,
+    undefined = 3,
 };
 
 enum operation_list {
@@ -219,6 +240,7 @@ enum operation_list {
     SR,             // >>
     ASR,            // >>>
     SL,             // <<
+    ASL,            // <<<
     CASE_EQUAL,     // ===
     CASE_NOT_EQUAL, // !==
     ADDER_FUNC,
@@ -248,7 +270,6 @@ enum ids {
     INOUT,
     WIRE,
     REG,
-    INTEGER,
     GENVAR,
     PARAMETER,
     LOCALPARAM,
@@ -365,12 +386,10 @@ struct typ {
         short is_inout;
         short is_wire;
         short is_reg;
-        short is_integer;
         short is_genvar;
         short is_memory;
-        short is_signed;
-        short is_initialized;
-        long initial_value;
+        operation_list signedness;
+        VNumber* initial_value = nullptr;
     } variable;
     struct
     {
@@ -398,18 +417,17 @@ struct typ {
 };
 
 struct ast_node_t {
+    loc_t loc;
+
     long unique_count;
     int far_tag;
     int high_number;
     ids type;
     typ types;
 
+    ast_node_t* identifier_node;
     ast_node_t** children;
     long num_children;
-
-    int line_number = -1;
-    int file_number = -1;
-    int related_module_id = -1;
 
     void* hb_port;
     void* net_node;
@@ -428,15 +446,14 @@ struct chain_information_t {
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
 struct nnode_t {
+    loc_t loc;
+
     long unique_id;
     char* name;          // unique name of a node
     operation_list type; // the type of node
     int bit_width;       // Size of the operation (e.g. for adders/subtractors)
 
     ast_node_t* related_ast_node; // the abstract syntax node that made this node
-
-    int line_number = -1;
-    int file_number = -1;
 
     uintptr_t traverse_visited; // a way to mark if we've visited yet
     stat_t stat;
@@ -461,7 +478,7 @@ struct nnode_t {
 
     netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
-    std::vector<std::vector<signed char>> memory_data;
+    std::vector<std::vector<BitSpace::bit_value_t>> memory_data;
     //(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
     void (*simulate_block_cycle)(int, int, int*, int, int*);
 
@@ -474,12 +491,17 @@ struct nnode_t {
     int in_queue;           // Flag used by the simulator to avoid double queueing.
     npin_t** undriven_pins; // These pins have been found by the simulator to have no driver.
     int num_undriven_pins;
-    int ratio;                     //clock ratio for clock nodes
-    signed char has_initial_value; // initial value assigned?
-    signed char initial_value;     // initial net value
+    int ratio;                  //clock ratio for clock nodes
+    init_value_e initial_value; // initial net value
     bool internal_clk_warn = false;
     edge_type_e edge_type; //
     bool covered = false;
+
+    // For mixing soft and hard logic optimizations
+    // a field that is used for storing weights towards the
+    // mixing optimization.
+    //  value of -1 is reserved for hardened blocks
+    long weight = 0;
 
     //Generic gate output
     unsigned char generic_output; //describes the output (1 or 0) of generic blocks
@@ -513,7 +535,8 @@ struct nnet_t {
     char* name; // name for the net
     short combined;
 
-    npin_t* driver_pin; // the pin that drives the net
+    int num_driver_pins;
+    npin_t** driver_pins; // the pin that drives the net
 
     npin_t** fanout_pins; // the pins pointed to by the net
     int num_fanout_pins;  // the list size of pins
@@ -525,12 +548,10 @@ struct nnet_t {
     stat_t stat;
     /////////////////////
     // For simulation
-    std::shared_ptr<AtomicBuffer>
-        values;
+    std::shared_ptr<AtomicBuffer> values;
 
-    signed char has_initial_value; // initial value assigned?
-    signed char initial_value;     // initial net value
-                                   //////////////////////
+    init_value_e initial_value; // initial net value
+                                //////////////////////
 };
 
 struct signal_list_t {

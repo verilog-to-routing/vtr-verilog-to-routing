@@ -54,7 +54,7 @@ sc_hierarchy* copy_sc_hierarchy(sc_hierarchy* to_copy) {
     for (int i = 0; i < hierarchy->num_local_symbol_table; i++) {
         hierarchy->local_symbol_table[i] = ast_node_deep_copy(to_copy->local_symbol_table[i]);
 
-        char* identifier = hierarchy->local_symbol_table[i]->children[0]->types.identifier;
+        char* identifier = hierarchy->local_symbol_table[i]->identifier_node->types.identifier;
         long sc_spot = sc_add_string(hierarchy->local_symbol_table_sc, identifier);
         hierarchy->local_symbol_table_sc->data[sc_spot] = (void*)hierarchy->local_symbol_table[i];
     }

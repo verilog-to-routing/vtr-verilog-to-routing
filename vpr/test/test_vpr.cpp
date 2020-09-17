@@ -125,8 +125,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
             kArchFile,
             "wire.eblif",
             "--route_chan_width",
-            "100",
-        };
+            "100"};
         vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
                  &options, &vpr_setup, &arch);
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;
@@ -165,6 +164,10 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         "wire.eblif",
         "--route_chan_width",
         "100",
+        "--reorder_rr_graph_nodes_seed",
+        "1",
+        "--reorder_rr_graph_nodes_algorithm",
+        "random_shuffle", // Tests node reordering with metadata
         "--read_rr_graph",
         kRrGraphFile,
     };
@@ -175,6 +178,13 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     vpr_create_device(vpr_setup, arch);
 
     const auto& device_ctx = g_vpr_ctx.device();
+
+    // recompute ordering from 'random_shuffle'
+    std::vector<int> src_order(device_ctx.rr_nodes.size()); // new id -> old id
+    std::iota(src_order.begin(), src_order.end(), 0);       // Initialize to [0, 1, 2 ...]
+    std::mt19937 g(1);
+    std::shuffle(src_order.begin(), src_order.end(), g);
+
     CHECK(device_ctx.rr_node_metadata.size() == 1);
     CHECK(device_ctx.rr_edge_metadata.size() == 1);
 
@@ -182,7 +192,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     auto edge = arch.strings.intern_string(vtr::string_view("edge"));
 
     for (const auto& node_meta : device_ctx.rr_node_metadata) {
-        CHECK(node_meta.first == src_inode);
+        CHECK(src_order[node_meta.first] == src_inode);
         REQUIRE(node_meta.second.has(node));
         auto* value = node_meta.second.one(node);
         REQUIRE(value != nullptr);
@@ -190,8 +200,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     }
 
     for (const auto& edge_meta : device_ctx.rr_edge_metadata) {
-        CHECK(std::get<0>(edge_meta.first) == src_inode);
-        CHECK(std::get<1>(edge_meta.first) == sink_inode);
+        CHECK(src_order[std::get<0>(edge_meta.first)] == src_inode);
+        CHECK(src_order[std::get<1>(edge_meta.first)] == sink_inode);
         CHECK(std::get<2>(edge_meta.first) == switch_id);
 
         REQUIRE(edge_meta.second.has(edge));

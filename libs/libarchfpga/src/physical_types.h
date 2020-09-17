@@ -576,6 +576,23 @@ constexpr int DEFAULT_SWITCH = -2;
  * num_receivers: Total number of input receivers supplied
  * index: Keep track of type in array for easy access
  * logical_tile_index: index of the corresponding logical block type
+ *
+ * In general, the physical tile is a placeable physical resource on the FPGA device,
+ * and it is allowed to contain an heterogeneous set of logical blocks (pb_types).
+ *
+ * Each physical tile must specify at least one sub tile, that is a physical location
+ * on the sub tiles stacks. This means that a physical tile occupies an (x, y) location on the grid,
+ * and it has at least one sub tile slot that allows for a placement within the (x, y) location.
+ *
+ * Therefore, to identify the location of a logical block within the device grid, we need to
+ * specify three different coordinates:
+ *      - x         : horizontal coordinate
+ *      - y         : vertical coordinate
+ *      - sub tile  : location within the sub tile stack at an (x, y) physical location
+ *
+ * A physical tile is heterogeneous as it allows the placement of different kinds of logical blocks within,
+ * that can share the same (x, y) placement location.
+ *
  */
 struct t_physical_tile_type {
     char* name = nullptr;
@@ -615,6 +632,7 @@ struct t_physical_tile_type {
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
+    // vector of the different types of sub tiles allowed for the physical tile.
     std::vector<t_sub_tile> sub_tiles;
 
     /* Unordered map indexed by the logical block index.
@@ -624,6 +642,7 @@ struct t_physical_tile_type {
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
 
+    // Returns the sub tile location of the physical tile given an input pin
     int get_sub_tile_loc_from_pin(int pin_num) const;
 
     // TODO: Remove is_input_type / is_output_type as part of
@@ -662,8 +681,27 @@ struct t_capacity_range {
     }
 };
 
-/** Describes the possible placeable blocks within a physical tile type.
- *  A sub tile adds flexibility in the tile composition description.
+/**
+ * @brief Describes the possible placeable blocks within a physical tile type.
+ *
+ * Heterogeneous blocks:
+ *
+ * The sub tile allows to have heterogeneous blocks placed at the same grid location.
+ * Heterogeneous blocks are blocks which do not share either the same functionality or the
+ * IO interface, but do share the same (x, y) grid location.
+ * For each heterogeneous block type than, there should be a corresponding sub tile to enable
+ * its placement within the physical tile.
+ *
+ * For further information there is a tutorial on the VTR documentation page.
+ *
+ *
+ * Equivalent sites:
+ *
+ * Moreover, the same sub tile enables to allow the placement of different implementations
+ * of a logical block.
+ * This means that two blocks that have different internal functionalities, but the IO interface of one block
+ * is a subset of the other, they can be placed at the same sub tile location within the physical tile.
+ * These two blocks can be identified as equivalent, hence they can belong to the same sub tile.
  */
 struct t_sub_tile {
     char* name = nullptr;
@@ -674,9 +712,14 @@ struct t_sub_tile {
 
     std::vector<t_physical_tile_port> ports;
 
-    std::vector<t_logical_block_type_ptr> equivalent_sites;
+    std::vector<t_logical_block_type_ptr> equivalent_sites; ///>List of netlist blocks (t_logical_block) that one could
+                                                            ///>place within this sub tile.
 
-    t_capacity_range capacity;
+    t_capacity_range capacity; ///>Indicates the total number of sub tile instances of this type placeable at a
+                               ///>physical location.
+                               ///>E.g.: capacity can range from 4 to 7, meaning that there are four placeable sub tiles
+                               ///>      at a physical location, and compatible netlist blocks can be placed at sub_tile
+                               ///>      indices ranging from 4 to 7.
     t_class_range class_range;
 
     int num_phy_pins = 0;
@@ -763,6 +806,16 @@ struct t_physical_tile_port {
  *
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
+ *
+ * A logical block is the implementation of a component's functionality of the FPGA device
+ * and it identifies its logical behaviour and internal connections.
+ *
+ * The logical block type is mainly used during the packing stage of VPR and is used to generate
+ * the packed netlist and all the corresponding blocks and their internal structure.
+ *
+ * The logical blocks than get assigned to a possible physical tile for the placement step.
+ *
+ * A logical block must correspond to at least one physical tile.
  */
 struct t_logical_block_type {
     char* name = nullptr;
@@ -773,7 +826,8 @@ struct t_logical_block_type {
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
-    std::vector<t_physical_tile_type_ptr> equivalent_tiles;
+    std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
+                                                            ///>place this type of netlist block.
 };
 
 /*************************************************************************************************

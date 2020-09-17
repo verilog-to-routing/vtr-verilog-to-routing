@@ -10,16 +10,16 @@ The script will always parse the results of the latest execution of the task.
 
 The script is located at::
 
-    $VTR_ROOT/vtr_flow/scripts/parse_vtr_task.pl
+    $VTR_ROOT/vtr_flow/scripts/python_libs/vtr/parse_vtr_task.py
 
-.. program:: parse_vtr_task.pl
+.. program:: parse_vtr_task.py
 
 Usage
 ~~~~~
 
 Typical usage is::
 
-    parse_vtr_task.pl <task_name1> <task_name2> ...
+    parse_vtr_task.py <task_name1> <task_name2> ...
 
 .. note:: At least one task must be specified, either directly as a parameter or through the :option:`-l` option.
 

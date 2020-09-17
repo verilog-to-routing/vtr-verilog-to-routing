@@ -27,6 +27,7 @@ HeapStorage::alloc() {
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
+    temp_ptr->path_data = nullptr;
     temp_ptr->set_prev_node(NO_PREVIOUS);
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);

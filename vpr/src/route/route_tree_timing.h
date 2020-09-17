@@ -19,7 +19,7 @@ void free_route_tree(t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node, int depth);
 
-t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup);
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup);
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
@@ -68,7 +68,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf);
 //  non_config_node_set_usage after pruning.
 t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage);
 
-void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac);
+void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub);
 
 bool is_equivalent_route_tree(const t_rt_node* rt_root, const t_rt_node* cloned_rt_root);
 bool is_valid_skeleton_tree(const t_rt_node* rt_root);

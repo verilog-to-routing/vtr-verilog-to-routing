@@ -25,7 +25,7 @@ Verifying Installation
 ~~~~~~~~~~~~~~~~~~~~~~
 To verfiy that VTR has been installed correctly run::
 
-    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.pl basic_flow
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_task.py basic_flow
 
 The expected output is::
 

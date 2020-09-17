@@ -129,32 +129,32 @@ ast_node_t* resolve_for(ast_node_t* node) {
 
     ast_node_t* value = 0;
     if (resolve_pre_condition(pre, &value)) {
-        error_message(AST, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
+        error_message(AST, pre->loc, "%s", "Unsupported pre-condition node in for loop");
     }
 
     int error_code = 0;
     condition_function cond_func = resolve_condition(cond, pre->children[0], &error_code);
     if (error_code) {
-        error_message(AST, cond->line_number, cond->file_number, "%s", "Unsupported condition node in for loop");
+        error_message(AST, cond->loc, "%s", "Unsupported condition node in for loop");
     }
 
     post_condition_function post_func = resolve_post_condition(post, pre->children[0], &error_code);
     if (error_code) {
-        error_message(AST, post->line_number, post->file_number, "%s", "Unsupported post-condition node in for loop");
+        error_message(AST, post->loc, "%s", "Unsupported post-condition node in for loop");
     }
 
     bool dup_body = cond_func(value->types.vnumber->get_value());
     while (dup_body) {
         ast_node_t* new_body = dup_and_fill_body(body, pre, &value, &error_code);
         if (error_code) {
-            error_message(AST, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
+            error_message(AST, pre->loc, "%s", "Unsupported pre-condition node in for loop");
         }
 
         VNumber* temp_vnum = value->types.vnumber;
         value->types.vnumber = new VNumber(post_func(temp_vnum->get_value()));
         delete temp_vnum;
 
-        body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body, new_body->line_number);
+        body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body, new_body->loc);
 
         dup_body = cond_func(value->types.vnumber->get_value());
     }
@@ -370,8 +370,8 @@ ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* pre, ast_node_t** va
                 }
             } else if (child->type == MODULE_INSTANCE && child->children[0]->type != MODULE_INSTANCE) {
                 /* find and replace iteration symbol for port connections and parameters */
-                ast_node_t* named_instance = child->children[1];
-                copy->children[i]->children[1] = dup_and_fill_body(named_instance, pre, value, error_code);
+                ast_node_t* named_instance = child->children[0];
+                copy->children[i]->children[0] = dup_and_fill_body(named_instance, pre, value, error_code);
                 free_whole_tree(named_instance);
 
                 is_unrolled = true;

@@ -45,6 +45,10 @@
 #include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
+#include "route_common.h"
+#include "breakpoint.h"
+
+#include "move_utils.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -72,6 +76,8 @@
 /****************************** Define Macros *******************************/
 
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#    define OLD_BLK_LOC_COLOR blk_GOLD
+#    define NEW_BLK_LOC_COLOR blk_GREEN
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 /********************** Subroutines local to this module ********************/
@@ -137,21 +143,23 @@ static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_dra
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first = true);
+static void draw_main_canvas(ezgl::renderer* g);
+static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window);
+static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window);
+static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window);
+static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window);
+static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window);
+static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window);
+static void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+static void setup_default_ezgl_callbacks(ezgl::application* app);
+static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void run_graphics_commands(std::string commands);
 
-void draw_main_canvas(ezgl::renderer* g);
-void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window);
-void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window);
-void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window);
-void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window);
-void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window);
-void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window);
-void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
-void setup_default_ezgl_callbacks(ezgl::application* app);
-void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void run_graphics_commands(std::string commands);
+void manual_move_generator_window();
+void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
 
 /************************** File Scope Variables ****************************/
 
@@ -233,7 +241,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
 }
 
 #ifndef NO_GRAPHICS
-void draw_main_canvas(ezgl::renderer* g) {
+static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
@@ -300,7 +308,7 @@ void draw_main_canvas(ezgl::renderer* g) {
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
-void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
     if (!is_new_window) return;
 
     //button to enter window_mode, created in main.ui
@@ -337,7 +345,7 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_w
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT_with_crit_path */
-void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window) {
     initial_setup_NO_PICTURE_to_PLACEMENT(app, is_new_window);
     button_for_toggle_crit_path();
 }
@@ -345,7 +353,7 @@ void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * PLACEMENT_to_ROUTING */
-void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window) {
+static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window) {
     initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(app, is_new_window);
     button_for_toggle_rr();
     button_for_toggle_congestion();
@@ -358,7 +366,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_wind
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * ROUTING_to_PLACEMENT */
-void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
+static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
     initial_setup_PLACEMENT_to_ROUTING(app, is_new_window);
     std::string toggle_rr = "toggle_rr";
     std::string toggle_congestion = "toggle_congestion";
@@ -378,7 +386,7 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_wind
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_ROUTING */
-void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window) {
     if (!is_new_window) return;
 
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -416,7 +424,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_ROUTING_with_crit_path */
-void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window) {
     initial_setup_NO_PICTURE_to_ROUTING(app, is_new_window);
     button_for_toggle_crit_path();
 }
@@ -529,7 +537,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 }
 
 #ifndef NO_GRAPHICS
-void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
+static void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
     window_mode = true;
 }
 
@@ -985,20 +993,33 @@ static void drawplace(ezgl::renderer* g) {
                 /* Fill background for the clb. Do not fill if "show_blk_internal"
                  * is toggled.
                  */
-                if (bnum == INVALID_BLOCK_ID) continue;
-                //Determine the block color
+                if (bnum == INVALID_BLOCK_ID)
+                    continue;
+
+                //Determine the block color and logical type
                 ezgl::color block_color;
                 t_logical_block_type_ptr logical_block_type = nullptr;
-                if (bnum != EMPTY_BLOCK_ID) {
-                    block_color = draw_state->block_color(bnum);
-                    logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
-                } else {
-                    block_color = get_block_type_color(device_ctx.grid[i][j].type);
-                    block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
 
-                    auto tile_type = device_ctx.grid[i][j].type;
-                    logical_block_type = pick_best_logical_type(tile_type);
+                //flag whether the current location is highlighted with a special color or not
+                bool current_loc_is_highlighted = false;
+
+                if (placer_breakpoint_reached())
+                    current_loc_is_highlighted = highlight_loc_with_specific_color(int(i), int(j), block_color);
+
+                // No color specified at this location; use the block color.
+                if (current_loc_is_highlighted == false) {
+                    if (bnum != EMPTY_BLOCK_ID) {
+                        block_color = draw_state->block_color(bnum);
+                        logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
+                    } else {
+                        block_color = get_block_type_color(device_ctx.grid[i][j].type);
+                        block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+                    }
                 }
+
+                auto tile_type = device_ctx.grid[i][j].type;
+                logical_block_type = pick_best_logical_type(tile_type);
+
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
                 ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k, logical_block_type);
@@ -1194,27 +1215,24 @@ static void draw_routing_costs(ezgl::renderer* g) {
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
     std::vector<float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
+
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            int cost_index = device_ctx.rr_nodes[inode].cost_index();
-            cost = device_ctx.rr_indexed_data[cost_index].base_cost
-                   + route_ctx.rr_node_route_inf[inode].acc_cost
-                   + route_ctx.rr_node_route_inf[inode].pres_cost;
+            cost = get_single_rr_cong_cost(inode, get_draw_state_vars()->pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
-            int cost_index = device_ctx.rr_nodes[inode].cost_index();
-            cost = device_ctx.rr_indexed_data[cost_index].base_cost;
+            cost = get_single_rr_cong_base_cost(inode);
 
         } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS
                    || draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS) {
-            cost = route_ctx.rr_node_route_inf[inode].acc_cost;
+            cost = get_single_rr_cong_acc_cost(inode);
 
         } else {
             VTR_ASSERT(draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
                        || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = route_ctx.rr_node_route_inf[inode].pres_cost;
+            cost = get_single_rr_cong_pres_cost(inode, get_draw_state_vars()->pres_fac);
         }
 
         if (draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS
@@ -3180,6 +3198,7 @@ static void draw_crit_path(ezgl::renderer* g) {
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES || draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
                 g->set_color(color);
                 g->set_line_dash(ezgl::line_dash::none);
+                g->set_line_width(4);
                 draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay, g);
             } else {
                 VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
@@ -3230,7 +3249,30 @@ static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, flo
         ss << 1e9 * incr_delay; //In nanoseconds
         std::string incr_delay_str = ss.str();
 
-        g->draw_text(text_bbox.center(), incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+        // Get the angle of line, to rotate the text
+        float text_angle = (180 / M_PI) * atan((end.y - start.y) / (end.x - start.x));
+
+        // Get the screen coordinates for text drawing
+        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+        g->set_text_rotation(text_angle);
+
+        // Set the text colour to black to differentiate it from the line
+        g->set_font_size(16);
+        g->set_color(ezgl::color(0, 0, 0));
+
+        g->set_coordinate_system(ezgl::SCREEN);
+
+        // Find an offset so it is sitting on top/below of the line
+        float x_offset = screen_coords.center().x - 8 * sin(text_angle * (M_PI / 180));
+        float y_offset = screen_coords.center().y - 8 * cos(text_angle * (M_PI / 180));
+
+        ezgl::point2d offset_text_bbox(x_offset, y_offset);
+        g->draw_text(offset_text_bbox, incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+
+        g->set_font_size(14);
+
+        g->set_text_rotation(0);
+        g->set_coordinate_system(ezgl::WORLD);
     }
 }
 
@@ -3912,7 +3954,7 @@ float get_net_alpha() {
     return draw_state->net_alpha;
 }
 
-void setup_default_ezgl_callbacks(ezgl::application* app) {
+static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     GObject* proceed_button = app->get_object("ProceedButton");
     g_signal_connect(proceed_button, "clicked", G_CALLBACK(ezgl::press_proceed), app);
@@ -3936,10 +3978,14 @@ void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Clip Routing Util checkbox
     GObject* clip_routing = app->get_object("clipRoutingUtil");
     g_signal_connect(clip_routing, "toggled", G_CALLBACK(clip_routing_util), app);
+
+    // Connect Debug Button
+    GObject* debugger = app->get_object("debugButton");
+    g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
 }
 
 // Callback function for Block Outline checkbox
-void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_outlines
@@ -3953,7 +3999,7 @@ void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*
 }
 
 // Callback function for Block Text checkbox
-void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_text
@@ -3968,7 +4014,7 @@ void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) 
 }
 
 // Callback function for Clip Routing Util checkbox
-void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->clip_routing_util
@@ -3998,13 +4044,13 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
     application.refresh_drawing();
 }
 
-void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->forced_pause = true;
 }
 
-void run_graphics_commands(std::string commands) {
+static void run_graphics_commands(std::string commands) {
     //A very simmple command interpreter for scripting graphics
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -4086,6 +4132,63 @@ void run_graphics_commands(std::string commands) {
 
     //Advance the sequence number
     ++draw_state->sequence_number;
+}
+
+/* This routine highlights the blocks affected in the latest move      *
+ * It highlights the old and new locations of the moved blocks         *
+ * It also highlights the moved block input and output terminals       *
+ * Currently, it is used in placer debugger when breakpoint is reached */
+void highlight_moved_block_and_its_terminals(const t_pl_blocks_to_be_moved& blocks_affected) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //clear all selected blocks
+    deselect_all();
+
+    //highlight the input/output terminals of the moved block
+    draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num);
+
+    //highlight the old and new locations of the moved block
+    clear_colored_locations();
+    set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc, OLD_BLK_LOC_COLOR);
+    set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc, NEW_BLK_LOC_COLOR);
+}
+
+// pass in an (x,y,subtile) location and the color in which it should be drawn.
+// This overrides the color of any block placed in that location, and also applies if the location is empty.
+void set_draw_loc_color(t_pl_loc loc, ezgl::color clr) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->colored_locations.push_back(std::make_pair(loc, clr));
+}
+
+// clear the colored_locations vector
+void clear_colored_locations() {
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->colored_locations.clear();
+}
+
+// This routine takes in a (x,y) location.
+// If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
+// otherwise, the function returns false (the location isn't among the highlighted locations)
+bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    //define a (x,y) location variable
+    t_pl_loc curr_loc;
+    curr_loc.x = x;
+    curr_loc.y = y;
+
+    //search for the current location in the vector of colored locations
+    auto it = std::find_if(draw_state->colored_locations.begin(), draw_state->colored_locations.end(), [&curr_loc](const std::pair<t_pl_loc, ezgl::color>& vec_element) { return (vec_element.first.x == curr_loc.x && vec_element.first.y == curr_loc.y); });
+
+    if (it != draw_state->colored_locations.end()) {
+        /* found a colored location at the spot I am drawing *
+         * (currently used for drawing the current move).    *
+         * This overrides any block color.                   */
+        loc_color = it->second;
+        return true;
+    }
+
+    return false;
 }
 
 #endif /* NO_GRAPHICS */

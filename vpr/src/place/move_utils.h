@@ -50,4 +50,13 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          t_pl_loc& to);
+
+// Accessor f_placer_breakpoint_reached
+// return true when a placer breakpoint is reached
+bool placer_breakpoint_reached();
+
+// setter for f_placer_breakpoint_reached
+// Should be setted in the breakpoint calculation algorithm
+void set_placer_breakpoint_reached(bool);
+
 #endif

@@ -155,7 +155,27 @@ void print_usage_by_wire_length();
 
 AtomBlockId find_memory_sibling(const t_pb* pb);
 
+/**
+ * @brief Syncs the logical block pins corresponding to the input iblk with the corresponding chosen physical tile
+ * @param iblk cluster block ID to sync within the assigned physical tile
+ *
+ * This routine updates the physical pins vector of the place context after the placement step
+ * to syncronize the pins related to the logical block with the actual connection interface of
+ * the belonging physical tile with the RR graph.
+ *
+ * This step is required as the logical block can be placed at any compatible sub tile locations
+ * within a physical tile.
+ * Given that it is possible to have equivalent logical blocks within a specific sub tile, with
+ * a different subset of IO pins, the various pins offsets must be correctly computed and assigned
+ * to the physical pins vector, so that, when the net RR terminals are computed, the correct physical
+ * tile IO pins are selected.
+ *
+ * This routine uses the x,y and sub_tile coordinates of the clb netlist, and expects those to place each netlist block
+ * at a legal location that can accomodate it.
+ * It does not check for overuse of locations, therefore it can be used with placements that have resource overuse.
+ */
 void place_sync_external_block_connections(ClusterBlockId iblk);
+
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 //Verifies whether a given logical block is compatible with a given physical tile
@@ -231,6 +251,23 @@ void pretty_print_float(const char* prefix, double value, int num_digits, int sc
 void print_timing_stats(std::string name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past = t_timing_analysis_profile_info());
+
+/*
+ * Builds legal_pos and num_legal_pos
+ *
+ * num_legal_pos is total number of each type of subtiles
+ * num_legal[0..device_ctx.num_block_types - 1][0..num_sub_tiles - 1] = total number of this type of subtile
+ *
+ * legal_pos is a lookup of all subtiles by sub_tile type
+ * legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1][0..num_legal - 1] = t_pl_loc for a single
+ * placement location of the proper tile type and sub_tile type.
+ *
+ * TODO: replace num_legal_pos by using the .size() of legal_pos instead.
+ */
+void alloc_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos,
+                                     std::vector<std::vector<int>>& num_legal_pos);
+
+void load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 
 // Make room in a vector, with amortized O(1) time by using a pow2 growth pattern.
 //

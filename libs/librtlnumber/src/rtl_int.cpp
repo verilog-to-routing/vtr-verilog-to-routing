@@ -47,7 +47,7 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in) {
                 "empty 2nd bit string");
 
 #ifndef RTL_ALLOW_UNKNOWN_COMPARE
-    if (a_in.is_dont_care_string() || b_in.is_dont_care_string())
+    if (a_in.has_unknown() || b_in.has_unknown())
         return UNK_EVAL;
 #endif
 
@@ -195,7 +195,7 @@ bool V_FALSE(VNumber& a) {
 }
 
 bool V_UNK(VNumber& a) {
-    return a.is_dont_care_string();
+    return a.has_unknown();
 }
 
 bool V_IS_X(VNumber& a) {
@@ -214,8 +214,8 @@ bool V_IS_UNSIGNED(VNumber& a) {
     return !a.is_signed();
 }
 
-std::string V_STRING(VNumber& a) {
-    return a.to_printable();
+std::string V_STRING(VNumber& a, const char base) {
+    return a.to_vstring(base);
 }
 
 /***
@@ -226,15 +226,15 @@ std::string V_STRING(VNumber& a) {
  */
 
 VNumber V_BITWISE_NOT(VNumber& a) {
-    return a.invert();
+    return a.bitwise(l_not);
 }
 
 VNumber V_LOGICAL_NOT(VNumber& a) {
-    if (a.is_dont_care_string())
+    if (a.has_unknown())
         return AMBIGUOUS_VALUE;
 
     VNumber ored = a.bitwise_reduce(l_or);
-    VNumber noted = ored.invert();
+    VNumber noted = ored.bitwise(l_not);
     return noted;
 }
 
@@ -245,6 +245,10 @@ VNumber V_ADD(VNumber& a) {
 
 VNumber V_MINUS(VNumber& a) {
     return a.twos_complement();
+}
+
+VNumber V_MINUS(VNumber& a, BitSpace::bit_value_t carry) {
+    return a.twos_complement(carry);
 }
 
 VNumber V_UNSIGNED(VNumber& a) {
@@ -271,17 +275,17 @@ VNumber V_BITWISE_XOR(VNumber& a) {
 }
 
 VNumber V_BITWISE_NAND(VNumber& a) {
-    VNumber to_return = a.bitwise_reduce(l_and).invert();
+    VNumber to_return = a.bitwise_reduce(l_and).bitwise(l_not);
     return to_return;
 }
 
 VNumber V_BITWISE_NOR(VNumber& a) {
-    VNumber to_return = a.bitwise_reduce(l_or).invert();
+    VNumber to_return = a.bitwise_reduce(l_or).bitwise(l_not);
     return to_return;
 }
 
 VNumber V_BITWISE_XNOR(VNumber& a) {
-    VNumber to_return = a.bitwise_reduce(l_xor).invert();
+    VNumber to_return = a.bitwise_reduce(l_xor).bitwise(l_not);
     return to_return;
 }
 
@@ -293,7 +297,7 @@ VNumber V_BITWISE_XNOR(VNumber& a) {
  */
 
 VNumber V_REPLICATE(VNumber& a, VNumber& n_times) {
-    assert_Werr(!n_times.is_dont_care_string(),
+    assert_Werr(!n_times.has_unknown(),
                 "Cannot use undefined number for the replication count");
 
     return a.replicate(n_times.get_value());
@@ -308,6 +312,46 @@ VNumber V_CONCAT(std::vector<VNumber> concat_list) {
         init = init.insert_at_lsb(concat_list[i]);
     }
     return init;
+}
+
+VNumber V_BITWISE_BUF(VNumber& a) {
+    return a.bitwise(l_buf);
+}
+
+VNumber V_BITWISE_BUFIF0(VNumber& input, VNumber& trigger) {
+    if (trigger.size() == 1 && input.size() > 1) {
+        trigger = trigger.replicate(input.size());
+    }
+    assert_Werr(input.size() == trigger.size(),
+                "tristate must either have a single trigger or contains as many as the input width");
+    return input.bitwise(trigger, l_bufif0);
+}
+
+VNumber V_BITWISE_BUFIF1(VNumber& input, VNumber& trigger) {
+    if (trigger.size() == 1 && input.size() > 1) {
+        trigger = trigger.replicate(input.size());
+    }
+    assert_Werr(input.size() == trigger.size(),
+                "tristate must either have a single trigger or contains as many as the input width");
+    return input.bitwise(trigger, l_bufif1);
+}
+
+VNumber V_BITWISE_NOTIF0(VNumber& input, VNumber& trigger) {
+    if (trigger.size() == 1 && input.size() > 1) {
+        trigger = trigger.replicate(input.size());
+    }
+    assert_Werr(input.size() == trigger.size(),
+                "tristate must either have a single trigger or contains as many as the input width");
+    return input.bitwise(trigger, l_notif0);
+}
+
+VNumber V_BITWISE_NOTIF1(VNumber& input, VNumber& trigger) {
+    if (trigger.size() == 1 && input.size() > 1) {
+        trigger = trigger.replicate(input.size());
+    }
+    assert_Werr(input.size() == trigger.size(),
+                "tristate must either have a single trigger or contains as many as the input width");
+    return input.bitwise(trigger, l_notif1);
 }
 
 VNumber V_BITWISE_AND(VNumber& a, VNumber& b) {
@@ -351,7 +395,7 @@ VNumber V_CASE_NOT_EQUAL(VNumber& a, VNumber& b) {
 }
 
 VNumber V_LOGICAL_AND(VNumber& a, VNumber& b) {
-    if (a.is_dont_care_string() || b.is_dont_care_string())
+    if (a.has_unknown() || b.has_unknown())
         return AMBIGUOUS_VALUE;
     VNumber reduxA = a.bitwise_reduce(l_or);
     VNumber reduxB = b.bitwise_reduce(l_or);
@@ -362,7 +406,7 @@ VNumber V_LOGICAL_AND(VNumber& a, VNumber& b) {
 }
 
 VNumber V_LOGICAL_OR(VNumber& a, VNumber& b) {
-    if (a.is_dont_care_string() || b.is_dont_care_string())
+    if (a.has_unknown() || b.has_unknown())
         return AMBIGUOUS_VALUE;
     VNumber reduxA = a.bitwise_reduce(l_or);
     VNumber reduxB = b.bitwise_reduce(l_or);
@@ -415,38 +459,38 @@ VNumber V_NOT_EQUAL(VNumber& a, VNumber& b) {
 }
 
 VNumber V_SIGNED_SHIFT_LEFT(VNumber& a, VNumber& b) {
-    if (b.is_dont_care_string())
+    if (b.has_unknown())
         return AMBIGUOUS_VALUE;
 
     return shift_op(a, b.get_value(), a.is_signed());
 }
 
 VNumber V_SHIFT_LEFT(VNumber& a, VNumber& b) {
-    if (b.is_dont_care_string())
+    if (b.has_unknown())
         return AMBIGUOUS_VALUE;
 
     return shift_op(a, b.get_value(), false);
 }
 
 VNumber V_SIGNED_SHIFT_RIGHT(VNumber& a, VNumber& b) {
-    if (b.is_dont_care_string())
+    if (b.has_unknown())
         return AMBIGUOUS_VALUE;
 
     return shift_op(a, -1 * b.get_value(), a.is_signed());
 }
 
 VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b) {
-    if (b.is_dont_care_string())
+    if (b.has_unknown())
         return AMBIGUOUS_VALUE;
 
     return shift_op(a, -1 * b.get_value(), false);
 }
 
-VNumber V_ADD(VNumber& a, VNumber& b) {
-    return sum_op(a, b, _0, /* is_twos_complement_subtraction */ false);
+VNumber V_ADD(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in) {
+    return sum_op(a, b, carry_in, /* is_twos_complement_subtraction */ false);
 }
 
-VNumber V_MINUS(VNumber& a, VNumber& b) {
+VNumber V_MINUS(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in) {
     size_t std_length = std::max(a.size(), b.size());
     VNumber padded_a(a, std_length);
     VNumber padded_b(b, std_length);
@@ -458,11 +502,19 @@ VNumber V_MINUS(VNumber& a, VNumber& b) {
         complement = V_MINUS(complement);
     }
 
-    return sum_op(padded_a, complement, _0, /* is_twos_complement_subtraction */ true);
+    return sum_op(padded_a, complement, carry_in, /* is_twos_complement_subtraction */ true);
+}
+
+VNumber V_ADD(VNumber& a, VNumber& b) {
+    return V_ADD(a, b, _0);
+}
+
+VNumber V_MINUS(VNumber& a, VNumber& b) {
+    return V_MINUS(a, b, _0);
 }
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in) {
-    if (a_in.is_dont_care_string() || b_in.is_dont_care_string()) {
+    if (a_in.has_unknown() || b_in.has_unknown()) {
         return AMBIGUOUS_VALUE;
     }
 
@@ -546,7 +598,7 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in) {
  * |-----------------------------------------------------------------------------|
  */
 VNumber V_POWER(VNumber& a, VNumber& b) {
-    if (a.is_dont_care_string() || b.is_dont_care_string()) {
+    if (a.has_unknown() || b.has_unknown()) {
         return AMBIGUOUS_VALUE;
     }
 
@@ -597,7 +649,7 @@ VNumber V_POWER(VNumber& a, VNumber& b) {
 
 /////////////////////////////
 VNumber V_DIV(VNumber& a_in, VNumber& b_in) {
-    if (a_in.is_dont_care_string() || b_in.is_dont_care_string() || eval_op(b_in, 0).is_eq())
+    if (a_in.has_unknown() || b_in.has_unknown() || eval_op(b_in, 0).is_eq())
         return AMBIGUOUS_VALUE;
 
     VNumber result("0");
@@ -643,7 +695,7 @@ VNumber V_DIV(VNumber& a_in, VNumber& b_in) {
 }
 
 VNumber V_MOD(VNumber& a_in, VNumber& b_in) {
-    if (a_in.is_dont_care_string() || b_in.is_dont_care_string() || eval_op(b_in, 0).is_eq())
+    if (a_in.has_unknown() || b_in.has_unknown() || eval_op(b_in, 0).is_eq())
         return AMBIGUOUS_VALUE;
 
     bool neg_a = a_in.is_negative();

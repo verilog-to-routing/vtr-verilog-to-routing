@@ -22,6 +22,7 @@
  */
 #include "odin_types.h"
 #include "odin_globals.h"
+#include "ast_util.h"
 #include "memories.h"
 #include "hard_blocks.h"
 #include "implicit_memory.h"
@@ -72,10 +73,10 @@ implicit_memory* lookup_implicit_memory(char* instance_name_prefix, char* identi
  * Looks up an implicit memory by ast reference in the implicit memory lookup table.
  */
 implicit_memory* lookup_implicit_memory_reference_ast(char* instance_name_prefix, ast_node_t* node) {
-    if (node && node->num_children == 2 && node->type == ARRAY_REF)
-        return lookup_implicit_memory(instance_name_prefix, node->children[0]->types.identifier);
-    else if (node && node->num_children == 3 && node->type == ARRAY_REF)
-        return lookup_implicit_memory(instance_name_prefix, node->children[0]->types.identifier);
+    if (node && node->num_children == 1 && node->type == ARRAY_REF)
+        return lookup_implicit_memory(instance_name_prefix, node->identifier_node->types.identifier);
+    else if (node && node->num_children == 2 && node->type == ARRAY_REF)
+        return lookup_implicit_memory(instance_name_prefix, node->identifier_node->types.identifier);
     else if (node && node->type == IDENTIFIERS)
         return lookup_implicit_memory(instance_name_prefix, node->types.identifier);
     else
@@ -86,10 +87,10 @@ implicit_memory* lookup_implicit_memory_reference_ast(char* instance_name_prefix
  * Determines if the given implicit memory reference mode is supported.
  */
 char is_valid_implicit_memory_reference_ast(char* instance_name_prefix, ast_node_t* node) {
-    if (node && node->num_children == 2 && node->type == ARRAY_REF
+    if (node && node->num_children == 1 && node->type == ARRAY_REF
         && lookup_implicit_memory_reference_ast(instance_name_prefix, node))
         return true;
-    else if (node && node->num_children == 3 && node->type == ARRAY_REF
+    else if (node && node->num_children == 2 && node->type == ARRAY_REF
              && lookup_implicit_memory_reference_ast(instance_name_prefix, node))
         return true;
     else
@@ -99,7 +100,7 @@ char is_valid_implicit_memory_reference_ast(char* instance_name_prefix, ast_node
 /*
  * Creates an implicit memory block with the given depth and data width, and the given name and prefix.
  */
-implicit_memory* create_implicit_memory_block(int data_width, long memory_depth, char* name, char* instance_name_prefix) {
+implicit_memory* create_implicit_memory_block(int data_width, long memory_depth, char* name, char* instance_name_prefix, loc_t loc) {
     char implicit_string[] = "implicit_ram";
 
     oassert(memory_depth > 0
@@ -110,24 +111,23 @@ implicit_memory* create_implicit_memory_block(int data_width, long memory_depth,
     long real_memory_depth = 1;
     while (real_memory_depth < memory_depth) {
         addr_width += 1;
-        real_memory_depth = shift_left_value_with_overflow_check(real_memory_depth, 0x1);
+        real_memory_depth = shift_left_value_with_overflow_check(real_memory_depth, 0x1, loc);
     }
 
     //verify if it is a power of two (only one bit set)
     if ((memory_depth != real_memory_depth)) {
-        warning_message(NETLIST, -1, -1, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, real_memory_depth);
+        warning_message(NETLIST, loc, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, real_memory_depth);
         memory_depth = real_memory_depth;
     }
 
-    nnode_t* node = allocate_nnode();
+    nnode_t* node = allocate_nnode(loc);
     node->type = MEMORY;
     node->name = hard_node_name(node, instance_name_prefix, implicit_string, name);
 
     // Create a fake ast node.
-    node->related_ast_node = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
+    node->related_ast_node = create_node_w_type(RAM, node->loc);
     node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-    node->related_ast_node->children[0] = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
-    node->related_ast_node->children[0]->types.identifier = vtr::strdup(DUAL_PORT_RAM_string);
+    node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), loc);
 
     char* full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, -1);
 
@@ -183,7 +183,7 @@ void register_implicit_memory_input(char* name, implicit_memory* memory) {
     if (!lookup_implicit_memory_input(name))
         implicit_memory_inputs.insert({std::string(name), memory});
     else
-        error_message(NETLIST, -1, -1, "Attempted to re-register implicit memory output %s.", name);
+        error_message(NETLIST, memory->node->loc, "Attempted to re-register implicit memory output %s.", name);
 }
 
 /*
@@ -288,7 +288,7 @@ void finalize_implicit_memory(implicit_memory* memory) {
 
     if (!has_clk) {
         add_dummy_input_port_to_implicit_memory(memory, 1, "clk");
-        warning_message(NETLIST, -1, -1, "Implicit memory %s is not clocked. Padding clock pin.", memory->name);
+        warning_message(NETLIST, memory->node->loc, "Implicit memory %s is not clocked. Padding clock pin.", memory->name);
     }
 
     char has_port1 = has_addr1 || has_data1 || has_we1 || has_out1;
@@ -312,7 +312,7 @@ void finalize_implicit_memory(implicit_memory* memory) {
         collapse_implicit_memory_to_single_port_ram(memory);
 
     if (!has_port1 && !has_port2) {
-        warning_message(NETLIST, -1, -1, "Implicit memory %s has no ports...", memory->name);
+        warning_message(NETLIST, memory->node->loc, "Implicit memory %s has no ports...", memory->name);
     } else {
         /*
          *  If this hard block is supported, register it globally and mark
@@ -322,7 +322,7 @@ void finalize_implicit_memory(implicit_memory* memory) {
          *  into soft logic during the partial map.
          */
         ast_node_t* ast_node = node->related_ast_node;
-        char* hard_block_identifier = ast_node->children[0]->types.identifier;
+        char* hard_block_identifier = ast_node->identifier_node->types.identifier;
         t_model* hb_model = find_hard_block(hard_block_identifier);
         if (hb_model) {
             hb_model->used = 1;
@@ -361,6 +361,6 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory* memory) {
     }
 
     ast_node_t* ast_node = node->related_ast_node;
-    vtr::free(ast_node->children[0]->types.identifier);
-    ast_node->children[0]->types.identifier = vtr::strdup(SINGLE_PORT_RAM_string);
+    vtr::free(ast_node->identifier_node->types.identifier);
+    ast_node->identifier_node->types.identifier = vtr::strdup(SINGLE_PORT_RAM_string);
 }

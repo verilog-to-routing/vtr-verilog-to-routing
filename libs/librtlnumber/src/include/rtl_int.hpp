@@ -24,14 +24,17 @@ bool V_IS_Z(VNumber& a);
 bool V_IS_SIGNED(VNumber& a);
 bool V_IS_UNSIGNED(VNumber& a);
 
-std::string V_STRING(VNumber& a);
+std::string V_STRING(VNumber& a, const char base);
 
 VNumber V_UNSIGNED(VNumber& a);
 VNumber V_SIGNED(VNumber& a);
 VNumber V_ADD(VNumber& a);
 VNumber V_MINUS(VNumber& a);
+VNumber V_MINUS(VNumber& a, BitSpace::bit_value_t carry);
 
+VNumber V_BITWISE_BUF(VNumber& a);
 VNumber V_BITWISE_NOT(VNumber& a);
+
 VNumber V_BITWISE_AND(VNumber& a);
 VNumber V_BITWISE_OR(VNumber& a);
 VNumber V_BITWISE_XOR(VNumber& a);
@@ -45,6 +48,11 @@ VNumber V_LOGICAL_NOT(VNumber& a);
  */
 VNumber V_REPLICATE(VNumber& a, VNumber& n_times);
 VNumber V_CONCAT(std::vector<VNumber> concat_list);
+
+VNumber V_BITWISE_BUFIF0(VNumber& input, VNumber& trigger);
+VNumber V_BITWISE_BUFIF1(VNumber& input, VNumber& trigger);
+VNumber V_BITWISE_NOTIF0(VNumber& input, VNumber& trigger);
+VNumber V_BITWISE_NOTIF1(VNumber& input, VNumber& trigger);
 
 VNumber V_BITWISE_AND(VNumber& a, VNumber& b);
 VNumber V_BITWISE_OR(VNumber& a, VNumber& b);
@@ -72,6 +80,8 @@ VNumber V_CASE_NOT_EQUAL(VNumber& a, VNumber& b);
 
 VNumber V_ADD(VNumber& a, VNumber& b);
 VNumber V_MINUS(VNumber& a, VNumber& b);
+VNumber V_ADD(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in);
+VNumber V_MINUS(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in);
 VNumber V_MULTIPLY(VNumber& a, VNumber& b);
 VNumber V_POWER(VNumber& a, VNumber& b);
 VNumber V_DIV(VNumber& a, VNumber& b);

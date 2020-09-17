@@ -69,6 +69,25 @@ void init_stat(netlist_t* netlist) {
     netlist->num_logic_element = 0;
 }
 
+void mixing_optimization_stats(nnode_t* node, netlist_t* netlist) {
+    // Reinitialize statistics (to avoid interference)
+    init_stat(netlist);
+    // assuming the optimization is started from the node of the type that
+    // matches the node type
+    switch (node->type) {
+        case MULTIPLY: {
+            stat_t* multiply_stats = get_stats(node, netlist, mult_optimization_traverse_value);
+            node->weight = multiply_stats->downward.max_depth;
+            vtr::free(multiply_stats);
+            break;
+        }
+        default:
+            error_message(NETLIST, unknown_location, "%s",
+                          "Counting weights for mixing optimization for %i: Hard block type is unimplemented", node->type);
+            break;
+    }
+}
+
 static void print_stats(metric_t* m) {
     printf("\n\t%s:%0.4lf\n\t%s: %0.4lf\n\t%s: %0.4lf\n\t%s: %0.4lf\n",
            "shortest path", m->min_depth,
@@ -213,10 +232,11 @@ static metric_t* get_upward_stat(nnet_t* net, netlist_t* netlist, uintptr_t trav
         if (traverse(net, traverse_mark_number)) {
             init(destination);
 
-            if (net->driver_pin) {
-                metric_t** parent_stat = (metric_t**)vtr::calloc(1, sizeof(metric_t*));
-                parent_stat[0] = get_upward_stat(net->driver_pin->node, netlist, traverse_mark_number);
-                aggregate(destination, parent_stat, 1);
+            if (net->num_driver_pins) {
+                metric_t** parent_stat = (metric_t**)vtr::calloc(net->num_driver_pins, sizeof(metric_t*));
+                for (int i = 0; i < net->num_driver_pins; i++)
+                    parent_stat[i] = get_upward_stat(net->driver_pins[i]->node, netlist, traverse_mark_number);
+                aggregate(destination, parent_stat, net->num_driver_pins);
                 vtr::free(parent_stat);
             }
         }

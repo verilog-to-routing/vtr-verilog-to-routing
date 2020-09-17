@@ -43,6 +43,11 @@ static float comp_width(t_chan* chan, float x, float separation);
 
 /************************* Subroutine Definitions ****************************/
 
+/**
+ * @brief This routine performs a binary search to find the minimum number of
+ *        tracks per channel required to successfully route a circuit, and returns
+ *        that minimum width_fac.
+ */
 int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
@@ -56,10 +61,6 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   ClbNetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc) {
-    /* This routine performs a binary search to find the minimum number of      *
-     * tracks per channel required to successfully route a circuit, and returns *
-     * that minimum width_fac.                                                  */
-
     vtr::vector<ClusterNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
@@ -76,7 +77,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
     t_graph_type graph_type;
 
-    /* We have chosen to pass placer_opts_ref by reference because of its large size. *      
+    /* We have chosen to pass placer_opts_ref by reference because of its large size. *
      * However, since the value is mutated later in the function, we declare a        *
      * mutable variable called placer_opts equal to placer_opts_ref.                  */
 
@@ -352,16 +353,17 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                     device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
-                    router_opts.base_cost_type,
-                    router_opts.trim_empty_channels,
-                    router_opts.trim_obs_channels,
-                    router_opts.clock_modeling,
+                    router_opts,
                     arch->Directs, arch->num_directs,
-                    &warnings,
-                    router_opts.read_rr_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warnings);
 
     init_draw_coords(final);
+
+    /* Allocate and load additional rr_graph information needed only by the router. */
+    alloc_and_load_rr_node_route_structs();
+
+    init_route_structs(router_opts.bb_factor);
+
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
     if (Fc_clipped) {
@@ -377,11 +379,13 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     return (final);
 }
 
+/**
+ * @brief Assigns widths to channels (in tracks).
+ *
+ * Minimum one track per channel. The channel distributions read from
+ * the architecture file are scaled by cfactor.
+ */
 t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
-    /* Assigns widths to channels (in tracks).  Minimum one track          *
-     * per channel. The channel distributions read from the architecture  *
-     * file are scaled by cfactor.                                         */
-
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
 
@@ -448,12 +452,14 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     return chan_width;
 }
 
+/**
+ * @brief Return the relative channel density.
+ *
+ *   @param chan        points to a channel functional description data structure
+ *   @param x           the distance (between 0 and 1) we are across the chip.
+ *   @param separation  the distance between two channels, in the 0 to 1 coordinate system
+ */
 static float comp_width(t_chan* chan, float x, float separation) {
-    /* Return the relative channel density.  *chan points to a channel   *
-     * functional description data structure, and x is the distance      *
-     * (between 0 and 1) we are across the chip.  separation is the      *
-     * distance between two channels, in the 0 to 1 coordinate system.   */
-
     float val;
 
     switch (chan->type) {
@@ -497,8 +503,9 @@ static float comp_width(t_chan* chan, float x, float separation) {
     return (val);
 }
 
-/*
- * After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type.
+/**
+ * @brief After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type.
+ *
  * This is required by blocks with capacity > 1 (e.g. typically IOs with multiple instaces in each placement
  * gride location). Since they may be swapped around during placement, we need to update which pins the various
  * nets use.

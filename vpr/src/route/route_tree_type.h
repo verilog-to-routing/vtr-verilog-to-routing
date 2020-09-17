@@ -27,6 +27,16 @@ struct t_linked_rt_edge {
  * parent_switch:  Index of the switch type driving this node (by its        *
  *                 parent).                                                  *
  * inode:  index (ID) of the rr_node that corresponds to this rt_node.       *
+ * net_pin_index:  Net pin index associated with the rt_node. This value
+ *                 ranges from 1 to fanout [1..num_pins-1]. For cases when   *
+ *                 different speed paths are taken to the same SINK for      *
+ *                 different pins, inode cannot uniquely identify each SINK, *
+ *                 so the net pin index guarantees an unique identification  *
+ *                 for each SINK rt_node. For non-SINK nodes and for SINK    *
+ *                 nodes with no associated net pin index, (i.e. special     *
+ *                 SINKs like the source of a clock tree which do not        *
+ *                 correspond to an actual netlist connection), the value    *
+ *                 for this member should be set to OPEN (-1).               *
  * C_downstream:  Total downstream capacitance from this rt_node.  That is,  *
  *                the total C of the subtree rooted at the current node,     *
  *                including the C of the current node.                       *
@@ -43,6 +53,7 @@ struct t_rt_node {
     short parent_switch;
     bool re_expand;
     int inode;
+    int net_pin_index;
     float C_downstream;
     float R_upstream;
     float Tdel;

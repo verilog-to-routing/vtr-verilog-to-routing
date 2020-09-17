@@ -197,6 +197,8 @@ class Bucket : public HeapInterface {
     void build_heap() final {
     }
 
+    void set_prune_limit(size_t max_index, size_t prune_limit) final;
+
     // Pop an item from the cheapest non-empty bucket.
     //
     // Returns nullptr if empty.
@@ -226,7 +228,7 @@ class Bucket : public HeapInterface {
     static constexpr float kDefaultConvFactor = 1e12;
 
     // Convert cost from float to integer bucket id.
-    int cost_to_int(float cost) {
+    int cost_to_int(float cost) const {
         return (int)(cost * conv_factor_);
     }
 
@@ -237,11 +239,17 @@ class Bucket : public HeapInterface {
     }
 
     void check_scaling();
+    void rescale();
+    float rescale_func() const;
+    void check_conv_factor() const;
+    bool check_front_list() const;
 
     // Expand the number of buckets.
     //
     // Only call if insufficient buckets exist.
     void expand(size_t required_number_of_buckets);
+
+    void prune_heap();
 
     BucketItems items_; /* Item storage */
 
@@ -251,14 +259,51 @@ class Bucket : public HeapInterface {
 
     size_t seed_; /* Seed for fast_rand, should be non-zero */
 
-    BucketItem** heap_; /* Buckets for linked lists*/
-    size_t heap_size_;  /* Number of buckets */
-    size_t heap_head_;  /* First non-empty bucket */
-    size_t heap_tail_;  /* Last non-empty bucket */
-    float conv_factor_; /* Cost bucket scaling factor */
+    BucketItem** heap_;      /* Buckets for linked lists*/
+    size_t heap_size_;       /* Number of buckets */
+    size_t heap_head_;       /* First non-empty bucket */
+    size_t heap_tail_;       /* Last non-empty bucket */
+    float conv_factor_;      /* Cost bucket scaling factor.
+                              *
+                              * Larger conv_factor_ means each bucket is
+                              * smaller.
+                              *
+                              * bucket index = cost * conv_factor_
+                              *
+                              */
+    float division_scaling_; /* Scaling factor used during rescaling.
+                              * Larger division scaling results in larger
+                              * conversion factor.
+                              */
+    ssize_t max_buckets_;    /* Maximum number of buckets to control when to
+                              * rescale.
+                              */
 
     float min_cost_; /* Smallest cost seen */
-    float max_cost_; /* Large cost seen */
+    float max_cost_; /* Largest cost seen */
+
+    size_t num_items_;                 /* Number of items in the bucket heap. */
+    size_t max_index_;                 /* Maximum value for index. */
+    size_t prune_limit_;               /* Maximum number of elements this bucket heap should
+                                        * have before the heap self compacts.
+                                        */
+    size_t prune_count_;               /* The number of times the bucket heap has self
+                                        * compacted.
+                                        */
+    std::vector<float> min_push_cost_; /* Lowest push cost for each index.
+                                        * Only used if the bucket has
+                                        * self-pruned.
+                                        */
+
+    /* In order to quickly randomly pop an element from the front bucket,
+     * a list of items is made.
+     *
+     * front_head_ points to the heap_ index this array was constructed from.
+     * If front_head_ is size_t::max or doesn't equal heap_head_, front_list_
+     * needs to be re-computed.
+     * */
+    size_t front_head_;
+    std::vector<BucketItem*> front_list_;
 };
 
 #endif /* _BUCKET_H */

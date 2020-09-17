@@ -4,7 +4,7 @@ Pass Requirements
 -----------------
 
 The :ref:`parse_vtr_task` scripts allow you to compare an executed task to a *golden* reference result.
-The comparison, which is performed when using the :option:`parse_vtr_task.pl -check_golden` option, which reports either ``Pass`` or ``Fail``.
+The comparison, which is performed when using the :option:`parse_vtr_task.py -check_golden` option, which reports either ``Pass`` or ``Fail``.
 The requirements that must be met to qualify as a ``Pass`` are specified in the pass requirements file.
 
 Task Configuration

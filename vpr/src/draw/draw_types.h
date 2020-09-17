@@ -26,6 +26,7 @@
 #    include "vpr_types.h"
 #    include "vtr_color_map.h"
 #    include "vtr_vector.h"
+#    include "breakpoint.h"
 
 #    include "ezgl/point.hpp"
 #    include "ezgl/rectangle.hpp"
@@ -159,6 +160,7 @@ typedef struct {
  * save_graphics: Whether to generate an output graphcis file
  * force_pause: Should we pause for user interaction (since the user requested it)
  * save_graphics_file_base: Base of save graphis file name (i.e. before extension)
+ * pres_fac: present congestion cost factor
  */
 struct t_draw_state {
     pic_type pic_on_screen = NO_PICTURE;
@@ -193,6 +195,9 @@ struct t_draw_state {
     bool forced_pause = false;
     int sequence_number = 0;
     float net_alpha = 0.1;
+    float pres_fac = 1.;
+
+    std::vector<Breakpoint> list_of_breakpoints;
 
     std::string save_graphics_file_base = "vpr";
 
@@ -208,6 +213,8 @@ struct t_draw_state {
     void set_block_color(ClusterBlockId blk, ezgl::color color);
     void reset_block_color(ClusterBlockId blk);
     void reset_block_colors();
+
+    std::vector<std::pair<t_pl_loc, ezgl::color>> colored_locations;
 
   private:
     friend void alloc_draw_structs(const t_arch* arch);

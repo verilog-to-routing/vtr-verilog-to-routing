@@ -564,10 +564,13 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 }
 
 /*
- * Slack and criticality calculation utilities
+ * Criticalities and setup slacks calculation utilities
  */
 
-//Return the criticality of a net's pin in the CLB netlist
+/**
+ * @brief Returns the criticality of a net's pin in the CLB netlist.
+ *        Assumes that the timing graph is correct and up to date.
+ */
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin) {
     //There may be multiple atom netlist pins connected to this CLB pin
     float clb_pin_crit = 0.;
@@ -577,6 +580,21 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
     }
 
     return clb_pin_crit;
+}
+
+/**
+ * @brief Returns the raw setup slack of a net's pin in the CLB netlist.
+ *        Assumes that the timing graph is correct and up to date.
+ */
+float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin) {
+    //There may be multiple atom netlist pins connected to this CLB pin
+    float clb_pin_setup_slack = std::numeric_limits<float>::infinity();
+    for (const auto atom_pin : pin_lookup.connected_atom_pins(clb_pin)) {
+        //Take the worst/minimum of the atom pin slack as the CLB pin slack
+        clb_pin_setup_slack = std::min(clb_pin_setup_slack, timing_info.setup_pin_slack(atom_pin));
+    }
+
+    return clb_pin_setup_slack;
 }
 
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum

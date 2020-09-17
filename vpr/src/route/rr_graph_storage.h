@@ -48,7 +48,7 @@
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
 struct alignas(16) t_rr_node_data {
-    int8_t cost_index_ = -1;
+    int16_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
     int16_t xlow_ = -1;
@@ -155,6 +155,8 @@ class t_rr_graph_storage {
     int16_t node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
+    float node_R(RRNodeId id) const;
+    float node_C(RRNodeId id) const;
 
     short node_xlow(RRNodeId id) const {
         return node_storage_[id].xlow_;
@@ -182,6 +184,7 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id);
     }
+    const char* node_direction_string(RRNodeId id) const;
 
     e_side node_side(RRNodeId id) const {
         return get_node_side(
@@ -189,6 +192,7 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id);
     }
+    const char* node_side_string(RRNodeId id) const;
 
     /* PTC get methods */
     short node_ptc_num(RRNodeId id) const;
@@ -287,6 +291,14 @@ class t_rr_graph_storage {
     // Get the destination node for the specified edge.
     RRNodeId edge_sink_node(const RREdgeId& edge) const {
         return edge_dest_node_[edge];
+    }
+
+    // Call the `apply` function with the edge id, source, and sink nodes of every edge.
+    void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
+        for (size_t i = 0; i < edge_dest_node_.size(); i++) {
+            RREdgeId edge(i);
+            apply(edge, edge_src_node_[edge], edge_dest_node_[edge]);
+        }
     }
 
     // Get the destination node for the iedge'th edge from specified RRNodeId.
@@ -423,6 +435,14 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
     }
+
+    // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
+    // and `inverse_order`, its inverse (new -> old), update the t_rr_graph_storage
+    // data structure to an isomorphic graph using the new RRNodeId's.
+    // NOTE: Re-ordering will invalidate any external references, so this
+    //       should generally be called before creating such references.
+    void reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
+                 const vtr::vector<RRNodeId, RRNodeId>& inverse_order);
 
     /* PTC set methods */
     void set_node_ptc_num(RRNodeId id, short);

@@ -71,8 +71,8 @@ void traverse_backward(nnode_t* node) {
     node->node_data = VISITED_BACKWARD;              // Mark as visited
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
-        if (node->input_pins[i]->net->driver_pin) {                        // ensure this net has a driver (i.e. skip undriven outputs)
-            traverse_backward(node->input_pins[i]->net->driver_pin->node); // Visit the drivers of this node
+        for (int j = 0; j < node->input_pins[i]->net->num_driver_pins; j++) {  // ensure this net has a driver (i.e. skip undriven outputs)
+            traverse_backward(node->input_pins[i]->net->driver_pins[j]->node); // Visit the drivers of this node
         }
     }
 }
@@ -109,8 +109,9 @@ void traverse_forward(nnode_t* node, int toplevel, int remove_me) {
             else
                 ADDER_START_NODE = VCC_NODE;
         }
+        oassert(node->input_pins[node->num_input_pins - 1]->net->num_driver_pins == 1);
         /* Check if we've found the head of an adder or subtractor chain */
-        if (node->input_pins[node->num_input_pins - 1]->net->driver_pin->node->type == ADDER_START_NODE) {
+        if (node->input_pins[node->num_input_pins - 1]->net->driver_pins[0]->node->type == ADDER_START_NODE) {
             addsub_list_next = insert_node_list(addsub_list_next, node);
         }
     }

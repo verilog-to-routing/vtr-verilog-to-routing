@@ -4,6 +4,7 @@
 #include "odin_types.h"
 #include "string_cache.h"
 #include "read_xml_arch_file.h"
+#include "HardSoftLogicMixer.hpp"
 
 extern t_logical_block_type* type_descriptors;
 
@@ -12,7 +13,7 @@ extern ids default_net_type;
 
 extern global_args_t global_args;
 extern config_t configuration;
-extern int current_parse_file;
+extern loc_t my_location;
 
 extern ast_t* verilog_ast;
 extern STRING_CACHE* module_names_to_idx;
@@ -46,6 +47,9 @@ extern netlist_t* blif_netlist;
 /* Global variable for read_blif function call */
 extern netlist_t* read_blif_netlist;
 
-extern long file_line_number;
+/* logic optimization mixer, once ODIN is classy, could remove that
+ * and pass as member variable
+ */
+extern HardSoftLogicMixer* mixer;
 
 #endif

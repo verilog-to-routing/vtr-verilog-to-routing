@@ -17,4 +17,4 @@ device_limiting_resources;vpr.out;FPGA size limited by block type\(s\): (.*)
 device_name;vpr.out;FPGA sized to \d+ x \d+: \d+ grid tiles \((\S+)\)
 
 #VPR Run-time Metrics
-pack_time;vpr.out;^#*\s*Packing took (.*) seconds
+pack_time;vpr.out;\s*Packing took (.*) seconds

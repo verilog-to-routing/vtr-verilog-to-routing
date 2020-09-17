@@ -18,5 +18,5 @@
 use strict;
 use Cwd;
 
-system("./run_reg_test.pl vtr_reg_basic");
+system("./run_reg_test.py vtr_reg_basic");
 

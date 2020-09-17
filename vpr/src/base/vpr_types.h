@@ -1,4 +1,6 @@
-/* This is a core file that defines the major data types used by VPR
+/**
+ * @file
+ * @brief This is a core file that defines the major data types used by VPR
  *
  * This file is divided into generally 4 major sections:
  *
@@ -17,7 +19,6 @@
  * Cluster-specific main data structure:
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
  * The t_pb hierarchy follows what is described by t_pb_graph_node
- *
  */
 
 #ifndef VPR_TYPES_H
@@ -61,9 +62,12 @@
 
 //#define VERBOSE //Prints additional intermediate data
 
-/* For update_screen.  Denotes importance of update.
+/**
+ * @brief For update_screen. Denotes importance of update.
+ *
  * By default MINOR only updates the screen, while MAJOR
- * pauses graphics for the user to interact */
+ * pauses graphics for the user to interact
+ */
 enum class ScreenUpdatePriority {
     MINOR = 0,
     MAJOR = 1
@@ -94,7 +98,7 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 /*******************************************************************************
  * Packing specific data types and constants
  * Packing takes the circuit described in the technology mapped user netlist
- * and maps it to the complex logic blocks found in the arhictecture
+ * and maps it to the complex logic blocks found in the architecture
  ******************************************************************************/
 
 #define NO_CLUSTER -1
@@ -106,14 +110,15 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 #endif
 
 enum class e_router_lookahead {
-    CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
-    MAP,     //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    NO_OP    //A no-operation lookahead which always returns zero
+    CLASSIC,      ///<VPR's classic lookahead (assumes uniform wire types)
+    MAP,          ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    EXTENDED_MAP, ///<Lookahead with a more extensive node sampling method
+    NO_OP         ///<A no-operation lookahead which always returns zero
 };
 
 enum class e_route_bb_update {
-    STATIC, //Router net bounding boxes are not updated
-    DYNAMIC //Rotuer net bounding boxes are updated
+    STATIC, ///<Router net bounding boxes are not updated
+    DYNAMIC ///<Rotuer net bounding boxes are updated
 };
 
 enum class e_router_initial_timing {
@@ -122,9 +127,9 @@ enum class e_router_initial_timing {
 };
 
 enum class e_const_gen_inference {
-    NONE,    //No constant generator inference
-    COMB,    //Only combinational constant generator inference
-    COMB_SEQ //Both combinational and sequential constant generator inference
+    NONE,    ///<No constant generator inference
+    COMB,    ///<Only combinational constant generator inference
+    COMB_SEQ ///<Both combinational and sequential constant generator inference
 };
 
 enum class e_unrelated_clustering {
@@ -145,7 +150,7 @@ enum class e_check_route_option {
     FULL
 };
 
-/* Selection algorithm for selecting next seed  */
+///@brief Selection algorithm for selecting next seed
 enum class e_cluster_seed {
     TIMING,
     MAX_INPUTS,
@@ -172,23 +177,28 @@ struct t_ext_pin_util {
     float output_pin_util = 1.;
 };
 
-//Specifies the utilization of external input/output pins
-//during packing
+/**
+ * @brief Specifies the utilization of external input/output pins during packing
+ */
 class t_ext_pin_util_targets {
   public:
     t_ext_pin_util_targets() = default;
     t_ext_pin_util_targets(float default_in_util, float default_out_util);
 
-    //Returns the input pin util of the specified block (or default if unspecified)
+    ///@brief Returns the input pin util of the specified block (or default if unspecified)
     t_ext_pin_util get_pin_util(std::string block_type_name) const;
 
   public:
-    //Sets the pin util for the specified block type
-    //Returns true if non-default was previously set
+    /**
+     * @brief Sets the pin util for the specified block type
+     * @return true if non-default was previously set
+     */
     void set_block_pin_util(std::string block_type_name, t_ext_pin_util target);
 
-    //Sets the default pin util
-    //Returns true if a default was previously set
+    /**
+     * @brief Sets the default pin util
+     * @return Returns true if a default was previously set
+     */
     void set_default_pin_util(t_ext_pin_util target);
 
   private:
@@ -204,12 +214,16 @@ class t_pack_high_fanout_thresholds {
     int get_threshold(std::string block_type_name) const;
 
   public:
-    //Sets the pin util for the specified block type
-    //Returns true if non-default was previously set
+    /**
+     * @brief Sets the pin util for the specified block type
+     * @return true if non-default was previously set
+     */
     void set(std::string block_type_name, int threshold);
 
-    //Sets the default pin util
-    //Returns true if a default was previously set
+    /**
+     * @brief Sets the default pin util
+     * @return true if a default was previously set
+     */
     void set_default(int threshold);
 
   private:
@@ -217,12 +231,14 @@ class t_pack_high_fanout_thresholds {
     std::map<std::string, int> overrides_;
 };
 
-/* Type used to express rr_node edge index. */
+///@brief Type used to express rr_node edge index.
 typedef uint16_t t_edge_size;
 
-//An iterator that dereferences to an edge index
-//
-//Used inconjunction with vtr::Range to return ranges of edge indices
+/**
+ * @brief An iterator that dereferences to an edge index
+ *
+ * Used inconjunction with vtr::Range to return ranges of edge indices
+ */
 class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, t_edge_size> {
   public:
     edge_idx_iterator(value_type init)
@@ -256,7 +272,10 @@ struct t_chain_info;
 
 typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
 
-/* A t_pb represents an instance of a clustered block, which may be:
+/**
+ * @brief A t_pb represents an instance of a clustered block.
+ *
+ * The instance may be:
  *    1) A top level clustered block which is placeable at a location in FPGA device
  *       grid location (e.g. a Logic block, RAM block, DSP block), or
  *    2) An internal 'block' representing an intermediate level of hierarchy inside a top level
@@ -269,32 +288,34 @@ typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
  */
 class t_pb {
   public:
-    char* name = nullptr;                     /* Name of this physical block */
-    t_pb_graph_node* pb_graph_node = nullptr; /* pointer to pb_graph_node this pb corresponds to */
+    char* name = nullptr;                     ///<Name of this physical block
+    t_pb_graph_node* pb_graph_node = nullptr; ///<pointer to pb_graph_node this pb corresponds to
 
-    int mode = 0; /* mode that this pb is set to */
+    int mode = 0; ///<mode that this pb is set to
 
-    t_pb** child_pbs = nullptr; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
-    t_pb* parent_pb = nullptr;  /* pointer to parent node */
+    t_pb** child_pbs = nullptr; ///<children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1]
+    t_pb* parent_pb = nullptr;  ///<pointer to parent node
 
-    t_pb_stats* pb_stats = nullptr; /* statistics for current pb */
+    t_pb_stats* pb_stats = nullptr; ///<statistics for current pb
 
-    /* Representation of intra-logic block routing, t_pb_route describes all internal hierarchy routing.
-     *  t_pb_route is an array of size [t_pb->pb_graph_node->total_pb_pins]
-     *  Only valid for the top-level t_pb (parent_pb == nullptr). On any child pb, t_pb_route will be nullptr. */
+    /**
+     * @brief  Representation of intra-logic block routing, t_pb_route describes all internal hierarchy routing.
+     *
+     * t_pb_route is an array of size [t_pb->pb_graph_node->total_pb_pins]
+     * Only valid for the top-level t_pb (parent_pb == nullptr). On any child pb, t_pb_route will be nullptr. */
     t_pb_routes pb_route;
 
-    int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
+    int clock_net = 0; ///<Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs
 
     // Member functions
 
-    //Returns true if this block has not parent pb block
+    ///@brief Returns true if this block has not parent pb block
     bool is_root() const { return parent_pb == nullptr; }
 
-    //Returns true if this pb corresponds to a primitive block (i.e. LUT, FF, etc.)
+    ///@brief Returns true if this pb corresponds to a primitive block (i.e. LUT, FF, etc.)
     bool is_primitive() const { return child_pbs == nullptr; }
 
-    //Returns true if this pb has modes
+    ///@brief Returns true if this pb has modes
     bool has_modes() const { return this->pb_graph_node->pb_type->num_modes > 0; }
 
     int get_num_child_types() const;
@@ -303,54 +324,66 @@ class t_pb {
 
     t_mode* get_mode() const;
 
-    //Returns the t_pb associated with the specified gnode which is contained
-    //within the current pb
+    /**
+     * @brief Returns the t_pb associated with the specified gnode which is contained
+     *        within the current pb
+     */
     const t_pb* find_pb(const t_pb_graph_node* gnode) const;
 
     const t_pb* find_pb_for_model(const std::string& blif_model) const;
 
-    //Returns the root pb containing this pb
+    ///@brief Returns the root pb containing this pb
     const t_pb* root_pb() const;
 
-    // Returns a string containing the hierarchical type name of a physical block
-    // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+    /**
+     * @brief  Returns a string containing the hierarchical type name of a physical block
+     *
+     * Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
+     */
     std::string hierarchical_type_name() const;
 
-    //Returns the bit index into the AtomPort for the specified primitive
-    //pb_graph_pin, considering any pin rotations which have been applied to logically
-    //equivalent pins
+    /**
+     * @brief Returns the bit index into the AtomPort for the specified primitive
+     *        pb_graph_pin, considering any pin rotations which have been applied to logically
+     *        equivalent pins
+     */
     BitIndex atom_pin_bit_index(const t_pb_graph_pin* gpin) const;
 
-    //For a given gpin, sets the mapping to the original atom netlist pin's bit index in
-    //it's AtomPort.  This is used to record any pin rotations which have been applied to
-    //logically equivalent pins
+    /**
+     * @brief For a given gpin, sets the mapping to the original atom
+     *         netlist pin's bit index in it's AtomPort.
+     *
+     * This is used to record any pin rotations which have been applied to
+     * logically equivalent pins
+     */
     void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx);
 
   private:
-    std::map<const t_pb_graph_pin*, BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated
-                                                              //with any primitive pins which have been rotated during clustering
+    /**
+     * @brief Contains the atom netlist port bit index associated
+     *        with any primitive pins which have been rotated during clustering
+     */
+    std::map<const t_pb_graph_pin*, BitIndex> pin_rotations_;
 };
 
-/* Representation of intra-logic block routing */
+///@brief Representation of intra-logic block routing
 struct t_pb_route {
-    AtomNetId atom_net_id;                        /* which net in the atom netlist uses this pin */
-    int driver_pb_pin_id = OPEN;                  /* The pb_pin id of the pb_pin that drives this pin */
-    std::vector<int> sink_pb_pin_ids;             /* The pb_pin id's of the pb_pins driven by this node */
-    const t_pb_graph_pin* pb_graph_pin = nullptr; /* The graph pin associated with this node */
+    AtomNetId atom_net_id;                        ///<which net in the atom netlist uses this pin
+    int driver_pb_pin_id = OPEN;                  ///<The pb_pin id of the pb_pin that drives this pin
+    std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
+    const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
+};
+
+///@brief Describes the molecule type
+enum e_pack_pattern_molecule_type {
+    MOLECULE_SINGLE_ATOM, ///<single atom forming a molecule (no pack pattern associated)
+    MOLECULE_FORCED_PACK  ///<more than one atom representing a packing pattern forming a large molecule
 };
 
 /**
- * Describes the molecule type
+ * @brief Represents a grouping of atom blocks that match a pack_pattern,
+ *        these groups are intended to be placed as a single unit during packing
  *
- * MOLECULE_SINGLE_ATOM : single atom forming a molecule (no pack pattern associated)
- * MOLECULE_FORCED_PACK : more than one atom representing a packing pattern forming a large molecule
- */
-enum e_pack_pattern_molecule_type {
-    MOLECULE_SINGLE_ATOM,
-    MOLECULE_FORCED_PACK
-};
-
-/* Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing
  * Store in linked list
  *
  * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.
@@ -391,7 +424,8 @@ class t_pack_molecule {
 };
 
 /**
- * Holds information to be shared between molecules that represent the same chained pack pattern.
+ * @brief Holds information to be shared between molecules that represent the same chained pack pattern.
+ *
  * For example, molecules that are representing a long carry chain that spans multiple logic blocks.
  *
  * Data members:
@@ -410,17 +444,19 @@ struct t_chain_info {
     t_pack_molecule* first_packed_molecule = nullptr;
 };
 
-/* Stats keeper for placement information during packing
+/**
+ * @brief Stats keeper for placement information during packing
+ *
  * Contains linked lists to placement locations based on status of primitive
  */
 struct t_cluster_placement_stats {
-    int num_pb_types;                                 /* num primitive pb_types inside complex block */
-    bool has_long_chain;                              /* specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster) */
-    const t_pack_molecule* curr_molecule;             /* current molecule being considered for packing */
-    t_cluster_placement_primitive** valid_primitives; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
-    t_cluster_placement_primitive* in_flight;         /* ptrs to primitives currently being considered */
-    t_cluster_placement_primitive* tried;             /* ptrs to primitives that are open but current logic block unable to pack to */
-    t_cluster_placement_primitive* invalid;           /* ptrs to primitives that are invalid */
+    int num_pb_types;                                 ///<num primitive pb_types inside complex block
+    bool has_long_chain;                              ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
+    const t_pack_molecule* curr_molecule;             ///<current molecule being considered for packing
+    t_cluster_placement_primitive** valid_primitives; ///<[0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty
+    t_cluster_placement_primitive* in_flight;         ///<ptrs to primitives currently being considered
+    t_cluster_placement_primitive* tried;             ///<ptrs to primitives that are open but current logic block unable to pack to
+    t_cluster_placement_primitive* invalid;           ///<ptrs to primitives that are invalid
 };
 
 /******************************************************************
@@ -451,6 +487,7 @@ enum class e_timing_update_type {
 /* Timing data structures end */
 enum sched_type {
     AUTO_SCHED,
+    DUSTY_SCHED,
     USER_SCHED
 };
 /* Annealing schedule */
@@ -468,29 +505,25 @@ enum pfreq {
     PLACE_ALWAYS
 };
 
-/* Are the pads free to be moved, locked in a random configuration, or
- * locked in user-specified positions?                                 */
-enum e_pad_loc_type {
-    FREE,
-    RANDOM,
-    USER
-};
+///@brief  Power data for t_netlist structure
 
-/* Power data for t_netlist structure */
 struct t_net_power {
-    /* Signal probability - long term probability that signal is logic-high*/
+    ///@brief Signal probability - long term probability that signal is logic-high
     float probability;
 
-    /* Transistion density - average # of transitions per clock cycle
+    /**
+     * @brief Transistion density - average # of transitions per clock cycle
+     *
      * For example, a clock would have density = 2
      */
     float density;
 };
 
-/* Stores the bounding box of a net in terms of the minimum and   *
- * maximum coordinates of the blocks forming the net, clipped to  *
- * the region:                                                    *
- *  (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1) */
+/**
+ * @brief Stores the bounding box of a net in terms of the minimum and
+ *        maximum coordinates of the blocks forming the net, clipped to
+ *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
+ */
 struct t_bb {
     int xmin = 0;
     int xmax = 0;
@@ -498,11 +531,13 @@ struct t_bb {
     int ymax = 0;
 };
 
-//An offset between placement locations (t_pl_loc)
-//
-// x: x-offset
-// y: y-offset
-// z: z-offset
+/**
+ * @brief An offset between placement locations (t_pl_loc)
+ *
+ * x: x-offset
+ * y: y-offset
+ * z: z-offset
+ */
 struct t_pl_offset {
     t_pl_offset() = default;
     t_pl_offset(int xoffset, int yoffset, int sub_tile_offset)
@@ -570,14 +605,15 @@ struct hash<t_pl_offset> {
 };
 } // namespace std
 
-//A placement location coordinate
-//
-// x: x-coordinate
-// y: y-coordinate
-// z: z-coordinate (capacity postion)
-//
-//Note that t_pl_offset should be used to represent an
-//offset between t_pl_loc.
+/**
+ * @brief A placement location coordinate
+ *
+ * x: x-coordinate
+ * y: y-coordinate
+ * z: z-coordinate (capacity postion)
+ *
+ * @note t_pl_offset should be used to represent an offset between t_pl_loc.
+ */
 struct t_pl_loc {
     t_pl_loc() = default;
     t_pl_loc(int xloc, int yloc, int sub_tile_loc)
@@ -648,37 +684,51 @@ struct hash<t_pl_loc> {
 };
 } // namespace std
 
-/* capacity:   Capacity of this region, in tracks.               *
- * occupancy:  Expected number of tracks that will be occupied.  *
- * cost:       Current cost of this usage.                       */
 struct t_place_region {
-    float capacity;
+    float capacity; ///<Capacity of this region, in tracks.
     float inv_capacity;
-    float occupancy;
-    float cost;
+    float occupancy; ///<Expected number of tracks that will be occupied.
+    float cost;      ///<Current cost of this usage.
 };
 
-/* Represents the placement location of a clustered block
+/**
+ * @brief  Represents the placement location of a clustered block
+ *
  * x: x-coordinate
  * y: y-coordinate
  * z: occupancy coordinate
- * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing */
+ * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
+ */
 struct t_block_loc {
     t_pl_loc loc;
 
     bool is_fixed = false;
 };
 
-/* Stores the clustered blocks placed at a particular grid location */
+///@brief Stores the clustered blocks placed at a particular grid location
 struct t_grid_blocks {
-    //How many valid blocks are in use at this location
-    int usage;
+    int usage; ///<How many valid blocks are in use at this location
 
-    //The clustered blocks associated with this grid location
+    /**
+     * @brief The clustered blocks associated with this grid location.
+     *
+     * Index range: [0..device_ctx.grid[x_loc][y_loc].type->capacity]
+     */
     std::vector<ClusterBlockId> blocks;
+
+    /**
+     * @brief Test if a subtile at a grid location is occupied by a block.
+     *
+     * Returns true if the subtile corresponds to the passed-in id is not
+     * occupied by a block at this grid location. The subtile id serves
+     * as the z-dimensional offset in the grid indexing.
+     */
+    inline bool subtile_empty(size_t isubtile) const {
+        return blocks[isubtile] == EMPTY_BLOCK_ID;
+    }
 };
 
-/* Names of various files */
+///@brief Names of various files
 struct t_file_name_opts {
     std::string ArchFile;
     std::string CircuitName;
@@ -693,7 +743,7 @@ struct t_file_name_opts {
     bool verify_file_digests;
 };
 
-/* Options for netlist loading */
+///@brief Options for netlist loading
 struct t_netlist_opts {
     e_const_gen_inference const_gen_inference = e_const_gen_inference::COMB;
     bool absorb_buffer_luts = true;
@@ -702,10 +752,10 @@ struct t_netlist_opts {
     bool sweep_dangling_nets = true;
     bool sweep_constant_primary_outputs = false;
 
-    int netlist_verbosity = 1; //Verbose output during netlist cleaning
+    int netlist_verbosity = 1; ///<Verbose output during netlist cleaning
 };
 
-//Should a stage in the CAD flow be skipped, loaded from a file, or performed
+///@brief Should a stage in the CAD flow be skipped, loaded from a file, or performed
 enum e_stage_action {
     STAGE_SKIP = 0,
     STAGE_LOAD,
@@ -713,8 +763,11 @@ enum e_stage_action {
     STAGE_AUTO
 };
 
-/* Options for packing
- * TODO: document each packing parameter         */
+/**
+ * @brief Options for packing
+ *
+ * TODO: document each packing parameter
+ */
 enum e_packer_algorithm {
     PACK_GREEDY,
     PACK_BRUTE_FORCE
@@ -749,53 +802,126 @@ struct t_packer_opts {
     e_timing_update_type timing_update_type;
 };
 
-/* Annealing schedule information for the placer.  The schedule type      *
- * is either USER_SCHED or AUTO_SCHED.  Inner_num is multiplied by        *
- * num_blocks^4/3 to find the number of moves per temperature.  The       *
- * remaining information is used only for USER_SCHED, and have the        *
- * obvious meanings.                                                      */
+/**
+ * @brief Annealing schedule information for the placer.
+ *
+ * The schedule type is either USER_SCHED or AUTO_SCHED. Inner_num is
+ * multiplied by num_blocks^4/3 to find the number of moves per temperature.
+ * The remaining information is used only for USER_SCHED, and have
+ * the obvious meanings.
+ */
 struct t_annealing_sched {
     enum sched_type type;
     float inner_num;
     float init_t;
     float alpha_t;
     float exit_t;
+
+    /* Parameters for DUSTY_SCHED                                         *
+     * The alpha ranges from alpha_min to alpha_max, decaying each        *
+     * iteration by `alpha_decay`.                                        *
+     * `restart_filter` is the low-pass coefficient (EWMA) for updating   *
+     * the new starting temperature for each alpha.                       *
+     * Give up after `wait` alphas.                                       */
+    float alpha_min;
+    float alpha_max;
+    float alpha_decay;
+    float success_min;
+    float success_target;
 };
 
-/* Various options for the placer.                                           *
- * place_algorithm:  BOUNDING_BOX_PLACE or PATH_TIMING_DRIVEN_PLACE          *
- * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff     *
- *                   timing driven and BOUNDING_BOX_PLACE.                   *
- * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
- * place_chan_width:  The channel width assumed if only one placement is     *
- *                    performed.                                             *
- * pad_loc_type:  Are pins FREE, fixed randomly, or fixed from a file.       *
- * pad_loc_file:  File to read pin locations form if pad_loc_type            *
- *                     is USER.                                              *
- * place_freq:  Should the placement be skipped, done once, or done for each *
- *              channel width in the binary search.                          *
- * recompute_crit_iter: how many temperature stages pass before we recompute *
- *               criticalities based on average point to point delay         *
- * inner_loop_crit_divider: (move_lim/inner_loop_crit_divider) determines how*
- *               many inner_loop iterations pass before a recompute of       *
- *               criticalities is done.                                      *
- * td_place_exp_first: exponent that is used on the timing_driven criticlity *
- *               it is the value that the exponent starts at.                *
- * td_place_exp_last: value that the criticality exponent will be at the end *
- * doPlacement: true if placement is supposed to be done in the CAD flow, false otherwise */
+/******************************************************************
+ * Placer data types
+ *******************************************************************/
+
+/**
+ * @brief Types of placement algorithms used in the placer.
+ *
+ *   @param BOUNDING_BOX_PLACE
+ *              Focuses purely on minimizing the bounding
+ *              box wirelength of the circuit.
+ *   @param CRITICALITY_TIMING_PLACE
+ *              Focuses on minimizing both the wirelength and the
+ *              connection timing costs (criticality * delay).
+ *   @param SLACK_TIMING_PLACE
+ *              Focuses on improving the circuit slack values
+ *              to reduce critical path delay.
+ *
+ * The default is to use CRITICALITY_TIMING_PLACE. BOUNDING_BOX_PLACE
+ * is used when there is no timing information available (wiring only).
+ * SLACK_TIMING_PLACE is mainly feasible during placement quench.
+ */
 enum e_place_algorithm {
     BOUNDING_BOX_PLACE,
-    PATH_TIMING_DRIVEN_PLACE
+    CRITICALITY_TIMING_PLACE,
+    SLACK_TIMING_PLACE
 };
 
+/**
+ * @brief Provides a wrapper around enum e_place_algorithm.
+ *
+ * Supports the method is_timing_driven(), which allows flexible updates
+ * to the placer algorithms if more timing driven placement strategies
+ * are added in tht future. This method is used across various placement
+ * setup files, and it can be useful for major placer routines as well.
+ *
+ * More methods can be added to this class if the placement strategies
+ * will be further divided into more categories the future.
+ *
+ * Also supports assignments and comparisons between t_place_algorithm
+ * and e_place_algorithm so as not to break down previous codes.
+ */
+class t_place_algorithm {
+  public:
+    //Constructors
+    t_place_algorithm() = default;
+    t_place_algorithm(e_place_algorithm _algo)
+        : algo(_algo) {}
+    ~t_place_algorithm() = default;
+
+    //Assignment operators
+    t_place_algorithm& operator=(const t_place_algorithm& rhs) {
+        algo = rhs.algo;
+        return *this;
+    }
+    t_place_algorithm& operator=(e_place_algorithm rhs) {
+        algo = rhs;
+        return *this;
+    }
+
+    //Equality operators
+    bool operator==(const t_place_algorithm& rhs) const { return algo == rhs.algo; }
+    bool operator==(e_place_algorithm rhs) const { return algo == rhs; }
+    bool operator!=(const t_place_algorithm& rhs) const { return algo != rhs.algo; }
+    bool operator!=(e_place_algorithm rhs) const { return algo != rhs; }
+
+    ///@brief Check if the algorithm belongs to the timing driven category.
+    inline bool is_timing_driven() const {
+        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
+    }
+
+    ///@brief Accessor: returns the underlying e_place_algorithm enum value.
+    e_place_algorithm get() const { return algo; }
+
+  private:
+    ///@brief The underlying algorithm. Default set to CRITICALITY_TIMING_PLACE.
+    e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
+};
+
+enum e_pad_loc_type {
+    FREE,
+    RANDOM
+};
+
+///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
-    CIRCUIT,       //Effort scales based on circuit size only
-    DEVICE_CIRCUIT //Effort scales based on both circuit and device size
+    CIRCUIT,       ///<Effort scales based on circuit size only
+    DEVICE_CIRCUIT ///<Effort scales based on both circuit and device size
 };
 
 enum class PlaceDelayModelType {
-    DELTA,          //Delta x/y based delay model
-    DELTA_OVERRIDE, //Delta x/y based delay model with special case delay overrides
+    DELTA,          ///<Delta x/y based delay model
+    DELTA_OVERRIDE, ///<Delta x/y based delay model with special case delay overrides
 };
 
 enum class e_reducer {
@@ -818,13 +944,59 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+/**
+ * @brief Various options for the placer.
+ *
+ *   @param place_algorithm
+ *              Controls which placement algorithm is used.
+ *   @param place_quench_algorithm
+ *              Controls which placement algorithm is used
+ *              during placement quench.
+ *   @param timing_tradeoff
+ *              When in CRITICALITY_TIMING_PLACE mode, what is the
+ *              tradeoff between timing and wiring costs.
+ *   @param place_cost_exp
+ *              Power to which denominator is raised for linear_cong.
+ *   @param place_chan_width
+ *              The channel width assumed if only one placement is performed.
+ *   @param pad_loc_type
+ *              Are pins FREE or fixed randomly.
+ *   @param constraints_file
+ *              File that specifies locations of locked down (constrained)
+ *              blocks for placement. Empty string means no constraints file.
+ *   @param pad_loc_file
+ *              File to read pad locations from if pad_loc_type is USER.
+ *   @param place_freq
+ *              Should the placement be skipped, done once, or done
+ *              for each channel width in the binary search.
+ *   @param recompute_crit_iter
+ *              How many temperature stages pass before we recompute
+ *              criticalities based on the current placement and its
+ *              estimated point-to-point delays.
+ *   @param inner_loop_crit_divider
+ *              (move_lim/inner_loop_crit_divider) determines how
+ *              many inner_loop iterations pass before a recompute
+ *              of criticalities is done.
+ *   @param td_place_exp_first
+ *              Exponent that is used in the CRITICALITY_TIMING_PLACE
+ *              mode to specify the initial value of `crit_exponent`.
+ *              After we map the slacks to criticalities, this value
+ *              is used to `sharpen` the criticalities, making connections
+ *              with worse slacks more critical.
+ *   @param td_place_exp_last
+ *              Value that the crit_exponent will be at the end.
+ *   @param doPlacement
+ *              True if placement is supposed to be done in the CAD flow.
+ *              False if otherwise.
+ */
 struct t_placer_opts {
-    enum e_place_algorithm place_algorithm;
+    t_place_algorithm place_algorithm;
+    t_place_algorithm place_quench_algorithm;
     float timing_tradeoff;
     float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
-    std::string pad_loc_file;
+    std::string constraints_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -855,13 +1027,23 @@ struct t_placer_opts {
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
 
-    // Tile types that should be used during delay sampling.
-    //
-    // Useful for excluding tiles that have abnormal delay behavior, e.g.
-    // clock tree elements like PLL's, global/local clock buffers, etc.
+    /**
+     * @brief Tile types that should be used during delay sampling.
+     *
+     * Useful for excluding tiles that have abnormal delay behavior, e.g.
+     * clock tree elements like PLL's, global/local clock buffers, etc.
+     */
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
+
+    /*
+     * @brief enables the analytic placer.
+     *
+     * Once analytic placement is done, the result is passed through the quench phase
+     * of the annealing placer for local improvement
+     */
+    bool enable_analytic_placer;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -877,9 +1059,9 @@ struct t_placer_opts {
  * bend_cost:  Cost of a bend (usually non-zero only for global routing).   *
  * max_router_iterations:  Maximum number of iterations before giving       *
  *                up.                                                       *
- * min_incremental_reroute_fanout: Minimum fanout a net needs to have 		*
- *				for incremental reroute to be applied to it through route 	*
- *				tree pruning. Larger circuits should get larger thresholds	*
+ * min_incremental_reroute_fanout: Minimum fanout a net needs to have       *
+ *              for incremental reroute to be applied to it through route   *
+ *              tree pruning. Larger circuits should get larger thresholds  *
  * bb_factor:  Linear distance a route can go outside the net bounding      *
  *             box.                                                         *
  * route_type:  GLOBAL or DETAILED.                                         *
@@ -905,10 +1087,10 @@ struct t_placer_opts {
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
  *                  criticality_exp (then clip to max_criticality).         *
- * doRouting: true if routing is supposed to be done, false otherwise	    *
- * routing_failure_predictor: sets the configuration to be used by the	    *
+ * doRouting: true if routing is supposed to be done, false otherwise       *
+ * routing_failure_predictor: sets the configuration to be used by the      *
  * routing failure predictor, how aggressive the threshold used to judge    *
- * and abort routings deemed unroutable							            *
+ * and abort routings deemed unroutable                                     *
  * write_rr_graph_name: stores the file name of the output rr graph         *
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 enum e_route_type {
@@ -919,6 +1101,13 @@ enum e_route_type {
 enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
+};
+
+// Node reordering algorithms for rr_nodes
+enum e_rr_node_reorder_algorithm {
+    DONT_REORDER,
+    DEGREE_BFS,
+    RANDOM_SHUFFLE,
 };
 
 enum e_base_cost_type {
@@ -935,10 +1124,13 @@ enum e_routing_failure_predictor {
     SAFE,
     AGGRESSIVE
 };
+
+// How to allocate budgets, and if RCV should be enabled
 enum e_routing_budgets_algorithm {
-    MINIMAX,
+    MINIMAX, // Use MINIMAX-PERT algorithm to allocate budgets
+    YOYO,    // Use MINIMAX as above, and enable RCV algorithm to resolve negative hold slack
     SCALE_DELAY,
-    DISABLE
+    DISABLE // Do not allocate budgets and run default router
 };
 
 enum class e_timing_report_detail {
@@ -986,7 +1178,7 @@ struct t_router_opts {
     int bb_factor;
     enum e_route_type route_type;
     int fixed_channel_width;
-    int min_channel_width_hint; //Hint to binary search of what the minimum channel width is
+    int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
     bool trim_empty_channels;
     bool trim_obs_channels;
     enum e_router_algorithm router_algorithm;
@@ -1006,9 +1198,10 @@ struct t_router_opts {
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
-    enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
-    bool two_stage_clock_routing;         //How clock nets on dedicated networks should be routed
+    enum e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
+    bool two_stage_clock_routing;         ///<How clock nets on dedicated networks should be routed
     int high_fanout_threshold;
+    float high_fanout_max_slope;
     int router_debug_net;
     int router_debug_sink_rr;
     int router_debug_iteration;
@@ -1029,6 +1222,14 @@ struct t_router_opts {
 
     e_check_route_option check_route;
     e_timing_update_type timing_update_type;
+
+    size_t max_logged_overused_rr_nodes;
+    bool generate_rr_node_overuse_report;
+
+    // Options related to rr_node reordering, for testing and possible cache optimization
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    int reorder_rr_graph_nodes_threshold = 0;
+    int reorder_rr_graph_nodes_seed = 1;
 };
 
 struct t_analysis_opts {
@@ -1044,39 +1245,40 @@ struct t_analysis_opts {
     e_timing_update_type timing_update_type;
 };
 
-/* Defines the detailed routing architecture of the FPGA.  Only important   *
- * if the route_type is DETAILED.                                           *
- * (UDSD by AY) directionality: Should the tracks be uni-directional or     *
- *                            bi-directional?                               *
- * switch_block_type:  Pattern of switches at each switch block.  I         *
- *           assume Fs is always 3.  If the type is SUBSET, I use a         *
- *           Xilinx-like switch block where track i in one channel always   *
- *           connects to track i in other channels.  If type is WILTON,     *
- *           I use a switch block where track i does not always connect     *
- *           to track i in other channels.  See Steve Wilton, Phd Thesis,   *
- *           University of Toronto, 1996.  The UNIVERSAL switch block is    *
- *           from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.       *
- *           A CUSTOM switch block has also been added which allows a user  *
- *           to describe custom permutation functions and connection        *
- *           patterns. See comment at top of SRC/route/build_switchblocks.c *
- * switchblocks: A vector of custom switch block descriptions that is       *
- *           used with the CUSTOM switch block type. See comment at top of  *
- *           SRC/route/build_switchblocks.c                                 *
- * delayless_switch:  Index of a zero delay switch (used to connect things  *
- *                    that should have no delay).                           *
- * wire_to_arch_ipin_switch: keeps track of the type of architecture switch *
- *                           that connects wires to ipins                   *
- * wire_to_rr_ipin_switch: keeps track of the type of RR graph switch that  *
- *                         connects wires to ipins in the RR graph          *
- * R_minW_nmos:  Resistance (in Ohms) of a minimum width nmos transistor.   *
- *               Used only in the FPGA area model.                          *
- * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   *
- *                                                                          *
- * read_rr_graph_filename: File to read the RR graph from (overrides        *
- *                         architecture)                                    *
- * write_rr_graph_filename: File to write the RR graph to after generation  *
- *                                                                          */
-
+/**
+ * @brief Defines the detailed routing architecture of the FPGA.
+ *
+ * Only important if the route_type is DETAILED.
+ *
+ *   @param directionality  Should the tracks be uni-directional or
+ *             bi-directional? (UDSD by AY)
+ *   @param switch_block_type  Pattern of switches at each switch block.
+ *             I assume Fs is always 3.  If the type is SUBSET, I use a
+ *             Xilinx-like switch block where track i in one channel always
+ *             connects to track i in other channels.  If type is WILTON,
+ *             I use a switch block where track i does not always connect
+ *             to track i in other channels.  See Steve Wilton, Phd Thesis,
+ *             University of Toronto, 1996.  The UNIVERSAL switch block is
+ *             from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
+ *             A CUSTOM switch block has also been added which allows a user
+ *             to describe custom permutation functions and connection
+ *             patterns. See comment at top of SRC/route/build_switchblocks.c
+ *   @param switchblocks  A vector of custom switch block descriptions that is
+ *             used with the CUSTOM switch block type. See comment at top of
+ *             SRC/route/build_switchblocks.c
+ *   @param delayless_switch  Index of a zero delay switch (used to connect
+ *             things that should have no delay).
+ *   @param wire_to_arch_ipin_switch  keeps track of the type of architecture
+ *             switch that connects wires to ipins
+ *   @param wire_to_rr_ipin_switch  keeps track of the type of RR graph switch
+ *             that connects wires to ipins in the RR graph
+ *   @param R_minW_nmos  Resistance (in Ohms) of a minimum width nmos transistor.
+ *             Used only in the FPGA area model.
+ *   @param R_minW_pmos  Resistance (in Ohms) of a minimum width pmos transistor.
+ *   @param read_rr_graph_filename  File to read the RR graph from (overrides
+ *             architecture)
+ *   @param write_rr_graph_filename  File to write the RR graph to after generation
+ */
 struct t_det_routing_arch {
     enum e_directionality directionality; /* UDSD by AY */
     int Fs;
@@ -1104,30 +1306,33 @@ enum e_direction : unsigned char {
 
 constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"}};
 
-/* Lists detailed information about segmentation.  [0 .. W-1].              *
- * length:  length of segment.                                              *
- * start:  index at which a segment starts in channel 0.                    *
- * longline:  true if this segment spans the entire channel.                *
- * sb:  [0..length]:  true for every channel intersection, relative to the  *
- *      segment start, at which there is a switch box.                      *
- * cb:  [0..length-1]:  true for every logic block along the segment at     *
- *      which there is a connection box.                                    *
- * arch_wire_switch: Index of the switch type that connects other wires     *
- *                   *to* this segment. Note that this index is in relation *
- *                   to the switches from the architecture file, not the    *
- *                   expanded list of switches that is built at the end of  *
- *                   build_rr_graph.                                        *
- * arch_opin_switch: Index of the switch type that connects output pins     *
- *                   (OPINs) *to* this segment. Note that this index is in  *
- *                   relation to the switches from the architecture file,   *
- *                   not the expanded list of switches that is is built     *
- *                   at the end of build_rr_graph                           *
- * Cmetal: Capacitance of a routing track, per unit logic block length.     *
- * Rmetal: Resistance of a routing track, per unit logic block length.      *
- * direction: The direction of a routing track.                             *
- * index: index of the segment type used for this track.                    *
- * type_name_ptr: pointer to name of the segment type this track belongs    *
- *                to. points to the appropriate name in s_segment_inf       */
+/**
+ * @brief Lists detailed information about segmentation.  [0 .. W-1].
+ *
+ *   @param length     length of segment.
+ *   @param start      index at which a segment starts in channel 0.
+ *   @param longline   true if this segment spans the entire channel.
+ *   @param sb  [0..length]: true for every channel intersection, relative to the
+ *                     segment start, at which there is a switch box.
+ *   @param cb  [0..length-1]:  true for every logic block along the segment at
+ *                     which there is a connection box.
+ *   @param arch_wire_switch  Index of the switch type that connects other wires
+ *                     *to* this segment. Note that this index is in relation
+ *                     to the switches from the architecture file, not the
+ *                     expanded list of switches that is built at the end of
+ *                     build_rr_graph.
+ *   @param arch_opin_switch  Index of the switch type that connects output pins
+ *                     (OPINs) *to* this segment. Note that this index is in
+ *                     relation to the switches from the architecture file,
+ *                     not the expanded list of switches that is is built
+ *                     at the end of build_rr_graph
+ *   @param Cmetal     Capacitance of a routing track, per unit logic block length.
+ *   @param Rmetal     Resistance of a routing track, per unit logic block length.
+ *   @param direction  The direction of a routing track.
+ *   @param index      index of the segment type used for this track.
+ *   @param type_name_ptr  pointer to name of the segment type this track belongs
+ *                     to. points to the appropriate name in s_segment_inf
+ */
 struct t_seg_details {
     int length = 0;
     int start = 0;
@@ -1145,7 +1350,7 @@ struct t_seg_details {
     int seg_start = 0;
     int seg_end = 0;
     int index = 0;
-    float Cmetal_per_m = 0; /* Used for power */
+    float Cmetal_per_m = 0; ///<Used for power
     std::string type_name;
 };
 
@@ -1209,24 +1414,28 @@ class t_chan_seg_details {
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
 
-/* A linked list of float pointers.  Used for keeping track of   *
- * which pathcosts in the router have been changed.              */
-
+/**
+ * @brief A linked list of float pointers.
+ *
+ * Used for keeping track of which pathcosts in the router have been changed.
+ */
 struct t_linked_f_pointer {
     t_linked_f_pointer* next;
     float* fptr;
 };
 
-/* Type of a routing resource node.  x-directed channel segment,   *
- * y-directed channel segment, input pin to a clb to pad, output   *
- * from a clb or pad (i.e. output pin of a net) and:               *
- * SOURCE:  A dummy node that is a logical output within a block   *
- *          -- i.e., the gate that generates a signal.             *
- * SINK:    A dummy node that is a logical input within a block    *
- *          -- i.e. the gate that needs a signal.                  */
+/**
+ * @brief Type of a routing resource node.
+ *
+ * x-directed channel segment, y-directed channel segment,
+ * input pin to a clb to pad, output from a clb or pad
+ * (i.e. output pin of a net) and:
+ * - SOURCE
+ * - SINK
+ */
 typedef enum e_rr_type : unsigned char {
-    SOURCE = 0,
-    SINK,
+    SOURCE = 0, ///<A dummy node that is a logical output within a block -- i.e., the gate that generates a signal.
+    SINK,       ///<A dummy node that is a logical input within a block -- i.e. the gate that needs a signal.
     IPIN,
     OPIN,
     CHANX,
@@ -1244,43 +1453,57 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
 //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
 typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
 
-/* Basic element used to store the traceback (routing) of each net.        *
- * index:   Array index (ID) of this routing resource node.                *
- * iswitch: Index of the switch type used to go from this rr_node to       *
- *          the next one in the routing.  OPEN if there is no next node    *
- *          (i.e. this node is the last one (a SINK) in a branch of the    *
- *          net's routing).                                                *
- * next:    Pointer to the next traceback element in this route.           */
+/**
+ * @brief Basic element used to store the traceback (routing) of each net.
+ *
+ *   @param index    Array index (ID) of this routing resource node.
+ *   @param net_pin_index:    Net pin index associated with the node. This value       
+ *                            ranges from 1 to fanout [1..num_pins-1]. For cases when  
+ *                            different speed paths are taken to the same SINK for     
+ *                            different pins, node index cannot uniquely identify      
+ *                            each SINK, so the net pin index guarantees an unique     
+ *                            identification for each SINK node. For non-SINK nodes    
+ *                            and for SINK nodes with no associated net pin index      
+ *                            (i.e. special SINKs like the source of a clock tree      
+ *                            which do not correspond to an actual netlist connection),
+ *                            the value for this member should be set to OPEN (-1).
+ *   @param iswitch  Index of the switch type used to go from this rr_node to
+ *                   the next one in the routing.  OPEN if there is no next node
+ *                   (i.e. this node is the last one (a SINK) in a branch of the
+ *                   net's routing).
+ *   @param next     Pointer to the next traceback element in this route.
+ */
 struct t_trace {
     t_trace* next;
     int index;
+    int net_pin_index = OPEN;
     short iswitch;
 };
 
-/* Extra information about each rr_node needed only during routing (i.e.    *
- * during the maze expansion).                                              *
- *                                                                          *
- * prev_node:  Index of the previous node (on the lowest cost path known to *
- *             reach this node); used to generate the traceback.  If there  *
- *             is no predecessor, prev_node = NO_PREVIOUS.                  *
- * prev_edge:  Index of the edge (from 0 to num_edges-1 of prev_node) that  *
- *             was used to reach this node from the previous node.  If      *
- *             there is no predecessor, prev_edge = NO_PREVIOUS.            *
- * pres_cost:  Present congestion cost term for this node.                  *
- * acc_cost:   Accumulated cost term from previous Pathfinder iterations.   *
- * path_cost:  Total cost of the path up to and including this node +       *
- *             the expected cost to the target if the timing_driven router  *
- *             is being used.                                               *
- * backward_path_cost:  Total cost of the path up to and including this     *
- *                      node.  Not used by breadth-first router.            *
- * target_flag:  Is this node a target (sink) for the current routing?      *
- *               Number of times this node must be reached to fully route.  *
- * occ:        The current occupancy of the associated rr node              */
+/**
+ * @brief Extra information about each rr_node needed only during routing
+ *        (i.e. during the maze expansion).
+ *
+ *   @param prev_node  Index of the previous node (on the lowest cost path known
+ *                     to reach this node); used to generate the traceback.
+ *                     If there is no predecessor, prev_node = NO_PREVIOUS.
+ *   @param prev_edge  Index of the edge (from 0 to num_edges-1 of prev_node)
+ *                     that was used to reach this node from the previous node.
+ *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
+ *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
+ *   @param path_cost  Total cost of the path up to and including this node +
+ *                     the expected cost to the target if the timing_driven router
+ *                     is being used.
+ *   @param backward_path_cost  Total cost of the path up to and including this
+ *                     node. Not used by breadth-first router.
+ *   @param target_flag  Is this node a target (sink) for the current routing?
+ *                     Number of times this node must be reached to fully route.
+ *   @param occ        The current occupancy of the associated rr node
+ */
 struct t_rr_node_route_inf {
     int prev_node;
     RREdgeId prev_edge;
 
-    float pres_cost;
     float acc_cost;
     float path_cost;
     float backward_path_cost;
@@ -1297,7 +1520,10 @@ struct t_rr_node_route_inf {
     short occ_ = 0;
 };
 
-//Information about the current status of a particular net as pertains to routing
+/**
+ * @brief Information about the current status of a particular
+ *        net as pertains to routing
+ */
 class t_net_routing_status {
   public:
     void clear() {
@@ -1329,8 +1555,8 @@ class t_net_routing_status {
         VTR_ASSERT_SAFE(net != ClusterNetId::INVALID());
         return net;
     }
-    vtr::dynamic_bitset<ClusterNetId> is_routed_; //Whether the net has been legally routed
-    vtr::dynamic_bitset<ClusterNetId> is_fixed_;  //Whether the net is fixed (i.e. not to be re-routed)
+    vtr::dynamic_bitset<ClusterNetId> is_routed_; ///<Whether the net has been legally routed
+    vtr::dynamic_bitset<ClusterNetId> is_fixed_;  ///<Whether the net is fixed (i.e. not to be re-routed)
 };
 
 struct t_node_edge {
@@ -1348,7 +1574,7 @@ struct t_node_edge {
     }
 };
 
-//Non-configurably connected nodes and edges in the RR graph
+///@brief Non-configurably connected nodes and edges in the RR graph
 struct t_non_configurable_rr_sets {
     std::set<std::set<int>> node_sets;
     std::set<std::set<t_node_edge>> edge_sets;
@@ -1356,7 +1582,7 @@ struct t_non_configurable_rr_sets {
 
 #define NO_PREVIOUS -1
 
-/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of device_ctx.rr_indexed_data.    */
+///@brief Index of the SOURCE, SINK, OPIN, IPIN, etc. member of device_ctx.rr_indexed_data.
 enum e_cost_indices {
     SOURCE_COST_INDEX = 0,
     SINK_COST_INDEX,
@@ -1365,12 +1591,12 @@ enum e_cost_indices {
     CHANX_COST_INDEX_START
 };
 
-/* Power estimation options */
+///@brief Power estimation options
 struct t_power_opts {
-    bool do_power; /* Perform power estimation? */
+    bool do_power; ///<Perform power estimation?
 };
 
-/* Channel width data */
+///@brief Channel width data
 struct t_chan_width {
     int max = 0;
     int x_max = 0;
@@ -1381,7 +1607,7 @@ struct t_chan_width {
     std::vector<int> y_list;
 };
 
-/* Type to store our list of token to enum pairings */
+///@brief Type to store our list of token to enum pairings
 struct t_TokenPair {
     const char* Str;
     int Enum;
@@ -1389,33 +1615,33 @@ struct t_TokenPair {
 
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
-/* Store settings for VPR */
+///@brief Store settings for VPR
 struct t_vpr_setup {
-    bool TimingEnabled;             /* Is VPR timing enabled */
-    t_file_name_opts FileNameOpts;  /* File names */
-    t_model* user_models;           /* blif models defined by the user */
-    t_model* library_models;        /* blif models in VPR */
-    t_netlist_opts NetlistOpts;     /* Options for packer */
-    t_packer_opts PackerOpts;       /* Options for packer */
-    t_placer_opts PlacerOpts;       /* Options for placer */
-    t_annealing_sched AnnealSched;  /* Placement option annealing schedule */
-    t_router_opts RouterOpts;       /* router options */
-    t_analysis_opts AnalysisOpts;   /* Analysis options */
-    t_det_routing_arch RoutingArch; /* routing architecture */
+    bool TimingEnabled;             ///<Is VPR timing enabled
+    t_file_name_opts FileNameOpts;  ///<File names
+    t_model* user_models;           ///<blif models defined by the user
+    t_model* library_models;        ///<blif models in VPR
+    t_netlist_opts NetlistOpts;     ///<Options for packer
+    t_packer_opts PackerOpts;       ///<Options for packer
+    t_placer_opts PlacerOpts;       ///<Options for placer
+    t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
+    t_router_opts RouterOpts;       ///<router options
+    t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
-    std::vector<t_segment_inf> Segments; /* wires in routing architecture */
-    t_timing_inf Timing;                 /* timing information */
-    float constant_net_delay;            /* timing information when place and route not run */
-    bool ShowGraphics;                   /* option to show graphics */
-    int GraphPause;                      /* user interactiveness graphics option */
-    bool SaveGraphics;                   /* option to save graphical contents to pdf, png, or svg */
-    std::string GraphicsCommands;        /* commands to control graphics settings */
+    std::vector<t_segment_inf> Segments; ///<wires in routing architecture
+    t_timing_inf Timing;                 ///<timing information
+    float constant_net_delay;            ///<timing information when place and route not run
+    bool ShowGraphics;                   ///<option to show graphics
+    int GraphPause;                      ///<user interactiveness graphics option
+    bool SaveGraphics;                   ///<option to save graphical contents to pdf, png, or svg
+    std::string GraphicsCommands;        ///<commands to control graphics settings
     t_power_opts PowerOpts;
     std::string device_layout;
-    e_constant_net_method constant_net_method; //How constant nets should be handled
-    e_clock_modeling clock_modeling;           //How clocks should be handled
-    bool two_stage_clock_routing;              //How clocks should be routed in the presence of a dedicated clock network
-    bool exit_before_pack;                     //Exits early before starting packing (useful for collecting statistics without running/loading any stages)
+    e_constant_net_method constant_net_method; ///<How constant nets should be handled
+    e_clock_modeling clock_modeling;           ///<How clocks should be handled
+    bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
+    bool exit_before_pack;                     ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
 };
 
 class RouteStatus {

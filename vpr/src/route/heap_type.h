@@ -6,6 +6,7 @@
 #include "vtr_memory.h"
 #include "vtr_array_view.h"
 #include "rr_graph_fwd.h"
+#include "route_path_manager.h"
 
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
@@ -33,7 +34,7 @@
  *
  * u.next:  pointer to the next s_heap structure in the free
  *          linked list.  Not used when on the heap.
- *
+ * 
  */
 struct t_heap {
     float cost = 0.;
@@ -41,6 +42,10 @@ struct t_heap {
     float R_upstream = 0.;
 
     int index = OPEN;
+
+    // Structure to handle extra RCV structures
+    // Managed by PathManager class
+    t_heap_path* path_data;
 
     struct t_prev {
         int node;
@@ -191,6 +196,34 @@ class HeapInterface {
     // Note: Only invoke this method if all objects returned from this
     // HeapInterface instace have been free'd.
     virtual void free_all_memory() = 0;
+
+    // Set maximum number of elements that the heap should contain
+    // (the prune_limit).  If the prune limit is hit, then the heap should
+    // kick out duplicate index entries.
+    //
+    // The prune limit exists to provide a maximum bound on memory usage in
+    // the heap.  In some pathological cases, the router may explore
+    // incrementally better paths, resulting in many duplicate entries for
+    // RR nodes.  To handle this edge case, if the number of heap items
+    // exceeds the prune_limit, then the heap will compacts itself.
+    //
+    // The heap compaction process simply means taking the lowest cost entry
+    // for each index (e.g. RR node).  All nodes with higher costs can safely
+    // be dropped.
+    //
+    // The pruning process is intended to bound the memory usage the heap can
+    // consume based on the prune_limit, which is expected to be a function of
+    // the graph size.
+    //
+    // max_index should be the highest index possible in the heap.
+    // prune_limit is the maximuming number of heap entries before pruning
+    // should take place.
+    //
+    // The prune_limit should always be higher than max_index, likely by a
+    // significant amount.  The pruning process has some overhead, so
+    // prune_limit should be ~2-4x the max_index to prevent excess pruning
+    // when not required.
+    virtual void set_prune_limit(size_t max_index, size_t prune_limit) = 0;
 };
 
 enum class e_heap_type {

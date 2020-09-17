@@ -21,10 +21,11 @@ void NetlistWalker::walk() {
     visitor_.finish();
 }
 
+/**
+ * @brief Recursively travers this pb calling visitor_.visit_atom() or
+ *        visitor_.visit_open() on any of its primitive pb's.
+ */
 void NetlistWalker::walk_blocks(const t_pb_routes& top_pb_route, const t_pb* pb) {
-    // Recursively travers this pb calling visitor_.visit_atom() or
-    // visitor_.visit_open() on any of its primitive pb's.
-
     VTR_ASSERT(pb != nullptr);
     VTR_ASSERT(pb->pb_graph_node != nullptr);
 

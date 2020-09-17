@@ -8,34 +8,34 @@
 #####################
 
 # truth test
-simple_true,        is_true, 1'b1, pass
-simple_fail,        is_true, 1'b0, fail
-decimal_true,       is_true, 1, pass
-decimal_fail,       is_true, 0, fail
-complex_true,       is_true, 3'b1xz, pass
-complex_fail,       is_true, 3'b0xz, fail
-unknown_x,          is_true, 1'bx, fail
-unknown_z,          is_true, 1'bz, fail
-large_number_pass,  is_true, 128'h8000_0000_0000_0000, pass
+simple_true,        is_true, 1'b1, 1'b1
+simple_fail,        is_true, 1'b0, 1'b0
+decimal_true,       is_true, 1, 1'b1
+decimal_fail,       is_true, 0, 1'b0
+complex_true,       is_true, 3'b1xz, 1'b1
+complex_fail,       is_true, 3'b0xz, 1'b0
+unknown_x,          is_true, 1'bx, 1'b0
+unknown_z,          is_true, 1'bz, 1'b0
+large_number_pass,  is_true, 128'h8000_0000_0000_0000, 1'b1
 
 # type test
-simple_x_pass,      is_x,   1'bx,    pass
-simple_x_fail,      is_x,   1'b1,    fail
-complex_x_pass,     is_x,   4'bxxxx, pass
-complex_x_fail,     is_x,   4'bzxxx, fail
-simple_z_pass,      is_z,   1'bz,    pass
-simple_z_fail,      is_z,   1'b1,    fail
-complex_z_pass,     is_z,   4'bzzzz, pass
-complex_z_fail,     is_z,   4'bxzzz, fail
-simple_unk_x_pass,  is_unk, 2'bx1,   pass
-simple_unk_z_pass,  is_unk, 2'bz1,   pass
-simple_unk_fail,    is_unk, 2'b10,   fail
+simple_x_pass,      is_x,   1'bx,    1'b1
+simple_x_fail,      is_x,   1'b1,    1'b0
+complex_x_pass,     is_x,   4'bxxxx, 1'b1
+complex_x_fail,     is_x,   4'bzxxx, 1'b0
+simple_z_pass,      is_z,   1'bz,    1'b1
+simple_z_fail,      is_z,   1'b1,    1'b0
+complex_z_pass,     is_z,   4'bzzzz, 1'b1
+complex_z_fail,     is_z,   4'bxzzz, 1'b0
+simple_unk_x_pass,  is_unk, 2'bx1,   1'b1
+simple_unk_z_pass,  is_unk, 2'bz1,   1'b1
+simple_unk_fail,    is_unk, 2'b10,   1'b0
 
 # sign test
-simple_is_unsigned_pass,     is_unsigned,    2'b11,  pass
-simple_is_unsigned_fail,     is_unsigned,    2'sb11, fail
-simple_is_signed_pass,       is_signed,      2'b11,  fail
-simple_is_signed_fail,       is_signed,      2'sb11, pass
+simple_is_unsigned_pass,     is_unsigned,    2'b11,  1'b1
+simple_is_unsigned_fail,     is_unsigned,    2'sb11, 1'b0
+simple_is_signed_pass,       is_signed,      2'b11,  1'b0
+simple_is_signed_fail,       is_signed,      2'sb11, 1'b1
 
 # type conversion test
 simple_is_unsigned_1,        to_unsigned,    2'b11,  2'b11
@@ -43,8 +43,26 @@ simple_is_unsigned_2,        to_unsigned,    2'sb11, 2'b11
 simple_is_signed_1,          to_signed,      2'b11,  2'sb11
 simple_is_signed_2,          to_signed,      2'sb11, 2'sb11
 
+# string display
+simple_string_b,          display, b, 64'd18446744073709551615, 1111111111111111111111111111111111111111111111111111111111111111
+simple_string_B,          display, B, 65'd18446744073709551616, 10000000000000000000000000000000000000000000000000000000000000000
+simple_string_u,          display, u, 1'bz, 1'b0        # todo, figure out the real result for this
+simple_string_U,          display, U, 1'bx, 1'b0        # todo, figure out the real result for this
+simple_string_z,          display, z, 1'bz, z
+simple_string_Z,          display, Z, 1'bx, X
+simple_string_s,          display, s, "hello world", hello world
+simple_string_S,          display, S, "hello world", hello world
+simple_string_o,          display, o, 64'd18446744073709551615, 1777777777777777777777
+simple_string_O,          display, O, 65'd18446744073709551616, 2000000000000000000000
+simple_string_h,          display, h, 64'd18446744073709551615, ffffffffffffffff
+simple_string_H,          display, H, 64'd18446744073709551614, FFFFFFFFFFFFFFFE
+simple_string_d,          display, d, 265663, 265663
+simple_string_D,          display, D, 265663, 265663
+simple_string_c,          display, c, "hello world", h
+simple_string_C,          display, C, "world", w
+
 # string test
-simple_string,          display,        "hello world",   hello world
+simple_string,          display,        s,   "hello world", hello world
 string_compare_pass,    "hello world",  ==,  "hello world", 1'b1
 string_compare_fail,    "hello world",  ==,  "hello", 1'b0
 string_ne_pass,         "hello world",  !=,  "hello", 1'b1
@@ -76,6 +94,55 @@ simple_decimal_minus,			    6, -, 1, 5
 simple_decimal_plus,			    6, +, 1, 7
 simple_decimal_shift_right,			6,  >>>, 1, 3
 simple_decimal_shift_left,			6,  <<<, 1, 12
+
+#################
+# tristate
+
+# single bit trigger
+# ======
+
+# bufif0
+bufif0_on,                 bufif0, 4'b10xz, 1'b0, 4'b10xx
+bufif0_off,                bufif0, 4'b10xz, 1'b1, 4'bzzzz
+bufif0_dc,                 bufif0, 4'b10xz, 1'bx, 4'bxxxx
+bufif0_hihz,               bufif0, 4'b10xz, 1'bz, 4'bxxxx
+
+# bufif1
+bufif1_on,                 bufif1, 4'b10xz, 1'b1, 4'b10xx
+bufif1_off,                bufif1, 4'b10xz, 1'b0, 4'bzzzz
+bufif1_dc,                 bufif1, 4'b10xz, 1'bx, 4'bxxxx
+bufif1_hihz,               bufif1, 4'b10xz, 1'bz, 4'bxxxx
+
+# notif0
+notif0_on,                 notif0, 4'b10xz, 1'b0, 4'b01xx
+notif0_off,                notif0, 4'b10xz, 1'b1, 4'bzzzz
+notif0_dc,                 notif0, 4'b10xz, 1'bx, 4'bxxxx
+notif0_hihz,               notif0, 4'b10xz, 1'bz, 4'bxxxx
+
+# notif1
+notif1_on,                 notif1, 4'b10xz, 1'b1, 4'b01xx
+notif1_off,                notif1, 4'b10xz, 1'b0, 4'bzzzz
+notif1_dc,                 notif1, 4'b10xz, 1'bx, 4'bxxxx
+notif1_hihz,               notif1, 4'b10xz, 1'bz, 4'bxxxx
+
+# wide trigger
+# ======
+
+# bufif0
+bufif0_upper,              bufif0, 4'b10xz, 4'b1100, 4'bzzxx
+bufif0_lower,              bufif0, 4'b10xz, 4'b0011, 4'b10zz
+
+# bufif1
+bufif1_upper,              bufif1, 4'b10xz, 4'b1100, 4'b10zz
+bufif1_lower,              bufif1, 4'b10xz, 4'b0011, 4'bzzxx
+
+# notif0
+notif0_upper,              notif0, 4'b10xz, 4'b1100, 4'bzzxx
+notif0_lower,              notif0, 4'b10xz, 4'b0011, 4'b01zz
+
+# notif1
+notif1_upper,              notif1, 4'b10xz, 4'b1100, 4'b01zz
+notif1_lower,              notif1, 4'b10xz, 4'b0011, 4'bzzxx
 
 
 # Reduction

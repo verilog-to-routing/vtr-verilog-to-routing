@@ -1,7 +1,8 @@
-/*
- * This file defines a signal handler used by VPR to catch SIGINT signals
- * (ctrl-C from terminal) on POSIX systems. It is only active if
- * VPR_USE_SIGACTION is defined.
+/**
+ * @file
+ * @brief This file defines a signal handler used by VPR to catch SIGINT signals
+ *        (ctrl-C from terminal) on POSIX systems. It is only active if
+ *        VPR_USE_SIGACTION is defined.
  *
  * If a SIGINT occur the handler sets the 'forced_pause' flag of the VPR
  * context.  If 'forced_pause' is still true when another SIGINT occurs an

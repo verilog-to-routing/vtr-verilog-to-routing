@@ -133,32 +133,37 @@ void define_hard_block(nnode_t* node, FILE* out) {
     oassert(node->output_port_sizes[0] > 0);
 
     //IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in define_add_function and define_mult_function)
-    if (strcmp(node->related_ast_node->children[0]->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->children[0]->types.identifier, "adder") == 0)
+    if (strcmp(node->related_ast_node->identifier_node->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->identifier_node->types.identifier, "adder") == 0)
         return;
 
     count = fprintf(out, "\n.subckt ");
     count--;
-    count += fprintf(out, "%s", node->related_ast_node->children[0]->types.identifier);
+    count += fprintf(out, "%s", node->related_ast_node->identifier_node->types.identifier);
 
     /* print the input port mappings */
     port = index = 0;
     for (i = 0; i < node->num_input_pins; i++) {
         /* Check that the input pin is driven */
-        if (node->input_pins[i]->net->driver_pin == NULL
+        if (node->input_pins[i]->net->num_driver_pins == 0
             && node->input_pins[i]->net != verilog_netlist->zero_net
             && node->input_pins[i]->net != verilog_netlist->one_net
             && node->input_pins[i]->net != verilog_netlist->pad_net) {
-            warning_message(NETLIST, -1, -1, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
+            warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
             add_fanout_pin_to_net(verilog_netlist->zero_net, node->input_pins[i]);
+        } else if (node->input_pins[i]->net->num_driver_pins > 1) {
+            error_message(NETLIST, node->loc, "Multiple (%d) driver pins not supported in hard block definition\n", node->input_pins[i]->net->num_driver_pins);
         }
 
-        if (node->input_port_sizes[port] == 1)
-            j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pin->node->name);
-        else {
-            if (node->input_pins[i]->net->driver_pin->name != NULL)
-                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->name);
+        if (node->input_port_sizes[port] == 1) {
+            if (node->input_pins[i]->net->driver_pins[0]->name != NULL)
+                j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pins[0]->name);
             else
-                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pin->node->name);
+                j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pins[0]->node->name);
+        } else {
+            if (node->input_pins[i]->net->driver_pins[0]->name != NULL)
+                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pins[0]->name);
+            else
+                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pins[0]->node->name);
         }
 
         if (count + j > 79) {

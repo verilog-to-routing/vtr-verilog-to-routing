@@ -146,7 +146,7 @@ void declare_hard_adder(nnode_t* node) {
 
     /* See if this size instance of adder exists? */
     if (hard_adders == NULL)
-        warning_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating adder where adders do not exist");
+        warning_message(NETLIST, node->loc, "%s\n", "Instantiating adder where adders do not exist");
 
     tmp = (t_adder*)hard_adders->instances;
     width_a = node->input_port_sizes[0];
@@ -318,7 +318,8 @@ void define_add_function(nnode_t* node, FILE* out) {
 
     /* Write the input pins*/
     for (i = 0; i < node->num_input_pins; i++) {
-        npin_t* driver_pin = node->input_pins[i]->net->driver_pin;
+        oassert(node->input_pins[i]->net->num_driver_pins == 1);
+        npin_t* driver_pin = node->input_pins[i]->net->driver_pins[0];
 
         if (i < node->input_port_sizes[0]) {
             if (!driver_pin->name)
@@ -629,7 +630,7 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
     node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (count));
 
     for (i = 0; i < count; i++) {
-        node[i] = allocate_nnode();
+        node[i] = allocate_nnode(nodeo->loc);
         node[i]->name = (char*)vtr::malloc(strlen(nodeo->name) + 20);
         odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
         if (i == count - 1) {
@@ -1121,27 +1122,24 @@ void free_op_nodes(nnode_t* node) {
  * (function: match_pins)
  *-------------------------------------------------------------------------*/
 int match_pins(nnode_t* node, nnode_t* next_node) {
-    int flag = 0;
-    int i, j;
-    long id;
-    for (i = 0; i < node->num_input_pins; i++) {
-        flag = 0;
-        id = node->input_pins[i]->net->driver_pin->unique_id;
-        for (j = 0; j < next_node->num_input_pins; j++) {
-            if (id == next_node->input_pins[j]->net->driver_pin->unique_id) {
-                flag = 1;
-                break;
+    for (int i = 0; i < node->num_input_pins; i++) {
+        for (int j = 0; j < node->input_pins[i]->net->num_driver_pins; j++) {
+            bool found = false;
+            long id = node->input_pins[i]->net->driver_pins[j]->unique_id;
+            for (int k = 0; k < next_node->num_input_pins && !found; k++) {
+                for (int l = 0; l < next_node->input_pins[k]->net->num_driver_pins; l++) {
+                    if (id == next_node->input_pins[k]->net->driver_pins[l]->unique_id) {
+                        found = true;
+                        break;
+                    }
+                }
             }
-            if (j == next_node->num_input_pins - 1) {
-                flag = -1;
-                break;
-            }
+            if (!found)
+                return -1;
         }
-        if (flag == -1)
-            break;
     }
 
-    return flag;
+    return 1;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1196,10 +1194,11 @@ static nnode_t* make_adder(operation_list funct, nnode_t* current_adder, nnode_t
         //connect input a
         if (current_pin < width[1]) {
             npin_t* temp_pin = node->input_pins[current_pin];
-            if (temp_pin->net->driver_pin == NULL || temp_pin->net->driver_pin->node->type == GND_NODE) {
+            oassert(temp_pin->net->num_driver_pins <= 1);
+            if (!temp_pin->net->num_driver_pins || temp_pin->net->driver_pins[0]->node->type == GND_NODE) {
                 connect_nodes(netlist->gnd_node, 0, new_funct, 0 + is_three_port_gate);
                 remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
-            } else if (temp_pin->net->driver_pin->node->type == VCC_NODE) {
+            } else if (temp_pin->net->driver_pins[0]->node->type == VCC_NODE) {
                 connect_nodes(netlist->vcc_node, 0, new_funct, 0 + is_three_port_gate);
                 remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
             } else {
@@ -1213,11 +1212,12 @@ static nnode_t* make_adder(operation_list funct, nnode_t* current_adder, nnode_t
         if (current_pin < width[2]) {
             //pin a is neighbor to pin b
             npin_t* temp_pin = node->input_pins[current_pin + width[1]];
-            if (temp_pin->net->driver_pin == NULL || temp_pin->net->driver_pin->node->type == GND_NODE) {
+            oassert(temp_pin->net->num_driver_pins <= 1);
+            if (temp_pin->net->num_driver_pins == 0 || temp_pin->net->driver_pins[0]->node->type == GND_NODE) {
                 nnode_t* attach_to = (subtraction) ? netlist->vcc_node : netlist->gnd_node;
                 connect_nodes(attach_to, 0, new_funct, 1 + is_three_port_gate);
                 remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
-            } else if (temp_pin->net->driver_pin->node->type == VCC_NODE) {
+            } else if (temp_pin->net->driver_pins[0]->node->type == VCC_NODE) {
                 nnode_t* attach_to = (subtraction) ? netlist->gnd_node : netlist->vcc_node;
                 connect_nodes(attach_to, 0, new_funct, 1 + is_three_port_gate);
                 remove_fanout_pins_from_net(temp_pin->net, temp_pin, temp_pin->pin_net_idx);
@@ -1254,17 +1254,22 @@ void instantiate_add_w_carry_block(int* width, nnode_t* node, short mark, netlis
     }
 }
 
+/*---------------------------------------------------------------------------------------------
+ * instance name = node->identifier_node
+ * instance list = instance->children[0]
+ * named port connections = connect list->children[n]->identifier_node
+ *-------------------------------------------------------------------------------------------*/
 bool is_ast_adder(ast_node_t* node) {
     bool is_adder;
-    ast_node_t* instance = node->children[1];
-    is_adder = (!strcmp(node->children[0]->types.identifier, "adder"))
-               && (instance->children[1]->num_children == 5);
+    ast_node_t* instance = node->children[0];
+    is_adder = (!strcmp(node->identifier_node->types.identifier, "adder"))
+               && (instance->children[0]->num_children == 4);
 
-    ast_node_t* connect_list = instance->children[1];
-    if (is_adder && connect_list->children[0]->children[0]) {
+    ast_node_t* connect_list = instance->children[0];
+    if (is_adder && connect_list->children[0]->identifier_node) {
         /* port connections were passed by name; verify port names */
         for (int i = 0; i < connect_list->num_children && is_adder; i++) {
-            char* id = connect_list->children[i]->children[0]->types.identifier;
+            char* id = connect_list->children[i]->identifier_node->types.identifier;
 
             if ((strcmp(id, "a") != 0) && (strcmp(id, "b") != 0) && (strcmp(id, "cin") != 0) && (strcmp(id, "cout") != 0) && (strcmp(id, "sumout") != 0)) {
                 is_adder = false;

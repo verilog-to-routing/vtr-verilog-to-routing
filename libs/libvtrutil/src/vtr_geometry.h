@@ -110,6 +110,9 @@ class Rect {
     //Returns true if the point is coincident with the rectangle (including the top-right edges)
     bool coincident(Point<T> point) const;
 
+    //Returns true if other is contained within the rectangle (including all edges)
+    bool contains(const Rect<T>& other) const;
+
     //Returns true if no points are contained in the rectangle
     //  rect.empty() => not exists p. rect.contains(p)
     //  This also implies either the width or height is 0.
@@ -145,6 +148,12 @@ Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
 //Only defined for integral types
 template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
 Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d);
+
+// clamps v to be between low (lo) and high (hi), inclusive.
+template<class T>
+static constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
+    return std::min(std::max(v, lo), hi);
+}
 
 //A 2D line
 template<class T>

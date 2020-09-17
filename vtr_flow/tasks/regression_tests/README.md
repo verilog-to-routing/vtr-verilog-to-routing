@@ -11,31 +11,31 @@ to [`regression_tests.ods`](./regression_tests.ods) for details on architecture
 
 DO-IT-ALL COMMAND - This command will execute, parse, and check results.
 ```
-./run_reg_test.pl vtr_reg_basic
+./run_reg_test.py vtr_reg_basic
 ```
 To create golden results, use:
 ```
-./run_reg_test.pl -create_golden vtr_reg_basic
+./run_reg_test.py -create_golden vtr_reg_basic
 ```
 
 Execute with:
 ```
-<scripts_path>/run_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
+<scripts_path>/run_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
 ```
 
 Parse results with:
 ```
-<scripts_path>/parse_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
+<scripts_path>/parse_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
 ```
 
 Check results with:
 ```
-<scripts_path>/parse_vtr_task.pl -check_golden -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
+<scripts_path>/parse_vtr_task.py -check_golden -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
 ```
 
 Create golden results with:
 ```
-<scripts_path>/parse_vtr_task.pl -create_golden -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
+<scripts_path>/parse_vtr_task.py -create_golden -l <tasks_path>/regression_tests/vtr_reg_basic/task_list.txt
 ```
 
 ## LEVEL TWO - Strong VTR Regression - `vtr_reg_strong`
@@ -45,32 +45,32 @@ Create golden results with:
 
 DO-IT-ALL COMMAND - This command will execute, parse, and check results.
 ```
-./run_reg_test.pl vtr_reg_strong
-./run_reg_test.pl vtr_reg_valgrind_small
+./run_reg_test.py vtr_reg_strong
+./run_reg_test.py vtr_reg_valgrind_small
 ```
 To create golden results, use:
 ```
-./run_reg_test.pl -create_golden vtr_reg_strong
+./run_reg_test.py -create_golden vtr_reg_strong
 ```
 
 Execute with:
 ```
-<scripts_path>/run_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
+<scripts_path>/run_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
 ```
 
 Parse results with:
 ```
-<scripts_path>/parse_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
+<scripts_path>/parse_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
 ```
 
 Check results with:
 ```
-<scripts_path>/parse_vtr_task.pl -check_golden -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
+<scripts_path>/parse_vtr_task.py -check_golden -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
 ```
 
 Create golden results with:
 ```
-<scripts_path>/parse_vtr_task.pl -create_golden -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
+<scripts_path>/parse_vtr_task.py -create_golden -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
 ```
 
 ## LEVEL THREE  - Nightly VTR Regression - `vtr_reg_nightly`
@@ -80,33 +80,33 @@ Create golden results with:
 
 DO-IT-ALL COMMAND - This command will execute, parse, and check results.
 ```
-./run_reg_test.pl vtr_reg_nightly
-./run_reg_test.pl vtr_reg_valgrind
+./run_reg_test.py vtr_reg_nightly
+./run_reg_test.py vtr_reg_valgrind
 ```
 
 To create golden results, use:
 ```
-./run_reg_test.pl -create_golden vtr_reg_nightly
+./run_reg_test.py -create_golden vtr_reg_nightly
 ```
 
 Execute with:
 ```
-<scripts_path>/run_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/run_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
 ```
 
 Parse results with:
 ```
-<scripts_path>/parse_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/parse_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
 ```
 
 Check results with:
 ```
-<scripts_path>/parse_vtr_task.pl -check_golden -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/parse_vtr_task.py -check_golden -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
 ```
 
 Create golden results with:
 ```
-<scripts_path>/parse_vtr_task.pl -create_golden -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/parse_vtr_task.py -create_golden -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
 ```
 
 
@@ -117,30 +117,30 @@ Create golden results with:
 
 DO-IT-ALL COMMAND - This command will execute, parse, and check results.
 ```
-./run_reg_test.pl vtr_reg_weekly
+./run_reg_test.py vtr_reg_weekly
 ```
 
 To create golden results, use:
 ```
-./run_reg_test.pl -create_golden vtr_reg_weekly
+./run_reg_test.py -create_golden vtr_reg_weekly
 ```
 
 Execute with:
 ```
-<scripts_path>/run_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
+<scripts_path>/run_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
 ```
 
 Parse results with:
 ```
-<scripts_path>/parse_vtr_task.pl -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
+<scripts_path>/parse_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
 ```
 
 Check results with:
 ```
-<scripts_path>/parse_vtr_task.pl -check_golden -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
+<scripts_path>/parse_vtr_task.py -check_golden -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
 ```
 
 Create golden results with:
 ```
-<scripts_path>/parse_vtr_task.pl -create_golden -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
+<scripts_path>/parse_vtr_task.py -create_golden -l <tasks_path>/regression_tests/vtr_reg_weekly/task_list.txt
 ```

@@ -9,21 +9,22 @@ For more details on how to use this see:
 """
 import re
 
-#VTR related
+# VTR related
 class VtrStrongIdPrinter:
     def __init__(self, val, typename="vtr::StrongId"):
         self.val = val
         self.typename = typename
 
     def to_string(self):
-        id = self.val['id_']
+        id = self.val["id_"]
 
         invalid_id = self.val.type.template_argument(2)
 
-        if(id == invalid_id):
+        if id == invalid_id:
             return self.typename + "(INVALID)"
         else:
             return self.typename + "(" + str(id) + ")"
+
 
 class TatumStrongIdPrinter:
     def __init__(self, val, typename="tatum::util::StrongId"):
@@ -31,33 +32,34 @@ class TatumStrongIdPrinter:
         self.typename = typename
 
     def to_string(self):
-        id = self.val['id_']
+        id = self.val["id_"]
 
         invalid_id = self.val.type.template_argument(2)
 
-        if(id == invalid_id):
+        if id == invalid_id:
             return self.typename + "(INVALID)"
         else:
             return self.typename + "(" + str(id) + ")"
 
-#class VtrNdMatrixPrinter:
-    #def __init__(self, val):
-        #self.val = val
 
-    #def to_string(self):
-        #id = self.val['id_']
+# class VtrNdMatrixPrinter:
+# def __init__(self, val):
+# self.val = val
 
-        #ndim = self.val.type.template_argument(2)
+# def to_string(self):
+# id = self.val['id_']
 
-        #if(id == invalid_id):
-            #return self.typename + "(INVALID)"
-        #else:
-            #return self.typename + "(" + str(id) + ")"
+# ndim = self.val.type.template_argument(2)
+
+# if(id == invalid_id):
+# return self.typename + "(INVALID)"
+# else:
+# return self.typename + "(" + str(id) + ")"
 
 
 def vtr_type_lookup(val):
-    #unqualified() removes qualifiers like 'const'
-    #strip_typedefs() returns the real type
+    # unqualified() removes qualifiers like 'const'
+    # strip_typedefs() returns the real type
     type = str(val.type.unqualified().strip_typedefs())
 
     if type.startswith("vtr::StrongId"):
@@ -115,10 +117,10 @@ def vtr_type_lookup(val):
             return TatumStrongIdPrinter(val, "tatum::LevelId")
         else:
             return TatumStrongIdPrinter(val)
-    #elif type.startswith("vtr::NdMatrix"):
-        #return VtrNdMatrixPrinter(val)
+    # elif type.startswith("vtr::NdMatrix"):
+    # return VtrNdMatrixPrinter(val)
     else:
-        #print("Type '{}'".format(type))
+        # print("Type '{}'".format(type))
         pass
 
     return None

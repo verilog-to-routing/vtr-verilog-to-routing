@@ -1082,13 +1082,67 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                 VTR_ASSERT(indices[SOURCE][x][y][0].size() == type->class_inf.size());
                 VTR_ASSERT(indices[SINK][x][y][0].size() == type->class_inf.size());
 
+                /* Limited sides for grids
+                 *   The wanted side depends on the location of the grid.
+                 *   In particular for perimeter grid, 
+                 *   -------------------------------------------------------
+                 *   Grid location |  IPIN side
+                 *   -------------------------------------------------------
+                 *   TOP           |  BOTTOM     
+                 *   -------------------------------------------------------
+                 *   RIGHT         |  LEFT     
+                 *   -------------------------------------------------------
+                 *   BOTTOM        |  TOP   
+                 *   -------------------------------------------------------
+                 *   LEFT          |  RIGHT
+                 *   -------------------------------------------------------
+                 *   TOP-LEFT      |  BOTTOM & RIGHT
+                 *   -------------------------------------------------------
+                 *   TOP-RIGHT     |  BOTTOM & LEFT
+                 *   -------------------------------------------------------
+                 *   BOTTOM-LEFT   |  TOP & RIGHT
+                 *   -------------------------------------------------------
+                 *   BOTTOM-RIGHT  |  TOP & LEFT
+                 *   -------------------------------------------------------
+                 *   Other         |  First come first fit
+                 *   -------------------------------------------------------
+                 *
+                 * Special for IPINs:
+                 *   If there are multiple wanted sides, first come first fit is applied 
+                 *   This guarantee that there is only a unique rr_node 
+                 *   for the same input pin on multiple sides, and thus avoid multiple driver problems
+                 */
+                std::vector<e_side> wanted_sides;
+                if (grid.height() - 1 == y) { /* TOP side */
+                    wanted_sides.push_back(BOTTOM);
+                }
+                if (grid.width() - 1 == x) { /* RIGHT side */
+                    wanted_sides.push_back(LEFT);
+                }
+                if (0 == y) { /* BOTTOM side */
+                    wanted_sides.push_back(TOP);
+                }
+                if (0 == x) { /* LEFT side */
+                    wanted_sides.push_back(RIGHT);
+                }
+
+                /* If wanted sides is empty still, this block does not have specific wanted sides,
+                 * Deposit all the sides
+                 */
+                if (true == wanted_sides.empty()) {
+                    for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
+                        wanted_sides.push_back(side);
+                    }
+                }
+
                 //Assign indices for IPINs and OPINs at all offsets from root
                 for (int ipin = 0; ipin < type->num_pins; ++ipin) {
-                    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                        int x_tile = x + width_offset;
-                        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                            int y_tile = y + height_offset;
-                            for (e_side side : SIDES) {
+                    bool assigned_to_rr_node = false;
+                    for (e_side side : wanted_sides) {
+                        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                            int x_tile = x + width_offset;
+                            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                                int y_tile = y + height_offset;
                                 if (type->pinloc[width_offset][height_offset][side][ipin]) {
                                     int iclass = type->pin_class[ipin];
                                     auto class_type = type->class_inf[iclass].type;
@@ -1096,18 +1150,33 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                                     if (class_type == DRIVER) {
                                         indices[OPIN][x_tile][y_tile][side].push_back(*index);
                                         indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
+                                        assigned_to_rr_node = true;
                                     } else {
                                         VTR_ASSERT(class_type == RECEIVER);
-                                        indices[IPIN][x_tile][y_tile][side].push_back(*index);
                                         indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
+                                        indices[IPIN][x_tile][y_tile][side].push_back(*index);
+                                        assigned_to_rr_node = true;
                                     }
-                                    ++(*index);
                                 } else {
                                     indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
                                     indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
                                 }
                             }
                         }
+                    }
+                    /* A pin may locate on multiple sides of a tile.
+                     * Instead of allocating multiple rr_nodes for the pin,
+                     * we just create a rr_node and make it indexable on these sides
+                     * As such, we can avoid redundant rr_node to be allocated
+                     * and multiple nets to be mapped to the pin
+                     *
+                     * Considering that some pin could be just dangling, we do not need
+                     * to create a void rr_node for it.
+                     * As such, we only allocate a rr node when the pin is indeed located
+                     * on at least one side
+                     */
+                    if (assigned_to_rr_node) {
+                        ++(*index);
                     }
                 }
 
@@ -1117,8 +1186,15 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                     for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                         int y_tile = y + height_offset;
                         for (e_side side : SIDES) {
-                            VTR_ASSERT(indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
-                            VTR_ASSERT(indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
+                            //Note that the fast look-up stores all the indices for the pins on each side
+                            //It has a fixed size (either 0 or the number of pins)
+                            //Case 0 pins: the side is skipped as no pins are located on it
+                            //Case number of pins: there are pins on this side
+                            //and data query can be applied any pin id on this side
+                            VTR_ASSERT((indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
+                                       || (0 == indices[IPIN][x_tile][y_tile][side].size()));
+                            VTR_ASSERT((indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
+                                       || (0 == indices[OPIN][x_tile][y_tile][side].size()));
                         }
                     }
                 }
@@ -1263,30 +1339,36 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
 
                         } else {
                             VTR_ASSERT(rr_node.type() == IPIN || rr_node.type() == OPIN);
-                            if (rr_node.xlow() != x) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
-                                          rr_node.xlow(),
-                                          x,
-                                          describe_rr_node(inode).c_str());
-                            }
-
-                            if (rr_node.ylow() != y) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node ylow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
-                                          rr_node.ylow(),
-                                          y,
-                                          describe_rr_node(inode).c_str());
-                            }
+                            /* As we allow a pin to be indexable on multiple sides,
+                             * This check code should be invalid
+                             * if (rr_node.xlow() != x) {
+                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
+                             *               rr_node.xlow(),
+                             *               x,
+                             *               describe_rr_node(inode).c_str());
+                             * }
+                             *
+                             * if (rr_node.ylow() != y) {
+                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node ylow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
+                             *               rr_node.ylow(),
+                             *               y,
+                             *               describe_rr_node(inode).c_str());
+                             * }
+                             */
                         }
 
                         if (rr_type == IPIN || rr_type == OPIN) {
-                            if (rr_node.side() != side) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                                          SIDE_STRING[rr_node.side()],
-                                          SIDE_STRING[side],
-                                          describe_rr_node(inode).c_str());
-                            } else {
-                                VTR_ASSERT(rr_node.side() == side);
-                            }
+                            /* As we allow a pin to be indexable on multiple sides,
+                             * This check code should be invalid
+                             * if (rr_node.side() != side) {
+                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%s/%s): %s",
+                             *               SIDE_STRING[rr_node.side()],
+                             *               SIDE_STRING[side],
+                             *               describe_rr_node(inode).c_str());
+                             * } else {
+                             *     VTR_ASSERT(rr_node.side() == side);
+                             * }
+                             */
                         } else { //Non-pin's don't have sides, and should only be in side 0
                             if (side != SIDES[0]) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "Non-Pin RR node in rr_node_indices found with non-default side %s: %s",
@@ -1325,7 +1407,10 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
                           count,
                           describe_rr_node(inode).c_str());
             }
-        } else {
+            /* As we allow a pin to be indexable on multiple sides,
+             * This check code should not be applied to input and output pins
+             */
+        } else if ((OPIN != rr_node.type()) && (IPIN != rr_node.type())) {
             if (count != rr_node.length() + 1) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node length (%d) and count within rr_node_indices (%d, should be length + 1): %s",
                           rr_node.length(),

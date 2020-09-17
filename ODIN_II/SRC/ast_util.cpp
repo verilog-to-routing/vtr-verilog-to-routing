@@ -59,7 +59,7 @@ void update_tree_tag(ast_node_t* node, int high_level_block_type_to_search, int 
 
         if (tagged > -1) {
             node->far_tag = tagged;
-            node->high_number = node->line_number;
+            node->high_number = node->loc.line;
         }
 
         for (i = 0; i < node->num_children; i++)
@@ -132,7 +132,7 @@ void add_top_module_to_ast(ast_t* ast, ast_node_t* to_add) {
 /*---------------------------------------------------------------------------
  * (function: create_node_w_type)
  *-------------------------------------------------------------------------*/
-static ast_node_t* create_node_w_type(ids id, int line_number, int file_number, bool update_unique_count) {
+ast_node_t* create_node_w_type(ids id, loc_t loc) {
     oassert(id != NO_ID);
 
     static long unique_count = 0;
@@ -142,23 +142,41 @@ static ast_node_t* create_node_w_type(ids id, int line_number, int file_number, 
     new_node = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
     oassert(new_node != NULL);
 
-    initial_node(new_node, id, line_number, file_number, unique_count);
+    new_node->type = id;
+    new_node->children = NULL;
+    new_node->num_children = 0;
+    new_node->unique_count = unique_count++; //++count_id;
+    new_node->loc = loc;
+    new_node->far_tag = 0;
+    new_node->high_number = 0;
+    new_node->hb_port = 0;
+    new_node->net_node = 0;
+    new_node->types.vnumber = nullptr;
+    new_node->types.identifier = NULL;
+    new_node->types.hierarchy = NULL;
+    new_node->chunk_size = 1;
+    new_node->identifier_node = NULL;
+    /* init value */
+    new_node->types.variable.initial_value = nullptr;
+    /* reset flags */
+    new_node->types.variable.is_parameter = false;
+    new_node->types.variable.is_string = false;
+    new_node->types.variable.is_localparam = false;
+    new_node->types.variable.is_defparam = false;
+    new_node->types.variable.is_port = false;
+    new_node->types.variable.is_input = false;
+    new_node->types.variable.is_output = false;
+    new_node->types.variable.is_inout = false;
+    new_node->types.variable.is_wire = false;
+    new_node->types.variable.is_reg = false;
+    new_node->types.variable.is_genvar = false;
+    new_node->types.variable.is_memory = false;
+    new_node->types.variable.signedness = UNSIGNED;
 
-    if (update_unique_count)
-        unique_count += 1;
+    new_node->types.concat.num_bit_strings = 0;
+    new_node->types.concat.bit_strings = NULL;
 
     return new_node;
-}
-
-ast_node_t* create_node_w_type_no_count(ids id, int line_number, int file_number) {
-    return create_node_w_type(id, line_number, file_number, false);
-}
-
-/*---------------------------------------------------------------------------
- * (function: create_node_w_type)
- *-------------------------------------------------------------------------*/
-ast_node_t* create_node_w_type(ids id, int line_number, int file_number) {
-    return create_node_w_type(id, line_number, file_number, true);
 }
 
 /*---------------------------------------------------------------------------
@@ -167,25 +185,31 @@ ast_node_t* create_node_w_type(ids id, int line_number, int file_number) {
  *-------------------------------------------------------------------------*/
 void free_assignement_of_node_keep_tree(ast_node_t* node) {
     if (node) {
-        int i;
+        /* nuke the identifier node first */
+        node->identifier_node = free_single_node(node->identifier_node);
+
+        /* free the identifier */
         vtr::free(node->types.identifier);
-        switch (node->type) {
-            case NUMBERS:
-                if (node->types.vnumber != nullptr)
-                    delete node->types.vnumber;
-                node->types.vnumber = nullptr;
-                break;
+        node->types.identifier = NULL;
 
-            case CONCATENATE:
-                for (i = 0; i < node->types.concat.num_bit_strings; i++) {
-                    if (node->types.concat.bit_strings[i])
-                        vtr::free(node->types.concat.bit_strings[i]);
-                }
-                vtr::free(node->types.concat.bit_strings);
+        /* initialization vlalues */
+        if (node->types.variable.initial_value != nullptr)
+            delete node->types.variable.initial_value;
+        node->types.variable.initial_value = nullptr;
 
-            default:
-                break;
+        /* numbered values */
+        if (node->types.vnumber != nullptr)
+            delete node->types.vnumber;
+        node->types.vnumber = nullptr;
+
+        /* concats */
+        for (int i = 0; i < node->types.concat.num_bit_strings; i++) {
+            if (node->types.concat.bit_strings[i])
+                vtr::free(node->types.concat.bit_strings[i]);
         }
+        vtr::free(node->types.concat.bit_strings);
+        node->types.concat.bit_strings = NULL;
+        node->types.concat.num_bit_strings = 0;
     }
 }
 /*---------------------------------------------------------------------------
@@ -257,8 +281,8 @@ ast_node_t* free_resolved_tree(ast_node_t* node) {
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_id)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* create_tree_node_id(char* string, int line_number, int /*file_number*/) {
-    ast_node_t* new_node = create_node_w_type(IDENTIFIERS, line_number, current_parse_file);
+ast_node_t* create_tree_node_id(char* string, loc_t loc) {
+    ast_node_t* new_node = create_node_w_type(IDENTIFIERS, loc);
     new_node->types.identifier = string;
 
     return new_node;
@@ -267,8 +291,8 @@ ast_node_t* create_tree_node_id(char* string, int line_number, int /*file_number
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* create_tree_node_string(char* input_number, int line_number, int /* file_number */) {
-    ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
+ast_node_t* create_tree_node_string(char* input_number, loc_t loc) {
+    ast_node_t* new_node = create_node_w_type(NUMBERS, loc);
     new_node->types.vnumber = new VNumber(input_number);
     new_node->types.variable.is_string = true;
     return new_node;
@@ -277,8 +301,8 @@ ast_node_t* create_tree_node_string(char* input_number, int line_number, int /* 
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* create_tree_node_number(char* input_number, int line_number, int /* file_number */) {
-    ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
+ast_node_t* create_tree_node_number(char* input_number, loc_t loc) {
+    ast_node_t* new_node = create_node_w_type(NUMBERS, loc);
     new_node->types.vnumber = new VNumber(input_number);
 
     return new_node;
@@ -287,8 +311,8 @@ ast_node_t* create_tree_node_number(char* input_number, int line_number, int /* 
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* create_tree_node_number(VNumber& input_number, int line_number, int /* file_number */) {
-    ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
+ast_node_t* create_tree_node_number(VNumber& input_number, loc_t loc) {
+    ast_node_t* new_node = create_node_w_type(NUMBERS, loc);
     new_node->types.vnumber = new VNumber(input_number);
 
     return new_node;
@@ -297,8 +321,8 @@ ast_node_t* create_tree_node_number(VNumber& input_number, int line_number, int 
 /*---------------------------------------------------------------------------------------------
  * (function: create_tree_node_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* create_tree_node_number(long input_number, int line_number, int /* file_number */) {
-    ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
+ast_node_t* create_tree_node_number(long input_number, loc_t loc) {
+    ast_node_t* new_node = create_node_w_type(NUMBERS, loc);
     new_node->types.vnumber = new VNumber(input_number);
 
     return new_node;
@@ -408,16 +432,16 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
             char* temp_string = make_full_ref_name(NULL, NULL, NULL, concat_top->children[i]->types.identifier, -1);
             ast_node_t* var_declare = resolve_hierarchical_name_reference(local_ref, temp_string);
             if (var_declare == NULL) {
-                error_message(AST, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
+                error_message(AST, concat_top->loc, "Missing declaration of this symbol %s\n", temp_string);
             } else {
-                if (var_declare->children[1] == NULL) {
+                if (var_declare->children[0] == NULL) {
                     concat_top->types.concat.num_bit_strings++;
                     concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
                     concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], -1, instance_name_prefix, local_ref);
-                } else if (var_declare->children[3] == NULL) {
+                } else if (var_declare->children[2] == NULL) {
                     /* reverse thorugh the range since highest bit in index will be lower in the string indx */
-                    rnode[1] = var_declare->children[1];
-                    rnode[2] = var_declare->children[2];
+                    rnode[1] = var_declare->children[0];
+                    rnode[2] = var_declare->children[1];
                     oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 
                     for (j = rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value(); j >= 0; j--) {
@@ -435,8 +459,8 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
             concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
             concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], 0, instance_name_prefix, local_ref);
         } else if (concat_top->children[i]->type == RANGE_REF) {
-            rnode[1] = concat_top->children[i]->children[1];
-            rnode[2] = concat_top->children[i]->children[2];
+            rnode[1] = concat_top->children[i]->children[0];
+            rnode[2] = concat_top->children[i]->children[1];
             oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
             oassert(rnode[1]->types.vnumber->get_value() >= rnode[2]->types.vnumber->get_value());
             int width = abs(rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()) + 1;
@@ -457,7 +481,7 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
                     concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
                 }
             } else {
-                error_message(AST, concat_top->line_number, concat_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
+                error_message(AST, concat_top->loc, "%s", "Unsized constants cannot be concatenated.\n");
             }
         } else if (concat_top->children[i]->type == CONCATENATE) {
             /* forward through list since we build concatenate list in idx order of MSB at index 0 and LSB at index list_size */
@@ -467,7 +491,7 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
                 concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
             }
         } else {
-            error_message(AST, concat_top->line_number, concat_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
+            error_message(AST, concat_top->loc, "%s", "Unsupported operation within a concatenation.\n");
         }
     }
 }
@@ -507,13 +531,13 @@ char* get_name_of_var_declare_at_bit(ast_node_t* var_declare, int bit) {
     char* return_string = NULL;
 
     /* calculate the port details */
-    if (var_declare->children[1] == NULL) {
+    if (var_declare->children[0] == NULL) {
         oassert(bit == 0);
-        return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
-    } else if (var_declare->children[3] == NULL) {
-        oassert(var_declare->children[2]->type == NUMBERS);
-        return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, var_declare->children[2]->types.vnumber->get_value() + bit);
-    } else if (var_declare->children[3] != NULL) {
+        return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->identifier_node->types.identifier, -1);
+    } else if (var_declare->children[2] == NULL) {
+        oassert(var_declare->children[1]->type == NUMBERS);
+        return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->identifier_node->types.identifier, var_declare->children[1]->types.vnumber->get_value() + bit);
+    } else if (var_declare->children[2] != NULL) {
         /* MEMORY output */
         oassert(false);
     }
@@ -527,7 +551,7 @@ char* get_name_of_var_declare_at_bit(ast_node_t* var_declare, int bit) {
  *-------------------------------------------------------------------------------------------*/
 char* get_identifier(ast_node_t* node) {
     if (node->type == ARRAY_REF || node->type == RANGE_REF) {
-        return node->children[0]->types.identifier;
+        return node->identifier_node->types.identifier;
     } else {
         oassert(node->type == IDENTIFIERS);
         return node->types.identifier;
@@ -539,27 +563,29 @@ char* get_identifier(ast_node_t* node) {
  * 	Assume module connections can be one of: Array entry, Concat, Signal, Array range reference
  *-------------------------------------------------------------------------------------------*/
 char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_prefix, sc_hierarchy* local_ref) {
+    oassert(var_node);
+
     char* return_string = NULL;
     ast_node_t* rnode[3] = {0};
 
     // STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
 
     if (var_node->type == ARRAY_REF) {
-        oassert(var_node->children[0]->type == IDENTIFIERS);
-        oassert(var_node->children[1]->type == NUMBERS);
-        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, (int)var_node->children[1]->types.vnumber->get_value());
+        oassert(var_node->identifier_node != NULL);
+        oassert(var_node->children[0]->type == NUMBERS);
+        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier, (int)var_node->children[0]->types.vnumber->get_value());
     } else if (var_node->type == RANGE_REF) {
         oassert(bit >= 0);
 
-        rnode[1] = var_node->children[1];
-        rnode[2] = var_node->children[2];
+        rnode[1] = var_node->children[0];
+        rnode[2] = var_node->children[1];
 
-        oassert(var_node->children[0]->type == IDENTIFIERS);
+        oassert(var_node->identifier_node != NULL);
         oassert(rnode[1]->type == NUMBERS);
         oassert(rnode[2]->type == NUMBERS);
         oassert(rnode[1]->types.vnumber->get_value() >= rnode[2]->types.vnumber->get_value() + bit);
 
-        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[2]->types.vnumber->get_value() + bit);
+        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier, rnode[2]->types.vnumber->get_value() + bit);
     } else if ((var_node->type == IDENTIFIERS) && (bit == -1)) {
         return_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
     } else if (var_node->type == IDENTIFIERS) {
@@ -567,14 +593,14 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
         int pin_index = 0;
 
         if ((symbol_node = resolve_hierarchical_name_reference(local_ref, var_node->types.identifier)) == NULL) {
-            error_message(AST, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
+            error_message(AST, var_node->loc, "Missing declaration of this symbol %s\n", var_node->types.identifier);
         }
 
-        if (symbol_node->children[1] == NULL) {
+        if (symbol_node->children[0] == NULL) {
             pin_index = bit;
-        } else if (symbol_node->children[3] == NULL) {
-            oassert(symbol_node->children[2]->type == NUMBERS);
-            pin_index = symbol_node->children[2]->types.vnumber->get_value() + bit;
+        } else if (symbol_node->children[2] == NULL) {
+            oassert(symbol_node->children[1]->type == NUMBERS);
+            pin_index = symbol_node->children[1]->types.vnumber->get_value() + bit;
         } else
             oassert(false);
 
@@ -602,7 +628,7 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
     } else {
         return_string = NULL;
 
-        error_message(AST, var_node->line_number, var_node->file_number, "Unsupported variable type. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
+        error_message(AST, var_node->loc, "Unsupported variable type. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
     }
 
     return return_string;
@@ -642,7 +668,7 @@ char* get_name_of_pin_number(ast_node_t* var_node, int bit) {
             return_string = vtr::strdup(ZERO_PAD_ZERO);
             break;
         default:
-            error_message(AST, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_vstring('B').c_str());
+            error_message(AST, var_node->loc, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_vstring('B').c_str());
             break;
     }
 
@@ -665,15 +691,15 @@ char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, 
         width = 1;
         return_string = (char**)vtr::malloc(sizeof(char*));
 
-        rnode[1] = var_node->children[1];
+        rnode[1] = var_node->children[0];
         oassert(rnode[1] && rnode[1]->type == NUMBERS);
-        oassert(var_node->children[0]->type == IDENTIFIERS);
+        oassert(var_node->identifier_node != NULL);
 
-        return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.vnumber->get_value());
+        return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier, rnode[1]->types.vnumber->get_value());
     } else if (var_node->type == RANGE_REF) {
-        rnode[0] = var_node->children[0];
-        rnode[1] = var_node->children[1];
-        rnode[2] = var_node->children[2];
+        rnode[0] = var_node->identifier_node;
+        rnode[1] = var_node->children[0];
+        rnode[2] = var_node->children[1];
 
         oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
         width = abs(rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()) + 1;
@@ -692,21 +718,21 @@ char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, 
         ast_node_t* sym_node = resolve_hierarchical_name_reference(local_ref, temp_string);
 
         if (sym_node == NULL) {
-            error_message(AST, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
+            error_message(AST, var_node->loc, "Missing declaration of this symbol %s\n", temp_string);
         }
 
         vtr::free(temp_string);
 
         if (sym_node && sym_node->children && sym_node->type) {
-            if (sym_node->children[1] == NULL || sym_node->type == BLOCKING_STATEMENT) {
+            if (sym_node->children[0] == NULL || sym_node->type == BLOCKING_STATEMENT) {
                 width = 1;
                 return_string = (char**)vtr::malloc(sizeof(char*) * width);
                 return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
-            } else if (sym_node->children[2] != NULL && sym_node->children[3] == NULL) {
+            } else if (sym_node->children[1] != NULL && sym_node->children[2] == NULL) {
                 int index = 0;
 
-                rnode[1] = sym_node->children[1];
-                rnode[2] = sym_node->children[2];
+                rnode[1] = sym_node->children[0];
+                rnode[2] = sym_node->children[1];
                 oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 
                 width = (rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value() + 1);
@@ -719,7 +745,7 @@ char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, 
                 }
             }
 
-            else if (sym_node->children[3] != NULL) {
+            else if (sym_node->children[2] != NULL) {
                 oassert(false);
             }
         }
@@ -792,7 +818,7 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
                 if (node_is_constant(var_declare)) {
                     assignment_size = var_declare->types.vnumber->size();
                 } else {
-                    error_message(AST, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
+                    error_message(AST, node->loc, "Parameter %s is not a constant expression\n", node->types.identifier);
                 }
 
                 free_whole_tree(var_declare);
@@ -805,17 +831,11 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
                 break;
             }
 
-            error_message(AST, node->line_number, node->file_number, "Missing declaration of this symbol %s\n", node->types.identifier);
+            error_message(AST, node->loc, "Missing declaration of this symbol %s\n", node->types.identifier);
         } break;
 
         case ARRAY_REF: {
-            ast_node_t* sym_node = resolve_hierarchical_name_reference(local_ref, node->children[0]->types.identifier);
-            if (sym_node != NULL) {
-                var_declare = sym_node;
-                break;
-            }
-
-            error_message(AST, node->children[0]->line_number, node->children[0]->file_number, "Missing declaration of this symbol %s\n", node->children[0]->types.identifier);
+            assignment_size = get_size_of_variable(node->identifier_node, local_ref);
         } break;
 
         case RANGE_REF: {
@@ -832,11 +852,11 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
             break;
     }
 
-    if (var_declare && !(var_declare->children[1])) {
+    if (var_declare && !(var_declare->children[0])) {
         assignment_size = 1;
-    } else if (var_declare && var_declare->children[1] && var_declare->children[2]) {
-        ast_node_t* node_max = var_declare->children[1];
-        ast_node_t* node_min = var_declare->children[2];
+    } else if (var_declare && var_declare->children[0] && var_declare->children[1]) {
+        ast_node_t* node_max = var_declare->children[0];
+        ast_node_t* node_min = var_declare->children[1];
 
         oassert(node_min->type == NUMBERS && node_max->type == NUMBERS);
         long range_max = node_max->types.vnumber->get_value();
@@ -902,14 +922,17 @@ ast_node_t* ast_node_copy(ast_node_t* node) {
     }
 
     //Copy node
-    node_copy = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
+    node_copy = create_node_w_type(node->type, node->loc);
     memcpy(node_copy, node, sizeof(ast_node_t));
 
     //Copy contents
-    if (node->type == NUMBERS && node->types.vnumber)
+    if (node->types.vnumber)
         node_copy->types.vnumber = new VNumber((*node->types.vnumber));
+    if (node->types.variable.initial_value)
+        node_copy->types.variable.initial_value = new VNumber((*node->types.variable.initial_value));
 
     node_copy->types.identifier = vtr::strdup(node->types.identifier);
+    node_copy->identifier_node = ast_node_deep_copy(node_copy->identifier_node);
     node_copy->children = NULL;
 
     return node_copy;
@@ -931,14 +954,14 @@ static void expand_power(ast_node_t** node) {
     if (expression1->type == NUMBERS) {
         int len1 = expression1->types.vnumber->get_value();
         long powRes = pow(len1, len);
-        new_node = create_tree_node_number(powRes, (*node)->line_number, (*node)->file_number);
+        new_node = create_tree_node_number(powRes, (*node)->loc);
     } else {
         if (len == 0) {
-            new_node = create_tree_node_number(1L, (*node)->line_number, (*node)->file_number);
+            new_node = create_tree_node_number(1L, (*node)->loc);
         } else {
             new_node = ast_node_deep_copy(expression1);
             for (int i = 1; i < len; i++) {
-                ast_node_t* temp_node = create_node_w_type(BINARY_OPERATION, (*node)->line_number, (*node)->file_number);
+                ast_node_t* temp_node = create_node_w_type(BINARY_OPERATION, (*node)->loc);
                 temp_node->types.operation.op = MULTIPLY;
 
                 allocate_children_to_node(temp_node, {ast_node_deep_copy(expression1), new_node});
@@ -994,13 +1017,13 @@ static void check_binary_operation(ast_node_t** node) {
                 break;
             case DIVIDE:
                 if (!node_is_constant((*node)->children[1]))
-                    error_message(AST, (*node)->line_number, (*node)->file_number, "%s", "Odin only supports constant expressions as divisors\n");
+                    error_message(AST, (*node)->loc, "%s", "Odin only supports constant expressions as divisors\n");
                 if ((*node)->children[0]->type == IDENTIFIERS && (*node)->children[1]->type == NUMBERS)
                     check_node_number((*node), (*node)->children[1], 3); // 3 means divide
                 break;
             case POWER:
                 if (!node_is_constant((*node)->children[1]))
-                    error_message(AST, (*node)->line_number, (*node)->file_number, "%s", "Odin only supports constant expressions as exponents\n");
+                    error_message(AST, (*node)->loc, "%s", "Odin only supports constant expressions as exponents\n");
                 expand_power(node);
                 break;
             default:
@@ -1080,7 +1103,7 @@ ast_node_t* fold_unary(ast_node_t** node) {
 
             case CLOG2:
                 if (voperand_0.size() > ODIN_STD_BITWIDTH)
-                    warning_message(AST, (*node)->line_number, (*node)->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n", voperand_0.size(), ODIN_STD_BITWIDTH);
+                    warning_message(AST, (*node)->loc, "argument is %ld-bits but ODIN limit is %lu-bits \n", voperand_0.size(), ODIN_STD_BITWIDTH);
 
                 vresult = VNumber(clog2(voperand_0.get_value(), voperand_0.size()));
                 success = true;
@@ -1101,12 +1124,12 @@ ast_node_t* fold_unary(ast_node_t** node) {
         }
 
         if (success) {
-            ast_node_t* new_num = create_tree_node_number(vresult, (*node)->line_number, (*node)->file_number);
+            ast_node_t* new_num = create_tree_node_number(vresult, (*node)->loc);
             return new_num;
         }
     } else if (op_id == CLOG2) {
         /* $clog2() argument must be a constant expression */
-        error_message(AST, (*node)->line_number, current_parse_file, "%s", "Argument must be constant\n");
+        error_message(AST, (*node)->loc, "%s", "Argument must be constant\n");
     }
 
     return NULL;
@@ -1185,6 +1208,11 @@ ast_node_t* fold_binary(ast_node_t** node) {
                 success = true;
                 break;
 
+            case ASL:
+                vresult = V_SIGNED_SHIFT_LEFT(voperand_0, voperand_1);
+                success = true;
+                break;
+
             case SL:
                 vresult = V_SHIFT_LEFT(voperand_0, voperand_1);
                 success = true;
@@ -1260,7 +1288,7 @@ ast_node_t* fold_binary(ast_node_t** node) {
         }
 
         if (success) {
-            ast_node_t* new_num = create_tree_node_number(vresult, (*node)->line_number, (*node)->file_number);
+            ast_node_t* new_num = create_tree_node_number(vresult, (*node)->loc);
             return new_num;
         }
     } else {
@@ -1280,53 +1308,17 @@ bool node_is_constant(ast_node_t* node) {
     return false;
 }
 
-/*---------------------------------------------------------------------------
- * (function: initial_node)
- *-------------------------------------------------------------------------*/
-void initial_node(ast_node_t* new_node, ids id, int line_number, int file_number, int unique_counter) {
-    new_node->type = id;
-    new_node->children = NULL;
-    new_node->num_children = 0;
-    new_node->unique_count = unique_counter; //++count_id;
-    new_node->line_number = line_number;
-    new_node->file_number = file_number;
-    new_node->far_tag = 0;
-    new_node->high_number = 0;
-    new_node->hb_port = 0;
-    new_node->net_node = 0;
-    new_node->types.vnumber = nullptr;
-    new_node->types.identifier = NULL;
-    new_node->types.hierarchy = NULL;
-    new_node->chunk_size = 1;
-    /* reset flags */
-    new_node->types.variable.is_parameter = false;
-    new_node->types.variable.is_string = false;
-    new_node->types.variable.is_localparam = false;
-    new_node->types.variable.is_defparam = false;
-    new_node->types.variable.is_port = false;
-    new_node->types.variable.is_input = false;
-    new_node->types.variable.is_output = false;
-    new_node->types.variable.is_inout = false;
-    new_node->types.variable.is_wire = false;
-    new_node->types.variable.is_reg = false;
-    new_node->types.variable.is_integer = false;
-    new_node->types.variable.is_genvar = false;
-    new_node->types.variable.is_memory = false;
-    new_node->types.variable.is_signed = false;
-    new_node->types.variable.is_initialized = false;
-}
-
 void assert_constant_positionnal_args(ast_node_t* node, long arg_count) {
     if (!node->children) {
-        error_message(AST, node->line_number, node->file_number,
+        error_message(AST, node->loc,
                       "%s node expects arguments\n", ast_node_name_based_on_ids(node));
     } else if (node->num_children < arg_count) {
-        error_message(AST, node->line_number, node->file_number,
+        error_message(AST, node->loc,
                       "%s node expects %ld positional arguments\n", ast_node_name_based_on_ids(node), arg_count);
     } else {
         for (long i = 0; i < arg_count; i += 1) {
             if (!node_is_constant(node->children[i])) {
-                error_message(AST, node->line_number, node->file_number,
+                error_message(AST, node->loc,
                               "%s node expects a constant at positional arguments [%ld]\n", ast_node_name_based_on_ids(node), i);
             }
         }
@@ -1338,39 +1330,52 @@ void assert_constant_positionnal_args(ast_node_t* node, long arg_count) {
  * a simple printf would not be able to do this since escaped characters are compile time
  */
 void c_simple_print(std::string str) {
+    size_t str_size = str.size();
     size_t start = 0;
     while (start != std::string::npos) {
         size_t format_char_index = str.find_first_of('\\', start);
         size_t next_char = format_char_index;
-        printf("%s", str.substr(start, format_char_index).c_str());
+        if (start != format_char_index) {
+            printf("%s", str.substr(start, format_char_index).c_str());
+        }
         // print the string
         if (format_char_index != std::string::npos) {
-            // try and see if its an octal number
-            char buffer[4] = {
-                str[format_char_index + 1],
-                str[format_char_index + 2],
-                str[format_char_index + 3],
-                0};
-            next_char = format_char_index + 4;
-            char* endptr = NULL;
-            char octal_value = (char)strtoul(buffer, &endptr, 8);
-            if (endptr == &buffer[3]) {
-                // if it is an octal number print the octal char
-                printf("%c", octal_value);
-            } else {
-                next_char = format_char_index + 2;
-                switch (str[format_char_index + 1]) {
-                    case 'n':
-                        printf("\n");
-                        break;
-                    case 't':
-                        printf("\t");
-                        break;
-                    default:
+            next_char = format_char_index + 2;
+            switch (str[format_char_index + 1]) {
+                case 'n':
+                    printf("\n");
+                    break;
+                case 't':
+                    printf("\t");
+                    break;
+                default:
+                    // can only be octal if there is 3+ chars following
+                    if ((str_size - 3) >= format_char_index) {
+                        // try and see if its an octal number
+                        char buffer[4] = {
+                            str[format_char_index + 1],
+                            str[format_char_index + 2],
+                            str[format_char_index + 3],
+                            0};
+                        next_char = format_char_index + 4;
+                        char* endptr = NULL;
+                        char octal_value = (char)strtoul(buffer, &endptr, 8);
+                        if (endptr == &buffer[3]) {
+                            // if it is an octal number print the octal char
+                            printf("%c", octal_value);
+                        } else {
+                            // otherwise just print the character
+                            next_char = format_char_index + 2;
+                            printf("%c", str[format_char_index + 1]);
+                            break;
+                        }
+
+                    } else {
                         // otherwise just print the character
+                        next_char = format_char_index + 2;
                         printf("%c", str[format_char_index + 1]);
                         break;
-                }
+                    }
             }
         }
         start = next_char;
@@ -1384,7 +1389,7 @@ void c_display(ast_node_t* node) {
      * but we will just assume, the programmer should know to use a string
      * and internally both are just numbers
      */
-    std::string format_str = node->children[0]->types.vnumber->to_printable();
+    std::string format_str = node->children[0]->types.vnumber->to_vstring('s');
     ast_node_t* argv_nodes = node->children[1];
     long argc_node = 0;
     while (!format_str.empty()) {
@@ -1400,7 +1405,7 @@ void c_display(ast_node_t* node) {
             if (format_input == "%%") {
                 printf("%%");
             } else if (!argv_nodes || argc_node >= argv_nodes->num_children || argv_nodes->children[argc_node] == NULL) {
-                error_message(AST, node->children[0]->line_number, node->children[0]->file_number,
+                error_message(AST, node->children[0]->loc,
                               "specifier character [%ld] has no argument associated with it", argc_node);
             } else {
                 ast_node_t* argv = argv_nodes->children[argc_node];
@@ -1413,7 +1418,7 @@ void c_display(ast_node_t* node) {
                     case 'c': // fallthrough
                     case 'b': {
                         if (!node_is_constant(argv)) {
-                            error_message(AST, argv->line_number, argv->file_number,
+                            error_message(AST, argv->loc,
                                           "specifier character [%ld] is not associated with a constant, node is %s",
                                           argc_node, ast_node_name_based_on_ids(argv));
                         }
@@ -1421,7 +1426,7 @@ void c_display(ast_node_t* node) {
                         break;
                     }
                     case 'v': {
-                        warning_message(AST, argv->line_number, argv->file_number,
+                        warning_message(AST, argv->loc,
                                         "%s", "Odin does not use signal strength since it is unsynthesizable, printing max strenght");
                         printf("7");
 
@@ -1439,7 +1444,7 @@ void c_display(ast_node_t* node) {
                     }
                     case 't': {
                         if (!node_is_constant(argv)) {
-                            error_message(AST, argv->line_number, argv->file_number,
+                            error_message(AST, argv->loc,
                                           "specifier character [%ld] is not associated with a constant, node is %s",
                                           argc_node, ast_node_name_based_on_ids(argv));
                         }
@@ -1448,7 +1453,7 @@ void c_display(ast_node_t* node) {
                         break;
                     }
                     default:
-                        error_message(AST, argv->line_number, argv->file_number,
+                        error_message(AST, argv->loc,
                                       "%s\n", "invalid specifier characer, one of: d, b, h, o, c, v[broken], m, s ,t[broken]");
                         break;
                 }
@@ -1526,13 +1531,13 @@ long resolve_concat_sizes(ast_node_t* node_top, sc_hierarchy* local_ref) {
             case NUMBERS: {
                 /* verify that the number that this represents is sized */
                 if (!(node_top->types.vnumber->is_defined_size())) {
-                    error_message(AST, node_top->line_number, node_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
+                    error_message(AST, node_top->loc, "%s", "Unsized constants cannot be concatenated.\n");
                 }
                 concatenation_size += node_top->types.vnumber->size();
             } break;
 
             default: {
-                error_message(AST, node_top->line_number, node_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
+                error_message(AST, node_top->loc, "%s", "Unsupported operation within a concatenation.\n");
             }
         }
     }

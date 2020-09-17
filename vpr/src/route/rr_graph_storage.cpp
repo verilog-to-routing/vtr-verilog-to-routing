@@ -549,6 +549,36 @@ const char* t_rr_graph_view::node_type_string(RRNodeId id) const {
     return rr_node_typename[node_type(id)];
 }
 
+const char* t_rr_graph_storage::node_direction_string(RRNodeId id) const {
+    e_direction direction = node_direction(id);
+
+    if (direction == e_direction::INC_DIRECTION) {
+        return "INC_DIR";
+    } else if (direction == e_direction::DEC_DIRECTION) {
+        return "DEC_DIR";
+    } else if (direction == e_direction::BI_DIRECTION) {
+        return "BI_DIR";
+    }
+
+    VTR_ASSERT(direction == e_direction::NO_DIRECTION);
+    return "NO_DIR";
+}
+
+const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
+    return SIDE_STRING[node_side(id)];
+}
+
+float t_rr_graph_storage::node_R(RRNodeId id) const {
+    auto& device_ctx = g_vpr_ctx.device();
+    return device_ctx.rr_rc_data[node_rc_index(id)].R;
+}
+
+float t_rr_graph_storage::node_C(RRNodeId id) const {
+    auto& device_ctx = g_vpr_ctx.device();
+    VTR_ASSERT(node_rc_index(id) < (short)device_ctx.rr_rc_data.size());
+    return device_ctx.rr_rc_data[node_rc_index(id)].C;
+}
+
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
@@ -708,4 +738,69 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_));
+}
+
+// Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
+// and `inverse_order`, its inverse (new -> old), update the t_rr_graph_storage
+// data structure to an isomorphic graph using the new RRNodeId's.
+//
+// Because the RRNodeId's affect the memory layout, this can be used to
+// optimize cache locality.
+//
+// Preconditions:
+//   order[inverse_order[x]] == x
+//   inverse_order[order[x]] == x
+//   x != y <===> order[x] != order[y]
+//
+// NOTE: Re-ordering will invalidate any external references, so this
+//       should generally be called before creating such references.
+void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
+                                 const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
+    VTR_ASSERT_SAFE(validate());
+    VTR_ASSERT(order.size() == inverse_order.size());
+    {
+        auto old_node_storage = node_storage_;
+
+        // Reorder nodes
+        for (size_t i = 0; i < node_storage_.size(); i++) {
+            auto n = RRNodeId(i);
+            VTR_ASSERT(n == inverse_order[order[n]]);
+            node_storage_[order[n]] = old_node_storage[n];
+        }
+    }
+    {
+        auto old_node_first_edge = node_first_edge_;
+        auto old_edge_src_node = edge_src_node_;
+        auto old_edge_dest_node = edge_dest_node_;
+        auto old_edge_switch = edge_switch_;
+        RREdgeId cur_edge(0);
+
+        // Reorder edges by source node
+        for (size_t i = 0; i < node_storage_.size(); i++) {
+            node_first_edge_[RRNodeId(i)] = cur_edge;
+            auto n = inverse_order[RRNodeId(i)];
+            for (auto e = old_node_first_edge[n];
+                 e < old_node_first_edge[RRNodeId(size_t(n) + 1)];
+                 e = RREdgeId(size_t(e) + 1)) {
+                edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?
+                edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
+                edge_switch_[cur_edge] = old_edge_switch[e];
+                cur_edge = RREdgeId(size_t(cur_edge) + 1);
+            }
+        }
+    }
+    {
+        auto old_node_ptc = node_ptc_;
+        for (size_t i = 0; i < node_ptc_.size(); i++) {
+            node_ptc_[order[RRNodeId(i)]] = old_node_ptc[RRNodeId(i)];
+        }
+    }
+    {
+        auto old_node_fan_in = node_fan_in_;
+        for (size_t i = 0; i < node_fan_in_.size(); i++) {
+            node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
+        }
+    }
+
+    VTR_ASSERT_SAFE(validate());
 }

@@ -1,5 +1,5 @@
-The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks and 
-architectures are distributed seperately from VTR due to their large size.
+The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks
+are distributed seperately from VTR due to their large size.
 
 To integrate them into VTR run:
 
@@ -18,8 +18,3 @@ and
 where 'titan_blif' contains the main Titan23 benchmarks, and 'titan_other_blif' contains smaller 
 titan-like benchmarks which are useful for testing (but should not be used for architecture and 
 CAD evaluation).
-
-The architectures are extracted to:
-    <vtr>/vtr_flow/arch/titan/
-
-where <vtr> is the root of the VTR source tree.

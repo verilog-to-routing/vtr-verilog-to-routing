@@ -12,20 +12,20 @@
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 class Netlist;
 
-//A signal index in a port
+///@brief A signal index in a port
 typedef unsigned BitIndex;
 
-//The type of a port in the Netlist
+///@brief The type of a port in the Netlist
 enum class PortType : char {
-    INPUT,  //The port is a data-input
-    OUTPUT, //The port is an output (usually data, but potentially a clock)
-    CLOCK   //The port is an input clock
+    INPUT,  ///<The port is a data-input
+    OUTPUT, ///<The port is an output (usually data, but potentially a clock)
+    CLOCK   ///<The port is an input clock
 };
 
 enum class PinType : char {
-    DRIVER, //The pin drives a net
-    SINK,   //The pin is a net sink
-    OPEN    //The pin is an open connection (undecided)
+    DRIVER, ///<The pin drives a net
+    SINK,   ///<The pin is a net sink
+    OPEN    ///<The pin is an open connection (undecided)
 };
 
 #endif

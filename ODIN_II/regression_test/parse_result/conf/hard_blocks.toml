@@ -1,0 +1,20 @@
+#########
+# we use a default of -1 since odin will report 0 if they are enabled but unused.
+# -1 will allow us to see wether or not they were included
+
+["Adder"]
+    regex = "Number of <ADD> node: (\d+)"
+    default = -1
+
+["Multiplier"]
+    regex = "Number of <(?:MULTIPLY|MUL)> node: (\d+)"
+    default = -1
+
+["Memory"]
+    regex = "Number of <(?:MEMORY|MEM)> node: (\d+)"
+    default = -1
+
+["Hard Ip"]
+    regex = "Number of <(?:HARD_IP|HB)> node: (\d+)"
+    default = -1
+

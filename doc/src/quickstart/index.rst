@@ -130,7 +130,7 @@ and various report files describing the characteristics of the implementation:
     pre_pack.report_timing.setup.rpt  report_timing.setup.rpt  report_unconstrained_timing.setup.rpt
 
 
-Visualizaing Circuit Implementation
+Visualizing Circuit Implementation
 -----------------------------------
 
 .. note:: This section requires that VPR was compiled with graphic support. See :ref:`VPR Graphics <vpr_graphics>` for details.
@@ -375,7 +375,7 @@ Lets make a new directory to work in named ``blink_run_flow``:
     > mkdir -p ~/vtr_work/quickstart/blink_run_flow
     > cd ~/vtr_work/quickstart/blink_run_flow
 
-Now lets run the script (``$VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl``) passing in:
+Now lets run the script (``$VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py``) passing in:
 
 * The circuit verilog file (``$VTR_ROOT/doc/src/quickstart/blink.v``)
 * The FPGA architecture file (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``)
@@ -390,7 +390,7 @@ The resulting command is:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl \
+    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py \
         $VTR_ROOT/doc/src/quickstart/blink.v \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
         -temp_dir . \

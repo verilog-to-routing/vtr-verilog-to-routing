@@ -5,6 +5,10 @@
 
 #include "vtr_random.h"
 
+//f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
+//Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
+bool f_placer_breakpoint_reached = false;
+
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 
@@ -650,4 +654,13 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     VTR_ASSERT_MSG(grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
     return true;
+}
+
+//Accessor for f_placer_breakpoint_reached
+bool placer_breakpoint_reached() {
+    return f_placer_breakpoint_reached;
+}
+
+void set_placer_breakpoint_reached(bool flag) {
+    f_placer_breakpoint_reached = flag;
 }

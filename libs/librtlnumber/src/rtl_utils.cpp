@@ -12,6 +12,60 @@
 
 static const char* base_10_digits = "0123456789";
 
+static int to_nb(char val, short base) {
+    if (base == 256) {
+        return (int)val;
+    } else if (val >= '0' && val <= '9') {
+        return val - '0';
+    } else {
+        return tolower(val) - 'a' + 10;
+    }
+}
+
+static char to_chr(int val, short base, bool uppercase) {
+    if (base == 256) {
+        return (char)val;
+    } else if (val >= 0 and val <= 9) {
+        return val + '0';
+    } else if (!uppercase) {
+        return (val - 10) + 'a';
+    } else {
+        return (val - 10) + 'A';
+    }
+}
+
+std::string convert_between_bases(std::string str, uint8_t base_from, uint8_t base_to, bool uppercase, bool big_endian) {
+    std::string digits = "";
+    while (str != "0") {
+        int carry = 0;
+
+        size_t start = (big_endian) ? str.size() - 1 : 0;
+        size_t end = (big_endian) ? 0 : str.size() - 1;
+        size_t increment = (big_endian) ? -1 : 1;
+
+        for (size_t i = start; (big_endian) ? (i >= end && i <= start) : (i >= start && i <= end); i += increment) {
+            int temp = to_nb(str[i], base_from);
+            temp += base_from * carry;
+            carry = temp % base_to;
+            temp = temp / base_to;
+            str[i] = to_chr(temp, base_from, uppercase);
+        }
+
+        if (big_endian) {
+            digits.push_back(to_chr(carry, base_to, uppercase));
+            while (str.size() > 1 && str.back() == '0') {
+                str.pop_back();
+            }
+        } else {
+            digits.insert(0, 1, to_chr(carry, base_to, uppercase));
+            while (str.size() > 1 && str[0] == '0') {
+                str.erase(0, 1);
+            }
+        }
+    }
+    return digits;
+}
+
 static uint8_t _to_decimal(char digit, const char* FUNCT, int LINE) {
     switch (std::tolower(digit)) {
         case '0':

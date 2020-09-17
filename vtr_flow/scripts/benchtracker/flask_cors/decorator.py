@@ -14,7 +14,7 @@ from .core import *
 
 
 def cross_origin(*args, **kwargs):
-    '''
+    """
     This function is the decorator which is used to wrap a Flask route with.
     In the simplest case, simply use the default parameters to allow all
     origins in what is the most permissive configuration. If this method
@@ -92,7 +92,7 @@ def cross_origin(*args, **kwargs):
     :type automatic_options: bool
 
 
-    '''
+    """
     _options = kwargs
 
     def decorator(f):
@@ -105,16 +105,16 @@ def cross_origin(*args, **kwargs):
         # If f.provide_automatic_options is unset or True, Flask's route
         # decorator (which is actually wraps the function object we return)
         # intercepts OPTIONS handling, and requests will not have CORS headers
-        if _options.get('automatic_options', True):
-            f.required_methods = getattr(f, 'required_methods', set())
-            f.required_methods.add('OPTIONS')
+        if _options.get("automatic_options", True):
+            f.required_methods = getattr(f, "required_methods", set())
+            f.required_methods.add("OPTIONS")
             f.provide_automatic_options = False
 
         def wrapped_function(*args, **kwargs):
             # Handle setting of Flask-Cors parameters
             options = get_cors_options(current_app, _options)
 
-            if options.get('automatic_options') and request.method == 'OPTIONS':
+            if options.get("automatic_options") and request.method == "OPTIONS":
                 resp = current_app.make_default_options_response()
             else:
                 resp = make_response(f(*args, **kwargs))
@@ -124,4 +124,5 @@ def cross_origin(*args, **kwargs):
             return resp
 
         return update_wrapper(wrapped_function, f)
+
     return decorator

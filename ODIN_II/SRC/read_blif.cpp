@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "odin_globals.h"
 #include "odin_util.h"
+#include "ast_util.h"
 #include "read_blif.h"
 #include "string_cache.h"
 
@@ -45,7 +46,6 @@
 
 #define READ_BLIF_BUFFER 1048576 // 1MB
 
-long file_line_number;
 int line_count;
 
 // Stores pin names of the form port[pin]
@@ -132,12 +132,16 @@ int count_blif_lines(FILE* file);
  */
 netlist_t* read_blif() {
     insert_global_clock = true;
-    current_parse_file = 0;
+
+    my_location.file = 0;
+    my_location.line = -1;
+    my_location.col = -1;
+
     blif_netlist = allocate_netlist();
     /*Opening the blif file */
-    FILE* file = vtr::fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
+    FILE* file = vtr::fopen(configuration.list_of_file_names[my_location.file].c_str(), "r");
     if (file == NULL) {
-        error_message(PARSE_ARGS, -1, current_parse_file, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
+        error_message(PARSE_ARGS, my_location, "cannot open file: %s\n", configuration.list_of_file_names[my_location.file].c_str());
     }
     int num_lines = count_blif_lines(file);
 
@@ -152,7 +156,6 @@ netlist_t* read_blif() {
     printf("Reading blif netlist...");
     fflush(stdout);
 
-    file_line_number = 0;
     line_count = 0;
     int position = -1;
     double time = wall_time();
@@ -293,29 +296,17 @@ void create_latch_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
                 line += " ";
             }
 
-            error_message(PARSE_BLIF, file_line_number, current_parse_file, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
+            error_message(PARSE_BLIF, my_location, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
                           line.c_str());
         }
     }
 
-    nnode_t* new_node = allocate_nnode();
+    nnode_t* new_node = allocate_nnode(my_location);
     new_node->related_ast_node = NULL;
     new_node->type = FF_NODE;
-    new_node->edge_type = edge_type_blif_enum(names[2]);
+    new_node->edge_type = edge_type_blif_enum(names[2], my_location);
 
-    /* Read in the initial value of the latch.
-     * Possible values from a blif file are:
-     * 0: LOW
-     * 1: HIGH
-     * 2: DON'T CARE
-     * 3: UNKNOWN
-     *
-     * 2 and 3 are treated in the same way */
-    int initial_value = atoi(names[4]);
-    if (initial_value == 0 || initial_value == 1) {
-        new_node->initial_value = initial_value;
-        new_node->has_initial_value = true;
-    }
+    new_node->initial_value = (init_value_e)atoi(names[4]);
 
     /* allocate the output pin (there is always one output pin) */
     allocate_more_output_pins(new_node, 1);
@@ -347,8 +338,6 @@ void create_latch_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
     /*add this node to blif_netlist as an ff (flip-flop) node */
     blif_netlist->ff_nodes = (nnode_t**)vtr::realloc(blif_netlist->ff_nodes, sizeof(nnode_t*) * (blif_netlist->num_ff_nodes + 1));
     blif_netlist->ff_nodes[blif_netlist->num_ff_nodes++] = new_node;
-    new_node->file_number = current_parse_file;
-    new_node->line_number = line_count;
 
     /*add name information and a net(driver) for the output */
     nnet_t* new_net = allocate_nnet();
@@ -377,7 +366,7 @@ void create_latch_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
  *-------------------------------------------------------------------------------------------*/
 char* search_clock_name(FILE* file) {
     fpos_t pos;
-    int last_line = file_line_number;
+    int last_line = my_location.line;
     fgetpos(file, &pos);
     rewind(file);
 
@@ -388,6 +377,7 @@ char* search_clock_name(FILE* file) {
     while (!found) {
         char buffer[READ_BLIF_BUFFER];
         vtr::fgets(buffer, READ_BLIF_BUFFER, file);
+        my_location.line += 1;
 
         // not sure if this is needed
         if (feof(file))
@@ -419,7 +409,7 @@ char* search_clock_name(FILE* file) {
             }
         }
     }
-    file_line_number = last_line;
+    my_location.line = last_line;
     fsetpos(file, &pos);
 
     if (found) {
@@ -496,7 +486,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
         add_hard_block_model(model, ports, models);
     }
 
-    nnode_t* new_node = allocate_nnode();
+    nnode_t* new_node = allocate_nnode(my_location);
 
     // Name the node subcircuit_name~hard_block_number so that the name is unique.
     static long hard_block_number = 0;
@@ -541,7 +531,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
         char* name = (char*)mapping_index->get(mapping);
 
         if (!name)
-            error_message(PARSE_BLIF, file_line_number, current_parse_file, "Invalid hard block mapping: %s", mapping);
+            error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", mapping);
 
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
@@ -556,7 +546,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
         char* mapping = model->outputs->names[i];
         char* name = (char*)mapping_index->get(mapping);
 
-        if (!name) error_message(PARSE_BLIF, file_line_number, current_parse_file, "Invalid hard block mapping: %s", model->outputs->names[i]);
+        if (!name) error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", model->outputs->names[i]);
 
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
@@ -575,16 +565,13 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
     }
 
     // Create a fake ast node.
-    new_node->related_ast_node = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
+    new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
     new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-    new_node->related_ast_node->children[0] = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
-    new_node->related_ast_node->children[0]->types.identifier = vtr::strdup(subcircuit_name);
+    new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
 
     /*add this node to blif_netlist as an internal node */
     blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
     blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
-    new_node->file_number = current_parse_file;
-    new_node->line_number = line_count;
 
     free_hard_block_ports(ports);
     mapping_index->destroy_free_items();
@@ -609,7 +596,7 @@ void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
     }
 
     /* assigning the new_node */
-    nnode_t* new_node = allocate_nnode();
+    nnode_t* new_node = allocate_nnode(my_location);
     new_node->related_ast_node = NULL;
 
     /* gnd vcc unconn already created as top module so ignore them */
@@ -689,8 +676,6 @@ void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
         /*add this node to blif_netlist as an internal node */
         blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
         blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
-        new_node->file_number = current_parse_file;
-        new_node->line_number = line_count;
 
         /*add name information and a net(driver) for the output */
 
@@ -700,12 +685,13 @@ void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
 
         add_output_pin_to_node(new_node, new_pin, 0);
 
-        nnet_t* new_net = allocate_nnet();
-        new_net->name = new_node->name;
-
-        add_driver_pin_to_net(new_net, new_pin);
-
-        output_nets_hash->add(new_node->name, new_net);
+        nnet_t* out_net = (nnet_t*)output_nets_hash->get(names[input_count - 1]);
+        if (out_net == nullptr) {
+            out_net = allocate_nnet();
+            out_net->name = new_node->name;
+            output_nets_hash->add(new_node->name, out_net);
+        }
+        add_driver_pin_to_net(out_net, new_pin);
     }
     /* Free the char** names */
     for (int i = 0; i < input_count; i++)
@@ -723,7 +709,7 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
     operation_list to_return = operation_list_END;
 
     fpos_t pos;
-    int last_line = file_line_number;
+    int last_line = my_location.line;
     const char* One = "1";
     const char* Zero = "0";
     fgetpos(file, &pos);
@@ -735,9 +721,7 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
 
     if (!input_count) {
         vtr::fgets(buffer, READ_BLIF_BUFFER, file);
-
-        file_line_number = last_line;
-        fsetpos(file, &pos);
+        my_location.line += 1;
 
         char* ptr = vtr::strtok(buffer, "\t\n", file, buffer);
         if (!ptr) {
@@ -752,6 +736,8 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
     } else {
         while (1) {
             vtr::fgets(buffer, READ_BLIF_BUFFER, file);
+            my_location.line += 1;
+
             if (!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
                 break;
 
@@ -762,9 +748,6 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
         }
 
         oassert(output_bit_map);
-
-        file_line_number = last_line;
-        fsetpos(file, &pos);
 
         /*Patern recognition for faster simulation*/
         if (!strcmp(output_bit_map, One)) {
@@ -961,6 +944,10 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
         }
         vtr::free(bit_map);
     }
+
+    my_location.line = last_line;
+    fsetpos(file, &pos);
+
     return to_return;
 }
 
@@ -974,16 +961,13 @@ static void build_top_input_node(const char* name_str, Hashtable* output_nets_ha
 
     /* create a new top input node and net*/
 
-    nnode_t* new_node = allocate_nnode();
+    nnode_t* new_node = allocate_nnode(my_location);
 
     new_node->related_ast_node = NULL;
     new_node->type = INPUT_NODE;
 
     /* add the name of the input variable */
     new_node->name = temp_string;
-
-    new_node->file_number = current_parse_file;
-    new_node->line_number = line_count;
 
     /* allocate the pins needed */
     allocate_more_output_pins(new_node, 1);
@@ -1016,7 +1000,7 @@ static void build_top_input_node(const char* name_str, Hashtable* output_nets_ha
 
 void add_top_input_nodes(FILE* file, Hashtable* output_nets_hash) {
     /**
-     * insert a global clock for fall back. 
+     * insert a global clock for fall back.
      * in case of undriven internal clocks, they will attach to the global clock
      * this also fix the issue of constant verilog (no input)
      * that cannot simulate due to empty input vector
@@ -1048,7 +1032,7 @@ void rb_create_top_output_nodes(FILE* file) {
         /*add_a_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);*/
 
         /* create a new top output node and */
-        nnode_t* new_node = allocate_nnode();
+        nnode_t* new_node = allocate_nnode(my_location);
         new_node->related_ast_node = NULL;
         new_node->type = OUTPUT_NODE;
 
@@ -1069,8 +1053,6 @@ void rb_create_top_output_nodes(FILE* file) {
          * add_node_to_netlist() function can also be used */
         blif_netlist->top_output_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_output_nodes, sizeof(nnode_t*) * (blif_netlist->num_top_output_nodes + 1));
         blif_netlist->top_output_nodes[blif_netlist->num_top_output_nodes++] = new_node;
-        new_node->file_number = current_parse_file;
-        new_node->line_number = line_count;
     }
 }
 
@@ -1081,8 +1063,9 @@ void rb_create_top_output_nodes(FILE* file) {
 void rb_look_for_clocks() {
     int i;
     for (i = 0; i < blif_netlist->num_ff_nodes; i++) {
-        if (blif_netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type != CLOCK_NODE) {
-            blif_netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type = CLOCK_NODE;
+        oassert(blif_netlist->ff_nodes[i]->input_pins[1]->net->num_driver_pins == 1);
+        if (blif_netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type != CLOCK_NODE) {
+            blif_netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type = CLOCK_NODE;
         }
     }
 }
@@ -1102,18 +1085,18 @@ void rb_create_top_driver_nets(const char* instance_name_prefix, Hashtable* outp
 
     /* ZERO net */
     /* description given for the zero net is same for other two */
-    blif_netlist->zero_net = allocate_nnet();               // allocate memory to net pointer
-    blif_netlist->gnd_node = allocate_nnode();              // allocate memory to node pointer
-    blif_netlist->gnd_node->type = GND_NODE;                // mark the type
-    allocate_more_output_pins(blif_netlist->gnd_node, 1);   // alloacate 1 output pin pointer to this node
-    add_output_port_information(blif_netlist->gnd_node, 1); // add port info. this port has 1 pin ,till now number of port for this is one
+    blif_netlist->zero_net = allocate_nnet();                  // allocate memory to net pointer
+    blif_netlist->gnd_node = allocate_nnode(unknown_location); // allocate memory to node pointer
+    blif_netlist->gnd_node->type = GND_NODE;                   // mark the type
+    allocate_more_output_pins(blif_netlist->gnd_node, 1);      // alloacate 1 output pin pointer to this node
+    add_output_port_information(blif_netlist->gnd_node, 1);    // add port info. this port has 1 pin ,till now number of port for this is one
     new_pin = allocate_npin();
     add_output_pin_to_node(blif_netlist->gnd_node, new_pin, 0); // add this pin to output pin pointer array of this node
     add_driver_pin_to_net(blif_netlist->zero_net, new_pin);     // add this pin to net as driver pin
 
     /*ONE net*/
     blif_netlist->one_net = allocate_nnet();
-    blif_netlist->vcc_node = allocate_nnode();
+    blif_netlist->vcc_node = allocate_nnode(unknown_location);
     blif_netlist->vcc_node->type = VCC_NODE;
     allocate_more_output_pins(blif_netlist->vcc_node, 1);
     add_output_port_information(blif_netlist->vcc_node, 1);
@@ -1123,7 +1106,7 @@ void rb_create_top_driver_nets(const char* instance_name_prefix, Hashtable* outp
 
     /* Pad net */
     blif_netlist->pad_net = allocate_nnet();
-    blif_netlist->pad_node = allocate_nnode();
+    blif_netlist->pad_node = allocate_nnode(unknown_location);
     blif_netlist->pad_node->type = PAD_NODE;
     allocate_more_output_pins(blif_netlist->pad_node, 1);
     add_output_port_information(blif_netlist->pad_node, 1);
@@ -1189,7 +1172,7 @@ void hook_up_node(nnode_t* node, Hashtable* output_nets_hash) {
         nnet_t* output_net = (nnet_t*)output_nets_hash->get(input_pin->name);
 
         if (!output_net)
-            error_message(PARSE_BLIF, file_line_number, current_parse_file, "Error: Could not hook up the pin %s: not available.", input_pin->name);
+            error_message(PARSE_BLIF, my_location, "Error: Could not hook up the pin %s: not available.", input_pin->name);
 
         add_fanout_pin_to_net(output_net, input_pin);
     }
@@ -1203,7 +1186,7 @@ void hook_up_node(nnode_t* node, Hashtable* output_nets_hash) {
 hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* ports, FILE* file) {
     // Store the current position in the file.
     fpos_t pos;
-    int last_line = file_line_number;
+    int last_line = my_location.line;
     fgetpos(file, &pos);
 
     hard_block_model* model;
@@ -1214,6 +1197,7 @@ hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* por
         // Search the file for .model followed buy the subcircuit name.
         char buffer[READ_BLIF_BUFFER];
         while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
+            my_location.line += 1;
             char* token = vtr::strtok(buffer, TOKENS, file, buffer);
             // match .model followed by the subcircuit name.
             if (token && !strcmp(token, ".model") && !strcmp(vtr::strtok(NULL, TOKENS, file, buffer), name_subckt)) {
@@ -1253,7 +1237,7 @@ hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* por
         }
 
         if (!model || feof(file))
-            error_message(PARSE_BLIF, last_line, current_parse_file, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
+            error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
 
         // Sort the names.
         qsort(model->inputs->names, model->inputs->count, sizeof(char*), compare_hard_block_pin_names);
@@ -1276,7 +1260,7 @@ hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* por
     }
 
     // Restore the original position in the file.
-    file_line_number = last_line;
+    my_location.line = last_line;
     fsetpos(file, &pos);
 
     return model;
@@ -1476,7 +1460,7 @@ long get_hard_block_pin_number(char* original_name) {
     long pin_number = strtol(pin_number_string, &endptr, 10);
 
     if (pin_number_string == endptr)
-        error_message(PARSE_BLIF, file_line_number, current_parse_file, "The given port name \"%s\" does not contain a valid pin number.", original_name);
+        error_message(PARSE_BLIF, my_location, "The given port name \"%s\" does not contain a valid pin number.", original_name);
 
     vtr::free(name);
 

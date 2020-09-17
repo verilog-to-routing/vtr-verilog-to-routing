@@ -6,14 +6,14 @@ set -x
 set -e
 
 # Set up the host
-source $SCRIPT_DIR/steps/hostsetup.sh
-source $SCRIPT_DIR/steps/hostinfo.sh
-
-# Output git information
 ls -l
 cd github
 ls -l
 cd vtr-verilog-to-routing
+source $SCRIPT_DIR/steps/hostsetup.sh
+source $SCRIPT_DIR/steps/hostinfo.sh
+
+# Output git information
 source $SCRIPT_DIR/steps/git.sh
 
 if [ $VTR_TEST == "vtr_reg_strong" ]; then

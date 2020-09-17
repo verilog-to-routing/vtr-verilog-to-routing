@@ -3,16 +3,18 @@
 
 #include "vtr_string_interning.h"
 
-// MetadataStorage is a two phase data structure.  In the first phase,
-// metadata is added cheaply by simply pushing onto a vector.  This is
-// unsuitable for lookup, but is fast, and because strings are interned, not
-// too expensive memory wise.
-//
-// The second phase occurs after all data has been inserted.  When/if a lookup
-// is needed, the vector is sorted and the final metadata lookup is generated.
-// In the event that the lookup is never needed, this saves the time spent
-// building the lookup, and reduces the number of outstanding memory
-// allocations dramatically.
+/**
+ * MetadataStorage is a two phase data structure.  In the first phase,
+ * metadata is added cheaply by simply pushing onto a vector.  This is
+ * unsuitable for lookup, but is fast, and because strings are interned, not
+ * too expensive memory wise.
+ *
+ * The second phase occurs after all data has been inserted.  When/if a lookup
+ * is needed, the vector is sorted and the final metadata lookup is generated.
+ * In the event that the lookup is never needed, this saves the time spent
+ * building the lookup, and reduces the number of outstanding memory
+ * allocations dramatically.
+ */
 template<typename LookupKey>
 class MetadataStorage {
   public:
@@ -24,6 +26,26 @@ class MetadataStorage {
         // Can only add metadata prior to building the map.
         VTR_ASSERT(map_.empty());
         data_.push_back(std::make_tuple(lookup_key, meta_key, meta_value));
+    }
+
+    // Use the given mapping function to change the keys
+    void remap_keys(std::function<LookupKey(LookupKey)> key_map) {
+        if (map_.empty()) {
+            for (auto& entry : data_) {
+                std::get<0>(entry) = key_map(std::get<0>(entry));
+            }
+        } else {
+            VTR_ASSERT(data_.empty());
+            for (auto& dict : map_) {
+                for (auto& entry : dict.second) {
+                    for (auto& value : entry.second) {
+                        data_.push_back(std::make_tuple(key_map(dict.first), entry.first, value.as_string()));
+                    }
+                }
+            }
+            map_.clear();
+            build_map();
+        }
     }
 
     typename vtr::flat_map<LookupKey, t_metadata_dict>::const_iterator find(const LookupKey& lookup_key) const {
