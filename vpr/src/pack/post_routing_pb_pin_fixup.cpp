@@ -163,7 +163,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
 
             /* If the node has been visited on the other side, we just skip it */
             if (visited_rr_nodes.end() != std::find(visited_rr_nodes.begin(), visited_rr_nodes.end(), RRNodeId(rr_node))) {
-              continue;
+                continue;
             }
 
             /* Get the cluster net id which has been mapped to this net
