@@ -640,7 +640,7 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
         auto remapped_result = remapped_clb->second.find(curr_pb_pin_id);
         if ((remapped_result != remapped_clb->second.end())
             && (remapped_result->second != clb_net_idx)) {
-            clb_net_idx = remapped_result->second; 
+            clb_net_idx = remapped_result->second;
             VTR_ASSERT(clb_net_idx);
             clb_net_pin_idx = cluster_ctx.clb_nlist.block_pin_net_index(clb, cluster_ctx.pre_routing_net_pin_mapping.at(clb).at(curr_pb_pin_id));
         }
