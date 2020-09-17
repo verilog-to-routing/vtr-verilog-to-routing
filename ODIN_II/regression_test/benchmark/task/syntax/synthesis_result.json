@@ -1702,7 +1702,7 @@
             "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
-            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~380 is itself undriven.",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~376 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
         ],
@@ -1735,7 +1735,7 @@
             "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
             "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
-            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~8012 is itself undriven.",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~8008 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
         ],
