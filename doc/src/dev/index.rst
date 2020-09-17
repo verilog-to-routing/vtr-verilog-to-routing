@@ -9,6 +9,7 @@ Developer Guide
     contributing/index
     developing
     c_api_doc
+    code_documentation
     tutorials/index
     support
     license
