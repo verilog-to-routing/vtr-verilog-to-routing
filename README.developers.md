@@ -738,6 +738,28 @@ $ ./vtr_flow/scripts/qor_compare.py parse_results1.txt parse_results2.txt parse_
 ```
 will produce ratio tables and a summary table for the files parse_results1.txt, parse_results2.txt and parse_results3.txt, where the first file (parse_results1.txt) is assumed to be the baseline used to produce normalized ratios.
 
+### Generating New QoR Golden Result
+There may be times when a regression test fails its QoR test because its golden_result needs to be changed due to known changes in code behaviour. In this case, a new golden result needs to be generated so that the test can be passed. To generate a new golden result, follow the steps outlined below.
+
+1. Move to the `vtr_flow/tasks` directory from the VTR root, and run the failing test. For example, if a test called `vtr_ex_test` in `vtr_reg_nightly` was failing:
+
+	```shell
+    #From the VTR root
+    $ cd vtr_flow/tasks
+    $ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_ex_test
+	```
+2. Next, generate new golden reference results using `parse_vtr_task.pl` and the `-create_golden` option.
+
+    ```shell
+    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_ex_test -create_golden
+    ```
+3. Lastly, check that the results match with the `-check_golden` option
+
+    ```shell
+    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_ex_test -check_golden
+    ```
+Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly.
+
 # Adding Tests
 
 Any time you add a feature to VTR you **must** add a test which exercises the feature.
