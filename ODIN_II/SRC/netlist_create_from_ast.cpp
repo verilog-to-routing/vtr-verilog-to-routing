@@ -77,7 +77,7 @@ edge_type_e circuit_edge;
 
 /* PROTOTYPES */
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char* instance_name, sc_hierarchy* local_ref, int level);
-signal_list_t* netlist_expand_ast_of_module(ast_node_t** node, char* instance_name_prefix, sc_hierarchy* local_ref);
+signal_list_t* netlist_expand_ast_of_module(ast_node_t** node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
 
 void create_all_driver_nets_in_this_scope(char* instance_name_prefix, sc_hierarchy* local_ref);
 
@@ -97,24 +97,24 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t* initial_no
 
 signal_list_t* concatenate_signal_lists(signal_list_t** signal_lists, int num_signal_lists);
 
-signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref);
+signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
 signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* create_output_pin(ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref);
-signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_prefix, sc_hierarchy* local_ref);
-signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists, int list_size, char* instance_name_prefix);
+signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists, int list_size, char* instance_name_prefix, long assignment_size);
 
 void terminate_continuous_assignment(ast_node_t* node, signal_list_t* assignment, char* instance_name_prefix);
 void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* assignment, signal_list_t* potential_clocks, sc_hierarchy* local_ref);
 
-signal_list_t* create_case(ast_node_t* case_ast, char* instance_name_prefix, sc_hierarchy* local_ref);
-void create_case_control_signals(ast_node_t* case_list_of_items, ast_node_t** compare_against, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref);
-signal_list_t* create_case_mux_statements(ast_node_t* case_list_of_items, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref);
-signal_list_t* create_if(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref);
-void create_if_control_signals(ast_node_t** if_expression, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref);
-signal_list_t* create_if_mux_statements(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref);
-signal_list_t* create_if_for_question(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref);
-signal_list_t* create_if_question_mux_expressions(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref);
+signal_list_t* create_case(ast_node_t* case_ast, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+void create_case_control_signals(ast_node_t* case_list_of_items, ast_node_t** compare_against, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+signal_list_t* create_case_mux_statements(ast_node_t* case_list_of_items, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+signal_list_t* create_if(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+void create_if_control_signals(ast_node_t** if_expression, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+signal_list_t* create_if_mux_statements(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+signal_list_t* create_if_for_question(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+signal_list_t* create_if_question_mux_expressions(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
 signal_list_t* create_mux_statements(signal_list_t** statement_lists, nnode_t* case_node, int num_statement_lists, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* create_mux_expressions(signal_list_t** expression_lists, nnode_t* mux_node, int num_expression_lists, char* instance_name_prefix);
 
@@ -220,7 +220,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
 
     /* BASE CASE is when there are no other instantiations of modules in this module */
     if ((*current_module)->types.module.size_module_instantiations == 0 && (*current_module)->types.function.size_function_instantiations == 0 && (*current_module)->types.task.size_task_instantiations == 0) {
-        list = netlist_expand_ast_of_module(current_module, instance_name, local_ref);
+        list = netlist_expand_ast_of_module(current_module, instance_name, local_ref, 0);
     } else {
         /* ELSE - we need to visit all the children before */
         int k;
@@ -312,7 +312,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
         }
 
         /* once we've done everyone lower, we can do this module */
-        list = netlist_expand_ast_of_module(current_module, instance_name, local_ref);
+        list = netlist_expand_ast_of_module(current_module, instance_name, local_ref, 0);
     }
 
     if (list) free_signal_list(list);
@@ -324,7 +324,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
  * 	Allows for a pre amble, looks at children (dfs), then does post amble
  * 	Can skip children traverse and the ambles...
  *-------------------------------------------------------------------------*/
-signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     /* with the top module we need to visit the entire ast tree */
     long i;
     short* child_skip_list = NULL; // list of children not to traverse into
@@ -479,7 +479,7 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 break;
             case GATE:
                 /* create gate instances */
-                return_sig_list = create_gate(node, instance_name_prefix, local_ref);
+                return_sig_list = create_gate(node, instance_name_prefix, local_ref, assignment_size);
                 /* create_gate does it's own instantiations so skip the children in the traverse */
                 skip_children = true;
                 break;
@@ -503,7 +503,8 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 break;
             case BLOCKING_STATEMENT:
             case NON_BLOCKING_STATEMENT: {
-                return_sig_list = assignment_alias(node, instance_name_prefix, local_ref);
+                assignment_size = get_size_of_variable(node->children[0], local_ref);
+                return_sig_list = assignment_alias(node, instance_name_prefix, local_ref, assignment_size);
                 skip_children = true;
                 break;
             }
@@ -516,7 +517,7 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 }
                 break;
             case CASE:
-                return_sig_list = create_case(node, instance_name_prefix, local_ref);
+                return_sig_list = create_case(node, instance_name_prefix, local_ref, assignment_size);
                 skip_children = true;
                 break;
             case DISPLAY:
@@ -528,11 +529,11 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 skip_children = true;
                 break;
             case IF:
-                return_sig_list = create_if(node, instance_name_prefix, local_ref);
+                return_sig_list = create_if(node, instance_name_prefix, local_ref, assignment_size);
                 skip_children = true;
                 break;
             case TERNARY_OPERATION:
-                return_sig_list = create_if_for_question(node, instance_name_prefix, local_ref);
+                return_sig_list = create_if_for_question(node, instance_name_prefix, local_ref, assignment_size);
                 skip_children = true;
                 break;
             case HARD_BLOCK:
@@ -559,7 +560,7 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                     }
 
                     /* recursively call through the tree going to each instance.  This is depth first traverse. */
-                    children_signal_list[i] = netlist_expand_ast_of_module(&(node->children[i]), instance_name_prefix, child_ref);
+                    children_signal_list[i] = netlist_expand_ast_of_module(&(node->children[i]), instance_name_prefix, child_ref, assignment_size);
                 }
             }
         }
@@ -633,11 +634,11 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 break;
             case BINARY_OPERATION:
                 oassert(node->num_children == 2);
-                return_sig_list = create_operation_node(node, children_signal_list, node->num_children, instance_name_prefix);
+                return_sig_list = create_operation_node(node, children_signal_list, node->num_children, instance_name_prefix, assignment_size);
                 break;
             case UNARY_OPERATION:
                 oassert(node->num_children == 1);
-                return_sig_list = create_operation_node(node, children_signal_list, node->num_children, instance_name_prefix);
+                return_sig_list = create_operation_node(node, children_signal_list, node->num_children, instance_name_prefix, assignment_size);
                 break;
             case BLOCK:
                 if (node->num_children > 0) {
@@ -2658,7 +2659,7 @@ signal_list_t* create_output_pin(ast_node_t* var_declare, char* instance_name_pr
 /*---------------------------------------------------------------------------------------------
  * (function: assignment_alias)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     ast_node_t* left = assignment->children[0];
     ast_node_t* right = assignment->children[1];
 
@@ -2676,7 +2677,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             error_message(NETLIST, assignment->loc,
                           "Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
-        signal_list_t* address = netlist_expand_ast_of_module(&(right->children[0]), instance_name_prefix, local_ref);
+        signal_list_t* address = netlist_expand_ast_of_module(&(right->children[0]), instance_name_prefix, local_ref, assignment_size);
         // Pad/shrink the address to the depth of the memory.
 
         if (address->count == 0) {
@@ -2736,7 +2737,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
         }
 
     } else {
-        in_1 = netlist_expand_ast_of_module(&(assignment->children[1]), instance_name_prefix, local_ref);
+        in_1 = netlist_expand_ast_of_module(&(assignment->children[1]), instance_name_prefix, local_ref, assignment_size);
         oassert(in_1 != NULL);
         right = assignment->children[1];
     }
@@ -2755,7 +2756,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                           "Assignment to implicit memories is only supported within sequential circuits.\n");
         } else {
             // Make sure the memory is addressed.
-            signal_list_t* address = netlist_expand_ast_of_module(&(left->children[0]), instance_name_prefix, local_ref);
+            signal_list_t* address = netlist_expand_ast_of_module(&(left->children[0]), instance_name_prefix, local_ref, assignment_size);
 
             // Pad/shrink the address to the depth of the memory.
             if (address->count == 0) {
@@ -3227,7 +3228,7 @@ int alias_output_assign_pins_to_inputs(char_list_t* output_list, signal_list_t* 
  * 	This function creates a gate node in the netlist and hooks up the inputs
  * 	and outputs.
  *------------------------------------------------------------------------*/
-signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t* out_1 = NULL;
 
     for (long j = 0; j < gate->children[0]->num_children; j++) {
@@ -3243,7 +3244,7 @@ signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hier
             /* IF one input gate */
 
             /* process the signal for the input gate */
-            signal_list_t* in_1 = netlist_expand_ast_of_module(&(gate_instance->children[1]), instance_name_prefix, local_ref);
+            signal_list_t* in_1 = netlist_expand_ast_of_module(&(gate_instance->children[1]), instance_name_prefix, local_ref, assignment_size);
             /* process the signal for the input ga$te */
             out_1 = create_output_pin(gate_instance->children[0], instance_name_prefix, local_ref);
 
@@ -3276,7 +3277,7 @@ signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hier
 
             signal_list_t** in = (signal_list_t**)vtr::calloc(gate_instance->num_children - 1, sizeof(signal_list_t*));
             for (long i = 0; i < gate_instance->num_children - 1; i++) {
-                in[i] = netlist_expand_ast_of_module(&(gate_instance->children[i + 1]), instance_name_prefix, local_ref);
+                in[i] = netlist_expand_ast_of_module(&(gate_instance->children[i + 1]), instance_name_prefix, local_ref, assignment_size);
             }
 
             /* process the signal for the input gate */
@@ -3328,7 +3329,7 @@ signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hier
 /*----------------------------------------------------------------------------
  * (function: create_operation_node)
  *--------------------------------------------------------------------------*/
-signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists, int list_size, char* instance_name_prefix) {
+signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists, int list_size, char* instance_name_prefix, long assignment_size) {
     long i;
     signal_list_t* return_list = init_signal_list();
     nnode_t* operation_node;
@@ -3405,16 +3406,25 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
             break;
         case SR:  // >>
         case ASR: // >>>
-            /* Shifts doesn't matter about port size, but second input needs to be a number */
             output_port_width = input_lists[0]->count;
             input_port_width = input_lists[0]->count;
             break;
         case ASL: // <<<
         case SL:  // <<
-            /* Shifts doesn't matter about port size, but second input needs to be a number */
-            //output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
-            output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, log2(op->children[1]->types.vnumber->get_value()), op->loc));
-            input_port_width = output_port_width;
+            //output_port_width = op->types.operation.output_port_width;
+            output_port_width = assignment_size;
+            input_port_width = (input_lists[0]->count > input_lists[1]->count) ? input_lists[0]->count : input_lists[1]->count;
+
+            if (output_port_width > input_port_width)
+                input_port_width = output_port_width;
+            /*
+             * This condition checks the output_port_width has been resolved in ast phase if it hasn't 
+             * that means there was no LHS operand size or in another word it was not a statement! 
+             * As a result, its value would set to the first RHS operand. 
+             * e.x. array[(addr/4)*2] => (addr/4)*2 => output_port_width = addr_port_width
+             */
+            if (output_port_width == 0)
+                output_port_width = input_lists[0]->count;
             break;
         case LOGICAL_NOT: // !
         case LOGICAL_OR:  // ||
@@ -3469,51 +3479,132 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
     oassert(input_port_width != -1);
     oassert(output_port_width != -1);
 
-    for (i = 0; i < list_size; i++) {
-        if ((operation_node->type == SR) || (operation_node->type == ASL) || (operation_node->type == SL) || (operation_node->type == ASR)) {
-            /* Need to check that 2nd operand is constant */
-            ast_node_t* second = op->children[1];
-            if (second->type != NUMBERS)
-                error_message(NETLIST, op->loc, "%s", "Odin only supports constant shifts at present\n");
-            oassert(second->type == NUMBERS);
+    /* allocate the pins for the ouput port */
+    allocate_more_output_pins(operation_node, output_port_width);
+    add_output_port_information(operation_node, output_port_width);
 
-            /* for shift left or right, it's actually a one port operation. The 2nd port is constant */
-            if (i == 0) {
+    if ((operation_node->type == SR) || (operation_node->type == ASL) || (operation_node->type == SL) || (operation_node->type == ASR)) {
+        if (op->children[1]->type != NUMBERS) {
+            for (int k = 0; k < list_size; k++) {
                 /* allocate the pins needed */
                 allocate_more_input_pins(operation_node, input_port_width);
                 /* record this port size */
                 add_input_port_information(operation_node, input_port_width);
                 /* hookup the input pins */
-                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_port_width, verilog_netlist);
+                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[k], 0, input_port_width, verilog_netlist);
+                current_idx += input_port_width;
             }
-        } else if (input_port_width != -2) {
-            /* IF taking port widths based on preset */
-            /* allocate the pins needed */
-            allocate_more_input_pins(operation_node, input_port_width);
-            /* record this port size */
-            add_input_port_information(operation_node, input_port_width);
 
-            /* hookup the input pins = will do padding of zeros for smaller port */
-            hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_port_width, verilog_netlist);
-            current_idx += input_port_width;
         } else {
-            /* ELSE if taking the port widths as they are */
-            /* allocate the pins needed */
-            allocate_more_input_pins(operation_node, input_lists[i]->count);
-            /* record this port size */
-            add_input_port_information(operation_node, input_lists[i]->count);
+            /* record the size of the shift */
+            input_port_width = input_lists[0]->count;
+            int pad_bit = input_port_width - 1;
+            int shift_size = op->children[1]->types.vnumber->get_value();
 
-            /* hookup the input pins */
-            hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_lists[i]->count, verilog_netlist);
+            switch (operation_node->type) {
+                case SL:
+                case ASL: {
+                    /* connect ZERO to outputs that don't have inputs connected */
+                    for (i = 0; i < shift_size; i++) {
+                        if (i < output_port_width) {
+                            // connect 0 to lower outputs
+                            npin_t* zero_pin = allocate_npin();
+                            add_fanout_pin_to_net(verilog_netlist->zero_net, zero_pin);
 
-            current_idx += input_lists[i]->count;
+                            add_pin_to_signal_list(return_list, zero_pin);
+                            zero_pin->node = NULL;
+                        }
+                    }
+
+                    /* connect inputs to outputs */
+                    for (i = 0; i < output_port_width - shift_size; i++) {
+                        if (i < input_port_width) {
+                            // connect higher output pin to lower input pin
+                            add_pin_to_signal_list(return_list, input_lists[0]->pins[i]);
+                            input_lists[0]->pins[i]->node = NULL;
+                        } else {
+                            npin_t* extension_pin = NULL;
+                            if (op->children[1]->types.variable.signedness == SIGNED) {
+                                extension_pin = copy_input_npin(input_lists[0]->pins[pad_bit]);
+                            } else {
+                                extension_pin = get_zero_pin(verilog_netlist);
+                            }
+
+                            add_pin_to_signal_list(return_list, extension_pin);
+                            extension_pin->node = NULL;
+                        }
+                    }
+                    break;
+                }
+                case SR: //fallthrough
+                case ASR: {
+                    // This IF condition has been set to prevent showing error for SR
+                    if (operation_node->type == ASR)
+                        error_message(NETLIST, op->loc, "%s", "TODO: test that ASR works with signed number\n");
+
+                    for (i = shift_size; i < input_port_width; i++) {
+                        // connect higher output pin to lower input pin
+                        if (i - shift_size < output_port_width) {
+                            add_pin_to_signal_list(return_list, input_lists[0]->pins[i]);
+                            input_lists[0]->pins[i]->node = NULL;
+                        }
+                    }
+
+                    /* Extend pad_bit to outputs that don't have inputs connected */
+                    for (i = output_port_width - 1; i >= input_port_width - shift_size; i--) {
+                        npin_t* extension_pin = NULL;
+                        if (op->children[1]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
+                            extension_pin = copy_input_npin(input_lists[0]->pins[pad_bit]);
+                        } else {
+                            extension_pin = get_zero_pin(verilog_netlist);
+                        }
+
+                        add_pin_to_signal_list(return_list, extension_pin);
+                        extension_pin->node = NULL;
+                    }
+                    break;
+                }
+                default:
+                    error_message(NETLIST, op->loc, "%s", "Operation not supported by Odin\n");
+                    break;
+            }
+
+            //CLEAN UP
+            for (i = 0; i < list_size; i++) {
+                free_signal_list(input_lists[i]);
+            }
+            free_nnode(operation_node);
+
+            return return_list;
+        }
+
+    } else {
+        for (i = 0; i < list_size; i++) {
+            if (input_port_width != -2) {
+                /* IF taking port widths based on preset */
+                /* allocate the pins needed */
+                allocate_more_input_pins(operation_node, input_port_width);
+                /* record this port size */
+                add_input_port_information(operation_node, input_port_width);
+
+                /* hookup the input pins = will do padding of zeros for smaller port */
+                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_port_width, verilog_netlist);
+                current_idx += input_port_width;
+            } else {
+                /* ELSE if taking the port widths as they are */
+                /* allocate the pins needed */
+                allocate_more_input_pins(operation_node, input_lists[i]->count);
+                /* record this port size */
+                add_input_port_information(operation_node, input_lists[i]->count);
+
+                /* hookup the input pins */
+                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_lists[i]->count, verilog_netlist);
+
+                current_idx += input_lists[i]->count;
+            }
         }
     }
-    /* allocate the pins for the ouput port */
-    allocate_more_output_pins(operation_node, output_port_width);
-    add_output_port_information(operation_node, output_port_width);
 
-    /* make the inplicit output list and hook up the outputs */
     for (i = 0; i < output_port_width; i++) {
         npin_t* new_pin1;
         npin_t* new_pin2;
@@ -3613,7 +3704,7 @@ signal_list_t* evaluate_sensitivity_list(ast_node_t* delay_control, char* instan
 /*---------------------------------------------------------------------------------------------
  * (function: create_if_for_question)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_if_for_question(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* create_if_for_question(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t* return_list;
     nnode_t* if_node;
 
@@ -3625,10 +3716,10 @@ signal_list_t* create_if_for_question(ast_node_t* if_ast, char* instance_name_pr
     if_node->name = node_name(if_node, instance_name_prefix);
 
     /* create the control structure for the if node */
-    create_if_control_signals(&(if_ast->children[0]), if_node, instance_name_prefix, local_ref);
+    create_if_control_signals(&(if_ast->children[0]), if_node, instance_name_prefix, local_ref, assignment_size);
 
     /* create the statements and integrate them into the mux */
-    return_list = create_if_question_mux_expressions(if_ast, if_node, instance_name_prefix, local_ref);
+    return_list = create_if_question_mux_expressions(if_ast, if_node, instance_name_prefix, local_ref, assignment_size);
 
     return return_list;
 }
@@ -3636,7 +3727,7 @@ signal_list_t* create_if_for_question(ast_node_t* if_ast, char* instance_name_pr
 /*---------------------------------------------------------------------------------------------
  * (function:  create_if_question_mux_expressions)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_if_question_mux_expressions(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* create_if_question_mux_expressions(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t** if_expressions;
     signal_list_t* return_list;
     int i;
@@ -3649,7 +3740,7 @@ signal_list_t* create_if_question_mux_expressions(ast_node_t* if_ast, nnode_t* i
         if (if_ast->children[i + 1] != NULL) // checking to see if expression exists.  +1 since first child is control expression
         {
             /* IF - this is a normal case item, then process the case match and the details of the statement */
-            if_expressions[i] = netlist_expand_ast_of_module(&(if_ast->children[i + 1]), instance_name_prefix, local_ref);
+            if_expressions[i] = netlist_expand_ast_of_module(&(if_ast->children[i + 1]), instance_name_prefix, local_ref, assignment_size);
         } else {
             error_message(NETLIST, if_ast->loc, "%s", "No such thing as a a = b ? z;\n");
         }
@@ -3665,7 +3756,7 @@ signal_list_t* create_if_question_mux_expressions(ast_node_t* if_ast, nnode_t* i
 /*---------------------------------------------------------------------------------------------
  * (function: create_if)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_if(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* create_if(ast_node_t* if_ast, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t* return_list;
     nnode_t* if_node;
 
@@ -3677,10 +3768,10 @@ signal_list_t* create_if(ast_node_t* if_ast, char* instance_name_prefix, sc_hier
     if_node->name = node_name(if_node, instance_name_prefix);
 
     /* create the control structure for the if node */
-    create_if_control_signals(&(if_ast->children[0]), if_node, instance_name_prefix, local_ref);
+    create_if_control_signals(&(if_ast->children[0]), if_node, instance_name_prefix, local_ref, assignment_size);
 
     /* create the statements and integrate them into the mux */
-    return_list = create_if_mux_statements(if_ast, if_node, instance_name_prefix, local_ref);
+    return_list = create_if_mux_statements(if_ast, if_node, instance_name_prefix, local_ref, assignment_size);
 
     return return_list;
 }
@@ -3688,7 +3779,7 @@ signal_list_t* create_if(ast_node_t* if_ast, char* instance_name_prefix, sc_hier
 /*---------------------------------------------------------------------------------------------
  * (function:  create_if_control_signals)
  *-------------------------------------------------------------------------------------------*/
-void create_if_control_signals(ast_node_t** if_expression, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref) {
+void create_if_control_signals(ast_node_t** if_expression, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t* if_logic_expression;
     signal_list_t* if_logic_expression_final;
     nnode_t* not_node;
@@ -3701,7 +3792,7 @@ void create_if_control_signals(ast_node_t** if_expression, nnode_t* if_node, cha
     add_input_port_information(if_node, 2);
 
     /* get the logic */
-    if_logic_expression = netlist_expand_ast_of_module(if_expression, instance_name_prefix, local_ref);
+    if_logic_expression = netlist_expand_ast_of_module(if_expression, instance_name_prefix, local_ref, assignment_size);
     oassert(if_logic_expression != NULL);
 
     if (if_logic_expression->count != 1) {
@@ -3745,7 +3836,7 @@ void create_if_control_signals(ast_node_t** if_expression, nnode_t* if_node, cha
 /*---------------------------------------------------------------------------------------------
  * (function:  create_if_mux_statements)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_if_mux_statements(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* create_if_mux_statements(ast_node_t* if_ast, nnode_t* if_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t** if_statements;
     signal_list_t* return_list;
     int i, j;
@@ -3758,7 +3849,7 @@ signal_list_t* create_if_mux_statements(ast_node_t* if_ast, nnode_t* if_node, ch
         if (if_ast->children[i + 1] != NULL) // checking to see if statement exists.  +1 since first child is control expression
         {
             /* IF - this is a normal case item, then process the case match and the details of the statement */
-            if_statements[i] = netlist_expand_ast_of_module(&(if_ast->children[i + 1]), instance_name_prefix, local_ref);
+            if_statements[i] = netlist_expand_ast_of_module(&(if_ast->children[i + 1]), instance_name_prefix, local_ref, assignment_size);
             sort_signal_list_alphabetically(if_statements[i]);
 
             /* free unused nnodes */
@@ -3784,7 +3875,7 @@ signal_list_t* create_if_mux_statements(ast_node_t* if_ast, nnode_t* if_node, ch
 /*---------------------------------------------------------------------------------------------
  * (function: create_case)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_case(ast_node_t* case_ast, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* create_case(ast_node_t* case_ast, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t* return_list;
     nnode_t* case_node;
     ast_node_t* case_list_of_items;
@@ -3800,10 +3891,10 @@ signal_list_t* create_case(ast_node_t* case_ast, char* instance_name_prefix, sc_
     case_list_of_items = case_ast->children[1];
 
     /* create all the control structures for the case mux ... each bit will turn on one of the paths ... one hot mux */
-    create_case_control_signals(case_list_of_items, &(case_ast->children[0]), case_node, instance_name_prefix, local_ref);
+    create_case_control_signals(case_list_of_items, &(case_ast->children[0]), case_node, instance_name_prefix, local_ref, assignment_size);
 
     /* create the statements and integrate them into the mux */
-    return_list = create_case_mux_statements(case_list_of_items, case_node, instance_name_prefix, local_ref);
+    return_list = create_case_mux_statements(case_list_of_items, case_node, instance_name_prefix, local_ref, assignment_size);
 
     return return_list;
 }
@@ -3811,7 +3902,7 @@ signal_list_t* create_case(ast_node_t* case_ast, char* instance_name_prefix, sc_
 /*---------------------------------------------------------------------------------------------
  * (function:  create_case_control_signals)
  *-------------------------------------------------------------------------------------------*/
-void create_case_control_signals(ast_node_t* case_list_of_items, ast_node_t** compare_against, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref) {
+void create_case_control_signals(ast_node_t* case_list_of_items, ast_node_t** compare_against, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     long i;
     signal_list_t* other_expressions_pin_list = init_signal_list();
 
@@ -3830,11 +3921,11 @@ void create_case_control_signals(ast_node_t* case_list_of_items, ast_node_t** co
             logical_equal->types.operation.op = LOGICAL_EQUAL;
 
             /* get the signals to compare against */
-            case_compares[0] = netlist_expand_ast_of_module(compare_against, instance_name_prefix, local_ref);
-            case_compares[1] = netlist_expand_ast_of_module(&(case_list_of_items->children[i]->children[0]), instance_name_prefix, local_ref);
+            case_compares[0] = netlist_expand_ast_of_module(compare_against, instance_name_prefix, local_ref, assignment_size);
+            case_compares[1] = netlist_expand_ast_of_module(&(case_list_of_items->children[i]->children[0]), instance_name_prefix, local_ref, assignment_size);
 
             /* make a LOGIC_EQUAL gate that collects all the other signals and if they're all off */
-            case_compare_expression = create_operation_node(logical_equal, case_compares, 2, instance_name_prefix);
+            case_compare_expression = create_operation_node(logical_equal, case_compares, 2, instance_name_prefix, assignment_size);
             oassert(case_compare_expression->count == 1);
 
             /* hookup this pin to the spot in the case_node */
@@ -3876,7 +3967,7 @@ void create_case_control_signals(ast_node_t* case_list_of_items, ast_node_t** co
 /*---------------------------------------------------------------------------------------------
  * (function:  create_case_mux_statements)
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_case_mux_statements(ast_node_t* case_list_of_items, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref) {
+signal_list_t* create_case_mux_statements(ast_node_t* case_list_of_items, nnode_t* case_node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
     signal_list_t** case_statement;
     signal_list_t* return_list;
     long i, j;
@@ -3888,7 +3979,7 @@ signal_list_t* create_case_mux_statements(ast_node_t* case_list_of_items, nnode_
     for (i = 0; i < case_list_of_items->num_children; i++) {
         if (case_list_of_items->children[i]->type == CASE_ITEM) {
             /* IF - this is a normal case item, then process the case match and the details of the statement */
-            case_statement[i] = netlist_expand_ast_of_module(&(case_list_of_items->children[i]->children[1]), instance_name_prefix, local_ref);
+            case_statement[i] = netlist_expand_ast_of_module(&(case_list_of_items->children[i]->children[1]), instance_name_prefix, local_ref, assignment_size);
             sort_signal_list_alphabetically(case_statement[i]);
 
             /* free unused nnodes */
@@ -3900,7 +3991,7 @@ signal_list_t* create_case_mux_statements(ast_node_t* case_list_of_items, nnode_
             }
         } else if (case_list_of_items->children[i]->type == CASE_DEFAULT) {
             oassert(i == case_list_of_items->num_children - 1); // has to be at the end
-            case_statement[i] = netlist_expand_ast_of_module(&(case_list_of_items->children[i]->children[0]), instance_name_prefix, local_ref);
+            case_statement[i] = netlist_expand_ast_of_module(&(case_list_of_items->children[i]->children[0]), instance_name_prefix, local_ref, assignment_size);
             sort_signal_list_alphabetically(case_statement[i]);
 
             /* free unused nnodes */
