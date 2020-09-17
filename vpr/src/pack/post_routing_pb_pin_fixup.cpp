@@ -147,6 +147,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         VTR_ASSERT(!pin_sides.empty());
 
         ClusterNetId routing_net_id = ClusterNetId::INVALID();
+        std::vector<RRNodeId> visited_rr_nodes;
         short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
             /* Find the net mapped to this pin in routing results */
@@ -159,6 +160,11 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                 continue;
             }
             VTR_ASSERT((size_t)rr_node < device_ctx.rr_nodes.size());
+
+            /* If the node has been visited on the other side, we just skip it */
+            if (visited_rr_nodes.end() != std::find(visited_rr_nodes.begin(), visited_rr_nodes.end(), RRNodeId(rr_node))) {
+              continue;
+            }
 
             /* Get the cluster net id which has been mapped to this net
              * In general, there is only one valid rr_node among all the sides.
@@ -184,6 +190,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                 }
                 routing_net_id = rr_node_nets[RRNodeId(rr_node)];
                 valid_routing_net_cnt++;
+                visited_rr_nodes.push_back(RRNodeId(rr_node));
             }
         }
         if (!((0 == valid_routing_net_cnt) || (1 == valid_routing_net_cnt)))
