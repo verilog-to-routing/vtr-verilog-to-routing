@@ -5,7 +5,8 @@
 #include "globals.h"
 #include "read_place.h"
 #include "initial_placement.h"
-#include "vpr_utils.h"
+//#include "vpr_utils.h"
+#include "place_util.h"
 
 /* The maximum number of tries when trying to place a carry chain at a    *
  * random location before trying exhaustive placement - find the fist     *
@@ -351,8 +352,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     // Loading legal placement locations
     zero_initialize_grid_blocks();
-    alloc_legal_placement_locations(legal_pos, num_legal_pos);
-    load_legal_placement_locations(legal_pos);
+    alloc_and_load_legal_placement_locations(legal_pos);
 
     int itype, ipos;
     std::vector<std::vector<int>> free_locations; /* [0..device_ctx.num_block_types-1].
@@ -370,7 +370,8 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         free_locations[itype].resize(type.sub_tiles.size());
 
         for (auto sub_tile : type.sub_tiles) {
-            free_locations[itype][sub_tile.index] = num_legal_pos[itype][sub_tile.index];
+            //free_locations[itype][sub_tile.index] = num_legal_pos[itype][sub_tile.index];
+            free_locations[itype][sub_tile.index] = legal_pos[itype][sub_tile.index].size();
         }
     }
 
@@ -428,7 +429,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     initial_placement_blocks(free_locations, pad_loc_type);
 
     /* Restore legal_pos */
-    load_legal_placement_locations(legal_pos);
+    alloc_and_load_legal_placement_locations(legal_pos);
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
