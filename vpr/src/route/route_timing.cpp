@@ -406,9 +406,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     constexpr int RCV_FINISH_EARLY_COUNTDOWN = 15;
 
     int rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;
-    
+
     // If tHNS is less than zero and the rcv_finished_count isn't zero, then hold isn't legal
-    // In this case don't allow the router to break early if RCV is enabled 
+    // In this case don't allow the router to break early if RCV is enabled
     bool hold_legal = true;
 
     print_route_status_header();
@@ -596,8 +596,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         //Have we converged the maximum number of times, did not make any changes, or does it seem
         //unlikely additional convergences will improve QoR?
         if ((legal_convergence_count >= router_opts.max_convergence_count
-            || router_iteration_stats.connections_routed == 0
-            || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics))
+             || router_iteration_stats.connections_routed == 0
+             || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics))
             && hold_legal) {
 #ifndef NO_GRAPHICS
             update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
@@ -2028,7 +2028,7 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_tracebac
             } else if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
                 return false;
             }
-            
+
             if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
                 return true;
             } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
@@ -2066,9 +2066,7 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_tracebac
             } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
                 return false;
             }
-
         }
-        
     }
 
     //Finally, wirelength tie breaker
