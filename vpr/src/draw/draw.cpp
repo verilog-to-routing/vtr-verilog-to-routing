@@ -1010,7 +1010,6 @@ static void drawplace(ezgl::renderer* g) {
                 if (current_loc_is_highlighted == false) {
                     if (bnum != EMPTY_BLOCK_ID) {
                         block_color = draw_state->block_color(bnum);
-                        logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
                     } else {
                         block_color = get_block_type_color(device_ctx.grid[i][j].type);
                         block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
