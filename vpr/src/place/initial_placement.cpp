@@ -14,7 +14,6 @@
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
 
 static std::vector<std::vector<std::vector<t_pl_loc>>> legal_pos; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1][0..num_sub_tiles - 1] */
-static std::vector<std::vector<int>> num_legal_pos;               /* [0..num_sub_tiles - 1][0..num_legal_pos-1] */
 
 // initialize usage to 0 and blockID to EMPTY_BLOCK_ID for all place_ctx.grid_block locations
 static void zero_initialize_grid_blocks();
@@ -347,7 +346,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     /* Randomly places the blocks to create an initial placement. We rely on
      * the legal_pos array already being loaded.  That legal_pos[itype] is an
      * array that gives every legal value of (x,y,z) that can accommodate a block.
-     * The number of such locations is given by num_legal_pos[itype].
      */
 
     // Loading legal placement locations
@@ -370,7 +368,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         free_locations[itype].resize(type.sub_tiles.size());
 
         for (auto sub_tile : type.sub_tiles) {
-            //free_locations[itype][sub_tile.index] = num_legal_pos[itype][sub_tile.index];
             free_locations[itype][sub_tile.index] = legal_pos[itype][sub_tile.index].size();
         }
     }
