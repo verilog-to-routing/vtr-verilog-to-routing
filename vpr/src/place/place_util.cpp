@@ -384,6 +384,3 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     //avoid any memory waste
     legal_pos.shrink_to_fit();
 }
-
-
-

@@ -205,6 +205,5 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
 ///@brief Returns the standard deviation of data set x.
 double get_std_dev(int n, double sum_x_squared, double av_x);
 
-
 ///@brief Builds legal_pos structure
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
