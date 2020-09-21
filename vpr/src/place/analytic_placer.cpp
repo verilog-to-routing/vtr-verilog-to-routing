@@ -294,8 +294,7 @@ void AnalyticPlacer::build_solve_type(t_logical_block_type_ptr run, int iter) {
 void AnalyticPlacer::build_legal_locations() {
     std::vector<std::vector<int>> num_legal_pos;
     // invoking same function used in initial_placement.cpp (can ignore function name)
-    alloc_legal_placement_locations(legal_pos, num_legal_pos);
-    load_legal_placement_locations(legal_pos);
+    alloc_and_load_legal_placement_locations(legal_pos);
 }
 
 // transfer initial placement from g_vpr_ctx to AnalyticPlacer data members, such as: blk_locs, place_blks
