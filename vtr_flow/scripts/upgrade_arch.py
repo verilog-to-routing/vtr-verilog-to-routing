@@ -47,6 +47,7 @@ supported_upgrades = [
     "add_tile_tags",
     "add_site_directs",
     "add_sub_tiles",
+    "remove_penalty_cost",
 ]
 
 
@@ -167,6 +168,11 @@ def main():
 
     if "add_sub_tiles" in args.features:
         result = add_sub_tiles(arch)
+        if result:
+            modified = True
+
+    if "remove_penalty_cost" in args.features:
+        result = remove_penalty_cost(arch)
         if result:
             modified = True
 
@@ -1181,6 +1187,23 @@ def add_sub_tiles(arch):
         tile.append(sub_tile)
 
         modified = True
+
+    return modified
+
+
+def remove_penalty_cost(arch):
+    """
+    This function removes the penalty cost attribute from switches
+
+    """
+
+    modified = False
+
+    for switch in arch.iter("switch"):
+        if "penalty_cost" in switch.attrib:
+            del switch.attrib["penalty_cost"]
+
+            modified = True
 
     return modified
 

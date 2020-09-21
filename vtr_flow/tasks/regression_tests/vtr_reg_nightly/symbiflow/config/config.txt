@@ -1,0 +1,30 @@
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/symbiflow
+
+# Path to directory of architectures to use
+archs_dir=arch/symbiflow
+
+#Large benchmarks
+circuit_list_add=symbiflow_counter.eblif
+
+# Add architectures to list to sweep
+arch_list_add=arch.timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_titan.txt
+
+# How to parse QoR info
+qor_parse_file=qor_vpr_titan.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_vpr_titan.txt
+
+#The Titan benchmarks are run at a fixed channel width of 300 to simulate a Stratix IV-like routing architecture
+#A large number of routing iterations is set to ensure the router doesn't give up to easily on the larger benchmarks
+#To be more run-time comparable to commercial tools like Quartus, we run with higher placer effort (inner_num=2) and lower astar_fac (1.0)
+#Set a 24hr timeout so they don't run forever
+script_params=-starting_stage vpr --max_router_iterations 500 --routing_failure_predictor off --router_high_fanout_threshold 1000 --constant_net_method route --route_chan_width 500 --router_heap bucket --clock_modeling route --place_delta_delay_matrix_calculation_method dijkstra --place_delay_model delta_override --router_lookahead extended_map --check_route quick --strict_checks off --allow_dangling_combinational_nodes on --disable_errors check_unbuffered_edges:check_route --congested_routing_iteration_threshold 0.8 --incremental_reroute_delay_ripup off --base_cost_type delay_normalized_length_bounded --bb_factor 10 --initial_pres_fac 4.0 --check_rr_graph off --read_rr_graph ../../../../rr_graph_xc7a50t_test.rr_graph.real.bin --read_router_lookahead ../../../../rr_graph_xc7a50t_test.lookahead.bin --read_placement_delay_lookup ../../../../rr_graph_xc7a50t_test.place_delay.bin
