@@ -334,9 +334,8 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
  *
  *   @param legal_pos
  *              a lookup of all subtiles by sub_tile type
- *              legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1][0..num_legal - 1] = t_pl_loc for a single
- *              placement location of the proper tile type and sub_tile type.
- *              where num_legal is total number of each type of subtiles
+ *              legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations 
+ *              of the proper tile type and sub_tile type
  *
  */
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
