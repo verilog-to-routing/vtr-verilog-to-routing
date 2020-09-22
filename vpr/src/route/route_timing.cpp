@@ -2006,7 +2006,6 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& /
 // Compares the worst and total setup slacks of the current routing with that of the best routing so far
 // Returns -1 if the new routing is worse, 0 if tied, and 1 if its improved
 static int compare_setup(const RoutingMetrics& best_routing_metrics, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
-
     // In general we don't care about ties or improvements to positive slack, as once timing constraints have been met there is no point in trying harder
     // Because of this, we only check if timing has either improved, or degraded, in which case we report the routing as better or worse respectively
 
@@ -2030,7 +2029,6 @@ static int compare_setup(const RoutingMetrics& best_routing_metrics, std::shared
 // Compares the worst and total hold slacks of the current routing with that of the best routing so far
 // Returns -1 if the new routing is worse, 0 if tied, and 1 if its improved
 static int compare_hold(const RoutingMetrics& best_routing_metrics, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
-
     // In general we don't care about ties or improvements to positive slack, as once timing constraints have been met there is no point in trying harder
     // Because of this, we only check if timing has either improved, or degraded, in which case we report the routing as better or worse respectively
 
@@ -2087,7 +2085,7 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_tracebac
                 // Hold has degraded
                 return false;
             }
-            
+
             int setup_comparison = compare_setup(best_routing_metrics, timing_info);
 
             if (setup_comparison > 0) {
