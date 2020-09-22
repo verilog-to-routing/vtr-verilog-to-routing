@@ -120,7 +120,7 @@ class PlacerCriticalities {
      * If out of sync, then the criticalities cannot be incrementally updated on
      * during the next timing analysis iteration.
      */
-    void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent);
+    void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent, float crit_limit);
 
     ///@brief Override the criticality of a particular connection.
     void set_criticality(ClusterNetId net, int ipin, float crit_val);

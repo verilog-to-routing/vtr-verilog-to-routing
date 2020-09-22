@@ -40,7 +40,7 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, cons
  *
  * If the criticality exponent has changed, we also need to update from scratch.
  */
-void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent) {
+void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent, float crit_limit) {
     /* If update is not enabled, exit the routine. */
     if (!update_enabled) {
         /* re-computation is required on the next iteration */

@@ -31,7 +31,8 @@ void initialize_timing_info(float crit_exponent,
                             PlacerSetupSlacks* setup_slacks,
                             ClusteredPinTimingInvalidator* pin_timing_invalidator,
                             SetupTimingInfo* timing_info,
-                            t_placer_costs* costs) {
+                            t_placer_costs* costs,
+                            float crit_limit) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
 
@@ -51,7 +52,8 @@ void initialize_timing_info(float crit_exponent,
                                setup_slacks,
                                pin_timing_invalidator,
                                timing_info,
-                               costs);
+                               costs,
+                               crit_limit);
 
     //Don't warn again about unconstrained nodes again during placement
     timing_info->set_warn_unconstrained(false);
@@ -79,7 +81,8 @@ void perform_full_timing_update(float crit_exponent,
                                 PlacerSetupSlacks* setup_slacks,
                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                 SetupTimingInfo* timing_info,
-                                t_placer_costs* costs) {
+                                t_placer_costs* costs,
+                                float crit_limit) {
     /* Update all timing related classes. */
     criticalities->enable_update();
     setup_slacks->enable_update();
@@ -87,7 +90,8 @@ void perform_full_timing_update(float crit_exponent,
                           timing_info,
                           criticalities,
                           setup_slacks,
-                          pin_timing_invalidator);
+                          pin_timing_invalidator,
+                          crit_limit);
 
     /* Update the timing cost with new connection criticalities. */
     update_timing_cost(delay_model,
@@ -127,12 +131,13 @@ void update_timing_classes(float crit_exponent,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           ClusteredPinTimingInvalidator* pin_timing_invalidator) {
+                           ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                           float crit_limit) {
     /* Run STA to update slacks and adjusted/relaxed criticalities. */
     timing_info->update();
 
     /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
-    criticalities->update_criticalities(timing_info, crit_exponent);
+    criticalities->update_criticalities(timing_info, crit_exponent, crit_limit);
 
     /* Update the placer's raw setup slacks. */
     setup_slacks->update_setup_slacks(timing_info);

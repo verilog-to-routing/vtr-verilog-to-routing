@@ -14,7 +14,8 @@ void initialize_timing_info(float crit_exponent,
                             PlacerSetupSlacks* setup_slacks,
                             ClusteredPinTimingInvalidator* pin_timing_invalidator,
                             SetupTimingInfo* timing_info,
-                            t_placer_costs* costs);
+                            t_placer_costs* costs,
+                            float crit_limit);
 
 ///@brief Updates every timing related classes, variables and structures.
 void perform_full_timing_update(float crit_exponent,
@@ -23,14 +24,16 @@ void perform_full_timing_update(float crit_exponent,
                                 PlacerSetupSlacks* setup_slacks,
                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                 SetupTimingInfo* timing_info,
-                                t_placer_costs* costs);
+                                t_placer_costs* costs,
+                                float crit_limit);
 
 ///@brief Update timing information based on the current block positions.
 void update_timing_classes(float crit_exponent,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           ClusteredPinTimingInvalidator* pin_timing_invalidator);
+                           ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                           float crit_limit);
 
 ///@brief Updates the timing driven (td) costs.
 void update_timing_cost(const PlaceDelayModel* delay_model,

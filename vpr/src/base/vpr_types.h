@@ -1048,6 +1048,7 @@ struct t_placer_opts {
     std::vector<float> place_static_move_prob;
     bool simpleRL_agent_placement;
     int place_high_fanout_net;
+    e_agent_algorithm place_agent_algorithm;
     float place_agent_epsilon;
     float place_agent_gamma;
     int place_dm_rlim;
