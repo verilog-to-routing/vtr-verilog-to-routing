@@ -62,7 +62,7 @@ class vector_map {
     //Indexing
     const_reference operator[](const K n) const {
         size_t index = size_t(n);
-        VTR_ASSERT_SAFE_MSG(index >= 0 && index < vec_.size(), "Out-of-range index");
+        VTR_ASSERT_SAFE_MSG(index < vec_.size(), "Out-of-range index");
         return vec_[index];
     }
 
