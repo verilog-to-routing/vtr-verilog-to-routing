@@ -2003,6 +2003,55 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& /
     return false;
 }
 
+// Compares the worst and total setup slacks of the current routing with that of the best routing so far
+// Returns -1 if the new routing is worse, 0 if tied, and 1 if its improved
+static int compare_setup(const RoutingMetrics& best_routing_metrics, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+
+    // In general we don't care about ties or improvements to positive slack, as once timing constraints have been met there is no point in trying harder
+    // Because of this, we only check if timing has either improved, or degraded, in which case we report the routing as better or worse respectively
+
+    // Worst negative setup slack is prioritized over total negative slack, since this metric is directly correlated to the CPD, and thus Fmax
+    if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
+        return 1;
+    } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
+        return -1;
+    }
+
+    if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
+        return 1;
+    } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
+        return -1;
+    }
+
+    // Return a tie
+    return 0;
+}
+
+// Compares the worst and total hold slacks of the current routing with that of the best routing so far
+// Returns -1 if the new routing is worse, 0 if tied, and 1 if its improved
+static int compare_hold(const RoutingMetrics& best_routing_metrics, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+
+    // In general we don't care about ties or improvements to positive slack, as once timing constraints have been met there is no point in trying harder
+    // Because of this, we only check if timing has either improved, or degraded, in which case we report the routing as better or worse respectively
+
+    // Worst negative hold slack is prioritized since getting this as close to zero as possible increases the odds of the routing still working on a physical device
+    //  this is because there are margins of error on timing calculations
+    if (timing_info->hold_worst_negative_slack() > best_routing_metrics.sWNS) {
+        return 1;
+    } else if (timing_info->hold_worst_negative_slack() < best_routing_metrics.sWNS) {
+        return -1;
+    }
+
+    if (timing_info->hold_total_negative_slack() > best_routing_metrics.sTNS) {
+        return 1;
+    } else if (timing_info->hold_total_negative_slack() < best_routing_metrics.sTNS) {
+        return -1;
+    }
+
+    // Report a tie
+    return 0;
+}
+
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
                                       const WirelengthInfo& wirelength_info,
@@ -2012,61 +2061,44 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_tracebac
         return true; //First legal routing
     }
 
-    //Rank first based on sWNS, followed by other timing metrics
     if (timing_info) {
         if (router_opts.routing_budgets_algorithm != YOYO) {
-            // If RCV is disabled prioritize setup slack and don't worry about hold
+            // If RCV is disabled prioritize setup slack improvements
+            int setup_comparison = compare_setup(best_routing_metrics, timing_info);
 
-            if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
+            if (setup_comparison > 0) {
+                // Setup has improved
                 return true;
-            } else if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
+            } else if (setup_comparison < 0) {
+                // Setup has degraded
                 return false;
             }
-
-            if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
-                return true;
-            } else if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
-                return false;
-            }
-            
-            if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
-                return true;
-            } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
-                return false;
-            }
-
-            if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
-                return true;
-            } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
-                return false;
-            }
+            // Setup slack tied
         } else {
             // If RCV is enabled prioritize hold over setup, but still return true if setup slack improves
 
-            if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
+            // Compare hold of current routing to best routing
+            int hold_comparison = compare_hold(best_routing_metrics, timing_info);
+
+            if (hold_comparison > 0) {
+                // Hold has improved
                 return true;
-            } else if (timing_info->hold_worst_negative_slack() < best_routing_metrics.hWNS) {
+            } else if (hold_comparison < 0) {
+                // Hold has degraded
+                return false;
+            }
+            
+            int setup_comparison = compare_setup(best_routing_metrics, timing_info);
+
+            if (setup_comparison > 0) {
+                // Setup has improved
+                return true;
+            } else if (setup_comparison < 0) {
+                // Setup has degraded
                 return false;
             }
 
-            if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
-                return true;
-            } else if (timing_info->hold_total_negative_slack() < best_routing_metrics.hTNS) {
-                return false;
-            }
-
-            if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
-                return true;
-            } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
-                return false;
-            }
-
-            if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
-                return true;
-            } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
-                return false;
-            }
-
+            // Setup and Hold have tied
         }
         
     }
