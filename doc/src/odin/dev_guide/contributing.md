@@ -56,9 +56,9 @@ digraph G {
     11 [label="Output Blif",shape=diamond];
 
     0 -> 5 -> 6 -> 7 -> 8
-    7->11
     7->10 [color=purple]
     4->8  [style=dotted] [color=purple]
+    8->11
     4->10 [style=dotted] [color=purple]
     2->10 [color=purple]
     10->3 [color=purple]
@@ -71,7 +71,7 @@ The flow is depicted in the figure below.
 digraph G {
     0 [label="Input Blif File",shape=plaintext];
     1 [label="Read Blif",shape=box];
-    3 [label="Create Netlist",shape=box];
+    3 [label="Build Netlist",shape=box];
     4 [label="Output Blif",shape=diamond];
     5 [label="Simulator",shape=box];
     6 [label="FPGA Architecture Specification File",shape=box];
