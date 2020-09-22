@@ -1123,10 +1123,6 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id, const t_model_port
  *      pin_number : the pin_number of the pin driven by the net (pin index within the port)
  */
 static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_ports* model_port, const BitIndex pin_number) {
-    if (model_port->is_clock) {
-        VTR_ASSERT(pin_number == 1); //TODO: support multi-clock primitives
-    }
-
     auto& atom_ctx = g_vpr_ctx.atom();
 
     auto port_id = atom_ctx.nlist.find_atom_port(block_id, model_port);
@@ -1134,6 +1130,20 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id, const t_model_p
     if (port_id) {
         auto net_id = atom_ctx.nlist.port_net(port_id, pin_number);
         if (net_id && atom_ctx.nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+
+            auto driver_blk_id = atom_ctx.nlist.net_driver_block(net_id);
+
+            if (model_port->is_clock) {
+                auto driver_blk_type = atom_ctx.nlist.block_type(driver_blk_id);
+
+                // TODO: support multi-clock primitives.
+                //       If the driver block is a .input block, this assertion should not
+                //       be triggered as the sink block might have only one input pin, which
+                //       would be a clock pin in case the sink block primitive is a clock generator,
+                //       resulting in a pin_number == 0.
+                VTR_ASSERT(pin_number == 1 || (pin_number == 0 && driver_blk_type == AtomBlockType::INPAD));
+            }
+
             return atom_ctx.nlist.net_driver_block(net_id);
         }
     }
