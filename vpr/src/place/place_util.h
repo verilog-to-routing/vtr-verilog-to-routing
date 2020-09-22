@@ -40,11 +40,11 @@
  */
 class t_placer_costs {
   public: //members
-    double cost;
-    double bb_cost;
-    double timing_cost;
-    double bb_cost_norm;
-    double timing_cost_norm;
+    double cost = 0.;
+    double bb_cost = 0.;
+    double timing_cost = 0.;
+    double bb_cost_norm = 0.;
+    double timing_cost_norm = 0.;
 
   public: //Constructor
     t_placer_costs(t_place_algorithm algo)
