@@ -1844,12 +1844,14 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             proposed_connection_delay[net][ipin] = temp_delay;
             
             float delay_budget;
+            /*
             if(timing_cost_func == 0)
                 delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
             else if(timing_cost_func == 1)
                 delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, ipin));
             else
-                delay_budget = 0;
+            */
+            delay_budget = 0;
            
             //proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay ;
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0),temp_delay - delay_budget) ;
@@ -1870,20 +1872,24 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             float temp_delay = comp_td_single_connection_delay(delay_model, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
+            /*
             if (temp_delay == connection_delay[net][ipin]) {
                 return;
             }
+            */
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
             
             float delay_budget;
+            /*
             if(timing_cost_func == 0)
                 delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
             else if(timing_cost_func == 1)
                 delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, ipin));
             else
-                delay_budget = 0;
+            */
+            delay_budget = 0;
             
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0), temp_delay - delay_budget);
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];

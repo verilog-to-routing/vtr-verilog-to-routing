@@ -26,8 +26,8 @@ std::unordered_set<ClusterBlockId> highly_crit_blocks;
 PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
-    , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN()))
-    , timing_place_normalized_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
+    , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
+//    , timing_place_normalized_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
 /**
@@ -91,7 +91,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
          * Since path criticality varies much more than timing, we "sharpen" timing
          * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
         timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
-        timing_place_normalized_crit_[clb_net][pin_index_in_net] = clb_pin_crit;
+        //timing_place_normalized_crit_[clb_net][pin_index_in_net] = clb_pin_crit;
 
         if(new_crit > crit_limit)
             highly_crit_blocks.insert(cluster_ctx.clb_nlist.net_driver_block(clb_net));

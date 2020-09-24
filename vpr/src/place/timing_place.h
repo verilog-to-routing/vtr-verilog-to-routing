@@ -102,7 +102,7 @@ class PlacerCriticalities {
     float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
     
     ///@brief Returns the normalized criticality of the specified connection
-    float normalized_criticality(ClusterNetId net, int ipin) const { return timing_place_normalized_crit_[net][ipin]; }
+    //float normalized_criticality(ClusterNetId net, int ipin) const { return timing_place_normalized_crit_[net][ipin]; }
 
     /**
      * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds) which
@@ -145,7 +145,7 @@ class PlacerCriticalities {
      */
     ClbNetPinsMatrix<float> timing_place_crit_;
 
-    ClbNetPinsMatrix<float> timing_place_normalized_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+    //ClbNetPinsMatrix<float> timing_place_normalized_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
     /**
      * The criticality exponent when update_criticalites() was last called
