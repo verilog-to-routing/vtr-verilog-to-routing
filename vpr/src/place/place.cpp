@@ -290,6 +290,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               std::vector<int>& num_moves,
                               std::vector<int>& accepted_moves,
                               std::vector<int>& aborted_moves,
+                              const t_place_algorithm& place_algorithm,
                               float timing_bb_factor);
 
 static void check_place(const t_placer_costs& costs,
@@ -1110,7 +1111,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  std::vector<int>& num_moves,
                                  std::vector<int>& accepted_moves,
                                  std::vector<int>& aborted_moves,
-                                 float timing_bb_factor){
+                                 float timing_bb_factor) {
     int inner_crit_iter_count, inner_iter;
 
     int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
@@ -1136,6 +1137,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              num_moves,
                                              accepted_moves,
                                              aborted_moves,
+                                             place_algorithm,
                                              timing_bb_factor);
 
         if (swap_result == ACCEPTED) {
@@ -1297,6 +1299,7 @@ static float starting_t(const t_annealing_state* state,
                                              num_moves,
                                              accepted_moves,
                                              aborted_moves,
+                                             placer_opts.place_algorithm,
                                              HI_LIMIT);
 
         if (swap_result == ACCEPTED) {
@@ -1390,6 +1393,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               std::vector<int>& num_moves,
                               std::vector<int>& accepted_moves,
                               std::vector<int>& aborted_moves,
+                              const t_place_algorithm& place_algorithm,
                               float timing_bb_factor) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
@@ -1398,7 +1402,6 @@ static e_move_result try_swap(const t_annealing_state* state,
      * Passes back the new value of the cost functions.                  */
 
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
-    t_place_algorithm place_algorithm = placer_opts.place_algorithm;
     float timing_tradeoff = placer_opts.timing_tradeoff;
 
     int type; //move type number
