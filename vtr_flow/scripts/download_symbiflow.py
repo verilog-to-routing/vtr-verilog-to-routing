@@ -1,50 +1,51 @@
 #!/usr/bin/env python3
+"""
+    Script to download the SymbiFlow Series-7 architectures
+"""
+
 import sys
 import os
 import argparse
-import urllib.parse
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
-import hashlib
 import math
 import textwrap
-import tarfile
 import fnmatch
-import errno
 import tempfile
 import shutil
-import glob
 import subprocess
+from urllib import request
 
+GCS_URL = (
+    "https://storage.googleapis.com/symbiflow-arch-defs/artifacts/prod/"
+    "foss-fpga-tools/symbiflow-arch-defs/presubmit/install/"
+    "731/20200926-090152/symbiflow-arch-defs-install-e3de025d.tar.xz"
+)
 
-class DownloadError(Exception):
-    pass
-
-
-class ChecksumError(Exception):
-    pass
+SYMBIFLOW_URL_MIRRORS = {"google": GCS_URL}
 
 
 class ExtractionError(Exception):
-    pass
-
-
-SYMBIFLOW_URL_MIRRORS = {
-        "google": "https://storage.googleapis.com/symbiflow-arch-defs/artifacts/prod/foss-fpga-tools/symbiflow-arch-defs/presubmit/install/731/20200926-090152/symbiflow-arch-defs-install-e3de025d.tar.xz"
-}
+    """
+    Extraction error exception class
+    """
 
 
 def parse_args():
+    """
+    Parses and returns script's arguments
+    """
+
     description = textwrap.dedent(
         """
-                    Download and extract a symbiflow benchmark release into a
-                    VTR-style directory structure.
+            Download and extract a symbiflow benchmark release into a
+            VTR-style directory structure.
 
-                    If a previous matching symbiflow release tar.gz file is found
-                    does nothing (unless --force is specified).
-                  """
+            If a previous matching symbiflow release tar.gz file is found
+            does nothing (unless --force is specified).
+        """
     )
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter, description=description
+    )
 
     parser.add_argument(
         "--vtr_flow_dir",
@@ -60,13 +61,11 @@ def parse_args():
         help="Run extraction step even if directores etc. already exist",
     )
 
-    parser.add_argument(
-        "--mirror", default="google", choices=["google"], help="Download mirror"
-    )
+    parser.add_argument("--mirror", default="google", choices=["google"], help="Download mirror")
 
     parser.add_argument(
         "--upgrade_archs",
-        action='store_true',
+        action="store_true",
         default=True,
         help="Try to upgrade included architecture files (using the upgrade_archs.py)",
     )
@@ -75,6 +74,9 @@ def parse_args():
 
 
 def main():
+    """
+    Main function
+    """
 
     args = parse_args()
 
@@ -89,12 +91,9 @@ def main():
         print("Extracting {}".format(tar_xz_filename))
         extract_to_vtr_flow_dir(args, tar_xz_filename)
 
-    except DownloadError as e:
-        print("Failed to download:", e)
+    except ExtractionError as error:
+        print("Failed to extract data: ", error)
         sys.exit(1)
-    except ExtractionError as e:
-        print("Failed to extract symbiflow release:", e)
-        sys.exit(2)
 
     sys.exit(0)
 
@@ -103,7 +102,7 @@ def download_url(filename, url):
     """
     Downloads the symbiflow release
     """
-    urllib.request.urlretrieve(url, filename, reporthook=download_progress_callback)
+    request.urlretrieve(url, filename, reporthook=download_progress_callback)
 
 
 def download_progress_callback(block_num, block_size, expected_size):
@@ -119,14 +118,6 @@ def download_progress_callback(block_num, block_size, expected_size):
     if block_num * block_size >= expected_size:
         print("")
 
-def force_symlink(file1, file2):
-    try:
-        os.symlink(file1, file2)
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            os.remove(file2)
-            os.symlink(file1, file2)
-
 
 def extract_to_vtr_flow_dir(args, tar_xz_filename):
     """
@@ -137,7 +128,9 @@ def extract_to_vtr_flow_dir(args, tar_xz_filename):
     # Reference directories
     arch_dir = os.path.join(args.vtr_flow_dir, "arch")
     symbiflow_arch_extract_dir = os.path.join(arch_dir, "symbiflow")
-    symbiflow_test_dir = os.path.join(args.vtr_flow_dir, "tasks", "regression_tests", "vtr_reg_nightly", "symbiflow")
+    symbiflow_test_dir = os.path.join(
+        args.vtr_flow_dir, "tasks", "regression_tests", "vtr_reg_nightly", "symbiflow"
+    )
 
     arch_upgrade_script = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "upgrade_arch.py"
@@ -149,52 +142,40 @@ def extract_to_vtr_flow_dir(args, tar_xz_filename):
             args.vtr_flow_dir,
             symbiflow_arch_extract_dir,
         ]
-        for dir in expected_dirs:
-            if not os.path.isdir(dir):
-                raise ExtractionError("{} should be a directory".format(dir))
+        for directory in expected_dirs:
+            if not os.path.isdir(directory):
+                raise ExtractionError("{} should be a directory".format(directory))
 
     # Create a temporary working directory
     tmpdir = tempfile.mkdtemp(suffix="download_symbiflow", dir=".")
 
     # Extract matching files into the temporary directory
-    subprocess.call("tar -C {} -xf {} share/symbiflow/arch/xc7a50t_test".format(tmpdir, tar_xz_filename), shell=True)
+    subprocess.call(
+        "tar -C {} -xf {} share/symbiflow/arch/xc7a50t_test".format(tmpdir, tar_xz_filename),
+        shell=True,
+    )
 
     # Move the extracted files to the relevant directories, SDC files first (since we
     # need to look up the BLIF name to make it match)
-    for dirpath, dirnames, filenames in os.walk(tmpdir):
+    for dirpath, _, filenames in os.walk(tmpdir):
         for filename in filenames:
             src_file_path = os.path.join(dirpath, filename)
             dst_file_path = None
 
             if fnmatch.fnmatch(src_file_path, "*/xc7a50t_test/arch.timing.xml"):
-                dst_file_path = os.path.join(
-                    symbiflow_arch_extract_dir, "arch.timing.xml"
-                )
+                dst_file_path = os.path.join(symbiflow_arch_extract_dir, "arch.timing.xml")
 
                 subprocess.call("{} {}".format(arch_upgrade_script, src_file_path), shell=True)
 
             elif fnmatch.fnmatch(src_file_path, "*/xc7a50t_test/*.bin"):
-                dst_file_path = os.path.join(
-                    symbiflow_test_dir, filename
-                )
+                dst_file_path = os.path.join(symbiflow_test_dir, filename)
 
             if dst_file_path:
                 shutil.move(src_file_path, dst_file_path)
 
-
     shutil.rmtree(tmpdir)
 
     print("Done")
-
-
-def extract_callback(members):
-    for tarinfo in members:
-        if fnmatch.fnmatch(tarinfo.name, "*/*.xml"):
-            print(tarinfo.name)
-            yield tarinfo
-        elif fnmatch.fnmatch(tarinfo.name, "*/*.bin"):
-            print(tarinfo.name)
-            yield tarinfo
 
 
 if __name__ == "__main__":
