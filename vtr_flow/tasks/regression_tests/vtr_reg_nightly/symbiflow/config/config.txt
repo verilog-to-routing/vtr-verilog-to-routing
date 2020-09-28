@@ -15,13 +15,13 @@ circuit_list_add=symbiflow_counter.eblif
 arch_list_add=arch.timing.xml
 
 # Parse info and how to parse
-parse_file=vpr_titan.txt
+parse_file=vpr_standard.txt
 
 # How to parse QoR info
-qor_parse_file=qor_vpr_titan.txt
+qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_vpr_titan.txt
+pass_requirements_file=pass_requirements.txt
 
 #The Titan benchmarks are run at a fixed channel width of 300 to simulate a Stratix IV-like routing architecture
 #A large number of routing iterations is set to ensure the router doesn't give up to easily on the larger benchmarks
