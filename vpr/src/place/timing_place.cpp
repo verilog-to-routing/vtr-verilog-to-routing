@@ -105,6 +105,10 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
     first_time_update_criticality = false;
 }
 
+void PlacerCriticalities::set_recompute_required() {
+    recompute_required = true;
+}
+
 /**
  * @brief Collect the cluster pins which need to be updated based on the latest timing
  *        analysis so that incremental updates to criticalities can be performed.
@@ -212,6 +216,7 @@ void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) 
     /* Can be incrementally updated on the next iteration. */
     recompute_required = false;
 }
+
 
 /**
  * @brief Collect the cluster pins which need to be updated based on the latest timing

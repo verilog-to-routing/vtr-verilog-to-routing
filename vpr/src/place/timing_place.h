@@ -122,6 +122,12 @@ class PlacerCriticalities {
      */
     void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent, float crit_limit);
 
+    ///@bried Enable the recompute_required flag to enforce from scratch update.
+    void set_recompute_required();
+
+    ///@brief From scratch update. See timing_place.cpp for more.
+    void recompute_criticalities();
+
     ///@brief Override the criticality of a particular connection.
     void set_criticality(ClusterNetId net, int ipin, float crit_val);
 
@@ -158,9 +164,6 @@ class PlacerCriticalities {
 
     ///@brief Incremental update. See timing_place.cpp for more.
     void incr_update_criticalities(const SetupTimingInfo* timing_info);
-
-    ///@brief From scratch update. See timing_place.cpp for more.
-    void recompute_criticalities();
 
     ///@brief Flag that turns on/off the update_criticalities() routine.
     bool update_enabled = true;
@@ -228,6 +231,9 @@ class PlacerSetupSlacks {
      * during the next timing analysis iteration.
      */
     void update_setup_slacks(const SetupTimingInfo* timing_info);
+
+    ///@bried Enable the recompute_required flag to enforce from scratch update.
+    void set_recompute_required() {recompute_required = true;}
 
     ///@brief Override the setup slack of a particular connection.
     void set_setup_slack(ClusterNetId net, int ipin, float slack_val);

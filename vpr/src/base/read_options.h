@@ -117,6 +117,8 @@ struct t_options {
     argparse::ArgValue<int> place_high_fanout_net;
 
     argparse::ArgValue<bool> simpleRL_agent_placement;
+    argparse::ArgValue<bool> place_agent_multistate;
+    argparse::ArgValue<bool> place_checkpointing;
     argparse::ArgValue<float> place_agent_epsilon;
     argparse::ArgValue<float> place_agent_gamma;
     argparse::ArgValue<int> place_dm_rlim;

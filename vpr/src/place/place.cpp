@@ -469,6 +469,7 @@ void try_place(const t_placer_opts& placer_opts,
     char msg[vtr::bufsize];
     t_placer_statistics stats;
 
+    t_placement_checkpoint placement_checkpoint;
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -797,8 +798,29 @@ void try_place(const t_placer_opts& placer_opts,
                                       pin_timing_invalidator.get(),
                                       timing_info.get());
 
+        if (placer_opts.place_algorithm.is_timing_driven()) {
+            critical_path = timing_info->least_slack_critical_path();
+            sTNS = timing_info->setup_total_negative_slack();
+            sWNS = timing_info->setup_worst_negative_slack();
+        }
 
-        if(agent_state == 1){
+        
+        if(agent_state == 2){
+            if(placement_checkpoint.cp_is_valid() == false || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())){
+
+                placement_checkpoint.save_placement(costs, critical_path.delay());
+                VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost, 1e9 * critical_path.delay());
+            }
+            /*
+            else if (cp_is_valid() && critical_path.delay() > 1.05 * get_cp_cpd()){
+                restore_placement();
+                VTR_LOG("Checkpoint restored\n");
+            }
+            */
+        }
+        
+
+        if(agent_state == 1 || placer_opts.place_agent_multistate == false){
             placement_inner_loop(&state, placer_opts,
                              inner_recompute_limit, &stats,
                              &costs,
@@ -841,35 +863,17 @@ void try_place(const t_placer_opts& placer_opts,
         tot_iter += state.move_lim;
         ++state.num_temps;
 
-        if (placer_opts.place_algorithm.is_timing_driven()) {
-            critical_path = timing_info->least_slack_critical_path();
-            sTNS = timing_info->setup_total_negative_slack();
-            sWNS = timing_info->setup_worst_negative_slack();
-        }
-
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
 
-
+        if(agent_state == 1 && state.alpha < 0.85 && state.alpha > 0.6){
+            agent_state = 2;
+            VTR_LOG("Agent's 2nd state: \n");
+        }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
         print_place_statisitics(num_temps, state.t,num_moves,accepted_moves,aborted_moves);
 #endif
 
-        
-        if(agent_state == 1 && state.alpha < 0.85 && state.alpha > 0.6){
-            //agent_state = 2;
-            if(cp_is_valid() == false || (critical_path.delay() < 0.95 * get_cp_cpd() && costs.bb_cost <= get_cp_bb_cost())){
-                save_placement(costs, critical_path.delay());
-                VTR_LOG("Checkpoint saved: bb_costs %g, TD costs %g, cpd %7.3f \n", costs.bb_cost, costs.timing_cost, 1e9 * critical_path.delay());
-            }
-            /*
-            else if (cp_is_valid() && critical_path.delay() > 1.05 * get_cp_cpd()){
-                restore_placement();
-                VTR_LOG("Checkpoint restored\n");
-            }
-            */
-            //VTR_LOG("Second state: \n");
-        }
         
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                 costs.cost, costs.bb_cost, costs.timing_cost, state.t);
@@ -911,7 +915,8 @@ quench:
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        placement_inner_loop(&state, placer_opts,
+        if(placer_opts.place_agent_multistate == true) {
+            placement_inner_loop(&state, placer_opts,
                              quench_recompute_limit, &stats,
                              &costs,
                              &moves_since_cost_recompute,
@@ -929,6 +934,26 @@ quench:
                              accepted_moves,
                              aborted_moves,
                              timing_bb_factor);
+        } else{
+            placement_inner_loop(&state, placer_opts,
+                             quench_recompute_limit, &stats,
+                             &costs,
+                             &moves_since_cost_recompute,
+                             pin_timing_invalidator.get(),
+                             place_delay_model.get(),
+                             placer_criticalities.get(),
+                             placer_setup_slacks.get(),
+                             *move_generator,
+                             blocks_affected,
+                             timing_info.get(),
+                             placer_opts.place_quench_algorithm,
+                             X_coord,
+                             Y_coord,
+                             num_moves,
+                             accepted_moves,
+                             aborted_moves,
+                             timing_bb_factor);
+        }
 
         tot_iter += state.move_lim;
         ++state.num_temps;
@@ -942,10 +967,37 @@ quench:
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
-            
-    if (cp_is_valid() && critical_path.delay() > 1.05 * get_cp_cpd()){
-        costs = restore_placement();
-        VTR_LOG("Checkpoint restored\n");
+
+    if (placer_opts.place_algorithm.is_timing_driven()) {
+        perform_full_timing_update(state.crit_exponent,
+                                   place_delay_model.get(),
+                                   placer_criticalities.get(),
+                                   placer_setup_slacks.get(),
+                                   pin_timing_invalidator.get(),
+                                   timing_info.get(),
+                                   &costs,
+                                   placer_opts.place_crit_limit);
+        VTR_LOG("post-quench CPD = %g (ns) \n", 1e9*timing_info->least_slack_critical_path().delay());
+    }
+        
+    if (placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost < 1.05* placement_checkpoint.get_cp_bb_cost() ){
+
+        costs = placement_checkpoint.restore_placement();
+
+        //recompute timing from scratch
+        placer_criticalities.get()->set_recompute_required();
+        placer_setup_slacks.get()->set_recompute_required();
+        comp_td_connection_delays(place_delay_model.get());
+        perform_full_timing_update(state.crit_exponent,
+                                   place_delay_model.get(),
+                                   placer_criticalities.get(),
+                                   placer_setup_slacks.get(),
+                                   pin_timing_invalidator.get(),
+                                   timing_info.get(),
+                                   &costs,
+                                   placer_opts.place_crit_limit);
+        
+        VTR_LOG("\nCheckpoint restored\n");
     }
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
@@ -973,15 +1025,7 @@ quench:
     if (placer_opts.place_algorithm.is_timing_driven()) {
         //Final timing estimate
         VTR_ASSERT(timing_info);
-        perform_full_timing_update(state.crit_exponent,
-                                   place_delay_model.get(),
-                                   placer_criticalities.get(),
-                                   placer_setup_slacks.get(),
-                                   pin_timing_invalidator.get(),
-                                   timing_info.get(),
-                                   &costs,
-                                   placer_opts.place_crit_limit);
-
+        
         critical_path = timing_info->least_slack_critical_path();
 
         if (isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {

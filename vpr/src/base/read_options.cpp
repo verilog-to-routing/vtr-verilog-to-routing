@@ -1809,6 +1809,21 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+
+    place_grp.add_argument<bool, ParseOnOff>(args.place_agent_multistate, "--place_agent_multistate")
+        .help(
+            "Enable multistate agent. "
+            "A second state will be activated late in the annealing and in the Quench that includes all the timing driven directed moves.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<bool, ParseOnOff>(args.place_checkpointing, "--place_checkpointing")
+        .help(
+            "Enable Placement checkpoints. "
+            "Only enabled if agnet's 2nd state is actovated")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.place_agent_epsilon, "--place_agent_epsilon")
         .help(
             "Agent epsilon (exploration fraction) for subsequent temperatures")

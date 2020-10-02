@@ -578,6 +578,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
     PlacerOpts->simpleRL_agent_placement = Options.simpleRL_agent_placement;
+    PlacerOpts->place_agent_multistate = Options.place_agent_multistate;
+    PlacerOpts->place_checkpointing = Options.place_checkpointing;
     PlacerOpts->place_agent_epsilon = Options.place_agent_epsilon;
     PlacerOpts->place_agent_gamma = Options.place_agent_gamma;
     PlacerOpts->place_dm_rlim = Options.place_dm_rlim;
