@@ -805,7 +805,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
 
         
-        if(agent_state == 2){
+        if(placer_opts.place_checkpointing && agent_state == 2){
             if(placement_checkpoint.cp_is_valid() == false || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())){
 
                 placement_checkpoint.save_placement(costs, critical_path.delay());
@@ -980,7 +980,7 @@ quench:
         VTR_LOG("post-quench CPD = %g (ns) \n", 1e9*timing_info->least_slack_critical_path().delay());
     }
         
-    if (placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost < 1.05* placement_checkpoint.get_cp_bb_cost() ){
+    if (placer_opts.place_checkpointing && placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost < 1.05* placement_checkpoint.get_cp_bb_cost() ){
 
         costs = placement_checkpoint.restore_placement();
 
