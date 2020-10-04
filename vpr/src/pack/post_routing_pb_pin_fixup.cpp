@@ -193,8 +193,8 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                 visited_rr_nodes.push_back(RRNodeId(rr_node));
             }
         }
-        if (!((0 == valid_routing_net_cnt) || (1 == valid_routing_net_cnt)))
-            VTR_ASSERT((0 == valid_routing_net_cnt) || (1 == valid_routing_net_cnt));
+
+        VTR_ASSERT((valid_routing_net_cnt < 0) || (valid_routing_net_cnt >= 2));
 
         /* Find the net mapped to this pin in clustering results*/
         ClusterNetId cluster_net_id = clustering_ctx.clb_nlist.block_net(blk_id, pb_type_pin);
