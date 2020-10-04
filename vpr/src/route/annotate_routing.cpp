@@ -27,12 +27,12 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
     rr_node_nets.resize(device_ctx.rr_nodes.size(), ClusterNetId::INVALID());
 
     for (auto net_id : clustering_ctx.clb_nlist.nets()) {
-        if (true == clustering_ctx.clb_nlist.net_is_ignored(net_id)) {
+        if (clustering_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue;
         }
 
         /* Ignore used in local cluster only, reserved one CLB pin */
-        if (false == clustering_ctx.clb_nlist.net_sinks(net_id).size()) {
+        if (!clustering_ctx.clb_nlist.net_sinks(net_id).size()) {
             continue;
         }
         t_trace* tptr = routing_ctx.trace[net_id].head;

@@ -31,7 +31,7 @@ static std::vector<e_side> find_physical_tile_pin_side(t_physical_tile_type_ptr 
     for (const e_side& side_cand : {TOP, RIGHT, BOTTOM, LEFT}) {
         int pin_width_offset = physical_tile->pin_width_offset[physical_pin];
         int pin_height_offset = physical_tile->pin_height_offset[physical_pin];
-        if (true == physical_tile->pinloc[pin_width_offset][pin_height_offset][side_cand][physical_pin]) {
+        if (physical_tile->pinloc[pin_width_offset][pin_height_offset][side_cand][physical_pin]) {
             pin_sides.push_back(side_cand);
         }
     }
@@ -98,7 +98,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
     /* If wanted sides is empty still, this block does not have specific wanted sides,
      * Deposit all the sides
      */
-    if (true == wanted_sides.empty()) {
+    if (wanted_sides.empty()) {
         for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
             wanted_sides.push_back(side);
         }
@@ -209,7 +209,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
          */
 
         /* Ignore used in local cluster only, reserved one CLB pin */
-        if ((true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
+        if ((clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
             && (0 == clustering_ctx.clb_nlist.net_sinks(cluster_net_id).size())) {
             continue;
         }
@@ -225,12 +225,12 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster] = routing_net_id;
 
         std::string routing_net_name("unmapped");
-        if (true == clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
+        if (clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
             routing_net_name = clustering_ctx.clb_nlist.net_name(routing_net_id);
         }
 
         std::string cluster_net_name("unmapped");
-        if (true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id)) {
+        if (clustering_ctx.clb_nlist.valid_net_id(cluster_net_id)) {
             cluster_net_name = clustering_ctx.clb_nlist.net_name(cluster_net_id);
         }
 
@@ -260,7 +260,7 @@ static int find_target_pb_route_from_equivalent_pins(const AtomContext& atom_ctx
                                                      const t_pb_graph_pin* source_pb_graph_pin,
                                                      const AtomNetId& target_net,
                                                      const bool& verbose) {
-    VTR_ASSERT(true == source_pb_graph_pin->parent_node->is_root());
+    VTR_ASSERT(source_pb_graph_pin->parent_node->is_root());
 
     std::vector<int> pb_route_indices;
 
@@ -282,7 +282,7 @@ static int find_target_pb_route_from_equivalent_pins(const AtomContext& atom_ctx
 
         /* Sanity check to ensure the pb_graph_pin is the top-level */
         VTR_ASSERT(pb_graph_pin->parent_node == pb->pb_graph_node);
-        VTR_ASSERT(true == pb_graph_pin->parent_node->is_root());
+        VTR_ASSERT(pb_graph_pin->parent_node->is_root());
 
         int pin = pb_graph_pin->pin_count_in_cluster;
 
@@ -419,7 +419,7 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
 
         /* Sanity check to ensure the pb_graph_pin is the top-level */
         VTR_ASSERT(pb_graph_pin->parent_node == pb->pb_graph_node);
-        VTR_ASSERT(true == pb_graph_pin->parent_node->is_root());
+        VTR_ASSERT(pb_graph_pin->parent_node->is_root());
 
         auto remapped_result = clustering_ctx.post_routing_clb_pin_nets.at(blk_id).find(pb_graph_pin->pin_count_in_cluster);
 
@@ -438,8 +438,8 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
         if (!remapped_net) {
             /* Remove the invalid pb_route */
             ClusterNetId global_net_id = clustering_ctx.clb_nlist.block_net(blk_id, pb_type_pin);
-            if ((true == clustering_ctx.clb_nlist.valid_net_id(global_net_id))
-                && (false == clustering_ctx.clb_nlist.net_is_ignored(global_net_id))) {
+            if ((clustering_ctx.clb_nlist.valid_net_id(global_net_id))
+                && (!clustering_ctx.clb_nlist.net_is_ignored(global_net_id))) {
                 new_pb_routes.erase(pb_graph_pin->pin_count_in_cluster);
             }
             continue;
@@ -519,15 +519,15 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
 
         /* Sanity check to ensure the pb_graph_pin is the top-level */
         VTR_ASSERT(pb_graph_pin->parent_node == pb->pb_graph_node);
-        VTR_ASSERT(true == pb_graph_pin->parent_node->is_root());
+        VTR_ASSERT(pb_graph_pin->parent_node->is_root());
 
         /* Focus on global net only */
         ClusterNetId global_net_id = clustering_ctx.clb_nlist.block_net(blk_id, pb_type_pin);
-        if (false == clustering_ctx.clb_nlist.valid_net_id(global_net_id)) {
+        if (!clustering_ctx.clb_nlist.valid_net_id(global_net_id)) {
             continue;
         }
-        if ((true == clustering_ctx.clb_nlist.valid_net_id(global_net_id))
-            && (false == clustering_ctx.clb_nlist.net_is_ignored(global_net_id))) {
+        if ((clustering_ctx.clb_nlist.valid_net_id(global_net_id))
+            && (!clustering_ctx.clb_nlist.net_is_ignored(global_net_id))) {
             continue;
         }
 
