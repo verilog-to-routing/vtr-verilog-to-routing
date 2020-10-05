@@ -82,8 +82,7 @@ void mixing_optimization_stats(nnode_t* node, netlist_t* netlist) {
             break;
         }
         default:
-            error_message(NETLIST, unknown_location, "%s",
-                          "Counting weights for mixing optimization for %i: Hard block type is unimplemented", node->type);
+            error_message(NETLIST, unknown_location, "Counting weights for mixing optimization for %i: Hard block type is unimplemented", node->type);
             break;
     }
 }
