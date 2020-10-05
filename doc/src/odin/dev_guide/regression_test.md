@@ -303,7 +303,7 @@ The micro regression tests targets hards blocks and pieces that can be easily in
 
 ### mixing_optimization
 
-The mixing optimization regression tests targets mixing implementations for operations implementable in hard blocks and their soft logic counterparts that can be can be easily instantiated in architectures.
+The mixing optimization regression tests targets mixing implementations for operations implementable in hard blocks and their soft logic counterparts that can be can be easily instantiated in architectures. The tests support extensive command line coverage, as well as provide infrastructure to enable the optimization from an .xml configuration file, require for using the optimization as a part of VTR synthesis flow.
 
 ### operators
 
@@ -430,6 +430,11 @@ benchmark
       │     │   |   |── synthesis_result.json
       │     │   |   └── task.conf
       |     |   ├── mults_auto_none
+      │     │   |   ├── simulation_result.json
+      │     │   |   |── synthesis_result.json
+      │     │   |   └── task.conf
+      |     |   ├── config_file_half
+      │     │   |   ├── config_file_half.xml
       │     │   |   ├── simulation_result.json
       │     │   |   |── synthesis_result.json
       │     │   |   └── task.conf
