@@ -3,11 +3,9 @@
 #include <algorithm>
 //#include "math.h"
 
-bool sort_by_weights(const std::pair<int,float> &a, const std::pair<int,float> &b);
+bool sort_by_weights(const std::pair<int, float>& a, const std::pair<int, float>& b);
 
-
-e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities ) {
+e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int&, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -32,22 +30,22 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     Y_coord.clear();
     ClusterNetId net_id;
     ClusterBlockId bnum;
-    int x,y,ipin,pnum;
+    int x, y, ipin, pnum;
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
-    float weight,center_x,center_y;
+    float weight, center_x, center_y;
 
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-        if(cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1){
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1) {
             ClusterBlockId source, sink;
             ClusterPinId sink_pin;
             source = cluster_ctx.clb_nlist.net_driver_block(net_id);
             sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
             sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
-            if(sink == source){
+            if (sink == source) {
                 continue;
             }
         }
@@ -58,8 +56,8 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
                 continue;
 
             //for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-            for(auto sink_pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-                if(pin_id == sink_pin_id)
+            for (auto sink_pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+                if (pin_id == sink_pin_id)
                     continue;
                 ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
                 pnum = tile_pin_index(sink_pin_id);
@@ -74,13 +72,13 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
                 x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
                 y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-                acc_x += x*weight;
-                acc_y += y*weight;
+                acc_x += x * weight;
+                acc_y += y * weight;
             }
         }
 
         //else the pin is sink --> only care about its driver
-        else  {
+        else {
             ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             weight = criticalities->criticality(net_id, ipin);
             acc_weight += weight;
@@ -95,14 +93,14 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-            acc_x += x*weight;
-            acc_y += y*weight;
+            acc_x += x * weight;
+            acc_y += y * weight;
         }
     }
 
     //Calculate the centroid location
-    center_x = acc_x/acc_weight;
-    center_y = acc_y/acc_weight;
+    center_x = acc_x / acc_weight;
+    center_y = acc_y / acc_weight;
 
     t_pl_loc centroid;
     centroid.x = center_x;

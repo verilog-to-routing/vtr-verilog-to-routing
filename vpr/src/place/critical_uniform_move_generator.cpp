@@ -1,22 +1,19 @@
 #include "critical_uniform_move_generator.h"
 #include "globals.h"
 
-e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>&, std::vector<int>&, int & , const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
-
+e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>&, std::vector<int>&, int&, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Pick a random block to be swapped with another random block.   */
     //ClusterBlockId b_from = pick_from_block();
-    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[vtr::irand(highly_crit_pins.size()-1)];
-//    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[vtr::irand(highly_crit_pins.size() - 1)];
+    //    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
     }
-    
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);

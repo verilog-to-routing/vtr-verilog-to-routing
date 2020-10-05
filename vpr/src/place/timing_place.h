@@ -100,7 +100,7 @@ class PlacerCriticalities {
   public: //Accessors
     ///@brief Returns the criticality of the specified connection.
     float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
-    
+
     ///@brief Returns the normalized criticality of the specified connection
     //float normalized_criticality(ClusterNetId net, int ipin) const { return timing_place_normalized_crit_[net][ipin]; }
 
@@ -175,7 +175,7 @@ class PlacerCriticalities {
      * if this method wasn't called updated after the previous timing info update.
      */
     bool recompute_required = true;
-    
+
     //if this is first time to call update_criticality
     bool first_time_update_criticality = true;
 };
@@ -233,7 +233,7 @@ class PlacerSetupSlacks {
     void update_setup_slacks(const SetupTimingInfo* timing_info);
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
-    void set_recompute_required() {recompute_required = true;}
+    void set_recompute_required() { recompute_required = true; }
 
     ///@brief Override the setup slack of a particular connection.
     void set_setup_slack(ClusterNetId net, int ipin, float slack_val);

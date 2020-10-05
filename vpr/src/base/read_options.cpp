@@ -455,8 +455,6 @@ struct ParseFixPins {
     }
 };
 
-
-
 struct ParseClusterSeed {
     ConvertedValue<e_cluster_seed> from_str(std::string str) {
         ConvertedValue<e_cluster_seed> conv_value;
@@ -1792,10 +1790,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "The Probability of different move in Simulated Annealing."
             "The order of moves is: {uniformMove, MedianMove, WeightedMedianMove, WeightedCentroid, Timing feasible Region(TFR), Critical UniformMove, Centroid}")
         .nargs('+')
-        .default_value({"100","0","0","0","0","0", "0"})
+        .default_value({"100", "0", "0", "0", "0", "0", "0"})
 
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
@@ -1808,7 +1805,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Uses a simple RL agent in choosing the appropiate move type in placement. ")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_agent_multistate, "--place_agent_multistate")
         .help(
@@ -1864,14 +1860,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-
-
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
         .default_value("e_greedy")
         .choices({"e_greedy", "softmax"})
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 

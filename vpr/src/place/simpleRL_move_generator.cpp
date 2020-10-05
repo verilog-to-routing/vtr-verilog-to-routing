@@ -5,11 +5,10 @@
 
 #include "vtr_random.h"
 
-float my_exp (float );
+float my_exp(float);
 
 //EpsilonGreedyAgent member functions
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
-
     //f_ = vtr::fopen("agent_info.txt", "w");
     //VTR_LOG("!!!!%f\n",epsilon);
     set_epsilon(epsilon);
@@ -25,40 +24,37 @@ EpsilonGreedyAgent::~EpsilonGreedyAgent() {
     if (f_) vtr::fclose(f_);
 }
 
-
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
-	//VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
-	if (gamma < 0) {
+    //VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
+    if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
-            //
-            // For an exponentially wieghted average the fraction of total weight applied to
-            // to moves which occured > K moves ago is:
-            //
-            //      gamma = (1 - alpha)^K
-            //
-            // If we treat K as the number of moves per temperature (move_lim) then gamma
-            // is the fraction of weight applied to moves which occured > move_lim moves ago,
-            // and given a target gamma we can explicitly calcualte the alpha step-size
-            // required by the agent:
-            //
-            //     alpha = 1 - e^(log(gamma) / K)
-            //
-            float alpha = 1 - std::exp(std::log(gamma) / move_lim);
-            //VTR_LOG("K-armed bandit alpha: %g\n", alpha);
-            exp_alpha_ = alpha;
-        }
+        //
+        // For an exponentially wieghted average the fraction of total weight applied to
+        // to moves which occured > K moves ago is:
+        //
+        //      gamma = (1 - alpha)^K
+        //
+        // If we treat K as the number of moves per temperature (move_lim) then gamma
+        // is the fraction of weight applied to moves which occured > move_lim moves ago,
+        // and given a target gamma we can explicitly calcualte the alpha step-size
+        // required by the agent:
+        //
+        //     alpha = 1 - e^(log(gamma) / K)
+        //
+        float alpha = 1 - std::exp(std::log(gamma) / move_lim);
+        //VTR_LOG("K-armed bandit alpha: %g\n", alpha);
+        exp_alpha_ = alpha;
+    }
 }
 
 void EpsilonGreedyAgent::process_outcome(double reward, int reward_num) {
     ++n_[last_action_];
-    if(reward_num == 1 || reward_num == 4 ){
+    if (reward_num == 1 || reward_num == 4) {
         reward = reward / time_elapsed_per_move[last_action_];
-    }
-    else if(reward_num == 2 || reward_num == 5 ){
+    } else if (reward_num == 2 || reward_num == 5) {
         reward = reward / time_elapsed_per_accepted_move[last_action_];
-    }
-    else
+    } else
         reward = reward / time_elapsed[last_action_];
     //Determine step size
     float step = 0.;
@@ -99,9 +95,7 @@ void EpsilonGreedyAgent::process_outcome(double reward, int reward_num) {
         }
         fprintf(f_, "\n");
     }
-
 }
-
 
 size_t EpsilonGreedyAgent::propose_action() {
     size_t action = 0;
@@ -153,15 +147,15 @@ void EpsilonGreedyAgent::set_k(size_t k) {
     cumm_epsilon_action_prob_ = std::vector<float>(k, 1.0 / k);
 #if 0
 /*
-    if (f_) {
-        vtr::fclose(f_);
-        f_ = nullptr;
-    }
-*/
+ * if (f_) {
+ * vtr::fclose(f_);
+ * f_ = nullptr;
+ * }
+ */
 
 #endif
     //f_ = vtr::fopen("egreedy.csv", "w");
-    if(f_){
+    if (f_) {
         fprintf(f_, "action,reward,");
         for (size_t i = 0; i < k_; ++i) {
             fprintf(f_, "q%zu,", i);
@@ -173,11 +167,9 @@ void EpsilonGreedyAgent::set_k(size_t k) {
     }
 }
 
-
 void EpsilonGreedyAgent::set_epsilon_action_prob() {
     //initialize to equal probabilities
-    std::vector<float> epsilon_prob(k_, 1.0/k_);
-
+    std::vector<float> epsilon_prob(k_, 1.0 / k_);
 
     float accum = 0;
     for (size_t i = 0; i < k_; ++i) {
@@ -186,87 +178,80 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
     }
 }
 
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent){
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
+    std::unique_ptr<MoveGenerator> move_generator;
+    move_generator = std::make_unique<UniformMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator));
 
-	std::unique_ptr<MoveGenerator> move_generator;
-	move_generator = std::make_unique<UniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator));
+    std::unique_ptr<MoveGenerator> move_generator2;
+    move_generator2 = std::make_unique<MedianMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator2));
 
-	std::unique_ptr<MoveGenerator> move_generator2;
-	move_generator2 = std::make_unique<MedianMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator2));
+    std::unique_ptr<MoveGenerator> move_generator4;
+    move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator4));
 
-	std::unique_ptr<MoveGenerator> move_generator4;
-	move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator4));
+    std::unique_ptr<MoveGenerator> move_generator7;
+    move_generator7 = std::make_unique<CentroidMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator7));
 
-	std::unique_ptr<MoveGenerator> move_generator7;
-	move_generator7 = std::make_unique<CentroidMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator7));
+    std::unique_ptr<MoveGenerator> move_generator3;
+    move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator3));
 
-	std::unique_ptr<MoveGenerator> move_generator3;
-	move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator3));
+    std::unique_ptr<MoveGenerator> move_generator6;
+    move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator6));
 
-
-	std::unique_ptr<MoveGenerator> move_generator6;
-	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator6));
-
-	std::unique_ptr<MoveGenerator> move_generator5;
-	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator5));
+    std::unique_ptr<MoveGenerator> move_generator5;
+    move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator5));
 
     karmed_bandit_agent = std::move(agent);
 }
-
 
 //SimpleRL class member functions
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent){
-//SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent){
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
+    //SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent){
 
-	std::unique_ptr<MoveGenerator> move_generator;
-	move_generator = std::make_unique<UniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator));
+    std::unique_ptr<MoveGenerator> move_generator;
+    move_generator = std::make_unique<UniformMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator));
 
-	std::unique_ptr<MoveGenerator> move_generator2;
-	move_generator2 = std::make_unique<MedianMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator2));
+    std::unique_ptr<MoveGenerator> move_generator2;
+    move_generator2 = std::make_unique<MedianMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator2));
 
-	std::unique_ptr<MoveGenerator> move_generator4;
-	move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator4));
+    std::unique_ptr<MoveGenerator> move_generator4;
+    move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator4));
 
-	std::unique_ptr<MoveGenerator> move_generator7;
-	move_generator7 = std::make_unique<CentroidMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator7));
+    std::unique_ptr<MoveGenerator> move_generator7;
+    move_generator7 = std::make_unique<CentroidMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator7));
 
-	std::unique_ptr<MoveGenerator> move_generator3;
-	move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator3));
+    std::unique_ptr<MoveGenerator> move_generator3;
+    move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator3));
 
+    std::unique_ptr<MoveGenerator> move_generator6;
+    move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator6));
 
-	std::unique_ptr<MoveGenerator> move_generator6;
-	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator6));
-
-	std::unique_ptr<MoveGenerator> move_generator5;
-	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator5));
+    std::unique_ptr<MoveGenerator> move_generator5;
+    move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
+    avail_moves.push_back(std::move(move_generator5));
 
     karmed_bandit_agent = std::move(agent);
 }
 
-
-e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
-	, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
-
-	type = karmed_bandit_agent->propose_action();
-	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, type, placer_opts, criticalities);
+e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+    type = karmed_bandit_agent->propose_action();
+    return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, type, placer_opts, criticalities);
 }
 
-void SimpleRLMoveGenerator::process_outcome(double reward, int reward_num){
-	karmed_bandit_agent->process_outcome(reward, reward_num);
+void SimpleRLMoveGenerator::process_outcome(double reward, int reward_num) {
+    karmed_bandit_agent->process_outcome(reward, reward_num);
 }
 /*                                  *
  *                                  *
@@ -274,28 +259,24 @@ void SimpleRLMoveGenerator::process_outcome(double reward, int reward_num){
  *                                  *
  *                                  */
 
-SoftmaxAgent::SoftmaxAgent(size_t k){
+SoftmaxAgent::SoftmaxAgent(size_t k) {
     set_k(k);
     set_action_prob();
 
     //f_ = vtr::fopen("agent_info.txt", "w");
 }
 
-
 SoftmaxAgent::~SoftmaxAgent() {
     if (f_) vtr::fclose(f_);
 }
 
-void SoftmaxAgent::process_outcome(double reward, int reward_num){
-
+void SoftmaxAgent::process_outcome(double reward, int reward_num) {
     ++n_[last_action_];
-    if(reward_num == 1 || reward_num == 4 ){
+    if (reward_num == 1 || reward_num == 4) {
         reward = reward / time_elapsed_per_move[last_action_];
-    }
-    else if(reward_num == 2 || reward_num == 5 ){
+    } else if (reward_num == 2 || reward_num == 5) {
         reward = reward / time_elapsed_per_accepted_move[last_action_];
-    }
-    else
+    } else
         reward = reward / time_elapsed[last_action_];
     //Determine step size
     float step = 0.;
@@ -338,7 +319,7 @@ void SoftmaxAgent::process_outcome(double reward, int reward_num){
     }
 }
 
-size_t SoftmaxAgent::propose_action(){
+size_t SoftmaxAgent::propose_action() {
     set_action_prob();
     size_t action = 0;
     float p = vtr::frand();
@@ -347,8 +328,8 @@ size_t SoftmaxAgent::propose_action(){
     auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
     action = itr - cumm_action_prob_.begin();
     //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
-    if(action == k_)
-        action = k_-1;
+    if (action == k_)
+        action = k_ - 1;
     VTR_ASSERT(action < k_);
 
     last_action_ = action;
@@ -360,10 +341,10 @@ void SoftmaxAgent::set_k(size_t k) {
     q_ = std::vector<float>(k, 0.);
     exp_q_ = std::vector<float>(k, 0.);
     n_ = std::vector<size_t>(k, 0);
-    action_prob_ = std::vector<float>(k,0.);
+    action_prob_ = std::vector<float>(k, 0.);
 
     cumm_action_prob_ = std::vector<float>(k);
-    if(f_){
+    if (f_) {
         fprintf(f_, "action,reward,");
         for (size_t i = 0; i < k_; ++i) {
             fprintf(f_, "q%zu,", i);
@@ -375,28 +356,26 @@ void SoftmaxAgent::set_k(size_t k) {
     }
 }
 
-float my_exp (float x){return std::exp(std::min(1000000*x,float(3.0)));}
+float my_exp(float x) { return std::exp(std::min(1000000 * x, float(3.0))); }
 
 void SoftmaxAgent::set_action_prob() {
     //float sum_q = accumulate(q_.begin(),q_.end(),0.0);
     std::transform(q_.begin(), q_.end(), exp_q_.begin(), my_exp);
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
-    if(sum_q == 0.0){
-        std::fill(action_prob_.begin(),action_prob_.end(),1.0/k_);
-    }
-    else{
-        for(size_t i=0; i<k_; ++i){
+    if (sum_q == 0.0) {
+        std::fill(action_prob_.begin(), action_prob_.end(), 1.0 / k_);
+    } else {
+        for (size_t i = 0; i < k_; ++i) {
             //action_prob_[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
             //action_prob_[i] = std::max(std::min(exp_q_[i]/sum_q, float(0.7)),float(0.06));
-            action_prob_[i] = exp_q_[i]/sum_q;
-
+            action_prob_[i] = exp_q_[i] / sum_q;
         }
     }
 
-    float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(),0.0);
+    float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
-          bind2nd(std::plus<float>(),(1.0-sum_prob)/k_ ));
+                   bind2nd(std::plus<float>(), (1.0 - sum_prob) / k_));
     float accum = 0;
     for (size_t i = 0; i < k_; ++i) {
         accum += action_prob_[i];
@@ -404,28 +383,26 @@ void SoftmaxAgent::set_action_prob() {
     }
 }
 
-void SoftmaxAgent::set_step(float gamma, int move_lim){
-	//VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
-	if (gamma < 0) {
+void SoftmaxAgent::set_step(float gamma, int move_lim) {
+    //VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
+    if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
-            //
-            // For an exponentially wieghted average the fraction of total weight applied to
-            // to moves which occured > K moves ago is:
-            //
-            //      gamma = (1 - alpha)^K
-            //
-            // If we treat K as the number of moves per temperature (move_lim) then gamma
-            // is the fraction of weight applied to moves which occured > move_lim moves ago,
-            // and given a target gamma we can explicitly calcualte the alpha step-size
-            // required by the agent:
-            //
-            //     alpha = 1 - e^(log(gamma) / K)
-            //
-            float alpha = 1 - std::exp(std::log(gamma) / move_lim);
-            //VTR_LOG("K-armed bandit alpha: %g\n", alpha);
-            exp_alpha_ = alpha;
-        }
+        //
+        // For an exponentially wieghted average the fraction of total weight applied to
+        // to moves which occured > K moves ago is:
+        //
+        //      gamma = (1 - alpha)^K
+        //
+        // If we treat K as the number of moves per temperature (move_lim) then gamma
+        // is the fraction of weight applied to moves which occured > move_lim moves ago,
+        // and given a target gamma we can explicitly calcualte the alpha step-size
+        // required by the agent:
+        //
+        //     alpha = 1 - e^(log(gamma) / K)
+        //
+        float alpha = 1 - std::exp(std::log(gamma) / move_lim);
+        //VTR_LOG("K-armed bandit alpha: %g\n", alpha);
+        exp_alpha_ = alpha;
+    }
 }
-
-

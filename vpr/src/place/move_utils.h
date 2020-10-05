@@ -23,7 +23,7 @@ enum class e_move_type {
     CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
-    FEASIBLE_REGION 
+    FEASIBLE_REGION
 };
 
 enum class e_create_move {
@@ -72,16 +72,15 @@ bool placer_breakpoint_reached();
 // Should be setted in the breakpoint calculation algorithm
 void set_placer_breakpoint_reached(bool);
 
-bool find_to_loc_median(t_logical_block_type_ptr type, const t_bb* limit_coords, const t_pl_loc from,
-                    t_pl_loc& to);
+bool find_to_loc_median(t_logical_block_type_ptr type, const t_bb* limit_coords, const t_pl_loc from, t_pl_loc& to);
 
 bool find_to_loc_centroid(t_logical_block_type_ptr type,
-                         float rlim,
-                         const t_pl_loc from,
-                         const t_pl_loc centeroid,
-                         t_pl_loc& to,
-                         int dm_rlim);
+                          float rlim,
+                          const t_pl_loc from,
+                          const t_pl_loc centeroid,
+                          t_pl_loc& to,
+                          int dm_rlim);
 
-std::string move_type_to_string (e_move_type);
+std::string move_type_to_string(e_move_type);
 
 #endif

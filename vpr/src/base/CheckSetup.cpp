@@ -43,11 +43,10 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "A block location file requires that placement is enabled.\n");
     }
 
-    if (PlacerOpts.place_static_move_prob.size() != 7){
+    if (PlacerOpts.place_static_move_prob.size() != 7) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                "The number of placer move probabilities should equal to the total number of supported moves. %d\n", PlacerOpts.place_static_move_prob.size());
+                        "The number of placer move probabilities should equal to the total number of supported moves. %d\n", PlacerOpts.place_static_move_prob.size());
     }
-
 
     if (RouterOpts.doRouting) {
         if (!Timing.timing_analysis_enabled

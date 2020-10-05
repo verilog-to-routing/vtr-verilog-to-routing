@@ -539,10 +539,10 @@ struct t_bb {
  *        This is useful for some directed move generators.
  */
 struct t_bb_cost {
-    std::pair<int,float> xmin={0,0.0};
-    std::pair<int,float> xmax={0,0.0};
-    std::pair<int,float> ymin={0,0.0};
-    std::pair<int,float> ymax={0,0.0};
+    std::pair<int, float> xmin = {0, 0.0};
+    std::pair<int, float> xmax = {0, 0.0};
+    std::pair<int, float> ymin = {0, 0.0};
+    std::pair<int, float> ymax = {0, 0.0};
 };
 
 /**
@@ -927,7 +927,7 @@ enum e_pad_loc_type {
     RANDOM
 };
 
-enum e_agent_algorithm{
+enum e_agent_algorithm {
     E_GREEDY,
     SOFTMAX
 };

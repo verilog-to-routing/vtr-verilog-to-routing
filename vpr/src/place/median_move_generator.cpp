@@ -5,13 +5,9 @@
 //#include "math.h"
 static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew);
 
-static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool & skip_net);
+static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
-
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
-
-
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int&, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -31,7 +27,7 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts
     /* Calculate the median region */
     t_pl_loc to;
 
-    t_bb coords,limit_coords;
+    t_bb coords, limit_coords;
     ClusterBlockId bnum;
     int pnum, xnew, xold, ynew, yold;
 
@@ -43,14 +39,13 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
-        if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
+        if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
             continue;
-        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4){
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4) {
             get_non_updateable(net_id, &coords, b_from, skip_net);
-            if(skip_net)
+            if (skip_net)
                 continue;
-        }
-        else{
+        } else {
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
             VTR_ASSERT(pnum >= 0);
@@ -58,23 +53,21 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts
             yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
-            if(bb_coords[net_id].xmin == xold){
+            if (bb_coords[net_id].xmin == xold) {
                 xnew = bb_coords[net_id].xmax;
-            }
-            else{
-               xnew = bb_coords[net_id].xmin;
+            } else {
+                xnew = bb_coords[net_id].xmin;
             }
 
-            if(bb_coords[net_id].ymin == yold){
+            if (bb_coords[net_id].ymin == yold) {
                 ynew = bb_coords[net_id].ymax;
-            }
-            else{
+            } else {
                 ynew = bb_coords[net_id].ymin;
             }
 
-            if(!update_bb(net_id, &coords, xold, yold, xnew, ynew)){
+            if (!update_bb(net_id, &coords, xold, yold, xnew, ynew)) {
                 get_non_updateable(net_id, &coords, b_from, skip_net);
-                if(skip_net)
+                if (skip_net)
                     continue;
             }
         }
@@ -84,30 +77,26 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts
         Y_coord.push_back(coords.ymax);
     }
 
-
-    if((X_coord.size()==0) || (Y_coord.size()==0))
+    if ((X_coord.size() == 0) || (Y_coord.size() == 0))
         return e_create_move::ABORT;
 
-    std::sort(X_coord.begin(),X_coord.end());
-    std::sort(Y_coord.begin(),Y_coord.end());
+    std::sort(X_coord.begin(), X_coord.end());
+    std::sort(Y_coord.begin(), Y_coord.end());
 
+    limit_coords.xmin = X_coord[floor((X_coord.size() - 1) / 2)];
+    limit_coords.xmax = X_coord[floor((X_coord.size() - 1) / 2) + 1];
 
-    limit_coords.xmin = X_coord[floor((X_coord.size()-1)/2)];
-    limit_coords.xmax = X_coord[floor((X_coord.size()-1)/2)+1];
-
-    limit_coords.ymin = Y_coord[floor((Y_coord.size()-1)/2)];
-    limit_coords.ymax = Y_coord[floor((Y_coord.size()-1)/2)+1];
+    limit_coords.ymin = Y_coord[floor((Y_coord.size() - 1) / 2)];
+    limit_coords.ymax = Y_coord[floor((Y_coord.size() - 1) / 2) + 1];
 
     t_pl_loc median_point;
-    median_point.x = (limit_coords.xmin + limit_coords.xmax) /2 ;
-    median_point.y = (limit_coords.ymin + limit_coords.ymax) /2 ;
-    if(!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to, placer_opts.place_dm_rlim))
+    median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
+    median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
+    if (!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to, placer_opts.place_dm_rlim))
         return e_create_move::ABORT;
-
 
     return ::create_move(blocks_affected, b_from, to);
 }
-
 
 /* Finds the bounding box of a net and stores its coordinates in the  *
  * bb_coord_new data structure.  This routine should only be called   *
@@ -116,7 +105,7 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, const t_placer_opts
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool & skip_net) {
+static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
 
     skip_net = true;
@@ -131,7 +120,7 @@ static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterB
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     bool first_block = false;
 
-    if(bnum != block_id){
+    if (bnum != block_id) {
         skip_net = false;
         pnum = net_pin_to_tile_pin_index(net_id, 0);
         x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
@@ -148,13 +137,13 @@ static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterB
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = tile_pin_index(pin_id);
-        if(bnum == block_id)
+        if (bnum == block_id)
             continue;
         skip_net = false;
         x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
-        if(!first_block){
+        if (!first_block) {
             xmin = x;
             ymin = y;
             xmax = x;
@@ -187,8 +176,6 @@ static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterB
     bb_coord_new->xmax = std::max(std::min<int>(xmax, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     bb_coord_new->ymax = std::max(std::min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 }
-
-
 
 static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew) {
     /* Updates the bounding box of a net by storing its coordinates in    *
@@ -282,7 +269,7 @@ static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yol
 
         if (yold == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
-                return false ;
+                return false;
             } else {
                 bb_coord_new->ymax = curr_bb_coord->ymax;
             }
@@ -330,6 +317,5 @@ static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yol
         bb_coord_new->ymin = curr_bb_coord->ymin;
         bb_coord_new->ymax = curr_bb_coord->ymax;
     }
-return true;
+    return true;
 }
-

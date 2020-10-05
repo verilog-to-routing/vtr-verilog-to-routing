@@ -27,7 +27,7 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, cons
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
     , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
-//    , timing_place_normalized_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
+    //    , timing_place_normalized_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
 /**
@@ -57,7 +57,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         /* Record new criticality exponent */
         last_crit_exponent_ = crit_exponent;
     }
-    
+
     ClusterBlockId crit_block;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     highly_crit_blocks.clear();
@@ -74,17 +74,15 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, clb_pin);
 
         float new_crit = pow(clb_pin_crit, crit_exponent);
-        if(!first_time_update_criticality){
-            if(new_crit > crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_limit){
-                highly_crit_pins.push_back(std::make_pair(clb_net,pin_index_in_net));
+        if (!first_time_update_criticality) {
+            if (new_crit > crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_limit) {
+                highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
+            } else if (new_crit < crit_limit && timing_place_crit_[clb_net][pin_index_in_net] > crit_limit) {
+                highly_crit_pins.erase(std::remove(highly_crit_pins.begin(), highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)), highly_crit_pins.end());
             }
-            else if (new_crit < crit_limit && timing_place_crit_[clb_net][pin_index_in_net] > crit_limit){
-                highly_crit_pins.erase(std::remove(highly_crit_pins.begin(), highly_crit_pins.end(), std::make_pair(clb_net,pin_index_in_net)), highly_crit_pins.end());
-            }
-        }
-        else {
-            if(new_crit > crit_limit)
-                highly_crit_pins.push_back(std::make_pair(clb_net,pin_index_in_net));
+        } else {
+            if (new_crit > crit_limit)
+                highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
         }
 
         /* The placer likes a great deal of contrast between criticalities.
@@ -93,15 +91,14 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
         //timing_place_normalized_crit_[clb_net][pin_index_in_net] = clb_pin_crit;
 
-        if(new_crit > crit_limit)
+        if (new_crit > crit_limit)
             highly_crit_blocks.insert(cluster_ctx.clb_nlist.net_driver_block(clb_net));
-
     }
 
     /* Criticalities updated. In sync with timing info.   */
     /* Can be incrementally updated on the next iteration */
     recompute_required = false;
-    
+
     first_time_update_criticality = false;
 }
 
@@ -216,7 +213,6 @@ void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) 
     /* Can be incrementally updated on the next iteration. */
     recompute_required = false;
 }
-
 
 /**
  * @brief Collect the cluster pins which need to be updated based on the latest timing

@@ -587,7 +587,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_reward_num = Options.place_reward_num;
     PlacerOpts->place_crit_limit = Options.place_crit_limit;
     PlacerOpts->place_agent_algorithm = Options.place_agent_algorithm;
-
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

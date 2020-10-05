@@ -51,7 +51,7 @@
 #include "move_utils.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#include "move_utils.h"
+#    include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *

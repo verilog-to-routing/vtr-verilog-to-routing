@@ -13,7 +13,7 @@ class KArmedBanditAgent {
   public:
     virtual ~KArmedBanditAgent() {}
     virtual void set_k(size_t k) = 0;
-    virtual void process_outcome(double , int) = 0;
+    virtual void process_outcome(double, int) = 0;
     virtual size_t propose_action() = 0;
 #if 0
     virtual void debug() = 0;
@@ -26,8 +26,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     ~EpsilonGreedyAgent();
 
     void process_outcome(double reward, int reward_num) override; //Updates the agent based on the reward of the last proposed action
-    size_t propose_action() override;            //Returns the next action the agent wants to
-
+    size_t propose_action() override;                             //Returns the next action the agent wants to
 
   public:
     void set_k(size_t k); //Sets the number of arms
@@ -50,9 +49,9 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     size_t last_action_ = 0; //The last action proposed
     //std::vector<double> time_elapsed {1.0,4.3,5.7,3.3};
     //std::vector<double> time_elapsed {1.0,3.87,6.4,2.8,2.29};
-    std::vector<double> time_elapsed {1.0,3.6,5.4,2.5,2.1,0.8};
-    std::vector<double> time_elapsed_per_move {1.0,3.7,6,3.0,2.0,1.0,2.6};
-    std::vector<double> time_elapsed_per_accepted_move {1.0,3.6,4.6,2.4,2.0,2.2,2.5};
+    std::vector<double> time_elapsed{1.0, 3.6, 5.4, 2.5, 2.1, 0.8};
+    std::vector<double> time_elapsed_per_move{1.0, 3.7, 6, 3.0, 2.0, 1.0, 2.6};
+    std::vector<double> time_elapsed_per_accepted_move{1.0, 3.6, 4.6, 2.4, 2.0, 2.2, 2.5};
     //std::vector<double> time_elapsed {1.0, 4.11, 6.67, 3.22, 1.88, 0.81};
     //std::vector<int> time_elapsed {7,30,40,23};
     FILE* f_ = nullptr;
@@ -64,8 +63,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
     ~SoftmaxAgent();
 
     void process_outcome(double reward, int reward_num) override; //Updates the agent based on the reward of the last proposed action
-    size_t propose_action() override;            //Returns the next action the agent wants to
-
+    size_t propose_action() override;                             //Returns the next action the agent wants to
 
   public:
     void set_k(size_t k); //Sets the number of arms
@@ -78,34 +76,32 @@ class SoftmaxAgent : public KArmedBanditAgent {
     size_t k_;             //Number of arms
     float exp_alpha_ = -1; //Step size for q_ updates (< 0 implies use incremental average)
 
-    std::vector<size_t> n_; //Number of times each arm has been pulled
-    std::vector<float> q_;  //Estimated value of each arm
-    std::vector<float> exp_q_;  //Estimated value of each arm
+    std::vector<size_t> n_;    //Number of times each arm has been pulled
+    std::vector<float> q_;     //Estimated value of each arm
+    std::vector<float> exp_q_; //Estimated value of each arm
     std::vector<float> action_prob_;
     std::vector<float> cumm_action_prob_;
     size_t last_action_ = 0; //The last action proposed
     //std::vector<double> time_elapsed {1.0,4.3,5.7,3.3};
     //std::vector<double> time_elapsed {1.0,3.87,6.4,2.8,2.29};
-    std::vector<double> time_elapsed {1.0,3.6,5.4,2.5,2.1,0.8,2.2};
-    std::vector<double> time_elapsed_per_move {1.0,3.7,6,3.0,2.0,1.0,2.6};
+    std::vector<double> time_elapsed{1.0, 3.6, 5.4, 2.5, 2.1, 0.8, 2.2};
+    std::vector<double> time_elapsed_per_move{1.0, 3.7, 6, 3.0, 2.0, 1.0, 2.6};
     //std::vector<double> time_elapsed_per_accepted_move {1.0,3.6,4.6,2.4,2.0,2.2,2.5};
-    std::vector<double> time_elapsed_per_accepted_move {1.0,3.6,4.6,2.4,1.0,1.0,1.0};
+    std::vector<double> time_elapsed_per_accepted_move{1.0, 3.6, 4.6, 2.4, 1.0, 1.0, 1.0};
     //std::vector<double> time_elapsed {1.0, 4.11, 6.67, 3.22, 1.88, 0.81};
     //std::vector<int> time_elapsed {7,30,40,23};
     FILE* f_ = nullptr;
 };
 
 class SimpleRLMoveGenerator : public MoveGenerator {
-private:
-	std::vector<std::unique_ptr<MoveGenerator>> avail_moves;
+  private:
+    std::vector<std::unique_ptr<MoveGenerator>> avail_moves;
     std::unique_ptr<KArmedBanditAgent> karmed_bandit_agent;
     //std::unique_ptr<SoftmaxAgent> karmed_bandit_agent;
-public:
-	SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
-	SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim,
-        std::vector<int>& X_coord, std::vector<int>& Y_coord,
-        int& type, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/);
+  public:
+    SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
+    SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/);
     void process_outcome(double reward, int reward_num);
 };
 #endif
