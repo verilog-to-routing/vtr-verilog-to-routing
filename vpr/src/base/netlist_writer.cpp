@@ -92,7 +92,7 @@
 //File local type declarations
 //
 
-typedef std::pair<double, std::string> pair_d;
+typedef std::pair<double, std::string> sequential_port_delay_pair;
 
 /*enum class PortType {
  * IN,
@@ -555,9 +555,9 @@ class BlackBoxInst : public Instance {
                  std::map<std::string, std::vector<std::string>> input_port_conns,  ///<Port connections: Dictionary of <port,nets>
                  std::map<std::string, std::vector<std::string>> output_port_conns, ///<Port connections: Dictionary of <port,nets>
                  std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
-                 std::map<std::string, pair_d> ports_tsu,                           ///<Port setup checks
-                 std::map<std::string, pair_d> ports_thld,                          ///<Port hold checks
-                 std::map<std::string, pair_d> ports_tcq)                           ///<Port clock-to-q delays
+                 std::map<std::string, sequential_port_delay_pair> ports_tsu,       ///<Port setup checks
+                 std::map<std::string, sequential_port_delay_pair> ports_thld,      ///<Port hold checks
+                 std::map<std::string, sequential_port_delay_pair> ports_tcq)       ///<Port clock-to-q delays
         : type_name_(type_name)
         , inst_name_(inst_name)
         , params_(params)
@@ -567,7 +567,7 @@ class BlackBoxInst : public Instance {
         , timing_arcs_(timing_arcs)
         , ports_tsu_(ports_tsu)
         , ports_thld_(ports_thld)
-        , ports_tcq_(ports_tcq){}
+        , ports_tcq_(ports_tcq) {}
 
     void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) override {
         os << indent(depth) << ".subckt " << type_name_ << " \\"
@@ -652,80 +652,77 @@ class BlackBoxInst : public Instance {
     }
 
     void print_sdf(std::ostream& os, int depth = 0) override {
-
-	
         if (!timing_arcs_.empty() || !ports_tcq_.empty() || !ports_tsu_.empty() || !ports_thld_.empty()) {
-        	os << indent(depth) << "(CELL\n";
-        	os << indent(depth + 1) << "(CELLTYPE \"" << type_name_ << "\")\n";
-        	os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(inst_name_) << ")\n";
-        	os << indent(depth + 1) << "(DELAY\n";
-	
+            os << indent(depth) << "(CELL\n";
+            os << indent(depth + 1) << "(CELLTYPE \"" << type_name_ << "\")\n";
+            os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(inst_name_) << ")\n";
+            os << indent(depth + 1) << "(DELAY\n";
 
-		if (!timing_arcs_.empty() || !ports_tcq_.empty()) {
-		    os << indent(depth + 2) << "(ABSOLUTE\n";
+            if (!timing_arcs_.empty() || !ports_tcq_.empty()) {
+                os << indent(depth + 2) << "(ABSOLUTE\n";
 
-		    //Combinational paths
-		    for (const auto& arc : timing_arcs_) {
-			double delay_ps = get_delay_ps(arc.delay());
+                //Combinational paths
+                for (const auto& arc : timing_arcs_) {
+                    double delay_ps = get_delay_ps(arc.delay());
 
-			std::stringstream delay_triple;
-			delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
 
-			//Note that we explicitly do not escape the last array indexing so an SDF
-			//reader will treat the ports as multi-bit
-			//
-			//We also only put the last index in if the port has multiple bits
-			os << indent(depth + 3) << "(IOPATH ";
-			os << escape_sdf_identifier(arc.source_name());
-			if (find_port_size(arc.source_name()) > 1) {
-			    os << "[" << arc.source_ipin() << "]";
-			}
-			os << " ";
-			os << escape_sdf_identifier(arc.sink_name());
-			if (find_port_size(arc.sink_name()) > 1) {
-			    os << "[" << arc.sink_ipin() << "]";
-			}
-			os << " ";
-			os << delay_triple.str();
-			os << ")\n";
-		    }
+                    //Note that we explicitly do not escape the last array indexing so an SDF
+                    //reader will treat the ports as multi-bit
+                    //
+                    //We also only put the last index in if the port has multiple bits
+                    os << indent(depth + 3) << "(IOPATH ";
+                    os << escape_sdf_identifier(arc.source_name());
+                    if (find_port_size(arc.source_name()) > 1) {
+                        os << "[" << arc.source_ipin() << "]";
+                    }
+                    os << " ";
+                    os << escape_sdf_identifier(arc.sink_name());
+                    if (find_port_size(arc.sink_name()) > 1) {
+                        os << "[" << arc.sink_ipin() << "]";
+                    }
+                    os << " ";
+                    os << delay_triple.str();
+                    os << ")\n";
+                }
 
-			    //Clock-to-Q delays
-		    for (auto kv : ports_tcq_) {
-			double clock_to_q_ps = get_delay_ps(kv.second.first);
+                //Clock-to-Q delays
+                for (auto kv : ports_tcq_) {
+                    double clock_to_q_ps = get_delay_ps(kv.second.first);
 
-			std::stringstream delay_triple;
-			delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
 
-			os << indent(depth + 3) << "(IOPATH (posedge " << escape_sdf_identifier(kv.second.second) << ") " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
-		    }
-		    os << indent(depth + 2) << ")\n"; //ABSOLUTE
-		}
-		os << indent(depth + 1) << ")\n"; //DELAY
+                    os << indent(depth + 3) << "(IOPATH (posedge " << escape_sdf_identifier(kv.second.second) << ") " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                }
+                os << indent(depth + 2) << ")\n"; //ABSOLUTE
+            }
+            os << indent(depth + 1) << ")\n"; //DELAY
 
-		if (!ports_tsu_.empty() || !ports_thld_.empty()) {
-		    //Setup checks
-		    os << indent(depth + 1) << "(TIMINGCHECK\n";
-		    for (auto kv : ports_tsu_) {
-			double setup_ps = get_delay_ps(kv.second.first);
+            if (!ports_tsu_.empty() || !ports_thld_.empty()) {
+                //Setup checks
+                os << indent(depth + 1) << "(TIMINGCHECK\n";
+                for (auto kv : ports_tsu_) {
+                    double setup_ps = get_delay_ps(kv.second.first);
 
-			std::stringstream delay_triple;
-			delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
 
-			os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge  " << escape_sdf_identifier(kv.second.second) << ") "  << delay_triple.str() << ")\n";
-		    }
-		    for (auto kv : ports_thld_) {
-			double hold_ps = get_delay_ps(kv.second.first);
+                    os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge  " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
+                }
+                for (auto kv : ports_thld_) {
+                    double hold_ps = get_delay_ps(kv.second.first);
 
-			std::stringstream delay_triple;
-			delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
+                    std::stringstream delay_triple;
+                    delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
 
-			os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge " << escape_sdf_identifier(kv.second.second) << ") "  << delay_triple.str() << ")\n";
-		    }
-		    os << indent(depth + 1) << ")\n"; //TIMINGCHECK
-		}
-		os << indent(depth) << ")\n"; //CELL
-	}
+                    os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
+                }
+                os << indent(depth + 1) << ")\n"; //TIMINGCHECK
+            }
+            os << indent(depth) << ")\n"; //CELL
+        }
     }
 
     size_t find_port_size(std::string port_name) {
@@ -752,9 +749,9 @@ class BlackBoxInst : public Instance {
     std::map<std::string, std::vector<std::string>> input_port_conns_;
     std::map<std::string, std::vector<std::string>> output_port_conns_;
     std::vector<Arc> timing_arcs_;
-    std::map<std::string, pair_d> ports_tsu_;
-    std::map<std::string, pair_d> ports_thld_;
-    std::map<std::string, pair_d> ports_tcq_;
+    std::map<std::string, sequential_port_delay_pair> ports_tsu_;
+    std::map<std::string, sequential_port_delay_pair> ports_thld_;
+    std::map<std::string, sequential_port_delay_pair> ports_tcq_;
 };
 
 /**
@@ -902,7 +899,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 verilog_os_ << indent(depth + 1) << "wire " << escape_verilog_identifier(wire_tnode_pair.first) << ";\n";
             }
         }
-        
+
         verilog_os_ << indent(depth + 1) << "wire DummyOut;\n";
 
         //connections between primary I/Os and their internal wires
@@ -1288,9 +1285,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
-        std::map<std::string, pair_d> ports_tsu;
-        std::map<std::string, pair_d> ports_thld;
-        std::map<std::string, pair_d> ports_tcq;
+        std::map<std::string, sequential_port_delay_pair> ports_tsu;
+        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        std::map<std::string, sequential_port_delay_pair> ports_tcq;
 
         params["ADDR_WIDTH"] = "0";
         params["DATA_WIDTH"] = "0";
@@ -1382,7 +1379,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                 }
                 output_port_conns[port_name].push_back(net);
-                ports_tcq[port_name] = std::make_pair(pin->tco_max,pin->associated_clock_pin->port->name); //pin->tco_max;
+                ports_tcq[port_name] = std::make_pair(pin->tco_max, pin->associated_clock_pin->port->name);
             }
         }
 
@@ -1431,9 +1428,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
-        std::map<std::string, pair_d> ports_tsu;
-        std::map<std::string, pair_d> ports_thld;
-        std::map<std::string, pair_d> ports_tcq;
+        std::map<std::string, sequential_port_delay_pair> ports_tsu;
+        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        std::map<std::string, sequential_port_delay_pair> ports_tcq;
 
         params["WIDTH"] = "0";
 
@@ -1527,9 +1524,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
-        std::map<std::string, pair_d> ports_tsu;
-        std::map<std::string, pair_d> ports_thld;
-        std::map<std::string, pair_d> ports_tcq;
+        std::map<std::string, sequential_port_delay_pair> ports_tsu;
+        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        std::map<std::string, sequential_port_delay_pair> ports_tcq;
 
         params["WIDTH"] = "0";
 
@@ -1625,9 +1622,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
-        std::map<std::string, pair_d> ports_tsu;
-        std::map<std::string, pair_d> ports_thld;
-        std::map<std::string, pair_d> ports_tcq;
+        std::map<std::string, sequential_port_delay_pair> ports_tsu;
+        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        std::map<std::string, sequential_port_delay_pair> ports_tcq;
 
         //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
         std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, double>>> tnode_delay_matrix;
@@ -1663,16 +1660,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     }
                 }
 
+                input_port_conns[port->name].push_back(net);
+                if (pin->type == PB_PIN_SEQUENTIAL) {
+                    if (!std::isnan(pin->tsu)) ports_tsu[port->name] = std::make_pair(pin->tsu, pin->associated_clock_pin->port->name);
+                    if (!std::isnan(pin->thld)) ports_thld[port->name] = std::make_pair(pin->thld, pin->associated_clock_pin->port->name);
+                }
+            }
+        }
 
-		input_port_conns[port->name].push_back(net);
-		if (pin->type == PB_PIN_SEQUENTIAL) {
-			if (!std::isnan(pin->tsu)) ports_tsu[port->name] = std::make_pair(pin->tsu, pin->associated_clock_pin->port->name);
-			if (!std::isnan(pin->thld)) ports_thld[port->name] = std::make_pair(pin->thld, pin->associated_clock_pin->port->name);
-		}
-	    }		
-	}
-
-	//Process the output ports
+        //Process the output ports
         for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
                 const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
@@ -1682,7 +1678,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 std::string net;
                 if (!top_pb_route.count(cluster_pin_idx)) {
-                     //Disconnected
+                    //Disconnected
                     net = "";
                 } else {
                     //Connected
@@ -1700,9 +1696,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     }
                 }
 
-
                 output_port_conns[port->name].push_back(net);
-                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) ports_tcq[port->name] = std::make_pair(pin->tco_max,pin->associated_clock_pin->port->name);
+                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) ports_tcq[port->name] = std::make_pair(pin->tco_max, pin->associated_clock_pin->port->name);
             }
         }
 
