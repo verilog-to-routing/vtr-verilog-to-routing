@@ -1,0 +1,28 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/microbenchmarks
+
+# Path to directory of architectures to use
+archs_dir=arch/complex_switch
+
+# Add circuits to list to sweep
+circuit_list_add=and.blif
+
+# Add architectures to list to sweep
+arch_list_add=k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+#Script parameters
+script_params=-track_memory_usage -check_equivalent -starting_stage abc --route_chan_width 200 --gen_post_synthesis_netlist on --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off 
