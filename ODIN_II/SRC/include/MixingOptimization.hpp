@@ -138,7 +138,7 @@ class MixingOpt {
      * @brief this variable allows to cache traverse value
      * 
      */
-    short cached_traverse_value;
+    short cached_traverse_value = 0;
 
     // an integer representing the number of required hard blocks
     // that should be estimated and updated through set blocks needed
