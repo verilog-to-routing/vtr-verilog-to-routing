@@ -17,8 +17,8 @@ external_libs:  ["libs/EXTERNAL"]
 docs:      ["docs/", "README.md", "*.md", "tutorial", "README", "*.rst"]
 infra:     [".travis.yml", ".travis.yml", ".travis/", "scripts/", ".github/", "Dockerfile"]
 build:     ["Makefile", "*.make", "CMakeLists.txt", "cmake"]
-tests:     ["*_test.pl", "*test*", "*TESTS*"]
-scripts:   ["scripts", "*.pl", "*.sh"]
+tests:     ["*_test.py", "*test*", "*TESTS*"]
+scripts:   ["scripts", "*.pl", "*.py", "*.sh"]
 VTR Flow:  ["vtr_flow"]
 
 # Tag pull requests with the languages used to make it easy to see what is

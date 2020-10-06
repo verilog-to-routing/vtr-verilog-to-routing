@@ -746,17 +746,17 @@ There may be times when a regression test fails its QoR test because its golden_
 	```shell
     #From the VTR root
     $ cd vtr_flow/tasks
-    $ ../scripts/run_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_ex_test
+    $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test
 	```
-2. Next, generate new golden reference results using `parse_vtr_task.pl` and the `-create_golden` option.
+2. Next, generate new golden reference results using `parse_vtr_task.py` and the `-create_golden` option.
 
     ```shell
-    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_ex_test -create_golden
+    $ ../scripts/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test -create_golden
     ```
 3. Lastly, check that the results match with the `-check_golden` option
 
     ```shell
-    $ ../scripts/parse_vtr_task.pl regression_tests/vtr_reg_nightly/vtr_ex_test -check_golden
+    $ ../scripts/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test -check_golden
     ```
 Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly.
 
