@@ -62,7 +62,12 @@ class vector_map {
     //Indexing
     const_reference operator[](const K n) const {
         size_t index = size_t(n);
-        VTR_ASSERT_SAFE_MSG(index >= 0 && index < vec_.size(), "Out-of-range index");
+
+        // Shouldn't check for index >= 0, since size_t is unsigned thus won't be negative
+        // A negative input to n would result in an absurdly large number close the maximum size of size_t, and be caught by index < vec_.size()
+        // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3690.pdf chapter 4.7 para 2
+
+        VTR_ASSERT_SAFE_MSG(index < vec_.size(), "Out-of-range index");
         return vec_[index];
     }
 

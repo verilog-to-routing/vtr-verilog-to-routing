@@ -330,8 +330,9 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
                                                     std::vector<std::vector<int>>& free_locations) {
     // Loop through the ordered map to get tiles in a decreasing priority order
     for (auto& tile : logical_block->equivalent_tiles) {
-        for (auto sub_tile : tile->sub_tiles) {
-            if (free_locations[tile->index][sub_tile.index] >= num_needed_types) {
+        auto possible_sub_tiles = get_possible_sub_tile_indices(tile, logical_block);
+        for (auto sub_tile_index : possible_sub_tiles) {
+            if (free_locations[tile->index][sub_tile_index] >= num_needed_types) {
                 return tile;
             }
         }

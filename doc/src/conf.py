@@ -69,6 +69,8 @@ extensions = [
     "rrgraphdomain",
     "recommonmark",
     "sphinx.ext.autodoc",
+    "sphinx.ext.graphviz",
+    
 ]
 
 if have_sphinxcontrib_bibtex:

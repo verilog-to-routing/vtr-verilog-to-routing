@@ -34,8 +34,7 @@
 
 void MixingOpt::scale_counts() {
     if (this->_blocks_count < 0 || this->_blocks_count == INT_MAX || this->_ratio < 0.0 || this->_ratio > 1.0) {
-        error_message(NETLIST, unknown_location, "%s",
-                      "The parameters for optimization kind:%i are configured incorrectly : count %i, ratio %f\n", this->_kind, this->_blocks_count, this->_ratio);
+        error_message(NETLIST, unknown_location, "The parameters for optimization kind:%i are configured incorrectly : count %i, ratio %f\n", this->_kind, this->_blocks_count, this->_ratio);
         exit(0);
     }
     this->_blocks_count = this->_blocks_count * this->_ratio;
@@ -43,14 +42,12 @@ void MixingOpt::scale_counts() {
 
 void MixingOpt::assign_weights(netlist_t* /*netlist*/, std::vector<nnode_t*> /*nodes*/) {
     // compute weights for all noted nodes
-    error_message(NETLIST, unknown_location, "%s",
-                  "Assign_weights mixing optimization was called for optimization without specification provided, for kind  %i\n", this->_kind);
+    error_message(NETLIST, unknown_location, "Assign_weights mixing optimization was called for optimization without specification provided, for kind  %i\n", this->_kind);
     exit(0);
 }
 
 void MixingOpt::perform(netlist_t*, std::vector<nnode_t*>&) {
-    error_message(NETLIST, unknown_location, "%s",
-                  "Performing mixing optimization was called for optimization without method provided, for kind  %i\n", this->_kind);
+    error_message(NETLIST, unknown_location, "Performing mixing optimization was called for optimization without method provided, for kind  %i\n", this->_kind);
     exit(0);
 }
 
@@ -63,8 +60,7 @@ MultsOpt::MultsOpt(int _exact)
 MultsOpt::MultsOpt(float ratio)
     : MixingOpt(ratio, MULTIPLY) {
     if (ratio < 0.0 || ratio > 1.0) {
-        error_message(NETLIST, unknown_location, "%s",
-                      "Miltipliers mixing optimization is started with wrong ratio %f\n", ratio);
+        error_message(NETLIST, unknown_location, "Miltipliers mixing optimization is started with wrong ratio %f\n", ratio);
         exit(0);
     }
 
@@ -144,14 +140,12 @@ void MultsOpt::set_blocks_needed(int new_count) {
     this->scale_counts();
 }
 void MixingOpt::instantiate_soft_logic(netlist_t* /*netlist*/, std::vector<nnode_t*> /* nodes*/) {
-    error_message(NETLIST, unknown_location, "%s",
-                  "Performing instantiate_soft_logic was called for optimization without method provided, for kind  %i\n", this->_kind);
+    error_message(NETLIST, unknown_location, "Performing instantiate_soft_logic was called for optimization without method provided, for kind  %i\n", this->_kind);
     exit(0);
 }
 
 void MixingOpt::partial_map_node(nnode_t* /*node*/, short /*traverse_value*/, netlist_t*, /*netlist*/ HardSoftLogicMixer* /*mixer*/) {
-    error_message(NETLIST, unknown_location, "%s",
-                  "Performing partial_map_node was called for optimization without method provided, for kind  %i\n", this->_kind);
+    error_message(NETLIST, unknown_location, "Performing partial_map_node was called for optimization without method provided, for kind  %i\n", this->_kind);
     exit(0);
 }
 
