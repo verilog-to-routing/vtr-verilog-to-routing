@@ -47,7 +47,7 @@ Task #3 - Setup VTR
 
   2.  Build the project
 
-  3.  Run "./run_quick_test.pl" to check that the build worked
+  3.  Run "./run_quick_test.py" to check that the build worked
 
   4.  Follow the Basic Design Flow Tutorial found in the Tutorials
   section of the documentation (https://vtr.readthedocs.io/en/latest).
