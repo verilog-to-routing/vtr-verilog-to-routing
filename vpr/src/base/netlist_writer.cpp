@@ -92,6 +92,9 @@
 //File local type declarations
 //
 
+// This pair cointains the following values:
+//      - double: hold, setup or clock-to-q delays of the port
+//      - string: port name of the associated source clock pin of the sequential port
 typedef std::pair<double, std::string> sequential_port_delay_pair;
 
 /*enum class PortType {
@@ -1622,6 +1625,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
+
+        // Maps to store a sink's port with the corresponding timing edge to that sink
+        //  - key   : string corresponding to the port's name
+        //  - value : pair with the delay and the associated clock pin port name
+        //
+        //  tsu : Setup
+        //  thld: Hold
+        //  tcq : Clock-to-Q
         std::map<std::string, sequential_port_delay_pair> ports_tsu;
         std::map<std::string, sequential_port_delay_pair> ports_thld;
         std::map<std::string, sequential_port_delay_pair> ports_tcq;
@@ -1651,7 +1662,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::INPUT, iport, ipin);
                     //Delays
                     //
-                    //We record the souce sink tnodes and thier delays here
+                    //We record the source's sink tnodes and their delays here
                     for (tatum::EdgeId edge : timing_ctx.graph->node_out_edges(src_tnode)) {
                         double delay = delay_calc_->max_edge_delay(*timing_ctx.graph, edge);
 
