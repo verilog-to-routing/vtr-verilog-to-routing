@@ -591,15 +591,7 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     while (next_pb_pin_id >= 0) {
         //Advance back towards the input
         curr_pb_pin_id = next_pb_pin_id;
-        /* TODO: remove when debug is finished */
-        //VTR_LOG("Current pb_pin is %s.\n",
-        //        pb_routes.at(curr_pb_pin_id).pb_graph_pin->to_string().c_str());
-        //if (0 == pb_routes.count(next_pb_pin_id)) {
-        //    VTR_LOG("Next pb_pin_id is not defined.\n");
-        //}
-        //if (0 == pb_routes.count(sink_pb_pin_id)) {
-        //    VTR_LOG("Sink pb_pin_id is not defined.\n");
-        //}
+
         VTR_ASSERT_MSG(pb_routes[next_pb_pin_id].atom_net_id == pb_routes[sink_pb_pin_id].atom_net_id,
                        "Connected pb_routes should connect the same net");
 
@@ -628,13 +620,6 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
         }
     }
     VTR_ASSERT(clb_net_pin_idx >= 0);
-
-    /* TODO: REMOVE AFTER DEBUGGING IS FINISHED
-     * VTR_LOG("Found clb '%lu' net '%s' at pin '%s'...\n",
-     *         size_t(clb),
-     *         cluster_ctx.clb_nlist.net_name(clb_net_idx).c_str(),
-     *         pb_routes[curr_pb_pin_id].pb_graph_pin->to_string().c_str());
-     */
 
     return std::tuple<ClusterNetId, int, int>(clb_net_idx, curr_pb_pin_id, clb_net_pin_idx);
 }
