@@ -444,9 +444,9 @@ static AtomPinId find_mapped_atom_pin(const AtomContext& atom_ctx,
 
     const t_pb_graph_pin* sink_pb_pin = intra_lb_pb_pin_lookup.pb_gpin(logical_type->index, sink_pb_route_id);
     const t_pb* leaf_pb = pb->find_pb(sink_pb_pin->parent_node);
-    const AtomPortId& atom_port = atom_ctx.nlist.find_atom_port(atom_ctx.lookup.pb_atom(leaf_pb), sink_pb_pin->port->model_port); 
+    const AtomPortId& atom_port = atom_ctx.nlist.find_atom_port(atom_ctx.lookup.pb_atom(leaf_pb), sink_pb_pin->port->model_port);
     BitIndex atom_pin_bit_index = leaf_pb->atom_pin_bit_index(sink_pb_pin);
-    AtomPinId mapped_atom_pin = atom_ctx.nlist.port_pin(atom_port, atom_pin_bit_index); 
+    AtomPinId mapped_atom_pin = atom_ctx.nlist.port_pin(atom_port, atom_pin_bit_index);
 
     return mapped_atom_pin;
 }
@@ -500,7 +500,7 @@ static std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> cache_atom_pin
             continue;
         }
 
-        int pb_route_id = pb_graph_pin->pin_count_in_cluster; 
+        int pb_route_id = pb_graph_pin->pin_count_in_cluster;
         auto pb_route_result = pb->pb_route.find(pb_route_id);
         if (pb->pb_route.end() == pb_route_result) {
             continue;
@@ -534,7 +534,7 @@ static const t_pb_graph_pin* find_mapped_equivalent_pb_pin_by_net(t_pb* pb,
     const t_pb_graph_pin* found_pb_pin = nullptr;
 
     for (int ipin = 0; ipin < eq_port->num_pins; ++ipin) {
-        const t_pb_graph_pin* cand_pb_pin = &(pb_graph_node->input_pins[eq_port->port_index_by_type][ipin]); 
+        const t_pb_graph_pin* cand_pb_pin = &(pb_graph_node->input_pins[eq_port->port_index_by_type][ipin]);
         VTR_ASSERT(eq_port == cand_pb_pin->port);
         auto pb_route_result = pb->pb_route.find(cand_pb_pin->pin_count_in_cluster);
         if (pb->pb_route.end() == pb_route_result) {
@@ -708,9 +708,9 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
         }
 
         if (is_single_fanout_pb_pin(const_cast<const t_pb_graph_pin*>(pb_graph_pin))) {
-             sink_pb_pin_to_add = pb_graph_pin->output_edges[0]->output_pins[0];
+            sink_pb_pin_to_add = pb_graph_pin->output_edges[0]->output_pins[0];
         }
- 
+
         for (const int& sink_pb_route : pb->pb_route.at(pb_route_id).sink_pb_pin_ids) {
             if (0 < sink_pb_pin_accessibility.count(sink_pb_route)) {
                 new_pb_route.sink_pb_pin_ids.push_back(sink_pb_route);
@@ -719,7 +719,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
 
         /* Add the directly connected pin ONLY when there is no pin to add */
         if ((sink_pb_pin_to_add)
-           && (new_pb_route.sink_pb_pin_ids.empty())) {
+            && (new_pb_route.sink_pb_pin_ids.empty())) {
             new_pb_route.sink_pb_pin_ids.push_back(sink_pb_pin_to_add->pin_count_in_cluster);
         }
 
@@ -748,7 +748,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                     new_pb_routes[new_sink_pb_route_id].atom_net_id = remapped_net;
                     new_pb_routes[new_sink_pb_route_id].pb_graph_pin = new_sink_pb_pin_to_add;
                     new_pb_routes[new_sink_pb_route_id].driver_pb_pin_id = new_driver_pb_pin;
-                 
+
                     /* Stop adding more routing tree when reach the primitive */
                     if (new_sink_pb_pin_to_add->parent_node->is_primitive()) {
                         break;
@@ -759,10 +759,10 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                     VTR_ASSERT(sink_pb);
                     t_pb_graph_pin* next_sink_pb_pin_to_add = find_used_sink_pb_pin(new_sink_pb_pin_to_add, sink_pb->mode);
                     VTR_ASSERT(next_sink_pb_pin_to_add);
-   
+
                     /* Assign sinks */
                     new_pb_routes[new_sink_pb_route_id].sink_pb_pin_ids.push_back(next_sink_pb_pin_to_add->pin_count_in_cluster);
-     
+
                     /* Print verbose outputs */
                     VTR_LOGV(verbose,
                              "Add a new trace '%d' linked to pin '%s' for net '%s'.\n",
@@ -770,7 +770,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                              new_sink_pb_pin_to_add->to_string().c_str(),
                              atom_ctx.nlist.net_name(remapped_net).c_str());
 
-                    /* Update the pins to add for next round */ 
+                    /* Update the pins to add for next round */
                     new_driver_pb_pin = new_sink_pb_pin_to_add->pin_count_in_cluster;
                     new_sink_pb_pin_to_add = next_sink_pb_pin_to_add;
                 }
@@ -993,7 +993,7 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
                                                                    logical_block,
                                                                    new_pb_routes,
                                                                    verbose);
- 
+
     /* Replace old pb_routes with the new one */
     pb->pb_route = new_pb_routes;
 }
