@@ -591,6 +591,15 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     while (next_pb_pin_id >= 0) {
         //Advance back towards the input
         curr_pb_pin_id = next_pb_pin_id;
+        /* Debug message */
+        VTR_LOG("Current pb_pin is %s.\n",
+                pb_routes.at(curr_pb_pin_id).pb_graph_pin->to_string().c_str());
+        if (0 == pb_routes.count(next_pb_pin_id)) {
+            VTR_LOG("Next pb_pin_id is not defined.\n");
+        }
+        if (0 == pb_routes.count(sink_pb_pin_id)) {
+            VTR_LOG("Sink pb_pin_id is not defined.\n");
+        }
         VTR_ASSERT_MSG(pb_routes[next_pb_pin_id].atom_net_id == pb_routes[sink_pb_pin_id].atom_net_id,
                        "Connected pb_routes should connect the same net");
 

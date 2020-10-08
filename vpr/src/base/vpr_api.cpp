@@ -758,7 +758,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                      g_vpr_ctx.mutable_clustering(),
                                      g_vpr_ctx.placement(),
                                      g_vpr_ctx.routing(),
-                                     false);
+                                     true);
         }
         VTR_LOG("\n");
 

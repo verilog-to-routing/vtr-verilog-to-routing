@@ -249,6 +249,12 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             VTR_ASSERT(cluster_ctx.clb_nlist.block_pb(clb_src_block)->pb_route[src_pb_route_id].atom_net_id == atom_net);
             VTR_ASSERT(cluster_ctx.clb_nlist.block_pb(clb_sink_block)->pb_route[sink_pb_route_id].atom_net_id == atom_net);
 
+            // TODO: delete after debugging is finished
+            VTR_LOG("Sink atom_pin '%lu' is paired to '%s' for net '%s'\n",
+                    size_t(atom_sink_pin),
+                    sink_gpin->to_string().c_str(),
+                    netlist_.net_name(atom_net).c_str());
+
             //NOTE: even if both the source and sink atoms are contained in the same top-level
             //      CLB, the connection between them may not have been absorbed, and may go
             //      through the global routing network.
@@ -271,6 +277,9 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                                                                                                             delay_type));
 
                 tatum::Time net_delay = tatum::Time(inter_cluster_delay(net_id, 0, sink_net_pin_index));
+
+                /* TODO: Remove this print out after finishing debugging */
+                VTR_LOG("Calculating net delay for '%s'...\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
 
                 tatum::Time sink_clb_delay = tatum::Time(clb_delay_calc_.clb_input_to_internal_sink_delay(clb_sink_block,
                                                                                                           sink_block_pin_index,
