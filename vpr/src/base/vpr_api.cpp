@@ -751,6 +751,9 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         /* If routing is successful, apply post-routing annotations
          * - apply logic block pin fix-up
+         *
+         * Note: 
+         *   - Turn on verbose output switch when you want to debug
          */
         if (route_status.success()) {
             sync_netlists_to_routing(g_vpr_ctx.device(),
@@ -758,7 +761,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                      g_vpr_ctx.mutable_clustering(),
                                      g_vpr_ctx.placement(),
                                      g_vpr_ctx.routing(),
-                                     true);
+                                     false);
         }
         VTR_LOG("\n");
 
