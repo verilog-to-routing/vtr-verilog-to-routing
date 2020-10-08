@@ -435,7 +435,14 @@ static AtomPinId find_mapped_atom_pin(const AtomContext& atom_ctx,
     /* Walk through the routing tree until we reach the end */
     int sink_pb_route_id = pb_route_id;
     while (0 < pb->pb_route.count(sink_pb_route_id)) {
-        VTR_ASSERT(1 == pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids.size());
+        /* We will only care about single fan-out routing trees,
+         * their atom pin their could be remapped
+         * If multiple fan-out exist in the paths,
+         * return an invalid id showing not found!
+         */
+        if (1 != pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids.size()) {
+            return AtomPinId::INVALID();
+        }
         sink_pb_route_id = pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids[0];
         if (pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids.empty()) {
             break;
@@ -513,7 +520,10 @@ static std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> cache_atom_pin
 
         const AtomPinId& orig_mapped_atom_pin = find_mapped_atom_pin(atom_ctx, intra_lb_pb_pin_lookup, logical_block, pb, pb_route_id);
 
-        atom_pin_to_pb_pin_mapping[pb_route_id] = std::make_pair(orig_mapped_atom_pin, atom_ctx.lookup.atom_pin_pb_graph_pin(orig_mapped_atom_pin));
+        /* Sometimes the routing traces is not what we target, skip caching */
+        if (orig_mapped_atom_pin) {
+            atom_pin_to_pb_pin_mapping[pb_route_id] = std::make_pair(orig_mapped_atom_pin, atom_ctx.lookup.atom_pin_pb_graph_pin(orig_mapped_atom_pin));
+        }
     }
 
     return atom_pin_to_pb_pin_mapping;
