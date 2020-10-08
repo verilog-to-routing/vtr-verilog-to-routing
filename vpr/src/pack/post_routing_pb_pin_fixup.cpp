@@ -793,7 +793,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                 VTR_ASSERT(new_sink_pb_pin_to_add == atom_ctx.lookup.atom_pin_pb_graph_pin(orig_mapped_atom_pin));
 
                 /* Update the pin rotation map */
-                t_pb* atom_pb = (t_pb*)(pb->find_pb(new_sink_pb_pin_to_add->parent_node));
+                t_pb* atom_pb = pb->find_mutable_pb(new_sink_pb_pin_to_add->parent_node);
                 atom_pb->set_atom_pin_bit_index(new_sink_pb_pin_to_add, atom_ctx.nlist.pin_port_bit(orig_mapped_atom_pin));
             } else {
                 new_pb_routes[sink_pb_route].driver_pb_pin_id = pb_graph_pin->pin_count_in_cluster;
@@ -839,7 +839,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                         VTR_ASSERT(next_pb_pin == atom_ctx.lookup.atom_pin_pb_graph_pin(orig_mapped_atom_pin));
 
                         /* Update the pin rotation map */
-                        t_pb* atom_pb = (t_pb*)(pb->find_pb(next_pb_pin->parent_node));
+                        t_pb* atom_pb = pb->find_mutable_pb(next_pb_pin->parent_node);
                         atom_pb->set_atom_pin_bit_index(next_pb_pin, atom_ctx.nlist.pin_port_bit(orig_mapped_atom_pin));
                     }
                 }

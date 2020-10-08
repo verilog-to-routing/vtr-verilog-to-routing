@@ -70,7 +70,7 @@ t_mode* t_pb::get_mode() const {
 }
 
 /**
- * @brief Returns the t_pb associated with the specified gnode which is contained
+ * @brief Returns the read-only t_pb associated with the specified gnode which is contained
  *        within the current pb
  */
 const t_pb* t_pb::find_pb(const t_pb_graph_node* gnode) const {
@@ -87,6 +87,33 @@ const t_pb* t_pb::find_pb(const t_pb_graph_node* gnode) const {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
 
             const t_pb* found_pb = child_pb->find_pb(gnode);
+            if (found_pb != nullptr) {
+                VTR_ASSERT(found_pb->pb_graph_node == gnode);
+                return found_pb; //Found
+            }
+        }
+    }
+    return nullptr; //Not found
+}
+
+/**
+ * @brief Returns the mutable t_pb associated with the specified gnode which is contained
+ *        within the current pb
+ */
+t_pb* t_pb::find_mutable_pb(const t_pb_graph_node* gnode) {
+    //Base case
+    if (pb_graph_node == gnode) {
+        return this;
+    }
+
+    //Search recursively
+    for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+        if (child_pbs[ichild_type] == nullptr) continue;
+
+        for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
+            t_pb* child_pb = &child_pbs[ichild_type][ipb];
+
+            t_pb* found_pb = child_pb->find_mutable_pb(gnode);
             if (found_pb != nullptr) {
                 VTR_ASSERT(found_pb->pb_graph_node == gnode);
                 return found_pb; //Found
