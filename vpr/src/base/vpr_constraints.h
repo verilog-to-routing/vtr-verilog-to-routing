@@ -21,13 +21,19 @@
 
 class VprConstraints {
   public:
+
+	//VprConstraints();
+
+	//Method to add an atom to constrained_atoms
     void add_constrained_atom(const AtomBlockId blk_id, const PartitionId partition);
 
     //Method to find which partition an atom belongs to
-    PartitionId get_atom_partition(AtomBlockId);
+    PartitionId get_atom_partition(AtomBlockId blk_id);
 
-    void add_partition(const PartitionId id, const std::string part_name, std::vector<AtomBlockId> atom_blocks, PartitionRegions part_region);
+    //Method to add a partition to partitions
+    void add_partition(Partition part);
 
+    //Method to return the partitions vector
     vtr::vector<PartitionId, Partition> get_partitions();
 
   private:

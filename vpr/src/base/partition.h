@@ -21,26 +21,33 @@ typedef vtr::StrongId<partition_id_tag> PartitionId;
 
 class Partition {
   public:
+
     PartitionId get_partition_id();
-    void set_partiton_id(PartitionId _part_id);
+    void set_partition_id(PartitionId _part_id);
 
     std::string get_name();
     void set_name(std::string _part_name);
 
-    //append to the atom_blocks vector
-    void add_to_atom_blocks(AtomBlockId id);
+    //add an id to the atom_blocks vector
+    void add_to_atoms(AtomBlockId atom_id);
 
     //check if a given atom is in the partition
-    bool is_atom_in_part(AtomBlockId id);
+    bool contains_atom(AtomBlockId atom_id);
 
-    std::vector<AtomBlockId> get_partition_atoms();
+    //get the atom_blocks vector
+    std::vector<AtomBlockId> get_atoms();
 
-    PartitionRegions get_partition_regions();
+    //set the union of regions for this partition;
+    void set_part_regions(PartitionRegions pr);
+
+    //get the union of regions of this partition
+    PartitionRegions get_part_regions();
+
 
   private:
-    PartitionId id;
-    std::string name;                     //name of the partition
-    std::vector<AtomBlockId> atom_blocks; //atoms that belong to this partition
+    PartitionId id;                       //unique id for this partition
+    std::string name;                     //name of the partition, name will be unique across partitions
+    std::vector<AtomBlockId> atom_blocks; //atoms that belong to this partition, each atom should only belong to one partition
     PartitionRegions part_regions;        //the union of regions that the partition can be placed in
 };
 
