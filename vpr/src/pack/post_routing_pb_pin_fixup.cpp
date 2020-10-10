@@ -53,6 +53,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                                                          const vtr::Point<size_t>& grid_coord,
                                                          const ClusterBlockId& blk_id,
                                                          const int& sub_tile_z,
+                                                         size_t& num_mismatches,
                                                          const bool& verbose) {
     /* Handle each pin */
     auto logical_block = clustering_ctx.clb_nlist.block_type(blk_id);
@@ -243,6 +244,9 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                  get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->port->name,
                  get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->pin_number,
                  cluster_net_name.c_str());
+
+        /* Update counter */
+        num_mismatches++;
     }
 }
 
@@ -590,6 +594,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                                                                             t_pb* pb,
                                                                             t_logical_block_type_ptr logical_block,
                                                                             t_pb_routes& new_pb_routes,
+                                                                            size_t& num_fixup,
                                                                             const bool& verbose) {
     /* Go through each pb_graph pin at the top level
      * and build the new routing traces
@@ -861,6 +866,9 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                  clustering_ctx.clb_nlist.block_pb(blk_id)->name,
                  pb_graph_pin->pin_count_in_cluster,
                  atom_ctx.nlist.net_name(remapped_net).c_str());
+
+        /* Update fixup counter */
+        num_fixup++;
     }
 }
 
@@ -878,6 +886,7 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
                                                                            t_pb* pb,
                                                                            t_logical_block_type_ptr logical_block,
                                                                            t_pb_routes& new_pb_routes,
+                                                                           size_t& num_fixup,
                                                                            const bool& verbose) {
     /* Reassign global nets to unused pins in the same port where they were mapped
      * NO optimization is done here!!! First find first fit
@@ -956,6 +965,9 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
                  clustering_ctx.clb_nlist.block_pb(blk_id)->name,
                  atom_ctx.nlist.net_name(global_atom_net_id).c_str(),
                  unused_pb_graph_pin->to_string().c_str());
+
+        /* Update fixup counter */
+        num_fixup++;
     }
 }
 
@@ -972,6 +984,7 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
                                                                     const IntraLbPbPinLookup& intra_lb_pb_pin_lookup,
                                                                     ClusteringContext& clustering_ctx,
                                                                     const ClusterBlockId& blk_id,
+                                                                    size_t& num_fixup,
                                                                     const bool& verbose) {
     /* Skip block where no remapping is applied */
     if (clustering_ctx.post_routing_clb_pin_nets.find(blk_id) == clustering_ctx.post_routing_clb_pin_nets.end()) {
@@ -994,6 +1007,7 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
                                                                     pb,
                                                                     logical_block,
                                                                     new_pb_routes,
+                                                                    num_fixup,
                                                                     verbose);
 
     update_cluster_global_routing_traces_with_post_routing_results(const_cast<const AtomContext&>(atom_ctx),
@@ -1002,6 +1016,7 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
                                                                    pb,
                                                                    logical_block,
                                                                    new_pb_routes,
+                                                                   num_fixup,
                                                                    verbose);
 
     /* Replace old pb_routes with the new one */
@@ -1042,6 +1057,10 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 
+    /* Count the number of mismatches and fix-up */
+    size_t num_mismatches = 0;
+    size_t num_fixup = 0;
+
     /* Update the core logic (center blocks of the FPGA) */
     for (const ClusterBlockId& cluster_blk_id : clustering_ctx.clb_nlist.blocks()) {
         /* We know the entrance to grid info and mapping results, do the fix-up for this block */
@@ -1053,11 +1072,19 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
                                                      rr_node_nets,
                                                      grid_coord, cluster_blk_id,
                                                      placement_ctx.block_locs[cluster_blk_id].loc.sub_tile,
+                                                     num_mismatches,
                                                      verbose);
         update_cluster_routing_traces_with_post_routing_results(atom_ctx,
                                                                 intra_lb_pb_pin_lookup,
                                                                 clustering_ctx,
                                                                 cluster_blk_id,
+                                                                num_fixup,
                                                                 verbose);
     }
+
+    /* Print a short summary */
+    VTR_LOG("Found %lu mismatches between routing and packing results.\n",
+            num_mismatches);
+    VTR_LOG("Fixed %lu routing traces due to mismatch between routing and packing results.\n",
+            num_fixup);
 }
