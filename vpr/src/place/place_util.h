@@ -47,11 +47,11 @@
  */
 class t_placer_costs {
   public: //members
-    double cost;
-    double bb_cost;
-    double timing_cost;
-    double bb_cost_norm;
-    double timing_cost_norm;
+    double cost = 0.;
+    double bb_cost = 0.;
+    double timing_cost = 0.;
+    double bb_cost_norm = 0.;
+    double timing_cost_norm = 0.;
 
   public: //Constructor
     t_placer_costs(t_place_algorithm algo)
@@ -248,4 +248,7 @@ void zero_initialize_grid_blocks();
 
 ///@brief a utility to calculate grid_blocks given the updated block_locs (used in restore_checkpoint)
 void load_grid_blocks_from_block_locs();
+
+///@brief Builds legal_pos structure
+void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 #endif

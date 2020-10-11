@@ -55,8 +55,7 @@ void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, net
 void instantiate_EQUAL(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 void instantiate_GE(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
-void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
-void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* netlist);
+void instantiate_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 void instantiate_unary_sub(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist);
 
@@ -211,10 +210,8 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case SL:
         case ASL:
         case SR:
-            instantiate_shift_left_or_right(node, node->type, traverse_number, netlist);
-            break;
         case ASR:
-            instantiate_arithmetic_shift_right(node, node->type, netlist);
+            instantiate_shift(node, node->type, traverse_number, netlist);
             break;
         case MULTI_PORT_MUX:
             instantiate_multi_port_mux(node, traverse_number, netlist);
@@ -898,132 +895,145 @@ void instantiate_GE(nnode_t* node, operation_list type, short mark, netlist_t* n
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: instantiate_shift_left_or_right )
- *	Creates the hardware for a shift left or right operation by a constant size.
+ * (function: instantiate_shift )
+ *	Creates the hardware for a shift left or right operation by a variable size.
+ *  Create mux 2:1
+ *   data1 = SHIFT first_input
+ *   data2 = SHIFT first_input shifted right or left by pow(2,i)
+ *   selector = SHIFT second_input[i]
  *-------------------------------------------------------------------------------------------*/
-void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short mark, netlist_t* netlist) {
-    /* these variables are used in an attempt so that I don't need if cases.  Probably a bad idea, but fun */
-    int width;
-    int i;
-    int shift_size;
-    nnode_t* buf_node;
+void instantiate_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist) {
+    /*  
+     *   Create mux 2:1
+     *   data1 = SHIFT first_input
+     *   data2 = SHIFT first_input shifted right or left by pow(2,i)
+     *   selector = SHIFT second_input[i]
+     */
 
-    width = node->input_port_sizes[0];
+    oassert(node->related_ast_node->children[1]->type != NUMBERS);
 
-    if (node->related_ast_node->children[1]->type == NUMBERS) {
-        /* record the size of the shift */
-        shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
-    } else {
-        shift_size = 0;
-        error_message(NETLIST, node->loc, "%s\n", "Odin only supports constant shifts at present");
+    nnode_t*** muxes;
+    signal_list_t* input_pins = init_signal_list();
+    signal_list_t* output_pins;
+    int input_port_width = 0;
+    int output_port_width = 0;
+    int pow_2_by_i = 0;
+
+    for (int i = 0; i < node->num_input_pins; i++) {
+        add_pin_to_signal_list(input_pins, node->input_pins[i]);
     }
 
-    buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
+    output_pins = input_pins;
+    output_port_width = node->output_port_sizes[0];
+    input_port_width = node->input_port_sizes[0];
+    muxes = (nnode_t***)vtr::malloc(sizeof(nnode_t**) * (input_port_width));
 
-    if (type == SL || type == ASL) {
-        /* IF shift left */
+    for (int i = 0; i < input_port_width; i++) {
+        muxes[i] = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (input_port_width));
+        for (int j = 0; j < input_port_width; j++) {
+            muxes[i][j] = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
+            // connect related pin of second_input to related multiplexer as a selector
+            nnode_t* select = make_1port_gate(BUF_NODE, 1, 1, node, mark);
+            add_input_pin_to_node(select, copy_input_npin(node->input_pins[input_port_width + i]), 0);
+            connect_nodes(select, 0, muxes[i][j], 1);
 
-        /* connect inputs to outputs */
-        for (i = 0; i < width - shift_size; i++) {
-            // connect higher output pin to lower input pin
-            remap_pin_to_new_node(node->input_pins[i], buf_node, i + shift_size);
-        }
-
-        /* connect ZERO to outputs that don't have inputs connected */
-        for (i = 0; i < shift_size; i++) {
-            // connect 0 to lower outputs
-            add_input_pin_to_node(buf_node, get_zero_pin(netlist), i);
-        }
-
-        for (i = width - 1; i >= width - shift_size; i--) {
-            /* demap the node from the net */
-            int idx_2_buffer = node->input_pins[i]->pin_net_idx;
-            node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
-        }
-    } else {
-        /* ELSE shift right */
-
-        /* connect inputs to outputs */
-        for (i = width - 1; i >= shift_size; i--) {
-            // connect higher input pin to lower output pin
-            remap_pin_to_new_node(node->input_pins[i], buf_node, i - shift_size);
-        }
-
-        /* connect ZERO to outputs that don't have inputs connected */
-        for (i = width - 1; i >= width - shift_size; i--) {
-            // connect 0 to lower outputs
-            add_input_pin_to_node(buf_node, get_zero_pin(netlist), i);
-        }
-        for (i = 0; i < shift_size; i++) {
-            /* demap the node from the net */
-            int idx_2_buffer = node->input_pins[i]->pin_net_idx;
-            node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
+            nnode_t* not_select = make_not_gate(select, mark);
+            connect_nodes(select, 0, not_select, 0);
+            connect_nodes(not_select, 0, muxes[i][j], 0);
         }
     }
 
-    for (i = 0; i < width; i++) {
-        remap_pin_to_new_node(node->output_pins[i], buf_node, i);
-    }
-    /* instantiate the buffer */
-    if (eliminate_buffer(buf_node, mark, netlist)) {
-        /* clean up */
-        for (i = 0; i < buf_node->num_input_pins; i++) {
-            buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
-            buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+    for (int i = 0; i < input_port_width; i++) {
+        pow_2_by_i = shift_left_value_with_overflow_check(0x1, i, node->loc);
+        /*
+         * Limit shift value of barrel design to max at input_port_width,
+         * since after this value we should extend based on extension bit.
+         * Also, checking the overflow of pow_2_by_i
+         */
+        int shift_size = (pow_2_by_i > input_port_width || pow_2_by_i < 0) ? input_port_width : pow_2_by_i;
+
+        input_pins = output_pins;
+
+        if (type == SR || type == ASR) {
+            /* 
+             * Logical variable shift right 
+             * or 
+             * arithmetic variable shift right
+             */
+
+            // shift by pow(2,i) and connect the output of the previous stage mux as the second input to the next stage mux
+            for (int j = shift_size; j < input_port_width; j++)
+                add_input_pin_to_node(muxes[i][j - shift_size],
+                                      copy_input_npin(input_pins->pins[j]),
+                                      3);
+            // connect the sign bit of the previous output as extension bits
+            int pad_bit = input_port_width - 1;
+            for (int j = 0; j < shift_size; j++) {
+                if (node->related_ast_node->children[0]->types.variable.signedness == SIGNED && type == ASR) {
+                    add_input_pin_to_node(muxes[i][j + input_port_width - shift_size],
+                                          copy_input_npin(input_pins->pins[pad_bit]),
+                                          3);
+                } else {
+                    add_input_pin_to_node(muxes[i][j + input_port_width - shift_size],
+                                          get_zero_pin(netlist),
+                                          3);
+                }
+            }
+
+        } else {
+            /* 
+             * Logical variable shift left 
+             * or 
+             * arithmetic variable shift left
+             */
+
+            // shift by pow(2,i) and connect the output of the previous stage mux as the second input to the next stage mux
+            for (int j = 0; j < input_port_width - shift_size; j++)
+                add_input_pin_to_node(muxes[i][j + shift_size],
+                                      copy_input_npin(input_pins->pins[j]),
+                                      3);
+
+            // connect the zero as extension bits
+            for (int j = 0; j < shift_size; j++)
+                add_input_pin_to_node(muxes[i][j],
+                                      get_zero_pin(netlist),
+                                      3);
         }
-        free_nnode(buf_node);
-        free_nnode(node);
-    }
-}
 
-/*---------------------------------------------------------------------------------------------
- * (function: instantiate_arithmatic_shift_right )
- *	Creates the hardware for an arithmatic shift right operation by a constant size.
- *-------------------------------------------------------------------------------------------*/
-void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* netlist) {
-    /* these variables are used in an attempt so that I don't need if cases.  Probably a bad idea, but fun */
-    int width;
-    int i;
-    int shift_size;
-    nnode_t* buf_node;
-    width = node->input_port_sizes[0];
-    if (node->related_ast_node->children[1]->type == NUMBERS) {
-        /* record the size of the shift */
-        shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
-    } else {
-        shift_size = 0;
-        error_message(NETLIST, node->loc, "%s\n", "Odin only supports constant shifts at present");
-    }
-    buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
-    /* connect inputs to outputs */
-    for (i = width - 1; i >= shift_size; i--) {
-        // connect higher input pin to lower output pin
-        remap_pin_to_new_node(node->input_pins[i], buf_node, i - shift_size);
-    }
-
-    int pad_bit = width - 1 - shift_size;
-
-    /* connect pad_bit pin to outputs that don't have inputs connected */
-    for (i = width - 1; i >= width - shift_size; i--) {
-        add_input_pin_to_node(buf_node, copy_input_npin(buf_node->input_pins[pad_bit]), i);
-    }
-
-    for (i = 0; i < shift_size; i++) {
-        /* demap the node from the net */
-        int idx_2_buffer = node->input_pins[i]->pin_net_idx;
-        node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
-    }
-    for (i = 0; i < width; i++) {
-        remap_pin_to_new_node(node->output_pins[i], buf_node, i);
-    }
-    /* instantiate the buffer */
-    if (eliminate_buffer(buf_node, mark, netlist)) {
-        /* clean up */
-        for (i = 0; i < buf_node->num_input_pins; i++) {
-            buf_node->output_pins[i]->net = free_nnet(buf_node->output_pins[i]->net);
-            buf_node->input_pins[i] = free_npin(buf_node->input_pins[i]);
+        for (int j = 0; j < input_port_width; j++) {
+            // connect the output of the previous stage mux as the first input to the next stage mux
+            add_input_pin_to_node(muxes[i][j], input_pins->pins[j], 2);
         }
-        free_nnode(buf_node);
-        free_nnode(node);
+
+        free_signal_list(input_pins);
+        output_pins = init_signal_list();
+        // Connect output pin to related input pin
+        for (int j = 0; j < input_port_width; j++) {
+            if (i != input_port_width - 1) {
+                npin_t* new_pin1 = allocate_npin();
+                npin_t* new_pin2 = allocate_npin();
+                nnet_t* new_net = allocate_nnet();
+                new_net->name = vtr::strdup(muxes[i][j]->name);
+                /* hook the output pin into the node */
+                add_output_pin_to_node(muxes[i][j], new_pin1, 0);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
+
+                // Storing the output pins of the current mux stage as the input of the next one
+                add_pin_to_signal_list(output_pins, new_pin2);
+
+            } else {
+                if (j < output_port_width)
+                    remap_pin_to_new_node(node->output_pins[j], muxes[i][j], 0);
+            }
+        }
     }
+
+    free_signal_list(output_pins);
+    for (int i = 0; i < input_port_width; i++) {
+        vtr::free(muxes[i]);
+    }
+    vtr::free(muxes);
 }

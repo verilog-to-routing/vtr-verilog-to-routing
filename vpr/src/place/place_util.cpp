@@ -282,6 +282,7 @@ void t_annealing_state::update_move_lim(float success_target, float success_rate
     move_lim = std::max(move_lim, 1);
 }
 
+///@brief Clear all data fields.
 void t_placer_statistics::reset() {
     av_cost = 0.;
     av_bb_cost = 0.;
@@ -292,6 +293,7 @@ void t_placer_statistics::reset() {
     std_dev = 0.;
 }
 
+///@brief Calculate placer success rate and cost std_dev for this iteration.
 void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
     success_sum++;
     av_cost += costs.cost;
@@ -300,6 +302,7 @@ void t_placer_statistics::single_swap_update(const t_placer_costs& costs) {
     sum_of_squares += (costs.cost) * (costs.cost);
 }
 
+///@brief Update stats when a single swap move has been accepted.
 void t_placer_statistics::calc_iteration_stats(const t_placer_costs& costs, int move_lim) {
     if (success_sum == 0) {
         av_cost = costs.cost;
@@ -340,7 +343,6 @@ bool t_placement_checkpoint::cp_is_valid() { return valid; }
 void t_placement_checkpoint::save_placement(const t_placer_costs& COSTS, const float& CPD) {
     auto& place_ctx = g_vpr_ctx.placement();
     block_locs = place_ctx.block_locs;
-    //place_cp.grid_blocks = place_ctx.grid_blocks;
     valid = true;
     cpd = CPD;
     costs = COSTS;
@@ -349,7 +351,6 @@ void t_placement_checkpoint::save_placement(const t_placer_costs& COSTS, const f
 t_placer_costs t_placement_checkpoint::restore_placement() {
     auto& mutable_place_ctx = g_vpr_ctx.mutable_placement();
     mutable_place_ctx.block_locs = block_locs;
-    //mutable_place_ctx.grid_blocks = place_cp.grid_blocks;
     load_grid_blocks_from_block_locs();
     return costs;
 }
@@ -391,4 +392,56 @@ void zero_initialize_grid_blocks() {
             }
         }
     }
+}
+
+/**
+ * @brief Builds (alloc and load) legal_pos that holds all the legal locations for placement
+ *
+ *   @param legal_pos
+ *              a lookup of all subtiles by sub_tile type
+ *              legal_pos[0..device_ctx.num_block_types-1][0..num_sub_tiles - 1] = std::vector<t_pl_loc> of all the legal locations 
+ *              of the proper tile type and sub_tile type
+ *
+ */
+void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    //alloc the legal placement positions
+    int num_tile_types = device_ctx.physical_tile_types.size();
+    legal_pos.resize(num_tile_types);
+
+    for (const auto& type : device_ctx.physical_tile_types) {
+        legal_pos[type.index].resize(type.sub_tiles.size());
+    }
+
+    //load the legal placement positions
+    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            auto tile = device_ctx.grid[i][j].type;
+
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
+
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
+                        continue;
+                    }
+                    // If this is the anchor position of a block, add it to the legal_pos.
+                    // Otherwise don't, so large blocks aren't added multiple times.
+                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                        int itype = tile->index;
+                        int isub_tile = sub_tile.index;
+                        t_pl_loc temp_loc;
+                        temp_loc.x = i;
+                        temp_loc.y = j;
+                        temp_loc.sub_tile = k + capacity.low;
+                        legal_pos[itype][isub_tile].push_back(temp_loc);
+                    }
+                }
+            }
+        }
+    }
+    //avoid any memory waste
+    legal_pos.shrink_to_fit();
 }

@@ -539,6 +539,7 @@ void connect_nodes(nnode_t* out_node, int out_idx, nnode_t* in_node, int in_idx)
         new_net = allocate_nnet();
         new_out_pin = allocate_npin();
 
+        new_net->name = vtr::strdup(out_node->name);
         /* create the pin that hooks up to the input */
         add_output_pin_to_node(out_node, new_out_pin, out_idx);
         /* hook up in pin out of the new net */

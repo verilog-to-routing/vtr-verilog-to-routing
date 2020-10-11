@@ -35,3 +35,103 @@ See [regression tests](./regression_tests) for further instruction.
 
 Odin II shares the same contributing philosophy as [VPR](https://docs.verilogtorouting.org/en/latest/dev/contributing/contributing/).
 Most importantly PRs will be rejected if they do not respect the coding standard: see [VPRs coding standard](https://docs.verilogtorouting.org/en/latest/dev/developing/#code-formatting)
+
+## Odin II's Flow
+
+Odin II functions by systematically executing a set of steps determined by the files and arguments passed in.
+The figure below illustrates the flow of Odin II if a Verilog File is passed, with an optional FPGA Architecture Specification File.
+The simulator is only activated if an Input Vector file is passed in which creates the Output Vector File.
+
+.. graphviz ::
+digraph G {
+    0 [label="Verilog HDL File",shape=plaintext];
+    2 [label="Input Vector File",shape=plaintext];
+    3 [label="Output Vector File",shape=diamond];
+    4 [label="FPGA Architecture Specification File",shape=plaintext];
+    5 [label="Build Abstract Syntax Tree",shape=box];
+    6 [label="Elaborate AST",shape=box];
+    7 [label="Build Netlist",shape=box];
+    8 [label="Partial Mapping",shape=box];
+    10 [label="Simulator",shape=box];
+    11 [label="Output Blif",shape=diamond];
+
+    0 -> 5 -> 6 -> 7 -> 8
+    7->10 [color=purple]
+    4->8  [style=dotted] [color=purple]
+    8->11
+    4->10 [style=dotted] [color=purple]
+    2->10 [color=purple]
+    10->3 [color=purple]
+}
+
+Currently, BLIF files being passed in are only used for simulation; no partial mapping takes place.
+The flow is depicted in the figure below.
+
+.. graphviz ::
+digraph G {
+    0 [label="Input Blif File",shape=plaintext];
+    1 [label="Read Blif",shape=box];
+    3 [label="Build Netlist",shape=box];
+    4 [label="Output Blif",shape=diamond];
+    5 [label="Simulator",shape=box];
+    6 [label="FPGA Architecture Specification File",shape=box];
+    7 [label="Input Vector File",shape=plaintext];
+    8 [label="Output Vector File",shape=diamond];
+
+    0->1->3
+    3->5 [color=purple]
+    3->4
+    5->8 [color=purple]
+    7->5 [color=purple]
+    6->5 [style=dotted] [color=purple]
+}
+
+### Building the Abstract Syntax Tree (AST)
+
+Odin II uses Bison and Flex to parse a passed Verilog file and produce an Abstract Syntax Tree for each module found in the Verilog File.
+The AST is considered the "front-end" of Odin II.
+Most of the code for this can be found in verilog_bison.y, verilog_flex.l and parse_making_ast.cpp located in the ODIN_II/SRC directory.
+
+### AST Elaboration
+
+In this step, Odin II parses through the ASTs and elaborates specific parts like for loops, function instances, etc.
+It also will simplify the tree and rid itself of useless parts, such as an unused if statement.
+It then builds one large AST, incorporating each module.
+The code for this can mostly be found in ast_elaborate.cpp located in the ODIN_II/SRC directory.
+
+> **NOTE**
+>
+> These ASTs can be viewed via graphviz using the command -A. The file(s) will appear in the main directory.
+
+### Building the Netlist
+
+Once again, Odin II parses through the AST assembling a Netlist.
+During the Netlist creation, pins are assigned and connected.
+The code for this can be found in netlist_create_from_ast.cpp located in the ODIN_II/SRC directory.
+
+> **NOTE**
+>
+> The Netlist can be viewed via graphviz using the command -G. The file will appear in the main directory under net.dot.
+
+### Partial Mapping
+
+During partial mapping, Odin II maps the logic using an architecture.
+If no architecture is passed in, Odin II will create the soft logic and use LUTs for mapping.
+However, if an architecture is passed, Odin II will map accordingly to the available hard blocks and LUTs.
+It uses a combination of soft logic and hard logic.
+
+### Simulator
+
+The simulator of Odin II takes an Input Vector file and creates an Output Vector file determined by the behaviour described in the Verilog file or BLIF file.
+
+## Useful tools of Odin II for Developers
+
+When making improvements to Odin II, there are some features the developer should be aware of to make their job easier.
+For instance, Odin II has a -A and -G command that prints the ASTs and Netlist viewable with GraphViz.
+These files can be found in the ODIN_II directory.
+This is very helpful to visualize what is being created and how everything is related to each other in the Netlist and AST.
+
+Another feature to be aware of is ``make test``.
+This build runs through all the regression tests and will list all the benchmarks that fail.
+It is important to run this after every major change implemented to ensure the change only affects benchmarks it was intended to effect (if any).
+It sheds insight on what needs to be fixed and how close it is to being merged with the master.

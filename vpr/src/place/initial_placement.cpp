@@ -14,7 +14,6 @@
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
 
 static std::vector<std::vector<std::vector<t_pl_loc>>> legal_pos; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1][0..num_sub_tiles - 1] */
-static std::vector<std::vector<int>> num_legal_pos;               /* [0..num_sub_tiles - 1][0..num_legal_pos-1] */
 
 static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles);
 
@@ -304,8 +303,9 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
                                                     std::vector<std::vector<int>>& free_locations) {
     // Loop through the ordered map to get tiles in a decreasing priority order
     for (auto& tile : logical_block->equivalent_tiles) {
-        for (auto sub_tile : tile->sub_tiles) {
-            if (free_locations[tile->index][sub_tile.index] >= num_needed_types) {
+        auto possible_sub_tiles = get_possible_sub_tile_indices(tile, logical_block);
+        for (auto sub_tile_index : possible_sub_tiles) {
+            if (free_locations[tile->index][sub_tile_index] >= num_needed_types) {
                 return tile;
             }
         }
@@ -320,13 +320,11 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     /* Randomly places the blocks to create an initial placement. We rely on
      * the legal_pos array already being loaded.  That legal_pos[itype] is an
      * array that gives every legal value of (x,y,z) that can accommodate a block.
-     * The number of such locations is given by num_legal_pos[itype].
      */
 
     // Loading legal placement locations
     zero_initialize_grid_blocks();
-    alloc_legal_placement_locations(legal_pos, num_legal_pos);
-    load_legal_placement_locations(legal_pos);
+    alloc_and_load_legal_placement_locations(legal_pos);
 
     int itype, ipos;
     std::vector<std::vector<int>> free_locations; /* [0..device_ctx.num_block_types-1].
@@ -344,7 +342,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         free_locations[itype].resize(type.sub_tiles.size());
 
         for (auto sub_tile : type.sub_tiles) {
-            free_locations[itype][sub_tile.index] = num_legal_pos[itype][sub_tile.index];
+            free_locations[itype][sub_tile.index] = legal_pos[itype][sub_tile.index].size();
         }
     }
 
@@ -402,7 +400,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     initial_placement_blocks(free_locations, pad_loc_type);
 
     /* Restore legal_pos */
-    load_legal_placement_locations(legal_pos);
+    alloc_and_load_legal_placement_locations(legal_pos);
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
