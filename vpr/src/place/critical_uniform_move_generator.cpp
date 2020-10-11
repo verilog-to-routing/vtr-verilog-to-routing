@@ -1,14 +1,13 @@
 #include "critical_uniform_move_generator.h"
 #include "globals.h"
 
-e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>&, std::vector<int>&, int&, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
+e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>&, std::vector<int>&, e_move_type& /*move_type*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Pick a random block to be swapped with another random block.   */
-    //ClusterBlockId b_from = pick_from_block();
+    // pick it from the highly critical blocks
     std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[vtr::irand(highly_crit_pins.size() - 1)];
-    //    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     if (!b_from) {

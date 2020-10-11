@@ -1355,7 +1355,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
 
-    int type; //move type number
+    e_move_type move_type; //move type number
 
     num_ts_called++;
 
@@ -1378,9 +1378,9 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     //Generate a new move (perturbation) used to explore the space of possible placements
-    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim, move_helper_vectors.X_coord, move_helper_vectors.Y_coord, type, placer_opts, criticalities);
+    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim, move_helper_vectors.X_coord, move_helper_vectors.Y_coord, move_type, placer_opts, criticalities);
 
-    ++move_helper_vectors.num_moves[type];
+    ++move_helper_vectors.num_moves[(int)move_type];
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
     e_move_result move_outcome = ABORTED;
@@ -1393,7 +1393,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
         move_outcome = ABORTED;
 
-        ++move_helper_vectors.aborted_moves[type];
+        ++move_helper_vectors.aborted_moves[(int)move_type];
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
@@ -1505,7 +1505,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
-            ++move_helper_vectors.accepted_moves[type];
+            ++move_helper_vectors.accepted_moves[(int)move_type];
         } else {
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
 

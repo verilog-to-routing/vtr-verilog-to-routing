@@ -2,12 +2,11 @@
 #include "globals.h"
 #include <algorithm>
 
-//#include "math.h"
 static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew);
 
-static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
+static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int&, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -19,6 +18,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
     }
+
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
@@ -31,10 +31,15 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     ClusterBlockId bnum;
     int pnum, xnew, xold, ynew, yold;
 
+    //clear the vectors that saves X & Y coords
+    //reused to save allocation time
     X_coord.clear();
     Y_coord.clear();
+
+    //true if the net is a feedback from the block to itself
     bool skip_net;
 
+    //iterate over block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
@@ -42,10 +47,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
             continue;
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4) {
-            get_non_updateable(net_id, &coords, b_from, skip_net);
+            //calculate the bb from scratch
+            get_bb_from_scratch(net_id, &coords, b_from, skip_net);
             if (skip_net)
                 continue;
         } else {
+            //use the incremental update of the bb
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
             pnum = tile_pin_index(pin_id);
             VTR_ASSERT(pnum >= 0);
@@ -53,6 +60,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             yold = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
             xold = std::max(std::min(xold, (int)device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
             yold = std::max(std::min(yold, (int)device_ctx.grid.height() - 2), 1); //-2 for no perim channels
+
+            //To calulate the bb incrementally while excluding the moving block
+            //assume that the moving block is moved to a non-critical coord of the bb
             if (bb_coords[net_id].xmin == xold) {
                 xnew = bb_coords[net_id].xmax;
             } else {
@@ -66,11 +76,12 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             }
 
             if (!update_bb(net_id, &coords, xold, yold, xnew, ynew)) {
-                get_non_updateable(net_id, &coords, b_from, skip_net);
+                get_bb_from_scratch(net_id, &coords, b_from, skip_net);
                 if (skip_net)
                     continue;
             }
         }
+        //push the calculated coorinates into X,Y coord vectors
         X_coord.push_back(coords.xmin);
         X_coord.push_back(coords.xmax);
         Y_coord.push_back(coords.ymin);
@@ -80,6 +91,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     if ((X_coord.size() == 0) || (Y_coord.size() == 0))
         return e_create_move::ABORT;
 
+    //calculate the median region
     std::sort(X_coord.begin(), X_coord.end());
     std::sort(Y_coord.begin(), Y_coord.end());
 
@@ -89,6 +101,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     limit_coords.ymin = Y_coord[floor((Y_coord.size() - 1) / 2)];
     limit_coords.ymax = Y_coord[floor((Y_coord.size() - 1) / 2) + 1];
 
+    //find a location in a range around the center of median region
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
@@ -105,12 +118,17 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
+static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
 
     skip_net = true;
 
-    int xmax, ymax, xmin, ymin, x, y;
+    int xmin = 0;
+    int xmax = 0;
+    int ymin = 0;
+    int ymax = 0;
+
+    int x, y;
     int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();

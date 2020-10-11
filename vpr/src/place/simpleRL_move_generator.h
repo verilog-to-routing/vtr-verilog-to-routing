@@ -47,13 +47,9 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
 
     std::vector<float> cumm_epsilon_action_prob_;
     size_t last_action_ = 0; //The last action proposed
-    //std::vector<double> time_elapsed {1.0,4.3,5.7,3.3};
-    //std::vector<double> time_elapsed {1.0,3.87,6.4,2.8,2.29};
     std::vector<double> time_elapsed{1.0, 3.6, 5.4, 2.5, 2.1, 0.8};
     std::vector<double> time_elapsed_per_move{1.0, 3.7, 6, 3.0, 2.0, 1.0, 2.6};
     std::vector<double> time_elapsed_per_accepted_move{1.0, 3.6, 4.6, 2.4, 2.0, 2.2, 2.5};
-    //std::vector<double> time_elapsed {1.0, 4.11, 6.67, 3.22, 1.88, 0.81};
-    //std::vector<int> time_elapsed {7,30,40,23};
     FILE* f_ = nullptr;
 };
 
@@ -101,7 +97,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
   public:
     SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
     SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& move_type, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/);
     void process_outcome(double reward, int reward_num);
 };
 #endif
