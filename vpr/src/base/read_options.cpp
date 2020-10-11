@@ -1803,27 +1803,27 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument<bool, ParseOnOff>(args.simpleRL_agent_placement, "--simpleRL_agent_placement")
         .help(
             "Uses a simple RL agent in choosing the appropiate move type in placement. ")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_agent_multistate, "--place_agent_multistate")
         .help(
             "Enable multistate agent. "
             "A second state will be activated late in the annealing and in the Quench that includes all the timing driven directed moves.")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_checkpointing, "--place_checkpointing")
         .help(
             "Enable Placement checkpoints. "
             "Only enabled if agnet's 2nd state is actovated")
-        .default_value("off")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_agent_epsilon, "--place_agent_epsilon")
         .help(
             "Agent epsilon (exploration fraction) for subsequent temperatures")
-        .default_value("0.5")
+        .default_value("0.3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_agent_gamma, "--place_agent_gamma")
@@ -1831,7 +1831,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Controls how quickly the agent's memory decays. "
             "Values between [0., 1.] specify the fraction of weight in the exponentially weighted average applied to moves which occured greater than moves_per_temp moves ago."
             "Values < 0 cause the unwieghted sample average to be used")
-        .default_value("0.01")
+        .default_value("0.05")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_dm_rlim, "--place_dm_rlim")
@@ -1845,7 +1845,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_reward_num, "--place_reward_num")
         .help(
             "Number of reward function")
-        .default_value("0")
+        .default_value("6")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_crit_limit, "--place_crit_limit")
@@ -1853,16 +1853,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "The criticality limit to count a block as a critical one (or have a critical connection)")
         .default_value("0.7")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
-        .help(
-            "which timing cost function to use")
-        .default_value("0")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
+    /*
+     * place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
+     * .help(
+     * "which timing cost function to use")
+     * .default_value("0")
+     * .show_in(argparse::ShowIn::HELP_ONLY);
+     */
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
-        .default_value("e_greedy")
+        .default_value("softmax")
         .choices({"e_greedy", "softmax"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
