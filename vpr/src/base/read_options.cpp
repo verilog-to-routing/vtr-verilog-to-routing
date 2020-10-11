@@ -1652,7 +1652,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.PlaceInnerNum, "--inner_num")
         .help("Controls number of moves per temperature: inner_num * num_blocks ^ (4/3)")
-        .default_value("1.0")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_effort_scaling, ParsePlaceEfforScaling>(args.place_effort_scaling, "--place_effort_scaling")
