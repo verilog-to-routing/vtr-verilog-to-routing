@@ -762,6 +762,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
 
         if (agent_state == 1 || placer_opts.place_agent_multistate == false) {
+            //use the first state
             placement_inner_loop(&state, placer_opts,
                                  inner_recompute_limit, &stats,
                                  &costs,
@@ -777,6 +778,7 @@ void try_place(const t_placer_opts& placer_opts,
                                  move_helper_vectors,
                                  timing_bb_factor);
         } else {
+            //use the second state
             placement_inner_loop(&state, placer_opts,
                                  inner_recompute_limit, &stats,
                                  &costs,
