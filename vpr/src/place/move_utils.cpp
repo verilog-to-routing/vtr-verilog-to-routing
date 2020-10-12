@@ -666,7 +666,6 @@ void set_placer_breakpoint_reached(bool flag) {
     f_placer_breakpoint_reached = flag;
 }
 
-//Elgammal
 bool find_to_loc_median(t_logical_block_type_ptr type,
                         const t_bb* limit_coords,
                         const t_pl_loc from,
