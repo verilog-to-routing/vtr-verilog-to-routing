@@ -6,33 +6,33 @@
 #include "vtr_assert.h"
 
 StaticMoveGenerator::StaticMoveGenerator(const std::vector<float>& prob) {
-    std::unique_ptr<MoveGenerator> move_generator;
-    move_generator = std::make_unique<UniformMoveGenerator>();
-    avail_moves.push_back(std::move(move_generator));
+    std::unique_ptr<MoveGenerator> uniform_move_generator;
+    uniform_move_generator = std::make_unique<UniformMoveGenerator>();
+    avail_moves.push_back(std::move(uniform_move_generator));
 
-    std::unique_ptr<MoveGenerator> move_generator2;
-    move_generator2 = std::make_unique<MedianMoveGenerator>();
-    avail_moves.push_back(std::move(move_generator2));
+    std::unique_ptr<MoveGenerator> median_move_generator;
+    median_move_generator = std::make_unique<MedianMoveGenerator>();
+    avail_moves.push_back(std::move(median_move_generator));
 
-    std::unique_ptr<MoveGenerator> move_generator3;
-    move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
-    avail_moves.push_back(std::move(move_generator3));
+    std::unique_ptr<MoveGenerator> weighted_centroid_move_generator;
+    weighted_centroid_move_generator = std::make_unique<WeightedCentroidMoveGenerator>();
+    avail_moves.push_back(std::move(weighted_centroid_move_generator));
 
-    std::unique_ptr<MoveGenerator> move_generator4;
-    move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
-    avail_moves.push_back(std::move(move_generator4));
+    std::unique_ptr<MoveGenerator> centroid_move_generator;
+    centroid_move_generator = std::make_unique<CentroidMoveGenerator>();
+    avail_moves.push_back(std::move(centroid_move_generator));
 
-    std::unique_ptr<MoveGenerator> move_generator5;
-    move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
-    avail_moves.push_back(std::move(move_generator5));
+    std::unique_ptr<MoveGenerator> weighted_median_move_generator;
+    weighted_median_move_generator = std::make_unique<WeightedMedianMoveGenerator>();
+    avail_moves.push_back(std::move(weighted_median_move_generator));
 
-    std::unique_ptr<MoveGenerator> move_generator6;
-    move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
-    avail_moves.push_back(std::move(move_generator6));
+    std::unique_ptr<MoveGenerator> crit_uniform_move_generator;
+    crit_uniform_move_generator = std::make_unique<CriticalUniformMoveGenerator>();
+    avail_moves.push_back(std::move(crit_uniform_move_generator));
 
-    std::unique_ptr<MoveGenerator> move_generator7;
-    move_generator7 = std::make_unique<CentroidMoveGenerator>();
-    avail_moves.push_back(std::move(move_generator7));
+    std::unique_ptr<MoveGenerator> feasible_region_move_generator;
+    feasible_region_move_generator = std::make_unique<FeasibleRegionMoveGenerator>();
+    avail_moves.push_back(std::move(feasible_region_move_generator));
 
     cumm_move_probs.push_back(prob[0]);
     for (size_t i = 1; i < prob.size(); i++) {
