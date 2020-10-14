@@ -21,10 +21,9 @@
 
 class VprConstraints {
   public:
+    //VprConstraints();
 
-	//VprConstraints();
-
-	//Method to add an atom to constrained_atoms
+    //Method to add an atom to constrained_atoms
     void add_constrained_atom(const AtomBlockId blk_id, const PartitionId partition);
 
     //Method to find which partition an atom belongs to

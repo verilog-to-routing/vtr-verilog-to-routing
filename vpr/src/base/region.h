@@ -16,8 +16,7 @@ extern int NO_SUBTILE;
 
 class Region {
   public:
-
-	Region();
+    Region();
 
     //vtr::Rect get_region_rect();
     int get_xmin();
@@ -42,8 +41,8 @@ class Region {
 
   private:
     //may need to include zmin, zmax for future use in 3D FPGA designs
-    vtr::Rect<int> region_bounds;   //xmin, ymin, xmax, ymax inclusive
-    int sub_tile; //users will optionally select a subtile, will select if they want to lock down block to specific location
+    vtr::Rect<int> region_bounds; //xmin, ymin, xmax, ymax inclusive
+    int sub_tile;                 //users will optionally select a subtile, will select if they want to lock down block to specific location
 };
 
 #endif /* REGION_H */

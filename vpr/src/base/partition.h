@@ -21,7 +21,6 @@ typedef vtr::StrongId<partition_id_tag> PartitionId;
 
 class Partition {
   public:
-
     PartitionId get_partition_id();
     void set_partition_id(PartitionId _part_id);
 
@@ -42,7 +41,6 @@ class Partition {
 
     //get the union of regions of this partition
     PartitionRegions get_part_regions();
-
 
   private:
     PartitionId id;                       //unique id for this partition

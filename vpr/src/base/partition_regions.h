@@ -11,7 +11,6 @@
 
 class PartitionRegions {
   public:
-
     /**
      * Returns the intersection of two PartitionRegions vectors that are passed to it.
      */
