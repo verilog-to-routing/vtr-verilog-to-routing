@@ -8,7 +8,10 @@ All I/O delays, multiplier delays and memory delays based on architecture k6_N10
 
 Soft logic blocks use 50% depopulated crossbars
 
-Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed
+Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed.
+These assumptions are fairly reasonable. It's an aggressive area scaling, but a conservative speed scaling. It is a reasonable design point though;
+in practice usually there will be a modest speed gain and a less than ideal area scaling, dependent on where the FPGA manufacturer chooses to 
+target the area-delay-power tradeoff.
 
 carry chain from Safeen's CMOS ripple carry adder not gate boosted
 

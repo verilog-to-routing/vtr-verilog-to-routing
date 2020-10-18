@@ -6,7 +6,7 @@
 circuits_dir=benchmarks/arithmetic/multipliers/
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/COFFE_22nm
 
 # Add circuits to list to sweep
 circuit_list_add=mult_4x4.v

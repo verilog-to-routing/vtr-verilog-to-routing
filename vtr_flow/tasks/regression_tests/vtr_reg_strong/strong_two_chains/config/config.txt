@@ -6,7 +6,7 @@
 circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/COFFE_22nm
 
 # Add circuits to list to sweep
 circuit_list_add=diffeq2.v
