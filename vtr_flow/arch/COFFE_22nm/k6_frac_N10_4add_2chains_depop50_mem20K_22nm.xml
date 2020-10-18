@@ -22,6 +22,11 @@
 
     In addition, the architecture has a 27x27 DSP block that can be fractured into two 18x19 DSPs.
 
+    A note about the delays and areas in this architecture:
+    This architecture uses 22 nm COFFE for the logic and routing, and Arria 10 (22 nm) hard block data for DSP,
+    and still uses Stratix IV (40 nm) BRAM speed data. Block RAM speed is not changing that much with process 
+    generation so this isn't a huge approximation.
+
 -->
 <architecture>
   <!-- 

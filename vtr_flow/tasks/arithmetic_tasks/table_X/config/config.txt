@@ -7,7 +7,7 @@
 circuits_dir=benchmarks/arithmetic/generated_circuits/table_X/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/COFFE_22nm
 
 # Add circuits to list to sweep
 circuit_list_add=arm_core.v
