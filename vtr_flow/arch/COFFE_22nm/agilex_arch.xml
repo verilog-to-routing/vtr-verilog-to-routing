@@ -76,8 +76,7 @@
     dual port mode the memory can be configured in the following modes: 512x40, 1024x20 and 2048x10,
     while in true dual port mode it can be configured as: 1024x20 and 2028x10.
 
-    BRAM (M20k) delays and area come from extrapolation of delays from Stratix IV (M32k) 
-    and Stratix III (M144k) and then scaling down to 20nm. See details in the BRAM section.
+    BRAM (M20k) delays and area come from COFFE runs on 20nm.
 
     The BRAM doesn't have an input crossbar. Adding an input crossbar was leading to a 
     seg fault in VPR, likely because of https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1475
@@ -1799,65 +1798,6 @@
 
 
     <!-- Define fracturable memory begin -->
-    <!-- 32 Kb Memory that can operate from 512x64 to 32Kx1 for single-port mode and 1024x32 to 32Kx1 for dual-port mode.  
-           Area and delay based off Stratix IV 9K and 144K memories (delay from linear interpolation, Tsu(483 ps, 636 ps) Tco(1084ps, 1969ps)).  
-           Input delay = 204ps (from Stratix IV LAB line) - 72ps (this architecture does not lump connection box delay in internal delay)
-           Output delay = M9K buffer 50ps
-		   
-		   Area is obtained by appropriately scaling and adjusting the published Stratix III (which is architecturally identical to Stratix IV)
-		   data from H. Wong, V. Betz and J. Rose, "Comparing FPGA vs. Custom CMOS and the Impact on Processor Microarchitecture", FPGA 2011.
-		   Linearly interpolating (by bit count) between the M9k and M144k areas to obtain an M32k (our RAM size) point yields a 65 nm area of
-		   of 0.153 mm^2. Interpolating based on port count between the RAMs would instead yield an area of 0.209 mm^2 for our 32 kB RAM; since 
-		   bit count accounts for more area than ports for a RAM this size we choose the bit count interpolation; however, since the port interpolation
-		   is not radically different this also gives us confidence that interpolating based on bits is OK, but slightly underpredicts area.
-		   Scaling to 40 nm^2 yields .0579 mm^2, and converting to MWTUs at 60 L^2 / MWTU yields 604,000 MWTUs. This includes routing. A Stratix IV
-		   M9K RAM is one row high and hence has one routing tile (one horizonal and one vertical routing segment area). An M144k RAM has 8 such tiles.
-		   Linearly interpolating on
-		   bits to 32 kb yields 2.2 routing tiles incorporated in the area number above. The inter-block routing represents 30% of the area of a logic 
-		   tile according to D. Lewis et al, "Architectural Enhancements in Stratix V," FPGA 2013. Hence we should subtract 0.3 * 2.2 * 84,375 MWTUs to
-		   obtain a RAM core area (not including inter-block routing) of 548,000 MWTU areas for our 32 kb RAM in a 40 nm process.
-
-       Delay calculation for M20k:
-         Setup time:
-          Linear interpolation between 483ps for M9k and 636ps for M144k gives
-          509ps for M32k and 472ps for M20k
-         Clock to Q time: 
-          Linear interpolation between 1084ps for M9k and 1969ps for M144k gives
-          1234ps for M32k and 1156ps for M20k
-         Input delay and output delay are the same as M32k 
-
-       Scaling down from 40nm to 22nm (assuming 1V operation in both cases)
-       Delay factor is 1.32
-       So, setup time = 472ps / 1.32 = 358ps
-           clk-to-q time = 1156ps / 1.32 = 875ps
-           input delay = 132ps / 1.32 = 100ps
-           output delay = 40ps / 1.32 = 30ps
-
-
-       Area calculation for M20k:
-       In the paper, area of M9K is 0.0635 and area of M144K is 0.5897
-       Linear interpolation gives 0.153 mm2 for M32k and 0.1063 mm2 for M20k
-       Scaling relationship for area is S^2, where S is the ratio of the node sizes.
-       In this case, 65nm/40nm = 1.625 = S.
-       S^2 = 1.625^2 = 2.64
-       Scaling to 40nm^2 gives 0.153/2.64 = 0.0579mm2 for M32K and 0.1063/2.64 = 0.040265mm2 for M20k.
-       Converting to MWTA at 60 L^2 / MWTA (1 MWTA = 60 * 40 * 40 nm2 = 96000nm2):
-           0.0579mm2 = 0.0579 * 1000000 * 1000000 nm2
-                     = (0.0579 * 1000000 * 1000000) / (96000) = 603125 ~= 604000 MWTAs
-           0.040265mm2 =  0.040265 * 1000000 * 1000000 nm2
-                     = (0.040265 * 1000000 * 1000000) / (96000) = 419427 ~= 420000 MWTAs 
-       Stratix IV M9k has 1 tile.
-       Stratix IV M32k has 8 tiles.
-       Linear interpolation means: 
-         M32k has 2.2 tiles
-         M20k has 1.57 tiles
-      
-       For core area for M20k, subtract 0.3 * 1.57 * 84375 = 39740
-       to get: 380260 MWTAs
-
-       Scaling down from 40nm to 22nm (assuming 1V operation in both cases)
-       is not required because the area is already in MWTAs
-      -->
     <pb_type name="memory">
       <input name="addr1" num_pins="11"/>
       <input name="addr2" num_pins="11"/>
@@ -2077,11 +2017,8 @@
              </direct>
         </interconnect>
       </mode>
-      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <!-- Place this memory block every 8 columns from (and including) the second column -->
       <power method="sum-of-children"/>
     </pb_type>
-
     <!-- Define fracturable memory end -->
   </complexblocklist>
   <power>
