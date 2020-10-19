@@ -1,7 +1,7 @@
 #ifndef REGION_H
 #define REGION_H
 
-#include "globals.h"
+#include <vtr_geometry.h>
 
 /**
  * @file
@@ -12,7 +12,7 @@
  */
 
 //sentinel value for indicating that a subtile had not been specified
-extern int NO_SUBTILE;
+extern int NO_SUBTILE; //don't need in header file, don't need global variable
 
 class Region {
   public:

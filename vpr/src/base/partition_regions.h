@@ -2,6 +2,7 @@
 #define PARTITION_REGIONS_H
 
 #include "region.h"
+#include "atom_netlist_fwd.h"
 
 /**
  * @file
@@ -15,16 +16,6 @@ class PartitionRegions {
      * Returns the intersection of two PartitionRegions vectors that are passed to it.
      */
     PartitionRegions get_intersection(PartitionRegions region);
-
-    /**
-     * A test for intersection of the PartitionRegions of two blocks
-     */
-    bool intersects(PartitionRegions region);
-
-    /**
-     * Takes Atom Id returns intersection of atom's PartitionRegions with the PartitionRegions of the object
-     */
-    PartitionRegions get_intersect(const AtomBlockId atom_id);
 
     //method to add to the partition_regions vector
     void add_to_part_regions(Region region);
