@@ -67,6 +67,7 @@
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
 #include "cluster.h"
+#include "output_clustering.h"
 
 #include "pack_report.h"
 #include "overuse_report.h"
@@ -1200,6 +1201,11 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
                                  g_vpr_ctx.placement(),
                                  g_vpr_ctx.routing(),
                                  false);
+
+        std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
+        write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
+                                     Arch.architecture_id,
+                                     post_routing_packing_output_file_name.c_str());
     } else {
         VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
     }
