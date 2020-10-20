@@ -5,23 +5,40 @@
 #include "partition_regions.h"
 #include "region.h"
 
+/**
+ * This file contains unit tests that check the functionality of all classes related to vpr constraints. These classes include
+ * VprConstraints, Region, PartitionRegions, and Partition.
+ */
+
 TEST_CASE("RegionAccessors", "[vpr]") {
     Region r1;
 
     r1.set_region_rect(1, 2, 3, 4);
     r1.set_sub_tile(2);
 
-    REQUIRE(r1.get_xmin() == 1);
-    REQUIRE(r1.get_ymin() == 2);
-    REQUIRE(r1.get_xmax() == 3);
-    REQUIRE(r1.get_ymax() == 4);
+    vtr::Rect<int> rect;
+    rect = r1.get_region_rect();
+
+    REQUIRE(rect.xmin() == 1);
+    REQUIRE(rect.ymin() == 2);
+    REQUIRE(rect.xmax() == 3);
+    REQUIRE(rect.ymax() == 4);
     REQUIRE(r1.get_sub_tile() == 2);
+
+    //checking that default constructor creates an empty rectangle (-1,-1,-1,-1)
+    Region def_region;
+    bool is_def_empty = false;
+
+    vtr::Rect<int> def_rect = def_region.get_region_rect();
+    is_def_empty = def_rect.empty();
+    REQUIRE(is_def_empty == true);
+    REQUIRE(def_rect.xmin() == -1);
 }
 
 TEST_CASE("PartitionRegionsAccessors", "[vpr]") {
     Region r1;
 
-    r1.set_region_rect(0, 0, 1, 1);
+    r1.set_region_rect(2, 3, 6, 7);
     r1.set_sub_tile(3);
 
     PartitionRegions pr1;
@@ -30,6 +47,12 @@ TEST_CASE("PartitionRegionsAccessors", "[vpr]") {
 
     std::vector<Region> pr_regions = pr1.get_partition_regions();
     REQUIRE(pr_regions[0].get_sub_tile() == 3);
+    vtr::Rect<int> rect;
+    rect = pr_regions[0].get_region_rect();
+    REQUIRE(rect.xmin() == 2);
+    REQUIRE(rect.ymin() == 3);
+    REQUIRE(rect.xmax() == 6);
+    REQUIRE(rect.ymax() == 7);
 }
 
 TEST_CASE("PartitionAccessors", "[vpr]") {
@@ -50,10 +73,11 @@ TEST_CASE("PartitionAccessors", "[vpr]") {
     REQUIRE(atoms[0] == atom_1);
     REQUIRE(atoms[1] == atom_2);
     REQUIRE(part.contains_atom(atom_1) == true);
+    REQUIRE(part.contains_atom(atom_2) == true);
 
-    //create region and partitionregions objects to test accessors of the Partitions class
+    //create region and partitionregions objects to test accessors of the Partition class
     Region r1;
-    r1.set_region_rect(0, 0, 1, 1);
+    r1.set_region_rect(2, 3, 7, 8);
     r1.set_sub_tile(3);
 
     PartitionRegions part_reg;
@@ -64,6 +88,12 @@ TEST_CASE("PartitionAccessors", "[vpr]") {
     std::vector<Region> regions = part_reg_2.get_partition_regions();
 
     REQUIRE(regions[0].get_sub_tile() == 3);
+    vtr::Rect<int> rect;
+    rect = regions[0].get_region_rect();
+    REQUIRE(rect.xmin() == 2);
+    REQUIRE(rect.ymin() == 3);
+    REQUIRE(rect.xmax() == 7);
+    REQUIRE(rect.ymax() == 8);
 }
 
 TEST_CASE("VprConstraintsAccessors", "[vpr]") {
@@ -95,20 +125,48 @@ TEST_CASE("VprConstraintsAccessors", "[vpr]") {
 }
 
 TEST_CASE("RegionIntersect", "[vpr]") {
+	//Test partial intersection
     Region region1;
     Region region2;
 
-    region1.set_region_rect(0, 0, 2, 2);
-    region2.set_region_rect(1, 1, 2, 2);
+    region1.set_region_rect(1,2,3,5);
+    region2.set_region_rect(2,3,4,6);
 
     Region int_reg;
 
     int_reg = region1.regions_intersection(region2);
+    vtr::Rect<int> rect = int_reg.get_region_rect();
 
-    REQUIRE(int_reg.get_xmin() == 1);
-    REQUIRE(int_reg.get_ymin() == 1);
-    REQUIRE(int_reg.get_xmax() == 2);
-    REQUIRE(int_reg.get_ymax() == 2);
+    REQUIRE(rect.xmin() == 2);
+    REQUIRE(rect.ymin() == 3);
+    REQUIRE(rect.xmax() == 3);
+    REQUIRE(rect.ymax() == 5);
+
+    //Test full overlap
+    Region region3;
+	Region region4;
+
+	region3.set_region_rect(5,1,8,6);
+	region4.set_region_rect(6,3,8,6);
+
+	Region int_reg_2;
+
+	int_reg_2 = region3.regions_intersection(region4);
+	vtr::Rect<int> rect_2 = int_reg_2.get_region_rect();
+
+	REQUIRE(rect_2.xmin() == 6);
+	REQUIRE(rect_2.ymin() == 3);
+	REQUIRE(rect_2.xmax() == 8);
+	REQUIRE(rect_2.ymax() == 6);
+
+	//Test no intersection (rect is empty)
+
+	Region int_reg_3;
+
+	int_reg_3 = region1.regions_intersection(region3);
+	vtr::Rect<int> rect_3 = int_reg_3.get_region_rect();
+
+	REQUIRE(rect_3.empty() == TRUE);
 }
 
 TEST_CASE("PartRegionIntersect", "[vpr]") {
@@ -145,15 +203,34 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
 
 TEST_CASE("RegionLocked", "[vpr]") {
     Region r1;
-
-    r1.set_region_rect(0, 1, 0, 1); //xmin = xmax = 0, ymin = ymax =1
-    r1.set_sub_tile(3);             //set the region to specific x, y, subtile to lock down
-
     bool is_r1_locked = false;
+
+    //set the region to a specific x, y, subtile location - region is locked
+    r1.set_region_rect(2,3,2,3); //point (2,3) to point (2,3) - locking to specific x, y location
+    r1.set_sub_tile(3);          //locking down to subtile 3
 
     is_r1_locked = r1.locked();
 
     REQUIRE(is_r1_locked == true);
+
+    //do not set region to specific x, y location - region is not locked even if a subtile is specified
+    r1.set_region_rect(2,3,5,6); //point (2,3) to point (5,6) - not locking to specific x, y location
+    r1.set_sub_tile(3);          //locking down to subtile 3
+
+    is_r1_locked = r1.locked();
+
+    REQUIRE(is_r1_locked == false);
+
+    //do not specify a subtile for the region - region is not locked even if it is set at specific x, y location
+    Region r2;
+    bool is_r2_locked = true;
+
+    r2.set_region_rect(2,3,2,3);
+
+    is_r2_locked = r2.locked();
+
+    REQUIRE(is_r2_locked == false);
+
 }
 
 TEST_CASE("PartRegionIntersect2", "[vpr]") {

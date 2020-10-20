@@ -1,10 +1,20 @@
 #include "region.h"
 
 //sentinel value for indicating that a subtile has not been specified
-int NO_SUBTILE = -1;
+constexpr int NO_SUBTILE = -1;
 
 Region::Region() {
     sub_tile = NO_SUBTILE;
+
+    //default rect for a region is (-1, -1, -1, -1)
+    region_bounds.set_xmin(-1);
+    region_bounds.set_ymin(-1);
+    region_bounds.set_xmax(-1);
+    region_bounds.set_ymax(-1);
+}
+
+vtr::Rect<int> Region::get_region_rect(){
+	return region_bounds;
 }
 
 int Region::get_xmin() {
@@ -91,20 +101,18 @@ Region Region::regions_intersection(Region region) {
 
 bool Region::locked() {
     bool locked = false;
-    bool x_matches = false;
-    bool y_matches = false;
 
-    if (region_bounds.xmin() == region_bounds.xmax()) {
-        x_matches = true;
+    if (region_bounds.xmin() != region_bounds.xmax()) {
+        return locked;
     }
 
-    if (region_bounds.ymin() == region_bounds.ymax()) {
-        y_matches = true;
+    if (region_bounds.ymin() != region_bounds.ymax()) {
+        return locked;
     }
 
-    if (x_matches && y_matches && sub_tile != NO_SUBTILE) {
-        locked = true;
+    if (sub_tile == NO_SUBTILE) {
+        return locked;
     }
 
-    return locked;
+    return locked = true;
 }

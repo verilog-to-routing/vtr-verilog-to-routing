@@ -34,7 +34,7 @@ class Partition {
     bool contains_atom(AtomBlockId atom_id);
 
     //get the atom_blocks vector
-    std::vector<AtomBlockId> get_atoms();
+    const std::vector<AtomBlockId> get_atoms();
 
     //set the union of regions for this partition;
     void set_part_regions(PartitionRegions pr);

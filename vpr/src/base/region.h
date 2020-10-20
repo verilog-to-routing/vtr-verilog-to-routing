@@ -11,14 +11,11 @@
  *
  */
 
-//sentinel value for indicating that a subtile had not been specified
-extern int NO_SUBTILE; //don't need in header file, don't need global variable
-
 class Region {
   public:
     Region();
 
-    //vtr::Rect get_region_rect();
+    vtr::Rect<int> get_region_rect();
     int get_xmin();
     int get_xmax();
     int get_ymin();

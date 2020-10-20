@@ -30,7 +30,7 @@ bool Partition::contains_atom(AtomBlockId atom_id) {
     return contains_atom;
 }
 
-std::vector<AtomBlockId> Partition::get_atoms() {
+const std::vector<AtomBlockId> Partition::get_atoms() {
     return atom_blocks;
 }
 
