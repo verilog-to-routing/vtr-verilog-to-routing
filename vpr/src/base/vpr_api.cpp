@@ -749,22 +749,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             }
         }
 
-        /* If routing is successful, apply post-routing annotations
-         * - apply logic block pin fix-up
-         *
-         * Note: 
-         *   - Turn on verbose output switch when you want to debug
-         */
-        if (route_status.success()) {
-            sync_netlists_to_routing(g_vpr_ctx.device(),
-                                     g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.mutable_clustering(),
-                                     g_vpr_ctx.placement(),
-                                     g_vpr_ctx.routing(),
-                                     false);
-        }
-        VTR_LOG("\n");
-
         //Echo files
         if (vpr_setup.Timing.timing_analysis_enabled) {
             if (isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
@@ -1202,6 +1186,24 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
         VTR_LOG_WARN("The following analysis results are for an illegal circuit implementation\n");
         VTR_LOG("*****************************************************************************************\n");
     }
+
+    /* If routing is successful, apply post-routing annotations
+     * - apply logic block pin fix-up
+     *
+     * Note: 
+     *   - Turn on verbose output switch when you want to debug
+     */
+    if (route_status.success()) {
+        sync_netlists_to_routing(g_vpr_ctx.device(),
+                                 g_vpr_ctx.mutable_atom(),
+                                 g_vpr_ctx.mutable_clustering(),
+                                 g_vpr_ctx.placement(),
+                                 g_vpr_ctx.routing(),
+                                 false);
+    } else {
+        VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
+    }
+    VTR_LOG("\n");
 
     vpr_analysis(vpr_setup, Arch, route_status);
 
