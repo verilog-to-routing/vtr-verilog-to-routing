@@ -125,12 +125,12 @@ TEST_CASE("VprConstraintsAccessors", "[vpr]") {
 }
 
 TEST_CASE("RegionIntersect", "[vpr]") {
-	//Test partial intersection
+    //Test partial intersection
     Region region1;
     Region region2;
 
-    region1.set_region_rect(1,2,3,5);
-    region2.set_region_rect(2,3,4,6);
+    region1.set_region_rect(1, 2, 3, 5);
+    region2.set_region_rect(2, 3, 4, 6);
 
     Region int_reg;
 
@@ -144,29 +144,29 @@ TEST_CASE("RegionIntersect", "[vpr]") {
 
     //Test full overlap
     Region region3;
-	Region region4;
+    Region region4;
 
-	region3.set_region_rect(5,1,8,6);
-	region4.set_region_rect(6,3,8,6);
+    region3.set_region_rect(5, 1, 8, 6);
+    region4.set_region_rect(6, 3, 8, 6);
 
-	Region int_reg_2;
+    Region int_reg_2;
 
-	int_reg_2 = region3.regions_intersection(region4);
-	vtr::Rect<int> rect_2 = int_reg_2.get_region_rect();
+    int_reg_2 = region3.regions_intersection(region4);
+    vtr::Rect<int> rect_2 = int_reg_2.get_region_rect();
 
-	REQUIRE(rect_2.xmin() == 6);
-	REQUIRE(rect_2.ymin() == 3);
-	REQUIRE(rect_2.xmax() == 8);
-	REQUIRE(rect_2.ymax() == 6);
+    REQUIRE(rect_2.xmin() == 6);
+    REQUIRE(rect_2.ymin() == 3);
+    REQUIRE(rect_2.xmax() == 8);
+    REQUIRE(rect_2.ymax() == 6);
 
-	//Test no intersection (rect is empty)
+    //Test no intersection (rect is empty)
 
-	Region int_reg_3;
+    Region int_reg_3;
 
-	int_reg_3 = region1.regions_intersection(region3);
-	vtr::Rect<int> rect_3 = int_reg_3.get_region_rect();
+    int_reg_3 = region1.regions_intersection(region3);
+    vtr::Rect<int> rect_3 = int_reg_3.get_region_rect();
 
-	REQUIRE(rect_3.empty() == TRUE);
+    REQUIRE(rect_3.empty() == TRUE);
 }
 
 TEST_CASE("PartRegionIntersect", "[vpr]") {
@@ -206,16 +206,16 @@ TEST_CASE("RegionLocked", "[vpr]") {
     bool is_r1_locked = false;
 
     //set the region to a specific x, y, subtile location - region is locked
-    r1.set_region_rect(2,3,2,3); //point (2,3) to point (2,3) - locking to specific x, y location
-    r1.set_sub_tile(3);          //locking down to subtile 3
+    r1.set_region_rect(2, 3, 2, 3); //point (2,3) to point (2,3) - locking to specific x, y location
+    r1.set_sub_tile(3);             //locking down to subtile 3
 
     is_r1_locked = r1.locked();
 
     REQUIRE(is_r1_locked == true);
 
     //do not set region to specific x, y location - region is not locked even if a subtile is specified
-    r1.set_region_rect(2,3,5,6); //point (2,3) to point (5,6) - not locking to specific x, y location
-    r1.set_sub_tile(3);          //locking down to subtile 3
+    r1.set_region_rect(2, 3, 5, 6); //point (2,3) to point (5,6) - not locking to specific x, y location
+    r1.set_sub_tile(3);             //locking down to subtile 3
 
     is_r1_locked = r1.locked();
 
@@ -225,12 +225,11 @@ TEST_CASE("RegionLocked", "[vpr]") {
     Region r2;
     bool is_r2_locked = true;
 
-    r2.set_region_rect(2,3,2,3);
+    r2.set_region_rect(2, 3, 2, 3);
 
     is_r2_locked = r2.locked();
 
     REQUIRE(is_r2_locked == false);
-
 }
 
 TEST_CASE("PartRegionIntersect2", "[vpr]") {

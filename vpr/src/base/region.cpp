@@ -13,8 +13,8 @@ Region::Region() {
     region_bounds.set_ymax(-1);
 }
 
-vtr::Rect<int> Region::get_region_rect(){
-	return region_bounds;
+vtr::Rect<int> Region::get_region_rect() {
+    return region_bounds;
 }
 
 int Region::get_xmin() {
@@ -51,25 +51,16 @@ void Region::set_sub_tile(int _sub_tile) {
 bool Region::do_regions_intersect(Region region) {
     bool intersect = true;
 
-    int x_min_1 = region.get_xmin();
-    int x_min_2 = region_bounds.xmin();
-    int int_x_min = std::max(x_min_1, x_min_2);
+    vtr::Rect<int> region_rect = region.get_region_rect();
+    vtr::Rect<int> intersect_rect;
 
-    int y_min_1 = region.get_ymin();
-    int y_min_2 = region_bounds.ymin();
-    int int_y_min = std::max(y_min_1, y_min_2);
+    intersect_rect = intersection(region_bounds, region_rect);
 
-    int x_max_1 = region.get_xmax();
-    int x_max_2 = region_bounds.xmax();
-    int int_x_max = std::min(x_max_1, x_max_2);
-
-    int y_max_1 = region.get_ymax();
-    int y_max_2 = region_bounds.ymax();
-    int int_y_max = std::min(y_max_1, y_max_2);
-
-    //check if rectangles dimensions are invalid
-    if (int_x_min > int_x_max || int_y_min > int_y_max) {
-        intersect = false;
+    /**if the intersection rectangle is empty or the subtile of the two regions does not match,
+     * the regions do not intersect
+     */
+    if (intersect_rect.empty() || sub_tile != region.get_sub_tile()) {
+        return intersect = false;
     }
 
     return intersect;
@@ -78,23 +69,15 @@ bool Region::do_regions_intersect(Region region) {
 Region Region::regions_intersection(Region region) {
     Region intersect;
 
-    int x_min_1 = region.get_xmin();
-    int x_min_2 = region_bounds.xmin();
-    int int_x_min = std::max(x_min_1, x_min_2);
+    vtr::Rect<int> region_rect = region.get_region_rect();
+    vtr::Rect<int> intersect_rect;
 
-    int y_min_1 = region.get_ymin();
-    int y_min_2 = region_bounds.ymin();
-    int int_y_min = std::max(y_min_1, y_min_2);
+    intersect_rect = intersection(region_bounds, region_rect);
 
-    int x_max_1 = region.get_xmax();
-    int x_max_2 = region_bounds.xmax();
-    int int_x_max = std::min(x_max_1, x_max_2);
-
-    int y_max_1 = region.get_ymax();
-    int y_max_2 = region_bounds.ymax();
-    int int_y_max = std::min(y_max_1, y_max_2);
-
-    intersect.set_region_rect(int_x_min, int_y_min, int_x_max, int_y_max);
+    intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
+    if (sub_tile == region.get_sub_tile()) {
+        intersect.set_sub_tile(sub_tile);
+    }
 
     return intersect;
 }

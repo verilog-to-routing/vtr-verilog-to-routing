@@ -141,6 +141,10 @@ class Rect {
 template<class T>
 Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
 
+//Return the intersection (union) of two given rectangles
+template<class T>
+Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs);
+
 //Sample on a uniformly spaced grid within a rectangle
 //  sample(vtr::Rect(l, h), 0, 0, M) == l
 //  sample(vtr::Rect(l, h), M, M, M) == h
