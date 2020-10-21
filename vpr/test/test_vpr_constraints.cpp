@@ -159,14 +159,34 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     REQUIRE(rect_2.xmax() == 8);
     REQUIRE(rect_2.ymax() == 6);
 
-    //Test no intersection (rect is empty)
+    //Test no intersection (rectangles don't overlap, intersect region will be returned empty)
 
     Region int_reg_3;
 
     int_reg_3 = region1.regions_intersection(region3);
-    vtr::Rect<int> rect_3 = int_reg_3.get_region_rect();
 
-    REQUIRE(rect_3.empty() == TRUE);
+    REQUIRE(int_reg_3.empty() == TRUE);
+
+    //Test no intersection (rectangles overlap but different subtiles are specified, intersect region will be returned empty)
+    region1.set_sub_tile(5);
+    region2.set_sub_tile(3);
+
+    Region int_reg_4;
+    int_reg_4 = region1.regions_intersection(region2);
+
+    REQUIRE(int_reg_4.empty() == TRUE);
+
+    //Test intersection where subtiles are the same and equal to something other than the INVALID value
+    region1.set_sub_tile(6);
+    region2.set_sub_tile(6);
+
+    Region int_reg_5;
+    int_reg_5 = region1.regions_intersection(region2);
+    vtr::Rect<int> rect_5 = int_reg_5.get_region_rect();
+    REQUIRE(rect_5.xmin() == 2);
+    REQUIRE(rect_5.ymin() == 3);
+    REQUIRE(rect_5.xmax() == 3);
+    REQUIRE(rect_5.ymax() == 5);
 }
 
 TEST_CASE("PartRegionIntersect", "[vpr]") {
@@ -201,6 +221,180 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     REQUIRE(regions[1].get_ymax() == 2);
 }
 
+TEST_CASE("PartRegionIntersect2", "[vpr]") {
+    PartitionRegions pr1;
+    PartitionRegions pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+
+    r1.set_region_rect(0, 0, 2, 2);
+    r2.set_region_rect(4, 4, 6, 6);
+    r3.set_region_rect(0, 0, 2, 2);
+
+    pr1.add_to_part_regions(r1);
+    pr1.add_to_part_regions(r2);
+    pr2.add_to_part_regions(r3);
+
+    PartitionRegions int_pr;
+
+    int_pr = pr1.get_intersection(pr2);
+    std::vector<Region> regions = int_pr.get_partition_regions();
+
+    REQUIRE(regions.size() == 1);
+    REQUIRE(regions[0].get_xmin() == 0);
+    REQUIRE(regions[0].get_ymin() == 0);
+    REQUIRE(regions[0].get_xmax() == 2);
+    REQUIRE(regions[0].get_ymax() == 2);
+}
+
+//2x2 regions, no overlaps
+TEST_CASE("PartRegionIntersect3", "[vpr]") {
+    PartitionRegions pr1;
+    PartitionRegions pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+    Region r4;
+
+    r1.set_region_rect(1, 2, 3, 5);
+    r1.set_sub_tile(2);
+
+    r2.set_region_rect(4, 2, 6, 4);
+
+    r3.set_region_rect(4, 5, 5, 7);
+
+    r4.set_region_rect(1, 2, 3, 5);
+    r4.set_sub_tile(4);
+
+    pr1.add_to_part_regions(r1);
+    pr1.add_to_part_regions(r2);
+    pr2.add_to_part_regions(r3);
+    pr2.add_to_part_regions(r4);
+
+    PartitionRegions int_pr;
+
+    int_pr = pr1.get_intersection(pr2);
+    std::vector<Region> regions = int_pr.get_partition_regions();
+
+    REQUIRE(regions.size() == 0);
+}
+
+//2x2 regions, 1 overlap
+TEST_CASE("PartRegionIntersect4", "[vpr]") {
+    PartitionRegions pr1;
+    PartitionRegions pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+    Region r4;
+
+    r1.set_region_rect(1, 2, 3, 5);
+    r1.set_sub_tile(2);
+
+    r2.set_region_rect(4, 2, 6, 4);
+
+    r3.set_region_rect(4, 5, 5, 7);
+
+    r4.set_region_rect(1, 2, 3, 4);
+    r4.set_sub_tile(2);
+
+    pr1.add_to_part_regions(r1);
+    pr1.add_to_part_regions(r2);
+    pr2.add_to_part_regions(r3);
+    pr2.add_to_part_regions(r4);
+
+    PartitionRegions int_pr;
+
+    int_pr = pr1.get_intersection(pr2);
+    std::vector<Region> regions = int_pr.get_partition_regions();
+
+    vtr::Rect<int> intersect(1, 2, 3, 4);
+
+    REQUIRE(regions.size() == 1);
+    REQUIRE(regions[0].get_region_rect() == intersect);
+    REQUIRE(regions[0].get_sub_tile() == 2);
+}
+
+//2x2 regions, 2 overlap
+TEST_CASE("PartRegionIntersect5", "[vpr]") {
+    PartitionRegions pr1;
+    PartitionRegions pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+    Region r4;
+
+    r1.set_region_rect(1, 5, 5, 7);
+
+    r2.set_region_rect(6, 3, 8, 5);
+
+    r3.set_region_rect(2, 6, 4, 9);
+
+    r4.set_region_rect(6, 4, 8, 7);
+
+    pr1.add_to_part_regions(r1);
+    pr1.add_to_part_regions(r2);
+    pr2.add_to_part_regions(r3);
+    pr2.add_to_part_regions(r4);
+
+    PartitionRegions int_pr;
+
+    int_pr = pr1.get_intersection(pr2);
+    std::vector<Region> regions = int_pr.get_partition_regions();
+
+    vtr::Rect<int> int_r1r3(2, 6, 4, 7);
+    vtr::Rect<int> int_r2r4(6, 4, 8, 5);
+
+    REQUIRE(regions.size() == 2);
+    REQUIRE(regions[0].get_region_rect() == int_r1r3);
+    REQUIRE(regions[1].get_region_rect() == int_r2r4);
+}
+
+//2x2 regions, 4 overlap
+TEST_CASE("PartRegionIntersect6", "[vpr]") {
+    PartitionRegions pr1;
+    PartitionRegions pr2;
+
+    Region r1;
+    Region r2;
+    Region r3;
+    Region r4;
+
+    r1.set_region_rect(2, 3, 4, 7);
+
+    r2.set_region_rect(5, 3, 7, 8);
+
+    r3.set_region_rect(2, 2, 7, 4);
+
+    r4.set_region_rect(2, 6, 7, 8);
+
+    pr1.add_to_part_regions(r1);
+    pr1.add_to_part_regions(r2);
+    pr2.add_to_part_regions(r3);
+    pr2.add_to_part_regions(r4);
+
+    PartitionRegions int_pr;
+
+    int_pr = pr1.get_intersection(pr2);
+    std::vector<Region> regions = int_pr.get_partition_regions();
+
+    vtr::Rect<int> int_r1r3(2, 3, 4, 4);
+    vtr::Rect<int> int_r1r4(2, 6, 4, 7);
+    vtr::Rect<int> int_r2r3(5, 3, 7, 4);
+    vtr::Rect<int> int_r2r4(5, 6, 7, 8);
+
+    REQUIRE(regions.size() == 4);
+    REQUIRE(regions[0].get_region_rect() == int_r1r3);
+    REQUIRE(regions[1].get_region_rect() == int_r1r4);
+    REQUIRE(regions[2].get_region_rect() == int_r2r3);
+    REQUIRE(regions[3].get_region_rect() == int_r2r4);
+}
+
 TEST_CASE("RegionLocked", "[vpr]") {
     Region r1;
     bool is_r1_locked = false;
@@ -230,32 +424,4 @@ TEST_CASE("RegionLocked", "[vpr]") {
     is_r2_locked = r2.locked();
 
     REQUIRE(is_r2_locked == false);
-}
-
-TEST_CASE("PartRegionIntersect2", "[vpr]") {
-    PartitionRegions pr1;
-    PartitionRegions pr2;
-
-    Region r1;
-    Region r2;
-    Region r3;
-
-    r1.set_region_rect(0, 0, 2, 2);
-    r2.set_region_rect(4, 4, 6, 6);
-    r3.set_region_rect(0, 0, 2, 2);
-
-    pr1.add_to_part_regions(r1);
-    pr1.add_to_part_regions(r2);
-    pr2.add_to_part_regions(r3);
-
-    PartitionRegions int_pr;
-
-    int_pr = pr1.get_intersection(pr2);
-    std::vector<Region> regions = int_pr.get_partition_regions();
-
-    REQUIRE(regions.size() == 1);
-    REQUIRE(regions[0].get_xmin() == 0);
-    REQUIRE(regions[0].get_ymin() == 0);
-    REQUIRE(regions[0].get_xmax() == 2);
-    REQUIRE(regions[0].get_ymax() == 2);
 }

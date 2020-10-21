@@ -26,6 +26,10 @@ class Region {
 
     void set_sub_tile(int _sub_tile);
 
+    //function to see if region is empty
+    //checks if the Rect of the region is empty
+    bool empty();
+
     //function to see if two regions intersect anywhere
     bool do_regions_intersect(Region region);
 
@@ -39,7 +43,7 @@ class Region {
   private:
     //may need to include zmin, zmax for future use in 3D FPGA designs
     vtr::Rect<int> region_bounds; //xmin, ymin, xmax, ymax inclusive
-    int sub_tile;                 //users will optionally select a subtile, will select if they want to lock down block to specific location
+    int sub_tile;                 //users will optionally select a subtile
 };
 
 #endif /* REGION_H */

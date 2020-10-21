@@ -15,7 +15,7 @@ class PartitionRegions {
     /**
      * Returns the intersection of two PartitionRegions vectors that are passed to it.
      */
-    PartitionRegions get_intersection(PartitionRegions region);
+    PartitionRegions get_intersection(PartitionRegions part_region);
 
     //method to add to the partition_regions vector
     void add_to_part_regions(Region region);

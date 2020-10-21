@@ -69,14 +69,19 @@ bool Region::do_regions_intersect(Region region) {
 Region Region::regions_intersection(Region region) {
     Region intersect;
 
-    vtr::Rect<int> region_rect = region.get_region_rect();
-    vtr::Rect<int> intersect_rect;
-
-    intersect_rect = intersection(region_bounds, region_rect);
-
-    intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
+    //if the subtiles do not match, there is no intersection
+    //so, the control will go straight to returning intersect, which will just be a region with an empty rectangle
+    //if the subtiles do match, then there will be an intersection as long as the rectangles overlap
+    //and the intersection will be found by the code in the if statement
+    //if they do not overlap, the intersection rectangle will still return an empty rectangle
     if (sub_tile == region.get_sub_tile()) {
         intersect.set_sub_tile(sub_tile);
+        vtr::Rect<int> region_rect = region.get_region_rect();
+        vtr::Rect<int> intersect_rect;
+
+        intersect_rect = intersection(region_bounds, region_rect);
+
+        intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
     }
 
     return intersect;
@@ -98,4 +103,8 @@ bool Region::locked() {
     }
 
     return locked = true;
+}
+
+bool Region::empty() {
+    return region_bounds.empty();
 }
