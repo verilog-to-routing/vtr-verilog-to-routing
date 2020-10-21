@@ -6,8 +6,14 @@ void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const Partit
 
 PartitionId VprConstraints::get_atom_partition(AtomBlockId blk_id) {
     PartitionId part_id;
-    part_id = constrained_atoms.at(blk_id);
-    return part_id;
+
+    std::unordered_map<AtomBlockId, PartitionId>::const_iterator got = constrained_atoms.find(blk_id);
+
+    if (got == constrained_atoms.end()) {
+        return part_id = PartitionId::INVALID();
+    } else {
+        return got->second;
+    }
 }
 
 void VprConstraints::add_partition(Partition part) {

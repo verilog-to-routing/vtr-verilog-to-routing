@@ -2,7 +2,13 @@
 #include <algorithm>
 #include <vector>
 
-PartitionId Partition::get_partition_id() {
+Partition::Partition() {
+    id = PartitionId::INVALID();
+    name = "";
+    atom_blocks = {};
+}
+
+const PartitionId Partition::get_partition_id() {
     return id;
 }
 
@@ -10,7 +16,7 @@ void Partition::set_partition_id(PartitionId _part_id) {
     id = _part_id;
 }
 
-std::string Partition::get_name() {
+const std::string Partition::get_name() {
     return name;
 }
 
@@ -34,7 +40,7 @@ const std::vector<AtomBlockId> Partition::get_atoms() {
     return atom_blocks;
 }
 
-PartitionRegions Partition::get_part_regions() {
+const PartitionRegions Partition::get_part_regions() {
     return part_regions;
 }
 

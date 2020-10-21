@@ -21,10 +21,12 @@ typedef vtr::StrongId<partition_id_tag> PartitionId;
 
 class Partition {
   public:
-    PartitionId get_partition_id();
+    Partition();
+
+    const PartitionId get_partition_id();
     void set_partition_id(PartitionId _part_id);
 
-    std::string get_name();
+    const std::string get_name();
     void set_name(std::string _part_name);
 
     //add an id to the atom_blocks vector
@@ -40,7 +42,7 @@ class Partition {
     void set_part_regions(PartitionRegions pr);
 
     //get the union of regions of this partition
-    PartitionRegions get_part_regions();
+    const PartitionRegions get_part_regions();
 
   private:
     PartitionId id;                       //unique id for this partition

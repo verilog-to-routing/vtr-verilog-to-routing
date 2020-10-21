@@ -10,7 +10,7 @@
  * VprConstraints, Region, PartitionRegions, and Partition.
  */
 
-TEST_CASE("RegionAccessors", "[vpr]") {
+TEST_CASE("Region", "[vpr]") {
     Region r1;
 
     r1.set_region_rect(1, 2, 3, 4);
@@ -35,7 +35,7 @@ TEST_CASE("RegionAccessors", "[vpr]") {
     REQUIRE(def_rect.xmin() == -1);
 }
 
-TEST_CASE("PartitionRegionsAccessors", "[vpr]") {
+TEST_CASE("PartitionRegions", "[vpr]") {
     Region r1;
 
     r1.set_region_rect(2, 3, 6, 7);
@@ -55,7 +55,7 @@ TEST_CASE("PartitionRegionsAccessors", "[vpr]") {
     REQUIRE(rect.ymax() == 7);
 }
 
-TEST_CASE("PartitionAccessors", "[vpr]") {
+TEST_CASE("Partition", "[vpr]") {
     Partition part;
 
     part.set_name("part");
@@ -63,7 +63,7 @@ TEST_CASE("PartitionAccessors", "[vpr]") {
 
     PartitionId part_id(6);
     part.set_partition_id(part_id);
-    REQUIRE(part.get_partition_id() == part_id);
+    //REQUIRE(part.get_partition_id() == part_id);
 
     AtomBlockId atom_1(3);
     AtomBlockId atom_2(5);
@@ -75,7 +75,7 @@ TEST_CASE("PartitionAccessors", "[vpr]") {
     REQUIRE(part.contains_atom(atom_1) == true);
     REQUIRE(part.contains_atom(atom_2) == true);
 
-    //create region and partitionregions objects to test accessors of the Partition class
+    //create region and partitionregions objects to test functions of the Partition class
     Region r1;
     r1.set_region_rect(2, 3, 7, 8);
     r1.set_sub_tile(3);
@@ -96,12 +96,13 @@ TEST_CASE("PartitionAccessors", "[vpr]") {
     REQUIRE(rect.ymax() == 8);
 }
 
-TEST_CASE("VprConstraintsAccessors", "[vpr]") {
+TEST_CASE("VprConstraints", "[vpr]") {
     PartitionId part_id(0);
     PartitionId part_id_2(1);
     AtomBlockId atom_id(6);
     AtomBlockId atom_id_2(7);
     AtomBlockId atom_id_3(8);
+    AtomBlockId atom_id_4(9);
 
     VprConstraints vprcon;
 
@@ -112,6 +113,7 @@ TEST_CASE("VprConstraintsAccessors", "[vpr]") {
     REQUIRE(vprcon.get_atom_partition(atom_id) == part_id);
     REQUIRE(vprcon.get_atom_partition(atom_id_2) == part_id);
     REQUIRE(vprcon.get_atom_partition(atom_id_3) == part_id_2);
+    REQUIRE(vprcon.get_atom_partition(atom_id_4) == PartitionId::INVALID());
 
     Partition part;
     part.set_partition_id(part_id);
@@ -210,15 +212,10 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();
 
-    REQUIRE(regions[0].get_xmin() == 0);
-    REQUIRE(regions[0].get_ymin() == 0);
-    REQUIRE(regions[0].get_xmax() == 1);
-    REQUIRE(regions[0].get_ymax() == 1);
-
-    REQUIRE(regions[1].get_xmin() == 1);
-    REQUIRE(regions[1].get_ymin() == 1);
-    REQUIRE(regions[1].get_xmax() == 2);
-    REQUIRE(regions[1].get_ymax() == 2);
+    vtr::Rect<int> int_rect(0, 0, 1, 1);
+    vtr::Rect<int> int_rect_2(1, 1, 2, 2);
+    REQUIRE(regions[0].get_region_rect() == int_rect);
+    REQUIRE(regions[1].get_region_rect() == int_rect_2);
 }
 
 TEST_CASE("PartRegionIntersect2", "[vpr]") {
@@ -241,12 +238,9 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
 
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();
-
+    vtr::Rect<int> int_rect(0, 0, 2, 2);
     REQUIRE(regions.size() == 1);
-    REQUIRE(regions[0].get_xmin() == 0);
-    REQUIRE(regions[0].get_ymin() == 0);
-    REQUIRE(regions[0].get_xmax() == 2);
-    REQUIRE(regions[0].get_ymax() == 2);
+    REQUIRE(regions[0].get_region_rect() == int_rect);
 }
 
 //2x2 regions, no overlaps

@@ -2,7 +2,7 @@
 
 PartitionRegions PartitionRegions::get_intersection(PartitionRegions part_region) {
     /**for N regions in part_region and M in the calling object you can get anywhere from
-     * 0 to M*N regions in the resulting vector. Only regions with non-zero area rectangles and
+     * 0 to M*N regions in the resulting vector. Only intersection regions with non-zero area rectangles and
      * equivalent subtiles are put in the resulting vector
      * Rectangles are not merged even if it would be possible
      */

@@ -6,8 +6,8 @@
 /**
  * @file
  * @brief This file defines the Region class. The Region class stores the data for each constraint region.
- *        This includes the bounds of the region rectangle and the sub_tile bounds. To lock a block down to a specific location,
- *        when defining the region specify xmin = xmax, ymin = ymax, sub_tile_min = sub_tile_max
+ *        This includes the x and y bounds of the region rectangle and its sub_tile. To lock a block down to a specific location,
+ *        when defining the region specify xmin = xmax, ymin = ymax, and specify a subtile value.
  *
  */
 
@@ -16,24 +16,24 @@ class Region {
     Region();
 
     vtr::Rect<int> get_region_rect();
-    int get_xmin();
-    int get_xmax();
-    int get_ymin();
-    int get_ymax();
+
     void set_region_rect(int _xmin, int _ymin, int _xmax, int _ymax);
 
     int get_sub_tile();
 
     void set_sub_tile(int _sub_tile);
 
-    //function to see if region is empty
-    //checks if the Rect of the region is empty
+    //function to see if region is empty (checks if region rectangle is empty)
     bool empty();
 
-    //function to see if two regions intersect anywhere
+    /**function to see if two regions intersect anywhere
+     * Intersection is the area of overlap between the rectangles of two regions,
+     * given that both regions have matching subtile values, or no subtiles assigned to them
+     * The overlap is inclusive of the x and y boundaries of the rectangles
+     */
     bool do_regions_intersect(Region region);
 
-    //returns the coordinates of the intersection of two regions
+    //returns the coordinates of the rectangular intersection of two regions
     Region regions_intersection(Region region);
 
     //function to check whether a block is locked down to a specific x, y, subtile location
