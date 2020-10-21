@@ -629,7 +629,6 @@ void output_clustering(const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_
 void write_packing_results_to_xml(const bool& global_clocks,
                                   const std::string& architecture_id,
                                   const char* out_fname) {
-
     vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing_placeholder;
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock(global_clocks);
 
@@ -640,4 +639,3 @@ void write_packing_results_to_xml(const bool& global_clocks,
                       out_fname,
                       false);
 }
-
