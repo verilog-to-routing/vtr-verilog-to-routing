@@ -3,10 +3,8 @@
 #include "move_generator.h"
 #include "timing_place.h"
 
-const float CRIT_LIMIT = 0.7;
-
 class FeasibleRegionMoveGenerator : public MoveGenerator {
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float, std::vector<int>&, std::vector<int>&, e_move_type& /*move_type*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* criticalities);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float, std::vector<int>&, std::vector<int>&, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
 };
 
 #endif

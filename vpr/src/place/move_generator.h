@@ -26,7 +26,7 @@ class MoveGenerator {
     virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& move_type, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
 
     //Recieves feedback about the outcome of the previously proposed move
-    virtual void process_outcome(double, int) {}
+    virtual void process_outcome(double, std::string) {}
 };
 
 #endif

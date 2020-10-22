@@ -39,7 +39,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             continue;
 
         ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-        if (criticalities->criticality(net_id, ipin) > CRIT_LIMIT) {
+        if (criticalities->criticality(net_id, ipin) > placer_opts.place_crit_limit) {
             bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
             X_coord.push_back(place_ctx.block_locs[bnum].loc.x);
             Y_coord.push_back(place_ctx.block_locs[bnum].loc.y);

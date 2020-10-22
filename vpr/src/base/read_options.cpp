@@ -1842,10 +1842,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.place_reward_num, "--place_reward_num")
+    place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
         .help(
-            "Number of reward function")
-        .default_value("6")
+            "The reward function used by placement RL agent."
+            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware")
+        .default_value("WLbiased_runtime_aware")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_crit_limit, "--place_crit_limit")

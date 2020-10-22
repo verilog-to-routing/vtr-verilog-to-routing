@@ -45,6 +45,17 @@ extern std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 extern std::unordered_set<ClusterBlockId> highly_crit_blocks;
 
 /**
+ * @brief Saves the placement criticality parameters
+ *
+ * crit_exponent: The criticality exponent used to sharpen the criticalities
+ * crit_limit:    The limit to consider a pin as timing critical
+ */
+struct PlaceCritParams {
+    float crit_exponent;
+    float crit_limit;
+};
+
+/**
  * @brief PlacerCriticalities returns the clustered netlist connection criticalities
  *        used by the placer ('sharpened' by a criticality exponent).
  *
@@ -120,7 +131,7 @@ class PlacerCriticalities {
      * If out of sync, then the criticalities cannot be incrementally updated on
      * during the next timing analysis iteration.
      */
-    void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent, float crit_limit);
+    void update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params);
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required();

@@ -48,14 +48,18 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
     }
 }
 
-void EpsilonGreedyAgent::process_outcome(double reward, int reward_num) {
+void EpsilonGreedyAgent::process_outcome(double reward, std::string reward_fun) {
     ++n_[last_action_];
+    if(reward_fun == "runtime_aware" || reward_fun == "WLbiased_runtime_aware")
+        reward /= time_elapsed[last_action_];
+    /*
     if (reward_num == 1 || reward_num == 4) {
         reward = reward / time_elapsed_per_move[last_action_];
     } else if (reward_num == 2 || reward_num == 5) {
         reward = reward / time_elapsed_per_accepted_move[last_action_];
     } else
         reward = reward / time_elapsed[last_action_];
+    */
     //Determine step size
     float step = 0.;
     if (exp_alpha_ < 0.) {
@@ -250,8 +254,8 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     return avail_moves[(int)move_type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, move_type, placer_opts, criticalities);
 }
 
-void SimpleRLMoveGenerator::process_outcome(double reward, int reward_num) {
-    karmed_bandit_agent->process_outcome(reward, reward_num);
+void SimpleRLMoveGenerator::process_outcome(double reward, std::string reward_fun) {
+    karmed_bandit_agent->process_outcome(reward, reward_fun);
 }
 /*                                  *
  *                                  *
@@ -270,14 +274,18 @@ SoftmaxAgent::~SoftmaxAgent() {
     if (f_) vtr::fclose(f_);
 }
 
-void SoftmaxAgent::process_outcome(double reward, int reward_num) {
+void SoftmaxAgent::process_outcome(double reward, std::string reward_fun) {
     ++n_[last_action_];
+    if(reward_fun == "runtime_aware" || reward_fun == "WLbiased_runtime_aware")
+        reward /= time_elapsed[last_action_];
+    /*
     if (reward_num == 1 || reward_num == 4) {
         reward = reward / time_elapsed_per_move[last_action_];
     } else if (reward_num == 2 || reward_num == 5) {
         reward = reward / time_elapsed_per_accepted_move[last_action_];
     } else
         reward = reward / time_elapsed[last_action_];
+    */
     //Determine step size
     float step = 0.;
     if (exp_alpha_ < 0.) {

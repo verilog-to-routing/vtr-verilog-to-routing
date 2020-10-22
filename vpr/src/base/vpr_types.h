@@ -927,6 +927,13 @@ enum e_pad_loc_type {
     RANDOM
 };
 
+/**
+ * @brief Used to determine the RL agent's algorithm
+ *
+ * This algorithm controls the exploration-exploitation and how we select the new action
+ * Currently, the supported algorithms are: epsilon greedy and softmax
+ * For more details, check simpleRL_move_generator.cpp
+ */
 enum e_agent_algorithm {
     E_GREEDY,
     SOFTMAX
@@ -1055,7 +1062,7 @@ struct t_placer_opts {
     float place_agent_gamma;
     int place_dm_rlim;
     //int place_timing_cost_func;
-    int place_reward_num;
+    std::string place_reward_fun;
     float place_crit_limit;
 
     /**

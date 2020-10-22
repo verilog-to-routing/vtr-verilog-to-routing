@@ -511,7 +511,7 @@ void try_place(const t_placer_opts& placer_opts,
             move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
         }
 
-        VTR_LOG("The reward function used is reward num: %d \n", placer_opts.place_reward_num);
+        VTR_LOG("The reward function used is reward num: %s \n", placer_opts.place_reward_fun);
     }
     width_fac = placer_opts.place_chan_width;
 
@@ -577,14 +577,17 @@ void try_place(const t_placer_opts& placer_opts,
                                                                                  atom_ctx.lookup,
                                                                                  *timing_info->timing_graph());
         //First time compute timing and costs, compute from scratch
-        initialize_timing_info(first_crit_exponent,
+        PlaceCritParams crit_params;
+        crit_params.crit_exponent = first_crit_exponent;
+        crit_params.crit_limit = placer_opts.place_crit_limit;
+
+        initialize_timing_info(crit_params,
                                place_delay_model.get(),
                                placer_criticalities.get(),
                                placer_setup_slacks.get(),
                                pin_timing_invalidator.get(),
                                timing_info.get(),
-                               &costs,
-                               placer_opts.place_crit_limit);
+                               &costs);
 
         critical_path = timing_info->least_slack_critical_path();
 
@@ -890,15 +893,18 @@ quench:
     auto post_quench_timing_stats = timing_ctx.stats;
 
     //Final timing analysis
+    PlaceCritParams crit_params;
+    crit_params.crit_exponent = state.crit_exponent;
+    crit_params.crit_limit = placer_opts.place_crit_limit;
+
     if (placer_opts.place_algorithm.is_timing_driven()) {
-        perform_full_timing_update(state.crit_exponent,
+        perform_full_timing_update(crit_params,
                                    place_delay_model.get(),
                                    placer_criticalities.get(),
                                    placer_setup_slacks.get(),
                                    pin_timing_invalidator.get(),
                                    timing_info.get(),
-                                   &costs,
-                                   placer_opts.place_crit_limit);
+                                   &costs);
         VTR_LOG("post-quench CPD = %g (ns) \n", 1e9 * timing_info->least_slack_critical_path().delay());
     }
 
@@ -911,14 +917,13 @@ quench:
         placer_criticalities.get()->set_recompute_required();
         placer_setup_slacks.get()->set_recompute_required();
         comp_td_connection_delays(place_delay_model.get());
-        perform_full_timing_update(state.crit_exponent,
+        perform_full_timing_update(crit_params,
                                    place_delay_model.get(),
                                    placer_criticalities.get(),
                                    placer_setup_slacks.get(),
                                    pin_timing_invalidator.get(),
                                    timing_info.get(),
-                                   &costs,
-                                   placer_opts.place_crit_limit);
+                                   &costs);
 
         VTR_LOG("\nCheckpoint restored\n");
     }
@@ -1047,15 +1052,18 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
         num_connections = std::max(num_connections, 1); //Avoid division by zero
         VTR_ASSERT(num_connections > 0);
 
+        PlaceCritParams crit_params;
+        crit_params.crit_exponent = crit_exponent;
+        crit_params.crit_limit = placer_opts.place_crit_limit;
+ 
         //Update all timing related classes
-        perform_full_timing_update(crit_exponent,
+        perform_full_timing_update(crit_params,
                                    delay_model,
                                    criticalities,
                                    setup_slacks,
                                    pin_timing_invalidator,
                                    timing_info,
-                                   costs,
-                                   placer_opts.place_crit_limit);
+                                   costs);
 
         *outer_crit_iter_count = 0;
     }
@@ -1127,15 +1135,19 @@ static void placement_inner_loop(const t_annealing_state* state,
 #ifdef VERBOSE
                 VTR_LOG("Inner loop recompute criticalities\n");
 #endif
+
+                PlaceCritParams crit_params;
+                crit_params.crit_exponent = state->crit_exponent;
+                crit_params.crit_limit = placer_opts.place_crit_limit;
+
                 //Update all timing related classes
-                perform_full_timing_update(state->crit_exponent,
+                perform_full_timing_update(crit_params,
                                            delay_model,
                                            criticalities,
                                            setup_slacks,
                                            pin_timing_invalidator,
                                            timing_info,
-                                           costs,
-                                           placer_opts.place_crit_limit);
+                                           costs);
             }
             inner_crit_iter_count++;
         }
@@ -1357,6 +1369,10 @@ static e_move_result try_swap(const t_annealing_state* state,
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
 
+    PlaceCritParams crit_params;
+    crit_params.crit_exponent = state->crit_exponent;
+    crit_params.crit_limit = placer_opts.place_crit_limit;
+
     e_move_type move_type; //move type number
 
     num_ts_called++;
@@ -1450,12 +1466,11 @@ static e_move_result try_swap(const t_annealing_state* state,
              * we need to revert block moves and restore the timing values.      */
             criticalities->disable_update();
             setup_slacks->enable_update();
-            update_timing_classes(state->crit_exponent,
+            update_timing_classes(crit_params,
                                   timing_info,
                                   criticalities,
                                   setup_slacks,
-                                  pin_timing_invalidator,
-                                  placer_opts.place_crit_limit);
+                                  pin_timing_invalidator);
 
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
@@ -1532,12 +1547,11 @@ static e_move_result try_swap(const t_annealing_state* state,
                                                 timing_info);
 
                 /* Revert the timing update */
-                update_timing_classes(state->crit_exponent,
+                update_timing_classes(crit_params,
                                       timing_info,
                                       criticalities,
                                       setup_slacks,
-                                      pin_timing_invalidator,
-                                      placer_opts.place_crit_limit);
+                                      pin_timing_invalidator);
 
                 VTR_ASSERT_SAFE_MSG(
                     verify_connection_setup_slacks(setup_slacks),
@@ -1571,7 +1585,28 @@ static e_move_result try_swap(const t_annealing_state* state,
      * else
      * move_generator.process_outcome(0);
      */
-    int reward_num = placer_opts.place_reward_num;
+    std::string reward_fun = placer_opts.place_reward_fun;
+    if(reward_fun == "basic"){
+        move_generator.process_outcome(-1 * delta_c, reward_fun);
+    }
+    else if(reward_fun == "nonPenalizing_basic" || reward_fun == "runtime_aware"){
+        if (delta_c < 0) {
+            move_generator.process_outcome(-1 * delta_c, reward_fun);
+        }
+        else{
+            move_generator.process_outcome(0, reward_fun);
+        }
+    }
+    else if(reward_fun == "WLbiased_runtime_aware"){
+        if (delta_c < 0) {
+            float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
+            move_generator.process_outcome(reward, reward_fun);
+        } else {
+            move_generator.process_outcome(0, reward_fun);
+        }
+        
+    }
+    /*
     if (reward_num == 0) {
         move_generator.process_outcome(-1 * delta_c, reward_num);
 
@@ -1587,7 +1622,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         } else
             move_generator.process_outcome(0, reward_num);
     }
-
+    */
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
     stop_placement_and_check_breakopints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
