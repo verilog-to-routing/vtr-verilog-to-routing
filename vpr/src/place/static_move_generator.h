@@ -15,6 +15,7 @@ class StaticMoveGenerator : public MoveGenerator {
     std::vector<std::unique_ptr<MoveGenerator>> avail_moves;
     std::vector<float> cumm_move_probs;
     float total_prob;
+    void initialize_move_prob(const std::vector<float>& prob);
 
   public:
     StaticMoveGenerator(const std::vector<float>& prob);

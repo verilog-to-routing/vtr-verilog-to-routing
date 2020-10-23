@@ -23,7 +23,8 @@ enum class e_move_type {
     CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
-    FEASIBLE_REGION
+    FEASIBLE_REGION,
+    Count
 };
 
 enum class e_create_move {

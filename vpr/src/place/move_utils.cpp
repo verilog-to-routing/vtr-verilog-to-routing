@@ -975,7 +975,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
 }
 
 //Array of move type strings
-std::string move_type_strings[7] = {
+std::array<std::string, 7> move_type_strings = {
     "Uniform",
     "Median",
     "W. Centroid",
@@ -983,6 +983,8 @@ std::string move_type_strings[7] = {
     "W. Median",
     "Crit. Uniform",
     "Feasible Region"};
+
+static_assert(move_type_strings.size() == static_cast<int>(e_move_type::Count), "The available move types and move_Type_Strings arenot matched");
 
 //To convert enum move type to string
 std::string move_type_to_string(e_move_type move) {
