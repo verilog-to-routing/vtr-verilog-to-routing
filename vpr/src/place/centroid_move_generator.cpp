@@ -4,7 +4,6 @@
 #include "directed_moves_util.h"
 
 e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& /*X_coord*/, std::vector<int>& /*Y_coord*/, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
-
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -18,7 +17,6 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = device_ctx.grid[from.x][from.y].type;
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
-
 
     t_pl_loc to, centroid;
 

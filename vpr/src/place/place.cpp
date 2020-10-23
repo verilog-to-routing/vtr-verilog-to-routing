@@ -1055,7 +1055,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
         PlaceCritParams crit_params;
         crit_params.crit_exponent = crit_exponent;
         crit_params.crit_limit = placer_opts.place_crit_limit;
- 
+
         //Update all timing related classes
         perform_full_timing_update(crit_params,
                                    delay_model,
@@ -1576,53 +1576,23 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     move_outcome_stats.outcome = move_outcome;
-    /*
-     * if (move_outcome == ACCEPTED)
-     * move_generator.process_outcome(delta_c*-1);
-     * else if(move_outcome == REJECTED)
-     * //move_generator.process_outcome(-0.25*delta_c);
-     * move_generator.process_outcome(0);
-     * else
-     * move_generator.process_outcome(0);
-     */
     std::string reward_fun = placer_opts.place_reward_fun;
-    if(reward_fun == "basic"){
+    if (reward_fun == "basic") {
         move_generator.process_outcome(-1 * delta_c, reward_fun);
-    }
-    else if(reward_fun == "nonPenalizing_basic" || reward_fun == "runtime_aware"){
+    } else if (reward_fun == "nonPenalizing_basic" || reward_fun == "runtime_aware") {
         if (delta_c < 0) {
             move_generator.process_outcome(-1 * delta_c, reward_fun);
-        }
-        else{
+        } else {
             move_generator.process_outcome(0, reward_fun);
         }
-    }
-    else if(reward_fun == "WLbiased_runtime_aware"){
+    } else if (reward_fun == "WLbiased_runtime_aware") {
         if (delta_c < 0) {
             float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
             move_generator.process_outcome(reward, reward_fun);
         } else {
             move_generator.process_outcome(0, reward_fun);
         }
-        
     }
-    /*
-    if (reward_num == 0) {
-        move_generator.process_outcome(-1 * delta_c, reward_num);
-
-    } else if (reward_num == 2 || reward_num == 1 || reward_num == 3) {
-        if (delta_c < 0) {
-            move_generator.process_outcome(-1 * delta_c, reward_num);
-        } else
-            move_generator.process_outcome(0, reward_num);
-    } else {
-        if (delta_c < 0) {
-            float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
-            move_generator.process_outcome(reward, reward_num);
-        } else
-            move_generator.process_outcome(0, reward_num);
-    }
-    */
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
     stop_placement_and_check_breakopints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);

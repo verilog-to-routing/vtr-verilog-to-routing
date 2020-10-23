@@ -1,6 +1,6 @@
 #ifndef VPR_DIRECTED_MOVES_UTIL_H
 #define VPR_DIRECTED_MOVES_UTIL_H
- 
+
 #include "globals.h"
 #include "timing_place.h"
 #include "move_generator.h"

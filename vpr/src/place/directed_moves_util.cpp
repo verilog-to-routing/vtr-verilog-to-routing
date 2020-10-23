@@ -1,7 +1,6 @@
 #include "directed_moves_util.h"
 
-void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities){
-
+void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
     auto& place_ctx = g_vpr_ctx.placement();
@@ -29,16 +28,15 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
             if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
                 continue;
-            
+
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 if (pin_id == sink_pin_id)
                     continue;
                 ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
                 pnum = tile_pin_index(sink_pin_id);
-                if(timing_weights){
-                    weight = criticalities->criticality(net_id, ipin); 
-                }
-                else {
+                if (timing_weights) {
+                    weight = criticalities->criticality(net_id, ipin);
+                } else {
                     weight = 1;
                 }
 
@@ -51,7 +49,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
                 y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
                 acc_x += x * weight;
-                acc_y += y * weight; 
+                acc_y += y * weight;
                 acc_weight += weight;
             }
         }
@@ -59,10 +57,9 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
         //else the pin is sink --> only care about its driver
         else {
             ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-            if(timing_weights){
+            if (timing_weights) {
                 weight = criticalities->criticality(net_id, ipin);
-            }
-            else {
+            } else {
                 weight = 1;
             }
 

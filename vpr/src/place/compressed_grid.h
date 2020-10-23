@@ -51,7 +51,8 @@ t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Poin
 
 int grid_to_compressed(const std::vector<int>& coords, int point);
 
-//Elgammal
+//find the nearest location in the compressed grid
+//Useful when the point is of a different type from coords
 int grid_to_compressed_approx(const std::vector<int>& coords, int point);
 
 #endif

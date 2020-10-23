@@ -125,7 +125,8 @@ int grid_to_compressed(const std::vector<int>& coords, int point) {
     return std::distance(coords.begin(), itr);
 }
 
-//Elgammal
+//find the nearest location in the compressed grid
+//Useful when the point is of a different type from coords
 int grid_to_compressed_approx(const std::vector<int>& coords, int point) {
     auto itr = std::lower_bound(coords.begin(), coords.end(), point);
     //VTR_ASSERT(*itr == point);
