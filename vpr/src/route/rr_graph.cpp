@@ -257,7 +257,6 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 static void alloc_rr_switch_inf(t_arch_switch_fanin& switch_fanin);
 
 static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               int max_chan_width,
                                int wire_to_rr_ipin_switch,
                                enum e_base_cost_type base_cost_type);
 
@@ -740,8 +739,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     //Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, max_chan_width,
-                       *wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf, *wire_to_rr_ipin_switch, base_cost_type);
 
     check_rr_graph(graph_type, grid, types);
 
@@ -907,14 +905,12 @@ static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin
 }
 
 static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               int max_chan_width,
                                int wire_to_rr_ipin_switch,
                                enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
 
     add_rr_graph_C_from_switches(device_ctx.rr_switch_inf[wire_to_rr_ipin_switch].Cin);
-    alloc_and_load_rr_indexed_data(segment_inf, device_ctx.rr_node_indices,
-                                   max_chan_width, wire_to_rr_ipin_switch, base_cost_type);
+    alloc_and_load_rr_indexed_data(segment_inf, wire_to_rr_ipin_switch, base_cost_type);
     load_rr_index_segments(segment_inf.size());
 }
 
