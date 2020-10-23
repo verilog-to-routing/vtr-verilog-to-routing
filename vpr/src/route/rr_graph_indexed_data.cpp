@@ -258,7 +258,6 @@ static float get_delay_normalization_fac() {
 
     std::vector<float> Tdel_vector(0.0);
     for (size_t cost_index = CHANX_COST_INDEX_START; cost_index < rr_indexed_data.size(); cost_index++) {
-
         float T_value = rr_indexed_data[cost_index].T_linear + rr_indexed_data[cost_index].T_quadratic;
 
         if (rr_indexed_data[cost_index].number_of_nodes == 0 || T_value == 0.0) continue;
@@ -391,7 +390,7 @@ static void load_rr_indexed_data_T_values() {
 
                 rr_indexed_data[cost_index].T_linear = Tsw + 0.5 * Rsw * Cnode;
                 rr_indexed_data[cost_index].T_quadratic = (Rsw + Rnode) * 0.5
-                                                                     * Cnode;
+                                                          * Cnode;
             }
         }
     }
