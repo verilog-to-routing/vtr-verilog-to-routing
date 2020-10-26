@@ -256,21 +256,18 @@ static float get_delay_normalization_fac() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
-    std::vector<float> Tdel_vector(0.0);
+    float Tdel_sum = 0.0;
+    int Tdel_num = 0;
     for (size_t cost_index = CHANX_COST_INDEX_START; cost_index < rr_indexed_data.size(); cost_index++) {
         float T_value = rr_indexed_data[cost_index].T_linear + rr_indexed_data[cost_index].T_quadratic;
 
-        if (rr_indexed_data[cost_index].number_of_nodes == 0 || T_value == 0.0) continue;
+        if (T_value == 0.0) continue;
 
-        Tdel_vector.push_back(T_value * 1e10);
+        Tdel_sum += T_value;
+        Tdel_num += 1;
     }
 
-    double mult = 1.0f;
-    for (auto Tdel : Tdel_vector) {
-        mult *= Tdel;
-    }
-
-    return std::pow(mult, 1.0 / Tdel_vector.size()) / 1e10;
+    return Tdel_sum / Tdel_num;
 }
 
 static void load_rr_indexed_data_T_values() {
@@ -362,8 +359,6 @@ static void load_rr_indexed_data_T_values() {
             rr_indexed_data[cost_index].T_quadratic = 0.0;
             rr_indexed_data[cost_index].C_load = 0.0;
         } else {
-            rr_indexed_data[cost_index].number_of_nodes = num_nodes_of_index[cost_index];
-
             float Rnode = R_total[cost_index] / num_nodes_of_index[cost_index];
             float Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
             float Rsw = (float)switch_R_total[cost_index] / num_nodes_of_index[cost_index];
