@@ -6,6 +6,8 @@
 
 extern vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
+#define NUM_AVAIL_MOVES 7
+
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */
@@ -23,8 +25,7 @@ enum class e_move_type {
     CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
-    FEASIBLE_REGION,
-    Count
+    FEASIBLE_REGION
 };
 
 enum class e_create_move {
