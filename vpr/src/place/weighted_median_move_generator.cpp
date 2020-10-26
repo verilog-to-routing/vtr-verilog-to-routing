@@ -25,7 +25,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_pl_loc to;
 
     t_bb_cost coords;
-    t_bb temp_coords, limit_coords;
+    t_bb limit_coords;
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
@@ -47,10 +47,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         if (skip_net)
             continue;
 
-        X_coord.insert(X_coord.end(), ceil(coords.xmin.second * 10), coords.xmin.first);
-        X_coord.insert(X_coord.end(), ceil(coords.xmax.second * 10), coords.xmax.first);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymin.second * 10), coords.ymin.first);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymax.second * 10), coords.ymax.first);
+        X_coord.insert(X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.loc);
+        X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.loc);
+        Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.loc);
+        Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.loc);
     }
 
     if ((X_coord.size() == 0) || (Y_coord.size() == 0))
@@ -165,8 +165,26 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
 
     /* Copy the coordinates and number on edges information into the proper   *
      * structures.                                                            */
-    coords->xmin = std::make_pair(xmin, xmin_cost);
-    coords->xmax = std::make_pair(xmax, xmax_cost);
-    coords->ymin = std::make_pair(ymin, ymin_cost);
-    coords->ymax = std::make_pair(ymax, ymax_cost);
+    /*
+    t_edge_cost temp_edge;
+    temp_edge.loc = xmin;
+    temp_edge.criticality = xmin_cost;
+    coords->xmin =temp_edge;
+    
+    temp_edge.loc = xmax;
+    temp_edge.criticality = xmax_cost;
+    coords->xmax = temp_edge;
+
+    temp_edge.loc = ymin;
+    temp_edge.criticality = ymin_cost;
+    coords->ymin = temp_edge;
+
+    temp_edge.loc = ymax;
+    temp_edge.criticality = ymax_cost;
+    coords->ymax = temp_edge;
+    */
+    coords->xmin = {xmin, xmin_cost};
+    coords->xmax = {xmax, xmax_cost};
+    coords->ymin = {ymin, ymin_cost};
+    coords->ymax = {ymax, ymax_cost};
 }
