@@ -1,6 +1,6 @@
 #include "region.h"
 
-//sentinel value for indicating that a subtile has not been specified
+/// @brief sentinel value for indicating that a subtile has not been specified
 constexpr int NO_SUBTILE = -1;
 
 Region::Region() {
@@ -40,7 +40,8 @@ bool Region::do_regions_intersect(Region region) {
 
     intersect_rect = intersection(region_bounds, region_rect);
 
-    /**if the intersection rectangle is empty or the subtile of the two regions does not match,
+    /**
+     * if the intersection rectangle is empty or the subtile of the two regions does not match,
      * the regions do not intersect
      */
     if (intersect_rect.empty() || sub_tile != region.get_sub_tile()) {

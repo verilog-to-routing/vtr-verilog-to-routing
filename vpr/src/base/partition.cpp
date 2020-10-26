@@ -10,10 +10,10 @@ void Partition::set_name(std::string _part_name) {
     name = _part_name;
 }
 
-const PartitionRegion Partition::get_part_regions() {
-    return part_regions;
+const PartitionRegion Partition::get_part_region() {
+    return part_region;
 }
 
-void Partition::set_part_regions(PartitionRegion pr) {
-    part_regions = pr;
+void Partition::set_part_region(PartitionRegion pr) {
+    part_region = pr;
 }

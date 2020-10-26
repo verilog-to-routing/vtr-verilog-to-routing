@@ -43,9 +43,9 @@ TEST_CASE("PartitionRegion", "[vpr]") {
 
     PartitionRegion pr1;
 
-    pr1.add_to_part_regions(r1);
+    pr1.add_to_part_region(r1);
 
-    std::vector<Region> pr_regions = pr1.get_partition_regions();
+    std::vector<Region> pr_regions = pr1.get_partition_region();
     REQUIRE(pr_regions[0].get_sub_tile() == 3);
     vtr::Rect<int> rect;
     rect = pr_regions[0].get_region_rect();
@@ -67,11 +67,11 @@ TEST_CASE("Partition", "[vpr]") {
     r1.set_sub_tile(3);
 
     PartitionRegion part_reg;
-    part_reg.add_to_part_regions(r1);
+    part_reg.add_to_part_region(r1);
 
-    part.set_part_regions(part_reg);
-    PartitionRegion part_reg_2 = part.get_part_regions();
-    std::vector<Region> regions = part_reg_2.get_partition_regions();
+    part.set_part_region(part_reg);
+    PartitionRegion part_reg_2 = part.get_part_region();
+    std::vector<Region> regions = part_reg_2.get_partition_region();
 
     REQUIRE(regions[0].get_sub_tile() == 3);
     vtr::Rect<int> rect;
@@ -196,14 +196,14 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     r2.set_region_rect(1, 1, 2, 2);
     r3.set_region_rect(0, 0, 2, 2);
 
-    pr1.add_to_part_regions(r1);
-    pr1.add_to_part_regions(r2);
-    pr2.add_to_part_regions(r3);
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
 
     PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
-    std::vector<Region> regions = int_pr.get_partition_regions();
+    std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> int_rect(0, 0, 1, 1);
     vtr::Rect<int> int_rect_2(1, 1, 2, 2);
@@ -223,14 +223,14 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
     r2.set_region_rect(4, 4, 6, 6);
     r3.set_region_rect(0, 0, 2, 2);
 
-    pr1.add_to_part_regions(r1);
-    pr1.add_to_part_regions(r2);
-    pr2.add_to_part_regions(r3);
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
 
     PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
-    std::vector<Region> regions = int_pr.get_partition_regions();
+    std::vector<Region> regions = int_pr.get_partition_region();
     vtr::Rect<int> int_rect(0, 0, 2, 2);
     REQUIRE(regions.size() == 1);
     REQUIRE(regions[0].get_region_rect() == int_rect);
@@ -256,15 +256,15 @@ TEST_CASE("PartRegionIntersect3", "[vpr]") {
     r4.set_region_rect(1, 2, 3, 5);
     r4.set_sub_tile(4);
 
-    pr1.add_to_part_regions(r1);
-    pr1.add_to_part_regions(r2);
-    pr2.add_to_part_regions(r3);
-    pr2.add_to_part_regions(r4);
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
+    pr2.add_to_part_region(r4);
 
     PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
-    std::vector<Region> regions = int_pr.get_partition_regions();
+    std::vector<Region> regions = int_pr.get_partition_region();
 
     REQUIRE(regions.size() == 0);
 }
@@ -289,15 +289,15 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
     r4.set_region_rect(1, 2, 3, 4);
     r4.set_sub_tile(2);
 
-    pr1.add_to_part_regions(r1);
-    pr1.add_to_part_regions(r2);
-    pr2.add_to_part_regions(r3);
-    pr2.add_to_part_regions(r4);
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
+    pr2.add_to_part_region(r4);
 
     PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
-    std::vector<Region> regions = int_pr.get_partition_regions();
+    std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> intersect(1, 2, 3, 4);
 
@@ -324,15 +324,15 @@ TEST_CASE("PartRegionIntersect5", "[vpr]") {
 
     r4.set_region_rect(6, 4, 8, 7);
 
-    pr1.add_to_part_regions(r1);
-    pr1.add_to_part_regions(r2);
-    pr2.add_to_part_regions(r3);
-    pr2.add_to_part_regions(r4);
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
+    pr2.add_to_part_region(r4);
 
     PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
-    std::vector<Region> regions = int_pr.get_partition_regions();
+    std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> int_r1r3(2, 6, 4, 7);
     vtr::Rect<int> int_r2r4(6, 4, 8, 5);
@@ -360,15 +360,15 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
 
     r4.set_region_rect(2, 6, 7, 8);
 
-    pr1.add_to_part_regions(r1);
-    pr1.add_to_part_regions(r2);
-    pr2.add_to_part_regions(r3);
-    pr2.add_to_part_regions(r4);
+    pr1.add_to_part_region(r1);
+    pr1.add_to_part_region(r2);
+    pr2.add_to_part_region(r3);
+    pr2.add_to_part_region(r4);
 
     PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
-    std::vector<Region> regions = int_pr.get_partition_regions();
+    std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> int_r1r3(2, 3, 4, 4);
     vtr::Rect<int> int_r1r4(2, 6, 4, 7);

@@ -9,12 +9,12 @@ PartitionRegion PartitionRegion::get_intersection(PartitionRegion part_region) {
     PartitionRegion pr;
     Region intersect_region;
     bool regions_intersect;
-    for (unsigned int i = 0; i < partition_regions.size(); i++) {
-        for (unsigned int j = 0; j < part_region.partition_regions.size(); j++) {
-            regions_intersect = partition_regions[i].do_regions_intersect(part_region.partition_regions[j]);
+    for (unsigned int i = 0; i < partition_region.size(); i++) {
+        for (unsigned int j = 0; j < part_region.partition_region.size(); j++) {
+            regions_intersect = partition_region[i].do_regions_intersect(part_region.partition_region[j]);
             if (regions_intersect) {
-                intersect_region = partition_regions[i].regions_intersection(part_region.partition_regions[j]);
-                pr.partition_regions.push_back(intersect_region);
+                intersect_region = partition_region[i].regions_intersection(part_region.partition_region[j]);
+                pr.partition_region.push_back(intersect_region);
             }
         }
     }
@@ -22,10 +22,10 @@ PartitionRegion PartitionRegion::get_intersection(PartitionRegion part_region) {
     return pr;
 }
 
-void PartitionRegion::add_to_part_regions(Region region) {
-    partition_regions.push_back(region);
+void PartitionRegion::add_to_part_region(Region region) {
+    partition_region.push_back(region);
 }
 
-std::vector<Region> PartitionRegion::get_partition_regions() {
-    return partition_regions;
+std::vector<Region> PartitionRegion::get_partition_region() {
+    return partition_region;
 }
