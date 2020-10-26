@@ -4,7 +4,7 @@
 #include "vtr_vector.h"
 #include "vpr_utils.h"
 #include "partition.h"
-#include "partition_regions.h"
+#include "partition_region.h"
 
 /**
  * @file
@@ -21,10 +21,8 @@
 
 class VprConstraints {
   public:
-    //VprConstraints();
-
     //function to add an atom to constrained_atoms
-    void add_constrained_atom(const AtomBlockId blk_id, const PartitionId partition);
+    void add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id);
 
     //function to find which partition an atom belongs to
     PartitionId get_atom_partition(AtomBlockId blk_id);
@@ -32,11 +30,11 @@ class VprConstraints {
     //function to add a partition to partitions
     void add_partition(Partition part);
 
-    //function to return the partitions vector
-    vtr::vector<PartitionId, Partition> get_partitions();
-
     //function to return a partition given a PartitionId
     Partition get_partition(PartitionId part_id);
+
+    //function to return the atoms belonging to a partition
+    std::vector<AtomBlockId> get_part_atoms(PartitionId part_id);
 
   private:
     /**

@@ -1,12 +1,12 @@
-#include "partition_regions.h"
+#include "partition_region.h"
 
-PartitionRegions PartitionRegions::get_intersection(PartitionRegions part_region) {
+PartitionRegion PartitionRegion::get_intersection(PartitionRegion part_region) {
     /**for N regions in part_region and M in the calling object you can get anywhere from
      * 0 to M*N regions in the resulting vector. Only intersection regions with non-zero area rectangles and
      * equivalent subtiles are put in the resulting vector
      * Rectangles are not merged even if it would be possible
      */
-    PartitionRegions pr;
+    PartitionRegion pr;
     Region intersect_region;
     bool regions_intersect;
     for (unsigned int i = 0; i < partition_regions.size(); i++) {
@@ -22,10 +22,10 @@ PartitionRegions PartitionRegions::get_intersection(PartitionRegions part_region
     return pr;
 }
 
-void PartitionRegions::add_to_part_regions(Region region) {
+void PartitionRegion::add_to_part_regions(Region region) {
     partition_regions.push_back(region);
 }
 
-std::vector<Region> PartitionRegions::get_partition_regions() {
+std::vector<Region> PartitionRegion::get_partition_regions() {
     return partition_regions;
 }

@@ -1,8 +1,8 @@
+#include "../src/base/partition_region.h"
 #include "catch.hpp"
 
 #include "vpr_constraints.h"
 #include "partition.h"
-#include "partition_regions.h"
 #include "region.h"
 
 /**
@@ -35,13 +35,13 @@ TEST_CASE("Region", "[vpr]") {
     REQUIRE(def_rect.xmin() == -1);
 }
 
-TEST_CASE("PartitionRegions", "[vpr]") {
+TEST_CASE("PartitionRegion", "[vpr]") {
     Region r1;
 
     r1.set_region_rect(2, 3, 6, 7);
     r1.set_sub_tile(3);
 
-    PartitionRegions pr1;
+    PartitionRegion pr1;
 
     pr1.add_to_part_regions(r1);
 
@@ -61,30 +61,16 @@ TEST_CASE("Partition", "[vpr]") {
     part.set_name("part");
     REQUIRE(part.get_name() == "part");
 
-    PartitionId part_id(6);
-    part.set_partition_id(part_id);
-    //REQUIRE(part.get_partition_id() == part_id);
-
-    AtomBlockId atom_1(3);
-    AtomBlockId atom_2(5);
-    part.add_to_atoms(atom_1);
-    part.add_to_atoms(atom_2);
-    std::vector<AtomBlockId> atoms = part.get_atoms();
-    REQUIRE(atoms[0] == atom_1);
-    REQUIRE(atoms[1] == atom_2);
-    REQUIRE(part.contains_atom(atom_1) == true);
-    REQUIRE(part.contains_atom(atom_2) == true);
-
     //create region and partitionregions objects to test functions of the Partition class
     Region r1;
     r1.set_region_rect(2, 3, 7, 8);
     r1.set_sub_tile(3);
 
-    PartitionRegions part_reg;
+    PartitionRegion part_reg;
     part_reg.add_to_part_regions(r1);
 
     part.set_part_regions(part_reg);
-    PartitionRegions part_reg_2 = part.get_part_regions();
+    PartitionRegion part_reg_2 = part.get_part_regions();
     std::vector<Region> regions = part_reg_2.get_partition_regions();
 
     REQUIRE(regions[0].get_sub_tile() == 3);
@@ -115,15 +101,22 @@ TEST_CASE("VprConstraints", "[vpr]") {
     REQUIRE(vprcon.get_atom_partition(atom_id_3) == part_id_2);
     REQUIRE(vprcon.get_atom_partition(atom_id_4) == PartitionId::INVALID());
 
+    vprcon.add_constrained_atom(atom_id_3, part_id);
+    REQUIRE(vprcon.get_atom_partition(atom_id_3) == part_id);
+
     Partition part;
-    part.set_partition_id(part_id);
     part.set_name("part_name");
-    part.add_to_atoms(atom_id);
-    part.add_to_atoms(atom_id_2);
 
     vprcon.add_partition(part);
-    vtr::vector<PartitionId, Partition> parts = vprcon.get_partitions();
-    REQUIRE(parts[part_id].get_name() == "part_name");
+
+    Partition got_part;
+    got_part = vprcon.get_partition(part_id);
+    REQUIRE(got_part.get_name() == "part_name");
+
+    std::vector<AtomBlockId> partition_atoms;
+
+    partition_atoms = vprcon.get_part_atoms(part_id);
+    REQUIRE(partition_atoms.size() == 3);
 }
 
 TEST_CASE("RegionIntersect", "[vpr]") {
@@ -192,8 +185,8 @@ TEST_CASE("RegionIntersect", "[vpr]") {
 }
 
 TEST_CASE("PartRegionIntersect", "[vpr]") {
-    PartitionRegions pr1;
-    PartitionRegions pr2;
+    PartitionRegion pr1;
+    PartitionRegion pr2;
 
     Region r1;
     Region r2;
@@ -207,7 +200,7 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     pr1.add_to_part_regions(r2);
     pr2.add_to_part_regions(r3);
 
-    PartitionRegions int_pr;
+    PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();
@@ -219,8 +212,8 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
 }
 
 TEST_CASE("PartRegionIntersect2", "[vpr]") {
-    PartitionRegions pr1;
-    PartitionRegions pr2;
+    PartitionRegion pr1;
+    PartitionRegion pr2;
 
     Region r1;
     Region r2;
@@ -234,7 +227,7 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
     pr1.add_to_part_regions(r2);
     pr2.add_to_part_regions(r3);
 
-    PartitionRegions int_pr;
+    PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();
@@ -245,8 +238,8 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
 
 //2x2 regions, no overlaps
 TEST_CASE("PartRegionIntersect3", "[vpr]") {
-    PartitionRegions pr1;
-    PartitionRegions pr2;
+    PartitionRegion pr1;
+    PartitionRegion pr2;
 
     Region r1;
     Region r2;
@@ -268,7 +261,7 @@ TEST_CASE("PartRegionIntersect3", "[vpr]") {
     pr2.add_to_part_regions(r3);
     pr2.add_to_part_regions(r4);
 
-    PartitionRegions int_pr;
+    PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();
@@ -278,8 +271,8 @@ TEST_CASE("PartRegionIntersect3", "[vpr]") {
 
 //2x2 regions, 1 overlap
 TEST_CASE("PartRegionIntersect4", "[vpr]") {
-    PartitionRegions pr1;
-    PartitionRegions pr2;
+    PartitionRegion pr1;
+    PartitionRegion pr2;
 
     Region r1;
     Region r2;
@@ -301,7 +294,7 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
     pr2.add_to_part_regions(r3);
     pr2.add_to_part_regions(r4);
 
-    PartitionRegions int_pr;
+    PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();
@@ -315,8 +308,8 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
 
 //2x2 regions, 2 overlap
 TEST_CASE("PartRegionIntersect5", "[vpr]") {
-    PartitionRegions pr1;
-    PartitionRegions pr2;
+    PartitionRegion pr1;
+    PartitionRegion pr2;
 
     Region r1;
     Region r2;
@@ -336,7 +329,7 @@ TEST_CASE("PartRegionIntersect5", "[vpr]") {
     pr2.add_to_part_regions(r3);
     pr2.add_to_part_regions(r4);
 
-    PartitionRegions int_pr;
+    PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();
@@ -351,8 +344,8 @@ TEST_CASE("PartRegionIntersect5", "[vpr]") {
 
 //2x2 regions, 4 overlap
 TEST_CASE("PartRegionIntersect6", "[vpr]") {
-    PartitionRegions pr1;
-    PartitionRegions pr2;
+    PartitionRegion pr1;
+    PartitionRegion pr2;
 
     Region r1;
     Region r2;
@@ -372,7 +365,7 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
     pr2.add_to_part_regions(r3);
     pr2.add_to_part_regions(r4);
 
-    PartitionRegions int_pr;
+    PartitionRegion int_pr;
 
     int_pr = pr1.get_intersection(pr2);
     std::vector<Region> regions = int_pr.get_partition_regions();

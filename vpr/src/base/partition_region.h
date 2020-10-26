@@ -10,10 +10,10 @@
  * of regions that a partition can be placed in.
  */
 
-class PartitionRegions {
+class PartitionRegion {
   public:
     //Returns the intersection of two PartitionRegions vectors that are passed to it.
-    PartitionRegions get_intersection(PartitionRegions part_region);
+    PartitionRegion get_intersection(PartitionRegion part_region);
 
     //function to add to the partition_regions vector
     void add_to_part_regions(Region region);

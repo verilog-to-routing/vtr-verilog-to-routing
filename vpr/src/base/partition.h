@@ -3,8 +3,8 @@
 
 #include "vtr_strong_id.h"
 #include "region.h"
-#include "partition_regions.h"
 #include "atom_netlist_fwd.h"
+#include "partition_region.h"
 /**
  * @file
  * @brief This file defines the data for a partition: a grouping of atoms that are constrained to a portion of an FPGA. A partition defines
@@ -21,34 +21,18 @@ typedef vtr::StrongId<partition_id_tag> PartitionId;
 
 class Partition {
   public:
-    Partition();
-
-    const PartitionId get_partition_id();
-    void set_partition_id(PartitionId _part_id);
-
     const std::string get_name();
     void set_name(std::string _part_name);
 
-    //add an id to the atom_blocks vector
-    void add_to_atoms(AtomBlockId atom_id);
-
-    //check if a given atom is in the partition
-    bool contains_atom(AtomBlockId atom_id);
-
-    //get the atom_blocks vector
-    const std::vector<AtomBlockId> get_atoms();
-
     //set the union of regions for this partition;
-    void set_part_regions(PartitionRegions pr);
+    void set_part_regions(PartitionRegion pr);
 
     //get the union of regions of this partition
-    const PartitionRegions get_part_regions();
+    const PartitionRegion get_part_regions();
 
   private:
-    PartitionId id;                       //unique id for this partition
-    std::string name;                     //name of the partition, name will be unique across partitions
-    std::vector<AtomBlockId> atom_blocks; //atoms that belong to this partition, each atom should only belong to one partition
-    PartitionRegions part_regions;        //the union of regions that the partition can be placed in
+    std::string name;             //name of the partition, name will be unique across partitions
+    PartitionRegion part_regions; //the union of regions that the partition can be placed in
 };
 
 #endif /* PARTITION_H */
