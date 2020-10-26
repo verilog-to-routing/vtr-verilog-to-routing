@@ -166,23 +166,23 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
     /* Copy the coordinates and number on edges information into the proper   *
      * structures.                                                            */
     /*
-    t_edge_cost temp_edge;
-    temp_edge.loc = xmin;
-    temp_edge.criticality = xmin_cost;
-    coords->xmin =temp_edge;
-    
-    temp_edge.loc = xmax;
-    temp_edge.criticality = xmax_cost;
-    coords->xmax = temp_edge;
-
-    temp_edge.loc = ymin;
-    temp_edge.criticality = ymin_cost;
-    coords->ymin = temp_edge;
-
-    temp_edge.loc = ymax;
-    temp_edge.criticality = ymax_cost;
-    coords->ymax = temp_edge;
-    */
+     * t_edge_cost temp_edge;
+     * temp_edge.loc = xmin;
+     * temp_edge.criticality = xmin_cost;
+     * coords->xmin =temp_edge;
+     *
+     * temp_edge.loc = xmax;
+     * temp_edge.criticality = xmax_cost;
+     * coords->xmax = temp_edge;
+     *
+     * temp_edge.loc = ymin;
+     * temp_edge.criticality = ymin_cost;
+     * coords->ymin = temp_edge;
+     *
+     * temp_edge.loc = ymax;
+     * temp_edge.criticality = ymax_cost;
+     * coords->ymax = temp_edge;
+     */
     coords->xmin = {xmin, xmin_cost};
     coords->xmax = {xmax, xmax_cost};
     coords->ymin = {ymin, ymin_cost};
