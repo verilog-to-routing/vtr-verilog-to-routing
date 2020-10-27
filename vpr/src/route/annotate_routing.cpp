@@ -32,7 +32,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
         }
 
         /* Ignore used in local cluster only, reserved one CLB pin */
-        if (!clustering_ctx.clb_nlist.net_sinks(net_id).size()) {
+        if (clustering_ctx.clb_nlist.net_sinks(net_id).empty()) {
             continue;
         }
         t_trace* tptr = routing_ctx.trace[net_id].head;
@@ -41,7 +41,12 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
             /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
             if ((SOURCE != device_ctx.rr_nodes.node_type(rr_node))
                 && (SINK != device_ctx.rr_nodes.node_type(rr_node))) {
-                rr_node_nets[rr_node] = net_id;
+                /* Sanity check: ensure we do not revoke any net mapping */
+                if (rr_node_nets[rr_node]) {
+                    VTR_ASSERT(net_id == rr_node_nets[rr_node]);
+                } else {
+                    rr_node_nets[rr_node] = net_id;
+                }
                 counter++;
             }
             tptr = tptr->next;
