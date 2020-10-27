@@ -253,13 +253,15 @@ static std::vector<size_t> count_rr_segment_types() {
 static float get_delay_normalization_fac() {
     /* Returns the average delay to go 1 CLB distance along a wire.  */
 
+    const int clb_dist = 3; /* Number of CLBs I think the average conn. goes. */
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
     float Tdel_sum = 0.0;
     int Tdel_num = 0;
     for (size_t cost_index = CHANX_COST_INDEX_START; cost_index < rr_indexed_data.size(); cost_index++) {
-        float T_value = rr_indexed_data[cost_index].T_linear + rr_indexed_data[cost_index].T_quadratic;
+        float frac_num_seg = device_ctx.rr_indexed_data[cost_index].inv_length * clb_dist;
+        float T_value = rr_indexed_data[cost_index].T_linear * frac_num_seg + rr_indexed_data[cost_index].T_quadratic * std::pow(frac_num_seg, 2);
 
         if (T_value == 0.0) continue;
 
