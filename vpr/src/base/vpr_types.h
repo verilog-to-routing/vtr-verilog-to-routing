@@ -484,6 +484,11 @@ enum class e_timing_update_type {
  * Placement and routing data types
  ****************************************************************************/
 
+/* Values of number of available move types */
+#define NUM_AVAILABLE_MOVE_TYPES 7
+#define NUM_ABAILABLE_NONTIMING_MOVE_TYPES 3
+#define NUM_1ST_STATE_AVAILABLE_MOVE_TYPES 4
+
 /* Timing data structures end */
 enum sched_type {
     AUTO_SCHED,
@@ -1062,6 +1067,7 @@ struct t_placer_opts {
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
     std::vector<float> place_static_move_prob;
+    std::vector<float> place_static_notiming_move_prob;
     bool simpleRL_agent_placement;
     bool place_agent_multistate;
     bool place_checkpointing;

@@ -28,9 +28,6 @@ class KArmedBanditAgent {
     std::vector<double> time_elapsed_{1.0, 3.6, 5.4, 2.5, 2.1, 0.8, 2.2};
 
     FILE* f_ = nullptr;
-#if 0
-    virtual void debug() = 0;
-#endif
 };
 
 class EpsilonGreedyAgent : public KArmedBanditAgent {
@@ -45,8 +42,6 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     void set_epsilon(float epsilon);
     void set_epsilon_action_prob();
     void set_step(float gamma, int move_lim);
-
-    //void debug() override;
 
   private:
     float epsilon_ = 0.1; //How often to perform a non-greedy exploration action
@@ -65,8 +60,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
     void set_k(size_t k); //Sets the number of arms
     void set_action_prob();
     void set_step(float gamma, int move_lim);
-
-    //void debug() override;
 
   private:
     std::vector<float> exp_q_; //Estimated value of each arm

@@ -129,7 +129,6 @@ int grid_to_compressed(const std::vector<int>& coords, int point) {
 //Useful when the point is of a different type from coords
 int grid_to_compressed_approx(const std::vector<int>& coords, int point) {
     auto itr = std::lower_bound(coords.begin(), coords.end(), point);
-    //VTR_ASSERT(*itr == point);
     if (itr == coords.end())
         return std::distance(coords.begin(), itr - 1);
     return std::distance(coords.begin(), itr);

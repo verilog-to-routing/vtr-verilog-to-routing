@@ -576,6 +576,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->timing_update_type = Options.timing_update_type;
     PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
     PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
+    PlacerOpts->place_static_notiming_move_prob = Options.place_static_notiming_move_prob;
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
     PlacerOpts->simpleRL_agent_placement = Options.simpleRL_agent_placement;
     PlacerOpts->place_agent_multistate = Options.place_agent_multistate;

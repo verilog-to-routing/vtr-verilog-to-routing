@@ -15,8 +15,8 @@ float my_exp(float);
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
     avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<CentroidMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<WeightedMedianMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<CriticalUniformMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<FeasibleRegionMoveGenerator>()));
@@ -27,8 +27,8 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
     avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<CentroidMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<WeightedMedianMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<CriticalUniformMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<FeasibleRegionMoveGenerator>()));
@@ -71,13 +71,6 @@ void KArmedBanditAgent::process_outcome(double reward, std::string reward_fun) {
     //Update the estimated value of the last action
     q_[last_action_] += delta_q;
 
-#if 0
-    //Update the cummulative q array
-    for (size_t i = last_action_; i < k_; ++i) {
-        cumm_q_[i] += delta_q;
-    }
-#endif
-
     if (f_) {
         fprintf(f_, "%zu,", last_action_);
         fprintf(f_, "%g,", reward);
@@ -102,7 +95,6 @@ void KArmedBanditAgent::process_outcome(double reward, std::string reward_fun) {
  *                                  *
  *                                  */
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
-    //f_ = vtr::fopen("agent_info.txt", "w");
     set_epsilon(epsilon);
     set_k(k);
     set_epsilon_action_prob();
@@ -113,7 +105,7 @@ EpsilonGreedyAgent::~EpsilonGreedyAgent() {
 }
 
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
-    //VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
+    VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
     if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
@@ -138,33 +130,15 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
 size_t EpsilonGreedyAgent::propose_action() {
     size_t action = 0;
     if (vtr::frand() < epsilon_) {
+        //Explore
         float p = vtr::frand();
         auto itr = std::lower_bound(cumm_epsilon_action_prob_.begin(), cumm_epsilon_action_prob_.end(), p);
         action = itr - cumm_epsilon_action_prob_.begin();
     } else {
-        //Greedy
+        //Greedy (Exploit)
         auto itr = std::max_element(q_.begin(), q_.end());
         VTR_ASSERT(itr != q_.end());
         action = itr - q_.begin();
-
-#if 0
-        //Proportional to relative q
-        auto itr = std::min_element(q_.begin(), q_.end());
-        std::vector<float> cumm_q(k_, 0);
-
-        float accum = 0.;
-        for (size_t i = 0; i < k_; i++) {
-            accum += q_[i];
-            cumm_q[i] = accum;
-        }
-
-        float range = q_[k_ - 1] - q_[0];
-
-        float p = vtr::frand();
-        float val = q_[0] + p*range;
-        itr = std::lower_bound(cumm_q.begin(), cumm_q.end());
-        action = itr - cumm_q.begin();
-#endif
     }
     VTR_ASSERT(action < k_);
 
@@ -183,16 +157,6 @@ void EpsilonGreedyAgent::set_k(size_t k) {
     n_ = std::vector<size_t>(k, 0);
 
     cumm_epsilon_action_prob_ = std::vector<float>(k, 1.0 / k);
-#if 0
-/*
- * if (f_) {
- * vtr::fclose(f_);
- * f_ = nullptr;
- * }
- */
-
-#endif
-    //f_ = vtr::fopen("egreedy.csv", "w");
     if (f_) {
         fprintf(f_, "action,reward,");
         for (size_t i = 0; i < k_; ++i) {
@@ -224,7 +188,6 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
 SoftmaxAgent::SoftmaxAgent(size_t k) {
     set_k(k);
     set_action_prob();
-
     //f_ = vtr::fopen("agent_info.txt", "w");
 }
 
@@ -270,7 +233,6 @@ void SoftmaxAgent::set_k(size_t k) {
 float my_exp(float x) { return std::exp(std::min(1000000 * x, float(3.0))); }
 
 void SoftmaxAgent::set_action_prob() {
-    //float sum_q = accumulate(q_.begin(),q_.end(),0.0);
     std::transform(q_.begin(), q_.end(), exp_q_.begin(), my_exp);
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
@@ -293,7 +255,7 @@ void SoftmaxAgent::set_action_prob() {
 }
 
 void SoftmaxAgent::set_step(float gamma, int move_lim) {
-    //VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
+    VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
     if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
@@ -311,7 +273,6 @@ void SoftmaxAgent::set_step(float gamma, int move_lim) {
         //     alpha = 1 - e^(log(gamma) / K)
         //
         float alpha = 1 - std::exp(std::log(gamma) / move_lim);
-        //VTR_LOG("K-armed bandit alpha: %g\n", alpha);
         exp_alpha_ = alpha;
     }
 }

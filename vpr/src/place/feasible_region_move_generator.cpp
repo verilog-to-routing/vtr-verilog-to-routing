@@ -6,8 +6,6 @@
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    //auto& device_ctx = g_vpr_ctx.device();
-    //auto& grid = device_ctx.grid;
 
     /* Pick a random block to be swapped with another random block.   */
     // pick it from the highly critical blocks

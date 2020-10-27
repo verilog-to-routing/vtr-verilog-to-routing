@@ -475,40 +475,73 @@ void try_place(const t_placer_opts& placer_opts,
 
     //create the move generator based on the chosen strategy
     if (placer_opts.simpleRL_agent_placement == false) {
-        VTR_LOG("Using static probabilities for choosing each move type\n");
-        VTR_LOG("Probability of Uniform_move : %f \n", placer_opts.place_static_move_prob[0]);
-        VTR_LOG("Probability of Median_move : %f \n", placer_opts.place_static_move_prob[1]);
-        VTR_LOG("Probability of Weighted_median_move : %f \n", placer_opts.place_static_move_prob[2]);
-        VTR_LOG("Probability of Weighted_centroid_move : %f \n", placer_opts.place_static_move_prob[3]);
-        VTR_LOG("Probability of Timing_feasible_region_move : %f \n", placer_opts.place_static_move_prob[4]);
-        VTR_LOG("Probability of Critical_uniform_move : %f \n", placer_opts.place_static_move_prob[5]);
-        VTR_LOG("Probability of Centroid_move : %f \n", placer_opts.place_static_move_prob[6]);
-        move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
-        move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
-    } else {
+        if(placer_opts.place_algorithm.is_timing_driven()){
+            VTR_LOG("Using static probabilities for choosing each move type\n");
+            VTR_LOG("Probability of Uniform_move : %f \n", placer_opts.place_static_move_prob[0]);
+            VTR_LOG("Probability of Median_move : %f \n", placer_opts.place_static_move_prob[1]);
+            VTR_LOG("Probability of Centroid_move : %f \n", placer_opts.place_static_move_prob[2]);
+            VTR_LOG("Probability of Weighted_centroid_move : %f \n", placer_opts.place_static_move_prob[3]);
+            VTR_LOG("Probability of Weighted_median_move : %f \n", placer_opts.place_static_move_prob[4]);
+            VTR_LOG("Probability of Timing_feasible_region_move : %f \n", placer_opts.place_static_move_prob[5]);
+            VTR_LOG("Probability of Critical_uniform_move : %f \n", placer_opts.place_static_move_prob[6]);
+            move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+            move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+        }   else { //Non-timing driven placement
+            VTR_LOG("Using static probabilities for choosing each move type\n");
+            VTR_LOG("Probability of Uniform_move : %f \n", placer_opts.place_static_notiming_move_prob[0]);
+            VTR_LOG("Probability of Median_move : %f \n", placer_opts.place_static_notiming_move_prob[1]);
+            VTR_LOG("Probability of Centroid_move : %f \n", placer_opts.place_static_notiming_move_prob[2]);
+            move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_notiming_move_prob);
+            move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_notiming_move_prob);
+        }
+    } else { //RL based placement 
         if (placer_opts.place_agent_algorithm == E_GREEDY) {
             VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;
-            //agent's 1st state
-            karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(4, placer_opts.place_agent_epsilon);
-            karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
+            if(placer_opts.place_algorithm.is_timing_driven()){
+                //agent's 1st state
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_1ST_STATE_AVAILABLE_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
 
-            //agent's 2nd state
-            karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(7, placer_opts.place_agent_epsilon);
-            karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+                //agent's 2nd state
+                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_AVAILABLE_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+            } else {
+                //agent's 1st state
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
+
+                //agent's 2nd state
+                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+            }
         } else {
             VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
             std::unique_ptr<SoftmaxAgent> karmed_bandit_agent1, karmed_bandit_agent2;
-            //agent's 1st state
-            karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(4);
-            karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
-            //agent's 2nd state
-            karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(7);
-            karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
-            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+            
+            if(placer_opts.place_algorithm.is_timing_driven()){
+                //agent's 1st state
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_1ST_STATE_AVAILABLE_MOVE_TYPES);
+                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
+                //agent's 2nd state
+                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_AVAILABLE_MOVE_TYPES);
+                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+            } else {
+                //agent's 1st state
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES);
+                karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
+                //agent's 2nd state
+                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES);
+                karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
+                move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
+            }
         }
 
         VTR_LOG("The reward function used is reward num: %s \n", placer_opts.place_reward_fun);
@@ -754,13 +787,13 @@ void try_place(const t_placer_opts& placer_opts,
             critical_path = timing_info->least_slack_critical_path();
             sTNS = timing_info->setup_total_negative_slack();
             sWNS = timing_info->setup_worst_negative_slack();
-        }
 
-        //see if we should save the current placement solution as a checkpoint
-        if (placer_opts.place_checkpointing && agent_state == 2) {
-            if (placement_checkpoint.cp_is_valid() == false || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())) {
-                placement_checkpoint.save_placement(costs, critical_path.delay());
-                VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost, 1e9 * critical_path.delay());
+            //see if we should save the current placement solution as a checkpoint
+            if (placer_opts.place_checkpointing && agent_state == 2) {
+                if (placement_checkpoint.cp_is_valid() == false || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())) {
+                    placement_checkpoint.save_placement(costs, critical_path.delay());
+                    VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost, 1e9 * critical_path.delay());
+                }
             }
         }
 
@@ -802,7 +835,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
 
-        if (agent_state == 1 && state.alpha < 0.85 && state.alpha > 0.6) {
+        if (placer_opts.place_quench_algorithm.is_timing_driven() && agent_state == 1 && state.alpha < 0.85 && state.alpha > 0.6) {
             agent_state = 2;
             if (placer_opts.place_agent_multistate)
                 VTR_LOG("Agent's 2nd state: \n");
@@ -847,7 +880,7 @@ quench:
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        if (placer_opts.place_agent_multistate == true) {
+        if (placer_opts.place_quench_algorithm.is_timing_driven() && placer_opts.place_agent_multistate == true) {
             placement_inner_loop(&state, placer_opts,
                                  quench_recompute_limit, &stats,
                                  &costs,
