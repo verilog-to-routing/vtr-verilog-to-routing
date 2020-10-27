@@ -1819,7 +1819,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //If there is a valid net connected in the implementation
                     AtomNetId logical_net_id = atom_ctx.nlist.port_net(port_id, orig_index);
 
-                    // Fatal error should be flagged when the net marked in implementation 
+                    // Fatal error should be flagged when the net marked in implementation
                     // does not match the net marked in input netlist
                     if (impl_input_net_id != logical_net_id) {
                         VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
