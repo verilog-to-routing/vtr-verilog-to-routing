@@ -1192,7 +1192,8 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
      * - apply logic block pin fix-up
      *
      * Note: 
-     *   - Turn on verbose output switch when you want to debug
+     *   - Turn on verbose output when users require verbose output
+     *     for packer (default verbosity is set to 2 for compact logs)
      */
     if (route_status.success()) {
         sync_netlists_to_routing(g_vpr_ctx.device(),
@@ -1200,7 +1201,7 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
                                  g_vpr_ctx.mutable_clustering(),
                                  g_vpr_ctx.placement(),
                                  g_vpr_ctx.routing(),
-                                 false);
+                                 vpr_setup.PackerOpts.pack_verbosity > 2);
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
         write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
