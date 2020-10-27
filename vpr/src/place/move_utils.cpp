@@ -9,7 +9,6 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
-
 //catch the initial range limit
 float init_rlim = -1;
 

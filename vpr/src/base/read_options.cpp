@@ -1794,7 +1794,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-
     place_grp.add_argument(args.place_static_notiming_move_prob, "--place_static_notiming_move_prob")
         .help(
             "The Probability of different non timing move in Simulated Annealing."
