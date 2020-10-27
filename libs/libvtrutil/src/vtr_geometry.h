@@ -141,7 +141,7 @@ class Rect {
 template<class T>
 Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
 
-//Return the intersection (union) of two given rectangles
+//Return the intersection of two given rectangles
 template<class T>
 Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs);
 

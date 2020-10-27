@@ -73,21 +73,7 @@ Region Region::regions_intersection(Region region) {
 }
 
 bool Region::locked() {
-    bool locked = false;
-
-    if (region_bounds.xmin() != region_bounds.xmax()) {
-        return locked;
-    }
-
-    if (region_bounds.ymin() != region_bounds.ymax()) {
-        return locked;
-    }
-
-    if (sub_tile == NO_SUBTILE) {
-        return locked;
-    }
-
-    return locked = true;
+    return region_bounds.xmin() == region_bounds.xmax() && region_bounds.ymin() == region_bounds.ymax() && sub_tile != NO_SUBTILE;
 }
 
 bool Region::empty() {
