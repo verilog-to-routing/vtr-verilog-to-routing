@@ -7,6 +7,8 @@
 #include "vtr_time.h"
 #include "vtr_log.h"
 
+#include "vpr_error.h"
+#include "rr_graph.h"
 #include "annotate_routing.h"
 
 /********************************************************************
@@ -41,9 +43,21 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
             /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
             if ((SOURCE != device_ctx.rr_nodes.node_type(rr_node))
                 && (SINK != device_ctx.rr_nodes.node_type(rr_node))) {
-                /* Sanity check: ensure we do not revoke any net mapping */
-                if (rr_node_nets[rr_node]) {
-                    VTR_ASSERT(net_id == rr_node_nets[rr_node]);
+                /* Sanity check: ensure we do not revoke any net mapping
+                 * In some routing architectures, node capacity is more than 1
+                 * which allows a node to be mapped by multiple nets
+                 * Therefore, the sanity check should focus on the nodes 
+                 * whose capacity is 1 
+                 */
+                if ((rr_node_nets[rr_node])
+                    && (1 == device_ctx.rr_nodes.node_capacity(rr_node))
+                    && (net_id != rr_node_nets[rr_node])) {
+                    VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS,
+                                    "Detect two nets '%s' and '%s' that are mapped to the same rr_node '%ld'!\n%s\n",
+                                    clustering_ctx.clb_nlist.net_name(net_id).c_str(),
+                                    clustering_ctx.clb_nlist.net_name(rr_node_nets[rr_node]).c_str(),
+                                    size_t(rr_node),
+                                    describe_rr_node((int)size_t(rr_node)).c_str());
                 } else {
                     rr_node_nets[rr_node] = net_id;
                 }
