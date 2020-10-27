@@ -586,8 +586,8 @@ The io pad is set to inpad mode and is driven by the inpad:
     ...
 
 .. note:: ``.net`` files may be outputted at two stages:
-          - After packing is completed, the packing results will be outputted.
-          - After analysis is completed, updated packing results will be outputted. This is due to that VPR router may swap pin mapping in packing results for optimizations. In such cases, packing results are synchronized with routing results. The outputted ``.net`` file will have a postfix of ``.post_routing`` as compared to the original packing results. It could happen that VPR router does not apply any pin swapping and the two ``.net`` files are the same. But we recommend to use the post-analysis ``.net`` file as the final packing results.
+          - After packing is completed, the packing results will be outputted. The ``.net`` file can be loaded as an input for placer, router and analyzer. Note that the file may **not** represent the final packing results as the analyzer will apply synchronization between packing and routing results.
+          - After analysis is completed, updated packing results will be outputted. This is due to that VPR router may swap pin mapping in packing results for optimizations. In such cases, packing results are synchronized with routing results. The outputted ``.net`` file will have a postfix of ``.post_routing`` as compared to the original packing results. It could happen that VPR router does not apply any pin swapping and the two ``.net`` files are the same. In both cases, the post-analysis ``.net`` file should be consideredto be **the final packing results** for downstream tools, e.g., bitstream generator.
 
 .. _vpr_place_file:
 
