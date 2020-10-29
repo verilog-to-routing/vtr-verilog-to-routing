@@ -1,4 +1,6 @@
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
+#include <fstream>
+#include <iomanip>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -14,6 +16,8 @@
 #include "rr_graph_indexed_data.h"
 #include "read_xml_arch_file.h"
 
+#include "echo_files.h"
+
 /******************* Subroutines local to this module ************************/
 
 static void load_rr_indexed_data_base_costs(enum e_base_cost_type base_cost_type);
@@ -28,7 +32,7 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment);
 
 static std::vector<size_t> count_rr_segment_types();
 
-static void print_rr_index_info(const std::vector<t_segment_inf>& segment_inf);
+static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf);
 
 /******************** Subroutine definitions *********************************/
 
@@ -115,7 +119,10 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
 
     load_rr_indexed_data_base_costs(base_cost_type);
 
-    if (false) print_rr_index_info(segment_inf);
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA)) {
+        print_rr_index_info(getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA),
+                            segment_inf);
+    }
 }
 
 void load_rr_index_segments(const int num_segment) {
@@ -269,7 +276,18 @@ static float get_delay_normalization_fac() {
         Tdel_num += 1;
     }
 
-    return Tdel_sum / Tdel_num;
+    float delay_norm_fac = Tdel_sum / Tdel_num;
+
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA)) {
+        std::ofstream out_file;
+
+        out_file.open(getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA));
+        out_file << "Delay normalization factor: " << delay_norm_fac << std::endl;
+
+        out_file.close();
+    }
+
+    return delay_norm_fac;
 }
 
 static void load_rr_indexed_data_T_values() {
@@ -471,32 +489,50 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment) {
     }
 }
 
-static void print_rr_index_info(const std::vector<t_segment_inf>& segment_inf) {
+static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.device();
 
+    std::ofstream out_file;
+
+    out_file.open(fname, std::ios_base::app);
+    out_file << std::left << std::setw(30) << "Cost Index";
+    out_file << std::left << std::setw(20) << "Base Cost";
+    out_file << std::left << std::setw(20) << "Ortho Cost Index";
+    out_file << std::left << std::setw(20) << "Seg Index";
+    out_file << std::left << std::setw(20) << "Inv. Length";
+    out_file << std::left << std::setw(20) << "T. Linear";
+    out_file << std::left << std::setw(20) << "T. Quadratic";
+    out_file << std::left << std::setw(20) << "C. Load" << std::endl;
     for (size_t cost_index = 0; cost_index < device_ctx.rr_indexed_data.size(); ++cost_index) {
         auto& index_data = device_ctx.rr_indexed_data[cost_index];
 
+        std::ostringstream string_stream;
+
         if (cost_index == SOURCE_COST_INDEX) {
-            VTR_LOG("Cost Index %zu SOURCE\n", cost_index);
+            string_stream << cost_index << " SOURCE";
         } else if (cost_index == SINK_COST_INDEX) {
-            VTR_LOG("Cost Index %zu SINK\n", cost_index);
+            string_stream << cost_index << " SINK";
         } else if (cost_index == OPIN_COST_INDEX) {
-            VTR_LOG("Cost Index %zu OPIN\n", cost_index);
+            string_stream << cost_index << " OPIN";
         } else if (cost_index == IPIN_COST_INDEX) {
-            VTR_LOG("Cost Index %zu IPIN\n", cost_index);
+            string_stream << cost_index << " IPIN";
         } else if (cost_index <= IPIN_COST_INDEX + segment_inf.size()) {
-            VTR_LOG("Cost Index %zu CHANX %s\n", cost_index, segment_inf[index_data.seg_index].name.c_str());
+            string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name.c_str();
         } else {
-            VTR_LOG("Cost Index %zu CHANY %s\n", cost_index, segment_inf[index_data.seg_index].name.c_str());
+            string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name.c_str();
         }
 
-        VTR_LOG("\tbase_cost=%g\n", index_data.base_cost);
-        VTR_LOG("\tortho_cost_index=%d\n", index_data.ortho_cost_index);
-        VTR_LOG("\tseg_index=%d\n", index_data.seg_index);
-        VTR_LOG("\tinv_length=%g\n", index_data.inv_length);
-        VTR_LOG("\tT_linear=%g\n", index_data.T_linear);
-        VTR_LOG("\tT_quadratic=%g\n", index_data.T_quadratic);
-        VTR_LOG("\tC_load=%g\n", index_data.C_load);
+        std::string cost_index_str = string_stream.str();
+
+        out_file << std::left << std::setw(30) << cost_index_str;
+        out_file << std::left << std::setw(20) << index_data.base_cost;
+        out_file << std::left << std::setw(20) << index_data.ortho_cost_index;
+        out_file << std::left << std::setw(20) << index_data.seg_index;
+        out_file << std::left << std::setw(20) << index_data.inv_length;
+        out_file << std::left << std::setw(20) << index_data.T_linear;
+        out_file << std::left << std::setw(20) << index_data.T_quadratic;
+        out_file << std::left << std::setw(20) << index_data.C_load << std::endl;
     }
+
+    out_file.close();
 }
