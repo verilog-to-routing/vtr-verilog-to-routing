@@ -555,8 +555,6 @@ void try_place(const t_placer_opts& placer_opts,
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             }
         }
-
-        VTR_LOG("The reward function used is reward num: %s \n", placer_opts.place_reward_fun);
     }
     width_fac = placer_opts.place_chan_width;
 
