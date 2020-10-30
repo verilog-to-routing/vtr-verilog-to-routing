@@ -51,8 +51,11 @@
 
 #include "placer_breakpoint.h"
 
-//define the reward function factor constant
-#define HI_LIMIT 0.8
+/*  define the reward function factor constant *
+ *  This factor controls the weight of bb cost *
+ *  compared to the timing cost in the agent's *
+ *  reward function                            */
+#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.8
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "draw_types.h"
@@ -776,7 +779,7 @@ void try_place(const t_placer_opts& placer_opts,
     int agent_state = 1;
 
     //Define the timing bb weight factor for the agent's reward function
-    float timing_bb_factor = HI_LIMIT;
+    float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
 
     /* Outer loop of the simulated annealing begins */
     do {
@@ -1312,7 +1315,7 @@ static float starting_t(const t_annealing_state* state,
                                              placer_opts,
                                              move_helper_vectors,
                                              placer_opts.place_algorithm,
-                                             HI_LIMIT);
+                                             REWARD_BB_TIMING_RELATIVE_WEIGHT);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
