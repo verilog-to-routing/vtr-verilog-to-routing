@@ -123,17 +123,27 @@ void check_rr_graph(const t_graph_type graph_type,
 
             t_rr_type to_rr_type = device_ctx.rr_nodes[to_node].type();
 
-            /* Only expect the following cases to have multiple edges
-             * - chan <-> chan connections 
-             * - IPIN <-> chan connections (unique rr_node for IPIN nodes on multiple sides)
-             * - OPIN <-> chan connections (unique rr_node for OPIN nodes on multiple sides)
+            /* It is unusual to have more than one programmable switch (in the same direction) between a from_node and a to_node,
+             * as the duplicate switch doesn't add more routing flexibility.
+             *
+             * However, such duplicate switches can occur for some types of nodes, which we allow below.
+             * Reasons one could have duplicate switches between two nodes include:
+             *      - The two switches have different electrical characteristics.
+             *      - Wires near the edges of an FPGA are often cut off, and the stubs connected together.
+             *        A regular switch pattern could then result in one physical wire connecting multiple
+             *        times to other wires, IPINs or OPINs.
+             *
+             * Only expect the following cases to have multiple edges
+             * - CHAN <-> CHAN connections
+             * - CHAN  -> IPIN connections (unique rr_node for IPIN nodes on multiple sides)
+             * - OPIN  -> CHAN connections (unique rr_node for OPIN nodes on multiple sides)
              */
-            if (((to_rr_type != CHANX && to_rr_type != CHANY && rr_type != IPIN)
-                 || (rr_type != CHANX && rr_type != CHANY))
-                && ((to_rr_type != CHANX && to_rr_type != CHANY)
-                    || (rr_type != CHANX && rr_type != CHANY && rr_type != OPIN))) {
+            bool is_chan_to_chan = (rr_type == CHANX || rr_type == CHANY) && (to_rr_type == CHANY || to_rr_type == CHANX);
+            bool is_chan_to_ipin = (rr_type == CHANX || rr_type == CHANY) && to_rr_type == IPIN;
+            bool is_opin_to_chan = rr_type == OPIN && (to_rr_type == CHANX || to_rr_type == CHANY);
+            if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN->CHAN.\n",
+                          "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN<->CHAN, CHAN->IPIN, OPIN->CHAN.\n",
                           inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_to_node);
             }
 
