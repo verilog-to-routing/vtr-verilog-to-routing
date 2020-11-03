@@ -219,6 +219,14 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
 //logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
 //This function considers if a given offset is in the range of sub tile capacity
 //
+//  (First pin index at current sub-tile)                                     (The wanted pin index)
+//                                                                                      
+//  |                                                               |<----- pin ------->|
+//  v                                                                                   v
+//
+//  |<----- capacity.low ----->|<----- capacity.low + 1 ----->| ... |<----- sub_tile_capacity ---->|
+//
+//
 //This function is called only after placement is finished, where all the logical
 //blocks are assigned to a specific location of a tile!!!
 //

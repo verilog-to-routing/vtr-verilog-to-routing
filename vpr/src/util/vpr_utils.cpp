@@ -2350,7 +2350,21 @@ int get_post_placement_physical_pin(t_physical_tile_type_ptr physical_tile,
     }
 
     int sub_tile_physical_pin = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
-    return (sub_tile_capacity - physical_tile->sub_tiles[sub_tile_index].capacity.low) * logical_block->pb_type->num_pins
+
+    /* Find the relative capacity of the logical_block in this sub tile */
+    int relative_capacity = sub_tile_capacity - physical_tile->sub_tiles[sub_tile_index].capacity.low;
+    
+    /* Find the maximum number of pins among all the logical blocks in the equivalent site list 
+     * of the sub tile. Otherwise, the current logical block may have smaller number of pins
+     * than other logical blocks that can be placed in the sub-tile. This will lead to an error
+     * when computing the pin index!
+     */
+    int max_logical_block_num_pins = logical_block->pb_type->num_pins;
+    for (t_logical_block_type_ptr eq_lb : physical_tile->sub_tiles[sub_tile_index].equivalent_sites) {
+        max_logical_block_num_pins = std::max(max_logical_block_num_pins, eq_lb->pb_type->num_pins);
+    } 
+
+    return relative_capacity * max_logical_block_num_pins
            + physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
 }
 
