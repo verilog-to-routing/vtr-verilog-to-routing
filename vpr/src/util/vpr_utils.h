@@ -202,6 +202,8 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
 //Returns the physical pin index (within 'physical_tile') corresponding to the
 //logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
 //
+//This function is called before/during placement, when a sub tile index was not yet assigned.
+//
 //Throws an exception if the corresponding physical pin can't be found.
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
@@ -217,11 +219,14 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
 //logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
 //This function considers if a given offset is in the range of sub tile capacity
 //
+//This function is called only after placement is finished, where all the logical
+//blocks are assigned to a specific location of a tile!!!
+//
 //Throws an exception if the corresponding physical pin can't be found.
-int get_physical_pin(t_physical_tile_type_ptr physical_tile,
-                     t_logical_block_type_ptr logical_block,
-                     int sub_tile_capacity,
-                     int pin);
+int get_post_placement_physical_pin(t_physical_tile_type_ptr physical_tile,
+                                    t_logical_block_type_ptr logical_block,
+                                    int sub_tile_capacity,
+                                    int pin);
 
 //Returns the physical pin index (within 'physical_tile') corresponding to the
 //logical index ('pin') of the 'logical_block' at sub-tile location 'sub_tile_index'.

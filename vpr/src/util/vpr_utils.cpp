@@ -2337,10 +2337,10 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
     return sub_tile_index;
 }
 
-int get_physical_pin(t_physical_tile_type_ptr physical_tile,
-                     t_logical_block_type_ptr logical_block,
-                     int sub_tile_capacity,
-                     int pin) {
+int get_post_placement_physical_pin(t_physical_tile_type_ptr physical_tile,
+                                    t_logical_block_type_ptr logical_block,
+                                    int sub_tile_capacity,
+                                    int pin) {
     int sub_tile_index = get_logical_block_physical_sub_tile_index(physical_tile, logical_block, sub_tile_capacity);
 
     if (sub_tile_index == OPEN) {

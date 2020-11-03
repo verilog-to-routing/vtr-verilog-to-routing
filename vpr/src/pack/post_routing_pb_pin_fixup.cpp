@@ -115,7 +115,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         /* Get the ptc num for the pin in rr_graph, we need to consider the sub tile offset here
          * sub tile offset is the location in a sub tile whose capacity is larger than zero
          */
-        int physical_pin = get_physical_pin(physical_tile, logical_block, sub_tile_z, pb_type_pin);
+        int physical_pin = get_post_placement_physical_pin(physical_tile, logical_block, sub_tile_z, pb_type_pin);
         VTR_ASSERT(physical_pin < physical_tile->num_pins);
 
         auto pin_class = physical_tile->pin_class[physical_pin];
