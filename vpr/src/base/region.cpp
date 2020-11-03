@@ -7,6 +7,7 @@ Region::Region() {
     sub_tile = NO_SUBTILE;
 
     //default rect for a region is (-1, -1, -1, -1)
+    //these values indicate an empty rectangle, they are set as default values to help catch uninitialized use
     region_bounds.set_xmin(-1);
     region_bounds.set_ymin(-1);
     region_bounds.set_xmax(-1);
@@ -32,26 +33,35 @@ void Region::set_sub_tile(int _sub_tile) {
     sub_tile = _sub_tile;
 }
 
-bool Region::do_regions_intersect(Region region) {
+bool Region::locked() {
+    return region_bounds.xmin() == region_bounds.xmax() && region_bounds.ymin() == region_bounds.ymax() && sub_tile != NO_SUBTILE;
+}
+
+bool Region::empty() {
+    return region_bounds.empty();
+}
+
+bool do_regions_intersect(Region r1, Region r2) {
     bool intersect = true;
 
-    vtr::Rect<int> region_rect = region.get_region_rect();
+    vtr::Rect<int> r1_rect = r1.get_region_rect();
+    vtr::Rect<int> r2_rect = r2.get_region_rect();
     vtr::Rect<int> intersect_rect;
 
-    intersect_rect = intersection(region_bounds, region_rect);
+    intersect_rect = intersection(r1_rect, r2_rect);
 
     /**
      * if the intersection rectangle is empty or the subtile of the two regions does not match,
      * the regions do not intersect
      */
-    if (intersect_rect.empty() || sub_tile != region.get_sub_tile()) {
+    if (intersect_rect.empty() || r1.get_sub_tile() != r2.get_sub_tile()) {
         return intersect = false;
     }
 
     return intersect;
 }
 
-Region Region::regions_intersection(Region region) {
+Region intersection(Region r1, Region r2) {
     Region intersect;
 
     /**
@@ -59,23 +69,16 @@ Region Region::regions_intersection(Region region) {
      * If they do match, the intersection function if used to get the overlap of the two regions' rectangles.
      * If there is no overlap, an empty rectangle will be returned.
      */
-    if (sub_tile == region.get_sub_tile()) {
-        intersect.set_sub_tile(sub_tile);
-        vtr::Rect<int> region_rect = region.get_region_rect();
+    if (r1.get_sub_tile() == r2.get_sub_tile()) {
+        intersect.set_sub_tile(r1.get_sub_tile());
+        vtr::Rect<int> r1_rect = r1.get_region_rect();
+        vtr::Rect<int> r2_rect = r2.get_region_rect();
         vtr::Rect<int> intersect_rect;
 
-        intersect_rect = intersection(region_bounds, region_rect);
+        intersect_rect = intersection(r1_rect, r2_rect);
 
         intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
     }
 
     return intersect;
-}
-
-bool Region::locked() {
-    return region_bounds.xmin() == region_bounds.xmax() && region_bounds.ymin() == region_bounds.ymax() && sub_tile != NO_SUBTILE;
-}
-
-bool Region::empty() {
-    return region_bounds.empty();
 }

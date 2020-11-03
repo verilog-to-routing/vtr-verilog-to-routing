@@ -23,8 +23,15 @@ typedef vtr::StrongId<partition_id_tag> PartitionId;
 
 class Partition {
   public:
+    /**
+     *  @brief Get the unique name of the partition
+     */
     const std::string get_name();
 
+    /**
+     * @brief Set the name of the partition
+     *   @param _part_name      The name being assigned to the partition.
+     */
     void set_name(std::string _part_name);
 
     /**

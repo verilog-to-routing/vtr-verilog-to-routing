@@ -10,6 +10,7 @@
  * VprConstraints, Region, PartitionRegions, and Partition.
  */
 
+//Test Region class accessors and mutators
 TEST_CASE("Region", "[vpr]") {
     Region r1;
 
@@ -35,6 +36,7 @@ TEST_CASE("Region", "[vpr]") {
     REQUIRE(def_rect.xmin() == -1);
 }
 
+//Test PartitionRegion class accessors and mutators
 TEST_CASE("PartitionRegion", "[vpr]") {
     Region r1;
 
@@ -55,6 +57,7 @@ TEST_CASE("PartitionRegion", "[vpr]") {
     REQUIRE(rect.ymax() == 7);
 }
 
+//Test Partition class accessors and mutators
 TEST_CASE("Partition", "[vpr]") {
     Partition part;
 
@@ -82,6 +85,7 @@ TEST_CASE("Partition", "[vpr]") {
     REQUIRE(rect.ymax() == 8);
 }
 
+//Test VprConstraints class accessors and mutators
 TEST_CASE("VprConstraints", "[vpr]") {
     PartitionId part_id(0);
     PartitionId part_id_2(1);
@@ -119,6 +123,7 @@ TEST_CASE("VprConstraints", "[vpr]") {
     REQUIRE(partition_atoms.size() == 3);
 }
 
+//Test intersection function for Regions
 TEST_CASE("RegionIntersect", "[vpr]") {
     //Test partial intersection
     Region region1;
@@ -129,7 +134,7 @@ TEST_CASE("RegionIntersect", "[vpr]") {
 
     Region int_reg;
 
-    int_reg = region1.regions_intersection(region2);
+    int_reg = intersection(region1, region2);
     vtr::Rect<int> rect = int_reg.get_region_rect();
 
     REQUIRE(rect.xmin() == 2);
@@ -146,7 +151,7 @@ TEST_CASE("RegionIntersect", "[vpr]") {
 
     Region int_reg_2;
 
-    int_reg_2 = region3.regions_intersection(region4);
+    int_reg_2 = intersection(region3, region4);
     vtr::Rect<int> rect_2 = int_reg_2.get_region_rect();
 
     REQUIRE(rect_2.xmin() == 6);
@@ -158,7 +163,7 @@ TEST_CASE("RegionIntersect", "[vpr]") {
 
     Region int_reg_3;
 
-    int_reg_3 = region1.regions_intersection(region3);
+    int_reg_3 = intersection(region1, region3);
 
     REQUIRE(int_reg_3.empty() == TRUE);
 
@@ -167,7 +172,7 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     region2.set_sub_tile(3);
 
     Region int_reg_4;
-    int_reg_4 = region1.regions_intersection(region2);
+    int_reg_4 = intersection(region1, region2);
 
     REQUIRE(int_reg_4.empty() == TRUE);
 
@@ -176,7 +181,7 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     region2.set_sub_tile(6);
 
     Region int_reg_5;
-    int_reg_5 = region1.regions_intersection(region2);
+    int_reg_5 = intersection(region1, region2);
     vtr::Rect<int> rect_5 = int_reg_5.get_region_rect();
     REQUIRE(rect_5.xmin() == 2);
     REQUIRE(rect_5.ymin() == 3);
@@ -184,6 +189,8 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     REQUIRE(rect_5.ymax() == 5);
 }
 
+//The following six test cases test the intersection function for PartitionRegions
+//2x1 regions, 2 overlap
 TEST_CASE("PartRegionIntersect", "[vpr]") {
     PartitionRegion pr1;
     PartitionRegion pr2;
@@ -202,7 +209,7 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
 
     PartitionRegion int_pr;
 
-    int_pr = pr1.get_intersection(pr2);
+    int_pr = intersection(pr1, pr2);
     std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> int_rect(0, 0, 1, 1);
@@ -211,6 +218,7 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     REQUIRE(regions[1].get_region_rect() == int_rect_2);
 }
 
+//2x1 regions, 1 overlap
 TEST_CASE("PartRegionIntersect2", "[vpr]") {
     PartitionRegion pr1;
     PartitionRegion pr2;
@@ -229,7 +237,7 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
 
     PartitionRegion int_pr;
 
-    int_pr = pr1.get_intersection(pr2);
+    int_pr = intersection(pr1, pr2);
     std::vector<Region> regions = int_pr.get_partition_region();
     vtr::Rect<int> int_rect(0, 0, 2, 2);
     REQUIRE(regions.size() == 1);
@@ -263,7 +271,7 @@ TEST_CASE("PartRegionIntersect3", "[vpr]") {
 
     PartitionRegion int_pr;
 
-    int_pr = pr1.get_intersection(pr2);
+    int_pr = intersection(pr1, pr2);
     std::vector<Region> regions = int_pr.get_partition_region();
 
     REQUIRE(regions.size() == 0);
@@ -296,7 +304,7 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
 
     PartitionRegion int_pr;
 
-    int_pr = pr1.get_intersection(pr2);
+    int_pr = intersection(pr1, pr2);
     std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> intersect(1, 2, 3, 4);
@@ -331,7 +339,7 @@ TEST_CASE("PartRegionIntersect5", "[vpr]") {
 
     PartitionRegion int_pr;
 
-    int_pr = pr1.get_intersection(pr2);
+    int_pr = intersection(pr1, pr2);
     std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> int_r1r3(2, 6, 4, 7);
@@ -367,7 +375,7 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
 
     PartitionRegion int_pr;
 
-    int_pr = pr1.get_intersection(pr2);
+    int_pr = intersection(pr1, pr2);
     std::vector<Region> regions = int_pr.get_partition_region();
 
     vtr::Rect<int> int_r1r3(2, 3, 4, 4);
@@ -382,6 +390,7 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
     REQUIRE(regions[3].get_region_rect() == int_r2r4);
 }
 
+//Test the locked member function of the Region class
 TEST_CASE("RegionLocked", "[vpr]") {
     Region r1;
     bool is_r1_locked = false;
