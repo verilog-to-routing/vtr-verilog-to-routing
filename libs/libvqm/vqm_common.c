@@ -21,7 +21,7 @@
 //                 pass to decrease memory fragmentation by reducing the number of realloc
 //                 calls.  Additionally remove linear growth regieme for array allocation,
 //                 as this will also cause memory fragmentaiton.
-//                 Modify pointer-integer casts  ot use uintptr_t which is 
+//                 Modify pointer-integer casts  ot use uintptr_t which is
 //                 gaurenteed to match the size of a pointer on any platform.  This prevents
 //                 bad addresses being generated due to sign extension when converting from
 //                 a 32 bit integer type to a 64 bit pointer type.
@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
+#include <stdint.h>
 #include "vqm_dll.h"
 #include "vqm_common.h"
 #include "vtr_assert.h"
@@ -61,7 +62,7 @@
  * This bound must be a power of 2.
  */
 
-#define ELEMENT_SIZE    sizeof(long)
+#define ELEMENT_SIZE    sizeof(intptr_t)
 
 /*******************************************************************************************/
 /****************************           DECLARATIONS             ***************************/
@@ -89,7 +90,7 @@ char most_recent_error[ERROR_LENGTH];
 size_t hash_func(char* key, t_hash_table* hash_table);
 t_hash_elem* get_hash_entry(char* key, t_hash_table* hash_table);
 void insert_hash(char* key, size_t value, t_hash_table* hash_table);
-t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref *net_list); 
+t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref *net_list);
 t_node_port_association *create_node_port_association(char *port_name, int port_index, t_pin_def *pin, int wire_index);
 /*******************************************************************************************/
 /****************************          IMPLEMENTATION            ***************************/
@@ -202,7 +203,7 @@ void free_node(void *pointer)
 	{
 		/* Free type */
 		free(node->type);
-		
+
 		/* Free name */
 		free(node->name);
 
@@ -304,9 +305,9 @@ void add_module(char *name, t_array_ref **pins, t_array_ref **assignments, t_arr
 	}
 
     //Add module to list
-    append_array_element((long) (new_module), module_list);
+    append_array_element((intptr_t) (new_module), module_list);
 
-			//blah					
+			//blah
 	/* Release previous association */
 	free(m_pins);
 	free(m_nodes);
@@ -360,7 +361,7 @@ t_pin_def *add_pin(char *name, int left, int right, t_pin_def_type type, t_parse
 
     //Append the element, the position is one less thatn the size of the array
     //which is returned by append_array_element
-    size_t position = append_array_element( (long) pin, pin_list) - 1;
+    size_t position = append_array_element( (intptr_t) pin, pin_list) - 1;
 
     //Add the pin to the hash for quick name -> pin look up
     insert_hash(pin->name, position, pin_hash);
@@ -370,7 +371,7 @@ t_pin_def *add_pin(char *name, int left, int right, t_pin_def_type type, t_parse
 
 
 void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int target_index,
-					t_boolean tristated, t_pin_def *tri_control, int tri_control_index, int constant, 
+					t_boolean tristated, t_pin_def *tri_control, int tri_control_index, int constant,
                     t_boolean invert, t_parse_info* parse_info)
 /* Add an assignment statement to the list of assignment statements. Use the source and target names
  * of pins to find corresponding t_pin_def references to create assignment statement.
@@ -400,7 +401,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 			/* In case of a single wire source, assign the entire wire. */
 			source_index = source_min-1;
 		}
-		VTR_ASSERT((source_index >= (source_min-1) && source_index <= source_max)); 
+		VTR_ASSERT((source_index >= (source_min-1) && source_index <= source_max));
 	}
 
 	target_max = target->left;
@@ -414,7 +415,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 		target_min = target->right;
 	}
 
-	VTR_ASSERT((target_index >= (target_min-1) && target_index <= target_max)); 
+	VTR_ASSERT((target_index >= (target_min-1) && target_index <= target_max));
 
 	/* Check for the tristate buffer */
 	if (tristated == T_TRUE)
@@ -466,7 +467,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 		assignment->inversion = invert;
 
 		/* Add this assignment statement to list of assignment statements */
-        append_array_element( (long) assignment, assignment_list);
+        append_array_element( (intptr_t) assignment, assignment_list);
 	}
 	else
 	{
@@ -503,7 +504,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 			assignment->inversion = invert;
 
 			/* Add this assignment statement to list of assignment statements */
-            append_array_element( (long) assignment, assignment_list);
+            append_array_element( (intptr_t) assignment, assignment_list);
 		}
 	}
 }
@@ -559,7 +560,7 @@ void add_node(char* type, char *name, t_array_ref **ports, t_parse_info* parse_i
 				strcpy(new_assoc->port_name, (char*)malloc(strlen(association->port_name)));
 				new_assoc->wire_index = wire_index;
 				wire_index += change;
-				m_ports->array_size = insert_element_at_index((long) new_assoc, m_ports, counter);
+				m_ports->array_size = insert_element_at_index((intptr_t) new_assoc, m_ports, counter);
 			}
 			index += offset + 1;
 		}
@@ -581,7 +582,7 @@ void add_node(char* type, char *name, t_array_ref **ports, t_parse_info* parse_i
 	}
 
 	/* Add node to the list */
-    append_array_element((long) my_node, node_list);
+    append_array_element((intptr_t) my_node, node_list);
 
 	/* Set most recently used node */
 	most_recently_used_node = my_node;
@@ -615,7 +616,7 @@ t_pin_def *locate_net_by_name(char *name)
  */
 {
 	t_pin_def *result = NULL;
-	
+
 	VTR_ASSERT(pin_list != NULL);
 
 	/*index = find_position_for_net_in_array(name, pin_list);*/
@@ -650,7 +651,7 @@ size_t hash_func(char* key, t_hash_table* hash_table)
 	}
 	hash_val += (int) key[0];
 	hash_val %= hash_table->size;
-	
+
 	hash_val = abs(hash_val);
 
     return hash_val;
@@ -659,7 +660,7 @@ size_t hash_func(char* key, t_hash_table* hash_table)
 t_hash_elem* get_hash_entry(char* key, t_hash_table* hash_table)
 /* Given a key, returns the hash table entry.
  * The returned entry may be either valid or empty,
- * caller must handle both cases. If the 
+ * caller must handle both cases. If the
  */
 {
     //Simple hash function
@@ -673,7 +674,7 @@ t_hash_elem* get_hash_entry(char* key, t_hash_table* hash_table)
         if(strcmp(key, entry->key) == 0) {
             //Match
             break;
-        } 
+        }
 
         //Check the next entry in the linked list
         entry = entry->next;
@@ -722,7 +723,7 @@ void insert_hash(char* key, size_t value, t_hash_table* hash_table)
     return;
 }
 
-void print_hash_stats(t_hash_table* hash_table) 
+void print_hash_stats(t_hash_table* hash_table)
 /* Prints usage statistics of internal hash table
  */
 {
@@ -758,7 +759,7 @@ void print_hash_stats(t_hash_table* hash_table)
     printf("\tLongest Entry Linked List: %zu\n", maximum_list_length);
 }
 
-t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref* /*net_list*/) 
+t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref* /*net_list*/)
 /* Given a net name use a simple hash function to return the index into the
  * has table.  Retrieve the hash table element, which should contain the
  * index into the netlist for the named net.
@@ -918,7 +919,7 @@ t_array_ref *associate_identifier_with_port_name(t_identifier_pass *identifier, 
 
 	if (ident->indexed == T_TRUE)
 	{
-        append_array_element( (long) create_node_port_association(port_name, port_index, pin, ident->index), result);
+        append_array_element( (intptr_t) create_node_port_association(port_name, port_index, pin, ident->index), result);
 	}
 	else
 	{
@@ -926,7 +927,7 @@ t_array_ref *associate_identifier_with_port_name(t_identifier_pass *identifier, 
 		if (pin->left - pin->right == 0)
 		{
 			local_index = pin->left;
-            append_array_element( (long) create_node_port_association(port_name, port_index, pin, local_index), result);
+            append_array_element( (intptr_t) create_node_port_association(port_name, port_index, pin, local_index), result);
 		}
 		else
 		{
@@ -937,14 +938,14 @@ t_array_ref *associate_identifier_with_port_name(t_identifier_pass *identifier, 
 			int port = my_abs(pin->left - pin->right);
 			int port_name_length = strlen(port_name);
 
-            append_array_element( (long) create_node_port_association(port_name, port, pin, pin->left), result);
+            append_array_element( (intptr_t) create_node_port_association(port_name, port, pin, pin->left), result);
 			port--;
 			for(index = pin->left+direction; index != pin->right + direction; index += direction)
 			{
 				char *temp_port_name = (char*)malloc(port_name_length+1);
 
 				strcpy(temp_port_name, port_name);
-                append_array_element((long)	create_node_port_association(temp_port_name, port, pin, index), result);
+                append_array_element((intptr_t)	create_node_port_association(temp_port_name, port, pin, index), result);
 				port--;
 			}
 		}
@@ -993,7 +994,7 @@ void create_pins_from_list(t_array_ref **list_of_pins, int left, int right, t_pi
 		t_identifier_pass *identifier = (t_identifier_pass *) list->pointer[index];
 		t_pin_def *new_pin;
 
-		/* No need to free the name field of the identifier as it is now pointed to by the 
+		/* No need to free the name field of the identifier as it is now pointed to by the
 		 * pin reference.
 		 */
 		new_pin = add_pin(identifier->name, left, right, type, parse_info);
@@ -1034,18 +1035,18 @@ t_array_ref *create_array_of_net_to_port_assignments(t_array_ref *con_array)
 			 * does not actually exist. This happens when some clock inputs to memory are not assigned, but
 			 * it is necessary to assign something to the input.
 			 */
-            append_array_element( (long) NULL, array_of_identifiers);
+            append_array_element( (intptr_t) NULL, array_of_identifiers);
 		}
 		else
 		{
 			/* Otherwise create a t_identifier_pass structure and pass it on. */
 			t_identifier_pass *new_identifier;
-			
+
 			pin = locate_net_by_name(source->name);
 			if (pin == NULL)
 			{
 				/* If the pin does not exist then it means that it is a dummy pin. */
-                append_array_element( (long) NULL, array_of_identifiers);
+                append_array_element( (intptr_t) NULL, array_of_identifiers);
 			}
 			else
 			{
@@ -1061,13 +1062,13 @@ t_array_ref *create_array_of_net_to_port_assignments(t_array_ref *con_array)
 						char *name = (char *) malloc(length+1);
 						strcpy(name, pin->name);
 						new_identifier = allocate_identifier(name, T_TRUE, pin_index);
-                        append_array_element( (long) new_identifier, array_of_identifiers);
+                        append_array_element( (intptr_t) new_identifier, array_of_identifiers);
 					}
 				}
 				else
 				{
 					/* Otherwise use the old identifier pass structure */
-                    append_array_element( (long) source, array_of_identifiers);
+                    append_array_element( (intptr_t) source, array_of_identifiers);
 					source = NULL;
 				}
 			}
@@ -1080,7 +1081,7 @@ t_array_ref *create_array_of_net_to_port_assignments(t_array_ref *con_array)
 			}
 		}
 	}
-	
+
 	VTR_ASSERT(array_of_identifiers != NULL);
 	return array_of_identifiers;
 }
@@ -1093,9 +1094,9 @@ t_array_ref *create_wire_port_connections(t_array_ref *concat_array, char *port_
 	t_array_ref *connections, *identifier_list;
 
 	identifier_list = create_array_of_net_to_port_assignments(concat_array);
-	
+
 	connections = (t_array_ref *) malloc(sizeof(t_array_ref));
-	
+
 	VTR_ASSERT(connections != NULL);
 	connections->pointer = NULL;
 	connections->array_size = 0;
@@ -1107,7 +1108,7 @@ t_array_ref *create_wire_port_connections(t_array_ref *concat_array, char *port_
 		char *temp;
 		size_t association_index;
 		t_array_ref *association;
-		
+
 		if (ident == NULL)
 		{
 			continue;
@@ -1115,7 +1116,7 @@ t_array_ref *create_wire_port_connections(t_array_ref *concat_array, char *port_
 		/* Copy the name of the port */
 		temp = (char *)malloc(strlen(port_name)+1);
 		strcpy(temp, port_name);
-		
+
 		/* Set port index that is array_size-1-index. This is to ensure that the first wire
 		 * listed in the concatenation set is associated with the Most significant bit of the port.
 		 */
@@ -1124,7 +1125,7 @@ t_array_ref *create_wire_port_connections(t_array_ref *concat_array, char *port_
 		{
 			for(association_index = 0; association_index < association->array_size; association_index++)
 			{
-                append_array_element(	(long)association->pointer[association_index], connections);
+                append_array_element(	(intptr_t)association->pointer[association_index], connections);
 			}
 			free(association->pointer);
 			free(association);
@@ -1153,7 +1154,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
  * wire c;
  *
  * assign a = {b, c};
- * 
+ *
  * We begin assigning wires of a starting at the left index (3). THe first wire to be assigned comes from
  * wire b, where we also start assignments from the left index. Thus, the first assignment is
  * assign a[3] = b[2];
@@ -1164,7 +1165,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
  *
  * And so on. The final two assignemnts are:
  * assign a[1] = b[0];
- * assign a[0] = c; 
+ * assign a[0] = c;
  */
 {
 	size_t index;
@@ -1174,7 +1175,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
 	VTR_ASSERT(target_pin != NULL);
 
 	target_wire_index = target_pin->left;
-	/* Now, for each wire of the net create an assignment statement. 
+	/* Now, for each wire of the net create an assignment statement.
 	 * There is an implied assumption that the list of wires concatenated into a single wire is
 	 * a set of wires that DRIVE the bus. Note that this bus will be eliminated once the circuit created as
 	 * the bus wire is only temporary.
@@ -1183,7 +1184,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
 	{
 		/* Get source wire info */
 		t_identifier_pass *source = (t_identifier_pass *) con_array->pointer[index];
-		
+
 		if (source == NULL)
 		{
 			/* Go to the next wire in the target bus. */
@@ -1198,7 +1199,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
 			continue;
 		}
 		pin = locate_net_by_name(source->name);
-		
+
 		/* Iterate through all wires. The trick here is count the wire indicies
 			* from left to right (either in increasing or decreasing order).
 			*/
@@ -1209,7 +1210,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
 			/* Create wire to wire assignment */
 			add_assignment(pin, wire_index, target_pin, target_wire_index,
 							T_FALSE, NULL, 0, -1, invert_wire, parse_info);
-							
+
 			/* Go to the next wire in the target bus. */
 			if (target_pin->left > target_pin->right)
 			{
@@ -1249,7 +1250,7 @@ void define_instance_parameter(t_identifier_pass *identifier, char *parameter_na
 	name = (char *) malloc(strlen(identifier->name)+strlen(index)+1);
 	VTR_ASSERT(name != NULL);
 	sprintf(name,"%s%s", identifier->name, index);
-	
+
 	/* Create a parameter for the node specified by the identifier */
 	/* First check if the node is the same one as most recently used one. */
 
@@ -1287,7 +1288,7 @@ void define_instance_parameter(t_identifier_pass *identifier, char *parameter_na
 		param->value.string_value = string_value;
 	}
 
-    t_array_ref* param_array_ref = append_array_element_wrapper((long) param, (long **) local_node->array_of_params, local_node->number_of_params);
+    t_array_ref* param_array_ref = append_array_element_wrapper((intptr_t) param, (intptr_t **) local_node->array_of_params, local_node->number_of_params);
     local_node->number_of_params = param_array_ref->array_size;
     local_node->array_of_params = (t_node_parameter**) param_array_ref->pointer;
 
@@ -1358,7 +1359,7 @@ void **reallocate_array(t_array_ref* array_ref, int new_element_count)
 	return new_array;
 }
 
-t_array_ref *append_array_element_wrapper(long element, long** array, int element_count)
+t_array_ref *append_array_element_wrapper(intptr_t element, intptr_t** array, int element_count)
 /* A wrapper around the append_array_element function, for allocations that
  * do not use the t_array_ref structure.
  */
@@ -1376,7 +1377,7 @@ t_array_ref *append_array_element_wrapper(long element, long** array, int elemen
 
 }
 
-size_t append_array_element(long element, t_array_ref *array_ref)
+size_t append_array_element(intptr_t element, t_array_ref *array_ref)
 /* This function adds an element to the end of the array. If need be the array
  * will be resized. If the array was NULL to begin with the memory will be
  * allocated to it, because realloc behaves like malloc when a NULL pointer
@@ -1520,7 +1521,7 @@ int remove_element_by_content(int element_content, int *array, int element_count
 }
 
 
-int insert_element_at_index(long element, t_array_ref* array_ref, int insert_index)
+int insert_element_at_index(intptr_t element, t_array_ref* array_ref, int insert_index)
 /* Given an array and a new element, insert the new element at the specified location.
  * The specified location cannot be greater than the total element count and less than zero.
  */
@@ -1571,5 +1572,3 @@ int calculate_array_size_using_bounds(int element_count)
     array_size = 1 << power_count;
 	return array_size;
 }
-
-
