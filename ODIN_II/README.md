@@ -15,3 +15,4 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
   * [Validating Tests](../doc/src/odin/dev_guide/testing)
 
 Maintained by: [sdamghan](https://github.com/sdamghan)
+Owned by: [KennethKent](https://github.com/kennethkent)
