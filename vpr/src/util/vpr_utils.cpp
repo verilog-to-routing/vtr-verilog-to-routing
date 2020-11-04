@@ -2353,7 +2353,7 @@ int get_post_placement_physical_pin(t_physical_tile_type_ptr physical_tile,
 
     /* Find the relative capacity of the logical_block in this sub tile */
     int relative_capacity = sub_tile_capacity - physical_tile->sub_tiles[sub_tile_index].capacity.low;
-    
+
     /* Find the maximum number of pins among all the logical blocks in the equivalent site list 
      * of the sub tile. Otherwise, the current logical block may have smaller number of pins
      * than other logical blocks that can be placed in the sub-tile. This will lead to an error
