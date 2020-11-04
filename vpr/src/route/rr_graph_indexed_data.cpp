@@ -476,14 +476,18 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment) {
          cost_index < CHANX_COST_INDEX_START + 2 * num_segment; cost_index++) {
         int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
+        auto& indexed_data = device_ctx.rr_indexed_data[cost_index];
+        auto& ortho_indexed_data = device_ctx.rr_indexed_data[ortho_cost_index];
         // Check if this data is uninitialized, but the orthogonal data is
         // initialized.
-        if (!std::isfinite(device_ctx.rr_indexed_data[cost_index].T_linear)
-            && std::isfinite(device_ctx.rr_indexed_data[ortho_cost_index].T_linear)) {
+        // Uninitialized data is set to zero by default.
+        bool needs_fixup = indexed_data.T_linear == 0 && indexed_data.T_quadratic == 0 && indexed_data.C_load == 0;
+        bool ortho_data_valid = ortho_indexed_data.T_linear != 0 || ortho_indexed_data.T_quadratic != 0 || ortho_indexed_data.C_load != 0;
+        if (needs_fixup && ortho_data_valid) {
             // Copy orthogonal data over.
-            device_ctx.rr_indexed_data[cost_index].T_linear = device_ctx.rr_indexed_data[ortho_cost_index].T_linear;
-            device_ctx.rr_indexed_data[cost_index].T_quadratic = device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic;
-            device_ctx.rr_indexed_data[cost_index].C_load = device_ctx.rr_indexed_data[ortho_cost_index].C_load;
+            indexed_data.T_linear = ortho_indexed_data.T_linear;
+            indexed_data.T_quadratic = ortho_indexed_data.T_quadratic;
+            indexed_data.C_load = ortho_indexed_data.C_load;
         }
     }
 }
