@@ -196,6 +196,12 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
 //Returns the sub tile index (within 'physical_tile') corresponding to the
 //'logical block'
+//
+//This function will return the index for the first sub_tile that can accommodate
+//the logical block
+//It is typically called before/during placement,
+//when picking a sub-tile to fit a logical block
+//
 int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
                                               t_logical_block_type_ptr logical_block);
 
@@ -227,8 +233,9 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
 //  |<----- capacity.low ----->|<----- capacity.low + 1 ----->| ... |<----- sub_tile_capacity ---->|
 //
 //
-//This function is called only after placement is finished, where all the logical
-//blocks are assigned to a specific location of a tile!!!
+//This function is created for device-level information inquiry.
+//Therefore, it should ONLY require device-level information as inputs!!!
+//It should NOT need any mapping results as inputs!!!
 //
 //Throws an exception if the corresponding physical pin can't be found.
 int get_post_placement_physical_pin(t_physical_tile_type_ptr physical_tile,
