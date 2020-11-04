@@ -220,7 +220,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
 //This function considers if a given offset is in the range of sub tile capacity
 //
 //  (First pin index at current sub-tile)                                     (The wanted pin index)
-//                                                                                      
+//
 //  |                                                               |<----- pin ------->|
 //  v                                                                                   v
 //

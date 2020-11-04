@@ -2362,7 +2362,7 @@ int get_post_placement_physical_pin(t_physical_tile_type_ptr physical_tile,
     int max_logical_block_num_pins = logical_block->pb_type->num_pins;
     for (t_logical_block_type_ptr eq_lb : physical_tile->sub_tiles[sub_tile_index].equivalent_sites) {
         max_logical_block_num_pins = std::max(max_logical_block_num_pins, eq_lb->pb_type->num_pins);
-    } 
+    }
 
     return relative_capacity * max_logical_block_num_pins
            + physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
