@@ -5,8 +5,10 @@
 
 namespace vtr {
 
-/*
- * Implements a set-like interface which supports:
+/**
+ * @brief Implements a set-like interface which supports multiple operations
+ *
+ * The supported operations are:
  *  - insertion
  *  - iteration
  *  - membership test

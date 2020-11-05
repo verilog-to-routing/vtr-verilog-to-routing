@@ -1,42 +1,43 @@
-// Provides basic string interning, along with pattern splitting suitable
-// for use with FASM.
-//
-// For reference, string interning refers to keeping a unique copy of a string
-// in storage, and then handing out an id to that storage location, rather than
-// keeping the string around.  This deduplicates memory overhead for strings.
-//
-// This string internment has an additional feature that is splitting the
-// input string into "parts" based on '.', which happens to be the feature
-// seperator for FASM.  This means the string "TILE.CLB.A" and "TILE.CLB.B"
-// would be made up of the intern ids for {"TILE", "CLB", "A"} and
-// {"TILE", "CLB", "B"} respectively, allowing some internal deduplication.
-//
-// Strings can contain up to kMaxParts, before they will be interned as their
-// whole string.
-//
-// Interned strings (interned_string) that come from the same internment
-// object (string_internment) can safely be checked for equality and hashed
-// without touching the underlying string.  Lexigraphical comprisions (e.g. <)
-// requires reconstructing the string.
-//
-// Basic usage:
-// 1) Create a string_internment
-// 2) Invoke string_internment::intern_string, which returns the
-//    interned_string object that is the interned string's unique idenfier.
-//    This idenfier can be checked for equality or hashed. If
-//    string_internment::intern_string is called with the same string, a value
-//    equivalent interned_string object will be returned.
-// 3. If the original string is required, interned_string::get can be invoked
-//    to copy the string into a std::string.
-//    interned_string also provides iteration via begin/end, however the begin
-//    method requires a pointer to original string_internment object.  This is
-//    not suitable for range iteration, so the method interned_string::bind
-//    can be used to create a bound_interned_string that can be used in a
-//    range iteration context.
-//
-//    For reference, the reason that interned_string's does not have a
-//    reference back to the string_internment object is to keep their memory
-//    footprint lower.
+/**
+ * @brief  Provides basic string interning, along with pattern splitting suitable for use with FASM.
+ * 
+ *  For reference, string interning refers to keeping a unique copy of a string
+ *  in storage, and then handing out an id to that storage location, rather than
+ *  keeping the string around.  This deduplicates memory overhead for strings.
+ * 
+ *  This string internment has an additional feature that is splitting the
+ *  input string into "parts" based on '.', which happens to be the feature
+ *  seperator for FASM.  This means the string "TILE.CLB.A" and "TILE.CLB.B"
+ *  would be made up of the intern ids for {"TILE", "CLB", "A"} and
+ *  {"TILE", "CLB", "B"} respectively, allowing some internal deduplication.
+ * 
+ *  Strings can contain up to kMaxParts, before they will be interned as their
+ *  whole string.
+ * 
+ *  Interned strings (interned_string) that come from the same internment
+ *  object (string_internment) can safely be checked for equality and hashed
+ *  without touching the underlying string.  Lexigraphical comprisions (e.g. <)
+ *  requires reconstructing the string.
+ * 
+ *  Basic usage:
+ *  1) Create a string_internment
+ *  2) Invoke string_internment::intern_string, which returns the
+ *     interned_string object that is the interned string's unique idenfier.
+ *     This idenfier can be checked for equality or hashed. If
+ *     string_internment::intern_string is called with the same string, a value
+ *     equivalent interned_string object will be returned.
+ *  3. If the original string is required, interned_string::get can be invoked
+ *     to copy the string into a std::string.
+ *     interned_string also provides iteration via begin/end, however the begin
+ *     method requires a pointer to original string_internment object.  This is
+ *     not suitable for range iteration, so the method interned_string::bind
+ *     can be used to create a bound_interned_string that can be used in a
+ *     range iteration context.
+ * 
+ *     For reference, the reason that interned_string's does not have a
+ *     reference back to the string_internment object is to keep their memory
+ *     footprint lower.
+ */
 #ifndef VTR_STRING_INTERNING_H_
 #define VTR_STRING_INTERNING_H_
 
@@ -60,33 +61,39 @@ class string_internment;
 class interned_string;
 class interned_string_less;
 
-// StrongId for identifying unique string pieces.
+///@brief  StrongId for identifying unique string pieces.
 struct interned_string_tag;
 typedef StrongId<interned_string_tag> StringId;
 
-// To keep interned_string memory footprint lower and flexible, these values
-// control the size of the storage used.
+/**
+ * @brief Values that control the size of the used storage
+ *
+ * To keep interned_string memory footprint lower and flexible, these values
+ * control the size of the storage used.
+ */
 
-// Number of bytes to represent the StringId.  This implies a maximum number
-// of unique strings available equal to (1 << (kBytesPerId*CHAR_BIT)).
+///@brief Number of bytes to represent the StringId.  This implies a maximum number of unique strings available equal to (1 << (kBytesPerId*CHAR_BIT)).
 constexpr size_t kBytesPerId = 3;
-// Maximum number of splits to accomidate before just interning the entire string.
+///@brief Maximum number of splits to accomidate before just interning the entire string.
 constexpr size_t kMaxParts = 3;
-// Number of bytes to represent the number of splits present in an interned string.
+///@brief Number of bytes to represent the number of splits present in an interned string.
 constexpr size_t kSizeSize = 1;
-// Which character to split the input string by.
+///@brief Which character to split the input string by.
 constexpr char kSplitChar = '.';
 
 static_assert((1 << (CHAR_BIT * kSizeSize)) > kMaxParts, "Size of size data is too small");
 
-// Iterator over interned string.
-// This object is much heavier memory wise than interned_string, so do not
-// store these.
-//
-// This iterator only accomidates the forward_iterator concept.
-//
-// Do no construct this iterator directly.  Use either
-// bound_interned_string::begin/end or interned_string;:begin/end.
+/**
+ * @brief Iterator over interned string.
+ *
+ * This object is much heavier memory wise than interned_string, so do not
+ * store these.
+ * 
+ * This iterator only accomidates the forward_iterator concept.
+ * 
+ * Do no construct this iterator directly.  Use either
+ * bound_interned_string::begin/end or interned_string;:begin/end.
+ */
 class interned_string_iterator {
   public:
     interned_string_iterator(const string_internment* internment, std::array<StringId, kMaxParts> intern_ids, size_t n);
@@ -144,11 +151,13 @@ inline bool operator!=(const interned_string_iterator& lhs, const interned_strin
     return !(lhs == rhs);
 }
 
-// A interned_string bound to it's string_internment object.
-//
-// This object is heavier than just an interned_string.
-// This object holds a pointer to interned_string, so its lifetime must be
-// shorter than the parent interned_string.
+/**
+ * @brief A interned_string bound to it's string_internment object.
+ *
+ * This object is heavier than just an interned_string.
+ * This object holds a pointer to interned_string, so its lifetime must be
+ * shorter than the parent interned_string.
+ */
 class bound_interned_string {
   public:
     bound_interned_string(const string_internment* internment, const interned_string* str)
@@ -163,11 +172,13 @@ class bound_interned_string {
     const interned_string* str_;
 };
 
-// Interned string value returned from a string_internment object.
-//
-// This is a value object without allocation.  It can be checked for equality
-// and hashed safely against other interned_string's generated from the same
-// string_internment.
+/**
+ * @brief Interned string value returned from a string_internment object.
+ *
+ * This is a value object without allocation.  It can be checked for equality
+ * and hashed safely against other interned_string's generated from the same
+ * string_internment.
+ */
 class interned_string {
   public:
     interned_string(std::array<StringId, kMaxParts> intern_ids, size_t n) {
@@ -178,25 +189,32 @@ class interned_string {
         }
     }
 
-    // Copy the underlying string into output.
-    //
-    // internment must the object that generated this interned_string.
+    /**
+     * @brief Copy the underlying string into output.
+     *
+     * internment must the object that generated this interned_string.
+     */
     void get(const string_internment* internment, std::string* output) const;
 
-    // Returns the underlying string as a std::string.
-    //
-    // This method will allocated memory.
+    /**
+     * @brief Returns the underlying string as a std::string.
+     *
+     * This method will allocated memory.
+     */
     std::string get(const string_internment* internment) const {
         std::string result;
         get(internment, &result);
         return result;
     }
 
-    // Bind the parent string_internment and return a bound_interned_string
-    // object.  That bound_interned_string lifetime must be shorter than this
-    // interned_string object lifetime, as bound_interned_string contains
-    // a reference this object, along with a reference to the internment
-    // object.
+    /**
+     * @brief Bind the parent string_internment and return a bound_interned_string object.
+     * 
+     * That bound_interned_string lifetime must be shorter than this
+     * interned_string object lifetime, as bound_interned_string contains
+     * a reference this object, along with a reference to the internment
+     * object.
+     */
     bound_interned_string bind(const string_internment* internment) const {
         return bound_interned_string(internment, this);
     }
@@ -295,14 +313,17 @@ inline bool operator<=(bound_interned_string lhs,
     return rhs >= lhs;
 }
 
-// Storage of interned string, and object capable of generating new
-// interned_string objects.
+/**
+ * @brief  Storage of interned string, and object capable of generating new interned_string objects.
+ */
 class string_internment {
   public:
-    // Intern a string, and return a unique identifier to that string.
-    //
-    // If interned_string is ever called with two strings of the same value,
-    // the interned_string will be equal.
+    /**
+     * @brief Intern a string, and return a unique identifier to that string.
+     *
+     * If interned_string is ever called with two strings of the same value,
+     * the interned_string will be equal.
+     */
     interned_string intern_string(vtr::string_view view) {
         size_t num_parts = 1;
         for (const auto& c : view) {
@@ -336,14 +357,17 @@ class string_internment {
         }
     }
 
-    // Retrieve a string part based on id.  This method should not generally
-    // be called directly.
+    /**
+     * @brief Retrieve a string part based on id.
+     *
+     * This method should not generally be called directly.
+     */
     vtr::string_view get_string(StringId id) const {
         auto& str = strings_[id];
         return vtr::string_view(str.data(), str.size());
     }
 
-    // Number of unique string parts stored.
+    ///@brief Number of unique string parts stored.
     size_t unique_strings() const {
         return strings_.size();
     }

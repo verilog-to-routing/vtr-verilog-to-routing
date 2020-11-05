@@ -10,8 +10,11 @@
 
 namespace vtr {
 
-// Implements a view to a fixed length string.
-// The underlying string does not need to be NULL terminated.
+/**
+ * @brief Implements a view to a fixed length string.
+ *
+ * The underlying string does not need to be NULL terminated.
+ */
 class string_view {
   public:
     static constexpr size_t npos = size_t(-1);

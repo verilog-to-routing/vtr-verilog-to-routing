@@ -4,6 +4,7 @@
 
 namespace vtr {
 
+///@brief A container to save the rgb components of a color
 template<class T>
 struct Color {
     T r;

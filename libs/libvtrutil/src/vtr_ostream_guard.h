@@ -3,7 +3,7 @@
 
 namespace vtr {
 
-//A RAII guard class to ensure restoration of output stream format
+///@brief A RAII guard class to ensure restoration of output stream format
 class OsFormatGuard {
   public:
     explicit OsFormatGuard(std::ostream& os)

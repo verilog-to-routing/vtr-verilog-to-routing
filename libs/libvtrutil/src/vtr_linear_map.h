@@ -6,26 +6,27 @@
 #include "vtr_sentinels.h"
 
 namespace vtr {
-
-//A std::map-like container which is indexed by K
-//
-//The main use of this container is to behave like a std::map which is optimized to hold
-//mappings between a dense linear range of keys (e.g. vtr::StrongId).
-//
-//Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
-//that the conversion results in a linearly increasing index into the underlying vector.
-//Also requires that K() return the sentinel value used to mark invalid entries.
-//
-//If you only need to access the value associated with the key consider using vtr::vector_map
-//instead, which provides a similar but more std::vector-like interface.
-//
-//Note that it is possible to use linear_map with sparse/non-contiguous keys, but this is typically
-//memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
-//where max_key is the largest key that has been inserted.
-//
-//As with a std::vector, it is the caller's responsibility to ensure there is sufficient space
-//when a given index/key before it is accessed. The exception to this are the find() and insert()
-//methods which handle non-existing keys gracefully.
+/**
+ * @brief A std::map-like container which is indexed by K
+ *
+ * The main use of this container is to behave like a std::map which is optimized to hold
+ * mappings between a dense linear range of keys (e.g. vtr::StrongId).
+ *
+ * Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
+ * that the conversion results in a linearly increasing index into the underlying vector.
+ * Also requires that K() return the sentinel value used to mark invalid entries.
+ *
+ * If you only need to access the value associated with the key consider using vtr::vector_map
+ * instead, which provides a similar but more std::vector-like interface.
+ * 
+ * Note that it is possible to use linear_map with sparse/non-contiguous keys, but this is typically
+ * memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
+ * where max_key is the largest key that has been inserted.
+ *
+ * As with a std::vector, it is the caller's responsibility to ensure there is sufficient space
+ * when a given index/key before it is accessed. The exception to this are the find() and insert()
+ * methods which handle non-existing keys gracefully.
+ */
 template<class K, class T, class Sentinel = DefaultSentinel<K>>
 class linear_map {
   public:
@@ -235,19 +236,20 @@ class linear_map {
 
   private:
     iterator convert_to_iterator(const_iterator const_iter) {
-        //This is a work around for the fact that there is no conversion between
-        //a const_iterator and iterator.
-        //
-        //We intiailize i to the start of the container and then advance it by
-        //the distance to const_iter. The resulting i points to the same element
-        //as const_iter
-        //
-        //Note that to be able to call std::distance with an iterator and
-        //const_iterator we need to specify the type as const_iterator (relying
-        //on the implicit conversion from iterator to const_iterator for i)
-        //
-        //Since the iterators are really vector (i.e. random-access) iterators
-        //both distance and advance take constant time
+/**
+ * @brief This is a work around for the fact that there is no conversion between a const_iterator and iterator.
+ * 
+ * We intiailize i to the start of the container and then advance it by
+ * the distance to const_iter. The resulting i points to the same element
+ * as const_iter
+ *
+ * Note that to be able to call std::distance with an iterator and
+ * const_iterator we need to specify the type as const_iterator (relying
+ * on the implicit conversion from iterator to const_iterator for i)
+ *
+ * Since the iterators are really vector (i.e. random-access) iterators
+ * both distance and advance take constant time
+ */
         iterator i = begin();
         std::advance(i, std::distance<const_iterator>(i, const_iter));
         return i;

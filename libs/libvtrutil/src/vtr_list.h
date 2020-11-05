@@ -2,7 +2,7 @@
 #define VTR_LIST_H
 
 namespace vtr {
-/* Linked lists of void pointers and integers, respectively. */
+///@brief Linked lists of void pointers and integers, respectively.
 
 struct t_linked_vptr {
     void* data_vptr;

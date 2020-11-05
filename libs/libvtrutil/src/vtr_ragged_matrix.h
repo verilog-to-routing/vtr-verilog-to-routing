@@ -8,49 +8,57 @@
 
 namespace vtr {
 
-//A 2 dimensional 'ragged' matrix with rows indexed by Index0,
-//and each row of variable length (indexed by Index1)
-//
-//Example:
-//
-//      std::vector<int> row_sizes = {1, 5, 3, 10};
-//      FlatRaggedMatrix<float> matrix(row_sizes);
-//
-//      //Fill in all entries with ascending values
-//      float value = 1.;
-//      for (size_t irow = 0; irow < row_sizes.size(); ++irow) {
-//          for (size_t icol = 0; icol < row_sizes[irow]; ++icoll) {
-//              matrix[irow][icol] = value;
-//              value += 1.;
-//          }
-//      }
-//
-//
-//For efficiency, this class uses a flat memory layout,
-//where all elements are laid out contiguiously (one row
-//after another).
-//
-//Expects Index0 and Index1 to be convertable to size_t
+/**
+ * @brief A 2 dimensional 'ragged' matrix with rows indexed by Index0, and each row of variable length (indexed by Index1)
+ * 
+ * Example:
+ * 
+ *       std::vector<int> row_sizes = {1, 5, 3, 10};
+ *       FlatRaggedMatrix<float> matrix(row_sizes);
+ * 
+ *       //Fill in all entries with ascending values
+ *       float value = 1.;
+ *       for (size_t irow = 0; irow < row_sizes.size(); ++irow) {
+ *           for (size_t icol = 0; icol < row_sizes[irow]; ++icoll) {
+ *               matrix[irow][icol] = value;
+ *               value += 1.;
+ *           }
+ *       }
+ * 
+ * 
+ * For efficiency, this class uses a flat memory layout,
+ * where all elements are laid out contiguiously (one row
+ * after another).
+ * 
+ * Expects Index0 and Index1 to be convertable to size_t
+ */
 template<typename T, typename Index0 = size_t, typename Index1 = size_t>
 class FlatRaggedMatrix {
   public: //Lifetime
     FlatRaggedMatrix() = default;
 
-    //Constructs matrix with 'nrows' rows, where the row length is determined
-    //by calling 'row_length_callback' with the associated row index.
+    /**
+     * @brief Constructs matrix with 'nrows' rows. 
+     *
+     * The row length is determined by calling 
+     * 'row_length_callback' with the associated row index.
+     */
     template<class Callback>
     FlatRaggedMatrix(size_t nrows, Callback& row_length_callback, T default_value = T())
         : FlatRaggedMatrix(RowLengthIterator<Callback>(0, row_length_callback),
                            RowLengthIterator<Callback>(nrows, row_length_callback),
                            default_value) {}
 
-    //Constructs matrix from a container of row lengths
+    ///@brief Constructs matrix from a container of row lengths
     template<class Container>
     FlatRaggedMatrix(Container container, T default_value = T())
         : FlatRaggedMatrix(std::begin(container), std::end(container), default_value) {}
 
-    //Constructs matrix from an iterator range, where the length of the range is
-    //the number of rows, and iterator values are the row lengths.
+    /**
+     * @brief Constructs matrix from an iterator range. 
+     *
+     * The length of the range is the number of rows, and iterator values are the row lengths. 
+     */
     template<class Iter>
     FlatRaggedMatrix(Iter row_size_first, Iter row_size_last, T default_value = T()) {
         size_t nrows = std::distance(row_size_first, row_size_last);
@@ -72,7 +80,7 @@ class FlatRaggedMatrix {
     }
 
   public: //Accessors
-    //Iterators to *all* elements
+    ///@brief Iterators to *all* elements
     auto begin() {
         return data_.begin();
     }
@@ -106,7 +114,7 @@ class FlatRaggedMatrix {
         return size() == 0;
     }
 
-    //Indexing operators for the first dimension
+    ///@brief Indexing operators for the first dimension
     vtr::array_view<T> operator[](Index0 i) {
         int idx = size_t(i);
         T* first = &data_[first_elem_[idx]];
@@ -138,7 +146,7 @@ class FlatRaggedMatrix {
     }
 
   public: //Types
-    //Proxy class used to represent a 'row' in the matrix
+    ///@brief Proxy class used to represent a 'row' in the matrix
     template<typename U>
     class ProxyRow {
       public:
@@ -178,8 +186,11 @@ class FlatRaggedMatrix {
     };
 
   private:
-    //Iterator for constructing FlatRaggedMatrix which uses a callback to determine
-    //row lengths.
+    /**
+     * @brief Iterator for constructing FlatRaggedMatrix.
+     *
+     * uses a callback to determine row lengths.
+     */
     template<class Callback>
     class RowLengthIterator : public std::iterator<std::random_access_iterator_tag, size_t> {
       public:

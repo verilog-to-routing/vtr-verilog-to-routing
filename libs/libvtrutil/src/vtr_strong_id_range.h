@@ -6,9 +6,13 @@
 
 namespace vtr {
 
-/*
- * This header defines a utility class for StrongId's.  StrongId's are
- * described in vtr_strong_id.h.  In some cases, StrongId's be considered
+/**
+ * @file
+ * @author
+ * @data 2020-11-04
+ * @brief This header defines a utility class for StrongId's.
+ *
+ * StrongId's are described in vtr_strong_id.h.  In some cases, StrongId's be considered
  * like random access iterators, but not all StrongId's have this property.
  * In addition, there is utility in refering to a range of id's, and being able
  * to iterator over that range.

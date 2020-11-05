@@ -19,7 +19,7 @@ Y linear_interpolate_or_extrapolate(const std::map<X, Y>* xy_map, X requested_x)
 
 constexpr int nint(float val) { return static_cast<int>(val + 0.5); }
 
-//Returns a 'safe' ratio which evaluates to zero if the denominator is zero
+///@brief Returns a 'safe' ratio which evaluates to zero if the denominator is zero
 template<typename T>
 T safe_ratio(T numerator, T denominator) {
     if (denominator == T(0)) {
@@ -47,16 +47,17 @@ double median(Container c) {
 
 template<typename InputIterator>
 double geomean(InputIterator first, InputIterator last, double init = 1.) {
-    //Compute the geometric mean of the elments in range [first, last)
-    //
-    //To avoid potential round-off issues we transform the standard formula:
-    //
-    //      geomean = ( v_1 * v_2 * ... * v_n) ^ (1/n)
-    //
-    //by taking the log:
-    //
-    //      geomean = exp( (1 / n) * (log(v_1) + log(v_2) + ... + log(v_n)))
-
+/**
+ * @brief Compute the geometric mean of the elments in range [first, last)
+ *
+ * To avoid potential round-off issues we transform the standard formula:
+ *
+ *      geomean = ( v_1 * v_2 * ... * v_n) ^ (1/n)
+ *
+ * by taking the log:
+ *
+ *      geomean = exp( (1 / n) * (log(v_1) + log(v_2) + ... + log(v_n)))
+ */
     double log_sum = std::log(init);
     size_t n = 0;
     for (auto iter = first; iter != last; ++iter) {
@@ -97,20 +98,26 @@ double arithmean(Container c) {
     return arithmean(std::begin(c), std::end(c));
 }
 
-//Return the greatest common divisor of x and y
-// Note that T should be an integral type
+/**
+ * @brief Return the greatest common divisor of x and y
+ *
+ * Note that T should be an integral type
+ */
 template<typename T>
 static T gcd(T x, T y) {
     static_assert(std::is_integral<T>::value, "T must be integral");
-    //Euclidean algorithm
+    ///@brief Euclidean algorithm
     if (y == 0) {
         return x;
     }
     return gcd(y, x % y);
 }
 
-//Return the least common multiple of x and y
-// Note that T should be an integral type
+/**
+ * @brief Return the least common multiple of x and y
+ *
+ * Note that T should be an integral type
+ */
 template<typename T>
 T lcm(T x, T y) {
     static_assert(std::is_integral<T>::value, "T must be integral");

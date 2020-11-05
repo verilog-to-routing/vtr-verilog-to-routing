@@ -16,8 +16,12 @@ class flat_map;
 template<class K, class V, class Compare = std::less<K>, class Storage = std::vector<std::pair<K, V>>>
 class flat_map2;
 
-//Helper function to create a flat map from a vector of pairs
-//without haveing to explicity specify the key and value types
+/**
+ * @brief A function to create a float map
+ *
+ * Helper function to create a flat map from a vector of pairs
+ * without haveing to explicity specify the key and value types
+ */
 template<class K, class V>
 flat_map<K, V> make_flat_map(std::vector<std::pair<K, V>>&& vec) {
     return flat_map<K, V>(std::move(vec));
@@ -27,27 +31,29 @@ flat_map2<K, V> make_flat_map2(std::vector<std::pair<K, V>>&& vec) {
     return flat_map2<K, V>(std::move(vec));
 }
 
-//
-// flat_map is a (nearly) std::map compatible container which uses a vector
-// as it's underlying storage. Internally the stored elements are kept sorted
-// allowing efficient look-up in O(logN) time via binary search.
-//
-// This container is typically useful in the following scenarios:
-//    * Reduced memory usage if key/value are small (std::map needs to store pointers to
-//      other BST nodes which can add substantial overhead for small keys/values)
-//    * Faster search/iteration by exploiting data locality (all elments are in continguous
-//      memory enabling better spatial locality)
-//
-// The container deviates from the behaviour of std::map in the following important ways:
-//    * Insertion/erase takes O(N) instead of O(logN) time
-//    * Iterators may be invalidated on insertion/erase (i.e. if the vector is reallocated)
-//
-// The slow insertion/erase performance makes this container poorly suited to maps that
-// frequently add/remove new keys. If this is required you likely want std::map or
-// std::unordered_map. However if the map is constructed once and then repeatedly quieried,
-// consider using the range or vector-based constructors which initializes the flat_map in
-// O(NlogN) time.
-//
+/**
+ * @brief flat_map is a (nearly) std::map compatible container 
+ * 
+ * It uses a vector as it's underlying storage. Internally the stored elements 
+ * are kept sorted allowing efficient look-up in O(logN) time via binary search.
+ *
+ *
+ * This container is typically useful in the following scenarios:
+ *    - Reduced memory usage if key/value are small (std::map needs to store pointers to
+ *      other BST nodes which can add substantial overhead for small keys/values)
+ *    - Faster search/iteration by exploiting data locality (all elments are in continguous
+ *      memory enabling better spatial locality)
+ *
+ * The container deviates from the behaviour of std::map in the following important ways:
+ *    - Insertion/erase takes O(N) instead of O(logN) time
+ *    - Iterators may be invalidated on insertion/erase (i.e. if the vector is reallocated)
+ *
+ * The slow insertion/erase performance makes this container poorly suited to maps that
+ * frequently add/remove new keys. If this is required you likely want std::map or
+ * std::unordered_map. However if the map is constructed once and then repeatedly quieried,
+ * consider using the range or vector-based constructors which initializes the flat_map in
+ * O(NlogN) time.
+ */
 template<class K, class T, class Compare, class Storage>
 class flat_map {
   public:
@@ -67,40 +73,43 @@ class flat_map {
     class value_compare;
 
   public:
-    //Standard big 5
+    ///@brief Standard big 5
     flat_map() = default;
     flat_map(const flat_map&) = default;
     flat_map(flat_map&&) = default;
     flat_map& operator=(const flat_map&) = default;
     flat_map& operator=(flat_map&&) = default;
 
-    //range constructor
+    ///@brief range constructor
     template<class InputIterator>
     flat_map(InputIterator first, InputIterator last) {
-        //Copy the values
+        // Copy the values
         std::copy(first, last, std::back_inserter(vec_));
 
         sort();
         uniquify();
     }
 
-    //direct vector constructor
+    ///@brief direct vector constructor
     explicit flat_map(Storage&& values) {
         assign(std::move(values));
     }
 
+    /**
+     * @brief Move the values
+     * 
+     * Should be more efficient than the range constructor which 
+     * must copy each element
+     */
     void assign(Storage&& values) {
-        //By moving the values this should be more efficient
-        //than the range constructor which must copy each element
         vec_ = std::move(values);
 
         sort();
         uniquify();
     }
 
+    ///@brief By moving the values this should be more efficient than the range constructor which must copy each element
     void assign_sorted(Storage&& values) {
-        //By moving the values this should be more efficient
-        //than the range constructor which must copy each element
         vec_ = std::move(values);
         if (vec_.size() > 1) {
             for (size_t i = 0; i < vec_.size() - 1; ++i) {
@@ -167,7 +176,7 @@ class flat_map {
         return iter->second;
     }
 
-    //Insert value
+    // Insert value
     std::pair<iterator, bool> insert(const value_type& value) {
         auto iter = lower_bound(value.first);
         if (iter != end() && keys_equivalent(iter->first, value.first)) {
@@ -194,7 +203,7 @@ class flat_map {
         }
     }
 
-    //Insert value with position hint
+    ///@brief Insert value with position hint
     iterator insert(const_iterator position, const value_type& value) {
         //In a legal position
         VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
@@ -205,7 +214,7 @@ class flat_map {
         return iter;
     }
 
-    //Emplace value with position hint
+    ///@brief Emplace value with position hint
     iterator emplace(const_iterator position, const value_type& value) {
         //In a legal position
         VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
@@ -216,7 +225,7 @@ class flat_map {
         return iter;
     }
 
-    //Insert range
+    ///@brief Insert range
     template<class InputIterator>
     void insert(InputIterator first, InputIterator last) {
         vec_.insert(vec_.end(), first, last);
@@ -226,7 +235,7 @@ class flat_map {
         uniquify();
     }
 
-    //Erase by key
+    ///@brief Erase by key
     void erase(const key_type& key) {
         auto iter = find(key);
         if (iter != end()) {
@@ -234,12 +243,12 @@ class flat_map {
         }
     }
 
-    //Erase at iterator
+    ///@brief Erase at iterator
     void erase(const_iterator position) {
         vec_.erase(position);
     }
 
-    //Erase range
+    ///@brief Erase range
     void erase(const_iterator first, const_iterator last) {
         vec_.erase(first, last);
     }
@@ -338,19 +347,20 @@ class flat_map {
     }
 
     iterator convert_to_iterator(const_iterator const_iter) {
-        //This is a work around for the fact that there is no conversion between
-        //a const_iterator and iterator.
-        //
-        //We intiailize i to the start of the container and then advance it by
-        //the distance to const_iter. The resulting i points to the same element
-        //as const_iter
-        //
-        //Note that to be able to call std::distance with an iterator and
-        //const_iterator we need to specify the type as const_iterator (relying
-        //on the implicit conversion from iterator to const_iterator for i)
-        //
-        //Since the iterators are really vector (i.e. random-access) iterators
-        //this takes constant time
+    /**
+     * @brief A work around as there is no conversion betweena const_iterator and iterator.
+     *
+     * We intiailize i to the start of the container and then advance it by
+     * the distance to const_iter. The resulting i points to the same element
+     * as const_iter
+     * 
+     * Note that to be able to call std::distance with an iterator and
+     * const_iterator we need to specify the type as const_iterator (relying
+     * on the implicit conversion from iterator to const_iterator for i)
+     *
+     * Since the iterators are really vector (i.e. random-access) iterators
+     * this takes constant time
+     */
         iterator i = begin();
         std::advance(i, std::distance<const_iterator>(i, const_iter));
         return i;
@@ -360,7 +370,11 @@ class flat_map {
     Storage vec_;
 };
 
-//Like flat_map, but operator[] never inserts and directly returns the mapped value
+/**
+ * @brief Another flat_map container
+ *
+ * Like flat_map, but operator[] never inserts and directly returns the mapped value
+ */
 template<class K, class T, class Compare, class Storage>
 class flat_map2 : public flat_map<K, T, Compare, Storage> {
   public:
@@ -390,7 +404,7 @@ class flat_map<K, T, Compare, Storage>::value_compare {
         return comp(x.first, y.first);
     }
 
-    //For std::lower_bound/std::upper_bound
+    ///@brief For std::lower_bound/std::upper_bound
     bool operator()(const value_type& x, const key_type& y) const {
         return comp(x.first, y);
     }

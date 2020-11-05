@@ -4,8 +4,9 @@
 #include "vtr_range.h"
 
 namespace vtr {
-
-//Iterator which derefernces the 'first' element of a std::pair iterator
+/**
+ * @brief Iterator which derefernces the 'first' element of a std::pair iterator
+ */
 template<typename PairIter>
 class pair_first_iter {
   public:
@@ -35,7 +36,9 @@ class pair_first_iter {
     PairIter iter_;
 };
 
-//Iterator which derefernces the 'second' element of a std::pair iterator
+/**
+ *Iterator which derefernces the 'second' element of a std::pair iterator
+ */
 template<typename PairIter>
 class pair_second_iter {
   public:

@@ -7,36 +7,38 @@
 
 namespace vtr {
 
-//A vector-like container which is indexed by K (instead of size_t as in std::vector).
-//
-//The main use of this container is to behave like a std::vector which is indexed by
-//vtr::StrongId.
-//
-//Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
-//that the conversion results in a linearly increasing index into the underlying vector.
-//
-//This results in a container that is somewhat similar to a std::map (i.e. converts from one
-//type to another), but requires contiguously ascending (i.e. linear) keys. Unlike std::map
-//only the values are stored (at the specified index/key), reducing memory usage and improving
-//cache locality. Furthermore, operator[] and find() return the value or iterator directly
-//associated with the value (like std::vector) rather than a std::pair (like std::map).
-//insert() takes both the key and value as separate arguments and has no return value.
-//
-//Additionally, vector_map will silently create values for 'gaps' in the index range (i.e.
-//those elements are initialized with Sentinel::INVALID()).
-//
-//If you need a fully featured std::map like container without the above differences see
-//vtr::linear_map.
-//
-//If you do not need std::map-like features see vtr::vector.
-//
-//Note that it is possible to use vector_map with sparse/non-contiguous keys, but this is typically
-//memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
-//where max_key is the largest key that has been inserted.
-//
-//As with a std::vector, it is the caller's responsibility to ensure there is sufficient space
-//when a given index/key before it is accessed. The exception to this are the find(), insert() and
-//update() methods which handle non-existing keys gracefully.
+/**
+ * @brief A vector-like container which is indexed by K (instead of size_t as in std::vector).
+ * 
+ * The main use of this container is to behave like a std::vector which is indexed by
+ * vtr::StrongId.
+ * 
+ * Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
+ * that the conversion results in a linearly increasing index into the underlying vector.
+ * 
+ * This results in a container that is somewhat similar to a std::map (i.e. converts from one
+ * type to another), but requires contiguously ascending (i.e. linear) keys. Unlike std::map
+ * only the values are stored (at the specified index/key), reducing memory usage and improving
+ * cache locality. Furthermore, operator[] and find() return the value or iterator directly
+ * associated with the value (like std::vector) rather than a std::pair (like std::map).
+ * insert() takes both the key and value as separate arguments and has no return value.
+ * 
+ * Additionally, vector_map will silently create values for 'gaps' in the index range (i.e.
+ * those elements are initialized with Sentinel::INVALID()).
+ * 
+ * If you need a fully featured std::map like container without the above differences see
+ * vtr::linear_map.
+ * 
+ * If you do not need std::map-like features see vtr::vector.
+ * 
+ * Note that it is possible to use vector_map with sparse/non-contiguous keys, but this is typically
+ * memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
+ * where max_key is the largest key that has been inserted.
+ * 
+ * As with a std::vector, it is the caller's responsibility to ensure there is sufficient space
+ * when a given index/key before it is accessed. The exception to this are the find(), insert() and
+ * update() methods which handle non-existing keys gracefully.
+ */
 template<typename K, typename V, typename Sentinel = DefaultSentinel<V>>
 class vector_map {
   public: //Public types
@@ -63,9 +65,12 @@ class vector_map {
     const_reference operator[](const K n) const {
         size_t index = size_t(n);
 
-        // Shouldn't check for index >= 0, since size_t is unsigned thus won't be negative
-        // A negative input to n would result in an absurdly large number close the maximum size of size_t, and be caught by index < vec_.size()
-        // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3690.pdf chapter 4.7 para 2
+        /**
+         * Shouldn't check for index >= 0, since size_t is unsigned thus won't be negative
+         *
+         * A negative input to n would result in an absurdly large number close the maximum size of size_t, and be caught by index < vec_.size()
+         * http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3690.pdf chapter 4.7 para 2
+         */
 
         VTR_ASSERT_SAFE_MSG(index < vec_.size(), "Out-of-range index");
         return vec_[index];
@@ -87,8 +92,7 @@ class vector_map {
     size_t count(const K key) const { return contains(key) ? 1 : 0; }
 
   public: //Mutators
-    //Delegate potentially overloaded functions to the underlying vector with perfect
-    //forwarding
+    ///@brief Delegate potentially overloaded functions to the underlying vector with perfect forwarding
     template<typename... Args>
     void push_back(Args&&... args) { vec_.push_back(std::forward<Args>(args)...); }
 
@@ -133,7 +137,7 @@ class vector_map {
 
     void update(const K key, const V value) { insert(key, value); }
 
-    //Swap (this enables std::swap via ADL)
+    ///@brief Swap (this enables std::swap via ADL)
     friend void swap(vector_map<K, V>& x, vector_map<K, V>& y) {
         std::swap(x.vec_, y.vec_);
     }
