@@ -13,13 +13,6 @@
 class PartitionRegion {
   public:
     /**
-     * @brief Return the intersection of two PartitionRegions
-     *
-     *   @param part_region     The PartitionRegion that the calling object will be intersected with
-     */
-    PartitionRegion get_intersection(PartitionRegion part_region);
-
-    /**
      * @brief Add a region to the union of regions belonging to the partition
      *
      *   @param region     The region to be added to the calling object
@@ -30,6 +23,14 @@ class PartitionRegion {
      * @brief Return the union of regions
      */
     std::vector<Region> get_partition_region();
+
+    /**
+     * @brief Global friend function that returns the intersection of two PartitionRegions
+     *
+     *   @param pr1     One of the PartitionRegions to be intersected
+     *   @param pr2     One of the PartitionRegions to be intersected
+     */
+    friend PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2);
 
   private:
     std::vector<Region> partition_region; ///< union of rectangular regions that a partition can be placed in

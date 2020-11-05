@@ -5,6 +5,10 @@ void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const Partit
 
     auto got = constrained_atoms.find(blk_id);
 
+    /**
+     * Each atom can only be in one partition. If the atoms already has a partition id assigned to it,
+     * the idea will be switched to the new part_id being passed in instead
+     */
     if (got == constrained_atoms.end()) {
         constrained_atoms.insert({blk_id, part_id});
     } else {
@@ -18,7 +22,7 @@ PartitionId VprConstraints::get_atom_partition(AtomBlockId blk_id) {
     auto got = constrained_atoms.find(blk_id);
 
     if (got == constrained_atoms.end()) {
-        return part_id = PartitionId::INVALID();
+        return part_id = PartitionId::INVALID(); ///< atom is not in a partition, i.e. unconstrained
     } else {
         return got->second;
     }
