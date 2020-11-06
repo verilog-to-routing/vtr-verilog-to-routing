@@ -457,6 +457,8 @@ void try_place(const t_placer_opts& placer_opts,
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
                                      directs, num_directs);
 
+    vtr::ScopedStartFinishTimer timer("Placement");
+
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
 
 #ifdef ENABLE_ANALYTIC_PLACE
