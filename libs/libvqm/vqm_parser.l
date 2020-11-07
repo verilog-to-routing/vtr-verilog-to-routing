@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h> // For vqm_parser.gen.h
 #include "vqm_dll.h"
 #include "vqm_parser.gen.h"
 #include "vqm_common.h"
