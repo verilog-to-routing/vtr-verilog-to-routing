@@ -39,6 +39,8 @@ They are suitable for FPGA architecture research and medium-scale CAD research.
     stereovision1       Computer Vision
     stereovision2       Computer Vision
     stereovision3       Computer Vision
+    tpu.32x32.int8      Deep Learning
+    tpu.16x16.int8      Deep Learning
     ================    =================
 
 The VTR benchmarks are provided as Verilog under: ::

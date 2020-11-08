@@ -104,7 +104,12 @@ inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(const t_pb_graph_
         }
 
     }
-    VTR_ASSERT_MSG(pb_edge, "Should find pb_graph_edge connecting PB pins");
+
+    if (!pb_edge) {
+        std::string conkt_debug_message = "Should find pb_graph_edge connecting PB pins from " + driver->to_string() + " to " + sink->to_string() + "!\n";
+        VTR_ASSERT_MSG(pb_edge,
+                       conkt_debug_message.c_str());
+    }
 
     return pb_edge;
 }

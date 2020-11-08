@@ -325,10 +325,16 @@ class t_pb {
     t_mode* get_mode() const;
 
     /**
-     * @brief Returns the t_pb associated with the specified gnode which is contained
+     * @brief Returns the read-only t_pb associated with the specified gnode which is contained
      *        within the current pb
      */
     const t_pb* find_pb(const t_pb_graph_node* gnode) const;
+
+    /**
+     * @brief Returns the mutable t_pb associated with the specified gnode which is contained
+     *        within the current pb
+     */
+    t_pb* find_mutable_pb(const t_pb_graph_node* gnode);
 
     const t_pb* find_pb_for_model(const std::string& blif_model) const;
 

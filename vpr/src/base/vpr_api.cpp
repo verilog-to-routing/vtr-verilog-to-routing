@@ -67,6 +67,7 @@
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
 #include "cluster.h"
+#include "output_clustering.h"
 
 #include "pack_report.h"
 #include "overuse_report.h"
@@ -80,6 +81,8 @@
 #include "read_place.h"
 
 #include "arch_util.h"
+
+#include "post_routing_pb_pin_fixup.h"
 
 #include "log.h"
 #include "iostream"
@@ -587,6 +590,10 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    /* Ensure we have a clean start with void net remapping information */
+    cluster_ctx.post_routing_clb_pin_nets.clear();
+    cluster_ctx.pre_routing_net_pin_mapping.clear();
+
     cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(),
                                          &arch,
                                          vpr_setup.FileNameOpts.verify_file_digests,
@@ -742,8 +749,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
                 VTR_LOG("For a detailed report on the RR node overuse information (report_overused_nodes.rpt), specify --generate_rr_node_overuse_report on.\n");
             }
         }
-
-        VTR_LOG("\n");
 
         //Echo files
         if (vpr_setup.Timing.timing_analysis_enabled) {
@@ -1182,6 +1187,30 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
         VTR_LOG_WARN("The following analysis results are for an illegal circuit implementation\n");
         VTR_LOG("*****************************************************************************************\n");
     }
+
+    /* If routing is successful, apply post-routing annotations
+     * - apply logic block pin fix-up
+     *
+     * Note: 
+     *   - Turn on verbose output when users require verbose output
+     *     for packer (default verbosity is set to 2 for compact logs)
+     */
+    if (route_status.success()) {
+        sync_netlists_to_routing(g_vpr_ctx.device(),
+                                 g_vpr_ctx.mutable_atom(),
+                                 g_vpr_ctx.mutable_clustering(),
+                                 g_vpr_ctx.placement(),
+                                 g_vpr_ctx.routing(),
+                                 vpr_setup.PackerOpts.pack_verbosity > 2);
+
+        std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
+        write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
+                                     Arch.architecture_id,
+                                     post_routing_packing_output_file_name.c_str());
+    } else {
+        VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
+    }
+    VTR_LOG("\n");
 
     vpr_analysis(vpr_setup, Arch, route_status);
 

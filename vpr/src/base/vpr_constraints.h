@@ -33,6 +33,8 @@ class VprConstraints {
     /**
      * @brief Return id of the partition the atom belongs to
      *
+     * If an atom is not in a partition (unconstrained), PartitionId::Invalid() is returned.
+     *
      *   @param blk_id      The atom for which the partition id is needed
      */
     PartitionId get_atom_partition(AtomBlockId blk_id);
