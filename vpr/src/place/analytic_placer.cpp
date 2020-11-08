@@ -14,6 +14,7 @@
 #    include "vtr_log.h"
 #    include "cut_spreader.h"
 #    include "vpr_utils.h"
+#    include "place_util.h"
 
 // Templated struct for constructing and solving matrix equations in analytic placer
 template<typename T>

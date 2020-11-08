@@ -387,8 +387,13 @@ static void load_rr_indexed_data_T_values(int index_start,
             switches_buffered[cost_index] = buffered;
         } else {
             if (switches_buffered[cost_index] != buffered) {
-                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                                "Expecting all wire-to-wire switches of wire segments with cost index (%d) to have same 'buffered' value (%d), but found segment switch with different 'buffered' value (%d)\n", cost_index, switches_buffered[cost_index], buffered);
+                // If a previous buffering state is inconsistent with the current one,
+                // the node should be treated as buffered, as there are only two possible
+                // values for the buffering state (except for the UNDEFINED case).
+                //
+                // This means that at least one edge of this node has a buffered switch,
+                // which prevails over unbuffered ones.
+                switches_buffered[cost_index] = 1;
             }
         }
     }
@@ -497,9 +502,13 @@ static void calculate_average_switch(int inode, double& avg_switch_R, double& av
                     buffered = 0;
                 }
             } else if (buffered != device_ctx.rr_switch_inf[switch_index].buffered()) {
-                VTR_LOG_WARN("Inconsitent buffering of children of rr node %s (%s)\n",
-                             rr_node_arch_name(inode).c_str(),
-                             describe_rr_node(inode).c_str());
+                // If a previous buffering state is inconsistent with the current one,
+                // the node should be treated as buffered, as there are only two possible
+                // values for the buffering state (except for the UNDEFINED case).
+                //
+                // This means that at least one edge of this node has a buffered switch,
+                // which prevails over unbuffered ones.
+                buffered = 1;
             }
 
             num_switches++;
