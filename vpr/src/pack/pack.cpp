@@ -26,7 +26,6 @@
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);

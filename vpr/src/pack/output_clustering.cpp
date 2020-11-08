@@ -26,6 +26,7 @@
 #include "output_clustering.h"
 #include "read_xml_arch_file.h"
 #include "vpr_utils.h"
+#include "pack.h"
 
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
@@ -614,4 +615,27 @@ void output_clustering(const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_
             cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route.clear();
         }
     }
+}
+
+/********************************************************************
+ * An useful API to output packing results to a XML file
+ * This function is a wrapper for the function output_clustering()
+ * but remove all the requirements on input data structures that
+ * have to be built with other APIs
+ *
+ * As such, this function is expected to be a standard API 
+ * which can be called anytime and anywhere after packing is finished.
+ ********************************************************************/
+void write_packing_results_to_xml(const bool& global_clocks,
+                                  const std::string& architecture_id,
+                                  const char* out_fname) {
+    vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing_placeholder;
+    std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock(global_clocks);
+
+    output_clustering(intra_lb_routing_placeholder,
+                      global_clocks,
+                      is_clock,
+                      architecture_id,
+                      out_fname,
+                      false);
 }

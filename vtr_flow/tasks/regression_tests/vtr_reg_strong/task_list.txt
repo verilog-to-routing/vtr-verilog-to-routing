@@ -72,3 +72,4 @@ regression_tests/vtr_reg_strong/strong_blocks_with_no_inputs
 regression_tests/vtr_reg_strong/strong_fix_clusters
 regression_tests/vtr_reg_strong/strong_analytic_placer
 regression_tests/vtr_reg_strong/strong_place_quench_slack
+regression_tests/vtr_reg_strong/strong_post_routing_sync

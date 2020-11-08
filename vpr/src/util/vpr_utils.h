@@ -194,13 +194,54 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
 //the best expected physical tile the block should use (if no valid placement).
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
+//Returns the sub tile index (within 'physical_tile') corresponding to the
+//'logical block'
+//
+//This function will return the index for the first sub_tile that can accommodate
+//the logical block
+//It is typically called before/during placement,
+//when picking a sub-tile to fit a logical block
+//
+int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
+                                              t_logical_block_type_ptr logical_block);
+
 //Returns the physical pin index (within 'physical_tile') corresponding to the
 //logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+//
+//This function is called before/during placement, when a sub tile index was not yet assigned.
 //
 //Throws an exception if the corresponding physical pin can't be found.
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin);
+
+//Returns the sub tile index (within 'physical_tile') corresponding to the
+//'logical block' by considering if a given offset is in the range of sub tile capacity
+int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
+                                              t_logical_block_type_ptr logical_block,
+                                              int sub_tile_capacity);
+
+//Returns the physical pin index (within 'physical_tile') corresponding to the
+//logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+//This function considers if a given offset is in the range of sub tile capacity
+//
+//  (First pin index at current sub-tile)                                     (The wanted pin index)
+//
+//  |                                                               |<----- pin ------->|
+//  v                                                                                   v
+//
+//  |<----- capacity.low ----->|<----- capacity.low + 1 ----->| ... |<----- sub_tile_capacity ---->|
+//
+//
+//This function is created for device-level information inquiry.
+//Therefore, it should ONLY require device-level information as inputs!!!
+//It should NOT need any mapping results as inputs!!!
+//
+//Throws an exception if the corresponding physical pin can't be found.
+int get_post_placement_physical_pin(t_physical_tile_type_ptr physical_tile,
+                                    t_logical_block_type_ptr logical_block,
+                                    int sub_tile_capacity,
+                                    int pin);
 
 //Returns the physical pin index (within 'physical_tile') corresponding to the
 //logical index ('pin') of the 'logical_block' at sub-tile location 'sub_tile_index'.

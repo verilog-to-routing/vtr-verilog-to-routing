@@ -585,6 +585,14 @@ The io pad is set to inpad mode and is driven by the inpad:
         </block>
     ...
 
+.. note:: ``.net`` files may be outputted at two stages:
+          - After packing is completed, the packing results will be outputted. The ``.net`` file can be loaded as an input for placer, router and analyzer. Note that the file may **not** represent the final packing results as the analyzer will apply synchronization between packing and routing results.
+          - After analysis is completed, updated packing results will be outputted. This is due to that VPR router may swap pin mapping in packing results for optimizations. In such cases, packing results are synchronized with routing results. The outputted ``.net`` file will have a postfix of ``.post_routing`` as compared to the original packing results. It could happen that VPR router does not apply any pin swapping and the two ``.net`` files are the same. In both cases, the post-analysis ``.net`` file should be considered to be **the final packing results** for downstream tools, e.g., bitstream generator. Users may load the post-routing ``.net`` file in VPR's analysis flow to sign-off the final results.
+
+.. warning:: Currently, the packing result synchronization is only applicable to input pins which may be remapped to different nets during routing optimization. If your architecture defines `link_instance_pin_xml_syntax_` equivalence for output pins, the packing results still mismatch the routing results! 
+
+.. _link_instance_pin_xml_syntax: https://docs.verilogtorouting.org/en/latest/arch/reference/#tag-%3Coutputname= 
+
 .. _vpr_place_file:
 
 Placement File Format (.place)
