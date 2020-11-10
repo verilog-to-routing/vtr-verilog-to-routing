@@ -156,7 +156,10 @@ set(PROF_USE_FLAGS_TO_CHECK
 if (VPR_PGO_CONFIG STREQUAL "prof_gen")
     message(STATUS "VPR: building to generate profiling data for PGO")
     target_link_libraries(libvpr gcov)
+
+    # This is to provide the -lgcov flag required for -fprofile-use to succeed in CHECK_CXX_COMPILER_FLAG below.
     set(CMAKE_REQUIRED_LIBRARIES gcov)
+
     foreach(flag ${PROF_GEN_FLAGS_TO_CHECK})
         CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
         if(CXX_COMPILER_SUPPORTS_${flag})
