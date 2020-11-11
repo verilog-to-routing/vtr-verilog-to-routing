@@ -255,7 +255,6 @@ void SoftmaxAgent::set_action_prob() {
 }
 
 void SoftmaxAgent::set_step(float gamma, int move_lim) {
-    VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
     if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
