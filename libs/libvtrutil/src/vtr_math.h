@@ -2,6 +2,7 @@
 #define VTR_MATH_H
 
 #include <map>
+#include <vector>
 #include <cmath>
 
 #include "vtr_assert.h"
@@ -9,6 +10,9 @@
 namespace vtr {
 /*********************** Math operations *************************************/
 int ipow(int base, int exp);
+
+//Returns the median of an input vector.
+float median(std::vector<float> vector);
 
 template<typename X, typename Y>
 Y linear_interpolate_or_extrapolate(const std::map<X, Y>* xy_map, X requested_x);

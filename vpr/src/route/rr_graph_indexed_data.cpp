@@ -5,6 +5,7 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -388,8 +389,9 @@ static void load_rr_indexed_data_T_values() {
             auto switch_T_total_histogram = build_histogram(switch_T_total[cost_index], 10);
             auto switch_Cinternal_total_histogram = build_histogram(switch_Cinternal_total[cost_index], 10);
 
-            float Rnode = get_histogram_mode(R_total_histogram);
-            float Cnode = get_histogram_mode(C_total_histogram);
+            // Sort Rnode and Cnode
+            float Cnode = vtr::median(C_total[cost_index]);
+            float Rnode = vtr::median(R_total[cost_index]);
             float Rsw = get_histogram_mode(switch_R_total_histogram);
             float Tsw = get_histogram_mode(switch_T_total_histogram);
             float Cinternalsw = get_histogram_mode(switch_Cinternal_total_histogram);
