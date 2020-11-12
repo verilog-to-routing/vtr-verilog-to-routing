@@ -1190,6 +1190,7 @@ struct t_router_opts {
     enum e_router_algorithm router_algorithm;
     enum e_base_cost_type base_cost_type;
     float astar_fac;
+    float router_profiler_astar_fac;
     float max_criticality;
     float criticality_exp;
     float init_wirelength_abort_threshold;
