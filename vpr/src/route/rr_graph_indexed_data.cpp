@@ -28,7 +28,7 @@ static float get_delay_normalization_fac();
 
 static void load_rr_indexed_data_T_values();
 
-static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered);
+static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
 
 static void fixup_rr_indexed_data_T_values(size_t num_segment);
 
@@ -303,6 +303,8 @@ static void load_rr_indexed_data_T_values() {
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
+    auto fan_in_list = get_fan_in_list();
+
     std::vector<int> num_nodes_of_index(rr_indexed_data.size(), 0);
     std::vector<std::vector<float>> C_total(rr_indexed_data.size());
     std::vector<std::vector<float>> R_total(rr_indexed_data.size());
@@ -336,7 +338,7 @@ static void load_rr_indexed_data_T_values() {
         double avg_switch_Cinternal = 0;
         int num_switches = 0;
         short buffered = UNDEFINED;
-        calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered);
+        calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
 
         if (num_switches == 0) {
             VTR_LOG_WARN("Node %d had no out-going switches\n", inode);
@@ -371,8 +373,6 @@ static void load_rr_indexed_data_T_values() {
             }
         }
     }
-
-    auto& segment_inf = device_ctx.rr_segments;
 
     for (size_t cost_index = CHANX_COST_INDEX_START;
          cost_index < rr_indexed_data.size(); cost_index++) {
@@ -420,19 +420,21 @@ static void load_rr_indexed_data_T_values() {
     }
 }
 
-static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered) {
+static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
     auto& device_ctx = g_vpr_ctx.device();
-    int num_edges = device_ctx.rr_nodes[inode].num_edges();
+    const auto& rr_nodes = device_ctx.rr_nodes.view();
+
+    auto node = RRNodeId(inode);
+
     avg_switch_R = 0;
     avg_switch_T = 0;
     avg_switch_Cinternal = 0;
     num_switches = 0;
     buffered = UNDEFINED;
-    for (int iedge = 0; iedge < num_edges; iedge++) {
-        int to_node_index = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+    for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
-        if (device_ctx.rr_nodes[to_node_index].type() == CHANX || device_ctx.rr_nodes[to_node_index].type() == CHANY) {
-            int switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        if (rr_nodes.node_type(node) == CHANX || rr_nodes.node_type(node) == CHANY) {
+            int switch_index = rr_nodes.edge_switch(edge);
 
             if (device_ctx.rr_switch_inf[switch_index].type() == SwitchType::SHORT) continue;
 
