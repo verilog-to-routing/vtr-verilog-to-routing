@@ -642,8 +642,6 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
             vpr_setup.Segments);
     }
 
-    vtr::ScopedStartFinishTimer timer("Placement");
-
     try_place(vpr_setup.PlacerOpts,
               vpr_setup.AnnealSched,
               vpr_setup.RouterOpts,
