@@ -19,6 +19,8 @@ std::vector<HistogramBucket> build_histogram(std::vector<float> values, size_t n
 
 void print_histogram(std::vector<HistogramBucket> histogram);
 
+float get_histogram_mode(std::vector<HistogramBucket> histogram);
+
 std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram, size_t width = 80);
 
 #endif

@@ -16,6 +16,8 @@
 #include "rr_graph_indexed_data.h"
 #include "read_xml_arch_file.h"
 
+#include "histogram.h"
+
 #include "echo_files.h"
 
 /******************* Subroutines local to this module ************************/
@@ -302,8 +304,8 @@ static void load_rr_indexed_data_T_values() {
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
     std::vector<int> num_nodes_of_index(rr_indexed_data.size(), 0);
-    std::vector<float> C_total(rr_indexed_data.size(), 0.0);
-    std::vector<float> R_total(rr_indexed_data.size(), 0.0);
+    std::vector<std::vector<float>> C_total(rr_indexed_data.size());
+    std::vector<std::vector<float>> R_total(rr_indexed_data.size());
 
     /* August 2014: Not all wire-to-wire switches connecting from some wire segment will
      * necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
@@ -311,9 +313,9 @@ static void load_rr_indexed_data_T_values() {
      * get the average R/Tdel/Cinternal values by first averaging them for a single wire segment
      * (first for loop below), and then by averaging this value over all wire segments in the channel
      * (second for loop below) */
-    std::vector<double> switch_R_total(rr_indexed_data.size(), 0.0);
-    std::vector<double> switch_T_total(rr_indexed_data.size(), 0.0);
-    std::vector<double> switch_Cinternal_total(rr_indexed_data.size(), 0.0);
+    std::vector<std::vector<float>> switch_R_total(rr_indexed_data.size());
+    std::vector<std::vector<float>> switch_T_total(rr_indexed_data.size());
+    std::vector<std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
     std::vector<short> switches_buffered(rr_indexed_data.size(), UNDEFINED);
 
     /* Get average C and R values for all the segments of this type in one      *
@@ -343,12 +345,12 @@ static void load_rr_indexed_data_T_values() {
         VTR_ASSERT(num_switches > 0);
 
         num_nodes_of_index[cost_index]++;
-        C_total[cost_index] += rr_nodes[inode].C();
-        R_total[cost_index] += rr_nodes[inode].R();
+        C_total[cost_index].push_back(rr_nodes[inode].C());
+        R_total[cost_index].push_back(rr_nodes[inode].R());
 
-        switch_R_total[cost_index] += avg_switch_R;
-        switch_T_total[cost_index] += avg_switch_T;
-        switch_Cinternal_total[cost_index] += avg_switch_Cinternal;
+        switch_R_total[cost_index].push_back(avg_switch_R);
+        switch_T_total[cost_index].push_back(avg_switch_T);
+        switch_Cinternal_total[cost_index].push_back(avg_switch_Cinternal);
         if (buffered == UNDEFINED) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
@@ -370,6 +372,8 @@ static void load_rr_indexed_data_T_values() {
         }
     }
 
+    auto& segment_inf = device_ctx.rr_segments;
+
     for (size_t cost_index = CHANX_COST_INDEX_START;
          cost_index < rr_indexed_data.size(); cost_index++) {
         if (num_nodes_of_index[cost_index] == 0) { /* Segments don't exist. */
@@ -378,11 +382,17 @@ static void load_rr_indexed_data_T_values() {
             rr_indexed_data[cost_index].T_quadratic = 0.0;
             rr_indexed_data[cost_index].C_load = 0.0;
         } else {
-            float Rnode = R_total[cost_index] / num_nodes_of_index[cost_index];
-            float Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
-            float Rsw = (float)switch_R_total[cost_index] / num_nodes_of_index[cost_index];
-            float Tsw = (float)switch_T_total[cost_index] / num_nodes_of_index[cost_index];
-            float Cinternalsw = (float)switch_Cinternal_total[cost_index] / num_nodes_of_index[cost_index];
+            auto C_total_histogram = build_histogram(C_total[cost_index], 10);
+            auto R_total_histogram = build_histogram(R_total[cost_index], 10);
+            auto switch_R_total_histogram = build_histogram(switch_R_total[cost_index], 10);
+            auto switch_T_total_histogram = build_histogram(switch_T_total[cost_index], 10);
+            auto switch_Cinternal_total_histogram = build_histogram(switch_Cinternal_total[cost_index], 10);
+
+            float Rnode = get_histogram_mode(R_total_histogram);
+            float Cnode = get_histogram_mode(C_total_histogram);
+            float Rsw = get_histogram_mode(switch_R_total_histogram);
+            float Tsw = get_histogram_mode(switch_T_total_histogram);
+            float Cinternalsw = get_histogram_mode(switch_Cinternal_total_histogram);
 
             if (switches_buffered[cost_index]) {
                 // Here, we are computing the linear time delay for buffered switches. Tlinear is
