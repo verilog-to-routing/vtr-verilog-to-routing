@@ -10,6 +10,8 @@ option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept sign
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
+set(VPR_PGO_DATA_DIR "." CACHE PATH "Where to store and retrieve PGO data")
+
 #Handle graphics setup
 set(GRAPHICS_DEFINES "")
 
@@ -143,16 +145,21 @@ endif()
 #
 set(PROF_GEN_FLAGS_TO_CHECK
     #GCC-like
-    "-fprofile-generate" #Build will generate profiling information
+    "-fprofile-generate=${VPR_PGO_DATA_DIR}" #Build will generate profiling information
     )
 set(PROF_USE_FLAGS_TO_CHECK
     #GCC-like
-    "-fprofile-use"     #Build will use previously generated profiling information to guide code optimization
+    "-fprofile-use=${VPR_PGO_DATA_DIR}"     #Build will use previously generated profiling information to guide code optimization
     "-Wmissing-profile" #Warn if the used profiling information doesn't match the source code or is missing
     )
 
 if (VPR_PGO_CONFIG STREQUAL "prof_gen")
     message(STATUS "VPR: building to generate profiling data for PGO")
+    target_link_libraries(libvpr gcov)
+
+    # This is to provide the -lgcov flag required for -fprofile-use to succeed in CHECK_CXX_COMPILER_FLAG below.
+    set(CMAKE_REQUIRED_LIBRARIES gcov)
+
     foreach(flag ${PROF_GEN_FLAGS_TO_CHECK})
         CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
         if(CXX_COMPILER_SUPPORTS_${flag})

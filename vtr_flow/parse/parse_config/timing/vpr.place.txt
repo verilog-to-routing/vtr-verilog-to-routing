@@ -7,6 +7,7 @@ placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sW
 placed_geomean_nonvirtual_intradomain_critical_path_delay_est;vpr.out;Placement estimated geomean non-virtual intra-domain period: (.*) ns
 
 #VPR Place Timing Analysis Run-time Metrics
+place_delay_matrix_lookup_time;vpr.out;\s*Computing placement delta delay look-up took (.*) seconds
 place_quench_timing_analysis_time;vpr.out;Placement Quench timing analysis took (.*) seconds
 place_quench_sta_time;vpr.out;Placement Quench timing analysis took .* seconds \((.*) STA
 place_total_timing_analysis_time;vpr.out;Placement Total\s+timing analysis took (.*) seconds
