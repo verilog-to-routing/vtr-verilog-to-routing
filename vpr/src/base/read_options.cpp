@@ -2011,7 +2011,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " when doing router delay profiling."
             " The router delay profiling step is currently used to calculate the place delay matrix lookup."
             " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
-        .default_value("1.5")
+        .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")
