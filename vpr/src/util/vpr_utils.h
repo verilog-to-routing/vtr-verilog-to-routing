@@ -9,7 +9,10 @@
 #include "clustered_netlist.h"
 #include "netlist.h"
 #include "vtr_vector.h"
+
 #include "arch_util.h"
+#include "physical_types_util.h"
+
 class DeviceGrid;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
