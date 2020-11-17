@@ -321,9 +321,13 @@ static void load_rr_indexed_data_T_values() {
     std::vector<std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
     std::vector<short> switches_buffered(rr_indexed_data.size(), UNDEFINED);
 
-    /* Get average C and R values for all the segments of this type in one      *
-     * channel segment, near the middle of the fpga.                            */
-
+    /*
+     * Walk through the RR graph and collect all R and C values of all the nodes,
+     * as well as their fan-in switches R, T_del, and Cinternal values.
+     *
+     * The median of R and C values for each cost index is assigned to the indexed
+     * data.
+     */
     for (size_t inode = 0; inode < rr_nodes.size(); inode++) {
         t_rr_type rr_type = rr_nodes[inode].type();
 
