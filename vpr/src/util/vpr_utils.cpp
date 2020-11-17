@@ -268,7 +268,7 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int 
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     auto logical_block = clb_nlist.block_type(clb);
-    auto physical_tile = pick_best_physical_type(logical_block);
+    auto physical_tile = pick_physical_type(logical_block);
 
     int physical_pin = get_physical_pin(physical_tile, logical_block, logical_pin);
     VTR_ASSERT(physical_pin >= 0);
@@ -1945,7 +1945,7 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     if (place_ctx.block_locs.empty()) { //No placement, pick best match
-        return pick_best_physical_type(cluster_ctx.clb_nlist.block_type(blk));
+        return pick_physical_type(cluster_ctx.clb_nlist.block_type(blk));
     } else { //Have placement, select physical tile implementing blk
         auto& device_ctx = g_vpr_ctx.device();
 

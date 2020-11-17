@@ -312,7 +312,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
         place_ctx.block_locs[blk_id].loc = to;
 
         //Mark IOs as fixed if specifying a (fixed) random placement
-        if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == RANDOM) {
+        if (is_io_type(pick_physical_type(logical_block)) && pad_loc_type == RANDOM) {
             place_ctx.block_locs[blk_id].is_fixed = true;
         }
 

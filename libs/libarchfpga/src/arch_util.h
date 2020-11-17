@@ -128,11 +128,17 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
 //Verifies whether a logical block and a relative placement location is compatible with a given physical tile
 bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc);
 
-//Returns the physical tile type which 'best' matches logical_block
-t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block);
+//Returns the first physical tile type that matches the logical block
+//
+//The order of the physical tiles suitable for the input logical block follows the order
+//with which the logical blocks appear in the architecture XML definition
+t_physical_tile_type_ptr pick_physical_type(t_logical_block_type_ptr logical_block);
 
-//Returns the logical block type which 'best' matches the physical tile
-t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile);
+//Returns the first logical block type that matches the physical tile
+//
+//The order of the logical blocks suitable for the input physical tile follows the order
+//with which the physical tiles appear in the architecture XML definition
+t_logical_block_type_ptr pick_logical_type(t_physical_tile_type_ptr physical_tile);
 
 //Returns the sub tile index (within 'physical_tile') corresponding to the
 //'logical block'.

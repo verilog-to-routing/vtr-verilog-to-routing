@@ -1505,11 +1505,11 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
 /**
  * This function returns the most common physical tile type given a logical block
  */
-t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block) {
+t_physical_tile_type_ptr pick_physical_type(t_logical_block_type_ptr logical_block) {
     return logical_block->equivalent_tiles[0];
 }
 
-t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile) {
+t_logical_block_type_ptr pick_logical_type(t_physical_tile_type_ptr physical_tile) {
     return physical_tile->sub_tiles[0].equivalent_sites[0];
 }
 
