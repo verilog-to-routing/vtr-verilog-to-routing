@@ -1548,7 +1548,16 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
     for (const auto pin_ptr : chain_input_pins) {
         std::vector<t_pb_graph_pin*> connected_primitive_pins;
         get_all_connected_primitive_pins(pin_ptr, connected_primitive_pins);
+
+        /**
+         * It is required that the chain pins are connected inside a complex
+         * block. Although it is allowed to have them disconnected in some
+         * modes of the block provided that there is always at least one mode
+         * that has them connected inside. The following assert checks for
+         * that.
+         */
         VTR_ASSERT(connected_primitive_pins.size());
+
         primitive_input_pins.push_back(connected_primitive_pins);
     }
 
