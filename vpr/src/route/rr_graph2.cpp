@@ -365,8 +365,6 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  const t_chan_width* nodes_per_chan,
-                                 const bool trim_empty_channels,
-                                 const bool trim_obs_channels,
                                  const int num_seg_details,
                                  const t_seg_details* seg_details,
                                  t_chan_details& chan_details_x,
@@ -375,11 +373,6 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
                                        num_seg_details, seg_details, SEG_DETAILS_X);
     chan_details_y = init_chan_details(grid, nodes_per_chan,
                                        num_seg_details, seg_details, SEG_DETAILS_Y);
-
-    /* Obstruct channel segment details based on grid block widths/heights */
-    obstruct_chan_details(grid, nodes_per_chan,
-                          trim_empty_channels, trim_obs_channels,
-                          chan_details_x, chan_details_y);
 
     /* Adjust segment start/end based on obstructed channels, if any */
     adjust_chan_details(grid, nodes_per_chan,
@@ -430,84 +423,6 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
         }
     }
     return chan_details;
-}
-
-void obstruct_chan_details(const DeviceGrid& grid,
-                           const t_chan_width* nodes_per_chan,
-                           const bool trim_empty_channels,
-                           const bool trim_obs_channels,
-                           t_chan_details& chan_details_x,
-                           t_chan_details& chan_details_y) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    /* Iterate grid to find and obstruct based on multi-width/height blocks */
-    for (size_t x = 0; x < grid.width() - 1; ++x) {
-        for (size_t y = 0; y < grid.height() - 1; ++y) {
-            if (!trim_obs_channels)
-                continue;
-
-            if (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
-                continue;
-            if (grid[x][y].width_offset > 0 || grid[x][y].height_offset > 0)
-                continue;
-            if (grid[x][y].type->width == 1 && grid[x][y].type->height == 1)
-                continue;
-
-            if (grid[x][y].type->height > 1) {
-                for (int dx = 0; dx <= grid[x][y].type->width - 1; ++dx) {
-                    for (int dy = 0; dy < grid[x][y].type->height - 1; ++dy) {
-                        for (int track = 0; track < nodes_per_chan->max; ++track) {
-                            chan_details_x[x + dx][y + dy][track].set_length(0);
-                        }
-                    }
-                }
-            }
-            if (grid[x][y].type->width > 1) {
-                for (int dy = 0; dy <= grid[x][y].type->height - 1; ++dy) {
-                    for (int dx = 0; dx < grid[x][y].type->width - 1; ++dx) {
-                        for (int track = 0; track < nodes_per_chan->max; ++track) {
-                            chan_details_y[x + dx][y + dy][track].set_length(0);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /* Iterate grid again to find and obstruct based on neighboring EMPTY and/or IO types */
-    for (size_t x = 0; x <= grid.width() - 2; ++x) {      //-2 for no perim channels
-        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
-
-            if (!trim_empty_channels)
-                continue;
-
-            if (is_io_type(grid[x][y].type)) {
-                if ((x == 0) || (y == 0))
-                    continue;
-            }
-            if (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
-                if ((x == grid.width() - 2) && is_io_type(grid[x + 1][y].type)) //-2 for no perim channels
-                    continue;
-                if ((y == grid.height() - 2) && is_io_type(grid[x][y + 1].type)) //-2 for no perim channels
-                    continue;
-            }
-
-            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
-                if (is_io_type(grid[x][y + 1].type) || (grid[x][y + 1].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
-                    for (int track = 0; track < nodes_per_chan->max; ++track) {
-                        chan_details_x[x][y][track].set_length(0);
-                    }
-                }
-            }
-            if (is_io_type(grid[x][y].type) || (grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
-                if (is_io_type(grid[x + 1][y].type) || (grid[x + 1][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
-                    for (int track = 0; track < nodes_per_chan->max; ++track) {
-                        chan_details_y[x][y][track].set_length(0);
-                    }
-                }
-            }
-        }
-    }
 }
 
 void adjust_chan_details(const DeviceGrid& grid,
