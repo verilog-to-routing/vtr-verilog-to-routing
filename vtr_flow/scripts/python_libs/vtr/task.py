@@ -43,6 +43,8 @@ class TaskConfig:
         qor_parse_file=None,
         cmos_tech_behavior=None,
         pad_file=None,
+        additional_files=None,
+        additional_files_list_add=None
     ):
         self.task_name = task_name
         self.config_dir = config_dir
@@ -61,6 +63,8 @@ class TaskConfig:
         self.qor_parse_file = qor_parse_file
         self.cmos_tech_behavior = cmos_tech_behavior
         self.pad_file = pad_file
+        self.additional_files = additional_files
+        self.additional_files_list_add = additional_files_list_add
 
 
 # pylint: enable=too-few-public-methods
@@ -169,6 +173,7 @@ def load_task_config(config_file):
         [
             "circuits_dir",
             "archs_dir",
+            "additional_files",
             "parse_file",
             "script_path",
             "script_params",
@@ -229,7 +234,7 @@ def load_task_config(config_file):
     if "script_params_common" in key_values:
         key_values["script_params_common"] = split(key_values["script_params_common"])
 
-    check_required_feilds(config_file, required_keys, key_values)
+    check_required_fields(config_file, required_keys, key_values)
 
     # Useful meta-data about the config
     config_dir = str(Path(config_file).parent)
@@ -240,7 +245,7 @@ def load_task_config(config_file):
     return TaskConfig(**key_values)
 
 
-def check_required_feilds(config_file, required_keys, key_values):
+def check_required_fields(config_file, required_keys, key_values):
     """
     Check that all required fields were specified
     """
@@ -306,6 +311,14 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
 
             # Collect any extra script params from the config file
             cmd = [abs_circuit_filepath, abs_arch_filepath]
+
+            # Check if additional architectural data files are present
+            if config.additional_files_list_add:
+                for additional_file in  config.additional_files_list_add:
+                    flag, file_name = additional_file.split(',')
+
+                    cmd += [flag]
+                    cmd += [resolve_vtr_source_file(config, file_name, config.arch_dir)]
 
             if hasattr(args, "show_failures") and args.show_failures:
                 cmd += ["-show_failures"]
