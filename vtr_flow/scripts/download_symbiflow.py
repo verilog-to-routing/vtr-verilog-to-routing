@@ -15,9 +15,7 @@ import subprocess
 from urllib import request
 
 GCS_URL = (
-    "https://storage.googleapis.com/symbiflow-arch-defs/artifacts/prod/"
-    "foss-fpga-tools/symbiflow-arch-defs/presubmit/install/"
-    "731/20200926-090152/symbiflow-arch-defs-install-e3de025d.tar.xz"
+    "https://storage.googleapis.com/symbiflow-arch-defs-gha/latest?authuser=0"
 )
 
 SYMBIFLOW_URL_MIRRORS = {"google": GCS_URL}
@@ -102,7 +100,9 @@ def download_url(filename, url):
     """
     Downloads the symbiflow release
     """
-    request.urlretrieve(url, filename, reporthook=download_progress_callback)
+    latest_package_url = request.urlopen(url).read().decode("utf-8")
+    print("Downloading latest package:\n{}".format(latest_package_url))
+    request.urlretrieve(latest_package_url, filename, reporthook=download_progress_callback)
 
 
 def download_progress_callback(block_num, block_size, expected_size):
@@ -128,9 +128,6 @@ def extract_to_vtr_flow_dir(args, tar_xz_filename):
     # Reference directories
     arch_dir = os.path.join(args.vtr_flow_dir, "arch")
     symbiflow_arch_extract_dir = os.path.join(arch_dir, "symbiflow")
-    symbiflow_test_dir = os.path.join(
-        args.vtr_flow_dir, "tasks", "regression_tests", "vtr_reg_nightly", "symbiflow"
-    )
 
     arch_upgrade_script = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "upgrade_arch.py"
@@ -168,7 +165,7 @@ def extract_to_vtr_flow_dir(args, tar_xz_filename):
                 subprocess.call("{} {}".format(arch_upgrade_script, src_file_path), shell=True)
 
             elif fnmatch.fnmatch(src_file_path, "*/xc7a50t_test/*.bin"):
-                dst_file_path = os.path.join(symbiflow_test_dir, filename)
+                dst_file_path = os.path.join(symbiflow_arch_extract_dir, filename)
 
             if dst_file_path:
                 shutil.move(src_file_path, dst_file_path)
