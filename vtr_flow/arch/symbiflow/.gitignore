@@ -1,0 +1,6 @@
+# Arch files
+*.xml
+
+# Data files
+*.bin
+
