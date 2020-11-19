@@ -64,6 +64,20 @@ void print_histogram(std::vector<HistogramBucket> histogram) {
     }
 }
 
+float get_histogram_mode(std::vector<HistogramBucket> histogram) {
+    size_t max_count = 0;
+    float mode = 0.0;
+    for (auto bucket : histogram) {
+        if (bucket.count > max_count) {
+            mode = bucket.max_value;
+
+            max_count = bucket.count;
+        }
+    }
+
+    return mode;
+}
+
 std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram, size_t width) {
     std::vector<std::string> lines;
 

@@ -115,6 +115,7 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_SBLOCK_PATTERN, "sblock_pattern.txt");
     setEchoFileName(E_ECHO_ENDPOINT_TIMING, "endpoint_timing.echo.json");
     setEchoFileName(E_ECHO_LOOKAHEAD_MAP, "lookahead_map.echo");
+    setEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA, "rr_indexed_data.echo");
 }
 
 void free_echo_file_info() {

@@ -20,7 +20,7 @@ archs_dir=arch/titan
 #of the slowest benchmarks
 
 #Largest benchmarks, excluded
-#circuit_list_add=gaussianblur_stratixiv_arch_timing.blif 
+#circuit_list_add=gaussianblur_stratixiv_arch_timing.blif
 
 #Large benchmarks
 circuit_list_add=directrf_stratixiv_arch_timing.blif
@@ -66,4 +66,4 @@ pass_requirements_file=pass_requirements_vpr_titan.txt
 #A large number of routing iterations is set to ensure the router doesn't give up to easily on the larger benchmarks
 #To be more run-time comparable to commercial tools like Quartus, we run with higher placer effort (inner_num=2) and lower astar_fac (1.0)
 #Set a 24hr timeout so they don't run forever
-script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map -timeout 86400 --seed 197
+script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map -timeout 86400 --seed 197 --initial_pres_fac 1.0 --router_profiler_astar_fac 1.5

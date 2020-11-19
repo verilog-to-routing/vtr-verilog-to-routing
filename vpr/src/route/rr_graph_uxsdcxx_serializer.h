@@ -1462,12 +1462,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         rr_nodes_->init_fan_in();
 
-        bool is_global_graph = GRAPH_GLOBAL == graph_type_;
-        int max_chan_width = (is_global_graph ? 1 : chan_width_->max);
         alloc_and_load_rr_indexed_data(
             segment_inf_,
-            *rr_node_indices_,
-            max_chan_width,
             *wire_to_rr_ipin_switch_,
             base_cost_type_);
 

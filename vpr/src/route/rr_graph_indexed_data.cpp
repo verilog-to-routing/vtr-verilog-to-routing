@@ -1,8 +1,11 @@
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
+#include <fstream>
+#include <iomanip>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -14,28 +17,25 @@
 #include "rr_graph_indexed_data.h"
 #include "read_xml_arch_file.h"
 
+#include "histogram.h"
+
+#include "echo_files.h"
+
 /******************* Subroutines local to this module ************************/
 
-static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-                                            const t_rr_node_indices& L_rr_node_indices,
-                                            enum e_base_cost_type base_cost_type);
+static void load_rr_indexed_data_base_costs(enum e_base_cost_type base_cost_type);
 
-static float get_delay_normalization_fac(int nodes_per_chan,
-                                         const t_rr_node_indices& L_rr_node_indices);
+static float get_delay_normalization_fac();
 
-static void load_rr_indexed_data_T_values(int index_start,
-                                          int num_indices_to_load,
-                                          t_rr_type rr_type,
-                                          int nodes_per_chan,
-                                          const t_rr_node_indices& L_rr_node_indices);
+static void load_rr_indexed_data_T_values();
 
-static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered);
+static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
 
 static void fixup_rr_indexed_data_T_values(size_t num_segment);
 
 static std::vector<size_t> count_rr_segment_types();
 
-static void print_rr_index_info(const std::vector<t_segment_inf>& segment_inf);
+static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf);
 
 /******************** Subroutine definitions *********************************/
 
@@ -53,8 +53,6 @@ static void print_rr_index_info(const std::vector<t_segment_inf>& segment_inf);
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
 void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
-                                    const t_rr_node_indices& L_rr_node_indices,
-                                    const int nodes_per_chan,
                                     int wire_to_ipin_switch,
                                     enum e_base_cost_type base_cost_type) {
     int iseg, length, i, index;
@@ -98,8 +96,6 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
     }
-    load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
-                                  nodes_per_chan, L_rr_node_indices);
 
     /* Y-directed segments. */
     for (iseg = 0; iseg < num_segment; iseg++) {
@@ -119,15 +115,17 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
     }
-    load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
-                                  num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
+
+    load_rr_indexed_data_T_values();
 
     fixup_rr_indexed_data_T_values(num_segment);
 
-    load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
-                                    base_cost_type);
+    load_rr_indexed_data_base_costs(base_cost_type);
 
-    if (false) print_rr_index_info(segment_inf);
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA)) {
+        print_rr_index_info(getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA),
+                            segment_inf);
+    }
 }
 
 void load_rr_index_segments(const int num_segment) {
@@ -150,9 +148,7 @@ void load_rr_index_segments(const int num_segment) {
     }
 }
 
-static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-                                            const t_rr_node_indices& L_rr_node_indices,
-                                            enum e_base_cost_type base_cost_type) {
+static void load_rr_indexed_data_base_costs(enum e_base_cost_type base_cost_type) {
     /* Loads the base_cost member of device_ctx.rr_indexed_data according to the specified *
      * base_cost_type.                                                          */
 
@@ -164,7 +160,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
     if (base_cost_type == DEMAND_ONLY || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
         delay_normalization_fac = 1.;
     } else {
-        delay_normalization_fac = get_delay_normalization_fac(nodes_per_chan, L_rr_node_indices);
+        delay_normalization_fac = get_delay_normalization_fac();
     }
 
     device_ctx.rr_indexed_data[SOURCE_COST_INDEX].base_cost = delay_normalization_fac;
@@ -264,53 +260,39 @@ static std::vector<size_t> count_rr_segment_types() {
     return rr_segment_type_counts;
 }
 
-static float get_delay_normalization_fac(int nodes_per_chan,
-                                         const t_rr_node_indices& L_rr_node_indices) {
+static float get_delay_normalization_fac() {
     /* Returns the average delay to go 1 CLB distance along a wire.  */
 
-    const int clb_dist = 3; /* Number of CLBs I think the average conn. goes. */
-
-    int inode, itrack, cost_index;
-    float Tdel, Tdel_sum, frac_num_seg;
-
     auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
-    Tdel_sum = 0.;
+    float Tdel_sum = 0.0;
+    int Tdel_num = 0;
+    for (size_t cost_index = CHANX_COST_INDEX_START; cost_index < rr_indexed_data.size(); cost_index++) {
+        float inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
+        float T_value = rr_indexed_data[cost_index].T_linear * inv_length + rr_indexed_data[cost_index].T_quadratic * std::pow(inv_length, 2);
 
-    for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-        inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), CHANX, itrack,
-                                           L_rr_node_indices);
-        if (inode == -1)
-            continue;
-        cost_index = device_ctx.rr_nodes[inode].cost_index();
-        frac_num_seg = clb_dist * device_ctx.rr_indexed_data[cost_index].inv_length;
-        Tdel = frac_num_seg * device_ctx.rr_indexed_data[cost_index].T_linear
-               + frac_num_seg * frac_num_seg
-                     * device_ctx.rr_indexed_data[cost_index].T_quadratic;
-        Tdel_sum += Tdel / (float)clb_dist;
+        if (T_value == 0.0) continue;
+
+        Tdel_sum += T_value;
+        Tdel_num += 1;
     }
 
-    for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-        inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), CHANY, itrack,
-                                           L_rr_node_indices);
-        if (inode == -1)
-            continue;
-        cost_index = device_ctx.rr_nodes[inode].cost_index();
-        frac_num_seg = clb_dist * device_ctx.rr_indexed_data[cost_index].inv_length;
-        Tdel = frac_num_seg * device_ctx.rr_indexed_data[cost_index].T_linear
-               + frac_num_seg * frac_num_seg
-                     * device_ctx.rr_indexed_data[cost_index].T_quadratic;
-        Tdel_sum += Tdel / (float)clb_dist;
+    float delay_norm_fac = Tdel_sum / Tdel_num;
+
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA)) {
+        std::ofstream out_file;
+
+        out_file.open(getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA));
+        out_file << "Delay normalization factor: " << delay_norm_fac << std::endl;
+
+        out_file.close();
     }
 
-    return (Tdel_sum / (2. * nodes_per_chan));
+    return delay_norm_fac;
 }
 
-static void load_rr_indexed_data_T_values(int index_start,
-                                          int num_indices_to_load,
-                                          t_rr_type rr_type,
-                                          int nodes_per_chan,
-                                          const t_rr_node_indices& L_rr_node_indices) {
+static void load_rr_indexed_data_T_values() {
     /* Loads the average propagation times through segments of each index type   *
      * for either all CHANX segment types or all CHANY segment types.  It does   *
      * this by looking at all the segments in one channel in the middle of the   *
@@ -318,18 +300,15 @@ static void load_rr_indexed_data_T_values(int index_start,
      * same type and using them to compute average delay values for this type of *
      * segment. */
 
-    int itrack, cost_index;
-    float *C_total, *R_total;                                         /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    double *switch_R_total, *switch_T_total, *switch_Cinternal_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    short* switches_buffered;
-    int* num_nodes_of_index; /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    float Rnode, Cnode, Rsw, Tsw, Cinternalsw;
-
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& rr_nodes = device_ctx.rr_nodes;
+    auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
-    num_nodes_of_index = (int*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(int));
-    C_total = (float*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(float));
-    R_total = (float*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(float));
+    auto fan_in_list = get_fan_in_list();
+
+    std::vector<int> num_nodes_of_index(rr_indexed_data.size(), 0);
+    std::vector<std::vector<float>> C_total(rr_indexed_data.size());
+    std::vector<std::vector<float>> R_total(rr_indexed_data.size());
 
     /* August 2014: Not all wire-to-wire switches connecting from some wire segment will
      * necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
@@ -337,28 +316,26 @@ static void load_rr_indexed_data_T_values(int index_start,
      * get the average R/Tdel/Cinternal values by first averaging them for a single wire segment
      * (first for loop below), and then by averaging this value over all wire segments in the channel
      * (second for loop below) */
-    switch_R_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
-    switch_T_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
-    switch_Cinternal_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
-    switches_buffered = (short*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(short));
+    std::vector<std::vector<float>> switch_R_total(rr_indexed_data.size());
+    std::vector<std::vector<float>> switch_T_total(rr_indexed_data.size());
+    std::vector<std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
+    std::vector<short> switches_buffered(rr_indexed_data.size(), UNDEFINED);
 
-    /* initialize switches_buffered array */
-    for (int i = index_start; i < index_start + num_indices_to_load; i++) {
-        switches_buffered[i] = UNDEFINED;
-    }
+    /*
+     * Walk through the RR graph and collect all R and C values of all the nodes,
+     * as well as their fan-in switches R, T_del, and Cinternal values.
+     *
+     * The median of R and C values for each cost index is assigned to the indexed
+     * data.
+     */
+    for (size_t inode = 0; inode < rr_nodes.size(); inode++) {
+        t_rr_type rr_type = rr_nodes[inode].type();
 
-    /* Get average C and R values for all the segments of this type in one      *
-     * channel segment, near the middle of the fpga.                            */
-
-    for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-        int inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), rr_type, itrack,
-                                               L_rr_node_indices);
-        if (inode == -1)
+        if (rr_type != CHANX && rr_type != CHANY) {
             continue;
-        cost_index = device_ctx.rr_nodes[inode].cost_index();
-        num_nodes_of_index[cost_index]++;
-        C_total[cost_index] += device_ctx.rr_nodes[inode].C();
-        R_total[cost_index] += device_ctx.rr_nodes[inode].R();
+        }
+
+        int cost_index = rr_nodes[inode].cost_index();
 
         /* get average switch parameters */
         double avg_switch_R = 0;
@@ -366,17 +343,21 @@ static void load_rr_indexed_data_T_values(int index_start,
         double avg_switch_Cinternal = 0;
         int num_switches = 0;
         short buffered = UNDEFINED;
-        calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered);
+        calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
 
         if (num_switches == 0) {
-            VTR_LOG_WARN("Track %d had no out-going switches\n", itrack);
+            VTR_LOG_WARN("Node %d had no out-going switches\n", inode);
             continue;
         }
         VTR_ASSERT(num_switches > 0);
 
-        switch_R_total[cost_index] += avg_switch_R;
-        switch_T_total[cost_index] += avg_switch_T;
-        switch_Cinternal_total[cost_index] += avg_switch_Cinternal;
+        num_nodes_of_index[cost_index]++;
+        C_total[cost_index].push_back(rr_nodes[inode].C());
+        R_total[cost_index].push_back(rr_nodes[inode].R());
+
+        switch_R_total[cost_index].push_back(avg_switch_R);
+        switch_T_total[cost_index].push_back(avg_switch_T);
+        switch_Cinternal_total[cost_index].push_back(avg_switch_Cinternal);
         if (buffered == UNDEFINED) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
@@ -398,51 +379,26 @@ static void load_rr_indexed_data_T_values(int index_start,
         }
     }
 
-    for (cost_index = index_start;
-         cost_index < index_start + num_indices_to_load; cost_index++) {
-        if (num_nodes_of_index[cost_index] != 0) continue;
-
-        // Did not find segments of this type
-        //'Unusual' wire types (e.g. clock networks) which aren't in every
-        //channel won't get picked up by the above, so try an exhaustive search to
-        //find them
-
-        for (int inode = 0; inode < int(device_ctx.rr_nodes.size()); ++inode) {
-            if (num_nodes_of_index[cost_index] > nodes_per_chan) break; //Sampled (more than) enough
-
-            if (device_ctx.rr_nodes[inode].cost_index() != cost_index) continue;
-
-            ++num_nodes_of_index[cost_index];
-
-            C_total[cost_index] += device_ctx.rr_nodes[inode].C();
-            R_total[cost_index] += device_ctx.rr_nodes[inode].R();
-
-            double avg_switch_R = 0;
-            double avg_switch_T = 0;
-            double avg_switch_Cinternal = 0;
-            int num_switches = 0;
-            short buffered = UNDEFINED;
-            calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered);
-
-            switch_R_total[cost_index] += avg_switch_R;
-            switch_T_total[cost_index] += avg_switch_T;
-            switch_Cinternal_total[cost_index] += avg_switch_Cinternal;
-        }
-    }
-
-    for (cost_index = index_start;
-         cost_index < index_start + num_indices_to_load; cost_index++) {
+    for (size_t cost_index = CHANX_COST_INDEX_START;
+         cost_index < rr_indexed_data.size(); cost_index++) {
         if (num_nodes_of_index[cost_index] == 0) { /* Segments don't exist. */
             VTR_LOG_WARN("Found no instances of RR node with cost index %d\n", cost_index);
-            device_ctx.rr_indexed_data[cost_index].T_linear = std::numeric_limits<float>::quiet_NaN();
-            device_ctx.rr_indexed_data[cost_index].T_quadratic = std::numeric_limits<float>::quiet_NaN();
-            device_ctx.rr_indexed_data[cost_index].C_load = std::numeric_limits<float>::quiet_NaN();
+            rr_indexed_data[cost_index].T_linear = 0.0;
+            rr_indexed_data[cost_index].T_quadratic = 0.0;
+            rr_indexed_data[cost_index].C_load = 0.0;
         } else {
-            Rnode = R_total[cost_index] / num_nodes_of_index[cost_index];
-            Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
-            Rsw = (float)switch_R_total[cost_index] / num_nodes_of_index[cost_index];
-            Tsw = (float)switch_T_total[cost_index] / num_nodes_of_index[cost_index];
-            Cinternalsw = (float)switch_Cinternal_total[cost_index] / num_nodes_of_index[cost_index];
+            auto C_total_histogram = build_histogram(C_total[cost_index], 10);
+            auto R_total_histogram = build_histogram(R_total[cost_index], 10);
+            auto switch_R_total_histogram = build_histogram(switch_R_total[cost_index], 10);
+            auto switch_T_total_histogram = build_histogram(switch_T_total[cost_index], 10);
+            auto switch_Cinternal_total_histogram = build_histogram(switch_Cinternal_total[cost_index], 10);
+
+            // Sort Rnode and Cnode
+            float Cnode = vtr::median(C_total[cost_index]);
+            float Rnode = vtr::median(R_total[cost_index]);
+            float Rsw = get_histogram_mode(switch_R_total_histogram);
+            float Tsw = get_histogram_mode(switch_T_total_histogram);
+            float Cinternalsw = get_histogram_mode(switch_Cinternal_total_histogram);
 
             if (switches_buffered[cost_index]) {
                 // Here, we are computing the linear time delay for buffered switches. Tlinear is
@@ -453,44 +409,41 @@ static void load_rr_indexed_data_T_values(int index_start,
                 // the combined capacitance of the node and internal capacitance of the switch. The
                 // second transient response is the result of the Rnode being distributed halfway along a
                 // wire segment's length times the total capacitance.
-                device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
-                                                                  + 0.5 * Rnode * (Cnode + Cinternalsw);
-                device_ctx.rr_indexed_data[cost_index].T_quadratic = 0.;
-                device_ctx.rr_indexed_data[cost_index].C_load = 0.;
+                rr_indexed_data[cost_index].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
+                                                       + 0.5 * Rnode * (Cnode + Cinternalsw);
+                rr_indexed_data[cost_index].T_quadratic = 0.;
+                rr_indexed_data[cost_index].C_load = 0.;
             } else { /* Pass transistor, does not have an internal capacitance*/
-                device_ctx.rr_indexed_data[cost_index].C_load = Cnode;
+                rr_indexed_data[cost_index].C_load = Cnode;
 
                 /* See Dec. 23, 1997 notes for deriviation of formulae. */
 
-                device_ctx.rr_indexed_data[cost_index].T_linear = Tsw + 0.5 * Rsw * Cnode;
-                device_ctx.rr_indexed_data[cost_index].T_quadratic = (Rsw + Rnode) * 0.5
-                                                                     * Cnode;
+                rr_indexed_data[cost_index].T_linear = Tsw + 0.5 * Rsw * Cnode;
+                rr_indexed_data[cost_index].T_quadratic = (Rsw + Rnode) * 0.5
+                                                          * Cnode;
             }
         }
     }
-
-    free(num_nodes_of_index);
-    free(C_total);
-    free(R_total);
-    free(switch_R_total);
-    free(switch_T_total);
-    free(switch_Cinternal_total);
-    free(switches_buffered);
 }
 
-static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered) {
+static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
     auto& device_ctx = g_vpr_ctx.device();
-    int num_edges = device_ctx.rr_nodes[inode].num_edges();
+    const auto& rr_nodes = device_ctx.rr_nodes.view();
+
+    auto node = RRNodeId(inode);
+
     avg_switch_R = 0;
     avg_switch_T = 0;
     avg_switch_Cinternal = 0;
     num_switches = 0;
     buffered = UNDEFINED;
-    for (int iedge = 0; iedge < num_edges; iedge++) {
-        int to_node_index = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+    for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
-        if (device_ctx.rr_nodes[to_node_index].type() == CHANX || device_ctx.rr_nodes[to_node_index].type() == CHANY) {
-            int switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        if (rr_nodes.node_type(node) == CHANX || rr_nodes.node_type(node) == CHANY) {
+            int switch_index = rr_nodes.edge_switch(edge);
+
+            if (device_ctx.rr_switch_inf[switch_index].type() == SwitchType::SHORT) continue;
+
             avg_switch_R += device_ctx.rr_switch_inf[switch_index].R;
             avg_switch_T += device_ctx.rr_switch_inf[switch_index].Tdel;
             avg_switch_Cinternal += device_ctx.rr_switch_inf[switch_index].Cinternal;
@@ -541,44 +494,66 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment) {
          cost_index < CHANX_COST_INDEX_START + 2 * num_segment; cost_index++) {
         int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
+        auto& indexed_data = device_ctx.rr_indexed_data[cost_index];
+        auto& ortho_indexed_data = device_ctx.rr_indexed_data[ortho_cost_index];
         // Check if this data is uninitialized, but the orthogonal data is
         // initialized.
-        if (!std::isfinite(device_ctx.rr_indexed_data[cost_index].T_linear)
-            && std::isfinite(device_ctx.rr_indexed_data[ortho_cost_index].T_linear)) {
+        // Uninitialized data is set to zero by default.
+        bool needs_fixup = indexed_data.T_linear == 0 && indexed_data.T_quadratic == 0 && indexed_data.C_load == 0;
+        bool ortho_data_valid = ortho_indexed_data.T_linear != 0 || ortho_indexed_data.T_quadratic != 0 || ortho_indexed_data.C_load != 0;
+        if (needs_fixup && ortho_data_valid) {
             // Copy orthogonal data over.
-            device_ctx.rr_indexed_data[cost_index].T_linear = device_ctx.rr_indexed_data[ortho_cost_index].T_linear;
-            device_ctx.rr_indexed_data[cost_index].T_quadratic = device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic;
-            device_ctx.rr_indexed_data[cost_index].C_load = device_ctx.rr_indexed_data[ortho_cost_index].C_load;
+            indexed_data.T_linear = ortho_indexed_data.T_linear;
+            indexed_data.T_quadratic = ortho_indexed_data.T_quadratic;
+            indexed_data.C_load = ortho_indexed_data.C_load;
         }
     }
 }
 
-static void print_rr_index_info(const std::vector<t_segment_inf>& segment_inf) {
+static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.device();
 
+    std::ofstream out_file;
+
+    out_file.open(fname, std::ios_base::app);
+    out_file << std::left << std::setw(30) << "Cost Index";
+    out_file << std::left << std::setw(20) << "Base Cost";
+    out_file << std::left << std::setw(20) << "Ortho Cost Index";
+    out_file << std::left << std::setw(20) << "Seg Index";
+    out_file << std::left << std::setw(20) << "Inv. Length";
+    out_file << std::left << std::setw(20) << "T. Linear";
+    out_file << std::left << std::setw(20) << "T. Quadratic";
+    out_file << std::left << std::setw(20) << "C. Load" << std::endl;
     for (size_t cost_index = 0; cost_index < device_ctx.rr_indexed_data.size(); ++cost_index) {
         auto& index_data = device_ctx.rr_indexed_data[cost_index];
 
+        std::ostringstream string_stream;
+
         if (cost_index == SOURCE_COST_INDEX) {
-            VTR_LOG("Cost Index %zu SOURCE\n", cost_index);
+            string_stream << cost_index << " SOURCE";
         } else if (cost_index == SINK_COST_INDEX) {
-            VTR_LOG("Cost Index %zu SINK\n", cost_index);
+            string_stream << cost_index << " SINK";
         } else if (cost_index == OPIN_COST_INDEX) {
-            VTR_LOG("Cost Index %zu OPIN\n", cost_index);
+            string_stream << cost_index << " OPIN";
         } else if (cost_index == IPIN_COST_INDEX) {
-            VTR_LOG("Cost Index %zu IPIN\n", cost_index);
+            string_stream << cost_index << " IPIN";
         } else if (cost_index <= IPIN_COST_INDEX + segment_inf.size()) {
-            VTR_LOG("Cost Index %zu CHANX %s\n", cost_index, segment_inf[index_data.seg_index].name.c_str());
+            string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name.c_str();
         } else {
-            VTR_LOG("Cost Index %zu CHANY %s\n", cost_index, segment_inf[index_data.seg_index].name.c_str());
+            string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name.c_str();
         }
 
-        VTR_LOG("\tbase_cost=%g\n", index_data.base_cost);
-        VTR_LOG("\tortho_cost_index=%d\n", index_data.ortho_cost_index);
-        VTR_LOG("\tseg_index=%d\n", index_data.seg_index);
-        VTR_LOG("\tinv_length=%g\n", index_data.inv_length);
-        VTR_LOG("\tT_linear=%g\n", index_data.T_linear);
-        VTR_LOG("\tT_quadratic=%g\n", index_data.T_quadratic);
-        VTR_LOG("\tC_load=%g\n", index_data.C_load);
+        std::string cost_index_str = string_stream.str();
+
+        out_file << std::left << std::setw(30) << cost_index_str;
+        out_file << std::left << std::setw(20) << index_data.base_cost;
+        out_file << std::left << std::setw(20) << index_data.ortho_cost_index;
+        out_file << std::left << std::setw(20) << index_data.seg_index;
+        out_file << std::left << std::setw(20) << index_data.inv_length;
+        out_file << std::left << std::setw(20) << index_data.T_linear;
+        out_file << std::left << std::setw(20) << index_data.T_quadratic;
+        out_file << std::left << std::setw(20) << index_data.C_load << std::endl;
     }
+
+    out_file.close();
 }

@@ -2000,7 +2000,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
         .help(
-            "Controls the directedness of the the timing-driven router's exploration."
+            "Controls the directedness of the timing-driven router's exploration."
+            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+        .default_value("1.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_profiler_astar_fac, "--router_profiler_astar_fac")
+        .help(
+            "Controls the directedness of the timing-driven router's exploration"
+            " when doing router delay profiling."
+            " The router delay profiling step is currently used to calculate the place delay matrix lookup."
             " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
