@@ -49,19 +49,24 @@ class vector_map {
     typedef typename std::vector<V>::const_iterator const_iterator;
     typedef typename std::vector<V>::const_reverse_iterator const_reverse_iterator;
 
-  public: //Constructor
+  public: 
+    ///@brief Constructor
     template<typename... Args>
     vector_map(Args&&... args)
         : vec_(std::forward<Args>(args)...) {}
 
   public: //Accessors
-    //Iterators
+    ///@brief Returns an iterator referring to the first element in the map container.
     const_iterator begin() const { return vec_.begin(); }
+    ///@brief Returns an iterator referring to the past-the-end element in the map container.
     const_iterator end() const { return vec_.end(); }
+    ///@begin Returns a reverse iterator pointing to the last element in the container (i.e., its reverse beginning).
     const_reverse_iterator rbegin() const { return vec_.rbegin(); }
+    ///@brief Returns a reverse iterator pointing to the theoretical element right before the first element in the map container (which is considered its reverse end).
     const_reverse_iterator rend() const { return vec_.rend(); }
 
     //Indexing
+    ///@brief [] operator immutable
     const_reference operator[](const K n) const {
         size_t index = size_t(n);
 
@@ -76,6 +81,7 @@ class vector_map {
         return vec_[index];
     }
 
+    ///@brief Searches the container for an element with a key equivalent to k and returns an iterator to it if found, otherwise it returns an iterator to vector_map::end.
     const_iterator find(const K key) const {
         if (size_t(key) < vec_.size()) {
             return vec_.begin() + size_t(key);
@@ -84,39 +90,51 @@ class vector_map {
         }
     }
 
+    ///@brief Returns the number of elements in the container.
     std::size_t size() const { return vec_.size(); }
 
+    ///@brief Returns true if the container is empty
     bool empty() const { return vec_.empty(); }
 
+    ///@brief Returns true if the container contains key
     bool contains(const K key) const { return size_t(key) < vec_.size(); }
+    ///@brief Returns 1 if the container contains key, 0 otherwise
     size_t count(const K key) const { return contains(key) ? 1 : 0; }
 
   public: //Mutators
-    ///@brief Delegate potentially overloaded functions to the underlying vector with perfect forwarding
+    // Delegate potentially overloaded functions to the underlying vector with perfect forwarding
+    ///@brief push_back function
     template<typename... Args>
     void push_back(Args&&... args) { vec_.push_back(std::forward<Args>(args)...); }
 
+    ///@brief emplace_back function
     template<typename... Args>
     void emplace_back(Args&&... args) { vec_.emplace_back(std::forward<Args>(args)...); }
 
+    ///@brief resize function
     template<typename... Args>
     void resize(Args&&... args) { vec_.resize(std::forward<Args>(args)...); }
 
+    ///@brief clears the container
     void clear() { vec_.clear(); }
 
+    ///@brief Returns the capacity of the container
     size_t capacity() const { return vec_.capacity(); }
+    ///@brief Requests the container to reduce its capacity to fit its size.
     void shrink_to_fit() { vec_.shrink_to_fit(); }
 
-    //Iterators
+    ///@brief Returns an iterator referring to the first element in the map container.
     iterator begin() { return vec_.begin(); }
+    ///@brief Returns an iterator referring to the past-the-end element in the map container.
     iterator end() { return vec_.end(); }
 
-    //Indexing
+    ///@brief Indexing
     reference operator[](const K n) {
         VTR_ASSERT_SAFE_MSG(size_t(n) < vec_.size(), "Out-of-range index");
         return vec_[size_t(n)];
     }
 
+    ///@brief Returns an iterator to the first element in the container that compares equal to val. If no such element is found, the function returns end().
     iterator find(const K key) {
         if (size_t(key) < vec_.size()) {
             return vec_.begin() + size_t(key);
@@ -125,6 +143,7 @@ class vector_map {
         }
     }
 
+    ///@brief Extends the container by inserting new elements, effectively increasing the container size by the number of elements inserted.
     void insert(const K key, const V value) {
         if (size_t(key) >= vec_.size()) {
             //Resize so key is in range
@@ -135,6 +154,7 @@ class vector_map {
         operator[](key) = value;
     }
 
+    ///@brief Inserts the new key value pair in the container
     void update(const K key, const V value) { insert(key, value); }
 
     ///@brief Swap (this enables std::swap via ADL)

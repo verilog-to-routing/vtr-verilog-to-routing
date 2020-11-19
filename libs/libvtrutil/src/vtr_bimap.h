@@ -1,5 +1,18 @@
 #ifndef VTR_BIMAP
 #define VTR_BIMAP
+
+/**
+ * @file
+ * @brief The vtr_bimap.h header provides a bi-directonal mapping between key and value which means that it can be addressed by either the key or the value
+ *
+ * It provides this bi-directional feature for all the map-like containers defined in vtr:
+ *      - unordered map
+ *      - flat map
+ *      - linear map
+ * 
+ * One example where this container might be so useful is the mapping between the atom and clustered net Id. See atom_lookup.h
+ */
+
 #include <map>
 #include <unordered_map>
 #include "vtr_flat_map.h"
@@ -23,9 +36,17 @@ class bimap {
 
   public: //Accessors
     //Iterators
+
+    ///@brief Return an iterator to the begin of the map
     iterator begin() const { return map_.begin(); }
+
+    ///@brief Return an iterator to the end of the map
     iterator end() const { return map_.end(); }
+
+    ///@brief Return an iterator to the begin of the inverse map
     inverse_iterator inverse_begin() const { return inverse_map_.begin(); }
+
+    ///@brief Return an iterator to the end of the inverse map
     inverse_iterator inverse_end() const { return inverse_map_.end(); }
 
     ///@brief Return an iterator to the key-value pair matching key, or end() if not found

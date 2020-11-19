@@ -40,6 +40,7 @@ class NdMatrixProxy {
 
     NdMatrixProxy<T, N>& operator=(const NdMatrixProxy<T, N>& other) = delete;
 
+    ///@brief const [] operator
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
         VTR_ASSERT_SAFE_MSG(dim_sizes_[1] > 0, "Can not index into zero-sized dimension");
@@ -51,6 +52,7 @@ class NdMatrixProxy {
             start_ + dim_strides_[0] * index); // Advance to index in this dimension
     }
 
+    ///@brief [] operator
     NdMatrixProxy<T, N - 1> operator[](size_t index) {
         // Call the const version and cast-away constness
         return const_cast<const NdMatrixProxy<T, N>*>(this)->operator[](index);
@@ -66,6 +68,13 @@ class NdMatrixProxy {
 template<typename T>
 class NdMatrixProxy<T, 1> {
   public:
+    /**
+     * @brief Construct a 1-d matrix proxy object
+     *
+     *    @param dim_sizes: Array of dimension sizes
+     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *    @param  start: Pointer to the start of the sub-matrix this proxy represents
+     */
     NdMatrixProxy<T, 1>(const size_t* dim_sizes, const size_t* dim_stride, T* start)
         : dim_sizes_(dim_sizes)
         , dim_strides_(dim_stride)
@@ -73,6 +82,7 @@ class NdMatrixProxy<T, 1> {
 
     NdMatrixProxy<T, 1>& operator=(const NdMatrixProxy<T, 1>& other) = delete;
 
+    ///@brief const [] operator
     const T& operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
@@ -81,6 +91,7 @@ class NdMatrixProxy<T, 1> {
         return start_[index];
     }
 
+    ///@brief [] operator
     T& operator[](size_t index) {
         // Call the const version and cast-away constness
         return const_cast<T&>(const_cast<const NdMatrixProxy<T, 1>*>(this)->operator[](index));
@@ -99,6 +110,7 @@ class NdMatrixProxy<T, 1> {
         return start_;
     }
 
+    ///@brief same as above but allow update the value
     T* data() {
         // Call the const version and cast-away constness
         return const_cast<T*>(const_cast<const NdMatrixProxy<T, 1>*>(this)->data());
@@ -190,12 +202,13 @@ class NdMatrixBase {
         return dim_sizes_[i];
     }
 
-    ///@brief Flat accessors of NdMatrix
+    ///@brief const Flat accessors of NdMatrix
     const T& get(size_t i) const {
         VTR_ASSERT_SAFE(i < size_);
         return data_[i];
     }
 
+    ///@brief Flat accessors of NdMatrix
     T& get(size_t i) {
         VTR_ASSERT_SAFE(i < size_);
         return data_[i];

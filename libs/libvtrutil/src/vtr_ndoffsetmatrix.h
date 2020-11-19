@@ -14,14 +14,21 @@ namespace vtr {
  */
 class DimRange {
   public:
+    ///@brief default constructor
     DimRange() = default;
+
+    ///@brief a constructor with begin_index, end_index
     DimRange(size_t begin, size_t end)
         : begin_index_(begin)
         , end_index_(end) {}
 
+    ///@brief Return the begin index
     size_t begin_index() const { return begin_index_; }
+
+    ///@brief Return the end index
     size_t end_index() const { return end_index_; }
 
+    ///@brief Return the size
     size_t size() const { return end_index_ - begin_index_; }
 
   private:
@@ -61,12 +68,13 @@ class NdOffsetMatrixProxy {
         , dim_stride_(dim_stride)
         , start_(start) {}
 
+    ///@brief const [] operator
     const NdOffsetMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(index >= dim_ranges_[idim_].begin_index(), "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < dim_ranges_[idim_].end_index(), "Index out of range (above dimension maximum)");
 
-        /**
-         * @brief Calculate the effective index
+        /*
+         * Calculate the effective index
          *
          * The elements are stored in zero-indexed form, so we need to adjust
          * for any non-zero minimum index
@@ -83,6 +91,7 @@ class NdOffsetMatrixProxy {
                                              start_ + dim_stride_ * effective_index); //Advance to index in this dimension
     }
 
+    ///@brief [] operator
     NdOffsetMatrixProxy<T, N - 1> operator[](size_t index) {
         //Call the const version and cast-away constness
         return const_cast<const NdOffsetMatrixProxy<T, N>*>(this)->operator[](index);
@@ -99,12 +108,20 @@ class NdOffsetMatrixProxy {
 template<typename T>
 class NdOffsetMatrixProxy<T, 1> {
   public:
+    /**
+     * @brief Construct a matrix proxy object
+     *
+     *     - dim_ranges: Array of DimRange objects
+     *     - dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *     - start: Pointer to the start of the sub-matrix this proxy represents
+     */
     NdOffsetMatrixProxy<T, 1>(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
         : dim_ranges_(dim_ranges)
         , idim_(idim)
         , dim_stride_(dim_stride)
         , start_(start) {}
 
+    ///@brief const [] operator
     const T& operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(dim_stride_ == 1, "Final dimension must have stride 1");
         VTR_ASSERT_SAFE_MSG(index >= dim_ranges_[idim_].begin_index(), "Index out of range (below dimension minimum)");
@@ -118,6 +135,7 @@ class NdOffsetMatrixProxy<T, 1> {
         return start_[effective_index];
     }
 
+    ///@brief [] operator
     T& operator[](size_t index) {
         //Call the const version and cast-away constness
         return const_cast<T&>(const_cast<const NdOffsetMatrixProxy<T, 1>*>(this)->operator[](index));
@@ -297,7 +315,7 @@ class NdOffsetMatrixBase {
     }
 
   private:
-    ///@brief Allocate space for all the elements
+    // Allocate space for all the elements
     void alloc() {
         data_ = std::make_unique<T[]>(size());
     }
@@ -357,7 +375,7 @@ class NdOffsetMatrix : public NdOffsetMatrixBase<T, N> {
     static_assert(N >= 2, "Minimum dimension 2");
 
   public:
-    //Use the base constructors
+    ///@brief Use the base constructors
     using NdOffsetMatrixBase<T, N>::NdOffsetMatrixBase;
 
   public:
@@ -373,8 +391,8 @@ class NdOffsetMatrix : public NdOffsetMatrixBase<T, N> {
         VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
-        /**
-         * @brief Clacluate the effective index
+        /*
+         * Clacluate the effective index
          * 
          * The elements are stored in zero-indexed form, so adjust for any
          * non-zero minimum index in this dimension

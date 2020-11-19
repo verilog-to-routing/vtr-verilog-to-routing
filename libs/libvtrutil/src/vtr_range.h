@@ -40,14 +40,21 @@ namespace vtr {
 template<typename T>
 class Range {
   public:
+    ///@brief constructor
     Range(T b, T e)
         : begin_(b)
         , end_(e) {}
+    ///@brief Return an iterator to the start of the range
     T begin() { return begin_; }
+    ///@brief Return an iterator to the end of the range
     T end() { return end_; }
+    ///@brief Return an iterator to the start of the range (immutable)
     const T begin() const { return begin_; }
+    ///@brief Return an iterator to the end of the range (immutable)
     const T end() const { return end_; }
+    ///@brief Return true if empty
     bool empty() { return begin_ == end_; }
+    ///@brief Return the range size
     size_t size() { return std::distance(begin_, end_); }
 
   private:

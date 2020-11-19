@@ -50,12 +50,6 @@ std::string join(std::initializer_list<T> list, std::string delim);
 template<typename Container>
 void uniquify(Container container);
 
-/**
- * @brief Legacy c-style function replacements.
- *
- * Typically these add extra error checking
- * and/or correct 'unexpected' behaviour of the standard c-functions
- */
 constexpr size_t bufsize = 32768; /* Maximum line length for various parsing proc. */
 char* strncpy(char* dest, const char* src, size_t size);
 char* strdup(const char* str);
@@ -85,7 +79,7 @@ extern std::string out_file_prefix;
 std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum);
 
 /**
- * @brief Template implementations
+ * @brief Template join function implementation
  */
 template<typename Iter>
 std::string join(Iter begin, Iter end, std::string delim) {
@@ -109,6 +103,11 @@ std::string join(std::initializer_list<T> list, std::string delim) {
     return join(list.begin(), list.end(), delim);
 }
 
+/**
+ * @brief Template uniquify function implementation
+ *
+ * Removes repeated elements in the container
+ */
 template<typename Container>
 void uniquify(Container container) {
     std::sort(container.begin(), container.end());

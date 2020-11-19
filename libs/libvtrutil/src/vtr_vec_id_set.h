@@ -29,12 +29,17 @@ class vec_id_set {
     typedef typename std::vector<T>::const_iterator const_iterator;
     typedef const_iterator iterator;
 
+    ///@brief Returns an iterator to the first element in the sequence
     auto begin() const { return vec_.begin(); }
+    ///@brief Returns an iterator referring to the past-the-end element in the vector container
     auto end() const { return vec_.end(); }
 
+    ///@brief Returns a constant iterator to the first element in the sequence
     auto cbegin() const { return vec_.cbegin(); }
+    ///@brief Returns a constant iterator referring to the past-the-end element in the vector container
     auto cend() const { return vec_.cend(); }
 
+    ///@brief Insert val in the set
     bool insert(T val) {
         if (count(val)) { //Already inserted
             return false;
@@ -53,6 +58,7 @@ class vec_id_set {
         return true;
     }
 
+    ///@brief Iterators specifying a range of elements. Copies of the elements in the range [first,last) are inserted in the container.
     template<typename Iter>
     void insert(Iter first, Iter last) {
         size_t nelem = std::distance(first, last);
@@ -64,6 +70,7 @@ class vec_id_set {
         }
     }
 
+    ///@brief Count elements with a specific value
     size_t count(T val) const {
         if (size_t(val) < contained_.size()) {
             //Value is with-in range of previously inserted
@@ -73,14 +80,17 @@ class vec_id_set {
         return 0;
     }
 
+    ///@brief Returns the size of the container
     size_t size() const {
         return vec_.size();
     }
 
+    ///@brief Sort elements in the container
     void sort() {
         std::sort(vec_.begin(), vec_.end());
     }
 
+    ///@bried Clears the container
     void clear() {
         vec_.clear();
         contained_.clear();

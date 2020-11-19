@@ -1,4 +1,8 @@
+#ifndef VTR_STRING_INTERNING_H_
+#define VTR_STRING_INTERNING_H_
+
 /**
+ * @file
  * @brief  Provides basic string interning, along with pattern splitting suitable for use with FASM.
  * 
  *  For reference, string interning refers to keeping a unique copy of a string
@@ -38,9 +42,6 @@
  *     reference back to the string_internment object is to keep their memory
  *     footprint lower.
  */
-#ifndef VTR_STRING_INTERNING_H_
-#define VTR_STRING_INTERNING_H_
-
 #include <cstring>
 #include <string>
 #include <vector>
@@ -56,12 +57,13 @@
 
 namespace vtr {
 
+
 // Forward declare classes for pointers.
 class string_internment;
 class interned_string;
 class interned_string_less;
 
-///@brief  StrongId for identifying unique string pieces.
+// StrongId for identifying unique string pieces.
 struct interned_string_tag;
 typedef StrongId<interned_string_tag> StringId;
 
@@ -70,9 +72,9 @@ typedef StrongId<interned_string_tag> StringId;
  *
  * To keep interned_string memory footprint lower and flexible, these values
  * control the size of the storage used.
+ *
+ * Number of bytes to represent the StringId.  This implies a maximum number of unique strings available equal to (1 << (kBytesPerId*CHAR_BIT)).
  */
-
-///@brief Number of bytes to represent the StringId.  This implies a maximum number of unique strings available equal to (1 << (kBytesPerId*CHAR_BIT)).
 constexpr size_t kBytesPerId = 3;
 ///@brief Maximum number of splits to accomidate before just interning the entire string.
 constexpr size_t kMaxParts = 3;
@@ -143,10 +145,12 @@ class interned_string_iterator {
     vtr::string_view view_;
 };
 
+///@brief == operator
 inline bool operator==(const interned_string_iterator& lhs, const interned_string_iterator& rhs) {
     return lhs.internment_ == rhs.internment_ && lhs.num_parts_ == rhs.num_parts_ && lhs.parts_ == rhs.parts_ && lhs.part_idx_ == rhs.part_idx_ && lhs.str_idx_ == rhs.str_idx_ && lhs.view_ == rhs.view_;
 }
 
+///@brief != operator
 inline bool operator!=(const interned_string_iterator& lhs, const interned_string_iterator& rhs) {
     return !(lhs == rhs);
 }
@@ -160,11 +164,14 @@ inline bool operator!=(const interned_string_iterator& lhs, const interned_strin
  */
 class bound_interned_string {
   public:
+    ///@brief constructor
     bound_interned_string(const string_internment* internment, const interned_string* str)
         : internment_(internment)
         , str_(str) {}
 
+    ///@brief return an iterator to the first part of the interned_string
     interned_string_iterator begin() const;
+    ///@brief return an iterator to the last part of the interned_string
     interned_string_iterator end() const;
 
   private:
@@ -181,6 +188,7 @@ class bound_interned_string {
  */
 class interned_string {
   public:
+    ///@brief constructor
     interned_string(std::array<StringId, kMaxParts> intern_ids, size_t n) {
         std::fill(storage_.begin(), storage_.end(), 0);
         set_num_parts(n);
@@ -219,6 +227,7 @@ class interned_string {
         return bound_interned_string(internment, this);
     }
 
+    ///@brief begin() function
     interned_string_iterator begin(const string_internment* internment) const {
         size_t n = num_parts();
         std::array<StringId, kMaxParts> intern_ids;
@@ -230,14 +239,18 @@ class interned_string {
         return interned_string_iterator(internment, intern_ids, n);
     }
 
+    ///@brief end() function
     interned_string_iterator end() const {
         return interned_string_iterator();
     }
 
+    ///@brief == operator
     friend bool operator==(interned_string lhs,
                            interned_string rhs) noexcept;
+    ///@brief != operator
     friend bool operator!=(interned_string lhs,
                            interned_string rhs) noexcept;
+    ///@brief hash function
     friend std::hash<interned_string>;
     friend interned_string_less;
 
@@ -288,26 +301,37 @@ class interned_string {
     std::array<uint8_t, kSizeSize + kMaxParts * kBytesPerId> storage_;
 };
 
+///@brief == operator
 inline bool operator==(interned_string lhs,
                        interned_string rhs) noexcept {
     return lhs.storage_ == rhs.storage_;
 }
+
+///@brief != operator
 inline bool operator!=(interned_string lhs,
                        interned_string rhs) noexcept {
     return lhs.storage_ != rhs.storage_;
 }
+
+///@brief < operator
 inline bool operator<(bound_interned_string lhs,
                       bound_interned_string rhs) noexcept {
     return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
+
+///@brief >= operator
 inline bool operator>=(bound_interned_string lhs,
                        bound_interned_string rhs) noexcept {
     return !std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
+
+///@brief > operator
 inline bool operator>(bound_interned_string lhs,
                       bound_interned_string rhs) noexcept {
     return rhs < lhs;
 }
+
+///@brief <= operator
 inline bool operator<=(bound_interned_string lhs,
                        bound_interned_string rhs) noexcept {
     return rhs >= lhs;
@@ -393,6 +417,11 @@ class string_internment {
     std::unordered_map<std::string, StringId> string_to_id_;
 };
 
+/**
+ * @brief Copy the underlying string into output.
+ *
+ * internment must the object that generated this interned_string.
+ */
 inline void interned_string::get(const string_internment* internment, std::string* output) const {
     // Implements
     // kSplitChar.join(interned_string->get_string(id(idx)) for idx in range(num_parts())));
@@ -416,6 +445,12 @@ inline void interned_string::get(const string_internment* internment, std::strin
     }
 }
 
+/**
+ * @brief constructor for interned string iterator.
+ *
+ * Do no construct this iterator directly.  Use either
+ * bound_interned_string::begin/end or interned_string;:begin/end.
+ */
 inline interned_string_iterator::interned_string_iterator(const string_internment* internment, std::array<StringId, kMaxParts> intern_ids, size_t n)
     : internment_(internment)
     , num_parts_(n)
@@ -429,6 +464,7 @@ inline interned_string_iterator::interned_string_iterator(const string_internmen
     }
 }
 
+///@brief Increment operator for interned_string_iterator
 inline interned_string_iterator& interned_string_iterator::operator++() {
     if (num_parts_ == size_t(-1)) {
         throw std::out_of_range("Invalid iterator");
@@ -463,6 +499,7 @@ inline interned_string_iterator& interned_string_iterator::operator++() {
     return *this;
 }
 
+///@brief Increment operator for interned_string_iterator
 inline interned_string_iterator interned_string_iterator::operator++(int) {
     interned_string_iterator prev = *this;
     ++*this;
@@ -470,10 +507,12 @@ inline interned_string_iterator interned_string_iterator::operator++(int) {
     return prev;
 }
 
+///@brief return an iterator to the first part of the interned_string
 inline interned_string_iterator bound_interned_string::begin() const {
     return str_->begin(internment_);
 }
 
+///@brief return an iterator to the last part of the interned_string
 inline interned_string_iterator bound_interned_string::end() const {
     return interned_string_iterator();
 }
@@ -485,8 +524,12 @@ inline std::ostream& operator<<(std::ostream& os, bound_interned_string const& v
     return os;
 }
 
+/**
+ * @brief A friend class to interned_string that compares 2 interned_strings
+ */
 class interned_string_less {
   public:
+    ///@brief Return true if the first interned string is less than the second one
     bool operator()(const vtr::interned_string& lhs, const vtr::interned_string& rhs) const {
         return lhs.storage_ < rhs.storage_;
     }
@@ -495,6 +538,12 @@ class interned_string_less {
 } // namespace vtr
 
 namespace std {
+/**
+ * @brief Hash function for the interned_string 
+ *
+ * It is defined as a friend function to interned_string class.
+ * It returns a unique hash for every interned_string.
+ */
 template<>
 struct hash<vtr::interned_string> {
     std::size_t operator()(vtr::interned_string const& s) const noexcept {

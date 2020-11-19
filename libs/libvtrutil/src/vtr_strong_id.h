@@ -2,8 +2,6 @@
 #define VTR_STRONG_ID_H
 /**
  * @file
- * @author 
- * @date 2020-11-04
  * @brief This header provides the StrongId class.
  *
  * It is template which can be used to create strong Id's 
@@ -151,12 +149,12 @@
 
 namespace vtr {
 
-///@briefForward declare the class (needed for operator declarations)
+// Forward declare the class (needed for operator declarations)
 template<typename tag, typename T, T sentinel>
 class StrongId;
 
-/**
- * @brief Forward declare the equality/inequality operators
+/*
+ * Forward declare the equality/inequality operators
  *
  * We need to do this before the class definition so the class can
  * friend them
@@ -187,7 +185,7 @@ class StrongId {
     explicit constexpr StrongId(T id)
         : id_(id) {}
 
-    ///@brief Allow some explicit conversion to useful types:
+    // Allow some explicit conversion to useful types:
 
     ///@brief Allow explicit conversion to bool (e.g. if(id))
     explicit operator bool() const { return *this != INVALID(); }
@@ -205,24 +203,28 @@ class StrongId {
      * after the function name (i.e. <>)
      */
     friend bool operator== <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    ///@brief != operator
     friend bool operator!= <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    ///@brief < operator
     friend bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
 
   private:
     T id_;
 };
 
+///@brief == operator
 template<typename tag, typename T, T sentinel>
 bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
     return lhs.id_ == rhs.id_;
 }
 
+///@brief != operator
 template<typename tag, typename T, T sentinel>
 bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
     return !(lhs == rhs);
 }
 
-///@brief Needed for std::map-like containers
+///@brief operator < Needed for std::map-like containers
 template<typename tag, typename T, T sentinel>
 bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
     return lhs.id_ < rhs.id_;

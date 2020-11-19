@@ -15,8 +15,6 @@
 
 /**
  * @file
- * @author  
- * @date    2020-11-03
  * @brief   This file implements an expressopn evaluator
  *
  * The expression evaluator is capable of performing many operations on given variables, 
@@ -39,19 +37,26 @@ namespace vtr {
 
 /**** Structs ****/
 
+////@brief a class to hold the formula data
 class t_formula_data {
   public:
+    ///@brief clears all the formula data
     void clear() {
         vars_.clear();
     }
 
+    ///@brief set the value of a specific part of the formula
     void set_var_value(vtr::string_view var, int value) { vars_[var] = value; }
+
+    ///@brief set the value of a specific part of the formula (the var can be c-style string)
     void set_var_value(const char* var, int value) { vars_[vtr::string_view(var)] = value; }
 
+    ///@brief get the value of a specific part of the formula
     int get_var_value(const std::string& var) const {
         return get_var_value(vtr::string_view(var.data(), var.size()));
     }
 
+    ///@brief get the value of a specific part of the formula (the var can be c-style string)
     int get_var_value(vtr::string_view var) const {
         auto iter = vars_.find(var);
         if (iter == vars_.end()) {
@@ -140,10 +145,12 @@ class Formula_Object {
         u_Data() { memset(this, 0, sizeof(u_Data)); }
     } data;
 
+    ///@brief constructor
     Formula_Object() {
         this->type = E_FML_UNDEFINED;
     }
 
+    ///@brief convert enum to string
     std::string to_string() const {
         if (type == E_FML_NUMBER || type == E_FML_VARIABLE) {
             return std::to_string(data.num);
@@ -199,6 +206,7 @@ class Formula_Object {
     }
 };
 
+///@brief A class to parse formula
 class FormulaParser {
   public:
     FormulaParser() = default;
@@ -217,7 +225,7 @@ class FormulaParser {
   private:
     std::vector<Formula_Object> rpn_output_;
 
-    ///@brief stack for handling operators and brackets in formula
+    // stack for handling operators and brackets in formula
     std::stack<Formula_Object> op_stack_;
 };
 

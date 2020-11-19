@@ -36,6 +36,7 @@ class Timer {
     constexpr static float BYTE_TO_MIB = 1024 * 1024;
 };
 
+///@brief Scoped time class which prints the time elapsed for the specifid action
 class ScopedActionTimer : public Timer {
   public:
     ScopedActionTimer(const std::string action);

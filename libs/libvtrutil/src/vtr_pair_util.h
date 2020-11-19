@@ -16,20 +16,32 @@ class pair_first_iter {
     using pointer = value_type*;
     using reference = value_type&;
 
+    ///@brief constructor
     pair_first_iter(PairIter init)
         : iter_(init) {}
+
+    ///@brief increment operator (++)
     auto operator++() {
         iter_++;
         return *this;
     }
+
+    ///@brief decrement operator (\-\-)
     auto operator--() {
         iter_--;
         return *this;
     }
+
+    ///@brief dereference * operator
     auto operator*() { return iter_->first; }
+
+    ///@brief -> operator
     auto operator-> () { return &iter_->first; }
 
+    ///@brief == operator
     friend bool operator==(const pair_first_iter lhs, const pair_first_iter rhs) { return lhs.iter_ == rhs.iter_; }
+
+    ///@brief != operator
     friend bool operator!=(const pair_first_iter lhs, const pair_first_iter rhs) { return !(lhs == rhs); }
 
   private:
@@ -48,20 +60,32 @@ class pair_second_iter {
     using pointer = value_type*;
     using reference = value_type&;
 
+    ///@brief constructor
     pair_second_iter(PairIter init)
         : iter_(init) {}
+
+    ///@brief increment operator (++)
     auto operator++() {
         iter_++;
         return *this;
     }
+    
+    ///@brief decrement operator (--)
     auto operator--() {
         iter_--;
         return *this;
     }
+
+    ///@brief dereference * operator
     auto operator*() { return iter_->second; }
+
+    ///@brief -> operator
     auto operator-> () { return &iter_->second; }
 
+    ///@brief == operator
     friend bool operator==(const pair_second_iter lhs, const pair_second_iter rhs) { return lhs.iter_ == rhs.iter_; }
+
+    ///@brief != operator
     friend bool operator!=(const pair_second_iter lhs, const pair_second_iter rhs) { return !(lhs == rhs); }
 
   private:

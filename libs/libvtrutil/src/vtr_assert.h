@@ -1,12 +1,12 @@
 #ifndef VTR_ASSERT_H
 #define VTR_ASSERT_H
-/*
+
+/**
  * @file
- * @author
- * @data 2020-11-03
- * @brief The header defines useful assertion macros for VTR projects.
+ * @brief The header vtr_assert.h defines useful assertion macros for VTR projects.
  *
  * Four types of assertions are defined:
+ *
  *      VTR_ASSERT_OPT   - low overhead assertions that should always be enabled
  *      VTR_ASSERT       - medium overhead assertions that are usually be enabled
  *      VTR_ASSERT_SAFE  - high overhead assertions typically enabled only for debugging
@@ -24,16 +24,15 @@
  *      VTR_ASSERT_LEVEL == 1: VTR_ASSERT_OPT enabled
  *      VTR_ASSERT_LEVEL == 0: No assertion checking enabled
  *
- * Note that an assertion levels beyond 4 are currently treated the same as level 4
+ * @Note that an assertion levels beyond 4 are currently treated the same as level 4
  */
 
-
-///@brief Set a default assertion level if none is specified
+// brief Set a default assertion level if none is specified
 #ifndef VTR_ASSERT_LEVEL
-#    define VTR_ASSERT_LEVEL 2
+#    define VTR_ASSERT_LEVEL 2 
 #endif
 
-///@brief Enable the assertions based on the specified level
+// Enable the assertions based on the specified level
 #if VTR_ASSERT_LEVEL >= 4
 #    define VTR_ASSERT_DEBUG_ENABLED
 #endif
@@ -50,7 +49,7 @@
 #    define VTR_ASSERT_OPT_ENABLED
 #endif
 
-///@brief Define the user assertion macros
+// Define the user assertion macros
 #ifdef VTR_ASSERT_DEBUG_ENABLED
 #    define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL(expr, nullptr)
 #    define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)

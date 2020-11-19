@@ -20,8 +20,11 @@ std::string out_file_prefix;     /* used by fopen */
 static int file_line_number = 0; /* file in line number being parsed (used by fgets) */
 static int cont;                 /* line continued? (used by strtok)*/
 
-//Splits the string 'text' along the specified delimiter characters in 'delims'
-//The split strings (excluding the delimiters) are returned
+/**
+ * @brief Splits the c-style string 'text' along the specified delimiter characters in 'delims'
+ *
+ * The split strings (excluding the delimiters) are returned
+ */
 std::vector<std::string> split(const char* text, const std::string delims) {
     if (text) {
         std::string text_str(text);
@@ -30,6 +33,11 @@ std::vector<std::string> split(const char* text, const std::string delims) {
     return std::vector<std::string>();
 }
 
+/**
+ * @brief Splits the string 'text' along the specified delimiter characters in 'delims'
+ *
+ * The split strings (excluding the delimiters) are returned
+ */
 std::vector<std::string> split(const std::string& text, const std::string delims) {
     std::vector<std::string> tokens;
 
@@ -62,6 +70,7 @@ std::vector<std::string> split(const std::string& text, const std::string delims
     return tokens;
 }
 
+///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace) {
     auto pos = input.find(search);
 
@@ -72,6 +81,7 @@ std::string replace_first(const std::string& input, const std::string& search, c
     return output;
 }
 
+///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
 std::string replace_all(const std::string& input, const std::string& search, const std::string& replace) {
     std::string output;
 
@@ -90,12 +100,12 @@ std::string replace_all(const std::string& input, const std::string& search, con
     return output;
 }
 
-//Retruns true if str starts with prefix
+///@brief Retruns true if str starts with prefix
 bool starts_with(std::string str, std::string prefix) {
     return str.find(prefix) == 0;
 }
 
-//Returns a std::string formatted using a printf-style format string
+///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...) {
     // Make a variable argument list
     va_list va_args;
@@ -112,8 +122,7 @@ std::string string_fmt(const char* fmt, ...) {
     return str;
 }
 
-//Returns a std::string formatted using a printf-style format string taking
-//an explicit va_list
+///@brief Returns a std::string formatted using a printf-style format string taking an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
     // We need to copy the args so we don't change them before the true formating
     va_list va_args_copy;
@@ -143,8 +152,7 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     return std::string(buf.get(), len);
 }
 
-/* An alternate for strncpy since strncpy doesn't work as most
- * people would expect. This ensures null termination */
+///@brief An alternate for strncpy since strncpy doesn't work as most people would expect. This ensures null termination 
 char* strncpy(char* dest, const char* src, size_t size) {
     /* Find string's length */
     size_t len = std::strlen(src);
@@ -162,6 +170,12 @@ char* strncpy(char* dest, const char* src, size_t size) {
     return dest;
 }
 
+/**
+ * @brief Legacy c-style function replacements.
+ *
+ * Typically these add extra error checking
+ * and/or correct 'unexpected' behaviour of the standard c-functions
+ */
 char* strdup(const char* str) {
     if (str == nullptr) {
         return nullptr;
@@ -173,6 +187,12 @@ char* strdup(const char* str) {
     ;
 }
 
+/**
+ * @brief Legacy c-style function replacements.
+ *
+ * Typically these add extra error checking
+ * and/or correct 'unexpected' behaviour of the standard c-functions
+ */
 template<class T>
 T atoT(const std::string& value, const std::string& type_name) {
     //The c version of atof doesn't catch errors.
@@ -193,31 +213,58 @@ T atoT(const std::string& value, const std::string& type_name) {
     return val;
 }
 
+/**
+ * @brief Legacy c-style function replacements.
+ *
+ * Typically these add extra error checking
+ * and/or correct 'unexpected' behaviour of the standard c-functions
+ */
 int atoi(const std::string& value) {
     return atoT<int>(value, "int");
 }
 
+/**
+ * @brief Legacy c-style function replacements.
+ *
+ * Typically these add extra error checking
+ * and/or correct 'unexpected' behaviour of the standard c-functions
+ */
 double atod(const std::string& value) {
     return atoT<double>(value, "double");
 }
 
+/**
+ * @brief Legacy c-style function replacements.
+ *
+ * Typically these add extra error checking
+ * and/or correct 'unexpected' behaviour of the standard c-functions
+ */
 float atof(const std::string& value) {
     return atoT<float>(value, "float");
 }
 
+/**
+ * @brief Legacy c-style function replacements.
+ *
+ * Typically these add extra error checking
+ * and/or correct 'unexpected' behaviour of the standard c-functions
+ */
 unsigned atou(const std::string& value) {
     return atoT<unsigned>(value, "unsigned int");
 }
 
+/**
+ * @brief Get next token, and wrap to next line if \ at end of line.    
+ *
+ * There is a bit of a "gotcha" in strtok.  It does not make a   *
+ * copy of the character array which you pass by pointer on the  
+ * first call.  Thus, you must make sure this array exists for   
+ * as long as you are using strtok to parse that line.  Don't    
+ * use local buffers in a bunch of subroutines calling each      
+ * other; the local buffer may be overwritten when the stack is  
+ * restored after return from the subroutine.                    
+ */
 char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf) {
-    /* Get next token, and wrap to next line if \ at end of line.    *
-     * There is a bit of a "gotcha" in strtok.  It does not make a   *
-     * copy of the character array which you pass by pointer on the  *
-     * first call.  Thus, you must make sure this array exists for   *
-     * as long as you are using strtok to parse that line.  Don't    *
-     * use local buffers in a bunch of subroutines calling each      *
-     * other; the local buffer may be overwritten when the stack is  *
-     * restored after return from the subroutine.                    */
 
     char* val;
 
@@ -234,6 +281,7 @@ char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf) {
     }
 }
 
+///@brief The legacy fopen function with extra error checking
 FILE* fopen(const char* fname, const char* flag) {
     FILE* fp;
     size_t Len;
@@ -263,17 +311,21 @@ FILE* fopen(const char* fname, const char* flag) {
     return (fp);
 }
 
+///@brief The legacy fclose function
 int fclose(FILE* f) {
     return std::fclose(f);
 }
 
+/**
+ * @brief Get an input line, update the line number and cut off any comment part.
+ *
+ * A \ at the end of a line with no comment part (#) means continue. 
+ * vtr::fgets should give
+ * identical results for Windows (\r\n) and Linux (\n) 
+ * newlines, since it replaces each carriage return \r
+ * by a newline character \n.  Returns NULL after EOF.
+ */
 char* fgets(char* buf, int max_size, FILE* fp) {
-    /* Get an input line, update the line number and cut off *
-     * any comment part.  A \ at the end of a line with no   *
-     * comment part (#) means continue. vtr::fgets should give *
-     * identical results for Windows (\r\n) and Linux (\n)   *
-     * newlines, since it replaces each carriage return \r   *
-     * by a newline character \n.  Returns NULL after EOF.     */
 
     int ch;
     int i;
@@ -324,9 +376,7 @@ char* fgets(char* buf, int max_size, FILE* fp) {
     return nullptr;
 }
 
-/*
- * Returns line number of last opened and read file
- */
+///@brief Returns line number of last opened and read file
 int get_file_line_number_of_last_opened_file() {
     return file_line_number;
 }
@@ -347,16 +397,15 @@ bool file_exists(const char* filename) {
 }
 
 /* Date:July 17th, 2013
- * Author: Daniel Chen
- * Purpose: Checks the file extension of an file to ensure
- *            correct file format. Returns true if format is
- *            correct, and false otherwise.
- * Note:    This is probably a fragile check, but at least
- *            should prevent common problems such as swapping
- *            architecture file and blif file on the VPR
- *            command line.
+ * Author: Daniel Chen */
+/**
+ * @brief Checks the file extension of an file to ensure correct file format. 
+ *
+ * Returns true if format is correct, and false otherwise.
+ * @note This is probably a fragile check, but at least should 
+ * prevent common problems such as swapping architecture file 
+ * and blif file on the VPR command line.
  */
-
 bool check_file_name_extension(const char* file_name,
                                const char* file_extension) {
     const char* str;
@@ -371,6 +420,9 @@ bool check_file_name_extension(const char* file_name,
     return true;
 }
 
+/**
+ * @brief Legacy ReadLine Tokening
+ */
 std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum) {
     std::unique_ptr<char[]> buf(new char[vtr::bufsize]);
 
@@ -381,6 +433,7 @@ std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum) {
     return vtr::split(line);
 }
 
+///@brief Returns pid if os is unix, -1 otherwise.
 int get_pid() {
 #if defined(__unix__)
     return getpid();

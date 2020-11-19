@@ -6,10 +6,21 @@ namespace vtr {
 /*********************** Portable random number generators *******************/
 typedef unsigned RandState;
 
+/**
+ * @brief The pseudo-random number generator is initialized using the argument passed as seed.
+ */
 void srandom(int seed);
+
+///@brief Return The random number generator state
 RandState get_random_state();
+
+///@brief Return a randomly generated integer less than or equal imax
 int irand(int imax);
+
+///@brief Return a randomly generated integer less than or equal imax using the generator (rand_state)
 int irand(int imax, RandState& rand_state);
+
+///@brief Return a randomly generated float number between [0,1]
 float frand();
 
 /**

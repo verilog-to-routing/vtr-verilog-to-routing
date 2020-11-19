@@ -64,8 +64,8 @@ T* chunk_new(t_chunk* chunk_info) {
 template<typename T>
 void chunk_delete(T* obj, t_chunk* /*chunk_info*/) {
     if (obj) {
-        obj->~T(); ///@brief Manually call destructor
-        ///@brief Currently we don't mark the unused memory as free
+        obj->~T(); // Manually call destructor
+        // Currently we don't mark the unused memory as free
     }
 }
 
