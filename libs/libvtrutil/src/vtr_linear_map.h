@@ -54,12 +54,12 @@ class linear_map {
         : vec_(num_keys, std::make_pair(sentinel(), T())) //Initialize all with sentinel values
     {}
 
-    ///@brief Return an iterator to the first element 
+    ///@brief Return an iterator to the first element
     iterator begin() { return vec_.begin(); }
 
     ///@brief Return a constant iterator to the first element
     const_iterator begin() const { return vec_.begin(); }
-    
+
     ///@brief Return an iterator to the last element
     iterator end() { return vec_.end(); }
 
@@ -228,7 +228,7 @@ class linear_map {
     size_type count(const key_type& key) const {
         return (find(key) == end()) ? 0 : 1;
     }
-    
+
     ///@brief Returns an iterator pointing to the first element in the range [first,last) which does not compare less than val.
     iterator lower_bound(const key_type& key) {
         const_iterator const_iter = const_cast<const linear_map*>(this)->lower_bound(key);
@@ -283,20 +283,20 @@ class linear_map {
 
   private:
     iterator convert_to_iterator(const_iterator const_iter) {
-    /*
-     * This is a work around for the fact that there is no conversion between a const_iterator and iterator.
-     * 
-     * We intiailize i to the start of the container and then advance it by
-     * the distance to const_iter. The resulting i points to the same element
-     * as const_iter
-     *
-     * Note that to be able to call std::distance with an iterator and
-     * const_iterator we need to specify the type as const_iterator (relying
-     * on the implicit conversion from iterator to const_iterator for i)
-     *
-     * Since the iterators are really vector (i.e. random-access) iterators
-     * both distance and advance take constant time
-     */
+        /*
+         * This is a work around for the fact that there is no conversion between a const_iterator and iterator.
+         * 
+         * We intiailize i to the start of the container and then advance it by
+         * the distance to const_iter. The resulting i points to the same element
+         * as const_iter
+         *
+         * Note that to be able to call std::distance with an iterator and
+         * const_iterator we need to specify the type as const_iterator (relying
+         * on the implicit conversion from iterator to const_iterator for i)
+         *
+         * Since the iterators are really vector (i.e. random-access) iterators
+         * both distance and advance take constant time
+         */
         iterator i = begin();
         std::advance(i, std::distance<const_iterator>(i, const_iter));
         return i;

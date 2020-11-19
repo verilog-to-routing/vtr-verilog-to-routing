@@ -57,7 +57,6 @@
 
 namespace vtr {
 
-
 // Forward declare classes for pointers.
 class string_internment;
 class interned_string;

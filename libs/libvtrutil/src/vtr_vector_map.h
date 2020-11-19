@@ -49,7 +49,7 @@ class vector_map {
     typedef typename std::vector<V>::const_iterator const_iterator;
     typedef typename std::vector<V>::const_reverse_iterator const_reverse_iterator;
 
-  public: 
+  public:
     ///@brief Constructor
     template<typename... Args>
     vector_map(Args&&... args)

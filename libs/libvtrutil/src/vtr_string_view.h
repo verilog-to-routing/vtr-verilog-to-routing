@@ -33,9 +33,11 @@ class string_view {
         : data_(str)
         , size_(size) {}
 
-    constexpr string_view(const string_view& other) noexcept = default;i
-    ///@brief copy constructor
-    constexpr string_view& operator=(const string_view& view) noexcept {
+    constexpr string_view(const string_view& other) noexcept = default;
+    i
+        ///@brief copy constructor
+        constexpr string_view&
+        operator=(const string_view& view) noexcept {
         data_ = view.data_;
         size_ = view.size_;
         return *this;

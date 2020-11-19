@@ -40,7 +40,7 @@
  *
  * Each of the three message types also have a VTR_LOGF_* variant,
  * which will cause the message to be logged for a custom file and
-
+ *
  * For example:
  *
  *      VTR_LOGF("my_file.txt", "This message will be logged from file 'my_file.txt' line %d\n", 42);

@@ -51,7 +51,6 @@ double median(Container c) {
     return median(std::begin(c), std::end(c));
 }
 
-
 /**
  * @brief Returns the geometric mean of the elments in range [first, last)
  *
@@ -102,7 +101,7 @@ double arithmean(InputIterator first, InputIterator last, double init = 0.) {
     }
 }
 
-///@brief Returns the aritmatic mean of a whole container 
+///@brief Returns the aritmatic mean of a whole container
 template<typename Container>
 double arithmean(Container c) {
     return arithmean(std::begin(c), std::end(c));

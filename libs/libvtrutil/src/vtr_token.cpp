@@ -17,7 +17,7 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
 
 bool IsWhitespace(char c);
 
-///@brief Returns true if character is whatspace between tokens 
+///@brief Returns true if character is whatspace between tokens
 bool IsWhitespace(char c) {
     switch (c) {
         case ' ':
@@ -30,7 +30,7 @@ bool IsWhitespace(char c) {
     }
 }
 
-///@brief Returns a token list of the text for a given string. 
+///@brief Returns a token list of the text for a given string.
 t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     const char* cur;
     t_token* tokens;
@@ -147,7 +147,7 @@ bool checkTokenType(const t_token token, enum e_token_type token_type) {
     return true;
 }
 
-///@brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace 
+///@brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring) {
     int i, j;
     char *cur, *cur2, *copy, *final;

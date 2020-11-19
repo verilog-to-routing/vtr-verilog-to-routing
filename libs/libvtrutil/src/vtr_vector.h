@@ -171,7 +171,7 @@ class vector : private std::vector<V, Allocator> {
         ///@brief constructor
         key_iterator(key_iterator::value_type init)
             : value_(init) {}
-    
+
         /*
          * vtr::vector assumes that the key time is convertable to size_t.
          *

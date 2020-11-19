@@ -78,7 +78,7 @@ class Point {
     friend bool operator< <>(Point<T> lhs, Point<T> rhs);
 
   public: //Mutators
-    ///@brief Set x and y values 
+    ///@brief Set x and y values
     void set(T x_val, T y_val);
 
     ///@brief set x value
@@ -277,7 +277,6 @@ class RectUnion {
 
     ///@brief Returns a range of all constituent rectangles
     rect_range rects() const;
-
 
     /**
      * @brief Checks whether two RectUnions have identical representations

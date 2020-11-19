@@ -40,8 +40,8 @@ struct t_chunk {
     //chunk_ptr_head->data_vptr: head of the entire linked
     //list of allocated "chunk" memory;
     //chunk_ptr_head->next: pointer to the next chunk on the linked list
-    int mem_avail = 0;                ///< number of bytes left in the current chunk 
-    char* next_mem_loc_ptr = nullptr; ///< pointer to the first available (free) byte in the current chunk		
+    int mem_avail = 0;                ///< number of bytes left in the current chunk
+    char* next_mem_loc_ptr = nullptr; ///< pointer to the first available (free) byte in the current chunk
 };
 
 void* free(void* some);

@@ -9,7 +9,7 @@
 namespace vtr {
 
 /**
- * @brief A std::array container
+ * @brief An array view class to avoid copying data
  */
 template<typename T>
 class array_view {
@@ -79,7 +79,7 @@ class array_view {
         return data_[size() - 1];
     }
 
-    ///@brief return the underlying pointer 
+    ///@brief return the underlying pointer
     constexpr T* data() {
         return data_;
     }

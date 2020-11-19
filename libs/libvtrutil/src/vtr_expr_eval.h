@@ -72,7 +72,7 @@ class t_formula_data {
 };
 
 /**** Enums ****/
-///@brief Used to identify the type of symbolic formula object 
+///@brief Used to identify the type of symbolic formula object
 typedef enum e_formula_obj {
     E_FML_UNDEFINED = 0,
     E_FML_NUMBER,
@@ -83,7 +83,7 @@ typedef enum e_formula_obj {
     E_FML_NUM_FORMULA_OBJS
 } t_formula_obj;
 
-///@brief Used to identify an operator in a formula 
+///@brief Used to identify an operator in a formula
 typedef enum e_operator {
     E_OP_UNDEFINED = 0,
     E_OP_ADD,
@@ -130,7 +130,7 @@ typedef enum e_compound_operator {
  */
 class Formula_Object {
   public:
-    ///@brief indicates the type of formula object this is 
+    ///@brief indicates the type of formula object this is
     t_formula_obj type;
 
     /**
@@ -213,13 +213,13 @@ class FormulaParser {
     FormulaParser(const FormulaParser&) = delete;
     FormulaParser& operator=(const FormulaParser&) = delete;
 
-    ///@brief returns integer result according to specified formula and data 
+    ///@brief returns integer result according to specified formula and data
     int parse_formula(std::string formula, const t_formula_data& mydata, bool is_breakpoint = false);
 
-    ///@brief returns integer result according to specified piece-wise formula and data 
+    ///@brief returns integer result according to specified piece-wise formula and data
     int parse_piecewise_formula(const char* formula, const t_formula_data& mydata);
 
-    ///@brief checks if the specified formula is piece-wise defined 
+    ///@brief checks if the specified formula is piece-wise defined
     static bool is_piecewise_formula(const char* formula);
 
   private:

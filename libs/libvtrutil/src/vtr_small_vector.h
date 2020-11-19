@@ -305,7 +305,7 @@ class small_vector {
     void assign(InputIterator first, InputIterator last) {
         insert(begin(), first, last);
     }
-    
+
     /**
      * @brief Assigns new contents to the vector, replacing its current contents, and modifying its size accordingly.
      *
@@ -522,7 +522,7 @@ class small_vector {
              * Instead we copy the short_vec values into long, destruct the original short_vec
              * values and then set short_vec to point to long_vec's original buffer (avoids
              * extra copy of long elements).
-
+             *
              * Save long data
              */
             pointer long_buf = long_vec.long_.data_;

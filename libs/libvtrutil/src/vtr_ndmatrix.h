@@ -219,7 +219,7 @@ class NdMatrixBase {
     void fill(T value) {
         std::fill(data_.get(), data_.get() + size(), value);
     }
-    
+
     /**
      * @brief Resize the matrix to the specified dimension ranges
      *
@@ -354,7 +354,7 @@ class NdMatrix : public NdMatrixBase<T, N> {
         VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
         VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
 
-         // Peel off the first dimension
+        // Peel off the first dimension
         return NdMatrixProxy<T, N - 1>(
             this->dim_sizes_.data() + 1,                        //Pass the dimension information
             this->dim_strides_.data() + 1,                      //Pass the stride for the next dimension
@@ -372,12 +372,11 @@ class NdMatrix : public NdMatrixBase<T, N> {
     }
 };
 
-
 /**
  * @brief A 1-dimensional matrix supporting arbitrary (continuous) index ranges per dimension.
  *
  * This is considered a specialization for N=1
- */ 
+ */
 template<typename T>
 class NdMatrix<T, 1> : public NdMatrixBase<T, 1> {
   public:

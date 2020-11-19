@@ -69,7 +69,7 @@ class pair_second_iter {
         iter_++;
         return *this;
     }
-    
+
     ///@brief decrement operator (--)
     auto operator--() {
         iter_--;

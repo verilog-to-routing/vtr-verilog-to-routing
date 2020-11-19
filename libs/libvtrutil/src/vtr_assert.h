@@ -29,7 +29,7 @@
 
 // brief Set a default assertion level if none is specified
 #ifndef VTR_ASSERT_LEVEL
-#    define VTR_ASSERT_LEVEL 2 
+#    define VTR_ASSERT_LEVEL 2
 #endif
 
 // Enable the assertions based on the specified level

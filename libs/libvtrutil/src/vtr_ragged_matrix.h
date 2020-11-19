@@ -34,7 +34,7 @@ namespace vtr {
  */
 template<typename T, typename Index0 = size_t, typename Index1 = size_t>
 class FlatRaggedMatrix {
-  public: 
+  public:
     ///@brief default constructor
     FlatRaggedMatrix() = default;
 
@@ -165,7 +165,7 @@ class FlatRaggedMatrix {
             : first_(first)
             , last_(last) {}
 
-        ///@brief Return iterator to the first element 
+        ///@brief Return iterator to the first element
         U* begin() { return first_; }
         ///@brief Return iterator to the last element
         U* end() { return last_; }

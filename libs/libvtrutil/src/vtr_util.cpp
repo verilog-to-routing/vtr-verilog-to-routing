@@ -152,7 +152,7 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     return std::string(buf.get(), len);
 }
 
-///@brief An alternate for strncpy since strncpy doesn't work as most people would expect. This ensures null termination 
+///@brief An alternate for strncpy since strncpy doesn't work as most people would expect. This ensures null termination
 char* strncpy(char* dest, const char* src, size_t size) {
     /* Find string's length */
     size_t len = std::strlen(src);
@@ -265,7 +265,6 @@ unsigned atou(const std::string& value) {
  * restored after return from the subroutine.                    
  */
 char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf) {
-
     char* val;
 
     val = std::strtok(ptr, tokens);
@@ -326,7 +325,6 @@ int fclose(FILE* f) {
  * by a newline character \n.  Returns NULL after EOF.
  */
 char* fgets(char* buf, int max_size, FILE* fp) {
-
     int ch;
     int i;
 

@@ -320,7 +320,7 @@ class flat_map {
     ///@brief Reduce the capacity of the underlying vector to fit its size
     void shrink_to_fit() { vec_.shrink_to_fit(); }
 
-    ///@brief 
+    ///@brief
     key_compare key_comp() const { return key_compare(); }
 
     ///@brief
@@ -402,20 +402,20 @@ class flat_map {
     }
 
     iterator convert_to_iterator(const_iterator const_iter) {
-    /*
-     * A work around as there is no conversion betweena const_iterator and iterator.
-     *
-     * We intiailize i to the start of the container and then advance it by
-     * the distance to const_iter. The resulting i points to the same element
-     * as const_iter
-     * 
-     * Note that to be able to call std::distance with an iterator and
-     * const_iterator we need to specify the type as const_iterator (relying
-     * on the implicit conversion from iterator to const_iterator for i)
-     *
-     * Since the iterators are really vector (i.e. random-access) iterators
-     * this takes constant time
-     */
+        /*
+         * A work around as there is no conversion betweena const_iterator and iterator.
+         *
+         * We intiailize i to the start of the container and then advance it by
+         * the distance to const_iter. The resulting i points to the same element
+         * as const_iter
+         * 
+         * Note that to be able to call std::distance with an iterator and
+         * const_iterator we need to specify the type as const_iterator (relying
+         * on the implicit conversion from iterator to const_iterator for i)
+         *
+         * Since the iterators are really vector (i.e. random-access) iterators
+         * this takes constant time
+         */
         iterator i = begin();
         std::advance(i, std::distance<const_iterator>(i, const_iter));
         return i;
