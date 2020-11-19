@@ -1,6 +1,7 @@
-=========
-Utilities
-=========
+.. _vtrutil_api:
+
+VTRUTIL API
+============
 
 .. toctree::
    :maxdepth: 1

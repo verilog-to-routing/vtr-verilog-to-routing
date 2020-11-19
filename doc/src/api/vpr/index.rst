@@ -8,4 +8,3 @@ VPR API
 
    contexts
    netlist
-   utilities
