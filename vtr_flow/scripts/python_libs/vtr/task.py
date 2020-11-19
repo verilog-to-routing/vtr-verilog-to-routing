@@ -18,7 +18,7 @@ from vtr import (
     paths,
 )
 
-# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals,too-few-public-methods
+# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-few-public-methods
 class TaskConfig:
     """
     An object representing a task config file
@@ -288,7 +288,7 @@ def find_longest_task_description(configs):
                     longest = arch_circuit_len
     return longest
 
-
+# pylint: disable=too-many-branches
 def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run=False):
     """
     Create the jobs to be executed depending on the configs.
