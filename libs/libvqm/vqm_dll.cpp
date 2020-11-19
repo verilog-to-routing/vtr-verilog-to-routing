@@ -13,6 +13,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdint.h> // For uintptr_t in vqm_parser.gen.h
 
 
 #include "vqm_dll.h"

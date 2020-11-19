@@ -4,6 +4,11 @@
 #include <cstdlib>
 #include <new>
 
+#ifdef _WIN32
+#    include <cerrno>
+#    include <malloc.h>
+#endif
+
 namespace vtr {
 
 //For efficiency, STL containers usually don't
@@ -64,7 +69,17 @@ void chunk_delete(T* obj, t_chunk* /*chunk_info*/) {
 int malloc_trim(size_t pad);
 
 inline int memalign(void** ptr_out, size_t align, size_t size) {
+#ifdef _WIN32
+    void* temp_ptr = _aligned_malloc(size, align);
+    if (temp_ptr != NULL) {
+        *ptr_out = temp_ptr;
+        return 0;
+    } else {
+        return errno;
+    }
+#else
     return posix_memalign(ptr_out, align, size);
+#endif
 }
 
 // This is a macro because it has to be.  rw and locality must be constants,
@@ -102,7 +117,11 @@ struct aligned_allocator {
     }
 
     void deallocate(T* p, size_type /*n*/) {
+#ifdef _WIN32
+        _aligned_free(p);
+#else
         vtr::free(p);
+#endif
     }
 };
 
