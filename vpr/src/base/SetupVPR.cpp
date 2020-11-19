@@ -356,10 +356,6 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->reorder_rr_graph_nodes_threshold = Options.reorder_rr_graph_nodes_threshold;
     RouterOpts->reorder_rr_graph_nodes_seed = Options.reorder_rr_graph_nodes_seed;
 
-    //TODO document these?
-    RouterOpts->trim_empty_channels = false; /* DEFAULT */
-    RouterOpts->trim_obs_channels = false;   /* DEFAULT */
-
     RouterOpts->initial_pres_fac = Options.initial_pres_fac;
     RouterOpts->base_cost_type = Options.base_cost_type;
     RouterOpts->first_iter_pres_fac = Options.first_iter_pres_fac;
