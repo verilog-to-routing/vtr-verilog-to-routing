@@ -1807,7 +1807,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
-            "Sets the assumed high fanout net during placement. ")
+            "Sets the assumed high fanout net during placement. "
+            "Any net with higher fanout would be ignored while calculating some of the directed moves: Median and WeightedMedian")
         .default_value("10")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
