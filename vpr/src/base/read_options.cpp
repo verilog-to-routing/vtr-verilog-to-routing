@@ -1835,7 +1835,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.place_agent_epsilon, "--place_agent_epsilon")
         .help(
-            "Agent epsilon (exploration fraction) for subsequent temperatures")
+            "Placement RL agent's epsilon for epsilon-greedy agent."
+            "Epsilon represents the percentage of exploration actions taken vs the exploitation ones.")
         .default_value("0.3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
