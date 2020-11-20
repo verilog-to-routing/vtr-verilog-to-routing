@@ -1864,7 +1864,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.place_crit_limit, "--place_crit_limit")
         .help(
-            "The criticality limit to count a block as a critical one (or have a critical connection)")
+            "The criticality limit to count a block as a critical one (or have a critical connection). "
+            "It used in some directed moves that only move critical blocks like critical uniform and feasible region. "
+            "Its range equals to [0., 1.].")
         .default_value("0.7")
         .show_in(argparse::ShowIn::HELP_ONLY);
     /*

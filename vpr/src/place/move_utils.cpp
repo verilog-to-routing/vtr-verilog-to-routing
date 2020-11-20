@@ -976,7 +976,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
 }
 
 //Array of move type strings
-const std::array<std::string, NUM_AVAILABLE_MOVE_TYPES> move_type_strings = {
+const std::array<std::string, NUM_PL_MOVE_TYPES> move_type_strings = {
     "Uniform",
     "Median",
     "W. Centroid",
