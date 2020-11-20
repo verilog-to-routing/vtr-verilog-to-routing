@@ -1828,8 +1828,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument<bool, ParseOnOff>(args.place_checkpointing, "--place_checkpointing")
         .help(
-            "Enable Placement checkpoints. "
-            "Only enabled if agnet's 2nd state is actovated")
+            "Enable Placement checkpoints. This means saving the placement and restore it if it's better than later placements."
+            "Only effective if agnet's 2nd state is activated.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
