@@ -477,7 +477,7 @@ void try_place(const t_placer_opts& placer_opts,
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    if (placer_opts.simpleRL_agent_placement == false) {
+    if (placer_opts.RL_agent_placement == false) {
         if (placer_opts.place_algorithm.is_timing_driven()) {
             VTR_LOG("Using static probabilities for choosing each move type\n");
             VTR_LOG("Probability of Uniform_move : %f \n", placer_opts.place_static_move_prob[0]);

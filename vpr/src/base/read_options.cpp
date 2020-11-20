@@ -1812,9 +1812,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("10")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument<bool, ParseOnOff>(args.simpleRL_agent_placement, "--simpleRL_agent_placement")
+    place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
         .help(
-            "Uses a simple RL agent in choosing the appropiate move type in placement. ")
+            "Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement."
+            "It activates the RL agent placement instead of using fixed probability for each move type.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
