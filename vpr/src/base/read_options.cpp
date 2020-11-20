@@ -1787,8 +1787,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
-            "The Probability of different move in Simulated Annealing."
-            "The order of moves is: {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Timing feasible Region(TFR), Critical UniformMove}")
+            "The percentage probabilities of different moves in Simulated Annealing placement."
+            "This options is only effective for timing-driven placement."
+            "The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Timing feasible Region(TFR), Critical UniformMove}, in that order.")
         .nargs('+')
         .default_value({"100", "0", "0", "0", "0", "0", "0"})
 
@@ -1797,7 +1798,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_static_notiming_move_prob, "--place_static_notiming_move_prob")
         .help(
             "The Probability of different non timing move in Simulated Annealing."
-            "The order of moves is: {uniformMove, MedianMove, CentroidMove}")
+            "This option is only effective for nontiming driven placement."
+            " The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove}, in that order.")
         .nargs('+')
         .default_value({"100", "0", "0"})
 
