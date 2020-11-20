@@ -1843,16 +1843,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_agent_gamma, "--place_agent_gamma")
         .help(
             "Controls how quickly the agent's memory decays. "
-            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted average applied to moves which occured greater than moves_per_temp moves ago."
-            "Values < 0 cause the unwieghted sample average to be used")
+            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted reward average applied to moves which occured greater than moves_per_temp moves ago."
+            "Values < 0 cause the unweighted reward sample average to be used (all samples are weighted equally)")
         .default_value("0.05")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_dm_rlim, "--place_dm_rlim")
         .help(
-            "Controls how quickly the agent's memory decays. "
-            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted average applied to moves which occured greater than moves_per_temp moves ago."
-            "Values < 0 cause the unwieghted sample average to be used")
+            "The maximum range limit of any directed move other than the uniform move. "
+            "It also shrinks with the default rlim")
         .default_value("3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
