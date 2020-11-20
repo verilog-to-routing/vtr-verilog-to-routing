@@ -492,7 +492,7 @@ enum class e_timing_update_type {
 
 /* Values of number of available move types */
 #define NUM_AVAILABLE_MOVE_TYPES 7
-#define NUM_ABAILABLE_NONTIMING_MOVE_TYPES 3
+#define NUM_AVAILABLE_NONTIMING_MOVE_TYPES 3
 #define NUM_1ST_STATE_AVAILABLE_MOVE_TYPES 4
 
 /* Timing data structures end */

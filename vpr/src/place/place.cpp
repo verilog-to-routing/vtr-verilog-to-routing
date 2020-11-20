@@ -525,12 +525,12 @@ void try_place(const t_placer_opts& placer_opts,
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             } else {
                 //agent's 1st state
-                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_AVAILABLE_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
 
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
+                karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_AVAILABLE_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             }
@@ -549,11 +549,11 @@ void try_place(const t_placer_opts& placer_opts,
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             } else {
                 //agent's 1st state
-                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES);
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_AVAILABLE_NONTIMING_MOVE_TYPES);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_ABAILABLE_NONTIMING_MOVE_TYPES);
+                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_AVAILABLE_NONTIMING_MOVE_TYPES);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             }

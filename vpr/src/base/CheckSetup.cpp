@@ -48,7 +48,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "The number of placer move probabilities should equal to the total number of supported moves. %d\n", PlacerOpts.place_static_move_prob.size());
     }
 
-    if (PlacerOpts.place_static_notiming_move_prob.size() != NUM_ABAILABLE_NONTIMING_MOVE_TYPES) {
+    if (PlacerOpts.place_static_notiming_move_prob.size() != NUM_AVAILABLE_NONTIMING_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The number of placer non timing move probabilities should equal to the total number of supported moves. %d\n", PlacerOpts.place_static_notiming_move_prob.size());
     }
