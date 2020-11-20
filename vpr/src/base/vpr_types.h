@@ -543,29 +543,6 @@ struct t_bb {
 };
 
 /**
- * @brief Stores a bounding box edge of a net with the timing
- *        criticality of the net terminal that caused this edge
- */
-struct t_edge_cost {
-    int loc;
-    float criticality;
-};
-
-/**
- * @brief Stores the bounding box of a net in terms of the minimum and
- *        maximum coordinates of the blocks forming the net, clipped to
- *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
- *        and the timing cost of the net terminal that caused each edge. 
- *        This is useful for some directed move generators.
- */
-struct t_bb_cost {
-    t_edge_cost xmin = {0, 0.0};
-    t_edge_cost xmax = {0, 0.0};
-    t_edge_cost ymin = {0, 0.0};
-    t_edge_cost ymax = {0, 0.0};
-};
-
-/**
  * @brief An offset between placement locations (t_pl_loc)
  *
  * x: x-offset

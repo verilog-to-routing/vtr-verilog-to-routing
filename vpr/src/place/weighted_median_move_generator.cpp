@@ -47,10 +47,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         if (skip_net)
             continue;
 
-        X_coord.insert(X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.loc);
-        X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.loc);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.loc);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.loc);
+        X_coord.insert(X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.edge);
+        X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.edge);
+        Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.edge);
+        Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.edge);
     }
 
     if ((X_coord.size() == 0) || (Y_coord.size() == 0))
@@ -163,26 +163,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
         }
     }
 
-    /* Copy the coordinates and number on edges information into the proper   *
-     * structures.                                                            */
-    /*
-     * t_edge_cost temp_edge;
-     * temp_edge.loc = xmin;
-     * temp_edge.criticality = xmin_cost;
-     * coords->xmin =temp_edge;
-     *
-     * temp_edge.loc = xmax;
-     * temp_edge.criticality = xmax_cost;
-     * coords->xmax = temp_edge;
-     *
-     * temp_edge.loc = ymin;
-     * temp_edge.criticality = ymin_cost;
-     * coords->ymin = temp_edge;
-     *
-     * temp_edge.loc = ymax;
-     * temp_edge.criticality = ymax_cost;
-     * coords->ymax = temp_edge;
-     */
+    // Copy the bounding box edges and corresponding criticalities into the proper structure
     coords->xmin = {xmin, xmin_cost};
     coords->xmax = {xmax, xmax_cost};
     coords->ymin = {ymin, ymin_cost};
