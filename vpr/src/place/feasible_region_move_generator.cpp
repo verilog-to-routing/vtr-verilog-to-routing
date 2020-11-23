@@ -33,7 +33,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     X_coord.clear();
     Y_coord.clear();
-    //For critical input nodes, calculate the x&y min-max valus
+    //For critical input nodes, calculate the x & y min-max values
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_input_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
@@ -68,7 +68,13 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     xt = output_loc.x;
     yt = output_loc.y;
 
-    //determine the feasible region
+    /**
+     * @brief determine the feasible region
+     *
+     * The algorithm is described in Chen et al. "Simultaneous Timing-Driven Placement and Duplication"
+     * it determines the coords of the feasible region based on the relative location of the location of 
+     * the most critical output block, the current location of the block and the locations of the highly critical inputs
+     */
     t_bb FR_coords;
     if (xt < min_x) {
         FR_coords.xmin = std::min(from.x, xt);
@@ -94,7 +100,11 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
+    // Try to find a legal location inside the feasible region
     if (!find_to_loc_median(cluster_from_type, &FR_coords, from, to)) {
+        /** If there is no legal location in the feasible region, calculate the center of the FR and try to find a legal location 
+         *  in a range around this center.
+         */ 
         t_pl_loc center;
         center.x = (FR_coords.xmin + FR_coords.xmax) / 2;
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
