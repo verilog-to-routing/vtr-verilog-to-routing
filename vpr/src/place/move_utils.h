@@ -6,6 +6,11 @@
 
 extern vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
+/* Cut off for incremental bounding box updates.                          *
+ * 4 is fastest -- I checked.                                             */
+/* To turn off incremental bounding box updates, set this to a huge value */
+#define SMALL_NET 4
+
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */

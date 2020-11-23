@@ -44,6 +44,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
+        /* To speedup the calculation, we found it is useful to ignore high fanout nets.
+         * Especially that in most cases, these high fanout nets are scattered in many locations of
+         * the device and don't guide to a specific location. We also assuered these assumpitions experimentally.
+         */
         if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
             continue;
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4) {
