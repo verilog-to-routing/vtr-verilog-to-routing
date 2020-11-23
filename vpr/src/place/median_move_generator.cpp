@@ -199,19 +199,20 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, Cluster
     bb_coord_new->ymax = std::max(std::min<int>(ymax, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 }
 
+/*
+ * Updates the bounding box of a net by storing its coordinates in    *
+ * the bb_coord_new data structure and the number of blocks on each   *
+ * edge in the bb_edge_new data structure.  This routine should only  *
+ * be called for large nets, since it has some overhead relative to   *
+ * just doing a brute force bounding box calculation.  The bounding   *
+ * box coordinate and edge information for inet must be valid before  *
+ * this routine is called.                                            *
+ * Currently assumes channels on both sides of the CLBs forming the   *
+ * edges of the bounding box can be used.  Essentially, I am assuming *
+ * the pins always lie on the outside of the bounding box.            *
+ * The x and y coordinates are the pin's x and y coordinates.         */
+/* IO blocks are considered to be one cell in for simplicity.         */
 static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew) {
-    /* Updates the bounding box of a net by storing its coordinates in    *
-     * the bb_coord_new data structure and the number of blocks on each   *
-     * edge in the bb_edge_new data structure.  This routine should only  *
-     * be called for large nets, since it has some overhead relative to   *
-     * just doing a brute force bounding box calculation.  The bounding   *
-     * box coordinate and edge information for inet must be valid before  *
-     * this routine is called.                                            *
-     * Currently assumes channels on both sides of the CLBs forming the   *
-     * edges of the bounding box can be used.  Essentially, I am assuming *
-     * the pins always lie on the outside of the bounding box.            *
-     * The x and y coordinates are the pin's x and y coordinates.         */
-    /* IO blocks are considered to be one cell in for simplicity.         */
     //TODO: account for multiple physical pin instances per logical pin
 
     t_bb *curr_bb_edge, *curr_bb_coord;

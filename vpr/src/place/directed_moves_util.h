@@ -5,6 +5,9 @@
 #include "timing_place.h"
 #include "move_generator.h"
 
+///@brief Helper function that returns the x, y coordinates of a pin
+void get_coordinate_of_pin(ClusterPinId pin, int& x , int& y);
+
 /**
  * @brief Calculates the exact centroid location
  *
