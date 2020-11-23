@@ -36,7 +36,7 @@ extern int yylex(void);
 
 %union
 {
-	unsigned long value; //Should be uintptr_t, but that fails to compile.  This should be correct for LP64 platforms
+	uintptr_t value;
 	char *string;
 }
 %parse-param {t_parse_info* parse_info}
@@ -87,7 +87,7 @@ modules:	/* Empty */ {}
 module:		header declarations statements footer
 			{
                 if(parse_info->pass_type == COUNT_PASS) {
-                    parse_info->number_of_modules++; 
+                    parse_info->number_of_modules++;
                 } else {
                     /* Now create a module structure and store all data you just read into it. */
                     add_module($1, &pin_list, &assignment_list, &node_list, parse_info);
@@ -100,17 +100,17 @@ header:		TOKEN_MODULE TOKEN_REGULARID '(' IdentifierList ')' ';'
                 if(parse_info->pass_type == COUNT_PASS) {
                     //pass
                 } else {
-                    
+
                     t_array_ref *identifiers = (t_array_ref *) $4;
                     size_t index;
-                    
+
                     /* Free the list of ports as they are defined later on more explicitly. */
                     if (identifiers != NULL)
                     {
                         for(index = 0; index < identifiers->array_size; index++)
                         {
                             t_identifier_pass *ident = (t_identifier_pass *) identifiers->pointer[index];
-                            
+
                             if (ident != NULL)
                             {
                                 free(ident->name);
@@ -121,7 +121,7 @@ header:		TOKEN_MODULE TOKEN_REGULARID '(' IdentifierList ')' ';'
                         free(identifiers);
                     }
                     /* Pass back the name of the module */
-                    $$ = $2;				
+                    $$ = $2;
                 }
 			}
 			;
@@ -149,7 +149,7 @@ declaration:	PinType IdentifierList ';'
                     } else {
                         /* Define action for creating a bus */
                         t_array_ref *list = (t_array_ref *) $7;
-                    
+
                         create_pins_from_list(&list, $3, $5, (t_pin_def_type)$1, T_TRUE, parse_info);
                     }
 				}
@@ -198,7 +198,7 @@ AssignStatement:	TOKEN_ASSIGN Identifier '=' RValue ';'
                                 case RVALUE_IDENTIFIER:
                                     /* Get source wire info */
                                     pin = locate_net_by_name(source_id->name);
-                                    
+
                                     if (target_id->indexed == T_TRUE)
                                     {
                                         target_wire_index = target_id->index;
@@ -276,7 +276,7 @@ RValue:		Identifier
                     rval->type = RVALUE_IDENTIFIER;
 
                     /* Pointer to t_identifier_pass structure */
-                    rval->data.data_structure = (void *) $1; 
+                    rval->data.data_structure = (void *) $1;
                     $$ = (uintptr_t) rval;
                 }
 			}
@@ -290,7 +290,7 @@ RValue:		Identifier
                     rval->type = RVALUE_IDENTIFIER_BAR;
 
                     /* Pointer to t_identifier_pass structure */
-                    rval->data.data_structure = (void *) $2; 
+                    rval->data.data_structure = (void *) $2;
                     $$ = (uintptr_t) rval;
                 }
 			}
@@ -303,7 +303,7 @@ RValue:		Identifier
                     assert(rval != NULL);
 
                     rval->type = RVALUE_BIT_VALUE;
-                    rval->data.bit_value = $1; 
+                    rval->data.bit_value = $1;
                     $$ = (uintptr_t) rval;
                 }
 			}
@@ -317,7 +317,7 @@ RValue:		Identifier
 
                     rval->type = RVALUE_CONCAT;
                     /* Pointer to t_array_ref structure that lists all identifiers to be concatenated */
-                    rval->data.data_structure = (void *) $1; 
+                    rval->data.data_structure = (void *) $1;
                     $$ = (uintptr_t) rval;
                 }
 			}
@@ -352,17 +352,17 @@ TriStatement:	TOKEN_ASSIGN Identifier '=' Identifier '?' Identifier ':' TOKEN_CO
                         src_index = source->index;
                         if (source->indexed == T_FALSE)
                         {
-                            src_index = my_min(src_pin->left, src_pin->right) - 1;	
+                            src_index = my_min(src_pin->left, src_pin->right) - 1;
                         }
                         tar_index = target->index;
                         if (target->indexed == T_FALSE)
                         {
-                            tar_index = my_min(tar_pin->left, tar_pin->right) - 1;	
+                            tar_index = my_min(tar_pin->left, tar_pin->right) - 1;
                         }
                         tri_index = tri_control->index;
                         if (tri_control->indexed == T_FALSE)
                         {
-                            tri_index = my_min(tri_pin->left, tri_pin->right) - 1;	
+                            tri_index = my_min(tri_pin->left, tri_pin->right) - 1;
                         }
 
                         /* Find pins */
@@ -403,7 +403,7 @@ WysiwygStatement:	TOKEN_WYSIWYGID Identifier '(' ConnectionList ')' ';'
 
 						* Add node to the global node list *
 						add_node((t_stratix_cells)$1, name, &all_connections);
-						
+
 						* Now free the identifier memory *
 						free(ident->name);
 						free(ident);
@@ -437,7 +437,7 @@ ComponentStatement:	TOKEN_REGULARID Identifier '(' ConnectionList ')' ';'
 
                             /* Add node to the global node list */
                             add_node($1, name, &all_connections, parse_info);
-                            
+
                             /* Now free the identifier memory */
                             free(ident->name);
                             free(ident);
@@ -455,7 +455,7 @@ DefParamStatement:	TOKEN_DEFPARAM Identifier '.' TOKEN_REGULARID '=' stringConst
                             t_identifier_pass *identifier = (t_identifier_pass *) $2;
                             define_instance_parameter(identifier, $4, $6, 0);
                             free(identifier->name);
-                            free(identifier);						
+                            free(identifier);
                         }
 					}
 				|	TOKEN_DEFPARAM Identifier '.' TOKEN_REGULARID '=' TOKEN_INTCONSTANT ';'
@@ -468,7 +468,7 @@ DefParamStatement:	TOKEN_DEFPARAM Identifier '.' TOKEN_REGULARID '=' stringConst
                                 t_identifier_pass *identifier = (t_identifier_pass *) $2;
                                 define_instance_parameter(identifier, $4, NULL, $6);
                                 free(identifier->name);
-                                free(identifier);						
+                                free(identifier);
                         }
 					}
 				 ;
@@ -489,7 +489,7 @@ ConnectionList:		Connection
                             //pass
                         } else {
                             size_t index;
-                            
+
                             /* Get a pointer to the list of connections */
                             t_array_ref *all_connections = (t_array_ref *) $1;
                             t_array_ref *new_connections = (t_array_ref *) $3;
@@ -498,7 +498,7 @@ ConnectionList:		Connection
                             /* Add connection to the list */
                             for (index = 0; index < new_connections->array_size; index++)
                             {
-                                append_array_element((long) new_connections->pointer[index], all_connections);
+                                append_array_element((intptr_t) new_connections->pointer[index], all_connections);
                             }
                             /* Free the temporary array */
                             free(new_connections->pointer);
@@ -521,10 +521,10 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             t_array_ref *array_of_connections;
                             t_array_ref *port_associations;
                             size_t index;
-                            
+
                             array_of_connections = (t_array_ref *) malloc(sizeof(t_array_ref));
                             assert(array_of_connections != NULL);
-                            
+
                             array_of_connections->pointer = NULL;
                             array_of_connections->array_size = 0;
                             array_of_connections->allocated_size = 0;
@@ -534,7 +534,7 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             {
                                 for(index = 0; index < port_associations->array_size; index++)
                                 {
-                                    append_array_element((long) port_associations->pointer[index], array_of_connections);
+                                    append_array_element((intptr_t) port_associations->pointer[index], array_of_connections);
                                 }
                                 free(port_associations->pointer);
                                 free(port_associations);
@@ -542,7 +542,7 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             else
                             {
                                 free($2);
-                            }						
+                            }
                             $$ = (uintptr_t) array_of_connections;
                             free(ident->name);
                             free(ident);
@@ -560,10 +560,10 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             t_array_ref *array_of_connections;
                             t_array_ref *port_associations;
                             size_t index;
-                            
+
                             array_of_connections = (t_array_ref *) malloc(sizeof(t_array_ref));
                             assert(array_of_connections != NULL);
-                            
+
                             array_of_connections->pointer = NULL;
                             array_of_connections->array_size = 0;
                             array_of_connections->allocated_size = 0;
@@ -573,10 +573,10 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             {
                                 for(index = 0; index < port_associations->array_size; index++)
                                 {
-                                    append_array_element((long) port_associations->pointer[index], array_of_connections);
+                                    append_array_element((intptr_t) port_associations->pointer[index], array_of_connections);
                                 }
                                 free(port_associations->pointer);
-                                free(port_associations);	
+                                free(port_associations);
                             }
                             else
                             {
@@ -605,7 +605,7 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             connections = create_wire_port_connections(ref_array, $2);
                             /* The ref_array is now useless so free it up. */
                             free(ref_array->pointer);
-                            free(ref_array);						 
+                            free(ref_array);
                             $$ = (uintptr_t) connections;
                         }
 					}
@@ -625,10 +625,10 @@ Connection:			'.' TOKEN_REGULARID '(' Identifier ')'
                             t_array_ref *connections;
 
                             connections = create_wire_port_connections(ref_array, $2);
-                             
+
                             /* The ref_array is now useless so free it up. */
                             free(ref_array->pointer);
-                            free(ref_array);						 
+                            free(ref_array);
                             $$ = (uintptr_t) connections;
                         }
 					}
@@ -649,8 +649,8 @@ IdentifierList:		Identifier
                             id_list->pointer = NULL;
 
                             /* Add the new identifier to the list */
-                            id_list->array_size = append_array_element((long) $1, id_list);
-                            //id_list->array_size = append_array_element((long) $1, (long **) &(id_list->pointer), id_list->array_size);
+                            id_list->array_size = append_array_element((intptr_t) $1, id_list);
+                            //id_list->array_size = append_array_element((intptr_t) $1, (intptr_t **) &(id_list->pointer), id_list->array_size);
 
                             /* Return list pointer */
                             $$ = (uintptr_t) id_list;
@@ -665,7 +665,7 @@ IdentifierList:		Identifier
                             t_array_ref *id_list = (t_array_ref *) $1;
 
                             /* Add new identifier */
-                            append_array_element((long) $3, id_list);
+                            append_array_element((intptr_t) $3, id_list);
 
                             /* Return list pointer */
                             $$ = (uintptr_t) id_list;

@@ -330,6 +330,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
     RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
+    RouterOpts->router_profiler_astar_fac = Options.router_profiler_astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
     RouterOpts->max_criticality = Options.max_criticality;
@@ -355,10 +356,6 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->reorder_rr_graph_nodes_algorithm = Options.reorder_rr_graph_nodes_algorithm;
     RouterOpts->reorder_rr_graph_nodes_threshold = Options.reorder_rr_graph_nodes_threshold;
     RouterOpts->reorder_rr_graph_nodes_seed = Options.reorder_rr_graph_nodes_seed;
-
-    //TODO document these?
-    RouterOpts->trim_empty_channels = false; /* DEFAULT */
-    RouterOpts->trim_obs_channels = false;   /* DEFAULT */
 
     RouterOpts->initial_pres_fac = Options.initial_pres_fac;
     RouterOpts->base_cost_type = Options.base_cost_type;

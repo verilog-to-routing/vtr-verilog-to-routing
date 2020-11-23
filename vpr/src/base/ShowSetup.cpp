@@ -252,8 +252,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown check_route value\n");
         }
 
-        VTR_LOG("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
-        VTR_LOG("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
         VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
         VTR_LOG("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
         VTR_LOG("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
@@ -270,6 +268,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
         if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
             VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+            VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
             VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
             VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
             VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
@@ -395,8 +394,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("%d\n", RouterOpts.fixed_channel_width);
         }
 
-        VTR_LOG("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
-        VTR_LOG("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
         VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
         VTR_LOG("RouterOpts.bb_factor: %d\n", RouterOpts.bb_factor);
         VTR_LOG("RouterOpts.bend_cost: %f\n", RouterOpts.bend_cost);
@@ -412,6 +409,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
         if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
             VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
+            VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
             VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
             VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
             VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
