@@ -278,6 +278,11 @@ static float get_delay_normalization_fac() {
         Tdel_num += 1;
     }
 
+    if (Tdel_num == 0) {
+        VTR_LOG_WARN("No valid cost index was found to get the delay normalization factor. Setting delay normalization factor to 1e-9 (1 ns)\n");
+        return 1e-9;
+    }
+
     float delay_norm_fac = Tdel_sum / Tdel_num;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA)) {
