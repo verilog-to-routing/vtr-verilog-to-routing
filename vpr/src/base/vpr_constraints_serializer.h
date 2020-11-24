@@ -29,9 +29,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
   public:
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In start_load \n");
-		VTR_LOG("\n");
 
         // report_error_in should be invoked if VprConstraintsSerializer encounters
         // an error during the read.
@@ -57,31 +54,16 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 	 * </xs:complexType>
 	 */
 	virtual inline const char* get_add_atom_name_pattern(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In get_add_atom_name_pattern \n");
-		VTR_LOG("\n");
+
 		return temp_.c_str();
 	}
 
 	virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
-		VTR_LOG("\n");
-		VTR_LOG("In set_add_atom_name_pattern \n");
-		VTR_LOG("\n");
 
 		auto& atom_ctx = g_vpr_ctx.atom();
 		std::string atom_name = name_pattern;
 		atom_id_ = atom_ctx.nlist.find_block(name_pattern);
 
-		if(atom_id_ == AtomBlockId::INVALID()) {
-			VTR_LOG("\n");
-			VTR_LOG("Invalid block name was entered \n");
-			VTR_LOG("\n");
-		}
-		else {
-			VTR_LOG("\n");
-			VTR_LOG("Atom id is %d \n", atom_id_);
-			VTR_LOG("\n");
-		}
 	}
 
     /** Generated for complex type "add_region":
@@ -99,9 +81,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline void set_add_region_subtile(int subtile, void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In set_add_region_subtile \n");
-		VTR_LOG("\n");
     	loaded_region.set_sub_tile(subtile);
     }
 
@@ -138,29 +117,17 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     	return temp_.c_str();
     }
     virtual inline void set_partition_name(const char* name, void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In set_partition_name \n");
-		VTR_LOG("\n");
     	loaded_partition.set_name(name);
     }
 
     virtual inline void preallocate_partition_add_atom(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_atom(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In add_parition_add_atom \n");
-		VTR_LOG("\n");
-
-		//PartitionId part_id(num_partitions_);
-		//constraints_.add_constrained_atom(atom_id_, part_id);
 
     	return nullptr;
     }
 
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In finish_parition_add_atom \n");
-		VTR_LOG("\n");
 
 		PartitionId part_id(num_partitions_);
 		constraints_.add_constrained_atom(atom_id_, part_id);
@@ -177,9 +144,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_add_region(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_region(void*& /*ctx*/, int x_high, int x_low, int y_high, int y_low) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In add_partition_add_region function \n");
-		VTR_LOG("\n");
 
     	loaded_region.set_region_rect(x_low, y_low, x_high, y_high);
 
@@ -187,18 +151,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual inline void finish_partition_add_region(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In finish_partition_add_region \n");
-		VTR_LOG("\n");
 
     	loaded_part_region.add_to_part_region(loaded_region);
 
     	Region clear_region;
     	loaded_region = clear_region;
 
-		/*if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_REGION)) {
-			echo_region(getEchoFileName(E_ECHO_REGION), loaded_region);
-		}*/
     }
 
     virtual inline size_t num_partition_add_region(void*& /*ctx*/) final {
@@ -219,16 +177,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void preallocate_partition_list_partition(void*& /*ctx*/, size_t /*size*/) final {}
 
 	virtual inline void* add_partition_list_partition(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In add_partition_list_partition \n");
-		VTR_LOG("\n");
+
 		return nullptr;
 	}
 
 	virtual inline void finish_partition_list_partition(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In finish_partition_list_partition \n");
-		VTR_LOG("\n");
 
 		loaded_partition.set_part_region(loaded_part_region);
 
@@ -239,14 +192,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 		constraints_.add_partition(loaded_partition);
 
 		num_partitions_++;
-
-		/*if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_REGION)) {
-			echo_partition(getEchoFileName(E_ECHO_REGION), loaded_partition);
-		}*/
-
-		/*if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_REGION)) {
-			echo_constraints(getEchoFileName(E_ECHO_REGION), constraints_, num_partitions_);
-		}*/
 
 	}
 	virtual inline size_t num_partition_list_partition(void*& /*ctx*/) final {
@@ -273,25 +218,20 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
 
     virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In init_vpr_constraints_partition_list \n");
-		VTR_LOG("\n");
+
     	return nullptr;
     }
 
     virtual inline void finish_vpr_constraints_partition_list(void*& /*ctx*/) final {
-    	VTR_LOG("\n");
-		VTR_LOG("In finish_vpr_constraints_partition_list \n");
-		VTR_LOG("\n");
+
     }
+
     virtual inline void* get_vpr_constraints_partition_list(void*& /*ctx*/) final {
     	return nullptr;
     }
 
     virtual void finish_load() final {
-    	VTR_LOG("\n");
-		VTR_LOG("In finish_load \n");
-		VTR_LOG("\n");
+
     }
 
     //temp data for loads
