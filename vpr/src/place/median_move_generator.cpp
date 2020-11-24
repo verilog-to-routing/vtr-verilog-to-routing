@@ -50,7 +50,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
          */
         if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
             continue;
-        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4) {
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
             //calculate the bb from scratch
             get_bb_from_scratch(net_id, &coords, b_from, skip_net);
             if (skip_net)
