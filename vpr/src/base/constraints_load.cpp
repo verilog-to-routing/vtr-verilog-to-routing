@@ -37,9 +37,11 @@ void print_partition_region(FILE* fp, PartitionRegion pr) {
 
 	std::vector<Region> part_region = pr.get_partition_region();
 
-	fprintf(fp, "\tpart_region size is: %d\n", part_region.size());
+	int pr_size = part_region.size();
 
-	for(int i = 0; i < part_region.size(); i++){
+	fprintf(fp, "\tpart_region size is: %d\n", pr_size);
+
+	for(unsigned int i = 0; i < part_region.size(); i++){
 		print_region(fp, part_region[i]);
 	}
 }
@@ -59,9 +61,11 @@ void print_constraints(FILE* fp, VprConstraints constraints, int num_parts) {
 
 		atoms = constraints.get_part_atoms(part_id);
 
-		fprintf(fp, "\tAtom vector size is %d\n", atoms.size());
+		int atoms_size = atoms.size();
 
-		for (int j = 0; j < atoms.size(); j++) {
+		fprintf(fp, "\tAtom vector size is %d\n", atoms_size);
+
+		for (unsigned int j = 0; j < atoms.size(); j++) {
 			AtomBlockId atom_id = atoms[j];
 			fprintf(fp, "\tAtom %d is in the partition\n", atom_id);
 		}
