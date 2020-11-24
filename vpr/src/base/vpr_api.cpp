@@ -68,6 +68,7 @@
 #include "atom_netlist_utils.h"
 #include "cluster.h"
 #include "output_clustering.h"
+#include "vpr_constraints_reader.h"
 
 #include "pack_report.h"
 #include "overuse_report.h"
@@ -344,6 +345,12 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
             timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
         }
+    }
+
+    //Initialize vpr floorplanning constraints
+    auto& filename_opts = vpr_setup->FileNameOpts;
+    if (!filename_opts.read_vpr_constraints_file.empty()) {
+    	load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
     }
 
     fflush(stdout);
