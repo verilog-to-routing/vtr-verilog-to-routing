@@ -34,8 +34,7 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     VprConstraints constraints = reader.constraints_;
     int num_parts = reader.num_partitions_;
 
-	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_VPR_CONSTRAINTS)) {
-		echo_constraints(getEchoFileName(E_ECHO_VPR_CONSTRAINTS), constraints, num_parts);
-	}
-
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_VPR_CONSTRAINTS)) {
+        echo_constraints(getEchoFileName(E_ECHO_VPR_CONSTRAINTS), constraints, num_parts);
+    }
 }

@@ -27,9 +27,7 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
 
 class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstraintsContextTypes> {
   public:
-
     void start_load(const std::function<void(const char*)>* report_error_in) final {
-
         // report_error_in should be invoked if VprConstraintsSerializer encounters
         // an error during the read.
         report_error_ = report_error_in;
@@ -49,22 +47,19 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     /** Generated for complex type "add_atom":
-	 * <xs:complexType name="add_atom">
-	 *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
-	 * </xs:complexType>
-	 */
-	virtual inline const char* get_add_atom_name_pattern(void*& /*ctx*/) final {
+     * <xs:complexType name="add_atom">
+     *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_add_atom_name_pattern(void*& /*ctx*/) final {
+        return temp_.c_str();
+    }
 
-		return temp_.c_str();
-	}
-
-	virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
-
-		auto& atom_ctx = g_vpr_ctx.atom();
-		std::string atom_name = name_pattern;
-		atom_id_ = atom_ctx.nlist.find_block(name_pattern);
-
-	}
+    virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
+        auto& atom_ctx = g_vpr_ctx.atom();
+        std::string atom_name = name_pattern;
+        atom_id_ = atom_ctx.nlist.find_block(name_pattern);
+    }
 
     /** Generated for complex type "add_region":
      * <xs:complexType name="add_region">
@@ -76,32 +71,32 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline int get_add_region_subtile(void*& /*ctx*/) final {
-    	int i = 0;
-    	return i;
+        int i = 0;
+        return i;
     }
 
     virtual inline void set_add_region_subtile(int subtile, void*& /*ctx*/) final {
-    	loaded_region.set_sub_tile(subtile);
+        loaded_region.set_sub_tile(subtile);
     }
 
     virtual inline int get_add_region_x_high(void*& /*ctx*/) final {
-    	int i = 0;
-    	return i;
+        int i = 0;
+        return i;
     }
 
     virtual inline int get_add_region_x_low(void*& /*ctx*/) final {
-    	int i = 0;
-    	return i;
+        int i = 0;
+        return i;
     }
 
     virtual inline int get_add_region_y_high(void*& /*ctx*/) final {
-    	int i = 0;
-    	return i;
+        int i = 0;
+        return i;
     }
 
     virtual inline int get_add_region_y_low(void*& /*ctx*/) final {
-    	int i = 0;
-    	return i;
+        int i = 0;
+        return i;
     }
 
     /** Generated for complex type "partition":
@@ -114,94 +109,86 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline const char* get_partition_name(void*& /*ctx*/) final {
-    	return temp_.c_str();
+        return temp_.c_str();
     }
     virtual inline void set_partition_name(const char* name, void*& /*ctx*/) final {
-    	loaded_partition.set_name(name);
+        loaded_partition.set_name(name);
     }
 
     virtual inline void preallocate_partition_add_atom(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_atom(void*& /*ctx*/) final {
-
-    	return nullptr;
+        return nullptr;
     }
 
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
-
-		PartitionId part_id(num_partitions_);
-		constraints_.add_constrained_atom(atom_id_, part_id);
+        PartitionId part_id(num_partitions_);
+        constraints_.add_constrained_atom(atom_id_, part_id);
     }
 
     virtual inline size_t num_partition_add_atom(void*& /*ctx*/) final {
-    	int i = 0;
-    	return i;
+        int i = 0;
+        return i;
     }
     virtual inline void* get_partition_add_atom(int /*n*/, void*& /*ctx*/) final {
-    	return nullptr;
+        return nullptr;
     }
 
     virtual inline void preallocate_partition_add_region(void*& /*ctx*/, size_t /*size*/) final {}
 
     virtual inline void* add_partition_add_region(void*& /*ctx*/, int x_high, int x_low, int y_high, int y_low) final {
+        loaded_region.set_region_rect(x_low, y_low, x_high, y_high);
 
-    	loaded_region.set_region_rect(x_low, y_low, x_high, y_high);
-
-    	return nullptr;
+        return nullptr;
     }
 
     virtual inline void finish_partition_add_region(void*& /*ctx*/) final {
+        loaded_part_region.add_to_part_region(loaded_region);
 
-    	loaded_part_region.add_to_part_region(loaded_region);
-
-    	Region clear_region;
-    	loaded_region = clear_region;
-
+        Region clear_region;
+        loaded_region = clear_region;
     }
 
     virtual inline size_t num_partition_add_region(void*& /*ctx*/) final {
-    	int i = 0;
-    	return i;
+        int i = 0;
+        return i;
     }
     virtual inline void* get_partition_add_region(int /*n*/, void*& /*ctx*/) final {
-    	return nullptr;
+        return nullptr;
     }
 
     /** Generated for complex type "partition_list":
-	 * <xs:complexType name="partition_list">
-	 *   <xs:sequence>
-	 *     <xs:element maxOccurs="unbounded" name="partition" type="partition" />
-	 *   </xs:sequence>
-	 * </xs:complexType>
-	 */
+     * <xs:complexType name="partition_list">
+     *   <xs:sequence>
+     *     <xs:element maxOccurs="unbounded" name="partition" type="partition" />
+     *   </xs:sequence>
+     * </xs:complexType>
+     */
     virtual inline void preallocate_partition_list_partition(void*& /*ctx*/, size_t /*size*/) final {}
 
-	virtual inline void* add_partition_list_partition(void*& /*ctx*/) final {
+    virtual inline void* add_partition_list_partition(void*& /*ctx*/) final {
+        return nullptr;
+    }
 
-		return nullptr;
-	}
+    virtual inline void finish_partition_list_partition(void*& /*ctx*/) final {
+        loaded_partition.set_part_region(loaded_part_region);
 
-	virtual inline void finish_partition_list_partition(void*& /*ctx*/) final {
+        //clear loaded_part_region
+        PartitionRegion clear_pr;
+        loaded_part_region = clear_pr;
 
-		loaded_partition.set_part_region(loaded_part_region);
+        constraints_.add_partition(loaded_partition);
 
-		//clear loaded_part_region
-		PartitionRegion clear_pr;
-		loaded_part_region = clear_pr;
+        num_partitions_++;
+    }
+    virtual inline size_t num_partition_list_partition(void*& /*ctx*/) final {
+        int i = 0;
+        return i;
+    }
 
-		constraints_.add_partition(loaded_partition);
-
-		num_partitions_++;
-
-	}
-	virtual inline size_t num_partition_list_partition(void*& /*ctx*/) final {
-		int i = 0;
-		return i;
-	}
-
-	virtual inline void* get_partition_list_partition(int /*n*/, void*& /*ctx*/) final {
-		return nullptr;
-	}
+    virtual inline void* get_partition_list_partition(int /*n*/, void*& /*ctx*/) final {
+        return nullptr;
+    }
 
     /** Generated for complex type "vpr_constraints":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -212,26 +199,23 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   </xs:complexType>
      */
     virtual inline const char* get_vpr_constraints_tool_name(void*& /*ctx*/) final {
-    	return temp_.c_str();
+        return temp_.c_str();
     }
 
     virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
 
     virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
-
-    	return nullptr;
+        return nullptr;
     }
 
     virtual inline void finish_vpr_constraints_partition_list(void*& /*ctx*/) final {
-
     }
 
     virtual inline void* get_vpr_constraints_partition_list(void*& /*ctx*/) final {
-    	return nullptr;
+        return nullptr;
     }
 
     virtual void finish_load() final {
-
     }
 
     //temp data for loads
