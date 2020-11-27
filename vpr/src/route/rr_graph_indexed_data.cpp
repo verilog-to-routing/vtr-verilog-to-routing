@@ -297,14 +297,20 @@ static float get_delay_normalization_fac() {
     return delay_norm_fac;
 }
 
+/*
+ * Scans all the RR nodes of CHAN type getting the medians for their R and C values (delays)
+ * as well as the delay data of all the nodes' switches, averaging them to find the following
+ * indexed data values for each wire type:
+ *      - T_linear
+ *      - T_quadratic
+ *      - C_load
+ *
+ * The indexed data is used in different locations such as:
+ *      - Base cost calculation for each cost_index
+ *      - Lookahead map computation
+ *      - Placement Delay Matrix computation
+ */
 static void load_rr_indexed_data_T_values() {
-    /* Loads the average propagation times through segments of each index type   *
-     * for either all CHANX segment types or all CHANY segment types.  It does   *
-     * this by looking at all the segments in one channel in the middle of the   *
-     * array and averaging the R, C, and Cinternal values of all segments of the *
-     * same type and using them to compute average delay values for this type of *
-     * segment. */
-
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
@@ -315,12 +321,13 @@ static void load_rr_indexed_data_T_values() {
     std::vector<std::vector<float>> C_total(rr_indexed_data.size());
     std::vector<std::vector<float>> R_total(rr_indexed_data.size());
 
-    /* August 2014: Not all wire-to-wire switches connecting from some wire segment will
-     * necessarily have the same delay. i.e. a mux with less inputs will have smaller delay
-     * than a mux with a greater number of inputs. So to account for these differences we will
-     * get the average R/Tdel/Cinternal values by first averaging them for a single wire segment
-     * (first for loop below), and then by averaging this value over all wire segments in the channel
-     * (second for loop below) */
+    /*
+     * Not all wire-to-wire switches connecting from some wire segment will necessarily have the same delay.
+     * i.e. a mux with less inputs will have smaller delay than a mux with a greater number of inputs.
+     * So to account for these differences we will get the average R/Tdel/Cinternal values by first averaging
+     * them for a single wire segment, and then by averaging this value over all the average values corresponding
+     * to the switches node
+     */
     std::vector<std::vector<float>> switch_R_total(rr_indexed_data.size());
     std::vector<std::vector<float>> switch_T_total(rr_indexed_data.size());
     std::vector<std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
@@ -412,7 +419,7 @@ static void load_rr_indexed_data_T_values() {
                 // from each wire and so we will correspondingly add one load for internal capacitance.
                 // The first transient response is the product between the resistance of the switch with
                 // the combined capacitance of the node and internal capacitance of the switch. The
-                // second transient response is the result of the Rnode being distributed halfway along a
+                // multiplication by the second term by 0.5 is the result of the Rnode being distributed halfway along a
                 // wire segment's length times the total capacitance.
                 rr_indexed_data[cost_index].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
                                                        + 0.5 * Rnode * (Cnode + Cinternalsw);
@@ -431,6 +438,13 @@ static void load_rr_indexed_data_T_values() {
     }
 }
 
+/*
+ * This routine calculates the average R/Tdel/Cinternal values of all the switches corresponding
+ * to the fan-in edges of the input inode.
+ *
+ * It is not safe to assume that each node of the same wire type has the same switches with the same
+ * delays, therefore we take their average to take into account the possible differences
+ */
 static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_nodes = device_ctx.rr_nodes.view();
