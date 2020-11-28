@@ -6,6 +6,7 @@
     Parameters
     ##############################
     Parameter | Value | Definition
+    __________|_______|______________________________
     N         |    10 | Number of BLEs per cluster
     W         |   320 | Channel width
     L         |     4 | Wire segment length
@@ -18,9 +19,10 @@
     Fclocal   |   0.5 | Local input crossbar population
 
     ##############################
-    CLB/Logic cluster
+    Logic Cluster
     ##############################
-    This architecture has 10 ALMs per cluster, where each ALM is a 6-LUT fracturable into
+    This architecture has 10 ALMs (or FLEs: Fracturable Logic Elements) per Logic Cluster
+    (or LAB or CLB), where each ALM is a 6-LUT fracturable into
     two 5-LUTs. The ALM has 8 inputs and 4 optionally registered outputs.The two 5-LUTs should
     share at least two inputs. Each two ALM outputs are logically equivalent, which means any
     output signal that can reach ALM.out[0] can reach ALM.out[1] and the same thing for
@@ -29,19 +31,21 @@
     bits of addition per ALM. This architecture has a single carry chain that spans the 10 ALMs
     in the LAB.
 
-    The LAB has 60 inputs and 40 outputs. Two outputs of each ALM are fed to the right and
-    left LAB using direct links and are also fed back to the LAB as feedback connections sharing
-    the 60 input ports with the signals coming from the routing channels.
+    The LAB (or Logic Cluster or CLB) has 60 inputs and 40 outputs. Two outputs of each ALM are fed 
+    to the right and left LAB using direct links and are also fed back to the LAB as feedback connections 
+    sharing the 60 input ports with the signals coming from the routing channels.
 
-    Delays and area for logic blocks come from COFFE runs on a 20 nm technology node.
+    Delays and area for Logic Cluster come from COFFE runs on a 20 nm technology node.
 
-    The CLB has a 50% sparsely populated input crossbar.
+    The LAB has a 50% sparsely populated input crossbar.
     
     ##############################
     DSP Slice
     ##############################
     This architecture has a DSP block that supports the following modes:
+
     Fixed point modes:
+    _________________
     1. 27x27 fixed point multiplier (multiply)
     2. 27x27 fixed point mac (mac_int)
     3. Two 18x19 fixed point multipliers (multiply)
@@ -53,6 +57,7 @@
     8. 9x9 sum-of-4 mode (sop_4_mode/int_sop_4) resulta = (dx * dy) + (cx * cy) + (bx * by) + (ax * ay)  
 
     Floating point modes:
+    ____________________
     1. One fp32 multiplier (multiply_fp)
     2. One fp32 adder/subtractor (adder_fp)
     3. One fp32 mac (mac_fp)
@@ -70,23 +75,38 @@
     The DSP slice has a 50% sparsely populated input crossbar.
 
     ##############################
-    BRAM
+    Memory Blocks
     ##############################
-    The architecture also has a 20Kb memory (BRAM) that has true and simple dual port modes. In simple
-    dual port mode the memory can be configured in the following modes: 512x40, 1024x20 and 2048x10,
-    while in true dual port mode it can be configured as: 1024x20 and 2028x10.
+    The architecture also has a 20Kb memory blocks (or M20k or BRAM) that has true and simple dual port modes. 
+    In simple dual port mode the memory can be configured in the following modes: 512x40, 1024x20 and 2048x10,
+    while in true dual port mode it can be configured as: 1024x20 and 2048x10.
 
     BRAM (M20k) delays and area come from COFFE runs on 20nm.
 
+    The BRAM has registered inputs and outputs. 
+    T_setup = T_level_shifter + T_register_micro_setup
+    T_clk_to_q = T_register_micro_clk_to_q
+
+    T_read = T1 + T2 + T3
+    = max (Row decoder, Pre-charge time) + (Wordline driver + Bit line delay) + (Sense amp + Output crossbar)
+
+    T_write = 
+    Write driver, Column decoder, Cnfigurable decoder, Configurable decoder driver delay
+
+    delay_constant values model the internal limits of a block. The delay_constant will be 
+    max (T_read + T_register_micro_setup, T_write). RAM can't run faster that this.
+
     The BRAM doesn't have an input crossbar. Adding an input crossbar was leading to a 
     seg fault in VPR, likely because of https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1475
+
+    Once this is fixed, an input crossbar can be added. The input crossbar delay from COFFE was: 
 
     ##############################
     Routing/Interconnect
     ##############################
     This architecture uses Wilton type switches with Fs=3. The channel width is 320.
 
-    Delays for routing elements come from COFFE runs for a 20 nm technology node.
+    Delays for routing elements come from COFFE runs for a 20nm technology node.
 
     ##############################
     Misc
