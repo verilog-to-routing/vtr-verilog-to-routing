@@ -7,10 +7,6 @@
 #include "vpr_constraints.h"
 #include "vtr_vector.h"
 
-void echo_region(char* filename, Region region);
-
-void echo_partition(char* filename, Partition part);
-
 void echo_constraints(char* filename, VprConstraints constraints, int num_parts);
 
 #endif

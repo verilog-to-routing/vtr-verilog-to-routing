@@ -59,6 +59,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         auto& atom_ctx = g_vpr_ctx.atom();
         std::string atom_name = name_pattern;
         atom_id_ = atom_ctx.nlist.find_block(name_pattern);
+
+        if (atom_id_ == AtomBlockId::INVALID()) {
+            VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern);
+        }
     }
 
     /** Generated for complex type "add_region":
@@ -123,7 +127,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
         PartitionId part_id(num_partitions_);
-        constraints_.add_constrained_atom(atom_id_, part_id);
+
+        if (atom_id_ != AtomBlockId::INVALID()) {
+            constraints_.add_constrained_atom(atom_id_, part_id);
+        }
     }
 
     virtual inline size_t num_partition_add_atom(void*& /*ctx*/) final {
