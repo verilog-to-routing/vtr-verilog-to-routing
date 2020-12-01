@@ -35,7 +35,7 @@ class MoveGenerator {
      * to match the parameters needed by all move generators
      *
      *  @param blocks_affected: the blocks affected by the proposed move
-     *  @param rlim: the range limit for this move type
+     *  @param rlim: maximum distance a block can move in x or y direction, in the compressed grid space
      *  @param X_coord: a scratch vector used to save X coordinates by some moves, used to save memory allocation time
      *  @param Y_coord: same as Y_coord for y coordinates
      *  @param move_type: return the move type that was used
