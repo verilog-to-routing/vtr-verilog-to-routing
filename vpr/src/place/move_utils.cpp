@@ -9,9 +9,6 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
-//catch the initial range limit
-float init_rlim = -1;
-
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 
@@ -824,8 +821,11 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     //This ensures that such blocks don't get locked down too early during placement (as would be the
     //case with a physical distance rlim)
 
+    //the initial placement range limit calculated for the current circuit by the annealer
+    static float init_rlim = -1;
     if (init_rlim == -1)
         init_rlim = rlim;
+    VTR_LOG("@%f\n", init_rlim);
 
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];

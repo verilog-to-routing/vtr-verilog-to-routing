@@ -52,7 +52,7 @@ class MoveGenerator {
      *  @param reward: the value of the agent's reward
      *  @param reward_fun: the name of the reward function used
      */
-    virtual void process_outcome(double reward, std::string reward_fun) {}
+    virtual void process_outcome(double /*reward*/, std::string /*reward_fun*/) {}
 };
 
 #endif
