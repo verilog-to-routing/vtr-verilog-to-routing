@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!--
+
+  XML 1.0 Schema for vpr constraints structure
+-->
+
+<!--
+  The root of the XSD file is the xs:schema.  With the xs:schema are 2 types
+  relevant to the code generated:
+
+- xs:complexType : This defines a child tag within the schema.  Most of the
+                   schema is made of these.
+- xs:element : There is one xs:element that is the direct child of the root
+               xs:schema, and this the definition of the root tag.
+
+  In addition to being used for code generation, this schema can be used to
+  validate whether a vpr constraints XML conforms to this schema.
+  Additional documentation is available at
+  https://github.com/duck2/uxsdcxx/blob/master/README.md
+
+-->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!--Attributes are optional be default. For required elements, the "use" attribute is used to specify
+      that it is required by setting use="required".-->
+  <xs:complexType name="add_atom">
+    <xs:attribute name="name_pattern" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="add_region">
+    <xs:attribute name="x_low" type="xs:int" use="required"/>
+    <xs:attribute name="y_low" type="xs:int" use="required"/>
+    <xs:attribute name="x_high" type="xs:int" use="required"/>
+    <xs:attribute name="y_high" type="xs:int" use="required"/>
+    <xs:attribute name="subtile" type="xs:int"/>
+  </xs:complexType>
+
+  <!--If an element can occur multiple times, the attribute maxOccurs can be set to 
+  unbounded for this element. When elements occur between <xs:sequence> tags, they are required
+  to appear in the order they are listed in the tag. For example, in "partition" below, add_atom
+  and add_region can both occur multiple times, but all add_atom elements must come before
+  the add_region elements. -->
+  <xs:complexType name="partition">
+    <xs:sequence>
+      <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded"/>
+      <xs:element name="add_region" type="add_region" maxOccurs="unbounded"/>
+    </xs:sequence>
+
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+
+  <xs:complexType name="partition_list">
+    <xs:sequence>
+      <xs:element name="partition" type="partition" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+<!-- This last definition is the root tag definition.  The name of the
+       xs:element is the root tag, and the contents of the xs:complexType
+       defines what attributes and subtags are expected.
+    -->
+  <xs:element name="vpr_constraints">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="partition_list" type="partition_list"/>
+      </xs:all>
+
+      <xs:attribute name="tool_name" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
+

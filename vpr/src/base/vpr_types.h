@@ -746,6 +746,7 @@ struct t_file_name_opts {
     std::string PowerFile;
     std::string CmosTechFile;
     std::string out_file_prefix;
+    std::string read_vpr_constraints_file;
     bool verify_file_digests;
 };
 

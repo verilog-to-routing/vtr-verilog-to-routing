@@ -93,6 +93,7 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->PowerFile = Options->PowerFile;
     FileNameOpts->CmosTechFile = Options->CmosTechFile;
     FileNameOpts->out_file_prefix = Options->out_file_prefix;
+    FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
 
     FileNameOpts->verify_file_digests = Options->verify_file_digests;
 

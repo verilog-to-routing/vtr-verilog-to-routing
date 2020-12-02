@@ -71,6 +71,9 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_ATOM_NETLIST_ORIG, "atom_netlist.orig.echo.blif");
     setEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED, "atom_netlist.cleaned.echo.blif");
 
+    //Vpr constraints
+    setEchoFileName(E_ECHO_VPR_CONSTRAINTS, "vpr_constraints.echo");
+
     //Intra-block routing
     setEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE, "intra_lb_failed_route.echo");
 
