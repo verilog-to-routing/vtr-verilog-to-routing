@@ -59,6 +59,18 @@ struct t_bb_cost {
     t_edge_cost ymax = {0, 0.0};
 };
 
+/**
+ * @brief Stores the different range limiters
+ *
+ * original_rlim: the original range limit calculated by the anneal
+ * first_rlim: the first range limit calculated based on the design and device size
+ * dm_rlim: the range limit around the center calculated by a directed move
+ */
+struct t_range_limiters {
+    float original_rlim;
+    float first_rlim;
+    float dm_rlim;
+};
 
 //Records a reasons for an aborted move
 void log_move_abort(std::string reason);
@@ -101,15 +113,13 @@ bool placer_breakpoint_reached();
 // Should be setted in the breakpoint calculation algorithm
 void set_placer_breakpoint_reached(bool);
 
-bool find_to_loc_median(t_logical_block_type_ptr type, const t_bb* limit_coords, const t_pl_loc from, t_pl_loc& to);
+bool find_to_loc_median(t_logical_block_type_ptr blk_type, const t_pl_loc& from_loc, const t_bb* limit_coords, t_pl_loc& to_loc);
 
-bool find_to_loc_centroid(t_logical_block_type_ptr type,
-                          float rlim,
-                          const t_pl_loc from,
-                          const t_pl_loc centeroid,
-                          t_pl_loc& to,
-                          int dm_rlim,
-                          float first_rlim);
+bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
+                          const t_pl_loc& from_loc,
+                          const t_pl_loc& centeroid,
+                          const t_range_limiters& range_limiters,
+                          t_pl_loc& to_loc);
 
 std::string move_type_to_string(e_move_type);
 

@@ -122,7 +122,7 @@ struct t_options {
     argparse::ArgValue<bool> place_checkpointing;
     argparse::ArgValue<float> place_agent_epsilon;
     argparse::ArgValue<float> place_agent_gamma;
-    argparse::ArgValue<int> place_dm_rlim;
+    argparse::ArgValue<float> place_dm_rlim;
     argparse::ArgValue<e_agent_algorithm> place_agent_algorithm;
     argparse::ArgValue<std::string> place_reward_fun;
     //argparse::ArgValue<int> place_timing_cost_func;

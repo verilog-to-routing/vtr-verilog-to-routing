@@ -1852,7 +1852,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "The maximum range limit of any directed move other than the uniform move. "
             "It also shrinks with the default rlim")
-        .default_value("3")
+        .default_value("3.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")

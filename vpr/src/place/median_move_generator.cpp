@@ -105,11 +105,17 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     limit_coords.ymin = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2)];
     limit_coords.ymax = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2) + 1];
 
+    //arrange the different range limiters
+    t_range_limiters range_limiters;
+    range_limiters.original_rlim = rlim;
+    range_limiters.first_rlim = move_helper.first_rlim;
+    range_limiters.dm_rlim = placer_opts.place_dm_rlim;
+
     //find a location in a range around the center of median region
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
-    if (!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to, placer_opts.place_dm_rlim, move_helper.first_rlim))
+    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to))
         return e_create_move::ABORT;
 
     return ::create_move(blocks_affected, b_from, to);
