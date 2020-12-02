@@ -853,6 +853,9 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     //Determine the valid compressed grid location ranges
     int min_cx, max_cx, delta_cx;
     int min_cy, max_cy;
+
+    // If we are early in the anneal and the range limit still big enough --> search around the center location that the move proposed
+    // If not --> search around the current location of the block but in the direction of the center location that the move proposed
     if (range_limiters.original_rlim > 0.15 * range_limiters.first_rlim) {
         min_cx = std::max(0, cx_centroid - rlim_x);
         max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
