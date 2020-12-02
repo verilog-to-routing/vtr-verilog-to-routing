@@ -352,7 +352,7 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
                         "-sdc_file",
                         "{}".format(sdc_file)
                     ]
-                except InspectError as e:
+                except InspectError:
                     pass
 
             parse_cmd = None

@@ -15,8 +15,14 @@ import subprocess
 from urllib import request
 
 GCS_URL = {
-    "architectures": "https://storage.googleapis.com/symbiflow-arch-defs/artifacts/prod/foss-fpga-tools/symbiflow-arch-defs/presubmit/install/1125/20201201-062708/symbiflow-arch-defs-install-4f157a57.tar.xz",
-    "benchmarks": "https://storage.googleapis.com/symbiflow-arch-defs/artifacts/prod/foss-fpga-tools/symbiflow-arch-defs/presubmit/install/1125/20201201-062708/symbiflow-arch-defs-benchmarks-4f157a57.tar.xz"
+    "architectures":
+        ("https://storage.googleapis.com/symbiflow-arch-defs/artifacts/"
+         "prod/foss-fpga-tools/symbiflow-arch-defs/presubmit/install/1125/20201201-062708/"
+         "symbiflow-arch-defs-install-4f157a57.tar.xz"),
+    "benchmarks":
+        ("https://storage.googleapis.com/symbiflow-arch-defs/artifacts/"
+         "prod/foss-fpga-tools/symbiflow-arch-defs/presubmit/install/1125/20201201-062708/"
+         "symbiflow-arch-defs-benchmarks-4f157a57.tar.xz")
 }
 
 SYMBIFLOW_URL_MIRRORS = {"google": GCS_URL}
@@ -91,7 +97,8 @@ def main():
         download_url(archs_tar_xz_filename, archs_tar_xz_url)
 
         print("Extracting architectures {}".format(archs_tar_xz_filename))
-        extract_to_vtr_flow_dir(args, archs_tar_xz_filename, "arch", "share/symbiflow/arch/xc7a50t_test")
+        symbiflow_data_dir = "share/symbiflow/arch/xc7a50t_test"
+        extract_to_vtr_flow_dir(args, archs_tar_xz_filename, "arch", symbiflow_data_dir)
 
         print("Downloading benchmarks {}".format(benchmarks_tar_xz_url))
         download_url(benchmarks_tar_xz_filename, benchmarks_tar_xz_url)
