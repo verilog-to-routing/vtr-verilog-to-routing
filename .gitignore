@@ -47,6 +47,17 @@ ispd_benchmarks_vtr*.tar.gz
 vtr_flow/benchmarks/ispd_blif/*.blif
 
 #
+# SymbiFlow benchmarks
+#
+#   We ignore the SymbiFlow netlists and architectures because of thier large size.
+#
+*symbiflow*.tar.xz
+vtr_flow/arch/symbiflow/*.bin
+vtr_flow/arch/symbiflow/*.xml
+vtr_flow/benchmarks/symbiflow/*.eblif
+vtr_flow/benchmarks/symbiflow/sdc/*.sdc
+
+#
 # Cloud9 Directory
 #
 .c9/

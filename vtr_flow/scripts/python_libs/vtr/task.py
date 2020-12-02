@@ -344,10 +344,16 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
             )
 
             if config.sdc_dir:
-                cmd += [
-                    "-sdc_file",
-                    "{}/{}.sdc".format(config.sdc_dir, Path(circuit).stem),
-                ]
+                sdc_name = "{}.sdc".format(Path(circuit).stem)
+                try:
+                    sdc_file = resolve_vtr_source_file(config, sdc_name, config.sdc_dir)
+
+                    cmd += [
+                        "-sdc_file",
+                        "{}".format(sdc_file)
+                    ]
+                except InspectError as e:
+                    pass
 
             parse_cmd = None
             second_parse_cmd = None
