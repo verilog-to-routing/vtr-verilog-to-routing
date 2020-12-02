@@ -5,7 +5,7 @@
 
 static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, bool& skip_net);
 
-e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -29,8 +29,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
-    X_coord.clear();
-    Y_coord.clear();
+    move_helper.X_coord.clear();
+    move_helper.Y_coord.clear();
 
     //true if the net is a feedback from the block to itself
     bool skip_net;
@@ -47,39 +47,39 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         if (skip_net)
             continue;
 
-        X_coord.insert(X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.edge);
-        X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.edge);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.edge);
-        Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.edge);
+        move_helper.X_coord.insert(move_helper.X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.edge);
+        move_helper.X_coord.insert(move_helper.X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.edge);
+        move_helper.Y_coord.insert(move_helper.Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.edge);
+        move_helper.Y_coord.insert(move_helper.Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.edge);
     }
 
-    if ((X_coord.size() == 0) || (Y_coord.size() == 0))
+    if ((move_helper.X_coord.size() == 0) || (move_helper.Y_coord.size() == 0))
         return e_create_move::ABORT;
 
     //calculate the weighted median region
-    std::sort(X_coord.begin(), X_coord.end());
-    std::sort(Y_coord.begin(), Y_coord.end());
+    std::sort(move_helper.X_coord.begin(), move_helper.X_coord.end());
+    std::sort(move_helper.Y_coord.begin(), move_helper.Y_coord.end());
 
-    if (X_coord.size() == 1) {
-        limit_coords.xmin = X_coord[floor((X_coord.size() - 1) / 2)];
+    if (move_helper.X_coord.size() == 1) {
+        limit_coords.xmin = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2)];
         limit_coords.xmax = limit_coords.xmin;
     } else {
-        limit_coords.xmin = X_coord[floor((X_coord.size() - 1) / 2)];
-        limit_coords.xmax = X_coord[floor((X_coord.size() - 1) / 2) + 1];
+        limit_coords.xmin = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2)];
+        limit_coords.xmax = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2) + 1];
     }
 
-    if (Y_coord.size() == 1) {
-        limit_coords.ymin = Y_coord[floor((Y_coord.size() - 1) / 2)];
+    if (move_helper.Y_coord.size() == 1) {
+        limit_coords.ymin = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2)];
         limit_coords.ymax = limit_coords.ymin;
     } else {
-        limit_coords.ymin = Y_coord[floor((Y_coord.size() - 1) / 2)];
-        limit_coords.ymax = Y_coord[floor((Y_coord.size() - 1) / 2) + 1];
+        limit_coords.ymin = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2)];
+        limit_coords.ymax = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2) + 1];
     }
 
     t_pl_loc w_median_point;
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     w_median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
-    if (!find_to_loc_centroid(cluster_from_type, rlim, from, w_median_point, to, placer_opts.place_dm_rlim)) {
+    if (!find_to_loc_centroid(cluster_from_type, rlim, from, w_median_point, to, placer_opts.place_dm_rlim, move_helper.first_rlim)) {
         return e_create_move::ABORT;
     }
     return ::create_move(blocks_affected, b_from, to);

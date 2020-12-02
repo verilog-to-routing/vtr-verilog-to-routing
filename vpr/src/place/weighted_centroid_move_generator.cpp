@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "directed_moves_util.h"
 
-e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& /*X_coord*/, std::vector<int>& /*Y_coord*/, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -24,7 +24,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     calculate_centroid_loc(b_from, true, centroid, criticalities);
 
     /* Find a  */
-    if (!find_to_loc_centroid(cluster_from_type, rlim, from, centroid, to, placer_opts.place_dm_rlim)) {
+    if (!find_to_loc_centroid(cluster_from_type, rlim, from, centroid, to, placer_opts.place_dm_rlim, move_helper.first_rlim)) {
         return e_create_move::ABORT;
     }
 

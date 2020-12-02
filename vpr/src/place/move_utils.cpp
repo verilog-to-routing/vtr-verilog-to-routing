@@ -810,7 +810,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
                           const t_pl_loc from,
                           const t_pl_loc centroid,
                           t_pl_loc& to,
-                          int dm_rlim) {
+                          int dm_rlim,
+                          float first_rlim) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -820,12 +821,6 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the
     //case with a physical distance rlim)
-
-    //the initial placement range limit calculated for the current circuit by the annealer
-    static float init_rlim = -1;
-    if (init_rlim == -1)
-        init_rlim = rlim;
-    VTR_LOG("@%f\n", init_rlim);
 
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -845,7 +840,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     //Determine the valid compressed grid location ranges
     int min_cx, max_cx, delta_cx;
     int min_cy, max_cy;
-    if (rlim > 0.15 * init_rlim) {
+    if (rlim > 0.15 * first_rlim) {
         min_cx = std::max(0, cx_centroid - rlim_x);
         max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
 

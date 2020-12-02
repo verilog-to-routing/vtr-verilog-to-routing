@@ -6,7 +6,7 @@ static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yol
 
 static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -33,8 +33,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
-    X_coord.clear();
-    Y_coord.clear();
+    move_helper.X_coord.clear();
+    move_helper.Y_coord.clear();
 
     //true if the net is a feedback from the block to itself
     bool skip_net;
@@ -86,30 +86,30 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             }
         }
         //push the calculated coorinates into X,Y coord vectors
-        X_coord.push_back(coords.xmin);
-        X_coord.push_back(coords.xmax);
-        Y_coord.push_back(coords.ymin);
-        Y_coord.push_back(coords.ymax);
+        move_helper.X_coord.push_back(coords.xmin);
+        move_helper.X_coord.push_back(coords.xmax);
+        move_helper.Y_coord.push_back(coords.ymin);
+        move_helper.Y_coord.push_back(coords.ymax);
     }
 
-    if ((X_coord.size() == 0) || (Y_coord.size() == 0))
+    if ((move_helper.X_coord.size() == 0) || (move_helper.Y_coord.size() == 0))
         return e_create_move::ABORT;
 
     //calculate the median region
-    std::sort(X_coord.begin(), X_coord.end());
-    std::sort(Y_coord.begin(), Y_coord.end());
+    std::sort(move_helper.X_coord.begin(), move_helper.X_coord.end());
+    std::sort(move_helper.Y_coord.begin(), move_helper.Y_coord.end());
 
-    limit_coords.xmin = X_coord[floor((X_coord.size() - 1) / 2)];
-    limit_coords.xmax = X_coord[floor((X_coord.size() - 1) / 2) + 1];
+    limit_coords.xmin = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2)];
+    limit_coords.xmax = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2) + 1];
 
-    limit_coords.ymin = Y_coord[floor((Y_coord.size() - 1) / 2)];
-    limit_coords.ymax = Y_coord[floor((Y_coord.size() - 1) / 2) + 1];
+    limit_coords.ymin = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2)];
+    limit_coords.ymax = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2) + 1];
 
     //find a location in a range around the center of median region
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
-    if (!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to, placer_opts.place_dm_rlim))
+    if (!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to, placer_opts.place_dm_rlim, move_helper.first_rlim))
         return e_create_move::ABORT;
 
     return ::create_move(blocks_affected, b_from, to);

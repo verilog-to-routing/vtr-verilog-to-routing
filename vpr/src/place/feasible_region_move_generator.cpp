@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "math.h"
 
-e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& /*move_type*/, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -31,8 +31,8 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     ClusterBlockId bnum;
     int max_x, min_x, max_y, min_y;
 
-    X_coord.clear();
-    Y_coord.clear();
+    move_helper.X_coord.clear();
+    move_helper.Y_coord.clear();
     //For critical input nodes, calculate the x & y min-max values
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_input_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
@@ -42,15 +42,15 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
         if (criticalities->criticality(net_id, ipin) > placer_opts.place_crit_limit) {
             bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-            X_coord.push_back(place_ctx.block_locs[bnum].loc.x);
-            Y_coord.push_back(place_ctx.block_locs[bnum].loc.y);
+            move_helper.X_coord.push_back(place_ctx.block_locs[bnum].loc.x);
+            move_helper.Y_coord.push_back(place_ctx.block_locs[bnum].loc.y);
         }
     }
-    if (X_coord.size() != 0) {
-        max_x = *(std::max_element(X_coord.begin(), X_coord.end()));
-        min_x = *(std::min_element(X_coord.begin(), X_coord.end()));
-        max_y = *(std::max_element(Y_coord.begin(), Y_coord.end()));
-        min_y = *(std::min_element(Y_coord.begin(), Y_coord.end()));
+    if (move_helper.X_coord.size() != 0) {
+        max_x = *(std::max_element(move_helper.X_coord.begin(), move_helper.X_coord.end()));
+        min_x = *(std::min_element(move_helper.X_coord.begin(), move_helper.X_coord.end()));
+        max_y = *(std::max_element(move_helper.Y_coord.begin(), move_helper.Y_coord.end()));
+        min_y = *(std::min_element(move_helper.Y_coord.begin(), move_helper.Y_coord.end()));
     } else {
         max_x = from.x;
         min_x = from.x;
@@ -108,7 +108,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         t_pl_loc center;
         center.x = (FR_coords.xmin + FR_coords.xmax) / 2;
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
-        if (!find_to_loc_centroid(cluster_from_type, rlim, from, center, to, placer_opts.place_dm_rlim))
+        if (!find_to_loc_centroid(cluster_from_type, rlim, from, center, to, placer_opts.place_dm_rlim, move_helper.first_rlim))
             return e_create_move::ABORT;
     }
 

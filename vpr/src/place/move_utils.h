@@ -108,7 +108,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
                           const t_pl_loc from,
                           const t_pl_loc centeroid,
                           t_pl_loc& to,
-                          int dm_rlim);
+                          int dm_rlim,
+                          float first_rlim);
 
 std::string move_type_to_string(e_move_type);
 

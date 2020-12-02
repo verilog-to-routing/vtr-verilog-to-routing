@@ -24,6 +24,7 @@ struct t_pl_moved_block {
  * num_moves:      save the number of proposed moves of each type(e.g. indexed from 0 to NUM_PL_MOVE_TYPES-1 )      *
  * accepted_moves: save the number of accepted moves of each type                                                   *
  * aborted_moves:  save the number of aborted moves of each type                                                    */
+/*
 struct t_move_helper_vectors {
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
@@ -31,7 +32,7 @@ struct t_move_helper_vectors {
     std::vector<int> accepted_moves;
     std::vector<int> aborted_moves;
 };
-
+*/
 /* Stores the list of blocks to be moved in a swap during       *
  * placement.                                                   *
  * Store the information on the blocks to be moved in a swap during     *

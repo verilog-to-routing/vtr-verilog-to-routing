@@ -19,6 +19,32 @@ struct MoveOutcomeStats {
 };
 
 /**
+ * @brief A struct that holds some data that is useful for move generators
+ *
+ * first_rlim: the first range limiter 
+ * X_coord:a scratch vector used to save X coordinates by some moves, used to save memory allocation time
+ * Y_coord: same as X_coord for y coordinates
+ */
+struct MoveHelperData {
+    float first_rlim;
+    std::vector<int> X_coord;
+    std::vector<int> Y_coord;
+};
+
+/**
+ * @brief A Struct to hold statistics about the different move types
+ *
+ * num_moves:      save the number of proposed moves of each type (e.g. indexed from 0 to NUM_PL_MOVE_TYPES-1 )
+ * accepted_moves: save the number of accepted moves of each type (e.g. indexed from 0 to NUM_PL_MOVE_TYPES-1 )
+ * aborted_moves:  save the number of aborted moves of each type (e.g. indexed from 0 to NUM_PL_MOVE_TYPES-1 )
+ */ 
+struct MoveTypeStat {
+    std::vector<int> num_moves;
+    std::vector<int> accepted_moves;
+    std::vector<int> aborted_moves;    
+};
+
+/**
  * @brief a base class for move generators
  *
  * This class represents the base class for all move generators.
@@ -31,19 +57,18 @@ class MoveGenerator {
     /**
      * @brief Updates affected_blocks with the proposed move, while respecting the current rlim
      *
-     * This function proposes a new move and updates affected_blocks accorrdingly. The function interface is general 
+     * This function proposes a new move and updates blocks affected and move_type accorrdingly. The function interface is general 
      * to match the parameters needed by all move generators
      *
-     *  @param blocks_affected: the blocks affected by the proposed move
+     *  @param blocks_affectedt: the output of the move
+     *  @param move_type: the move type used
+     *  @param move_helper: some helper variables for the different move generators
      *  @param rlim: maximum distance a block can move in x or y direction, in the compressed grid space
-     *  @param X_coord: a scratch vector used to save X coordinates by some moves, used to save memory allocation time
-     *  @param Y_coord: same as Y_coord for y coordinates
-     *  @param move_type: return the move type that was used
      *  @param placer_opts: all the placer options
      *  @param criticalities: the placer criticalities, useful for timing directed moves
      */
-    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, e_move_type& move_type, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
-
+    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
+ 
     /**
      * @brief Recieves feedback about the outcome of the previously proposed move
      *
