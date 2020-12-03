@@ -5,6 +5,9 @@
 #include "timing_place.h"
 #include "move_generator.h"
 
+#include "static_move_generator.h"
+#include "simpleRL_move_generator.h"
+
 ///@brief Helper function that returns the x, y coordinates of a pin
 void get_coordinate_of_pin(ClusterPinId pin, int& x, int& y);
 
@@ -22,4 +25,13 @@ void get_coordinate_of_pin(ClusterPinId pin, int& x, int& y);
  */
 void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities);
 
+/**
+ * @brief Creates the move generators that will be used by the annealer
+ *
+ * This function creates 2 move generators to be used by the annealer. The type of the move generators created here depends on the 
+ * type selected in placer_opts.
+ * It returns a unique pointer for each move generator in move_generator and move_generator2
+ * move_lim: represents the num of moves per temp.
+ */
+void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, const t_placer_opts& placer_opts, int move_lim);
 #endif
