@@ -52,8 +52,10 @@
 #include "placer_breakpoint.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
- *  compared to the timing cost in the agent's reward function. 
-#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.8
+ *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
+ * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
+ */
+#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.4
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "draw_types.h"
@@ -1647,7 +1649,8 @@ static e_move_result try_swap(const t_annealing_state* state,
         }
     } else if (reward_fun == "WLbiased_runtime_aware") {
         if (delta_c < 0) {
-            float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
+            //float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
+            float reward = -1 * ((1.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + (1 + timing_bb_factor) * move_outcome_stats.delta_bb_cost_norm);
             move_generator.process_outcome(reward, reward_fun);
         } else {
             move_generator.process_outcome(0, reward_fun);
