@@ -638,17 +638,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     VTR_ASSERT(cy_to != OPEN);
 
     //Convert to true (uncompressed) grid locations
-    to.x = compressed_block_grid.compressed_to_grid_x[cx_to];
-    to.y = compressed_block_grid.compressed_to_grid_y[cy_to];
+    compressed_grid_to_loc(type, cx_to, cy_to, to);
 
     auto& grid = g_vpr_ctx.device().grid;
-
     auto to_type = grid[to.x][to.y].type;
-
-    //Each x/y location possibly contains multiple sub tiles, so we need to pick
-    //a z location within a compatible sub tile.
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
-    to.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
@@ -796,17 +789,10 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT(cy_to != OPEN);
 
     //Convert to true (uncompressed) grid locations
-    to_loc.x = compressed_block_grid.compressed_to_grid_x[cx_to];
-    to_loc.y = compressed_block_grid.compressed_to_grid_y[cy_to];
+    compressed_grid_to_loc(blk_type, cx_to, cy_to, to_loc);
 
     auto& grid = g_vpr_ctx.device().grid;
-
     auto to_type = grid[to_loc.x][to_loc.y].type;
-
-    //Each x/y location contains only a single type, so we can pick a random
-    //z (capcity) location
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
-    to_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[to_loc.x][to_loc.y].width_offset == 0, "Should be at block base location");
@@ -967,17 +953,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     VTR_ASSERT(cy_to != OPEN);
 
     //Convert to true (uncompressed) grid locations
-    to_loc.x = compressed_block_grid.compressed_to_grid_x[cx_to];
-    to_loc.y = compressed_block_grid.compressed_to_grid_y[cy_to];
+    compressed_grid_to_loc(blk_type, cx_to, cy_to, to_loc);
 
     auto& grid = g_vpr_ctx.device().grid;
-
     auto to_type = grid[to_loc.x][to_loc.y].type;
-
-    //Each x/y location contains only a single type, so we can pick a random
-    //z (capcity) location
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
-    to_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[to_loc.x][to_loc.y].width_offset == 0, "Should be at block base location");
@@ -987,7 +966,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 }
 
 //Array of move type strings
-const std::array<std::string, NUM_PL_MOVE_TYPES> move_type_strings = {
+static const std::array<std::string, NUM_PL_MOVE_TYPES> move_type_strings = {
     "Uniform",
     "Median",
     "W. Centroid",
@@ -999,4 +978,16 @@ const std::array<std::string, NUM_PL_MOVE_TYPES> move_type_strings = {
 //To convert enum move type to string
 std::string move_type_to_string(e_move_type move) {
     return move_type_strings[int(move)];
+}
+
+//Convert to true (uncompressed) grid locations
+void compressed_grid_to_loc (t_logical_block_type_ptr blk_type, int cx, int cy, t_pl_loc& to_loc) {
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
+
+    to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
+    to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
+
+    //Each x/y location contains only a single type, so we can pick a random z (capcity) location
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(blk_type->index);
+    to_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 }

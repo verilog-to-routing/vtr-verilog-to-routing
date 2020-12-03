@@ -20,7 +20,7 @@ enum e_move_result {
     ABORTED
 };
 
-//This is to list all the abailable moves
+//This is to list all the available moves
 enum class e_move_type {
     UNIFORM,
     MEDIAN,
@@ -122,5 +122,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           t_pl_loc& to_loc);
 
 std::string move_type_to_string(e_move_type);
+
+// find to location helper function
+void compressed_grid_to_loc (t_logical_block_type_ptr blk, int, int, t_pl_loc&);
 
 #endif

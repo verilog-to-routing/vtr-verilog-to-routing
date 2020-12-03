@@ -1058,7 +1058,7 @@ struct t_placer_opts {
     e_agent_algorithm place_agent_algorithm;
     float place_agent_epsilon;
     float place_agent_gamma;
-    int place_dm_rlim;
+    float place_dm_rlim;
     //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;
