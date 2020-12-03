@@ -58,9 +58,34 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         auto& atom_ctx = g_vpr_ctx.atom();
         std::string atom_name = name_pattern;
+
+        auto atom_name_regex = std::regex(atom_name);
+
+        std::vector<AtomBlockId> clear_atoms;
+        atoms_ = clear_atoms;
+
         atom_id_ = atom_ctx.nlist.find_block(name_pattern);
 
-        if (atom_id_ == AtomBlockId::INVALID()) {
+        if (atom_id_ != AtomBlockId::INVALID()) {
+            atoms_.push_back(atom_id_);
+        } else {
+            /*If the atom name returns an invalid ID, it might be a regular expression, so loop through the atoms blocks
+             * and see if any block names match atom_name_regex.
+             */
+            for (auto block_id : atom_ctx.nlist.blocks()) {
+                auto block_name = atom_ctx.nlist.block_name(block_id);
+
+                if (std::regex_match(block_name, atom_name_regex)) {
+                    VTR_LOG("Matched block %s with ID %d to regex\n", block_name.c_str(), block_id);
+                    atoms_.push_back(block_id);
+                }
+            }
+        }
+
+        /*If the atoms_ vector is empty by this point, no atoms were found that matched the name,
+         * so the name is invalid.
+         */
+        if (atoms_.empty()) {
             VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern);
         }
     }
@@ -128,8 +153,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
         PartitionId part_id(num_partitions_);
 
-        if (atom_id_ != AtomBlockId::INVALID()) {
-            constraints_.add_constrained_atom(atom_id_, part_id);
+        for (unsigned int i = 0; i < atoms_.size(); i++) {
+            if (atoms_[i] != AtomBlockId::INVALID()) {
+                constraints_.add_constrained_atom(atoms_[i], part_id);
+            }
         }
     }
 
@@ -239,6 +266,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     std::string temp_;
     int num_partitions_ = 0;
     AtomBlockId atom_id_;
+    std::vector<AtomBlockId> atoms_;
 };
 
 #endif /* VPR_CONSTRAINTS_SERIALIZER_H_ */
