@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx.py ../vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * Input file: /home/khalid88/Documents/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: 3e1f2692931484aa45dce794ba723aa9
+ * Cmdline: uxsdcxx.py vpr_constraints.xsd
+ * Input file: /home/khalid88/Documents/uxsdcxx/vpr_constraints.xsd
+ * md5sum of input file: 6b6011a6e6446347b234da82e517422e
  */
 
 #include <functional>
@@ -68,8 +68,10 @@ class VprConstraintsBase {
     /** Generated for complex type "partition":
      * <xs:complexType name="partition">
      *   <xs:sequence>
-     *     <xs:element maxOccurs="unbounded" name="add_atom" type="add_atom" />
-     *     <xs:element maxOccurs="unbounded" name="add_region" type="add_region" />
+     *      <xs:choice maxOccurs="unbounded">
+     *          <xs:element name="add_atom" type="add_atom" />
+     *          <xs:element name="add_region" type="add_region" />
+     *      </xs:choice>
      *   </xs:sequence>
      *   <xs:attribute name="name" type="xs:string" use="required" />
      * </xs:complexType>

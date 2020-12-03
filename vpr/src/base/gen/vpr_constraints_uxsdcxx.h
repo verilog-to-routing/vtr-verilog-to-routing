@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx.py ../vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * Input file: /home/khalid88/Documents/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: 3e1f2692931484aa45dce794ba723aa9
+ * Cmdline: uxsdcxx.py vpr_constraints.xsd
+ * Input file: /home/khalid88/Documents/uxsdcxx/vpr_constraints.xsd
+ * md5sum of input file: 6b6011a6e6446347b234da82e517422e
  */
 
 #include <functional>
@@ -521,12 +521,11 @@ inline void load_add_region(const pugi::xml_node& root, T& out, Context& context
         noreturn_report(report_error, "Unexpected child element in <add_region>.");
 }
 
-constexpr int NUM_T_PARTITION_STATES = 3;
+constexpr int NUM_T_PARTITION_STATES = 2;
 constexpr const int NUM_T_PARTITION_INPUTS = 2;
 constexpr int gstate_t_partition[NUM_T_PARTITION_STATES][NUM_T_PARTITION_INPUTS] = {
-    {-1, 0},
-    {1, 0},
-    {1, -1},
+    {0, 0},
+    {0, 0},
 };
 template<class T, typename Context>
 inline void load_partition(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
@@ -552,7 +551,7 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
     size_t add_atom_count = 0;
     size_t add_region_count = 0;
     {
-        int next, state = 2;
+        int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
             *offset_debug = node.offset_debug();
             gtok_t_partition in = lex_node_t_partition(node.name(), report_error);
@@ -575,7 +574,7 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
         out.preallocate_partition_add_atom(context, add_atom_count);
         out.preallocate_partition_add_region(context, add_region_count);
     }
-    int next, state = 2;
+    int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         *offset_debug = node.offset_debug();
         gtok_t_partition in = lex_node_t_partition(node.name(), report_error);

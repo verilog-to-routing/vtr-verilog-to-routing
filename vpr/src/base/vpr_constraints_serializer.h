@@ -211,6 +211,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
 
+    virtual inline void set_vpr_constraints_constraints_comment(const char* /*constraints_comment*/, void*& /*ctx*/) final {}
+
+    virtual inline const char* get_vpr_constraints_constraints_comment(void*& /*ctx*/) final {
+        return temp_.c_str();
+    }
     virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
         return nullptr;
     }
