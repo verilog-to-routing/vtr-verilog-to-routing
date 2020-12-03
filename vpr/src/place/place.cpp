@@ -50,7 +50,7 @@
 #include "tatum/TimingReporter.hpp"
 
 #include "placer_breakpoint.h"
-#include "directed_moves_util.h"
+#include "RL_agent_util.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
@@ -704,7 +704,9 @@ void try_place(const t_placer_opts& placer_opts,
     print_place_status_header();
 
     //RL agent state definition
-    int agent_state = 1;
+    e_agent_state agent_state = EARLY_IN_THE_ANNEAL;
+
+    std::unique_ptr<MoveGenerator> current_move_generator;
 
     //Define the timing bb weight factor for the agent's reward function
     float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
@@ -730,7 +732,7 @@ void try_place(const t_placer_opts& placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
 
             //see if we should save the current placement solution as a checkpoint
-            if (placer_opts.place_checkpointing && agent_state == 2) {
+            if (placer_opts.place_checkpointing && agent_state == LATE_IN_THE_ANNEAL) {
                 if (placement_checkpoint.cp_is_valid() == false || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())) {
                     placement_checkpoint.save_placement(costs, critical_path.delay());
                     VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost, 1e9 * critical_path.delay());
@@ -738,50 +740,39 @@ void try_place(const t_placer_opts& placer_opts,
             }
         }
 
-        if (agent_state == 1 || placer_opts.place_agent_multistate == false) {
-            //use the first state
-            placement_inner_loop(&state, placer_opts,
-                                 inner_recompute_limit, &stats,
-                                 &costs,
-                                 &moves_since_cost_recompute,
-                                 pin_timing_invalidator.get(),
-                                 place_delay_model.get(),
-                                 placer_criticalities.get(),
-                                 placer_setup_slacks.get(),
-                                 *move_generator,
-                                 blocks_affected,
-                                 timing_info.get(),
-                                 placer_opts.place_algorithm,
-                                 move_helper,
-                                 move_type_stat,
-                                 timing_bb_factor);
-        } else {
-            //use the second state
-            placement_inner_loop(&state, placer_opts,
-                                 inner_recompute_limit, &stats,
-                                 &costs,
-                                 &moves_since_cost_recompute,
-                                 pin_timing_invalidator.get(),
-                                 place_delay_model.get(),
-                                 placer_criticalities.get(),
-                                 placer_setup_slacks.get(),
-                                 *move_generator2,
-                                 blocks_affected,
-                                 timing_info.get(),
-                                 placer_opts.place_algorithm,
-                                 move_helper,
-                                 move_type_stat,
-                                 timing_bb_factor);
-        }
+        //move the appropoiate move_generator to be the current used move generator
+        assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
+
+        //do a complete inner loop iteration
+        placement_inner_loop(&state, placer_opts,
+                             inner_recompute_limit, &stats,
+                             &costs,
+                             &moves_since_cost_recompute,
+                             pin_timing_invalidator.get(),
+                             place_delay_model.get(),
+                             placer_criticalities.get(),
+                             placer_setup_slacks.get(),
+                             *current_move_generator,
+                             blocks_affected,
+                             timing_info.get(),
+                             placer_opts.place_algorithm,
+                             move_helper,
+                             move_type_stat,
+                             timing_bb_factor);
+
+        //move the update used move_generator to its original variable
+        update_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
+
         tot_iter += state.move_lim;
         ++state.num_temps;
 
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
 
-        if (placer_opts.place_quench_algorithm.is_timing_driven() && agent_state == 1 && state.alpha < 0.85 && state.alpha > 0.6) {
-            agent_state = 2;
-            if (placer_opts.place_agent_multistate)
+        if (placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_agent_multistate && agent_state == EARLY_IN_THE_ANNEAL) {
+            if (state.alpha < 0.85 && state.alpha > 0.6) {
+                agent_state = LATE_IN_THE_ANNEAL;
                 VTR_LOG("Agent's 2nd state: \n");
+            }
         }
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
@@ -821,41 +812,29 @@ quench:
                                       pin_timing_invalidator.get(),
                                       timing_info.get());
 
+        //move the appropoiate move_generator to be the current used move generator
+        assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
+
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        if (placer_opts.place_quench_algorithm.is_timing_driven() && placer_opts.place_agent_multistate == true) {
-            placement_inner_loop(&state, placer_opts,
-                                 quench_recompute_limit, &stats,
-                                 &costs,
-                                 &moves_since_cost_recompute,
-                                 pin_timing_invalidator.get(),
-                                 place_delay_model.get(),
-                                 placer_criticalities.get(),
-                                 placer_setup_slacks.get(),
-                                 *move_generator2,
-                                 blocks_affected,
-                                 timing_info.get(),
-                                 placer_opts.place_quench_algorithm,
-                                 move_helper,
-                                 move_type_stat,
-                                 timing_bb_factor);
-        } else {
-            placement_inner_loop(&state, placer_opts,
-                                 quench_recompute_limit, &stats,
-                                 &costs,
-                                 &moves_since_cost_recompute,
-                                 pin_timing_invalidator.get(),
-                                 place_delay_model.get(),
-                                 placer_criticalities.get(),
-                                 placer_setup_slacks.get(),
-                                 *move_generator,
-                                 blocks_affected,
-                                 timing_info.get(),
-                                 placer_opts.place_quench_algorithm,
-                                 move_helper,
-                                 move_type_stat,
-                                 timing_bb_factor);
-        }
+        placement_inner_loop(&state, placer_opts,
+                             quench_recompute_limit, &stats,
+                             &costs,
+                             &moves_since_cost_recompute,
+                             pin_timing_invalidator.get(),
+                             place_delay_model.get(),
+                             placer_criticalities.get(),
+                             placer_setup_slacks.get(),
+                             *current_move_generator,
+                             blocks_affected,
+                             timing_info.get(),
+                             placer_opts.place_quench_algorithm,
+                             move_helper,
+                             move_type_stat,
+                             timing_bb_factor);
+
+        //move the update used move_generator to its original variable
+        update_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
 
         tot_iter += state.move_lim;
         ++state.num_temps;
