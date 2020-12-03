@@ -123,7 +123,25 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 
 std::string move_type_to_string(e_move_type);
 
-// find to location helper function
-void compressed_grid_to_loc (t_logical_block_type_ptr blk, int, int, t_pl_loc&);
+/* find to loaction helper functions */
+/**
+ * @brief convert compressed location to normal location
+ *
+ * blk_type: the type of the moving block
+ * cx: the x coordinate of the compressed location
+ * cy: the y coordinate of the compressed location
+ * loc: the uncompressed output location (returned in reference)
+ */
+void compressed_grid_to_loc (t_logical_block_type_ptr blk_type, int cx, int cy, t_pl_loc& loc);
+/**
+ * @brief find compressed location in a compressed range for a specific type
+ * 
+ * type: defines the moving block type
+ * min_cx, max_cx: the minimum and maximum x coordinates of the range in the compressed grid
+ * min_cy, max_cx: the minimum and maximum y coordinates of the range in the compressed grid
+ * cx_from, cy_from: the x and y coordinates of the old location 
+ * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
+ */
+bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to);
 
 #endif
