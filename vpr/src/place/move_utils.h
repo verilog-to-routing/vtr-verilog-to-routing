@@ -41,8 +41,8 @@ enum class e_create_move {
  *        criticality of the net terminal that caused this edge
  */
 struct t_edge_cost {
-    int edge;
-    float criticality;
+    int edge;           //x or y coordinate of one edge of a bounding box
+    float criticality;  //the timing criticality of the net terminal that caused this edge
 };
 
 /**
@@ -113,8 +113,35 @@ bool placer_breakpoint_reached();
 // Should be setted in the breakpoint calculation algorithm
 void set_placer_breakpoint_reached(bool);
 
+/**
+ * @brief Find a legal swap to location for the given type in a specific region.
+ *
+ * This function finds a legal swap to location for the type "blk_type" in a region 
+ * defined in "limit_coords". It returns the location it picks in "to_loc" that is passed by reference. It also returns true
+ * if it was able to find a compatible location and false otherwise.
+ * It is similar to find_to_loc_uniform but searching in a defined range instead of searching in a range around the current block location.
+ *
+ *  @param blk_type: the type of the moving block
+ *  @param from_loc: the original location of the moving block
+ *  @param limit_coords: the region where I can move the block to
+ *  @param to_loc: the new location that the function picked for the block
+ */
 bool find_to_loc_median(t_logical_block_type_ptr blk_type, const t_pl_loc& from_loc, const t_bb* limit_coords, t_pl_loc& to_loc);
 
+/**
+ * @brief Find a legal swap to location for the given type in a range around a specific location.
+ *
+ * This function finds a legal swap to location for the type "blk_type" in a range around a specific location.
+ * It returns the location it picks in "to_loc" that is passed by reference. It also returns true
+ * if it was able to find a compatible location and false otherwise.
+ * It is similar to find_to_loc_uniform but searching in a range around a defined location 
+ * instead of searching in a range around the current block location.
+ *
+ *  @param blk_type: the type of the moving block
+ *  @param from_loc: the original location of the moving block
+ *  @param limit_coords: the region where I can move the block to
+ *  @param to_loc: the new location that the function picked for the block
+ */
 bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& from_loc,
                           const t_pl_loc& centeroid,

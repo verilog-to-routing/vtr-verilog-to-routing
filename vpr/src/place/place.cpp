@@ -51,10 +51,8 @@
 
 #include "placer_breakpoint.h"
 
-/*  define the reward function factor constant *
- *  This factor controls the weight of bb cost *
- *  compared to the timing cost in the agent's *
- *  reward function                            */
+/*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
+ *  compared to the timing cost in the agent's reward function. 
 #define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.8
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
