@@ -638,10 +638,10 @@ void try_place(const t_placer_opts& placer_opts,
         inner_recompute_limit = first_move_lim + 1;
     }
 
+    /* calculate the number of moves in the quench that we should recompute timing after based on the value of *
+     * the commandline option quench_recompute_divider                                                         */ 
     int quench_recompute_limit;
-    if (placer_opts.quench_recompute_divider == -1) {
-        quench_recompute_limit = 1;
-    } else if (placer_opts.quench_recompute_divider != 0) {
+    if (placer_opts.quench_recompute_divider != 0) {
         quench_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
     } else {
         /*don't do an quench recompute */
