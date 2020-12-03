@@ -1,20 +1,20 @@
 #include "directed_moves_util.h"
 
-void get_coordinate_of_pin(ClusterPinId pin, int& x , int& y){
+void get_coordinate_of_pin(ClusterPinId pin, int& x, int& y) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int pnum = tile_pin_index(pin);
-    ClusterBlockId block =  cluster_ctx.clb_nlist.pin_block(pin);
-    
+    ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
+
     x = place_ctx.block_locs[block].loc.x + physical_tile_type(block)->pin_width_offset[pnum];
     y = place_ctx.block_locs[block].loc.y + physical_tile_type(block)->pin_height_offset[pnum];
 
     x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
     y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
-} 
+}
 
 void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -56,7 +56,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
                     weight = 1;
                 }
 
-                get_coordinate_of_pin(sink_pin_id,x,y);
+                get_coordinate_of_pin(sink_pin_id, x, y);
 
                 acc_x += x * weight;
                 acc_y += y * weight;
@@ -75,7 +75,7 @@ void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc
 
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
 
-            get_coordinate_of_pin(source_pin,x,y);
+            get_coordinate_of_pin(source_pin, x, y);
 
             acc_x += x * weight;
             acc_y += y * weight;

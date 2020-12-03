@@ -376,7 +376,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
                                  MoveHelperData& move_helper,
-                                 MoveTypeStat& move_type_stat, 
+                                 MoveTypeStat& move_type_stat,
                                  float timing_bb_factor);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
@@ -729,8 +729,8 @@ void try_place(const t_placer_opts& placer_opts,
 
     //allocate helper vectors that are used by many move generators
     MoveHelperData move_helper;
-    move_helper.X_coord.resize(10,0);
-    move_helper.Y_coord.resize(10,0);
+    move_helper.X_coord.resize(10, 0);
+    move_helper.Y_coord.resize(10, 0);
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;

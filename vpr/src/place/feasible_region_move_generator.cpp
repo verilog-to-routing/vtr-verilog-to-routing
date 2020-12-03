@@ -109,7 +109,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to)) {
         /** If there is no legal location in the feasible region, calculate the center of the FR and try to find a legal location 
          *  in a range around this center.
-         */ 
+         */
         t_pl_loc center;
         center.x = (FR_coords.xmin + FR_coords.xmax) / 2;
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;

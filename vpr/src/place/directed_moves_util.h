@@ -6,7 +6,7 @@
 #include "move_generator.h"
 
 ///@brief Helper function that returns the x, y coordinates of a pin
-void get_coordinate_of_pin(ClusterPinId pin, int& x , int& y);
+void get_coordinate_of_pin(ClusterPinId pin, int& x, int& y);
 
 /**
  * @brief Calculates the exact centroid location
@@ -19,7 +19,7 @@ void get_coordinate_of_pin(ClusterPinId pin, int& x , int& y);
  *      @param criticalities: A pointer to the placer criticalities which is used when calculating weighted centroid (send a NULL pointer in case of centroid)
  * 
  *      @return The calculated location is returned in centroid parameter that is sent by reference
- */ 
+ */
 void calculate_centroid_loc(ClusterBlockId b_from, bool timing_weights, t_pl_loc& centroid, const PlacerCriticalities* criticalities);
 
 #endif

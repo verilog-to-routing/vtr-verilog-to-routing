@@ -41,8 +41,8 @@ enum class e_create_move {
  *        criticality of the net terminal that caused this edge
  */
 struct t_edge_cost {
-    int edge;           //x or y coordinate of one edge of a bounding box
-    float criticality;  //the timing criticality of the net terminal that caused this edge
+    int edge;          //x or y coordinate of one edge of a bounding box
+    float criticality; //the timing criticality of the net terminal that caused this edge
 };
 
 /**
@@ -159,7 +159,7 @@ std::string move_type_to_string(e_move_type);
  * cy: the y coordinate of the compressed location
  * loc: the uncompressed output location (returned in reference)
  */
-void compressed_grid_to_loc (t_logical_block_type_ptr blk_type, int cx, int cy, t_pl_loc& loc);
+void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t_pl_loc& loc);
 /**
  * @brief find compressed location in a compressed range for a specific type
  * 
