@@ -741,7 +741,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
 
         //move the appropoiate move_generator to be the current used move generator
-        assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
+        assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, false, current_move_generator);
 
         //do a complete inner loop iteration
         placement_inner_loop(&state, placer_opts,
@@ -761,7 +761,7 @@ void try_place(const t_placer_opts& placer_opts,
                              timing_bb_factor);
 
         //move the update used move_generator to its original variable
-        update_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
+        update_move_generator(move_generator, move_generator2, agent_state, placer_opts, false, current_move_generator);
 
         tot_iter += state.move_lim;
         ++state.num_temps;
@@ -813,7 +813,7 @@ quench:
                                       timing_info.get());
 
         //move the appropoiate move_generator to be the current used move generator
-        assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
+        assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, true, current_move_generator);
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
@@ -834,7 +834,7 @@ quench:
                              timing_bb_factor);
 
         //move the update used move_generator to its original variable
-        update_move_generator(move_generator, move_generator2, agent_state, placer_opts, current_move_generator);
+        update_move_generator(move_generator, move_generator2, agent_state, placer_opts, true, current_move_generator);
 
         tot_iter += state.move_lim;
         ++state.num_temps;
