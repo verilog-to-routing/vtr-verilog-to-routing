@@ -1,6 +1,7 @@
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
