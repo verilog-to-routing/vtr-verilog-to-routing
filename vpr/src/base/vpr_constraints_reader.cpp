@@ -27,7 +27,7 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     } else {
         VTR_LOG_WARN(
             "VPR constraints file '%s' may be in incorrect format. "
-            "Expecting .xml format\n",
+            "Expecting .xml format. Not reading file.\n",
             read_vpr_constraints_name);
     }
 
