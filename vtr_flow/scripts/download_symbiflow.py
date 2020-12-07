@@ -16,13 +16,9 @@ from urllib import request
 
 GCS_URL = {
     "architectures":
-        ("https://storage.googleapis.com/symbiflow-arch-defs/artifacts/"
-         "prod/foss-fpga-tools/symbiflow-arch-defs/presubmit/install/1125/20201201-062708/"
-         "symbiflow-arch-defs-install-4f157a57.tar.xz"),
+        "https://storage.googleapis.com/symbiflow-arch-defs-gha/symbiflow-xc7a50t_test-latest",
     "benchmarks":
-        ("https://storage.googleapis.com/symbiflow-arch-defs/artifacts/"
-         "prod/foss-fpga-tools/symbiflow-arch-defs/presubmit/install/1125/20201201-062708/"
-         "symbiflow-arch-defs-benchmarks-4f157a57.tar.xz")
+        "https://storage.googleapis.com/symbiflow-arch-defs-gha/symbiflow-benchmarks-latest"
 }
 
 SYMBIFLOW_URL_MIRRORS = {"google": GCS_URL}
@@ -117,8 +113,9 @@ def download_url(filename, url):
     """
     Downloads the symbiflow release
     """
-    print("Downloading latest package:\n{}".format(url))
-    request.urlretrieve(url, filename, reporthook=download_progress_callback)
+    latest_package_url = request.urlopen(url).read().decode("utf-8")
+    print("Downloading latest package:\n{}".format(latest_package_url))
+    request.urlretrieve(latest_package_url, filename, reporthook=download_progress_callback)
 
 
 def download_progress_callback(block_num, block_size, expected_size):
@@ -183,6 +180,8 @@ def extract_to_vtr_flow_dir(args, tar_xz_filename, destination, extract_path="")
             elif fnmatch.fnmatch(src_file_path, "**/*.sdc"):
                 dst_file_path = os.path.join(symbiflow_extract_dir, "sdc", filename)
 
+            elif fnmatch.fnmatch(src_file_path, "**/*.place"):
+                dst_file_path = os.path.join(symbiflow_extract_dir, "place_constr", filename)
 
             if dst_file_path:
                 shutil.move(src_file_path, dst_file_path)

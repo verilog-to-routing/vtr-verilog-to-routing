@@ -40,6 +40,7 @@ class TaskConfig:
         script_params_list_add=None,
         pass_requirements_file=None,
         sdc_dir=None,
+        place_constr_dir=None,
         qor_parse_file=None,
         cmos_tech_behavior=None,
         pad_file=None,
@@ -60,6 +61,7 @@ class TaskConfig:
         self.script_params_list_add = script_params_list_add
         self.pass_requirements_file = pass_requirements_file
         self.sdc_dir = sdc_dir
+        self.place_constr_dir = place_constr_dir
         self.qor_parse_file = qor_parse_file
         self.cmos_tech_behavior = cmos_tech_behavior
         self.pad_file = pad_file
@@ -180,6 +182,7 @@ def load_task_config(config_file):
             "script_params_common",
             "pass_requirements_file",
             "sdc_dir",
+            "place_constr_dir",
             "qor_parse_file",
             "cmos_tech_behavior",
             "pad_file",
@@ -351,6 +354,19 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
                     cmd += [
                         "-sdc_file",
                         "{}".format(sdc_file)
+                    ]
+                except InspectError:
+                    pass
+
+            if config.place_constr_dir:
+                place_constr_name = "{}.place".format(Path(circuit).stem)
+                try:
+                    place_constr_file = resolve_vtr_source_file(
+                        config, place_constr_name, config.place_constr_dir)
+
+                    cmd += [
+                        "--fix_clusters",
+                        "{}".format(place_constr_file)
                     ]
                 except InspectError:
                     pass

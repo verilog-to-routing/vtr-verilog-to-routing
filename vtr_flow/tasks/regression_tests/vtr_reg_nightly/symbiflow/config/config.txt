@@ -8,6 +8,9 @@ circuits_dir=benchmarks/symbiflow
 # SDC directory
 sdc_dir=benchmarks/symbiflow/sdc
 
+# Place constraints directory
+place_constr_dir=benchmarks/symbiflow/place_constr
+
 # Path to directory of architectures to use
 archs_dir=arch/symbiflow
 
@@ -18,6 +21,10 @@ circuit_list_add=murax_basys3_full_100.eblif
 circuit_list_add=murax_basys3_full_50.eblif
 circuit_list_add=picosoc_basys3_full_100.eblif
 circuit_list_add=picosoc_basys3_full_50.eblif
+circuit_list_add=linux_arty.eblif
+circuit_list_add=minilitex_arty.eblif
+circuit_list_add=minilitex_ddr_arty.eblif
+circuit_list_add=minilitex_ddr_eth_arty.eblif
 
 # Add architectures to list to sweep
 arch_list_add=arch.timing.xml

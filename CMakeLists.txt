@@ -320,7 +320,7 @@ add_custom_target(get_ispd_benchmarks
 add_custom_target(get_symbiflow_benchmarks
     COMMAND ./vtr_flow/scripts/download_symbiflow.py --vtr_flow_dir ./vtr_flow
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Downloading (~1GB) and extracting SymbiFlow architectures (~10GB) into VTR source tree.")
+    COMMENT "Downloading (~100MB) and extracting SymbiFlow architectures (~2.7GB) into VTR source tree.")
 
 #
 # Unit Testing
