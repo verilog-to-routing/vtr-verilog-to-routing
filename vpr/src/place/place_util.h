@@ -11,9 +11,6 @@
 #include "vtr_util.h"
 #include "vtr_vector_map.h"
 
-#pragma once
-#include "vpr_types.h"
-
 /**
  * @brief Data structure that stores different cost values in the placer.
  *
@@ -212,36 +209,6 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
 
 ///@brief Returns the standard deviation of data set x.
 double get_std_dev(int n, double sum_x_squared, double av_x);
-
-//Placement checkpoint
-/**
- * @brief Data structure that stores the placement state and saves it as a checkpoint.
- *
- * The placement checkpoints are very useful to solve the problem of critical 
- * delay oscillations, expecially very late in the annealer. 
- *
- *   @param cost The weighted average of the wiring cost and the timing cost.
- *   @param block_locs saves the location of each block
- *   @param cpd Saves the critical path delay of the current checkpoint
- *   @param valid a flag to show whether the current checkpoint is initialized or not
- */
-class t_placement_checkpoint {
-  private:
-    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
-    float cpd;
-    float sTNS;
-    float sWNS;
-    bool valid = false;
-    t_placer_costs costs;
-
-  public:
-    void save_placement(const t_placer_costs& costs, const float& cpd);
-    t_placer_costs restore_placement();
-
-    float get_cp_cpd();
-    double get_cp_bb_cost();
-    bool cp_is_valid();
-};
 
 ///@brief Initialize usage to 0 and blockID to EMPTY_BLOCK_ID for all place_ctx.grid_block locations
 void zero_initialize_grid_blocks();

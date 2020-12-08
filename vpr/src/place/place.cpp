@@ -51,6 +51,7 @@
 
 #include "placer_breakpoint.h"
 #include "RL_agent_util.h"
+#include "place_checkpoint.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
@@ -732,11 +733,9 @@ void try_place(const t_placer_opts& placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
 
             //see if we should save the current placement solution as a checkpoint
+
             if (placer_opts.place_checkpointing && agent_state == LATE_IN_THE_ANNEAL) {
-                if (placement_checkpoint.cp_is_valid() == false || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())) {
-                    placement_checkpoint.save_placement(costs, critical_path.delay());
-                    VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost, 1e9 * critical_path.delay());
-                }
+                save_placement_checkpoint_if_needed(placement_checkpoint, timing_info, costs, critical_path.delay());
             }
         }
 

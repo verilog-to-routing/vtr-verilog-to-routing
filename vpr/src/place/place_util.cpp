@@ -10,9 +10,6 @@
 
 /* File-scope routines */
 
-//Placement Checkpoint
-//placement_checkpoint place_cp;
-
 static vtr::Matrix<t_grid_blocks> init_grid_blocks();
 
 /**
@@ -334,25 +331,6 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
 
     /* Very small variances sometimes round negative. */
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
-}
-
-float t_placement_checkpoint::get_cp_cpd() { return cpd; }
-double t_placement_checkpoint::get_cp_bb_cost() { return costs.bb_cost; }
-bool t_placement_checkpoint::cp_is_valid() { return valid; }
-
-void t_placement_checkpoint::save_placement(const t_placer_costs& COSTS, const float& CPD) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    block_locs = place_ctx.block_locs;
-    valid = true;
-    cpd = CPD;
-    costs = COSTS;
-}
-
-t_placer_costs t_placement_checkpoint::restore_placement() {
-    auto& mutable_place_ctx = g_vpr_ctx.mutable_placement();
-    mutable_place_ctx.block_locs = block_locs;
-    load_grid_blocks_from_block_locs();
-    return costs;
 }
 
 void load_grid_blocks_from_block_locs() {
