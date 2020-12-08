@@ -498,7 +498,7 @@ static bool net_is_driven_by_direct(ClusterNetId clb_net) {
     int pin_index = cluster_ctx.clb_nlist.net_pin_logical_index(clb_net, 0);
 
     auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
-    auto physical_tile = pick_best_physical_type(logical_block);
+    auto physical_tile = pick_physical_type(logical_block);
     auto physical_pin = get_physical_pin(physical_tile, logical_block, pin_index);
 
     auto direct = f_idirect_from_blk_pin[physical_tile->index][physical_pin];
