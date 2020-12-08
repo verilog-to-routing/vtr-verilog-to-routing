@@ -348,28 +348,22 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
 
             if config.sdc_dir:
                 sdc_name = "{}.sdc".format(Path(circuit).stem)
-                try:
-                    sdc_file = resolve_vtr_source_file(config, sdc_name, config.sdc_dir)
+                sdc_file = resolve_vtr_source_file(config, sdc_name, config.sdc_dir)
 
-                    cmd += [
-                        "-sdc_file",
-                        "{}".format(sdc_file)
-                    ]
-                except InspectError:
-                    pass
+                cmd += [
+                    "-sdc_file",
+                    "{}".format(sdc_file)
+                ]
 
             if config.place_constr_dir:
                 place_constr_name = "{}.place".format(Path(circuit).stem)
-                try:
-                    place_constr_file = resolve_vtr_source_file(
-                        config, place_constr_name, config.place_constr_dir)
+                place_constr_file = resolve_vtr_source_file(
+                    config, place_constr_name, config.place_constr_dir)
 
-                    cmd += [
-                        "--fix_clusters",
-                        "{}".format(place_constr_file)
-                    ]
-                except InspectError:
-                    pass
+                cmd += [
+                    "--fix_clusters",
+                    "{}".format(place_constr_file)
+                ]
 
             parse_cmd = None
             second_parse_cmd = None
