@@ -1382,7 +1382,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_vpr_constraints_file, "--read_vpr_constraints")
-        .help("Reads the constraints data from the constraints file.")
+        .help("Reads the floorplanning constraints from the specified XML file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")

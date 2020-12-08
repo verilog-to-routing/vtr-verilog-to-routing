@@ -43,8 +43,10 @@
   the add_region elements. -->
   <xs:complexType name="partition">
     <xs:sequence>
-      <xs:element name="add_atom" type="add_atom" maxOccurs="unbounded"/>
-      <xs:element name="add_region" type="add_region" maxOccurs="unbounded"/>
+       <xs:choice maxOccurs="unbounded">
+           <xs:element name="add_atom" type="add_atom"/>
+           <xs:element name="add_region" type="add_region"/>
+       </xs:choice>
     </xs:sequence>
 
     <xs:attribute name="name" type="xs:string" use="required"/>

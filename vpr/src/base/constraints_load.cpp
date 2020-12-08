@@ -23,7 +23,7 @@ void print_region(FILE* fp, Region region) {
 
 void print_partition(FILE* fp, Partition part) {
     std::string name = part.get_name();
-    fprintf(fp, "\npartition_name: %s\n", name.c_str());
+    fprintf(fp, "partition_name: %s\n", name.c_str());
 
     PartitionRegion pr = part.get_part_region();
 
@@ -51,6 +51,7 @@ void print_constraints(FILE* fp, VprConstraints constraints, int num_parts) {
 
         temp_part = constraints.get_partition(part_id);
 
+        fprintf(fp, "\npartition_id: %zu\n", size_t(part_id));
         print_partition(fp, temp_part);
 
         atoms = constraints.get_part_atoms(part_id);

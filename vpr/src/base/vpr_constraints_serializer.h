@@ -12,6 +12,44 @@
 
 #include "vpr_constraints_uxsdcxx_interface.h"
 
+/**
+ * @file
+ * @brief The reading of vpr floorplanning constraints is now done via uxsdcxx and the 'vpr_constraints.xsd' file.
+ *        The interface between the generated code and VPR is provided by VprConstraintsBase, which is in the
+ *        file 'vpr/src/base/gen/vpr_constraints_uxsdcxx_interface.h'.
+ * 		  This file implements the virtual functions from VprConstraintsBase.
+ *
+ * Overview
+ * ========
+ * 'vpr_constraints.xsd' is an XML schema that specifies the desired format for a VPR constraints file.
+ * If this schema is changed, the following files must be regenerated: 'vpr/src/base/gen/vpr_constraints_uxsdcxx.h' and
+ * 'vpr/src/base/gen/vpr_constraints_uxsdcxx_interface.h'.
+ *
+ * Instructions to Update the Files
+ * ================================
+ *
+ * 1. Clone https://github.com/duck2/uxsdcxx/
+ * 2. Run 'python3 -mpip install --user -r requirements.txt'
+ * 3. Run 'python3 uxsdcxx.py vpr/src/base/vpr_constraints.xsd'
+ * 4. Copy 'vpr_constraints_uxsdcxx.h' and 'vpr_constraints_uxsdcxx_interface.h' to vpr/src/base/gen
+ * 5. Run 'make format'
+ * 6. Update 'vpr/src/base/vpr_constraints_serializer.h' (this file) by adding or changing functions as needed.
+ *    If the schema has changed, the compiler will complain that virtual functions are missing if they are
+ *    not implemented here.
+ *
+ * Functions in this file
+ * ======================
+ *
+ * This file implements all the functions that are necessary for the load/read interface of uxsdcxx. These are start_load, finish_load,
+ * error_encountered, and any function starting with 'set', 'add', 'preallocate' or 'finish'. Some of the load functions (ex. finish_load and
+ * the preallocate functions) have been stubbed out because the load could be successfully completed without implementing them.
+ *
+ * The functions related to the write interface have also been stubbed out because writing vpr_constraints XML files is not needed at this time.
+ * These functions can be implemented to make the write interface if needed.
+ *
+ * For more detail on how the load and write interfaces work with uxsdcxx, refer to 'vpr/src/route/SCHEMA_GENERATOR.md'
+ */
+
 struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTypes {
     using AddAtomReadContext = void*;
     using AddRegionReadContext = void*;
@@ -58,9 +96,38 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         auto& atom_ctx = g_vpr_ctx.atom();
         std::string atom_name = name_pattern;
+
+        auto atom_name_regex = std::regex(atom_name);
+
+        atoms_.clear();
+
         atom_id_ = atom_ctx.nlist.find_block(name_pattern);
 
-        if (atom_id_ == AtomBlockId::INVALID()) {
+        /* The constraints file may either provide a specific atom name or a regex.
+         * If the a valid atom ID is found for the atom name, then a specific atom name
+         * must have been read in from the file. The if condition checks for this case.
+         * The else statement checks for atoms that may match a regex.
+         * This code may get slow if many regexes are given in the file.
+         */
+        if (atom_id_ != AtomBlockId::INVALID()) {
+            atoms_.push_back(atom_id_);
+        } else {
+            /*If the atom name returns an invalid ID, it might be a regular expression, so loop through the atoms blocks
+             * and see if any block names match atom_name_regex.
+             */
+            for (auto block_id : atom_ctx.nlist.blocks()) {
+                auto block_name = atom_ctx.nlist.block_name(block_id);
+
+                if (std::regex_search(block_name, atom_name_regex)) {
+                    atoms_.push_back(block_id);
+                }
+            }
+        }
+
+        /*If the atoms_ vector is empty by this point, no atoms were found that matched the name,
+         * so the name is invalid.
+         */
+        if (atoms_.empty()) {
             VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern);
         }
     }
@@ -128,8 +195,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
         PartitionId part_id(num_partitions_);
 
-        if (atom_id_ != AtomBlockId::INVALID()) {
-            constraints_.add_constrained_atom(atom_id_, part_id);
+        for (unsigned int i = 0; i < atoms_.size(); i++) {
+            constraints_.add_constrained_atom(atoms_[i], part_id);
         }
     }
 
@@ -211,6 +278,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
 
+    virtual inline void set_vpr_constraints_constraints_comment(const char* /*constraints_comment*/, void*& /*ctx*/) final {}
+
+    virtual inline const char* get_vpr_constraints_constraints_comment(void*& /*ctx*/) final {
+        return temp_.c_str();
+    }
     virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
         return nullptr;
     }
@@ -227,13 +299,22 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     //temp data for loads
     const std::function<void(const char*)>* report_error_;
+
+    //temp data structures to be loaded during file reading
     Region loaded_region;
     Partition loaded_partition;
     PartitionRegion loaded_part_region;
     VprConstraints constraints_;
+
+    //temp string used when a method must return a const char*
     std::string temp_;
+
+    //used to count the number of partitions read in from the file
     int num_partitions_ = 0;
+
+    //used when reading in atom names and regular expressions for atoms
     AtomBlockId atom_id_;
+    std::vector<AtomBlockId> atoms_;
 };
 
 #endif /* VPR_CONSTRAINTS_SERIALIZER_H_ */
