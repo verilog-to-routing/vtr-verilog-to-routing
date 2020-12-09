@@ -872,24 +872,8 @@ quench:
     }
 
     //See if our latest checkpoint is better than the current placement solution
-    if (placer_opts.place_checkpointing && placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost < 1.05 * placement_checkpoint.get_cp_bb_cost()) {
-        //restore the latest placement checkpoint
-        costs = placement_checkpoint.restore_placement();
-
-        //recompute timing from scratch
-        placer_criticalities.get()->set_recompute_required();
-        placer_setup_slacks.get()->set_recompute_required();
-        comp_td_connection_delays(place_delay_model.get());
-        perform_full_timing_update(crit_params,
-                                   place_delay_model.get(),
-                                   placer_criticalities.get(),
-                                   placer_setup_slacks.get(),
-                                   pin_timing_invalidator.get(),
-                                   timing_info.get(),
-                                   &costs);
-
-        VTR_LOG("\nCheckpoint restored\n");
-    }
+    if(placer_opts.place_checkpointing)
+        restore_best_placement(placement_checkpoint, timing_info, costs, placer_criticalities, placer_setup_slacks, place_delay_model, pin_timing_invalidator, crit_params);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", state.num_temps + 1, 0);
