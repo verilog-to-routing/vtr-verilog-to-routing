@@ -680,7 +680,6 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     //Info for the switch connecting from_node to_node
     int iswitch = rr_nodes_.edge_switch(from_edge);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
-    bool reached_configurably = rr_switch_inf_[iswitch].configurable();
     float switch_R = rr_switch_inf_[iswitch].R;
     float switch_Tdel = rr_switch_inf_[iswitch].Tdel;
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
@@ -723,22 +722,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     //Second, we adjust the Tdel to account for the delay caused by the internal capacitance.
     Tdel += Rdel_adjust * switch_Cinternal;
 
-    float cong_cost = 0.;
-    if (reached_configurably) {
-        cong_cost = get_rr_cong_cost(to_node, cost_params.pres_fac);
-    } else {
-        //Reached by a non-configurable edge.
-        //Therefore the from_node and to_node are part of the same non-configurable node set.
-#ifdef VTR_ASSERT_SAFE_ENABLED
-        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to_node),
-                            "Non-configurably connected edges should be part of the same node set");
-#endif
-
-        //The congestion cost of all nodes in the set has already been accounted for (when
-        //the current path first expanded a node in the set). Therefore do *not* re-add the congestion
-        //cost.
-        cong_cost = 0.;
-    }
+    float cong_cost = get_rr_cong_cost(to_node, cost_params.pres_fac);
 
     //Update the backward cost (upstream already included)
     to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
