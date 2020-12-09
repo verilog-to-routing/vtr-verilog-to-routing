@@ -1734,11 +1734,9 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             float temp_delay = comp_td_single_connection_delay(delay_model, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
-            /*
-             * if (temp_delay == connection_delay[net][ipin]) {
-             * return;
-             * }
-             */
+            if (temp_delay == connection_delay[net][ipin]) {
+                return;
+            }
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
