@@ -611,7 +611,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT(min_cx >= 0);
     VTR_ASSERT(static_cast<int>(compressed_block_grid.compressed_to_grid_x.size()) - 1 - max_cx >= 0);
     VTR_ASSERT(max_cx >= min_cx);
-    int delta_cx = max_cx - min_cx ;
+    int delta_cx = max_cx - min_cx;
 
     int min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, limit_coords->ymin);
     int max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, limit_coords->ymax);
@@ -756,7 +756,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
     std::unordered_set<int> tried_cx_to;
     bool legal = false;
 
-    while (!legal && (int)tried_cx_to.size() <= delta_cx ) { //Until legal or all possibilities exhaused
+    while (!legal && (int)tried_cx_to.size() <= delta_cx) { //Until legal or all possibilities exhaused
         //Pick a random x-location within [min_cx, max_cx],
         //until we find a legal swap, or have exhuasted all possiblites
         cx_to = min_cx + vtr::irand(delta_cx);

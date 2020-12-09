@@ -20,7 +20,6 @@ t_placer_costs t_placement_checkpoint::restore_placement() {
 }
 
 void save_placement_checkpoint_if_needed(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo> timing_info, t_placer_costs& costs, float CPD) {
-
     if (placement_checkpoint.cp_is_valid() == false || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())) {
         placement_checkpoint.save_placement(costs, CPD);
         VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost, 1e9 * CPD);

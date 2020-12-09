@@ -391,7 +391,9 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const SetupTimingInfo& timing_info,
                                                const PlacementDelayCalculator& delay_calc);
 
+//calculate the agent's reward and the total process outcome
 static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opts, const MoveOutcomeStats& move_outcome_stats, const double& delta_c, float timing_bb_factor, MoveGenerator& move_generator);
+
 static void print_place_status_header();
 
 static void print_place_status(const t_annealing_state& state,
@@ -645,7 +647,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     /* calculate the number of moves in the quench that we should recompute timing after based on the value of *
-     * the commandline option quench_recompute_divider                                                         */ 
+     * the commandline option quench_recompute_divider                                                         */
     int quench_recompute_limit;
     if (placer_opts.quench_recompute_divider != 0) {
         quench_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
@@ -1518,27 +1520,27 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     calculate_reward_and_process_outcome(placer_opts, move_outcome_stats, delta_c, timing_bb_factor, move_generator);
 /* 
-    std::string reward_fun_string = placer_opts.place_reward_fun;
-    e_reward_function reward_fun = string_to_reward(reward_fun_string);
-
-    if (reward_fun == BASIC) {
-        move_generator.process_outcome(-1 * delta_c, reward_fun);
-    } else if (reward_fun == NON_PENALIZING_BASIC || reward_fun == RUNTIME_AWARE) {
-        if (delta_c < 0) {
-            move_generator.process_outcome(-1 * delta_c, reward_fun);
-        } else {
-            move_generator.process_outcome(0, reward_fun);
-        }
-    } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
-        if (delta_c < 0) {
-            //float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
-            float reward = -1 * ((1.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + (1 + timing_bb_factor) * move_outcome_stats.delta_bb_cost_norm);
-            move_generator.process_outcome(reward, reward_fun);
-        } else {
-            move_generator.process_outcome(0, reward_fun);
-        }
-    }
-*/
+ * std::string reward_fun_string = placer_opts.place_reward_fun;
+ * e_reward_function reward_fun = string_to_reward(reward_fun_string);
+ *
+ * if (reward_fun == BASIC) {
+ * move_generator.process_outcome(-1 * delta_c, reward_fun);
+ * } else if (reward_fun == NON_PENALIZING_BASIC || reward_fun == RUNTIME_AWARE) {
+ * if (delta_c < 0) {
+ * move_generator.process_outcome(-1 * delta_c, reward_fun);
+ * } else {
+ * move_generator.process_outcome(0, reward_fun);
+ * }
+ * } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
+ * if (delta_c < 0) {
+ * //float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
+ * float reward = -1 * ((1.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + (1 + timing_bb_factor) * move_outcome_stats.delta_bb_cost_norm);
+ * move_generator.process_outcome(reward, reward_fun);
+ * } else {
+ * move_generator.process_outcome(0, reward_fun);
+ * }
+ * }
+ */
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
     stop_placement_and_check_breakopints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
@@ -2912,7 +2914,6 @@ static void print_resources_utilization() {
 }
 
 static void print_placement_swaps_stats(const t_annealing_state& state) {
- 
     size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
 
@@ -2927,7 +2928,7 @@ static void print_placement_swaps_stats(const t_annealing_state& state) {
     VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
 }
 
-static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat){
+static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat) {
     float moves, accepted, rejected, aborted;
     float total_moves = std::accumulate(move_type_stat.num_moves.begin(), move_type_stat.num_moves.end(), 0.0);
 

@@ -86,12 +86,12 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
 }
 
 void assign_current_move_generator(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, e_agent_state agent_state, const t_placer_opts& placer_opts, bool in_quench, std::unique_ptr<MoveGenerator>& current_move_generator) {
-    if(in_quench){
+    if (in_quench) {
         if (placer_opts.place_quench_algorithm.is_timing_driven() && placer_opts.place_agent_multistate == true)
-            current_move_generator = std::move(move_generator2); 
+            current_move_generator = std::move(move_generator2);
         else
             current_move_generator = std::move(move_generator);
-    } else{
+    } else {
         if (agent_state == EARLY_IN_THE_ANNEAL || placer_opts.place_agent_multistate == false)
             current_move_generator = std::move(move_generator);
         else
@@ -100,8 +100,8 @@ void assign_current_move_generator(std::unique_ptr<MoveGenerator>& move_generato
 }
 
 void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, e_agent_state agent_state, const t_placer_opts& placer_opts, bool in_quench, std::unique_ptr<MoveGenerator>& current_move_generator) {
-    if(in_quench) {
-        if (placer_opts.place_quench_algorithm.is_timing_driven() && placer_opts.place_agent_multistate == true) 
+    if (in_quench) {
+        if (placer_opts.place_quench_algorithm.is_timing_driven() && placer_opts.place_agent_multistate == true)
             move_generator2 = std::move(current_move_generator);
         else
             move_generator = std::move(current_move_generator);

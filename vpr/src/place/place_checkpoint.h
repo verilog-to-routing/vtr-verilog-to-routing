@@ -39,5 +39,5 @@ class t_placement_checkpoint {
 };
 
 //save placement checkpoint if checkpointing is enabled and checkpoint conditions occured
-void save_placement_checkpoint_if_needed(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo> timing_info, t_placer_costs& costs, float CPD); 
+void save_placement_checkpoint_if_needed(t_placement_checkpoint& placement_checkpoint, std::shared_ptr<SetupTimingInfo> timing_info, t_placer_costs& costs, float CPD);
 #endif
