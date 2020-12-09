@@ -1522,7 +1522,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
-    stop_placement_and_check_breakopints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+    stop_placement_and_check_breakpoints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 #    endif
 #endif
 
