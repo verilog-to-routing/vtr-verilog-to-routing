@@ -403,6 +403,10 @@ static void print_place_status(const t_annealing_state& state,
 
 static void print_resources_utilization();
 
+static void print_placement_swaps_stats(const t_annealing_state& state);
+
+static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat);
+
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
@@ -937,37 +941,11 @@ quench:
             costs.cost, costs.bb_cost, costs.timing_cost);
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
-    size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
-    VTR_ASSERT(total_swap_attempts > 0);
-
     print_resources_utilization();
 
-    size_t num_swap_print_digits = ceil(log10(total_swap_attempts));
-    float reject_rate = (float)num_swap_rejected / total_swap_attempts;
-    float accept_rate = (float)num_swap_accepted / total_swap_attempts;
-    float abort_rate = (float)num_swap_aborted / total_swap_attempts;
-    VTR_LOG("Placement number of temperatures: %d\n", state.num_temps);
-    VTR_LOG("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
-    VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100 * accept_rate);
-    VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100 * reject_rate);
-    VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
+    print_placement_swaps_stats(state);
 
-    float moves, accepted, rejected, aborted;
-    float total_moves = std::accumulate(move_type_stat.num_moves.begin(), move_type_stat.num_moves.end(), 0.0);
-
-    std::string move_name;
-    VTR_LOG("\n\nPercentage of different move types:\n");
-
-    for (size_t i = 0; i < move_type_stat.num_moves.size(); i++) {
-        moves = move_type_stat.num_moves[i];
-        if (moves != 0) {
-            accepted = move_type_stat.accepted_moves[i];
-            aborted = move_type_stat.aborted_moves[i];
-            rejected = moves - (accepted + aborted);
-            move_name = move_type_to_string(e_move_type(i));
-            VTR_LOG("\t%.17s move: %2.2f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n", move_name.c_str(), 100 * moves / total_moves, 100 * accepted / moves, 100 * rejected / moves, 100 * aborted / moves);
-        }
-    }
+    print_placement_move_types_stats(move_type_stat);
 
     free_placement_structs(placer_opts);
     free_try_swap_arrays();
@@ -2922,6 +2900,42 @@ static void print_resources_utilization() {
     for (auto logical_block : num_type_instances) {
         for (auto physical_tile : num_placed_instances[logical_block.first]) {
             VTR_LOG("  %-*s implemented as %-*s: %d\n", max_block_name, logical_block.first->name, max_tile_name, physical_tile.first->name, physical_tile.second);
+        }
+    }
+    VTR_LOG("\n");
+}
+
+static void print_placement_swaps_stats(const t_annealing_state& state) {
+ 
+    size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
+    VTR_ASSERT(total_swap_attempts > 0);
+
+    size_t num_swap_print_digits = ceil(log10(total_swap_attempts));
+    float reject_rate = (float)num_swap_rejected / total_swap_attempts;
+    float accept_rate = (float)num_swap_accepted / total_swap_attempts;
+    float abort_rate = (float)num_swap_aborted / total_swap_attempts;
+    VTR_LOG("Placement number of temperatures: %d\n", state.num_temps);
+    VTR_LOG("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
+    VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100 * accept_rate);
+    VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100 * reject_rate);
+    VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
+}
+
+static void print_placement_move_types_stats(const MoveTypeStat& move_type_stat){
+    float moves, accepted, rejected, aborted;
+    float total_moves = std::accumulate(move_type_stat.num_moves.begin(), move_type_stat.num_moves.end(), 0.0);
+
+    std::string move_name;
+    VTR_LOG("\n\nPercentage of different move types:\n");
+
+    for (size_t i = 0; i < move_type_stat.num_moves.size(); i++) {
+        moves = move_type_stat.num_moves[i];
+        if (moves != 0) {
+            accepted = move_type_stat.accepted_moves[i];
+            aborted = move_type_stat.aborted_moves[i];
+            rejected = moves - (accepted + aborted);
+            move_name = move_type_to_string(e_move_type(i));
+            VTR_LOG("\t%.17s move: %2.2f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n", move_name.c_str(), 100 * moves / total_moves, 100 * accepted / moves, 100 * rejected / moves, 100 * aborted / moves);
         }
     }
     VTR_LOG("\n");
