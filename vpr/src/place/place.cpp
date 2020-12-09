@@ -1737,18 +1737,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
 
-            float delay_budget;
-            /*
-             * if(timing_cost_func == 0)
-             * delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
-             * else if(timing_cost_func == 1)
-             * delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, ipin));
-             * else
-             */
-            delay_budget = 0;
-
-            //proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay ;
-            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0), temp_delay - delay_budget);
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
@@ -1775,17 +1764,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
 
-            float delay_budget;
-            /*
-             * if(timing_cost_func == 0)
-             * delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
-             * else if(timing_cost_func == 1)
-             * delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, ipin));
-             * else
-             */
-            delay_budget = 0;
-
-            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0), temp_delay - delay_budget);
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
