@@ -14,7 +14,7 @@ class KArmedBanditAgent {
     virtual ~KArmedBanditAgent() {}
     virtual void set_k(size_t k) = 0;
     virtual size_t propose_action() = 0;
-    void process_outcome(double, std::string);
+    void process_outcome(double, e_reward_function);
 
   protected:
     float exp_alpha_ = -1;   //Step size for q_ updates (< 0 implies use incremental average)
@@ -76,6 +76,6 @@ class SimpleRLMoveGenerator : public MoveGenerator {
     SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
     SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
-    void process_outcome(double reward, std::string reward_fun);
+    void process_outcome(double reward, e_reward_function reward_fun);
 };
 #endif

@@ -3,6 +3,7 @@
 #include "vpr_types.h"
 #include "move_utils.h"
 #include "timing_place.h"
+#include "directed_moves_util.h"
 
 #include <limits>
 
@@ -77,7 +78,7 @@ class MoveGenerator {
      *  @param reward: the value of the agent's reward
      *  @param reward_fun: the name of the reward function used
      */
-    virtual void process_outcome(double /*reward*/, std::string /*reward_fun*/) {}
+    virtual void process_outcome(double /*reward*/, e_reward_function /*reward_fun*/) {}
 };
 
 #endif

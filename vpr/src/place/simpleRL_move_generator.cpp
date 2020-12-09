@@ -41,7 +41,7 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     return avail_moves[(int)move_type]->propose_move(blocks_affected, move_type, move_helper, rlim, placer_opts, criticalities);
 }
 
-void SimpleRLMoveGenerator::process_outcome(double reward, std::string reward_fun) {
+void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function reward_fun) {
     karmed_bandit_agent->process_outcome(reward, reward_fun);
 }
 
@@ -50,9 +50,9 @@ void SimpleRLMoveGenerator::process_outcome(double reward, std::string reward_fu
  *  K-Armed bandit agent implementation   *
  *                                        *
  *                                        */
-void KArmedBanditAgent::process_outcome(double reward, std::string reward_fun) {
+void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_fun) {
     ++n_[last_action_];
-    if (reward_fun == "runtime_aware" || reward_fun == "WLbiased_runtime_aware")
+    if (reward_fun == RUNTIME_AWARE || reward_fun == WL_BIASED_RUNTIME_AWARE)
         reward /= time_elapsed_[last_action_];
 
     //Determine step size
