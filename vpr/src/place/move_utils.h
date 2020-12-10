@@ -4,8 +4,6 @@
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
-extern vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
-
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
 /* To turn off incremental bounding box updates, set this to a huge value */

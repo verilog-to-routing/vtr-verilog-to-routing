@@ -118,12 +118,6 @@ static vtr::vector<ClusterNetId, double> net_cost, proposed_net_cost;
  * right, DO NOT update again.                                                   */
 static vtr::vector<ClusterNetId, char> bb_updated_before;
 
-/* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
- * blocks on each of a net's bounding box (to allow efficient updates),      *
- * respectively.                                                             */
-
-vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
-
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
  * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     *
@@ -1232,12 +1226,14 @@ static float starting_t(const t_annealing_state* state,
 static void update_move_nets(int num_nets_affected) {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = g_placer_ctx.mutable_move(); 
+
     for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        bb_coords[net_id] = ts_bb_coord_new[net_id];
+        place_move_ctx.bb_coords[net_id] = ts_bb_coord_new[net_id];
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
-            bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
+            place_move_ctx.bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
 
         net_cost[net_id] = proposed_net_cost[net_id];
 
@@ -1928,22 +1924,23 @@ static double comp_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = g_placer_ctx.mutable_move(); 
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == NORMAL) {
-                get_bb_from_scratch(net_id, &bb_coords[net_id],
-                                    &bb_num_on_edges[net_id]);
+                get_bb_from_scratch(net_id, &place_move_ctx.bb_coords[net_id],
+                                    &place_move_ctx.bb_num_on_edges[net_id]);
             } else {
-                get_non_updateable_bb(net_id, &bb_coords[net_id]);
+                get_non_updateable_bb(net_id, &place_move_ctx.bb_coords[net_id]);
             }
 
-            net_cost[net_id] = get_net_cost(net_id, &bb_coords[net_id]);
+            net_cost[net_id] = get_net_cost(net_id, &place_move_ctx.bb_coords[net_id]);
             cost += net_cost[net_id];
             if (method == CHECK)
-                expected_wirelength += get_net_wirelength_estimate(net_id, &bb_coords[net_id]);
+                expected_wirelength += get_net_wirelength_estimate(net_id, &place_move_ctx.bb_coords[net_id]);
         }
     }
 
@@ -1968,6 +1965,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     auto& p_timing_ctx = g_placer_ctx.mutable_timing();
+    auto& place_move_ctx = g_placer_ctx.mutable_move(); 
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
@@ -2007,8 +2005,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     net_cost.resize(num_nets, -1.);
     proposed_net_cost.resize(num_nets, -1.);
-    bb_coords.resize(num_nets, t_bb());
-    bb_num_on_edges.resize(num_nets, t_bb());
+    place_move_ctx.bb_coords.resize(num_nets, t_bb());
+    place_move_ctx.bb_num_on_edges.resize(num_nets, t_bb());
 
     /* Used to store costs for moves not yet made and to indicate when a net's   *
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
@@ -2025,6 +2023,8 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs(const t_placer_opts& placer_opts) {
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
+ 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         auto& p_timing_ctx = g_placer_ctx.mutable_timing();
 
@@ -2040,8 +2040,8 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
 
     vtr::release_memory(net_cost);
     vtr::release_memory(proposed_net_cost);
-    vtr::release_memory(bb_coords);
-    vtr::release_memory(bb_num_on_edges);
+    vtr::release_memory(place_move_ctx.bb_coords);
+    vtr::release_memory(place_move_ctx.bb_num_on_edges);
 
     vtr::release_memory(bb_updated_before);
 
@@ -2295,9 +2295,10 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
     /* IO blocks are considered to be one cell in for simplicity.         */
     //TODO: account for multiple physical pin instances per logical pin
 
-    t_bb *curr_bb_edge, *curr_bb_coord;
+    const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_move_ctx = g_placer_ctx.move(); 
 
     xnew = max(min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = max(min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -2310,8 +2311,8 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
         return;
     } else if (bb_updated_before[net_id] == NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
-        curr_bb_coord = &bb_coords[net_id];
-        curr_bb_edge = &bb_num_on_edges[net_id];
+        curr_bb_coord = &place_move_ctx.bb_coords[net_id];
+        curr_bb_edge = &place_move_ctx.bb_num_on_edges[net_id];
         bb_updated_before[net_id] = UPDATED_ONCE;
     } else {
         /* The net had been updated before, must use the new values */

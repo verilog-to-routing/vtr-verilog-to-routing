@@ -87,6 +87,18 @@ struct PlacerRuntimeContext : public Context {
 };
 
 /**
+ * @brief Placement Move generators data
+ */
+struct PlacerMoveContext : public Context {
+  public:
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    vtr::vector<ClusterNetId, t_bb> bb_coords;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
+};
+
+/**
  * @brief This object encapsulates VPR placer's state.
  *
  * It is divided up into separate sub-contexts of logically related
@@ -107,7 +119,11 @@ class PlacerContext : public Context {
     const PlacerRuntimeContext& runtime() const { return runtime_; }
     PlacerRuntimeContext& mutable_runtime() { return runtime_; }
 
+    const PlacerMoveContext& move() const { return move_; }
+    PlacerMoveContext& mutable_move() { return move_; }
+
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
+    PlacerMoveContext move_;
 };

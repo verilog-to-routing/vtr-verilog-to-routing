@@ -2,6 +2,8 @@
 #include "globals.h"
 #include <algorithm>
 
+#include "placer_globals.h"
+
 static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew);
 
 static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
@@ -10,6 +12,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
+
+    auto& place_move_ctx = g_placer_ctx.move(); 
 
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from;
@@ -67,16 +71,16 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
             //To calulate the bb incrementally while excluding the moving block
             //assume that the moving block is moved to a non-critical coord of the bb
-            if (bb_coords[net_id].xmin == xold) {
-                xnew = bb_coords[net_id].xmax;
+            if (place_move_ctx.bb_coords[net_id].xmin == xold) {
+                xnew = place_move_ctx.bb_coords[net_id].xmax;
             } else {
-                xnew = bb_coords[net_id].xmin;
+                xnew = place_move_ctx.bb_coords[net_id].xmin;
             }
 
-            if (bb_coords[net_id].ymin == yold) {
-                ynew = bb_coords[net_id].ymax;
+            if (place_move_ctx.bb_coords[net_id].ymin == yold) {
+                ynew = place_move_ctx.bb_coords[net_id].ymax;
             } else {
-                ynew = bb_coords[net_id].ymin;
+                ynew = place_move_ctx.bb_coords[net_id].ymin;
             }
 
             if (!update_bb(net_id, &coords, xold, yold, xnew, ynew)) {
@@ -221,9 +225,10 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, Cluster
 static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew) {
     //TODO: account for multiple physical pin instances per logical pin
 
-    t_bb *curr_bb_edge, *curr_bb_coord;
+    const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_move_ctx = g_placer_ctx.move(); 
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
@@ -231,8 +236,8 @@ static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yol
     yold = std::max(std::min<int>(yold, device_ctx.grid.height() - 2), 1); //-2 for no perim channels
 
     /* The net had NOT been updated before, could use the old values */
-    curr_bb_coord = &bb_coords[net_id];
-    curr_bb_edge = &bb_num_on_edges[net_id];
+    curr_bb_coord = &(place_move_ctx.bb_coords[net_id]);
+    curr_bb_edge = &(place_move_ctx.bb_num_on_edges[net_id]);
 
     /* Check if I can update the bounding box incrementally. */
 
