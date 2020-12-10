@@ -47,3 +47,13 @@ echo "========================================"
 export VPR_NUM_WORKERS=1
 ./run_reg_test.py $VTR_TEST $VTR_TEST_OPTIONS -j$NUM_CORES
 kill $MONITOR
+
+echo "========================================"
+echo "Check final workdir size"
+echo "========================================"
+# Make sure working directory doesn't exceed disk space limit!
+echo "Working directory size: $(du -sh)"
+if [[ $(du -s | cut -d $'\t' -f 1) -gt $(expr 1024 \* 1024 \* 90) ]]; then
+    echo "Working directory too large!"
+    exit 1
+fi
