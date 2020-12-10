@@ -1017,7 +1017,7 @@ static void drawplace(ezgl::renderer* g) {
                 }
 
                 auto tile_type = device_ctx.grid[i][j].type;
-                logical_block_type = pick_best_logical_type(tile_type);
+                logical_block_type = pick_logical_type(tile_type);
 
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
