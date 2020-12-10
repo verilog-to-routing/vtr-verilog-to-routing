@@ -96,6 +96,13 @@ struct PlacerMoveContext : public Context {
 
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
     vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
+
+    // The first range limit calculated by the anneal
+    float first_rlim;
+
+    // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)
+    std::vector<int> X_coord;
+    std::vector<int> Y_coord;
 };
 
 /**

@@ -262,7 +262,6 @@ static e_move_result try_swap(const t_annealing_state* state,
                               PlacerCriticalities* criticalities,
                               PlacerSetupSlacks* setup_slacks,
                               const t_placer_opts& placer_opts,
-                              MoveHelperData& move_helper,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor);
@@ -292,7 +291,6 @@ static float starting_t(const t_annealing_state* state,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
-                        MoveHelperData& move_helper,
                         MoveTypeStat& move_type_stat);
 
 static int count_connections();
@@ -371,7 +369,6 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
-                                 MoveHelperData& move_helper,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor);
 
@@ -421,6 +418,7 @@ void try_place(const t_placer_opts& placer_opts,
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     const auto& p_timing_ctx = g_placer_ctx.timing();
     const auto& p_runtime_ctx = g_placer_ctx.runtime();
@@ -651,9 +649,8 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     //allocate helper vectors that are used by many move generators
-    MoveHelperData move_helper;
-    move_helper.X_coord.resize(10, 0);
-    move_helper.Y_coord.resize(10, 0);
+    place_move_ctx.X_coord.resize(10, 0);
+    place_move_ctx.Y_coord.resize(10, 0);
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
@@ -663,7 +660,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-    move_helper.first_rlim = first_rlim;
+    place_move_ctx.first_rlim = first_rlim;
 
     /* Set the temperature high so essentially all swaps will be accepted   */
     /* when trying to determine the starting temp for placement inner loop. */
@@ -683,7 +680,6 @@ void try_place(const t_placer_opts& placer_opts,
                          pin_timing_invalidator.get(),
                          blocks_affected,
                          placer_opts,
-                         move_helper,
                          move_type_stat);
 
     if (!placer_opts.move_stats_file.empty()) {
@@ -756,7 +752,6 @@ void try_place(const t_placer_opts& placer_opts,
                              blocks_affected,
                              timing_info.get(),
                              placer_opts.place_algorithm,
-                             move_helper,
                              move_type_stat,
                              timing_bb_factor);
 
@@ -829,7 +824,6 @@ quench:
                              blocks_affected,
                              timing_info.get(),
                              placer_opts.place_quench_algorithm,
-                             move_helper,
                              move_type_stat,
                              timing_bb_factor);
 
@@ -1003,7 +997,6 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
-                                 MoveHelperData& move_helper,
                                  MoveTypeStat& move_type_stat,
                                  float timing_bb_factor) {
     int inner_crit_iter_count, inner_iter;
@@ -1026,7 +1019,6 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              criticalities,
                                              setup_slacks,
                                              placer_opts,
-                                             move_helper,
                                              move_type_stat,
                                              place_algorithm,
                                              timing_bb_factor);
@@ -1156,7 +1148,6 @@ static float starting_t(const t_annealing_state* state,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
-                        MoveHelperData& move_helper,
                         MoveTypeStat& move_type_stat) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
@@ -1185,7 +1176,6 @@ static float starting_t(const t_annealing_state* state,
                                              criticalities,
                                              setup_slacks,
                                              placer_opts,
-                                             move_helper,
                                              move_type_stat,
                                              placer_opts.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT);
@@ -1278,7 +1268,6 @@ static e_move_result try_swap(const t_annealing_state* state,
                               PlacerCriticalities* criticalities,
                               PlacerSetupSlacks* setup_slacks,
                               const t_placer_opts& placer_opts,
-                              MoveHelperData& move_helper,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor) {
@@ -1318,7 +1307,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     //Generate a new move (perturbation) used to explore the space of possible placements
-    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, move_type, move_helper, rlim, placer_opts, criticalities);
+    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
 
     ++move_type_stat.num_moves[(int)move_type];
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);

@@ -75,7 +75,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
   public:
     SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
     SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
-    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
     void process_outcome(double reward, e_reward_function reward_fun);
 };
 #endif

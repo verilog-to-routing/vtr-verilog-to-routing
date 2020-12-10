@@ -5,9 +5,11 @@
 
 static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, bool& skip_net);
 
-e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, MoveHelperData& move_helper, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
@@ -29,8 +31,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
-    move_helper.X_coord.clear();
-    move_helper.Y_coord.clear();
+    place_move_ctx.X_coord.clear();
+    place_move_ctx.Y_coord.clear();
 
     //true if the net is a feedback from the block to itself
     bool skip_net;
@@ -47,39 +49,39 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         if (skip_net)
             continue;
 
-        move_helper.X_coord.insert(move_helper.X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.edge);
-        move_helper.X_coord.insert(move_helper.X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.edge);
-        move_helper.Y_coord.insert(move_helper.Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.edge);
-        move_helper.Y_coord.insert(move_helper.Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.edge);
+        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.edge);
+        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.edge);
+        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.edge);
+        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.edge);
     }
 
-    if ((move_helper.X_coord.size() == 0) || (move_helper.Y_coord.size() == 0))
+    if ((place_move_ctx.X_coord.size() == 0) || (place_move_ctx.Y_coord.size() == 0))
         return e_create_move::ABORT;
 
     //calculate the weighted median region
-    std::sort(move_helper.X_coord.begin(), move_helper.X_coord.end());
-    std::sort(move_helper.Y_coord.begin(), move_helper.Y_coord.end());
+    std::sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
+    std::sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
 
-    if (move_helper.X_coord.size() == 1) {
-        limit_coords.xmin = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2)];
+    if (place_move_ctx.X_coord.size() == 1) {
+        limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
         limit_coords.xmax = limit_coords.xmin;
     } else {
-        limit_coords.xmin = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2)];
-        limit_coords.xmax = move_helper.X_coord[floor((move_helper.X_coord.size() - 1) / 2) + 1];
+        limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
+        limit_coords.xmax = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2) + 1];
     }
 
-    if (move_helper.Y_coord.size() == 1) {
-        limit_coords.ymin = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2)];
+    if (place_move_ctx.Y_coord.size() == 1) {
+        limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
         limit_coords.ymax = limit_coords.ymin;
     } else {
-        limit_coords.ymin = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2)];
-        limit_coords.ymax = move_helper.Y_coord[floor((move_helper.Y_coord.size() - 1) / 2) + 1];
+        limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
+        limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
     }
 
     t_range_limiters range_limiters;
     range_limiters.original_rlim = rlim;
     range_limiters.dm_rlim = placer_opts.place_dm_rlim;
-    range_limiters.first_rlim = move_helper.first_rlim;
+    range_limiters.first_rlim = place_move_ctx.first_rlim;
 
     t_pl_loc w_median_point;
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
