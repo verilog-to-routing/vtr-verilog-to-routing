@@ -866,7 +866,7 @@ quench:
     }
 
     //See if our latest checkpoint is better than the current placement solution
-    if(placer_opts.place_checkpointing)
+    if (placer_opts.place_checkpointing)
         restore_best_placement(placement_checkpoint, timing_info, costs, placer_criticalities, placer_setup_slacks, place_delay_model, pin_timing_invalidator, crit_params);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
@@ -1226,7 +1226,7 @@ static float starting_t(const t_annealing_state* state,
 static void update_move_nets(int num_nets_affected) {
     /* update net cost functions and reset flags. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move(); 
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
@@ -1924,7 +1924,7 @@ static double comp_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.mutable_move(); 
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
@@ -1965,7 +1965,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     auto& p_timing_ctx = g_placer_ctx.mutable_timing();
-    auto& place_move_ctx = g_placer_ctx.mutable_move(); 
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
@@ -2024,7 +2024,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
  * elsewhere).   */
 static void free_placement_structs(const t_placer_opts& placer_opts) {
     auto& place_move_ctx = g_placer_ctx.mutable_move();
- 
+
     if (placer_opts.place_algorithm.is_timing_driven()) {
         auto& p_timing_ctx = g_placer_ctx.mutable_timing();
 
@@ -2298,7 +2298,7 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.move(); 
+    auto& place_move_ctx = g_placer_ctx.move();
 
     xnew = max(min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = max(min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels

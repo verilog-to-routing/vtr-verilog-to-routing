@@ -13,7 +13,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto& place_move_ctx = g_placer_ctx.move(); 
+    auto& place_move_ctx = g_placer_ctx.move();
 
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from;
@@ -228,7 +228,7 @@ static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yol
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_move_ctx = g_placer_ctx.move(); 
+    auto& place_move_ctx = g_placer_ctx.move();
 
     xnew = std::max(std::min<int>(xnew, device_ctx.grid.width() - 2), 1);  //-2 for no perim channels
     ynew = std::max(std::min<int>(ynew, device_ctx.grid.height() - 2), 1); //-2 for no perim channels

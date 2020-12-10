@@ -45,5 +45,4 @@ void restore_best_placement(t_placement_checkpoint& placement_checkpoint, std::s
 
         VTR_LOG("\nCheckpoint restored\n");
     }
-
 }
