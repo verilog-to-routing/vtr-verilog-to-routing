@@ -65,6 +65,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> exp_q_; //Estimated value of each arm
     std::vector<float> action_prob_;
     std::vector<float> cumm_action_prob_;
+
 };
 
 class SimpleRLMoveGenerator : public MoveGenerator {

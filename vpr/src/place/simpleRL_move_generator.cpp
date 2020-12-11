@@ -5,7 +5,9 @@
 
 #include "vtr_random.h"
 
-float my_exp(float);
+/* File-scope routines */
+//a scaled and clipped exponential function
+static float scaled_clipped_exp(float x) { return std::exp(std::min(1000000 * x, float(3.0))); }
 
 /*                                     *
  *                                     *
@@ -230,10 +232,8 @@ void SoftmaxAgent::set_k(size_t k) {
     }
 }
 
-float my_exp(float x) { return std::exp(std::min(1000000 * x, float(3.0))); }
-
 void SoftmaxAgent::set_action_prob() {
-    std::transform(q_.begin(), q_.end(), exp_q_.begin(), my_exp);
+    std::transform(q_.begin(), q_.end(), exp_q_.begin(), scaled_clipped_exp);
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
     if (sum_q == 0.0) {
