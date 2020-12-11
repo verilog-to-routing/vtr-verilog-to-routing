@@ -9,7 +9,6 @@
 #include "draw_global.h"
 
 /* File-scope routines */
-
 static vtr::Matrix<t_grid_blocks> init_grid_blocks();
 
 /**
@@ -336,6 +335,7 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
 void load_grid_blocks_from_block_locs() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
     zero_initialize_grid_blocks();
 
@@ -343,6 +343,10 @@ void load_grid_blocks_from_block_locs() {
     for (auto blk_id : blocks) {
         t_pl_loc location;
         location = place_ctx.block_locs[blk_id].loc;
+
+        VTR_ASSERT(location.x < (int)device_ctx.grid.width());
+        VTR_ASSERT(location.y < (int)device_ctx.grid.height());
+
         place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = blk_id;
         place_ctx.grid_blocks[location.x][location.y].usage++;
     }

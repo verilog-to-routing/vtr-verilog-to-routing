@@ -216,6 +216,6 @@ void zero_initialize_grid_blocks();
 ///@brief a utility to calculate grid_blocks given the updated block_locs (used in restore_checkpoint)
 void load_grid_blocks_from_block_locs();
 
-///@brief Builds legal_pos structure
+///@brief Builds legal_pos structure. legal_pos[type->index] is an array that gives every legal value of (x,y,z) that can accommodate a block.
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 #endif
