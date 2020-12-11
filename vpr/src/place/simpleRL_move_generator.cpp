@@ -53,14 +53,14 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
  *                                        *
  *                                        */
 void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_fun) {
-    ++n_[last_action_];
+    ++num_action_chosen_[last_action_];
     if (reward_fun == RUNTIME_AWARE || reward_fun == WL_BIASED_RUNTIME_AWARE)
         reward /= time_elapsed_[last_action_];
 
     //Determine step size
     float step = 0.;
     if (exp_alpha_ < 0.) {
-        step = 1. / n_[last_action_]; //Incremental average
+        step = 1. / num_action_chosen_[last_action_]; //Incremental average
     } else if (exp_alpha_ <= 1) {
         step = exp_alpha_; //Exponentially wieghted average
     } else {
@@ -73,21 +73,21 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     //Update the estimated value of the last action
     q_[last_action_] += delta_q;
 
-    if (f_) {
-        fprintf(f_, "%zu,", last_action_);
-        fprintf(f_, "%g,", reward);
+    if (agent_info_file_) {
+        fprintf(agent_info_file_, "%zu,", last_action_);
+        fprintf(agent_info_file_, "%g,", reward);
 
-        for (size_t i = 0; i < k_; ++i) {
-            fprintf(f_, "%g,", q_[i]);
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "%g,", q_[i]);
         }
 
-        for (size_t i = 0; i < k_; ++i) {
-            fprintf(f_, "%zu", n_[i]);
-            if (i != k_ - 1) {
-                fprintf(f_, ",");
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "%zu", num_action_chosen_[i]);
+            if (i != num_available_actions_ - 1) {
+                fprintf(agent_info_file_, ",");
             }
         }
-        fprintf(f_, "\n");
+        fprintf(agent_info_file_, "\n");
     }
 }
 
@@ -96,14 +96,14 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
  *  E-greedy agent implementation   *
  *                                  *
  *                                  */
-EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
+EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_actions, float epsilon) {
     set_epsilon(epsilon);
-    set_k(k);
+    set_num_actions(num_actions);
     set_epsilon_action_prob();
 }
 
 EpsilonGreedyAgent::~EpsilonGreedyAgent() {
-    if (f_) vtr::fclose(f_);
+    if (agent_info_file_) vtr::fclose(agent_info_file_);
 }
 
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
@@ -142,7 +142,7 @@ size_t EpsilonGreedyAgent::propose_action() {
         VTR_ASSERT(itr != q_.end());
         action = itr - q_.begin();
     }
-    VTR_ASSERT(action < k_);
+    VTR_ASSERT(action < num_available_actions_);
 
     last_action_ = action;
     return action;
@@ -153,30 +153,30 @@ void EpsilonGreedyAgent::set_epsilon(float epsilon) {
     epsilon_ = epsilon;
 }
 
-void EpsilonGreedyAgent::set_k(size_t k) {
-    k_ = k;
-    q_ = std::vector<float>(k, 0.);
-    n_ = std::vector<size_t>(k, 0);
+void EpsilonGreedyAgent::set_num_actions(size_t num_actions) {
+    num_available_actions_ = num_actions;
+    q_ = std::vector<float>(num_actions, 0.);
+    num_action_chosen_ = std::vector<size_t>(num_actions, 0);
 
-    cumm_epsilon_action_prob_ = std::vector<float>(k, 1.0 / k);
-    if (f_) {
-        fprintf(f_, "action,reward,");
-        for (size_t i = 0; i < k_; ++i) {
-            fprintf(f_, "q%zu,", i);
+    cumm_epsilon_action_prob_ = std::vector<float>(num_actions, 1.0 / num_actions);
+    if (agent_info_file_) {
+        fprintf(agent_info_file_, "action,reward,");
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "q%zu,", i);
         }
-        for (size_t i = 0; i < k_; ++i) {
-            fprintf(f_, "n%zu,", i);
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "n%zu,", i);
         }
-        fprintf(f_, "\n");
+        fprintf(agent_info_file_, "\n");
     }
 }
 
 void EpsilonGreedyAgent::set_epsilon_action_prob() {
     //initialize to equal probabilities
-    std::vector<float> epsilon_prob(k_, 1.0 / k_);
+    std::vector<float> epsilon_prob(num_available_actions_, 1.0 / num_available_actions_);
 
     float accum = 0;
-    for (size_t i = 0; i < k_; ++i) {
+    for (size_t i = 0; i < num_available_actions_; ++i) {
         accum += epsilon_prob[i];
         cumm_epsilon_action_prob_[i] = accum;
     }
@@ -187,14 +187,14 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
  *  Softmax agent implementation    *
  *                                  *
  *                                  */
-SoftmaxAgent::SoftmaxAgent(size_t k) {
-    set_k(k);
+SoftmaxAgent::SoftmaxAgent(size_t num_actions) {
+    set_num_actions(num_actions);
     set_action_prob();
-    //f_ = vtr::fopen("agent_info.txt", "w");
+    //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
 
 SoftmaxAgent::~SoftmaxAgent() {
-    if (f_) vtr::fclose(f_);
+    if (agent_info_file_) vtr::fclose(agent_info_file_);
 }
 
 size_t SoftmaxAgent::propose_action() {
@@ -204,31 +204,31 @@ size_t SoftmaxAgent::propose_action() {
     auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
     action = itr - cumm_action_prob_.begin();
     //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
-    if (action == k_)
-        action = k_ - 1;
-    VTR_ASSERT(action < k_);
+    if (action == num_available_actions_)
+        action = num_available_actions_ - 1;
+    VTR_ASSERT(action < num_available_actions_);
 
     last_action_ = action;
     return action;
 }
 
-void SoftmaxAgent::set_k(size_t k) {
-    k_ = k;
-    q_ = std::vector<float>(k, 0.);
-    exp_q_ = std::vector<float>(k, 0.);
-    n_ = std::vector<size_t>(k, 0);
-    action_prob_ = std::vector<float>(k, 0.);
+void SoftmaxAgent::set_num_actions(size_t num_actions) {
+    num_available_actions_ = num_actions;
+    q_ = std::vector<float>(num_actions, 0.);
+    exp_q_ = std::vector<float>(num_actions, 0.);
+    num_action_chosen_ = std::vector<size_t>(num_actions, 0);
+    action_prob_ = std::vector<float>(num_actions, 0.);
 
-    cumm_action_prob_ = std::vector<float>(k);
-    if (f_) {
-        fprintf(f_, "action,reward,");
-        for (size_t i = 0; i < k_; ++i) {
-            fprintf(f_, "q%zu,", i);
+    cumm_action_prob_ = std::vector<float>(num_actions);
+    if (agent_info_file_) {
+        fprintf(agent_info_file_, "action,reward,");
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "q%zu,", i);
         }
-        for (size_t i = 0; i < k_; ++i) {
-            fprintf(f_, "n%zu,", i);
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "n%zu,", i);
         }
-        fprintf(f_, "\n");
+        fprintf(agent_info_file_, "\n");
     }
 }
 
@@ -237,18 +237,18 @@ void SoftmaxAgent::set_action_prob() {
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
     if (sum_q == 0.0) {
-        std::fill(action_prob_.begin(), action_prob_.end(), 1.0 / k_);
+        std::fill(action_prob_.begin(), action_prob_.end(), 1.0 / num_available_actions_);
     } else {
-        for (size_t i = 0; i < k_; ++i) {
+        for (size_t i = 0; i < num_available_actions_; ++i) {
             action_prob_[i] = exp_q_[i] / sum_q;
         }
     }
 
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
-                   bind2nd(std::plus<float>(), (1.0 - sum_prob) / k_));
+                   bind2nd(std::plus<float>(), (1.0 - sum_prob) / num_available_actions_));
     float accum = 0;
-    for (size_t i = 0; i < k_; ++i) {
+    for (size_t i = 0; i < num_available_actions_; ++i) {
         accum += action_prob_[i];
         cumm_action_prob_[i] = accum;
     }
