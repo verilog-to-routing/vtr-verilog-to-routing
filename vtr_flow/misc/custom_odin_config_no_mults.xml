@@ -1,0 +1,42 @@
+<!-- 
+	This file specifies a way of hard-coding odin arguments to run a complete vtr flow
+	Hard-coded values can modify the "XXX", "YYY" etc.
+	The tags marked as required should be persisted for the run_vtr_flow.py to succeed
+-->
+<!-- required-->
+<config>
+	<!-- required-->
+	<verilog_files>
+		<!-- Way of specifying multiple files in a project, required -->
+		<verilog_file>XXX</verilog_file>
+	</verilog_files>
+	<!-- required-->
+	<output>
+		<!-- These are the output flags for the project, required -->
+		<output_type>blif</output_type>
+		<!-- required-->
+		<output_path_and_name>ZZZ</output_path_and_name>
+		<target>
+			<!-- This is the target device the output is being built for, required -->
+			<arch_file>YYY</arch_file>
+		</target>
+	</output>
+	<!-- required-->
+	<optimizations>
+		<!-- optional-->
+		<mix_soft_hard_blocks mults_ratio="0.0"></mix_soft_hard_blocks>+
+		<!-- required-->
+		<multiply size="MMM" fixed="1" fracture="0" padding="-1"/> 
+		<!-- required-->
+		<memory split_memory_width="1" split_memory_depth="PPP"/> 
+		<!-- required-->
+		<adder size="0" threshold_size="AAA"/>
+	</optimizations>
+	<!-- required-->
+	<debug_outputs>
+		<!-- Various debug options, all optional -->
+		<debug_output_path>.</debug_output_path>
+		<output_ast_graphs>1</output_ast_graphs>
+		<output_netlist_graphs>1</output_netlist_graphs>
+	</debug_outputs>
+</config>

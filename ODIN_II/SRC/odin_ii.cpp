@@ -572,7 +572,7 @@ void get_options(int argc, char** argv) {
             global_args.verilog_files.value().size() > 0                             //have a verilog input list
         })) {
         parser.print_usage();
-        error_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
+        warning_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\nUnless is used for infrastructure directly\n");
     }
 
     //adjust thread count

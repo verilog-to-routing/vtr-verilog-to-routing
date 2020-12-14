@@ -314,6 +314,12 @@ def vtr_command_argparser(prog=None):
         type=int,
         help="Tells ODIN II the minimum adder size that should be implemented using hard adder.",
     )
+    odin.add_argument(
+        "-odin_xml",
+        default=None,
+        dest="odin_config",
+        help="Supplies Odin with a custom config file for optimizations.",
+    )
     #
     # VPR arguments
     #
@@ -421,6 +427,7 @@ def vtr_command_main(arg_list, prog=None):
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
             min_hard_adder_size=args.min_hard_adder_size,
+            odin_config=args.odin_config,
             check_equivalent=args.check_equivalent,
             check_incremental_sta_consistency=args.check_incremental_sta_consistency,
             use_old_abc_script=args.use_old_abc_script,
