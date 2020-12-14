@@ -1,6 +1,8 @@
 #ifndef PARTITION_H
 #define PARTITION_H
 
+#include <string>
+
 #include "vtr_strong_id.h"
 #include "region.h"
 #include "atom_netlist_fwd.h"
