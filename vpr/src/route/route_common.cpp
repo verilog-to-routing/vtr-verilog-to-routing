@@ -927,6 +927,7 @@ void alloc_and_load_rr_node_route_structs() {
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_nodes;
 
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_nodes.size());
     route_ctx.non_configurable_bitset.resize(device_ctx.rr_nodes.size());
@@ -935,7 +936,15 @@ void alloc_and_load_rr_node_route_structs() {
     reset_rr_node_route_structs();
 
     for (auto i : device_ctx.rr_node_to_non_config_node_set) {
-        route_ctx.non_configurable_bitset.set(i.first, true);
+        const auto& node_set = device_ctx.rr_non_config_node_sets[i.second];
+        for (auto n : node_set) {
+            RRNodeId node(n);
+            // Mark non-configurable node sets with multiple possible routes.
+            if (rr_graph.fan_in(node) > 1 || rr_graph.num_non_configurable_edges(node) > 1) {
+                route_ctx.non_configurable_bitset.set(i.first, true);
+                break;
+            }
+        }
     }
 }
 

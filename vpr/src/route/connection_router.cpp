@@ -677,10 +677,13 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
      * new_costs.R_upstream: is the upstream resistance at the end of this node
      */
 
+    auto& route_ctx = g_vpr_ctx.routing();
+
     //Info for the switch connecting from_node to_node
     int iswitch = rr_nodes_.edge_switch(from_edge);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
-    bool reached_configurably = rr_switch_inf_[iswitch].configurable();
+    bool reached_configurably = rr_switch_inf_[iswitch].configurable() ||
+      !route_ctx.non_configurable_bitset.get(to_node);
     float switch_R = rr_switch_inf_[iswitch].R;
     float switch_Tdel = rr_switch_inf_[iswitch].Tdel;
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
