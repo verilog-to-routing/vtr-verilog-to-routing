@@ -24,6 +24,7 @@
 #include "place_macro.h"
 #include "compressed_grid.h"
 #include "metadata_storage.h"
+#include "vpr_constraints.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -370,6 +371,17 @@ struct RoutingContext : public Context {
 };
 
 /**
+ * @brief State relating to VPR's floorplanning constraints
+ *
+ * This should contain only data structures related to constraining blocks
+ * to certain regions on the chip.
+ */
+struct FloorplanningContext : public Context {
+    ///@brief Atom netlist
+    VprConstraints constraints;
+};
+
+/**
  * @brief This object encapsulates VPR's state.
  *
  * There is typically a single instance which is
@@ -440,6 +452,9 @@ class VprContext : public Context {
     const RoutingContext& routing() const { return routing_; }
     RoutingContext& mutable_routing() { return routing_; }
 
+    const FloorplanningContext& floorplanning() const { return constraints_; }
+    FloorplanningContext& mutable_floorplanning() { return constraints_; }
+
   private:
     DeviceContext device_;
 
@@ -451,6 +466,7 @@ class VprContext : public Context {
     ClusteringContext clustering_;
     PlacementContext placement_;
     RoutingContext routing_;
+    FloorplanningContext constraints_;
 };
 
 #endif

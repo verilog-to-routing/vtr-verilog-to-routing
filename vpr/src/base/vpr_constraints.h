@@ -60,6 +60,18 @@ class VprConstraints {
      */
     std::vector<AtomBlockId> get_part_atoms(PartitionId part_id);
 
+    /**
+     * @brief Returns the number of partitions in the object
+     */
+    int get_num_partitions();
+
+    /**
+     * @brief Sets the number of partitions in the object
+     *
+     *   @param num_parts The number of partitions in the partitions vector
+     */
+    void set_num_partitions(int num_parts);
+
   private:
     /**
      * Store all constrained atoms
@@ -70,6 +82,12 @@ class VprConstraints {
      * Store all partitions
      */
     vtr::vector<PartitionId, Partition> partitions;
+
+    /**
+     * Store number of partitions - the number of partitions in the partitions vector.
+     * Used when echoing VprConstraints objects.
+     */
+    int num_partitions;
 };
 
 #endif /* VPR_CONSTRAINTS_H */
