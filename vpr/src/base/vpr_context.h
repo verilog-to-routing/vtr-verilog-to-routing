@@ -344,6 +344,9 @@ struct RoutingContext : public Context {
      */
     vtr::dynamic_bitset<> non_configurable_bitset; /*[0...device_ctx.num_rr_nodes] */
 
+    ///@brief Congestion base cost of each non-configurably connected node
+    std::vector<float> rr_non_config_node_cong_base_costs;
+
     ///@brief Information about current routing status of each net
     t_net_routing_status net_status;
 
