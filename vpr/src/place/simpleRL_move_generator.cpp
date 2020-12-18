@@ -132,12 +132,14 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
 size_t EpsilonGreedyAgent::propose_action() {
     size_t action = 0;
     if (vtr::frand() < epsilon_) {
-        //Explore
+        /* Explore
+         * With probability epsilon, choose randomly amongst all move types */
         float p = vtr::frand();
         auto itr = std::lower_bound(cumm_epsilon_action_prob_.begin(), cumm_epsilon_action_prob_.end(), p);
         action = itr - cumm_epsilon_action_prob_.begin();
     } else {
-        //Greedy (Exploit)
+        /* Greedy (Exploit)
+         * For probability 1-epsilon, choose the greedy action */
         auto itr = std::max_element(q_.begin(), q_.end());
         VTR_ASSERT(itr != q_.end());
         action = itr - q_.begin();
@@ -233,20 +235,28 @@ void SoftmaxAgent::set_num_actions(size_t num_actions) {
 }
 
 void SoftmaxAgent::set_action_prob() {
+    //calculate the scaled and clipped explonential function for the estimated q value for each action
     std::transform(q_.begin(), q_.end(), exp_q_.begin(), scaled_clipped_exp);
+
+    // calculate the sum of all scaled clipped expnential q values
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
-    if (sum_q == 0.0) {
+    if (sum_q == 0.0) { //action probabilities need to be initialized with equal values
         std::fill(action_prob_.begin(), action_prob_.end(), 1.0 / num_available_actions_);
     } else {
+        // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
         for (size_t i = 0; i < num_available_actions_; ++i) {
             action_prob_[i] = exp_q_[i] / sum_q;
         }
     }
 
+    // normalize all the action probabilities to guarantee the sum(all actyion probs) = 1 
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
                    bind2nd(std::plus<float>(), (1.0 - sum_prob) / num_available_actions_));
+
+    //calulcate the accumulative action probability of each action
+    // e.g. if we have 5 actions with equal probability of 0.2, the cumm_action_prob will be {0.2,0.4,0.6,0.8,1.0}
     float accum = 0;
     for (size_t i = 0; i < num_available_actions_; ++i) {
         accum += action_prob_[i];
@@ -259,7 +269,7 @@ void SoftmaxAgent::set_step(float gamma, int move_lim) {
         exp_alpha_ = -1; //Use sample average
     } else {
         //
-        // For an exponentially wieghted average the fraction of total weight applied to
+        // For an exponentially weighted average the fraction of total weight applied
         // to moves which occured > K moves ago is:
         //
         //      gamma = (1 - alpha)^K

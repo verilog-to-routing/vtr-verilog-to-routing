@@ -101,6 +101,7 @@ struct PlacerMoveContext : public Context {
     float first_rlim;
 
     // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)
+    // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
 };
