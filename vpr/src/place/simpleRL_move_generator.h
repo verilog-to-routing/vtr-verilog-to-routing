@@ -15,7 +15,6 @@
 class KArmedBanditAgent {
   public:
     virtual ~KArmedBanditAgent() {}
-    virtual void set_num_actions(size_t num_actions) = 0;
     virtual size_t propose_action() = 0;
     void process_outcome(double, e_reward_function);
 
@@ -48,7 +47,6 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     size_t propose_action() override; //Returns the type of the next action the agent wishes to perform
 
   public:
-    void set_num_actions(size_t num_actions); //Sets the number of arms
     void set_epsilon(float epsilon);
     void set_epsilon_action_prob();
     void set_step(float gamma, int move_lim);
@@ -74,7 +72,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
     size_t propose_action() override; //Returns the type of the next action the agent wishes to perform
 
   public:
-    void set_num_actions(size_t num_actions); //Sets the number of arms
     void set_action_prob();
     void set_step(float gamma, int move_lim);
 

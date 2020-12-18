@@ -98,7 +98,21 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
  *                                  */
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t num_actions, float epsilon) {
     set_epsilon(epsilon);
-    set_num_actions(num_actions);
+    num_available_actions_ = num_actions;
+    q_ = std::vector<float>(num_actions, 0.);
+    num_action_chosen_ = std::vector<size_t>(num_actions, 0);
+
+    cumm_epsilon_action_prob_ = std::vector<float>(num_actions, 1.0 / num_actions);
+    if (agent_info_file_) {
+        fprintf(agent_info_file_, "action,reward,");
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "q%zu,", i);
+        }
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "n%zu,", i);
+        }
+        fprintf(agent_info_file_, "\n");
+    }
     set_epsilon_action_prob();
 }
 
@@ -155,24 +169,6 @@ void EpsilonGreedyAgent::set_epsilon(float epsilon) {
     epsilon_ = epsilon;
 }
 
-void EpsilonGreedyAgent::set_num_actions(size_t num_actions) {
-    num_available_actions_ = num_actions;
-    q_ = std::vector<float>(num_actions, 0.);
-    num_action_chosen_ = std::vector<size_t>(num_actions, 0);
-
-    cumm_epsilon_action_prob_ = std::vector<float>(num_actions, 1.0 / num_actions);
-    if (agent_info_file_) {
-        fprintf(agent_info_file_, "action,reward,");
-        for (size_t i = 0; i < num_available_actions_; ++i) {
-            fprintf(agent_info_file_, "q%zu,", i);
-        }
-        for (size_t i = 0; i < num_available_actions_; ++i) {
-            fprintf(agent_info_file_, "n%zu,", i);
-        }
-        fprintf(agent_info_file_, "\n");
-    }
-}
-
 void EpsilonGreedyAgent::set_epsilon_action_prob() {
     //initialize to equal probabilities
     std::vector<float> epsilon_prob(num_available_actions_, 1.0 / num_available_actions_);
@@ -190,7 +186,23 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
  *                                  *
  *                                  */
 SoftmaxAgent::SoftmaxAgent(size_t num_actions) {
-    set_num_actions(num_actions);
+    num_available_actions_ = num_actions;
+    q_ = std::vector<float>(num_actions, 0.);
+    exp_q_ = std::vector<float>(num_actions, 0.);
+    num_action_chosen_ = std::vector<size_t>(num_actions, 0);
+    action_prob_ = std::vector<float>(num_actions, 0.);
+
+    cumm_action_prob_ = std::vector<float>(num_actions);
+    if (agent_info_file_) {
+        fprintf(agent_info_file_, "action,reward,");
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "q%zu,", i);
+        }
+        for (size_t i = 0; i < num_available_actions_; ++i) {
+            fprintf(agent_info_file_, "n%zu,", i);
+        }
+        fprintf(agent_info_file_, "\n");
+    }
     set_action_prob();
     //agent_info_file_ = vtr::fopen("agent_info.txt", "w");
 }
@@ -212,26 +224,6 @@ size_t SoftmaxAgent::propose_action() {
 
     last_action_ = action;
     return action;
-}
-
-void SoftmaxAgent::set_num_actions(size_t num_actions) {
-    num_available_actions_ = num_actions;
-    q_ = std::vector<float>(num_actions, 0.);
-    exp_q_ = std::vector<float>(num_actions, 0.);
-    num_action_chosen_ = std::vector<size_t>(num_actions, 0);
-    action_prob_ = std::vector<float>(num_actions, 0.);
-
-    cumm_action_prob_ = std::vector<float>(num_actions);
-    if (agent_info_file_) {
-        fprintf(agent_info_file_, "action,reward,");
-        for (size_t i = 0; i < num_available_actions_; ++i) {
-            fprintf(agent_info_file_, "q%zu,", i);
-        }
-        for (size_t i = 0; i < num_available_actions_; ++i) {
-            fprintf(agent_info_file_, "n%zu,", i);
-        }
-        fprintf(agent_info_file_, "\n");
-    }
 }
 
 void SoftmaxAgent::set_action_prob() {
