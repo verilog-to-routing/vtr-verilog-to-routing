@@ -72,6 +72,12 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, clb_pin);
 
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
+        /*
+         * Update the highly critical pins container
+         *
+         * If the old criticality < limit and the new criticality > limit --> add this pin to the highly critical pins
+         * If the old criticality > limit and the new criticality < limit --> remove this pin from the highly critical pins
+         */
         if (!first_time_update_criticality) {
             if (new_crit > crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_params.crit_limit) {
                 place_move_ctx.highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
