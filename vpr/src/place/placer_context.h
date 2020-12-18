@@ -104,6 +104,13 @@ struct PlacerMoveContext : public Context {
     // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
+
+    // Container to save the highly critical pins (higher than a timing criticality limit setted by commandline option)
+    //std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
+    std::unordered_set<std::pair<ClusterNetId, int>> highly_crit_pins;
+
+    // Container to save the highly critical blocks (blocks with one or more highly critical pins)
+    std::unordered_set<ClusterBlockId> highly_crit_blocks;
 };
 
 /**

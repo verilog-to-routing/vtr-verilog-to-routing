@@ -10,10 +10,10 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     /* Pick a random block to be swapped with another random block.   */
     // pick it from the highly critical blocks
-    if (highly_crit_pins.size() == 0) {
+    if (place_move_ctx.highly_crit_pins.size() == 0) {
         return e_create_move::ABORT; //No critical block
     }
-    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[vtr::irand(highly_crit_pins.size() - 1)];
+    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     if (!b_from) {

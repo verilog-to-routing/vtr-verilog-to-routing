@@ -13,21 +13,18 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
+#include "placer_globals.h"
 #include "net_delay.h"
 #include "timing_place_lookup.h"
 #include "timing_place.h"
 
 #include "timing_info.h"
 
-std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
-std::unordered_set<ClusterBlockId> highly_crit_blocks;
-
 ///@brief Allocates space for the timing_place_crit_ data structure.
 PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
     , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
-    //    , timing_place_normalized_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
 /**
@@ -60,7 +57,8 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
 
     ClusterBlockId crit_block;
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    highly_crit_blocks.clear();
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
+    place_move_ctx.highly_crit_blocks.clear();
 
     /* Performs a 1-to-1 mapping from criticality to timing_place_crit_.
      * For every pin on every net (or, equivalently, for every tedge ending
@@ -76,13 +74,13 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
         if (!first_time_update_criticality) {
             if (new_crit > crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_params.crit_limit) {
-                highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
+                place_move_ctx.highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
             } else if (new_crit < crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] > crit_params.crit_limit) {
-                highly_crit_pins.erase(std::remove(highly_crit_pins.begin(), highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)), highly_crit_pins.end());
+                place_move_ctx.highly_crit_pins.erase(std::remove(place_move_ctx.highly_crit_pins.begin(), place_move_ctx.highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)), place_move_ctx.highly_crit_pins.end());
             }
         } else {
             if (new_crit > crit_params.crit_limit)
-                highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
+                place_move_ctx.highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
         }
 
         /* The placer likes a great deal of contrast between criticalities.
@@ -92,7 +90,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         //timing_place_normalized_crit_[clb_net][pin_index_in_net] = clb_pin_crit;
 
         if (new_crit > crit_params.crit_limit)
-            highly_crit_blocks.insert(cluster_ctx.clb_nlist.net_driver_block(clb_net));
+            place_move_ctx.highly_crit_blocks.insert(cluster_ctx.clb_nlist.net_driver_block(clb_net));
     }
 
     /* Criticalities updated. In sync with timing info.   */
