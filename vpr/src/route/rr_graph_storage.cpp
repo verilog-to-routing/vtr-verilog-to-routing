@@ -711,7 +711,7 @@ void t_rr_graph_storage::set_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
-    std::bitset<NUM_SIDES - 1> side_bits = node_storage_[id].dir_side_.sides;
+    std::bitset<NUM_SIDES> side_bits = node_storage_[id].dir_side_.sides;
     /* Enable the side bit */
     side_bits[size_t(new_side)] = true;
     if (side_bits.to_ulong() > CHAR_MAX) {

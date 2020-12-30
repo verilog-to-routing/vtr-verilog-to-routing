@@ -593,7 +593,7 @@ class t_rr_graph_storage {
 
     /** THIS FUNCTION IS GOING TO BE DEPRECATED
      *  Return the first valid side for the node
-     */ 
+     */
     static inline e_side get_node_side(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
         RRNodeId id) {
@@ -604,7 +604,7 @@ class t_rr_graph_storage {
                             rr_node_typename[node_data.type_]);
         }
         std::vector<e_side> exist_sides;
-        std::bitset<NUM_SIDES - 1> side_tt = node_storage[id].dir_side_.sides;
+        std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
         for (const e_side& side : SIDES) {
             if (side_tt[size_t(side)]) {
                 return side;
@@ -612,7 +612,6 @@ class t_rr_graph_storage {
         }
         /* No valid sides, return an invalid value */
         return NUM_SIDES;
-
     }
 
     static inline std::vector<e_side> get_node_sides(
@@ -626,7 +625,7 @@ class t_rr_graph_storage {
         }
         // Return a vector showing only the sides that the node appears
         std::vector<e_side> exist_sides;
-        std::bitset<NUM_SIDES - 1> side_tt = node_storage[id].dir_side_.sides;
+        std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
         for (const e_side& side : SIDES) {
             if (side_tt[size_t(side)]) {
                 exist_sides.push_back(side);
