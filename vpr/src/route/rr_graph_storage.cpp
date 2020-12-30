@@ -711,7 +711,13 @@ void t_rr_graph_storage::set_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
-    node_storage_[id].dir_side_.side = new_side;
+    std::bitset<NUM_SIDES - 1> side_bits = node_storage_[id].dir_side_.sides;
+    /* Enable the side bit */
+    side_bits[size_t(new_side)] = true;
+    if (side_bits.to_ulong() > CHAR_MAX) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
+    }
+    node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
 
 short t_rr_graph_view::node_ptc_num(RRNodeId id) const {

@@ -70,10 +70,8 @@ struct alignas(16) t_rr_node_data {
      */
     union {
         e_direction direction; //Valid only for CHANX/CHANY
-        e_side side;           //Valid only for IPINs/OPINs
-        char sides;
+        unsigned char sides;   //Valid only for IPINs/OPINs
     } dir_side_;
-
 
     uint16_t capacity_ = 0;
 };
@@ -469,6 +467,10 @@ class t_rr_graph_storage {
     void set_node_rc_index(RRNodeId, short new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, e_direction new_direction);
+
+    /* Add a side to the node abbributes;
+     * Note that a node may have multiple valid sides
+     */
     void set_node_side(RRNodeId, e_side new_side);
 
     /****************
@@ -589,6 +591,9 @@ class t_rr_graph_storage {
         return node_storage[id].dir_side_.direction;
     }
 
+    /** THIS FUNCTION IS GOING TO BE DEPRECATED
+     *  Return the first valid side for the node
+     */ 
     static inline e_side get_node_side(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
         RRNodeId id) {
@@ -598,7 +603,16 @@ class t_rr_graph_storage {
                             "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
                             rr_node_typename[node_data.type_]);
         }
-        return node_storage[id].dir_side_.side;
+        std::vector<e_side> exist_sides;
+        std::bitset<NUM_SIDES - 1> side_tt = node_storage[id].dir_side_.sides;
+        for (const e_side& side : SIDES) {
+            if (side_tt[size_t(side)]) {
+                return side;
+            }
+        }
+        /* No valid sides, return an invalid value */
+        return NUM_SIDES;
+
     }
 
     static inline std::vector<e_side> get_node_sides(
@@ -612,7 +626,7 @@ class t_rr_graph_storage {
         }
         // Return a vector showing only the sides that the node appears
         std::vector<e_side> exist_sides;
-        std::bitset<4> side_tt = node_storage[id].dir_side_.sides;
+        std::bitset<NUM_SIDES - 1> side_tt = node_storage[id].dir_side_.sides;
         for (const e_side& side : SIDES) {
             if (side_tt[size_t(side)]) {
                 exist_sides.push_back(side);
