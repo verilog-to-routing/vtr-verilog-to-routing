@@ -2,6 +2,7 @@
 #define _RR_GRAPH_STORAGE_
 
 #include <exception>
+#include <bitset>
 
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
@@ -57,10 +58,22 @@ struct alignas(16) t_rr_node_data {
     int16_t yhigh_ = -1;
 
     t_rr_type type_ = NUM_RR_TYPES;
+
+    /* The character is a hex number which is a 4-bit truth table for node sides
+     * The 4-bits in serial represent 4 sides on which a node could appear 
+     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0) 
+     *   - When a node appears on a given side, it is set to "1"
+     *   - When a node does not appear on a given side, it is set to "0"
+     * For example,
+     *   - '1' means '0001' in hex number, which means the node appears on TOP 
+     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
+     */
     union {
         e_direction direction; //Valid only for CHANX/CHANY
         e_side side;           //Valid only for IPINs/OPINs
+        char sides;
     } dir_side_;
+
 
     uint16_t capacity_ = 0;
 };
@@ -588,6 +601,26 @@ class t_rr_graph_storage {
         return node_storage[id].dir_side_.side;
     }
 
+    static inline std::vector<e_side> get_node_sides(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+        const RRNodeId& id) {
+        auto& node_data = node_storage[id];
+        if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
+                            rr_node_typename[node_data.type_]);
+        }
+        // Return a vector showing only the sides that the node appears
+        std::vector<e_side> exist_sides;
+        std::bitset<4> side_tt = node_storage[id].dir_side_.sides;
+        for (const e_side& side : SIDES) {
+            if (side_tt[size_t(side)]) {
+                exist_sides.push_back(side);
+            }
+        }
+        return exist_sides;
+    }
+
   private:
     friend struct edge_swapper;
     friend class edge_sort_iterator;
@@ -734,6 +767,20 @@ class t_rr_graph_view {
 
     e_side node_side(RRNodeId id) const {
         return t_rr_graph_storage::get_node_side(node_storage_, id);
+    }
+
+    std::vector<e_side> node_sides(const RRNodeId& id) const {
+        return t_rr_graph_storage::get_node_sides(node_storage_, id);
+    }
+
+    /**
+     * A function to find if the given node appears on a specific side
+     * This function is placed only here in the purpose of minimizing
+     * the footprint of node_storage data structure
+     */
+    bool node_on_specific_side(const RRNodeId& id, const e_side& side) const {
+        std::vector<e_side> node_sides = t_rr_graph_storage::get_node_sides(node_storage_, id);
+        return (node_sides.end() != std::find(node_sides.begin(), node_sides.end(), side));
     }
 
     /* PTC get methods */
