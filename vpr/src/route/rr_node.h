@@ -112,6 +112,8 @@ class t_rr_node {
     const char* direction_string() const;
 
     e_side side() const;
+    std::vector<e_side> sides() const;
+    bool is_node_on_specific_side(e_side side) const;
     const char* side_string() const;
 
     float R() const;

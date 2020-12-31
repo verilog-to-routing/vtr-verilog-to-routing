@@ -70,7 +70,7 @@ struct alignas(16) t_rr_node_data {
      */
     union {
         e_direction direction; //Valid only for CHANX/CHANY
-        unsigned char sides;   //Valid only for IPINs/OPINs
+        unsigned char sides = 0x0;   //Valid only for IPINs/OPINs
     } dir_side_;
 
     uint16_t capacity_ = 0;
@@ -203,6 +203,19 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id);
     }
+    std::vector<e_side> node_sides(RRNodeId id) const {
+        return get_node_sides(
+            vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+                node_storage_.data(), node_storage_.size()),
+            id);
+    }
+    bool is_node_on_specific_side(RRNodeId id, e_side side) const {
+        return is_node_on_specific_side(
+            vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+                node_storage_.data(), node_storage_.size()),
+            id, side);
+    }
+
     const char* node_side_string(RRNodeId id) const;
 
     /* PTC get methods */
@@ -603,7 +616,6 @@ class t_rr_graph_storage {
                             "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
                             rr_node_typename[node_data.type_]);
         }
-        std::vector<e_side> exist_sides;
         std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
         for (const e_side& side : SIDES) {
             if (side_tt[size_t(side)]) {
@@ -632,6 +644,21 @@ class t_rr_graph_storage {
             }
         }
         return exist_sides;
+    }
+
+    /* Find if the given node appears on a specific side */
+    static inline bool is_node_on_specific_side(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+        const RRNodeId& id, const e_side& side) {
+        auto& node_data = node_storage[id];
+        if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
+                            rr_node_typename[node_data.type_]);
+        }
+        // Return a vector showing only the sides that the node appears
+        std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
+        return side_tt[size_t(side)];
     }
 
   private:
@@ -784,16 +811,6 @@ class t_rr_graph_view {
 
     std::vector<e_side> node_sides(const RRNodeId& id) const {
         return t_rr_graph_storage::get_node_sides(node_storage_, id);
-    }
-
-    /**
-     * A function to find if the given node appears on a specific side
-     * This function is placed only here in the purpose of minimizing
-     * the footprint of node_storage data structure
-     */
-    bool node_on_specific_side(const RRNodeId& id, const e_side& side) const {
-        std::vector<e_side> node_sides = t_rr_graph_storage::get_node_sides(node_storage_, id);
-        return (node_sides.end() != std::find(node_sides.begin(), node_sides.end(), side));
     }
 
     /* PTC get methods */

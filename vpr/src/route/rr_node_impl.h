@@ -159,4 +159,12 @@ inline e_side t_rr_node::side() const {
     return storage_->node_side(id_);
 }
 
+inline std::vector<e_side> t_rr_node::sides() const {
+    return storage_->node_sides(id_);
+}
+
+inline bool t_rr_node::is_node_on_specific_side(e_side side) const {
+    return storage_->is_node_on_specific_side(id_, side);
+}
+
 #endif /* _RR_NODE_IMPL_H_ */

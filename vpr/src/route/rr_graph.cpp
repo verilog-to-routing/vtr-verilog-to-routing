@@ -1498,7 +1498,14 @@ static void build_rr_sinks_sources(const int i,
                             L_rr_node[inode].set_coordinates(i + width_offset, j + height_offset, i + width_offset, j + height_offset);
                             L_rr_node[inode].set_side(side);
 
-                            VTR_ASSERT(type->pinloc[width_offset][height_offset][L_rr_node[inode].side()][L_rr_node[inode].pin_num()]);
+                            // Sanity check
+                            VTR_ASSERT(1 <= L_rr_node[inode].sides().size());
+                            if (1 == L_rr_node[inode].sides().size()) {
+                                VTR_ASSERT(type->pinloc[width_offset][height_offset][L_rr_node[inode].side()][L_rr_node[inode].pin_num()]);
+                            } else {
+                                VTR_ASSERT(L_rr_node[inode].is_node_on_specific_side(side));
+                                VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node[inode].pin_num()]);
+                            }
                         }
                     }
                 }
