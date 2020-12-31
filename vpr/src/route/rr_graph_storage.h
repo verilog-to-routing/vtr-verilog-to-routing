@@ -69,8 +69,8 @@ struct alignas(16) t_rr_node_data {
      *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
      */
     union {
-        e_direction direction; //Valid only for CHANX/CHANY
-        unsigned char sides = 0x0;   //Valid only for IPINs/OPINs
+        e_direction direction;     //Valid only for CHANX/CHANY
+        unsigned char sides = 0x0; //Valid only for IPINs/OPINs
     } dir_side_;
 
     uint16_t capacity_ = 0;
@@ -649,7 +649,8 @@ class t_rr_graph_storage {
     /* Find if the given node appears on a specific side */
     static inline bool is_node_on_specific_side(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
-        const RRNodeId& id, const e_side& side) {
+        const RRNodeId& id,
+        const e_side& side) {
         auto& node_data = node_storage[id];
         if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
