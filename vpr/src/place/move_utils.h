@@ -166,6 +166,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  * min_cy, max_cx: the minimum and maximum y coordinates of the range in the compressed grid
  * cx_from, cy_from: the x and y coordinates of the old location 
  * cx_to, cy_to: the x and y coordinates of the new location on the compressed grid
+ * is_median: true if this is called from find_to_loc_median
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
 
