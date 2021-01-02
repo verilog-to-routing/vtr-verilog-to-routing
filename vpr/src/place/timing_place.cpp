@@ -56,9 +56,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
     }
 
     ClusterBlockId crit_block;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
-    place_move_ctx.highly_crit_blocks.clear();
 
     /* Performs a 1-to-1 mapping from criticality to timing_place_crit_.
      * For every pin on every net (or, equivalently, for every tedge ending
@@ -93,10 +91,6 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
          * Since path criticality varies much more than timing, we "sharpen" timing
          * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
         timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
-        //timing_place_normalized_crit_[clb_net][pin_index_in_net] = clb_pin_crit;
-
-        if (new_crit > crit_params.crit_limit)
-            place_move_ctx.highly_crit_blocks.insert(cluster_ctx.clb_nlist.net_driver_block(clb_net));
     }
 
     /* Criticalities updated. In sync with timing info.   */
