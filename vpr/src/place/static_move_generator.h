@@ -18,8 +18,8 @@
 class StaticMoveGenerator : public MoveGenerator {
   private:
     std::vector<std::unique_ptr<MoveGenerator>> avail_moves; //list of pointers to the different available move type generators
-    std::vector<float> cumm_move_probs; // accumulative probabilities for different move types
-    float total_prob;   // sum of the input probabilities from the use
+    std::vector<float> cumm_move_probs;                      // accumulative probabilities for different move types
+    float total_prob;                                        // sum of the input probabilities from the use
     void initialize_move_prob(const std::vector<float>& prob);
 
   public:

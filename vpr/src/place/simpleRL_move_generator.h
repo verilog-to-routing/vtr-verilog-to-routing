@@ -19,11 +19,11 @@ class KArmedBanditAgent {
     void process_outcome(double, e_reward_function);
 
   protected:
-    float exp_alpha_ = -1;   //Step size for q_ updates (< 0 implies use incremental average)
-    size_t num_available_actions_;               //Number of arms of the karmed bandit problem (k)
-    std::vector<size_t> num_action_chosen_;  //Number of times each arm has been pulled (n)
-    std::vector<float> q_;   //Estimated value of each arm (Q)
-    size_t last_action_ = 0; //type of the last action (move type) proposed
+    float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
+    size_t num_available_actions_;          //Number of arms of the karmed bandit problem (k)
+    std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
+    std::vector<float> q_;                  //Estimated value of each arm (Q)
+    size_t last_action_ = 0;                //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
@@ -52,7 +52,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     void set_step(float gamma, int move_lim);
 
   private:
-    float epsilon_ = 0.1; //How often to perform a non-greedy exploration action
+    float epsilon_ = 0.1;                         //How often to perform a non-greedy exploration action
     std::vector<float> cumm_epsilon_action_prob_; //The accumulative probability of choosing each action
 };
 
@@ -76,10 +76,9 @@ class SoftmaxAgent : public KArmedBanditAgent {
     void set_step(float gamma, int move_lim);
 
   private:
-    std::vector<float> exp_q_; //The clipped and scaled exponential of the estimated Q value for each action
-    std::vector<float> action_prob_; //The probability of choosing each action 
+    std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
+    std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
-
 };
 
 /**
@@ -92,17 +91,17 @@ class SoftmaxAgent : public KArmedBanditAgent {
 class SimpleRLMoveGenerator : public MoveGenerator {
   private:
     std::vector<std::unique_ptr<MoveGenerator>> avail_moves; // list of pointers to the available move generators (the different move types)
-    std::unique_ptr<KArmedBanditAgent> karmed_bandit_agent; // a pointer to the specific agent used (e.g. Softmax)
+    std::unique_ptr<KArmedBanditAgent> karmed_bandit_agent;  // a pointer to the specific agent used (e.g. Softmax)
 
   public:
     // constructors using a pointer to the agent used
     SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
     SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
 
-    // Updates affected_blocks with the proposed move, while respecting the current rlim 
+    // Updates affected_blocks with the proposed move, while respecting the current rlim
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
 
-    // Recieves feedback about the outcome of the previously proposed move 
+    // Recieves feedback about the outcome of the previously proposed move
     void process_outcome(double reward, e_reward_function reward_fun);
 };
 #endif

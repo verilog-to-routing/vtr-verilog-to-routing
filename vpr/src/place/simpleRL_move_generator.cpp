@@ -242,7 +242,7 @@ void SoftmaxAgent::set_action_prob() {
         }
     }
 
-    // normalize all the action probabilities to guarantee the sum(all actyion probs) = 1 
+    // normalize all the action probabilities to guarantee the sum(all actyion probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
                    bind2nd(std::plus<float>(), (1.0 - sum_prob) / num_available_actions_));

@@ -3,7 +3,9 @@
 #include <algorithm>
 #include "math.h"
 
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, bool& skip_net);
+#define CRIT_MULT_FOR_W_MEDIAN 10
+
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net);
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -34,7 +36,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     place_move_ctx.X_coord.clear();
     place_move_ctx.Y_coord.clear();
 
-    //true if the net is a feedback from the block to itself
+    //true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
     bool skip_net;
 
     //iterate over block pins
@@ -44,15 +46,25 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             continue;
         if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
             continue;
-        //all net pins are weighted with their own crititcalities
-        get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id, criticalities, skip_net);
+        /**
+         * Calculate the bounding box edges and the cost of each edge.
+         *
+         * Note: skip_net returns true if this net should be skipped. Currently, the only case to skip a net is the feedback nets
+         *       (a net that all its terminals connected to the same block). Logically, this net should be neglected as it is only connected 
+         *       to the moving block. Experimentally, we found that including these nets into calculations badly affect the averall placement
+         *       solution especillay for some large designs.
+         */
+        get_bb_cost_for_net_excluding_block(net_id, b_from, pin_id, criticalities, &coords, skip_net);
         if (skip_net)
             continue;
 
-        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmin.criticality * 10), coords.xmin.edge);
-        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmax.criticality * 10), coords.xmax.edge);
-        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymin.criticality * 10), coords.ymin.edge);
-        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * 10), coords.ymax.edge);
+        // We need to insert the calculated edges in the X,Y vectors multiple times based on the criticality of the pin that caused each of them.
+        // As all the criticalities are [0,1], we map it to [0,CRIT_MULT_FOR_W_MEDIAN] inserts in the vectors for each edge
+        // by multiplying each edge's criticality by CRIT_MULT_FOR_W_MEDIAN
+        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmin.edge);
+        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
+        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
+        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
     }
 
     if ((place_move_ctx.X_coord.size() == 0) || (place_move_ctx.Y_coord.size() == 0))
@@ -63,7 +75,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     std::sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
 
     if (place_move_ctx.X_coord.size() == 1) {
-        limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
+        limit_coords.xmin = place_move_ctx.X_coord[0];
         limit_coords.xmax = limit_coords.xmin;
     } else {
         limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
@@ -71,7 +83,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
 
     if (place_move_ctx.Y_coord.size() == 1) {
-        limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
+        limit_coords.ymin = place_move_ctx.Y_coord[0];
         limit_coords.ymax = limit_coords.ymin;
     } else {
         limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
@@ -92,10 +104,22 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     return ::create_move(blocks_affected, b_from, to);
 }
 
-/* This routine finds the bounding box of a net from scratch excluding   *
- * a specific block. This is very useful in some directed moves.         *
- * It updates coordinates of the bb                                      */
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, bool& skip_net) {
+/**
+ * This routine finds the bounding box and the cost of each side of the bounding box,
+ * which is defined as the criticality of the connection that led to the bounding box extending 
+ * that far. If more than one terminal leads to a bounding box edge, w pick the cost using the criticality of the first one. 
+ * This is helpful in computing weighted median moves. 
+ *
+ * Outputs:
+ *      - coords: the bounding box and the edge costs
+ *      - skip_net: returns whether this net should be skipped in calculation or not
+ *
+ * Inputs:
+ *      - net_id: The net we are considering
+ *      - moving_pin_id: pin (which should be on this net) on a block that is being moved.
+ *      - criticalities: the timing criticalities of all connections
+ */
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, ClusterBlockId, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, t_bb_cost* coords, bool& skip_net) {
     int pnum, x, y, xmin, xmax, ymin, ymax;
     float xmin_cost, xmax_cost, ymin_cost, ymax_cost, cost;
 
@@ -125,11 +149,18 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
         if (pin_id != moving_pin_id) {
             skip_net = false;
             pnum = tile_pin_index(pin_id);
+            /**
+             * Calculates the pin index of the correct pin to calculate the required connection
+             *
+             * if the current pin is the driver, we only care about one sink (the moving pin)
+             * else if the current pin is a sink, calculate the criticality of itself
+             */
             if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
                 ipin = cluster_ctx.clb_nlist.pin_net_index(moving_pin_id);
             } else {
                 ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             }
+            cost = criticalities->criticality(net_id, ipin);
 
             VTR_ASSERT(pnum >= 0);
             x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
@@ -138,7 +169,6 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-            cost = criticalities->criticality(net_id, ipin);
             if (is_first_block) {
                 xmin = x;
                 xmin_cost = cost;
