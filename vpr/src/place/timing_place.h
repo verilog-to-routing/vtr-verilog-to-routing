@@ -109,9 +109,6 @@ class PlacerCriticalities {
     ///@brief Returns the criticality of the specified connection.
     float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
 
-    ///@brief Returns the normalized criticality of the specified connection
-    //float normalized_criticality(ClusterNetId net, int ipin) const { return timing_place_normalized_crit_[net][ipin]; }
-
     /**
      * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds) which
      *        were modified by the last call to PlacerCriticalities::update_criticalities().
@@ -159,8 +156,6 @@ class PlacerCriticalities {
      */
     ClbNetPinsMatrix<float> timing_place_crit_;
 
-    //ClbNetPinsMatrix<float> timing_place_normalized_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
-
     /**
      * The criticality exponent when update_criticalites() was last called
      * (used to detect if incremental update can be used).
@@ -184,7 +179,11 @@ class PlacerCriticalities {
      */
     bool recompute_required = true;
 
-    //if this is first time to call update_criticality
+    /**
+     * @brief if this is first time to call update_criticality
+     * 
+     * This can be used for incremental criticality update and also incrementally update the highly critical pins
+     */
     bool first_time_update_criticality = true;
 };
 

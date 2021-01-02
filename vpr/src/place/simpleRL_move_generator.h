@@ -53,7 +53,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
 
   private:
     float epsilon_ = 0.1; //How often to perform a non-greedy exploration action
-    std::vector<float> cumm_epsilon_action_prob_;
+    std::vector<float> cumm_epsilon_action_prob_; //The accumulative probability of choosing each action
 };
 
 /**
