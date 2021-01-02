@@ -758,13 +758,13 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
 
     std::unordered_set<int> tried_cx_to;
     bool legal = false;
-    int poss;
+    int possibilities;
     if (is_median)
-        poss = delta_cx + 1;
+        possibilities = delta_cx + 1;
     else
-        poss = delta_cx;
+        possibilities = delta_cx;
 
-    while (!legal && (int)tried_cx_to.size() < poss) { //Until legal or all possibilities exhaused
+    while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhaused
         //Pick a random x-location within [min_cx, max_cx],
         //until we find a legal swap, or have exhuasted all possiblites
         cx_to = min_cx + vtr::irand(delta_cx);
