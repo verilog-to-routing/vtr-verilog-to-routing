@@ -2891,7 +2891,7 @@ static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opt
         }
     } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
         if (delta_c < 0) {
-            float reward = -1 * ( move_outcome_stats.delta_cost_norm + (0.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
+            float reward = -1 * (move_outcome_stats.delta_cost_norm + (0.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
             move_generator.process_outcome(reward, reward_fun);
         } else {
             move_generator.process_outcome(0, reward_fun);
