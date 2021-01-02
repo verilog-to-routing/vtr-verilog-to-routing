@@ -57,8 +57,8 @@ arch_list_add=stratixiv_arch.timing.xml
 parse_file=vpr_titan.txt
 
 # How to parse QoR info
-#qor_parse_file=qor_vpr_titan.txt
-qor_parse_file=qor_large.txt
+qor_parse_file=qor_vpr_titan.txt
+#qor_parse_file=qor_large.txt
 
 # Pass requirements
 pass_requirements_file=pass_requirements_vpr_titan.txt

@@ -559,7 +559,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     int cy_to = OPEN;
     bool legal = false;
 
-    legal = find_compatible_compressed_loc_in_range(type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to);
+    legal = find_compatible_compressed_loc_in_range(type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
 
     if (!legal) {
         //No valid position found
@@ -623,7 +623,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     int cy_to = OPEN;
     bool legal = false;
 
-    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to);
+    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, true);
 
     if (!legal) {
         //No valid position found
@@ -700,7 +700,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     int cy_to = OPEN;
     bool legal = false;
 
-    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to);
+    legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
 
     if (!legal) {
         //No valid position found
@@ -745,18 +745,26 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
     to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
     to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
 
+    auto& grid = g_vpr_ctx.device().grid;
+    auto to_type = grid[to_loc.x][to_loc.y].type;
+
     //Each x/y location contains only a single type, so we can pick a random z (capcity) location
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(blk_type->index);
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
     to_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 }
 
-bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to) {
+bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
     std::unordered_set<int> tried_cx_to;
     bool legal = false;
+    int poss;
+    if (is_median)
+        poss = delta_cx + 1;
+    else
+        poss = delta_cx;
 
-    while (!legal && (int)tried_cx_to.size() <= delta_cx) { //Until legal or all possibilities exhaused
+    while (!legal && (int)tried_cx_to.size() < poss) { //Until legal or all possibilities exhaused
         //Pick a random x-location within [min_cx, max_cx],
         //until we find a legal swap, or have exhuasted all possiblites
         cx_to = min_cx + vtr::irand(delta_cx);

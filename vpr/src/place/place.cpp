@@ -735,7 +735,43 @@ void try_place(const t_placer_opts& placer_opts,
                 save_placement_checkpoint_if_needed(placement_checkpoint, timing_info, costs, critical_path.delay());
             }
         }
-
+        /*
+         * if (agent_state == EARLY_IN_THE_ANNEAL || placer_opts.place_agent_multistate == false) {
+         * //use the first state
+         * placement_inner_loop(&state, placer_opts,
+         * inner_recompute_limit, &stats,
+         * &costs,
+         * &moves_since_cost_recompute,
+         * pin_timing_invalidator.get(),
+         * place_delay_model.get(),
+         * placer_criticalities.get(),
+         * placer_setup_slacks.get(),
+         *move_generator,
+         * blocks_affected,
+         * timing_info.get(),
+         * placer_opts.place_algorithm,
+         * move_helper,
+         * move_type_stat,
+         * timing_bb_factor);
+         * } else {
+         * //use the second state
+         * placement_inner_loop(&state, placer_opts,
+         * inner_recompute_limit, &stats,
+         * &costs,
+         * &moves_since_cost_recompute,
+         * pin_timing_invalidator.get(),
+         * place_delay_model.get(),
+         * placer_criticalities.get(),
+         * placer_setup_slacks.get(),
+         *move_generator2,
+         * blocks_affected,
+         * timing_info.get(),
+         * placer_opts.place_algorithm,
+         * move_helper,
+         * move_type_stat,
+         * timing_bb_factor);
+         * }
+         */
         //move the appropoiate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, false, current_move_generator);
 
@@ -762,7 +798,6 @@ void try_place(const t_placer_opts& placer_opts,
         ++state.num_temps;
 
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
-
         if (placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_agent_multistate && agent_state == EARLY_IN_THE_ANNEAL) {
             if (state.alpha < 0.85 && state.alpha > 0.6) {
                 agent_state = LATE_IN_THE_ANNEAL;
@@ -806,7 +841,42 @@ quench:
                                       placer_setup_slacks.get(),
                                       pin_timing_invalidator.get(),
                                       timing_info.get());
-
+/*
+ * if (placer_opts.place_quench_algorithm.is_timing_driven() && placer_opts.place_agent_multistate == true) {
+ * placement_inner_loop(&state, placer_opts,
+ * quench_recompute_limit, &stats,
+ * &costs,
+ * &moves_since_cost_recompute,
+ * pin_timing_invalidator.get(),
+ * place_delay_model.get(),
+ * placer_criticalities.get(),
+ * placer_setup_slacks.get(),
+ *move_generator2,
+ * blocks_affected,
+ * timing_info.get(),
+ * placer_opts.place_quench_algorithm,
+ * move_helper,
+ * move_type_stat,
+ * timing_bb_factor);
+ * } else {
+ * placement_inner_loop(&state, placer_opts,
+ * quench_recompute_limit, &stats,
+ * &costs,
+ * &moves_since_cost_recompute,
+ * pin_timing_invalidator.get(),
+ * place_delay_model.get(),
+ * placer_criticalities.get(),
+ * placer_setup_slacks.get(),
+ *move_generator,
+ * blocks_affected,
+ * timing_info.get(),
+ * placer_opts.place_quench_algorithm,
+ * move_helper,
+ * move_type_stat,
+ * timing_bb_factor);
+ * }
+ */
+#if 1
         //move the appropoiate move_generator to be the current used move generator
         assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, true, current_move_generator);
 
@@ -829,7 +899,7 @@ quench:
 
         //move the update used move_generator to its original variable
         update_move_generator(move_generator, move_generator2, agent_state, placer_opts, true, current_move_generator);
-
+#endif
         tot_iter += state.move_lim;
         ++state.num_temps;
 
@@ -2893,7 +2963,7 @@ static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opt
     } else if (reward_fun == WL_BIASED_RUNTIME_AWARE) {
         if (delta_c < 0) {
             //float reward = -1 * (move_outcome_stats.delta_cost_norm) - 0.5 * ((1 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
-            float reward = -1 * ((1.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + (1 + timing_bb_factor) * move_outcome_stats.delta_bb_cost_norm);
+            float reward = -1 * ( move_outcome_stats.delta_cost_norm + (0.5 - timing_bb_factor) * move_outcome_stats.delta_timing_cost_norm + timing_bb_factor * move_outcome_stats.delta_bb_cost_norm);
             move_generator.process_outcome(reward, reward_fun);
         } else {
             move_generator.process_outcome(0, reward_fun);
