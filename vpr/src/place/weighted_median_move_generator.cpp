@@ -122,7 +122,6 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
 
-        //if(bnum != block_id)
         if (pin_id != moving_pin_id) {
             skip_net = false;
             pnum = tile_pin_index(pin_id);
