@@ -1,0 +1,11 @@
+#VPR Place Agent checks
+placement_technique;vpr.out;Using (.*) for choosing move types
+reward;vpr.out;The reward function used is reward num: (.*)
+uniform_percentage;vpr.out;Uniform move: (.*) \% \(acc=
+median_percentage;vpr.out;Median move: (.*) \% \(acc=
+wmedian_percentage;vpr.out;Weighted_median move: (.*) \% \(acc=
+wcent_percentage;vpr.out;Weighted_centroid move: (.*) \% \(acc=
+fr_percentage;vpr.out;Feasible_region move: (.*) \% \(acc=
+critUni_percentage;vpr.out;Critical_uniform move: (.*) \% \(acc=
+centroid_percentage;vpr.out;Centroid move: (.*) \% \(acc=
+

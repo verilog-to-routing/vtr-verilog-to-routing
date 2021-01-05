@@ -393,6 +393,37 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParsePlaceAgentAlgorithm {
+    ConvertedValue<e_agent_algorithm> from_str(std::string str) {
+        ConvertedValue<e_agent_algorithm> conv_value;
+        if (str == "e_greedy")
+            conv_value.set_value(E_GREEDY);
+        else if (str == "softmax")
+            conv_value.set_value(SOFTMAX);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_agent_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_agent_algorithm val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == E_GREEDY)
+            conv_value.set_value("e_greedy");
+        else {
+            VTR_ASSERT(val == SOFTMAX);
+            conv_value.set_value("softmax");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"e_greedy", "softmax"};
+    }
+};
+
 struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(std::string str) {
         ConvertedValue<e_pad_loc_type> conv_value;
@@ -1625,7 +1656,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.PlaceInnerNum, "--inner_num")
         .help("Controls number of moves per temperature: inner_num * num_blocks ^ (4/3)")
-        .default_value("1.0")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_effort_scaling, ParsePlaceEfforScaling>(args.place_effort_scaling, "--place_effort_scaling")
@@ -1756,6 +1787,103 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Enables the analytic placer. "
             "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
         .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
+        .help(
+            "The percentage probabilities of different moves in Simulated Annealing placement."
+            "This option is only effective for timing-driven placement."
+            "The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove, WeightedCentroid, WeightedMedian, Timing feasible Region(TFR), Critical UniformMove}, in that order.")
+        .nargs('+')
+        .default_value({"100", "0", "0", "0", "0", "0", "0"})
+
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_static_notiming_move_prob, "--place_static_notiming_move_prob")
+        .help(
+            "The Probability of different non timing move in Simulated Annealing."
+            "This option is only effective for nontiming driven placement."
+            " The numbers listed are interpreted as the percentage probabilities of {uniformMove, MedianMove, CentroidMove}, in that order.")
+        .nargs('+')
+        .default_value({"100", "0", "0"})
+
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
+        .help(
+            "Sets the assumed high fanout net during placement. "
+            "Any net with higher fanout would be ignored while calculating some of the directed moves: Median and WeightedMedian")
+        .default_value("10")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
+        .help(
+            "Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement."
+            "It activates the RL agent placement instead of using fixed probability for each move type.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<bool, ParseOnOff>(args.place_agent_multistate, "--place_agent_multistate")
+        .help(
+            "Enable multistate agent. "
+            "A second state will be activated late in the annealing and in the Quench that includes all the timing driven directed moves.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<bool, ParseOnOff>(args.place_checkpointing, "--place_checkpointing")
+        .help(
+            "Enable Placement checkpoints. This means saving the placement and restore it if it's better than later placements."
+            "Only effective if agnet's 2nd state is activated.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_agent_epsilon, "--place_agent_epsilon")
+        .help(
+            "Placement RL agent's epsilon for epsilon-greedy agent."
+            "Epsilon represents the percentage of exploration actions taken vs the exploitation ones.")
+        .default_value("0.3")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_agent_gamma, "--place_agent_gamma")
+        .help(
+            "Controls how quickly the agent's memory decays. "
+            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted reward average applied to moves which occured greater than moves_per_temp moves ago."
+            "Values < 0 cause the unweighted reward sample average to be used (all samples are weighted equally)")
+        .default_value("0.05")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_dm_rlim, "--place_dm_rlim")
+        .help(
+            "The maximum range limit of any directed move other than the uniform move. "
+            "It also shrinks with the default rlim")
+        .default_value("3.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
+        .help(
+            "The reward function used by placement RL agent."
+            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware")
+        .default_value("WLbiased_runtime_aware")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_crit_limit, "--place_crit_limit")
+        .help(
+            "The criticality limit to count a block as a critical one (or have a critical connection). "
+            "It used in some directed moves that only move critical blocks like critical uniform and feasible region. "
+            "Its range equals to [0., 1.].")
+        .default_value("0.7")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+    /*
+     * place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
+     * .help(
+     * "which timing cost function to use")
+     * .default_value("0")
+     * .show_in(argparse::ShowIn::HELP_ONLY);
+     */
+    place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
+        .help("Controls which placement RL agent is used")
+        .default_value("softmax")
+        .choices({"e_greedy", "softmax"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
