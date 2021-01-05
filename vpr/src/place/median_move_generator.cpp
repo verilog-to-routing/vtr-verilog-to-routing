@@ -4,9 +4,9 @@
 
 #include "placer_globals.h"
 
-static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew);
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew);
 
-static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
+static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net);
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -56,7 +56,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             continue;
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
             //calculate the bb from scratch
-            get_bb_from_scratch(net_id, &coords, b_from, skip_net);
+            get_bb_from_scratch_excluding_block(net_id, &coords, b_from, skip_net);
             if (skip_net)
                 continue;
         } else {
@@ -83,8 +83,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                 ynew = place_move_ctx.bb_coords[net_id].ymin;
             }
 
-            if (!update_bb(net_id, &coords, xold, yold, xnew, ynew)) {
-                get_bb_from_scratch(net_id, &coords, b_from, skip_net);
+            if (!get_bb_incrementally(net_id, &coords, xold, yold, xnew, ynew)) {
+                get_bb_from_scratch_excluding_block(net_id, &coords, b_from, skip_net);
                 if (skip_net)
                     continue;
             }
@@ -126,13 +126,16 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 }
 
 /* Finds the bounding box of a net and stores its coordinates in the  *
- * bb_coord_new data structure.  This routine should only be called   *
- * for small nets, since it does not determine enough information for *
- * the bounding box to be updated incrementally later.                *
+ * bb_coord_new data structure. It excludes the moving block sent in  *
+ * function arguments in block_id. It also returns whether this net   *
+ * should be excluded from median calculation or not.                 *
+ * This routine should only be called for small nets, since it does   *
+ * not determine enough information for the bounding box to be        *
+ * updated incrementally later.                                       *
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
+static void get_bb_from_scratch_excluding_block(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool& skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
 
     skip_net = true;
@@ -210,19 +213,19 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* bb_coord_new, Cluster
 }
 
 /*
- * Updates the bounding box of a net by storing its coordinates in    *
- * the bb_coord_new data structure and the number of blocks on each   *
- * edge in the bb_edge_new data structure.  This routine should only  *
- * be called for large nets, since it has some overhead relative to   *
- * just doing a brute force bounding box calculation.  The bounding   *
- * box coordinate and edge information for inet must be valid before  *
- * this routine is called.                                            *
+ * Calculates the bounding box of a net by storing its coordinates    *
+ * in the bb_coord_new data structure. It uses information from       *
+ * PlaceMoveContext to calculate the bb incrementally. This routine   *
+ * should only be called for large nets, since it has some overhead   *
+ * relative to just doing a brute force bounding box calculation.     *
+ * The bounding box coordinate and edge information for inet must be  *
+ * valid before this routine is called.                               *
  * Currently assumes channels on both sides of the CLBs forming the   *
- * edges of the bounding box can be used.  Essentially, I am assuming *
+ * edges of the bounding box can be used. Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            *
  * The x and y coordinates are the pin's x and y coordinates.         */
 /* IO blocks are considered to be one cell in for simplicity.         */
-static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew) {
+static bool get_bb_incrementally(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew) {
     //TODO: account for multiple physical pin instances per logical pin
 
     const t_bb *curr_bb_edge, *curr_bb_coord;
