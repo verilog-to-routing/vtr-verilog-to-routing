@@ -236,10 +236,21 @@
 
   <xs:simpleType name="loc_side">
     <xs:restriction base="xs:string">
-      <xs:enumeration value="LEFT"/>
-      <xs:enumeration value="RIGHT"/>
       <xs:enumeration value="TOP"/>
+      <xs:enumeration value="TOP,LEFT"/>
+      <xs:enumeration value="TOP,RIGHT"/>
+      <xs:enumeration value="TOP,BOTTOM"/>
+      <xs:enumeration value="TOP,RIGHT,LEFT"/>
+      <xs:enumeration value="TOP,RIGHT,BOTTOM"/>
+      <xs:enumeration value="TOP,BOTTOM,LEFT"/>
+      <xs:enumeration value="RIGHT"/>
+      <xs:enumeration value="RIGHT,BOTTOM"/>
+      <xs:enumeration value="RIGHT,LEFT"/>
+      <xs:enumeration value="RIGHT,BOTTOM,LEFT"/>
       <xs:enumeration value="BOTTOM"/>
+      <xs:enumeration value="BOTTOM,LEFT"/>
+      <xs:enumeration value="LEFT"/>
+      <xs:enumeration value="TOP,RIGHT,BOTTOM,LEFT"/>
     </xs:restriction>
   </xs:simpleType>
 
