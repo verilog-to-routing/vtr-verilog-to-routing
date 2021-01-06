@@ -623,6 +623,14 @@ class t_rr_graph_storage {
             }
         }
         /* No valid sides, return an invalid value */
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Invalid side for RR node '%d':\n\ttype='%s'\txlow,ylow=(%d,%d)\n\txhigh,yhigh=(%d,%d)",
+                        size_t(id),
+                        rr_node_typename[node_data.type_],
+                        node_data.xlow_,
+                        node_data.ylow_,
+                        node_data.xhigh_,
+                        node_data.yhigh_);
         return NUM_SIDES;
     }
 
