@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
-# Input file: /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
-# md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
+# Cmdline: uxsdcxx/uxsdcap.py /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+# Input file: /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+# md5sum of input file: f7808029c0bfdf2e30e6e1f5f05fcc4a
 
-@0xb803100e76d3342d;
+@0xa6084fe8f0768aad;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -45,10 +45,21 @@ enum NodeDirection {
 
 enum LocSide {
 	uxsdInvalid @0;
-	left @1;
+	top @1;
 	right @2;
-	top @3;
+	topRight @3;
 	bottom @4;
+	topBottom @5;
+	rightBottom @6;
+	topRightBottom @7;
+	left @8;
+	topLeft @9;
+	rightLeft @10;
+	topRightLeft @11;
+	bottomLeft @12;
+	topBottomLeft @13;
+	rightBottomLeft @14;
+	topRightBottomLeft @15;
 }
 
 struct Channel {

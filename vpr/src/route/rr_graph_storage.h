@@ -203,7 +203,7 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id);
     }
-    std::vector<e_side> node_sides(RRNodeId id) const {
+    std::bitset<NUM_SIDES> node_sides(RRNodeId id) const {
         return get_node_sides(
             vtr::array_view_id<RRNodeId, const t_rr_node_data>(
                 node_storage_.data(), node_storage_.size()),
@@ -634,7 +634,7 @@ class t_rr_graph_storage {
         return NUM_SIDES;
     }
 
-    static inline std::vector<e_side> get_node_sides(
+    static inline std::bitset<NUM_SIDES> get_node_sides(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
         const RRNodeId& id) {
         auto& node_data = node_storage[id];
@@ -646,12 +646,7 @@ class t_rr_graph_storage {
         // Return a vector showing only the sides that the node appears
         std::vector<e_side> exist_sides;
         std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
-        for (const e_side& side : SIDES) {
-            if (side_tt[size_t(side)]) {
-                exist_sides.push_back(side);
-            }
-        }
-        return exist_sides;
+        return side_tt;
     }
 
     /* Find if the given node appears on a specific side */
@@ -818,7 +813,7 @@ class t_rr_graph_view {
         return t_rr_graph_storage::get_node_side(node_storage_, id);
     }
 
-    std::vector<e_side> node_sides(const RRNodeId& id) const {
+    std::bitset<NUM_SIDES> node_sides(const RRNodeId& id) const {
         return t_rr_graph_storage::get_node_sides(node_storage_, id);
     }
 

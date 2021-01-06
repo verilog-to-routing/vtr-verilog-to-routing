@@ -159,7 +159,7 @@ inline e_side t_rr_node::side() const {
     return storage_->node_side(id_);
 }
 
-inline std::vector<e_side> t_rr_node::sides() const {
+inline std::bitset<NUM_SIDES> t_rr_node::sides() const {
     return storage_->node_sides(id_);
 }
 

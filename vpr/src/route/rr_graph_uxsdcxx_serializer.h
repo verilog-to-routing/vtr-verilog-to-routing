@@ -578,12 +578,17 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     inode, node.type());
             }
         } else {
-            node.set_side(from_uxsd_loc_side(side));
+            std::bitset<NUM_SIDES> side_mask = from_uxsd_loc_side(side);
+            for (const e_side& candidate_side : SIDES) { 
+                if (side_mask[size_t(candidate_side)]) {
+                    node.set_side(candidate_side);
+                }
+            }
         }
     }
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
         if (node.type() == IPIN || node.type() == OPIN) {
-            return to_uxsd_loc_side(node.side());
+            return to_uxsd_loc_side(node.sides());
         } else {
             return uxsd::enum_loc_side::UXSD_INVALID;
         }
@@ -1626,39 +1631,84 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     // Enum converters from/to uxsd types
 
-    e_side from_uxsd_loc_side(uxsd::enum_loc_side side) {
+    std::bitset<NUM_SIDES> from_uxsd_loc_side(uxsd::enum_loc_side side) {
+        std::bitset<NUM_SIDES> side_mask(0x0);
         switch (side) {
-            case uxsd::enum_loc_side::LEFT:
-                return LEFT;
+            case uxsd::enum_loc_side::TOP:
+                side_mask.set(TOP);
+                break;
+            case uxsd::enum_loc_side::TOP_LEFT:
+                side_mask.set(TOP);
+                side_mask.set(LEFT);
+                break;
+            case uxsd::enum_loc_side::TOP_RIGHT:
+                side_mask.set(TOP);
+                side_mask.set(RIGHT);
+                break;
+            case uxsd::enum_loc_side::TOP_BOTTOM:
+                side_mask.set(TOP);
+                side_mask.set(BOTTOM);
+                break;
+            case uxsd::enum_loc_side::TOP_RIGHT_LEFT:
+                side_mask.set(TOP);
+                side_mask.set(RIGHT);
+                side_mask.set(LEFT);
+                break;
+            case uxsd::enum_loc_side::TOP_RIGHT_BOTTOM:
+                side_mask.set(TOP);
+                side_mask.set(RIGHT);
+                side_mask.set(BOTTOM);
+                break;
+            case uxsd::enum_loc_side::TOP_BOTTOM_LEFT:
+                side_mask.set(TOP);
+                side_mask.set(BOTTOM);
+                side_mask.set(LEFT);
                 break;
             case uxsd::enum_loc_side::RIGHT:
-                return RIGHT;
+                side_mask.set(RIGHT);
                 break;
-            case uxsd::enum_loc_side::TOP:
-                return TOP;
+            case uxsd::enum_loc_side::RIGHT_BOTTOM:
+                side_mask.set(RIGHT);
+                side_mask.set(BOTTOM);
+                break;
+            case uxsd::enum_loc_side::RIGHT_LEFT:
+                side_mask.set(RIGHT);
+                side_mask.set(LEFT);
+                break;
+            case uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT:
+                side_mask.set(RIGHT);
+                side_mask.set(BOTTOM);
+                side_mask.set(LEFT);
+                break;
             case uxsd::enum_loc_side::BOTTOM:
-                return BOTTOM;
+                side_mask.set(BOTTOM);
+                break;
+            case uxsd::enum_loc_side::BOTTOM_LEFT:
+                side_mask.set(BOTTOM);
+                side_mask.set(LEFT);
+                break;
+            case uxsd::enum_loc_side::LEFT:
+                side_mask.set(LEFT);
+                break;
+            case uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT:
+                side_mask.set(TOP);
+                side_mask.set(RIGHT);
+                side_mask.set(BOTTOM);
+                side_mask.set(LEFT);
                 break;
             default:
                 report_error(
                     "Invalid side %d", side);
         }
+        return side_mask;
     }
 
-    uxsd::enum_loc_side to_uxsd_loc_side(e_side side) {
-        switch (side) {
-            case LEFT:
-                return uxsd::enum_loc_side::LEFT;
-            case RIGHT:
-                return uxsd::enum_loc_side::RIGHT;
-            case TOP:
-                return uxsd::enum_loc_side::TOP;
-            case BOTTOM:
-                return uxsd::enum_loc_side::BOTTOM;
-            default:
-                report_error(
-                    "Invalid side %d", side);
+    uxsd::enum_loc_side to_uxsd_loc_side(std::bitset<NUM_SIDES> sides) {
+        if (0 == sides.to_ulong()) {
+            report_error(
+                "Invalid side %ld", sides.to_ulong());
         }
+        return static_cast<uxsd::enum_loc_side>(sides.to_ulong());
     }
 
     e_direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {

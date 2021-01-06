@@ -234,23 +234,59 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <!-- The enumeration MUST follow the order of side maskcode
+       so that it is easy for RRGraph writer to convert the mask code to enumerations 
+     
+       index | LEFT BOTTOM RIGHT TOP | mask
+       ======+======================+======
+        1    |                    X  | 0001
+       ======+======================+======
+        2    |               X       | 0010
+       ======+======================+======
+        3    |               X    X  | 0011
+       ======+======================+======
+        4    |         X             | 0100
+       ======+======================+======
+        5    |         X          X  | 0101
+       ======+======================+======
+        6    |         X     X       | 0110
+       ======+======================+======
+        7    |         X     X    X  | 0111
+       ======+======================+======
+        8    |  X                    | 1000
+       ======+======================+======
+        9    |  X                 X  | 1001
+       ======+======================+======
+        10   |  X            X       | 1010
+       ======+======================+======
+        11   |  X            X    X  | 1011
+       ======+======================+======
+        12   |  X      X             | 1100
+       ======+======================+======
+        13   |  X      X          X  | 1101
+       ======+======================+======
+        14   |  X      X     X       | 1110
+       ======+======================+======
+        15   |  X      X     X    X  | 1111
+       
+    -->
   <xs:simpleType name="loc_side">
     <xs:restriction base="xs:string">
       <xs:enumeration value="TOP"/>
-      <xs:enumeration value="TOP,LEFT"/>
-      <xs:enumeration value="TOP,RIGHT"/>
-      <xs:enumeration value="TOP,BOTTOM"/>
-      <xs:enumeration value="TOP,RIGHT,LEFT"/>
-      <xs:enumeration value="TOP,RIGHT,BOTTOM"/>
-      <xs:enumeration value="TOP,BOTTOM,LEFT"/>
       <xs:enumeration value="RIGHT"/>
-      <xs:enumeration value="RIGHT,BOTTOM"/>
-      <xs:enumeration value="RIGHT,LEFT"/>
-      <xs:enumeration value="RIGHT,BOTTOM,LEFT"/>
+      <xs:enumeration value="TOP_RIGHT"/>
       <xs:enumeration value="BOTTOM"/>
-      <xs:enumeration value="BOTTOM,LEFT"/>
+      <xs:enumeration value="TOP_BOTTOM"/>
+      <xs:enumeration value="RIGHT_BOTTOM"/>
+      <xs:enumeration value="TOP_RIGHT_BOTTOM"/>
       <xs:enumeration value="LEFT"/>
-      <xs:enumeration value="TOP,RIGHT,BOTTOM,LEFT"/>
+      <xs:enumeration value="TOP_LEFT"/>
+      <xs:enumeration value="RIGHT_LEFT"/>
+      <xs:enumeration value="TOP_RIGHT_LEFT"/>
+      <xs:enumeration value="BOTTOM_LEFT"/>
+      <xs:enumeration value="TOP_BOTTOM_LEFT"/>
+      <xs:enumeration value="RIGHT_BOTTOM_LEFT"/>
+      <xs:enumeration value="TOP_RIGHT_BOTTOM_LEFT"/>
     </xs:restriction>
   </xs:simpleType>
 
