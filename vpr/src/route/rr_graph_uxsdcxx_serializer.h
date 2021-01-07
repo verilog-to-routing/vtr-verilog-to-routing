@@ -1755,15 +1755,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                                                         uxsd::enum_loc_side::TOP_BOTTOM_LEFT,
                                                         uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT,
                                                         uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT};
-        // Error out when 
-        // - the side has no valid bits 
+        // Error out when
+        // - the side has no valid bits
         // - the side is beyond the mapping range: this is to warn any changes on side truth table which may cause the mapping failed
         if ((0 == sides.count())
-           || (sides.to_ulong() > side_map.size() - 1)) {
+            || (sides.to_ulong() > side_map.size() - 1)) {
             report_error(
                 "Invalid side %ld", sides.to_ulong());
         }
-        return side_map[sides.to_ulong()]; 
+        return side_map[sides.to_ulong()];
     }
 
     e_direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {

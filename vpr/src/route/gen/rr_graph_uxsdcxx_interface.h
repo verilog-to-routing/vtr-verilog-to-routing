@@ -137,7 +137,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="x_max" type="xs:int" use="required" />
 	 *   <xs:attribute name="y_max" type="xs:int" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_channel_chan_width_max(typename ContextTypes::ChannelReadContext& ctx) = 0;
     virtual inline int get_channel_x_max(typename ContextTypes::ChannelReadContext& ctx) = 0;
     virtual inline int get_channel_x_min(typename ContextTypes::ChannelReadContext& ctx) = 0;
@@ -146,11 +146,11 @@ class RrGraphBase {
 
     /** Generated for complex type "x_list":
 	 * <xs:complexType name="x_list">
-	 *   
+	 *
 	 *   <xs:attribute name="index" type="xs:unsignedInt" use="required" />
 	 *   <xs:attribute name="info" type="xs:int" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline unsigned int get_x_list_index(typename ContextTypes::XListReadContext& ctx) = 0;
     virtual inline int get_x_list_info(typename ContextTypes::XListReadContext& ctx) = 0;
 
@@ -159,7 +159,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="index" type="xs:unsignedInt" use="required" />
 	 *   <xs:attribute name="info" type="xs:int" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline unsigned int get_y_list_index(typename ContextTypes::YListReadContext& ctx) = 0;
     virtual inline int get_y_list_info(typename ContextTypes::YListReadContext& ctx) = 0;
 
@@ -171,7 +171,7 @@ class RrGraphBase {
 	 *     <xs:element maxOccurs="unbounded" name="y_list" type="y_list" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
-	*/
+ 	 */
     virtual inline typename ContextTypes::ChannelWriteContext init_channels_channel(typename ContextTypes::ChannelsWriteContext& ctx, int chan_width_max, int x_max, int x_min, int y_max, int y_min) = 0;
     virtual inline void finish_channels_channel(typename ContextTypes::ChannelWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::ChannelReadContext get_channels_channel(typename ContextTypes::ChannelsReadContext& ctx) = 0;
@@ -188,14 +188,14 @@ class RrGraphBase {
 
     /** Generated for complex type "timing":
 	 * <xs:complexType name="timing">
-	 *   
+	 *
 	 *   <xs:attribute name="R" type="xs:float" />
 	 *   <xs:attribute name="Cin" type="xs:float" />
 	 *   <xs:attribute name="Cinternal" type="xs:float" />
 	 *   <xs:attribute name="Cout" type="xs:float" />
 	 *   <xs:attribute name="Tdel" type="xs:float" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline float get_timing_Cin(typename ContextTypes::TimingReadContext& ctx) = 0;
     virtual inline void set_timing_Cin(float Cin, typename ContextTypes::TimingWriteContext& ctx) = 0;
     virtual inline float get_timing_Cinternal(typename ContextTypes::TimingReadContext& ctx) = 0;
@@ -212,7 +212,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="mux_trans_size" type="xs:float" use="required" />
 	 *   <xs:attribute name="buf_size" type="xs:float" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline float get_sizing_buf_size(typename ContextTypes::SizingReadContext& ctx) = 0;
     virtual inline float get_sizing_mux_trans_size(typename ContextTypes::SizingReadContext& ctx) = 0;
 
@@ -223,12 +223,12 @@ class RrGraphBase {
 	 *     <xs:element name="sizing" type="sizing" />
 	 *   </xs:all>
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
-	 *   
+	 *
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
-	 *   
+	 *
 	 *   <xs:attribute name="type" type="switch_type" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_switch_id(typename ContextTypes::SwitchReadContext& ctx) = 0;
     virtual inline const char* get_switch_name(typename ContextTypes::SwitchReadContext& ctx) = 0;
     virtual inline void set_switch_name(const char* name, typename ContextTypes::SwitchWriteContext& ctx) = 0;
@@ -248,7 +248,7 @@ class RrGraphBase {
 	 *     <xs:element maxOccurs="unbounded" name="switch" type="switch" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline void preallocate_switches_switch(typename ContextTypes::SwitchesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::SwitchWriteContext add_switches_switch(typename ContextTypes::SwitchesWriteContext& ctx, int id) = 0;
     virtual inline void finish_switches_switch(typename ContextTypes::SwitchWriteContext& ctx) = 0;
@@ -260,7 +260,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="R_per_meter" type="xs:float" />
 	 *   <xs:attribute name="C_per_meter" type="xs:float" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline float get_segment_timing_C_per_meter(typename ContextTypes::SegmentTimingReadContext& ctx) = 0;
     virtual inline void set_segment_timing_C_per_meter(float C_per_meter, typename ContextTypes::SegmentTimingWriteContext& ctx) = 0;
     virtual inline float get_segment_timing_R_per_meter(typename ContextTypes::SegmentTimingReadContext& ctx) = 0;
@@ -274,7 +274,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="id" type="xs:int" use="required" />
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_segment_id(typename ContextTypes::SegmentReadContext& ctx) = 0;
     virtual inline const char* get_segment_name(typename ContextTypes::SegmentReadContext& ctx) = 0;
     virtual inline void set_segment_name(const char* name, typename ContextTypes::SegmentWriteContext& ctx) = 0;
@@ -289,7 +289,7 @@ class RrGraphBase {
 	 *     <xs:element maxOccurs="unbounded" name="segment" type="segment" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline void preallocate_segments_segment(typename ContextTypes::SegmentsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::SegmentWriteContext add_segments_segment(typename ContextTypes::SegmentsWriteContext& ctx, int id) = 0;
     virtual inline void finish_segments_segment(typename ContextTypes::SegmentWriteContext& ctx) = 0;
@@ -304,7 +304,7 @@ class RrGraphBase {
 	 *     </xs:extension>
 	 *   </xs:simpleContent>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_pin_ptc(typename ContextTypes::PinReadContext& ctx) = 0;
     virtual inline void set_pin_value(const char* value, typename ContextTypes::PinWriteContext& ctx) = 0;
     virtual inline const char* get_pin_value(typename ContextTypes::PinReadContext& ctx) = 0;
@@ -316,7 +316,7 @@ class RrGraphBase {
 	 *   </xs:sequence>
 	 *   <xs:attribute name="type" type="pin_type" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline enum_pin_type get_pin_class_type(typename ContextTypes::PinClassReadContext& ctx) = 0;
     virtual inline void preallocate_pin_class_pin(typename ContextTypes::PinClassWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::PinWriteContext add_pin_class_pin(typename ContextTypes::PinClassWriteContext& ctx, int ptc) = 0;
@@ -334,7 +334,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="width" type="xs:int" use="required" />
 	 *   <xs:attribute name="height" type="xs:int" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_block_type_height(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
     virtual inline int get_block_type_id(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
     virtual inline const char* get_block_type_name(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
@@ -352,7 +352,7 @@ class RrGraphBase {
 	 *     <xs:element maxOccurs="unbounded" name="block_type" type="block_type" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline void preallocate_block_types_block_type(typename ContextTypes::BlockTypesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::BlockTypeWriteContext add_block_types_block_type(typename ContextTypes::BlockTypesWriteContext& ctx, int height, int id, int width) = 0;
     virtual inline void finish_block_types_block_type(typename ContextTypes::BlockTypeWriteContext& ctx) = 0;
@@ -367,7 +367,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="width_offset" type="xs:int" use="required" />
 	 *   <xs:attribute name="height_offset" type="xs:int" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_grid_loc_block_type_id(typename ContextTypes::GridLocReadContext& ctx) = 0;
     virtual inline int get_grid_loc_height_offset(typename ContextTypes::GridLocReadContext& ctx) = 0;
     virtual inline int get_grid_loc_width_offset(typename ContextTypes::GridLocReadContext& ctx) = 0;
@@ -380,7 +380,7 @@ class RrGraphBase {
 	 *     <xs:element maxOccurs="unbounded" name="grid_loc" type="grid_loc" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline void preallocate_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext& ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
     virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext& ctx) = 0;
@@ -396,7 +396,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="side" type="loc_side" />
 	 *   <xs:attribute name="ptc" type="xs:int" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext& ctx) = 0;
     virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext& ctx) = 0;
     virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext& ctx) = 0;
@@ -410,7 +410,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="R" type="xs:float" use="required" />
 	 *   <xs:attribute name="C" type="xs:float" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline float get_node_timing_C(typename ContextTypes::NodeTimingReadContext& ctx) = 0;
     virtual inline float get_node_timing_R(typename ContextTypes::NodeTimingReadContext& ctx) = 0;
 
@@ -418,7 +418,7 @@ class RrGraphBase {
 	 * <xs:complexType name="node_segment">
 	 *   <xs:attribute name="segment_id" type="xs:int" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline int get_node_segment_segment_id(typename ContextTypes::NodeSegmentReadContext& ctx) = 0;
 
     /** Generated for complex type "meta":
@@ -429,7 +429,7 @@ class RrGraphBase {
 	 *     </xs:extension>
 	 *   </xs:simpleContent>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline const char* get_meta_name(typename ContextTypes::MetaReadContext& ctx) = 0;
     virtual inline void set_meta_name(const char* name, typename ContextTypes::MetaWriteContext& ctx) = 0;
     virtual inline void set_meta_value(const char* value, typename ContextTypes::MetaWriteContext& ctx) = 0;
@@ -441,7 +441,7 @@ class RrGraphBase {
 	 *     <xs:element maxOccurs="unbounded" name="meta" type="meta" />
 	 *   </xs:sequence>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline void preallocate_metadata_meta(typename ContextTypes::MetadataWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::MetaWriteContext add_metadata_meta(typename ContextTypes::MetadataWriteContext& ctx) = 0;
     virtual inline void finish_metadata_meta(typename ContextTypes::MetaWriteContext& ctx) = 0;
@@ -461,7 +461,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="direction" type="node_direction" />
 	 *   <xs:attribute name="capacity" type="xs:unsignedInt" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline unsigned int get_node_capacity(typename ContextTypes::NodeReadContext& ctx) = 0;
     virtual inline enum_node_direction get_node_direction(typename ContextTypes::NodeReadContext& ctx) = 0;
     virtual inline void set_node_direction(enum_node_direction direction, typename ContextTypes::NodeWriteContext& ctx) = 0;
@@ -489,7 +489,7 @@ class RrGraphBase {
 	 *     <xs:element name="node" type="node" />
 	 *   </xs:choice>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline void preallocate_rr_nodes_node(typename ContextTypes::RrNodesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::NodeWriteContext add_rr_nodes_node(typename ContextTypes::RrNodesWriteContext& ctx, unsigned int capacity, unsigned int id, enum_node_type type) = 0;
     virtual inline void finish_rr_nodes_node(typename ContextTypes::NodeWriteContext& ctx) = 0;
@@ -505,7 +505,7 @@ class RrGraphBase {
 	 *   <xs:attribute name="sink_node" type="xs:unsignedInt" use="required" />
 	 *   <xs:attribute name="switch_id" type="xs:unsignedInt" use="required" />
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline unsigned int get_edge_sink_node(typename ContextTypes::EdgeReadContext& ctx) = 0;
     virtual inline unsigned int get_edge_src_node(typename ContextTypes::EdgeReadContext& ctx) = 0;
     virtual inline unsigned int get_edge_switch_id(typename ContextTypes::EdgeReadContext& ctx) = 0;
@@ -520,7 +520,7 @@ class RrGraphBase {
 	 *     <xs:element name="edge" type="edge" />
 	 *   </xs:choice>
 	 * </xs:complexType>
-	*/
+	 */
     virtual inline void preallocate_rr_edges_edge(typename ContextTypes::RrEdgesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::EdgeWriteContext add_rr_edges_edge(typename ContextTypes::RrEdgesWriteContext& ctx, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) = 0;
     virtual inline void finish_rr_edges_edge(typename ContextTypes::EdgeWriteContext& ctx) = 0;
@@ -542,7 +542,7 @@ class RrGraphBase {
 	 *     <xs:attribute name="tool_version" type="xs:string" />
 	 *     <xs:attribute name="tool_comment" type="xs:string" />
 	 *   </xs:complexType>
-	*/
+	 */
     virtual inline const char* get_rr_graph_tool_comment(typename ContextTypes::RrGraphReadContext& ctx) = 0;
     virtual inline void set_rr_graph_tool_comment(const char* tool_comment, typename ContextTypes::RrGraphWriteContext& ctx) = 0;
     virtual inline const char* get_rr_graph_tool_name(typename ContextTypes::RrGraphReadContext& ctx) = 0;
