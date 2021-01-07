@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params= -write_rr_graph stratixv_arch.timing_11x8_rr_graph.xml
+script_params=-starting_stage vpr -write_rr_graph stratixv_arch.timing_11x8_rr_graph.xml
