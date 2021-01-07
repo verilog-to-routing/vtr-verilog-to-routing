@@ -171,7 +171,7 @@ class RrGraphBase {
      *     <xs:element maxOccurs="unbounded" name="y_list" type="y_list" />
      *   </xs:sequence>
      * </xs:complexType>
-      */
+     */
     virtual inline typename ContextTypes::ChannelWriteContext init_channels_channel(typename ContextTypes::ChannelsWriteContext& ctx, int chan_width_max, int x_max, int x_min, int y_max, int y_min) = 0;
     virtual inline void finish_channels_channel(typename ContextTypes::ChannelWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::ChannelReadContext get_channels_channel(typename ContextTypes::ChannelsReadContext& ctx) = 0;
