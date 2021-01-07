@@ -1738,10 +1738,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         side_map[(1 << TOP)] = uxsd::enum_loc_side::TOP;
         side_map[(1 << RIGHT)] = uxsd::enum_loc_side::RIGHT;
         side_map[(1 << BOTTOM)] = uxsd::enum_loc_side::BOTTOM;
+        side_map[(1 << LEFT)] = uxsd::enum_loc_side::LEFT;
+        side_map[(1 << TOP) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_LEFT;
         side_map[(1 << TOP) | (1 << RIGHT)] = uxsd::enum_loc_side::TOP_RIGHT;
         side_map[(1 << TOP) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_BOTTOM;
         side_map[(1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::RIGHT_BOTTOM;
-        side_map[(1 << TOP) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_LEFT;
         side_map[(1 << RIGHT) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_LEFT;
         side_map[(1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::BOTTOM_LEFT;
         side_map[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM;
