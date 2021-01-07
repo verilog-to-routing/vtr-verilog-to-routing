@@ -487,7 +487,7 @@ class t_rr_graph_storage {
      */
     void set_node_side(RRNodeId, e_side new_side);
     /* Set multiple sides to the node abbributes */
-    void set_node_sides(RRNodeId, std::vector<e_side> new_side);
+    void set_node_sides(RRNodeId, std::bitset<NUM_SIDES> new_side);
     /* Add a side to the node abbributes
      * This is the function to use when you just add a new side WITHOUT reseting side attributes
      */
@@ -624,6 +624,16 @@ class t_rr_graph_storage {
                             rr_node_typename[node_data.type_]);
         }
         std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
+        if (1 < side_tt.count()) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Try to get one side for RR node '%d':\n\ttype='%s'\txlow,ylow=(%d,%d)\n\txhigh,yhigh=(%d,%d), which has multiple sides!",
+                            size_t(id),
+                            rr_node_typename[node_data.type_],
+                            node_data.xlow_,
+                            node_data.ylow_,
+                            node_data.xhigh_,
+                            node_data.yhigh_);
+        }
         for (const e_side& side : SIDES) {
             if (side_tt[size_t(side)]) {
                 return side;
@@ -651,7 +661,6 @@ class t_rr_graph_storage {
                             rr_node_typename[node_data.type_]);
         }
         // Return a vector showing only the sides that the node appears
-        std::vector<e_side> exist_sides;
         std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
         return side_tt;
     }

@@ -578,12 +578,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     inode, node.type());
             }
         } else {
-            std::bitset<NUM_SIDES> side_mask = from_uxsd_loc_side(side);
-            for (const e_side& candidate_side : SIDES) {
-                if (side_mask[size_t(candidate_side)]) {
-                    node.set_side(candidate_side);
-                }
-            }
+            node.set_sides(from_uxsd_loc_side(side));
         }
     }
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
@@ -1703,8 +1698,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return side_mask;
     }
 
-    /* The enumeration MUST follow the order of side maskcode
-     * so that it is easy for RRGraph writer to convert the mask code to enumerations 
+    /* A truth table to help understand the conversion from VPR side mask to uxsd side code
      *
      * index | LEFT BOTTOM RIGHT TOP | mask
      * ======+======================+======
@@ -1739,22 +1733,22 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *  15   |  X      X     X    X  | 1111
      */
     uxsd::enum_loc_side to_uxsd_loc_side(std::bitset<NUM_SIDES> sides) {
-        std::array<uxsd::enum_loc_side, 16> side_map = {uxsd::enum_loc_side::UXSD_INVALID,
-                                                        uxsd::enum_loc_side::TOP,
-                                                        uxsd::enum_loc_side::RIGHT,
-                                                        uxsd::enum_loc_side::TOP_RIGHT,
-                                                        uxsd::enum_loc_side::BOTTOM,
-                                                        uxsd::enum_loc_side::TOP_BOTTOM,
-                                                        uxsd::enum_loc_side::RIGHT_BOTTOM,
-                                                        uxsd::enum_loc_side::TOP_RIGHT_BOTTOM,
-                                                        uxsd::enum_loc_side::LEFT,
-                                                        uxsd::enum_loc_side::TOP_LEFT,
-                                                        uxsd::enum_loc_side::RIGHT_LEFT,
-                                                        uxsd::enum_loc_side::TOP_RIGHT_LEFT,
-                                                        uxsd::enum_loc_side::BOTTOM_LEFT,
-                                                        uxsd::enum_loc_side::TOP_BOTTOM_LEFT,
-                                                        uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT,
-                                                        uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT};
+        std::array<uxsd::enum_loc_side, 16> side_map;
+        side_map[0] = uxsd::enum_loc_side::UXSD_INVALID;
+        side_map[(1 << TOP)] = uxsd::enum_loc_side::TOP;
+        side_map[(1 << RIGHT)] = uxsd::enum_loc_side::RIGHT;
+        side_map[(1 << BOTTOM)] = uxsd::enum_loc_side::BOTTOM;
+        side_map[(1 << TOP) | (1 << RIGHT)] = uxsd::enum_loc_side::TOP_RIGHT;
+        side_map[(1 << TOP) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_BOTTOM;
+        side_map[(1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::RIGHT_BOTTOM;
+        side_map[(1 << TOP) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_LEFT;
+        side_map[(1 << RIGHT) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_LEFT;
+        side_map[(1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::BOTTOM_LEFT;
+        side_map[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM;
+        side_map[(1 << TOP) | (1 << RIGHT) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_LEFT;
+        side_map[(1 << TOP) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_BOTTOM_LEFT;
+        side_map[(1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT;
+        side_map[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT;
         // Error out when
         // - the side has no valid bits
         // - the side is beyond the mapping range: this is to warn any changes on side truth table which may cause the mapping failed

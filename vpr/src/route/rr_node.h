@@ -139,7 +139,7 @@ class t_rr_node {
 
     void set_direction(e_direction);
     void set_side(e_side);
-    void set_sides(std::vector<e_side>);
+    void set_sides(std::bitset<NUM_SIDES>);
     void add_side(e_side);
 
     void next_node() {
