@@ -1496,7 +1496,7 @@ static void build_rr_sinks_sources(const int i,
                             //for the pin on all sides at which it exists
                             //As such, multipler driver problem can be avoided.
                             L_rr_node[inode].set_coordinates(i + width_offset, j + height_offset, i + width_offset, j + height_offset);
-                            L_rr_node[inode].set_side(side);
+                            L_rr_node[inode].add_side(side);
 
                             // Sanity check
                             VTR_ASSERT(1 <= L_rr_node[inode].sides().size());

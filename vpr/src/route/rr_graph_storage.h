@@ -481,10 +481,17 @@ class t_rr_graph_storage {
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, e_direction new_direction);
 
-    /* Add a side to the node abbributes;
-     * Note that a node may have multiple valid sides
+    /* Set a side to the node abbributes
+     * Note that this function will overwrite any existing side attributes
+     * If the node has multiple sides, you should use the method set_node_sides()
      */
     void set_node_side(RRNodeId, e_side new_side);
+    /* Set multiple sides to the node abbributes */
+    void set_node_sides(RRNodeId, std::vector<e_side> new_side);
+    /* Add a side to the node abbributes
+     * This is the function to use when you just add a new side WITHOUT reseting side attributes
+     */
+    void add_node_side(RRNodeId, e_side new_side);
 
     /****************
      * Edge methods *

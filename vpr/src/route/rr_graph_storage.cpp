@@ -711,8 +711,37 @@ void t_rr_graph_storage::set_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
+    std::bitset<NUM_SIDES> side_bits;
+    /* The new side will overwrite existing side storage */
+    side_bits[size_t(new_side)] = true;
+    if (side_bits.to_ulong() > CHAR_MAX) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
+    }
+    node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
+}
+
+void t_rr_graph_storage::set_node_sides(RRNodeId id, std::vector<e_side> new_sides) {
+    if (node_type(id) != IPIN && node_type(id) != OPIN) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
+    }
+    /* The new sides will overwrite existing side storage */
+    std::bitset<NUM_SIDES> side_bits;
+    for (const e_side& new_side : new_sides) {
+        side_bits[size_t(new_side)] = true;
+    }
+    if (side_bits.to_ulong() > CHAR_MAX) {
+        for (const e_side& new_side : new_sides) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
+        }
+    }
+    node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
+}
+
+void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
+    if (node_type(id) != IPIN && node_type(id) != OPIN) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
+    }
     std::bitset<NUM_SIDES> side_bits = node_storage_[id].dir_side_.sides;
-    /* Enable the side bit */
     side_bits[size_t(new_side)] = true;
     if (side_bits.to_ulong() > CHAR_MAX) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
