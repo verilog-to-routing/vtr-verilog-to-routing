@@ -579,7 +579,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         } else {
             std::bitset<NUM_SIDES> side_mask = from_uxsd_loc_side(side);
-            for (const e_side& candidate_side : SIDES) { 
+            for (const e_side& candidate_side : SIDES) {
                 if (side_mask[size_t(candidate_side)]) {
                     node.set_side(candidate_side);
                 }
@@ -1703,12 +1703,67 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return side_mask;
     }
 
+    /* The enumeration MUST follow the order of side maskcode
+     * so that it is easy for RRGraph writer to convert the mask code to enumerations 
+     *
+     * index | LEFT BOTTOM RIGHT TOP | mask
+     * ======+======================+======
+     *  1    |                    X  | 0001
+     * ======+======================+======
+     *  2    |               X       | 0010
+     * ======+======================+======
+     *  3    |               X    X  | 0011
+     * ======+======================+======
+     *  4    |         X             | 0100
+     * ======+======================+======
+     *  5    |         X          X  | 0101
+     * ======+======================+======
+     *  6    |         X     X       | 0110
+     * ======+======================+======
+     *  7    |         X     X    X  | 0111
+     * ======+======================+======
+     *  8    |  X                    | 1000
+     * ======+======================+======
+     *  9    |  X                 X  | 1001
+     * ======+======================+======
+     *  10   |  X            X       | 1010
+     * ======+======================+======
+     *  11   |  X            X    X  | 1011
+     * ======+======================+======
+     *  12   |  X      X             | 1100
+     * ======+======================+======
+     *  13   |  X      X          X  | 1101
+     * ======+======================+======
+     *  14   |  X      X     X       | 1110
+     * ======+======================+======
+     *  15   |  X      X     X    X  | 1111
+     */
     uxsd::enum_loc_side to_uxsd_loc_side(std::bitset<NUM_SIDES> sides) {
-        if (0 == sides.to_ulong()) {
+        std::array<uxsd::enum_loc_side, 16> side_map = {uxsd::enum_loc_side::UXSD_INVALID,
+                                                        uxsd::enum_loc_side::TOP,
+                                                        uxsd::enum_loc_side::RIGHT,
+                                                        uxsd::enum_loc_side::TOP_RIGHT,
+                                                        uxsd::enum_loc_side::BOTTOM,
+                                                        uxsd::enum_loc_side::TOP_BOTTOM,
+                                                        uxsd::enum_loc_side::RIGHT_BOTTOM,
+                                                        uxsd::enum_loc_side::TOP_RIGHT_BOTTOM,
+                                                        uxsd::enum_loc_side::LEFT,
+                                                        uxsd::enum_loc_side::TOP_LEFT,
+                                                        uxsd::enum_loc_side::RIGHT_LEFT,
+                                                        uxsd::enum_loc_side::TOP_RIGHT_LEFT,
+                                                        uxsd::enum_loc_side::BOTTOM_LEFT,
+                                                        uxsd::enum_loc_side::TOP_BOTTOM_LEFT,
+                                                        uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT,
+                                                        uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT};
+        // Error out when 
+        // - the side has no valid bits 
+        // - the side is beyond the mapping range: this is to warn any changes on side truth table which may cause the mapping failed
+        if ((0 == sides.count())
+           || (sides.to_ulong() > side_map.size() - 1)) {
             report_error(
                 "Invalid side %ld", sides.to_ulong());
         }
-        return static_cast<uxsd::enum_loc_side>(sides.to_ulong());
+        return side_map[sides.to_ulong()]; 
     }
 
     e_direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {

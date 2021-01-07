@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
  * Input file: /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
- * md5sum of input file: f7808029c0bfdf2e30e6e1f5f05fcc4a
+ * md5sum of input file: cd57d47fc9dfa62c7030397ca759217e
  */
 
 #include <functional>
@@ -46,21 +46,21 @@ enum class enum_node_direction { UXSD_INVALID = 0,
                                  BI_DIR };
 
 enum class enum_loc_side { UXSD_INVALID = 0,
-                           TOP,
-                           RIGHT,
-                           TOP_RIGHT,
-                           BOTTOM,
-                           TOP_BOTTOM,
-                           RIGHT_BOTTOM,
-                           TOP_RIGHT_BOTTOM,
                            LEFT,
-                           TOP_LEFT,
+                           RIGHT,
+                           TOP,
+                           BOTTOM,
                            RIGHT_LEFT,
-                           TOP_RIGHT_LEFT,
-                           BOTTOM_LEFT,
-                           TOP_BOTTOM_LEFT,
+                           RIGHT_BOTTOM,
                            RIGHT_BOTTOM_LEFT,
-                           TOP_RIGHT_BOTTOM_LEFT };
+                           TOP_RIGHT,
+                           TOP_BOTTOM,
+                           TOP_LEFT,
+                           TOP_RIGHT_BOTTOM,
+                           TOP_RIGHT_LEFT,
+                           TOP_BOTTOM_LEFT,
+                           TOP_RIGHT_BOTTOM_LEFT,
+                           BOTTOM_LEFT };
 
 /* Base class for the schema. */
 struct DefaultRrGraphContextTypes {
