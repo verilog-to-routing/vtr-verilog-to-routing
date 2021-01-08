@@ -16,12 +16,13 @@ circuit_list_add=styr.blif
 arch_list_add=stratixiv_arch.timing.xml
 
 # Parse info and how to parse
-parse_file=vpr_no_timing.txt
+parse_file=vpr_fixed_chan_width.txt
+parse_file=vpr_parse_second_file.txt
 
 # How to parse QoR info
-qor_parse_file=qor_no_timing.txt
+qor_parse_file=qor_rr_graph.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_no_timing.txt
+pass_requirements_file=pass_requirements_verify_rr_graph.txt
 
-script_params=-starting_stage vpr -write_rr_graph stratixv_arch.timing_11x8_rr_graph.xml
+script_params=-starting_stage vpr -verify_rr_graph -rr_graph_ext .xml -route_chan_width 20
