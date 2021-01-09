@@ -291,8 +291,66 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_edge_metadata_(rr_edge_metadata)
         , strings_(strings)
         , empty_(strings_->intern_string(vtr::string_view("")))
-        , report_error_(nullptr) {}
+        , report_error_(nullptr) {
+        // Initialize internal data
+        init_side_map();
+    }
 
+    /* A truth table to help understand the conversion from VPR side mask to uxsd side code
+     *
+     * index | LEFT BOTTOM RIGHT TOP | mask
+     * ======+======================+======
+     *  1    |                    X  | 0001
+     * ======+======================+======
+     *  2    |               X       | 0010
+     * ======+======================+======
+     *  3    |               X    X  | 0011
+     * ======+======================+======
+     *  4    |         X             | 0100
+     * ======+======================+======
+     *  5    |         X          X  | 0101
+     * ======+======================+======
+     *  6    |         X     X       | 0110
+     * ======+======================+======
+     *  7    |         X     X    X  | 0111
+     * ======+======================+======
+     *  8    |  X                    | 1000
+     * ======+======================+======
+     *  9    |  X                 X  | 1001
+     * ======+======================+======
+     *  10   |  X            X       | 1010
+     * ======+======================+======
+     *  11   |  X            X    X  | 1011
+     * ======+======================+======
+     *  12   |  X      X             | 1100
+     * ======+======================+======
+     *  13   |  X      X          X  | 1101
+     * ======+======================+======
+     *  14   |  X      X     X       | 1110
+     * ======+======================+======
+     *  15   |  X      X     X    X  | 1111
+     */
+  private:
+    virtual void init_side_map() final {
+        side_map_[0] = uxsd::enum_loc_side::UXSD_INVALID;
+        side_map_[(1 << TOP)] = uxsd::enum_loc_side::TOP;
+        side_map_[(1 << RIGHT)] = uxsd::enum_loc_side::RIGHT;
+        side_map_[(1 << BOTTOM)] = uxsd::enum_loc_side::BOTTOM;
+        side_map_[(1 << LEFT)] = uxsd::enum_loc_side::LEFT;
+        side_map_[(1 << TOP) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_LEFT;
+        side_map_[(1 << TOP) | (1 << RIGHT)] = uxsd::enum_loc_side::TOP_RIGHT;
+        side_map_[(1 << TOP) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_BOTTOM;
+        side_map_[(1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::RIGHT_BOTTOM;
+        side_map_[(1 << RIGHT) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_LEFT;
+        side_map_[(1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::BOTTOM_LEFT;
+        side_map_[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM;
+        side_map_[(1 << TOP) | (1 << RIGHT) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_LEFT;
+        side_map_[(1 << TOP) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_BOTTOM_LEFT;
+        side_map_[(1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT;
+        side_map_[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT;
+    }
+
+  public:
     void start_load(const std::function<void(const char*)>* report_error_in) final {
         // report_error_in should be invoked if RrGraphSerializer encounters
         // an error during the read.
@@ -1698,67 +1756,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return side_mask;
     }
 
-    /* A truth table to help understand the conversion from VPR side mask to uxsd side code
-     *
-     * index | LEFT BOTTOM RIGHT TOP | mask
-     * ======+======================+======
-     *  1    |                    X  | 0001
-     * ======+======================+======
-     *  2    |               X       | 0010
-     * ======+======================+======
-     *  3    |               X    X  | 0011
-     * ======+======================+======
-     *  4    |         X             | 0100
-     * ======+======================+======
-     *  5    |         X          X  | 0101
-     * ======+======================+======
-     *  6    |         X     X       | 0110
-     * ======+======================+======
-     *  7    |         X     X    X  | 0111
-     * ======+======================+======
-     *  8    |  X                    | 1000
-     * ======+======================+======
-     *  9    |  X                 X  | 1001
-     * ======+======================+======
-     *  10   |  X            X       | 1010
-     * ======+======================+======
-     *  11   |  X            X    X  | 1011
-     * ======+======================+======
-     *  12   |  X      X             | 1100
-     * ======+======================+======
-     *  13   |  X      X          X  | 1101
-     * ======+======================+======
-     *  14   |  X      X     X       | 1110
-     * ======+======================+======
-     *  15   |  X      X     X    X  | 1111
-     */
     uxsd::enum_loc_side to_uxsd_loc_side(std::bitset<NUM_SIDES> sides) {
-        std::array<uxsd::enum_loc_side, 16> side_map;
-        side_map[0] = uxsd::enum_loc_side::UXSD_INVALID;
-        side_map[(1 << TOP)] = uxsd::enum_loc_side::TOP;
-        side_map[(1 << RIGHT)] = uxsd::enum_loc_side::RIGHT;
-        side_map[(1 << BOTTOM)] = uxsd::enum_loc_side::BOTTOM;
-        side_map[(1 << LEFT)] = uxsd::enum_loc_side::LEFT;
-        side_map[(1 << TOP) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_LEFT;
-        side_map[(1 << TOP) | (1 << RIGHT)] = uxsd::enum_loc_side::TOP_RIGHT;
-        side_map[(1 << TOP) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_BOTTOM;
-        side_map[(1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::RIGHT_BOTTOM;
-        side_map[(1 << RIGHT) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_LEFT;
-        side_map[(1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::BOTTOM_LEFT;
-        side_map[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM;
-        side_map[(1 << TOP) | (1 << RIGHT) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_LEFT;
-        side_map[(1 << TOP) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_BOTTOM_LEFT;
-        side_map[(1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::RIGHT_BOTTOM_LEFT;
-        side_map[(1 << TOP) | (1 << RIGHT) | (1 << BOTTOM) | (1 << LEFT)] = uxsd::enum_loc_side::TOP_RIGHT_BOTTOM_LEFT;
         // Error out when
         // - the side has no valid bits
         // - the side is beyond the mapping range: this is to warn any changes on side truth table which may cause the mapping failed
         if ((0 == sides.count())
-            || (sides.to_ulong() > side_map.size() - 1)) {
+            || (sides.to_ulong() > side_map_.size() - 1)) {
             report_error(
                 "Invalid side %ld", sides.to_ulong());
         }
-        return side_map[sides.to_ulong()];
+        return side_map_[sides.to_ulong()];
     }
 
     e_direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {
@@ -1932,6 +1939,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     // Temporary storage
     std::vector<int> seg_index_;
     std::string temp_string_;
+
+    // Constant mapping which is frequently used 
+    std::array<uxsd::enum_loc_side, 16> side_map_;
 
     // Output for loads, and constant data for writes.
     int* wire_to_rr_ipin_switch_;
