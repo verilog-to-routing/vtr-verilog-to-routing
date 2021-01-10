@@ -1940,7 +1940,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     std::vector<int> seg_index_;
     std::string temp_string_;
 
-    // Constant mapping which is frequently used 
+    // Constant mapping which is frequently used
     std::array<uxsd::enum_loc_side, 16> side_map_;
 
     // Output for loads, and constant data for writes.
