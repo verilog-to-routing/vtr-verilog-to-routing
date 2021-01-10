@@ -10,8 +10,9 @@ circuits_dir=benchmarks/verilog
 archs_dir=arch/COFFE_22nm
 
 # Add circuits to list to sweep
-circuit_list_add=sha.v
-circuit_list_add=stereovision3.v
+circuit_list_add=spree.v
+circuit_list_add=or1200.v
+circuit_list_add=matmul_8x8_fp16.v
 
 # Add architectures to list to sweep
 arch_list_add=agilex_arch.xml

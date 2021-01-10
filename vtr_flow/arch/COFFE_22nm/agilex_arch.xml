@@ -78,7 +78,11 @@
     area and delay results. The standard cell library used was Cadence GPDK 45nm (gsclib045_svt_v4.4)
     and area/delay scaling euqations from [4] were used.
 
-    The DSP slice has a 50% sparsely populated input crossbar.
+    A 50% sparsely populated input crossbar was added to the DSP block but is commented out.
+    It was leading to a failure in in VPR. See the discussion on this commit: 
+    https://github.com/verilog-to-routing/vtr-verilog-to-routing/commit/ea7acf1582ece35e892c26b756aa302d2e12ddb2
+
+    Once this is fixed, the input crossbar code can be enabled.
 
     ##############################
     Memory Blocks
@@ -424,20 +428,18 @@
           <site pb_type="dsp_top" pin_mapping="direct"/>
         </equivalent_sites>
         <input name="reset" num_pins="1" is_non_clock_global="true"/>
-        <input name="dsp_I1" num_pins="64" equivalent="full"/>
-        <input name="dsp_I2" num_pins="63" equivalent="full"/>
+        <input name="dsp_I1" num_pins="64" />
+        <input name="dsp_I2" num_pins="63" />
         <input name="chainin" num_pins="64"/>
         <output name="resulta" num_pins="64"/>
         <output name="resultb" num_pins="37"/>
         <output name="chainout" num_pins="64"/>
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
-          <!-- clock pins do not connect to local routing -->
-          <fc_override fc_type="frac" fc_val="0" port_name="clk"/>
-        <!--
+          <!-- clock pins and chain ports do not connect to local routing -->
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
           <fc_override port_name="chainin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="chainout" fc_type="frac" fc_val="0"/>
-        -->
         </fc>
         <pinlocations pattern="perimeter"/>
       </sub_tile>
@@ -471,7 +473,7 @@
       <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
       <perimeter type="io" priority="101"/>
       <corners type="EMPTY" priority="102"/>
-
+      
       <col type="dsp_top"  startx="1"  starty="1"  priority="100"/>
       <col type="clb"  startx="2"  starty="1"  priority="100"/>
       <col type="clb"  startx="3"  starty="1"  priority="100"/>
@@ -511,7 +513,6 @@
       <col type="clb"  startx="174"  starty="1"  priority="1"/>
       <col type="clb"  startx="175"  starty="1"  priority="1"/>
       <col type="dsp_top"  startx="176"  starty="1"  priority="20"/>
-
     <!--
     </auto_layout>
     -->
@@ -957,8 +958,8 @@
     <!-- Define DSP slice begin -->
     <pb_type name="dsp_top">
       <input name="reset" num_pins="1" is_non_clock_global="true"/>
-      <input name="dsp_I1" num_pins="64" equivalent="full"/>
-      <input name="dsp_I2" num_pins="63" equivalent="full"/>
+      <input name="dsp_I1" num_pins="64" />
+      <input name="dsp_I2" num_pins="63" />
       <input name="chainin" num_pins="64"/>
       <output name="resulta" num_pins="64"/>
       <output name="resultb" num_pins="37"/>
@@ -1786,6 +1787,7 @@
     <interconnect>
         <!--50% sparse crossbar means 50% of the lines can reach an actual input of the dsp 
         We do this by splitting inputs into two buckets and having two full crossbars-->
+        <!--
        <complete name="first_half" input="dsp_top.dsp_I1" output="dsp.dsp_I1">
             <delay_constant max="333e-12" in_port="dsp_top.dsp_I1" out_port="dsp.dsp_I1"/>
        </complete>
@@ -1793,7 +1795,7 @@
         <complete name="second_half" input="dsp_top.dsp_I2" output="dsp.dsp_I2">
             <delay_constant max="333e-12" in_port="dsp_top.dsp_I2" out_port="dsp.dsp_I2"/>
         </complete>
-        <!--
+        -->
         <direct name="enable" input="dsp_top.dsp_I1[0]" output ="dsp.dsp_I1[0]"/>
         <direct name="loadconst" input="dsp_top.dsp_I1[1]" output ="dsp.dsp_I1[1]"/>
         <direct name="accumulate" input="dsp_top.dsp_I1[2]" output ="dsp.dsp_I1[2]"/>
@@ -1805,7 +1807,6 @@
         <direct name="internal_coeffb" input="dsp_top.dsp_I1[10]" output ="dsp.dsp_I1[10]"/>
         <direct name="datain1" input="dsp_top.dsp_I1[63:11]" output ="dsp.dsp_I1[63:11]"/>
         <direct name="datain2" input="dsp_top.dsp_I2" output ="dsp.dsp_I2"/>
-        -->
  
         <direct name="reset" input="dsp_top.reset" output="dsp.reset"></direct>
         <direct name="chainin" input="dsp_top.chainin" output="dsp.chainin">
