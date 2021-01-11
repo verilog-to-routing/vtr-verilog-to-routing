@@ -173,7 +173,7 @@ jobs:
       matrix:
         include:
         - { name: 'Basic',  suite: 'vtr_reg_basic'  }
-        - { name: 'Strong', suite: 'vtr_reg_strong' }
+        #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
     name: 'S: ${{ matrix.name }}'
     steps:
 
