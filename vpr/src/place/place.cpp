@@ -690,6 +690,14 @@ void try_place(const t_placer_opts& placer_opts,
     tot_iter = 0;
     moves_since_cost_recompute = 0;
 
+    //RL agent state definition
+    e_agent_state agent_state = EARLY_IN_THE_ANNEAL;
+
+    std::unique_ptr<MoveGenerator> current_move_generator;
+
+    //Define the timing bb weight factor for the agent's reward function
+    float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
+
 #ifdef ENABLE_ANALYTIC_PLACE
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
     // TODO: refactor goto label.
@@ -700,14 +708,6 @@ void try_place(const t_placer_opts& placer_opts,
     //Table header
     VTR_LOG("\n");
     print_place_status_header();
-
-    //RL agent state definition
-    e_agent_state agent_state = EARLY_IN_THE_ANNEAL;
-
-    std::unique_ptr<MoveGenerator> current_move_generator;
-
-    //Define the timing bb weight factor for the agent's reward function
-    float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
 
     /* Outer loop of the simulated annealing begins */
     do {
