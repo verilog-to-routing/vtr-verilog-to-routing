@@ -50,6 +50,10 @@
 
 #include "move_utils.h"
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+#    include "move_utils.h"
+#endif
+
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
 #    include <time.h>
@@ -1017,7 +1021,7 @@ static void drawplace(ezgl::renderer* g) {
                 }
 
                 auto tile_type = device_ctx.grid[i][j].type;
-                logical_block_type = pick_best_logical_type(tile_type);
+                logical_block_type = pick_logical_type(tile_type);
 
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */

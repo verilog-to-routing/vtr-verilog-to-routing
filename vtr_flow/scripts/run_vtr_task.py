@@ -283,7 +283,8 @@ def run_tasks(
 
         if args.parse:
             print("\nParsing test results...")
-            print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
+            if len(args.list_file) > 0:
+                print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
             parse_tasks(configs, jobs)
 
         if args.create_golden:

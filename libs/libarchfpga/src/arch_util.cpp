@@ -12,9 +12,13 @@
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 
+/******************** Subroutine declarations ********************************/
+
 static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors);
 static void free_pb_graph(t_pb_graph_node* pb_graph_node);
 static void free_pb_type(t_pb_type* pb_type);
+
+/******************** End Subroutine declarations ****************************/
 
 InstPort::InstPort(std::string str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");

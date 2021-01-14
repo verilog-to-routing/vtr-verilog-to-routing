@@ -43,6 +43,7 @@ def run(
     vpr_args=None,
     keep_intermediate_files=True,
     keep_result_files=True,
+    odin_config=None,
     min_hard_mult_size=3,
     min_hard_adder_size=1,
     check_equivalent=False,
@@ -182,6 +183,7 @@ def run(
             command_runner=command_runner,
             temp_dir=temp_dir,
             odin_args=odin_args,
+            odin_config=odin_config,
             min_hard_mult_size=min_hard_mult_size,
             min_hard_adder_size=min_hard_adder_size,
         )

@@ -87,6 +87,29 @@ struct PlacerRuntimeContext : public Context {
 };
 
 /**
+ * @brief Placement Move generators data
+ */
+struct PlacerMoveContext : public Context {
+  public:
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    vtr::vector<ClusterNetId, t_bb> bb_coords;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
+
+    // The first range limit calculated by the anneal
+    float first_rlim;
+
+    // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)
+    // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
+    std::vector<int> X_coord;
+    std::vector<int> Y_coord;
+
+    // Container to save the highly critical pins (higher than a timing criticality limit setted by commandline option)
+    std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
+};
+
+/**
  * @brief This object encapsulates VPR placer's state.
  *
  * It is divided up into separate sub-contexts of logically related
@@ -107,7 +130,11 @@ class PlacerContext : public Context {
     const PlacerRuntimeContext& runtime() const { return runtime_; }
     PlacerRuntimeContext& mutable_runtime() { return runtime_; }
 
+    const PlacerMoveContext& move() const { return move_; }
+    PlacerMoveContext& mutable_move() { return move_; }
+
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
+    PlacerMoveContext move_;
 };

@@ -332,6 +332,50 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
 }
 
+void load_grid_blocks_from_block_locs() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    zero_initialize_grid_blocks();
+
+    auto blocks = cluster_ctx.clb_nlist.blocks();
+    for (auto blk_id : blocks) {
+        t_pl_loc location;
+        location = place_ctx.block_locs[blk_id].loc;
+
+        VTR_ASSERT(location.x < (int)device_ctx.grid.width());
+        VTR_ASSERT(location.y < (int)device_ctx.grid.height());
+
+        place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = blk_id;
+        place_ctx.grid_blocks[location.x][location.y].usage++;
+    }
+}
+
+void zero_initialize_grid_blocks() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    /* Initialize all occupancy to zero. */
+
+    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            place_ctx.grid_blocks[i][j].usage = 0;
+            auto tile = device_ctx.grid[i][j].type;
+
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
+
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
+                        place_ctx.grid_blocks[i][j].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /**
  * @brief Builds (alloc and load) legal_pos that holds all the legal locations for placement
  *
