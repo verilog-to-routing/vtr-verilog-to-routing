@@ -110,12 +110,12 @@ def parse_resources(resources):
 
 def get_regexp_pattern(regexp):
     """
-        Helper that returns regexp pattern from given value.
+    Helper that returns regexp pattern from given value.
 
-        :param regexp: regular expression to stringify
-        :type regexp: _sre.SRE_Pattern or str
-        :returns: string representation of given regexp pattern
-        :rtype: str
+    :param regexp: regular expression to stringify
+    :type regexp: _sre.SRE_Pattern or str
+    :returns: string representation of given regexp pattern
+    :rtype: str
     """
     try:
         return regexp.pattern
@@ -226,11 +226,11 @@ def get_cors_headers(options, request_headers, request_method, response_headers)
 
 def set_cors_headers(resp, options):
     """
-        Performs the actual evaluation of Flas-CORS options and actually
-        modifies the response object.
+    Performs the actual evaluation of Flas-CORS options and actually
+    modifies the response object.
 
-        This function is used both in the decorator and the after_request
-        callback
+    This function is used both in the decorator and the after_request
+    callback
     """
 
     # If CORS has already been evaluated via the decorator, skip
@@ -250,8 +250,8 @@ def set_cors_headers(resp, options):
 
 def re_fix(reg):
     """
-        Replace the invalid regex r'*' with the valid, wildcard regex r'/.*' to
-        enable the CORS app extension to have a more user friendly api.
+    Replace the invalid regex r'*' with the valid, wildcard regex r'/.*' to
+    enable the CORS app extension to have a more user friendly api.
     """
     return r".*" if reg == r"*" else reg
 
@@ -262,7 +262,7 @@ def try_match_any(inst, patterns):
 
 def try_match(request_origin, pattern):
     """
-        Safely attempts to match a pattern or string to a request origin.
+    Safely attempts to match a pattern or string to a request origin.
     """
     try:
         if isinstance(pattern, RegexObject):
@@ -275,9 +275,9 @@ def try_match(request_origin, pattern):
 
 def get_cors_options(appInstance, *dicts):
     """
-        Compute CORS options for an application by combining
-        the DEFAULT_OPTIONS, the app's configuration-specified options
-        and any dictionaries passed. The last specified option wins.
+    Compute CORS options for an application by combining
+    the DEFAULT_OPTIONS, the app's configuration-specified options
+    and any dictionaries passed. The last specified option wins.
     """
     options = DEFAULT_OPTIONS.copy()
     options.update(get_app_kwarg_dict(appInstance))
@@ -290,7 +290,7 @@ def get_cors_options(appInstance, *dicts):
 
 def get_app_kwarg_dict(appInstance=None):
     """
-        Returns the dictionary of CORS specific app configurations.
+    Returns the dictionary of CORS specific app configurations.
     """
     app = appInstance or current_app
     return dict(
@@ -302,11 +302,11 @@ def get_app_kwarg_dict(appInstance=None):
 
 def flexible_str(obj):
     """
-        A more flexible str function which intelligently handles
-        stringifying iterables. The results are lexographically
-        sorted to ensure generated responses are consistent when
-        iterables such as Set are used (whose order is usually platform
-        dependent)
+    A more flexible str function which intelligently handles
+    stringifying iterables. The results are lexographically
+    sorted to ensure generated responses are consistent when
+    iterables such as Set are used (whose order is usually platform
+    dependent)
     """
     if not isinstance(obj, string_types) and isinstance(obj, collections.Iterable):
         return ", ".join(str(item) for item in sorted(obj))
@@ -322,7 +322,7 @@ def serialize_option(options_dict, key, upper=False):
 
 def ensure_iterable(inst):
     """
-        Wraps scalars or string types as a list, or returns the iterable instance.
+    Wraps scalars or string types as a list, or returns the iterable instance.
     """
     if isinstance(inst, string_types):
         return [inst]
@@ -338,8 +338,8 @@ def sanitize_regex_param(param):
 
 def serialize_options(opts):
     """
-        A helper method to serialize and processes the options dictionary
-        where applicable.
+    A helper method to serialize and processes the options dictionary
+    where applicable.
     """
     options = (opts or {}).copy()
 
@@ -367,8 +367,8 @@ def serialize_options(opts):
 
 def getLogger(app=None):
     """
-        Helper to get Flask-Cor's logger, attached to the current_app's logger
-        if it exists.
+    Helper to get Flask-Cor's logger, attached to the current_app's logger
+    if it exists.
     """
     # we are in the context of a request
     if stack.top is not None:
@@ -382,13 +382,13 @@ def getLogger(app=None):
 
 def debugLog(*args, **kwargs):
     """
-        Helper to log a message at the DEBUG level.
+    Helper to log a message at the DEBUG level.
     """
     getLogger().debug(*args, **kwargs)
 
 
 def infoLog(*args, **kwargs):
     """
-        Helper to log a message at the INFO level.
+    Helper to log a message at the INFO level.
     """
     getLogger().info(*args, **kwargs)

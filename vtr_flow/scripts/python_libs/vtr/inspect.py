@@ -155,7 +155,11 @@ class RangePassRequirement(PassRequirement):
             False,
             "relative value {} outside of range [{},{}] "
             "and not equal to {} value: {}".format(
-                norm_check_value, self.min_value(), self.max_value(), check_string, golden_value,
+                norm_check_value,
+                self.min_value(),
+                self.max_value(),
+                check_string,
+                golden_value,
             ),
         )
 
@@ -328,7 +332,8 @@ def load_parse_patterns(parse_config_filepath):
                 parse_patterns[name] = ParsePattern(name, filepath, regex_str, default_value)
             else:
                 raise InspectError(
-                    "Duplicate parse pattern name '{}'".format(name), parse_config_filepath,
+                    "Duplicate parse pattern name '{}'".format(name),
+                    parse_config_filepath,
                 )
 
         else:
@@ -363,7 +368,8 @@ def load_pass_requirements(pass_requirements_filepath):
 
         if metric in parse_patterns:
             raise InspectError(
-                "Duplicate pass requirement for '{}'".format(metric), pass_requirements_filepath,
+                "Duplicate pass requirement for '{}'".format(metric),
+                pass_requirements_filepath,
             )
 
         func, params_str = expr.split("(")
@@ -515,7 +521,7 @@ def determine_memory_addr_width(architecture_file):
 
 def determine_min_w(log_filename):
     """
-        determines the miniumum width.
+    determines the miniumum width.
     """
     min_w_regex = re.compile(r"\s*Best routing used a channel width factor of (?P<min_w>\d+).")
     with open(log_filename) as file:

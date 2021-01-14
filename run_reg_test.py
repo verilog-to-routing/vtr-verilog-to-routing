@@ -50,14 +50,19 @@ def vtr_command_argparser(prog=None):
     )
 
     parser = argparse.ArgumentParser(
-        prog=prog, description=description, epilog=epilog, formatter_class=RawDefaultHelpFormatter,
+        prog=prog,
+        description=description,
+        epilog=epilog,
+        formatter_class=RawDefaultHelpFormatter,
     )
 
     #
     # Major arguments
     #
     parser.add_argument(
-        "reg_test", nargs="+", help="Regression tests to be run",
+        "reg_test",
+        nargs="+",
+        help="Regression tests to be run",
     )
 
     parser.add_argument(
@@ -75,7 +80,10 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
-        "-parse", default=False, action="store_true", help="Only run the parse tests.",
+        "-parse",
+        default=False,
+        action="store_true",
+        help="Only run the parse tests.",
     )
 
     parser.add_argument(
@@ -92,7 +100,10 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
-        "-skip_qor", default=False, action="store_true", help="Skips running the Qor tests",
+        "-skip_qor",
+        default=False,
+        action="store_true",
+        help="Skips running the Qor tests",
     )
 
     parser.add_argument(
@@ -118,7 +129,10 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
-        "-long_task_names", default=False, action="store_true", help="Display long task names",
+        "-long_task_names",
+        default=False,
+        action="store_true",
+        help="Display long task names",
     )
 
     return parser
