@@ -1,0 +1,292 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # weekly
+
+env:
+  MATRIX_EVAL: "CC=gcc-6 && CXX=g++-6"
+
+jobs:
+
+
+  Build:
+    name: 'B: Building VtR'
+    runs-on: ubuntu-18.04
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        MATRIX_EVAL: "CC=gcc-6 && CXX=g++-6"
+        BUILD_TYPE: release
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        ./.github/travis/setup.sh
+
+
+  Format:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { name: 'C/C++',       script: 'check-format.sh'    }
+        - { name: 'Python',      script: 'check-format-py.sh' }
+        - { name: 'Python Lint', script: 'pylint_check.py'    }
+    name: 'F: ${{ matrix.name }}'
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./dev/${{ matrix.script }}
+        ./.github/travis/setup.sh
+
+
+  UniTests:
+    name: 'U: C++ Unit Tests'
+    runs-on: ubuntu-18.04
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        ./.github/travis/unittest.sh
+        ./.github/travis/setup.sh
+
+
+  Warnings:
+    name: 'W: Check Compilation Warnings'
+    runs-on: ubuntu-18.04
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        #In order to get compilation warnings produced per source file, we must do a non-IPO build
+        #We also turn warnings into errors for this target by doing a strict compile
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
+        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        ./.github/travis/setup.sh
+
+
+  Regression:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          {
+            name: 'Basic',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with NO_GRAPHICS',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
+            suite: 'vtr_reg_basic'
+          },
+          {
+            name: 'Strong',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            suite: 'vtr_reg_strong'
+          },
+          {
+            name: 'Valgrind Memory',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            suite: 'vtr_reg_valgrind_small'
+          }
+        ]
+    name: 'R: ${{ matrix.name }}'
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: ${{ matrix.params }}
+        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
+        ./.github/travis/setup.sh
+
+
+  Sanitized:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { name: 'Basic',  suite: 'vtr_reg_basic'  }
+        #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
+    name: 'S: ${{ matrix.name }}'
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
+        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
+        BUILD_TYPE: debug
+        LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        # We skip QoR since we are only checking for errors in sanitizer runs
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
+        ./.github/travis/setup.sh
+
+  ODINII:
+    name: 'ODIN-II Micro Tests'
+    runs-on: ubuntu-18.04
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
+        MATRIX_EVAL: 'CC=gcc-5 && CXX=g++-5'
+        BUILD_TYPE: debug
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        ./run_reg_test.py odin_reg_micro -show_failures -j2
+        ./.github/travis/setup.sh
+
+
+  Compatibility:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { name: 'GCC 5 (Ubuntu Xenial - 16.04)',    eval: 'CC=gcc-5 && CXX=g++-5',           build: 'release_strict' }
+        - { name: 'GCC 6 (Debian Stretch)',           eval: 'CC=gcc-6 && CXX=g++-6',           build: 'release_strict' }
+        - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           build: ''               }
+        - { name: 'GCC 9 (Latest Release)',           eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
+        - { name: 'GCC 8 (Ubuntu Latest)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
+        - { name: 'Clang 6 (Debian + Ubuntu common)', eval: 'CC=clang-6.0 && CXX=clang++-6.0', build: ''               }
+        - { name: 'Clang 8 (Latest Release)',         eval: 'CC=clang-8 && CXX=clang++-8',     build: ''               }
+    name: 'B: ${{ matrix.name }}'
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        MATRIX_EVAL: ${{ matrix.eval }}
+        BUILD_TYPE: ${{ matrix.build }}
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        ./.github/travis/setup.sh
+
+
+  Coverity:
+    name: 'Coverity Scan'
+    needs:
+      - Build
+      - Format
+      - UniTests
+      - Warnings
+      - Regression
+      - Sanitized
+      - ODINII
+      - Compatibility
+    runs-on: ubuntu-18.04
+    steps:
+
+    - uses: actions/checkout@v2
+    - run: ./.github/gha/install_dependencies.sh
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - run: pip install -r requirements.txt
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
+        MATRIX_EVAL: 'CC=gcc-6 && CXX=g++-6'
+        _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
+        _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
+      run: |
+        source .github/travis/common.sh
+        ./.github/travis/setup.sh
+        ./.github/travis/build.sh
+        ./.github/travis/setup.sh
