@@ -14,42 +14,42 @@ from .core import *
 
 class CORS(object):
     """
-        Initializes Cross Origin Resource sharing for the application. The
-        arguments are identical to :py:func:`cross_origin`, with the
-        addition of a `resources` parameter. The resources parameter
-        defines a series of regular expressions for resource paths to match
-        and optionally, the associated options
-        to be applied to the particular resource. These options are
-        identical to the arguments to :py:func:`cross_origin`.
+    Initializes Cross Origin Resource sharing for the application. The
+    arguments are identical to :py:func:`cross_origin`, with the
+    addition of a `resources` parameter. The resources parameter
+    defines a series of regular expressions for resource paths to match
+    and optionally, the associated options
+    to be applied to the particular resource. These options are
+    identical to the arguments to :py:func:`cross_origin`.
 
-        The settings for CORS are determined in the following order:
-            Resource level settings (e.g when passed as a dictionary)
-            Keyword argument settings
-            App level configuration settings (e.g. CORS_*)
-            Default settings
+    The settings for CORS are determined in the following order:
+        Resource level settings (e.g when passed as a dictionary)
+        Keyword argument settings
+        App level configuration settings (e.g. CORS_*)
+        Default settings
 
-        Note: as it is possible for multiple regular expressions to match a
-        resource path, the regular expressions are first sorted by length,
-        from longest to shortest, in order to attempt to match the most
-        specific regular expression. This allows the definition of a
-        number of specific resource options, with a wildcard fallback
-        for all other resources.
+    Note: as it is possible for multiple regular expressions to match a
+    resource path, the regular expressions are first sorted by length,
+    from longest to shortest, in order to attempt to match the most
+    specific regular expression. This allows the definition of a
+    number of specific resource options, with a wildcard fallback
+    for all other resources.
 
-        :param resources: the series of regular expression and (optionally)
-        associated CORS options to be applied to the given resource path.
+    :param resources: the series of regular expression and (optionally)
+    associated CORS options to be applied to the given resource path.
 
-        If the argument is a dictionary, it is expected to be of the form:
-        regexp : dict_of_options
+    If the argument is a dictionary, it is expected to be of the form:
+    regexp : dict_of_options
 
-        If the argument is a list, it is expected to be a list of regular
-        expressions, for which the app-wide configured options are applied.
+    If the argument is a list, it is expected to be a list of regular
+    expressions, for which the app-wide configured options are applied.
 
-        If the argument is a string, it is expected to be a regular
-        expression for which the app-wide configured options are applied.
+    If the argument is a string, it is expected to be a regular
+    expression for which the app-wide configured options are applied.
 
-        Default :'*'
+    Default :'*'
 
-        :type resources: dict, iterable or string
+    :type resources: dict, iterable or string
 
     """
 
@@ -83,8 +83,8 @@ class CORS(object):
 
         def cors_after_request(resp):
             """
-                The actual after-request handler, retains references to the
-                the options, and definitions of resources through a closure.
+            The actual after-request handler, retains references to the
+            the options, and definitions of resources through a closure.
             """
             # If CORS headers are set in a view decorator, pass
             if resp.headers.get(ACL_ORIGIN):
