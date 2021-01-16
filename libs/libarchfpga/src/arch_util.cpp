@@ -38,9 +38,9 @@ InstPort::InstPort(std::string str) {
 }
 
 InstPort::name_index InstPort::parse_name_index(const std::string& str) {
-    auto open_bracket_pos = str.find("[");
-    auto close_bracket_pos = str.find("]");
-    auto colon_pos = str.find(":");
+    auto open_bracket_pos = str.find('[');
+    auto close_bracket_pos = str.find(']');
+    auto colon_pos = str.find(':');
 
     //Parse checks
     if (open_bracket_pos == std::string::npos && close_bracket_pos != std::string::npos) {
