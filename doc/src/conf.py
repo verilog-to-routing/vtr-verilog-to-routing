@@ -70,7 +70,6 @@ extensions = [
     "recommonmark",
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
-    
 ]
 
 if have_sphinxcontrib_bibtex:
@@ -393,7 +392,11 @@ def setup(app):
     app.add_domain(MarkdownSymlinksDomain)
     app.add_config_value(
         "recommonmark_config",
-        {"github_code_repo": github_code_repo, "enable_math": True, "enable_inline_math": True,},
+        {
+            "github_code_repo": github_code_repo,
+            "enable_math": True,
+            "enable_inline_math": True,
+        },
         True,
     )
     app.add_stylesheet("css/vtr.css")

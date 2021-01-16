@@ -1,0 +1,5 @@
+vpr_status;output.txt;vpr_status=(.*)
+num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
+BB estimate of WL;vpr.out;BB estimate of min-dist \(placement\) wire length:\s*(\d+)
+place_time;vpr.out;Placement took (.*) seconds
+geomean period;vpr.out;Placement estimated geomean non-virtual intra-domain period:\s*(.*) ns

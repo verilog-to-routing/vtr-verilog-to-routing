@@ -164,7 +164,9 @@ def main():
 
         if (path in grandfathered_files) and not args.check_grandfathered:
             print(
-                TermColor.YELLOW + relpath_str, "skipped (grandfathered)", TermColor.END,
+                TermColor.YELLOW + relpath_str,
+                "skipped (grandfathered)",
+                TermColor.END,
             )
             continue
 

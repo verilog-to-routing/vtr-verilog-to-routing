@@ -114,7 +114,13 @@ def run(
         )
         if abc_flow_type == "blanket_bb":
             command_runner.run_system_command(
-                [blackbox_latches_script, "--input", input_file, "--output", pre_abc_blif.name,],
+                [
+                    blackbox_latches_script,
+                    "--input",
+                    input_file,
+                    "--output",
+                    pre_abc_blif.name,
+                ],
                 temp_dir=temp_dir,
                 log_filename=str(i) + "_blackboxing_latch.out",
                 indent_depth=1,
@@ -173,7 +179,8 @@ def run(
                     'echo "Output Netlist"',
                     'echo "=============="',
                     "write_hie {pre_abc_blif} {post_abc_raw_blif}".format(
-                        pre_abc_blif=pre_abc_blif.name, post_abc_raw_blif=post_abc_raw_blif.name,
+                        pre_abc_blif=pre_abc_blif.name,
+                        post_abc_raw_blif=post_abc_raw_blif.name,
                     ),
                     "time;",
                 ]
@@ -189,7 +196,8 @@ def run(
                     "time",
                     "scleanup",
                     "write_hie {pre_abc_blif} {post_abc_raw_blif}".format(
-                        pre_abc_blif=pre_abc_blif.name, post_abc_raw_blif=post_abc_raw_blif.name,
+                        pre_abc_blif=pre_abc_blif.name,
+                        post_abc_raw_blif=post_abc_raw_blif.name,
                     ),
                     "print_stats",
                 ]
@@ -269,7 +277,7 @@ def run(
 # pylint: enable=too-many-arguments, too-many-locals
 def parse_abc_args(abc_args):
     """
-        function to parse abc_args
+    function to parse abc_args
     """
     abc_flow_type = "iterative_bb"
     abc_run_args = ""
@@ -303,7 +311,7 @@ def parse_abc_args(abc_args):
 
 def populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir):
     """
-        function to populate the clock list
+    function to populate the clock list
     """
     clk_list_path = temp_dir / "report_clk.out"
     cmd = [
@@ -407,8 +415,8 @@ def run_lec(
 
 def check_abc_lec_status(output):
     """
-        Reads abc_lec output and determines if the files were equivelent and
-        if there were errors when preforming lec.
+    Reads abc_lec output and determines if the files were equivelent and
+    if there were errors when preforming lec.
     """
     equivalent = None
     errored = False
