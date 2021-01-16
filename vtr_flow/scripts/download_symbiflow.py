@@ -14,11 +14,10 @@ import shutil
 import subprocess
 from urllib import request
 
+BASE_URL = "https://storage.googleapis.com/symbiflow-arch-defs-gha/"
 GCS_URL = {
-    "architectures":
-        "https://storage.googleapis.com/symbiflow-arch-defs-gha/symbiflow-xc7a50t_test-latest",
-    "benchmarks":
-        "https://storage.googleapis.com/symbiflow-arch-defs-gha/symbiflow-benchmarks-latest"
+    "architectures": BASE_URL + "symbiflow-xc7a50t_test-latest",
+    "benchmarks": BASE_URL + "symbiflow-benchmarks-latest",
 }
 
 SYMBIFLOW_URL_MIRRORS = {"google": GCS_URL}

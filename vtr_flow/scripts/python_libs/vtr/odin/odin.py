@@ -154,7 +154,10 @@ def run(
             "-U0",
         ]
         command_runner.run_system_command(
-            cmd, temp_dir=temp_dir, log_filename="sim_produce_vector.out", indent_depth=1,
+            cmd,
+            temp_dir=temp_dir,
+            log_filename="sim_produce_vector.out",
+            indent_depth=1,
         )
 
 

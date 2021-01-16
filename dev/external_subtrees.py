@@ -146,22 +146,26 @@ def update_component(args, subtree_info):
     if not os.path.exists(subtree_info.internal_path):
         # Create
         action = "add"
-        message = "{msg}\n\n{name}: Adding '{path}/' as an external git subtree from {url} {rev}".format(
-            name=subtree_info.name,
-            path=subtree_info.internal_path,
-            url=subtree_info.external_url,
-            rev=external_ref,
-            msg=args.message,
+        message = (
+            "{msg}\n\n{name}: Adding '{path}/' as an external git subtree from {url} {rev}".format(
+                name=subtree_info.name,
+                path=subtree_info.internal_path,
+                url=subtree_info.external_url,
+                rev=external_ref,
+                msg=args.message,
+            )
         )
     else:
         # Pull
         action = "pull"
-        message = "{msg}\n\n{name}: Updating '{path}/' (external git subtree from {url} {rev})".format(
-            name=subtree_info.name,
-            path=subtree_info.internal_path,
-            url=subtree_info.external_url,
-            rev=external_ref,
-            msg=args.message,
+        message = (
+            "{msg}\n\n{name}: Updating '{path}/' (external git subtree from {url} {rev})".format(
+                name=subtree_info.name,
+                path=subtree_info.internal_path,
+                url=subtree_info.external_url,
+                rev=external_ref,
+                msg=args.message,
+            )
         )
     assert action != None
     assert message != None

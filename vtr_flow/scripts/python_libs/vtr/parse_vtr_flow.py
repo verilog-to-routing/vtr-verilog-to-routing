@@ -17,7 +17,7 @@ from vtr import paths
 
 def parse_vtr_flow(arg_list):
     """
-        parse vtr flow output
+    parse vtr flow output
     """
     parse_path = arg_list[0]
     parse_config_file = arg_list[1]

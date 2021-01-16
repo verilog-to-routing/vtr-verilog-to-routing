@@ -140,7 +140,7 @@ def export_data_csv_todisk(selected_cols, data, tasks, dir="benchtracker_data"):
 def describe_param(param, mode, tasks, dbname="results.db"):
     """
     Give back metainformation about a parameter to allow for easier filtering.
-    
+
     Param would be an element of the list returned by describe_tasks - space separated name and type
     Returns a 2-tuple describing the parameter type and values for some tasks of a database.
     - 1st value is either 'range' or 'categorical'

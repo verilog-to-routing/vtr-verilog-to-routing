@@ -45,7 +45,7 @@ class TaskConfig:
         cmos_tech_behavior=None,
         pad_file=None,
         additional_files=None,
-        additional_files_list_add=None
+        additional_files_list_add=None,
     ):
         self.task_name = task_name
         self.config_dir = config_dir
@@ -291,6 +291,7 @@ def find_longest_task_description(configs):
                     longest = arch_circuit_len
     return longest
 
+
 # pylint: disable=too-many-branches
 def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run=False):
     """
@@ -317,8 +318,8 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
 
             # Check if additional architectural data files are present
             if config.additional_files_list_add:
-                for additional_file in  config.additional_files_list_add:
-                    flag, file_name = additional_file.split(',')
+                for additional_file in config.additional_files_list_add:
+                    flag, file_name = additional_file.split(",")
 
                     cmd += [flag]
                     cmd += [resolve_vtr_source_file(config, file_name, config.arch_dir)]
@@ -350,20 +351,15 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
                 sdc_name = "{}.sdc".format(Path(circuit).stem)
                 sdc_file = resolve_vtr_source_file(config, sdc_name, config.sdc_dir)
 
-                cmd += [
-                    "-sdc_file",
-                    "{}".format(sdc_file)
-                ]
+                cmd += ["-sdc_file", "{}".format(sdc_file)]
 
             if config.place_constr_dir:
                 place_constr_name = "{}.place".format(Path(circuit).stem)
                 place_constr_file = resolve_vtr_source_file(
-                    config, place_constr_name, config.place_constr_dir)
+                    config, place_constr_name, config.place_constr_dir
+                )
 
-                cmd += [
-                    "--fix_clusters",
-                    "{}".format(place_constr_file)
-                ]
+                cmd += ["--fix_clusters", "{}".format(place_constr_file)]
 
             parse_cmd = None
             second_parse_cmd = None
@@ -371,7 +367,9 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
             if config.parse_file:
                 parse_cmd = [
                     resolve_vtr_source_file(
-                        config, config.parse_file, str(PurePath("parse").joinpath("parse_config")),
+                        config,
+                        config.parse_file,
+                        str(PurePath("parse").joinpath("parse_config")),
                     )
                 ]
 
