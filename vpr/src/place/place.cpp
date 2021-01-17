@@ -690,16 +690,14 @@ void try_place(const t_placer_opts& placer_opts,
     tot_iter = 0;
     moves_since_cost_recompute = 0;
 
+    bool skip_anneal = false;
+
 #ifdef ENABLE_ANALYTIC_PLACE
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
     // TODO: refactor goto label.
     if (placer_opts.enable_analytic_placer)
-        goto quench;
+        skip_anneal = true;
 #endif /* ENABLE_ANALYTIC_PLACE */
-
-    //Table header
-    VTR_LOG("\n");
-    print_place_status_header();
 
     //RL agent state definition
     e_agent_state agent_state = EARLY_IN_THE_ANNEAL;
@@ -709,82 +707,84 @@ void try_place(const t_placer_opts& placer_opts,
     //Define the timing bb weight factor for the agent's reward function
     float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
 
-    /* Outer loop of the simulated annealing begins */
-    do {
-        vtr::Timer temperature_timer;
+    if(skip_anneal == false){
+        //Table header
+        VTR_LOG("\n");
+        print_place_status_header();
 
-        outer_loop_update_timing_info(placer_opts,
-                                      &costs,
-                                      num_connections,
-                                      state.crit_exponent,
-                                      &outer_crit_iter_count,
-                                      place_delay_model.get(),
-                                      placer_criticalities.get(),
-                                      placer_setup_slacks.get(),
-                                      pin_timing_invalidator.get(),
-                                      timing_info.get());
 
-        if (placer_opts.place_algorithm.is_timing_driven()) {
-            critical_path = timing_info->least_slack_critical_path();
-            sTNS = timing_info->setup_total_negative_slack();
-            sWNS = timing_info->setup_worst_negative_slack();
+        /* Outer loop of the simulated annealing begins */
+        do {
+            vtr::Timer temperature_timer;
 
-            //see if we should save the current placement solution as a checkpoint
+            outer_loop_update_timing_info(placer_opts,
+                                          &costs,
+                                          num_connections,
+                                          state.crit_exponent,
+                                          &outer_crit_iter_count,
+                                          place_delay_model.get(),
+                                          placer_criticalities.get(),
+                                          placer_setup_slacks.get(),
+                                          pin_timing_invalidator.get(),
+                                          timing_info.get());
 
-            if (placer_opts.place_checkpointing && agent_state == LATE_IN_THE_ANNEAL) {
-                save_placement_checkpoint_if_needed(placement_checkpoint, timing_info, costs, critical_path.delay());
+            if (placer_opts.place_algorithm.is_timing_driven()) {
+                critical_path = timing_info->least_slack_critical_path();
+                sTNS = timing_info->setup_total_negative_slack();
+                sWNS = timing_info->setup_worst_negative_slack();
+
+                //see if we should save the current placement solution as a checkpoint
+
+                if (placer_opts.place_checkpointing && agent_state == LATE_IN_THE_ANNEAL) {
+                    save_placement_checkpoint_if_needed(placement_checkpoint, timing_info, costs, critical_path.delay());
+                }
             }
-        }
 
-        //move the appropoiate move_generator to be the current used move generator
-        assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, false, current_move_generator);
+            //move the appropoiate move_generator to be the current used move generator
+            assign_current_move_generator(move_generator, move_generator2, agent_state, placer_opts, false, current_move_generator);
 
-        //do a complete inner loop iteration
-        placement_inner_loop(&state, placer_opts,
-                             inner_recompute_limit, &stats,
-                             &costs,
-                             &moves_since_cost_recompute,
-                             pin_timing_invalidator.get(),
-                             place_delay_model.get(),
-                             placer_criticalities.get(),
-                             placer_setup_slacks.get(),
-                             *current_move_generator,
-                             blocks_affected,
-                             timing_info.get(),
-                             placer_opts.place_algorithm,
-                             move_type_stat,
-                             timing_bb_factor);
+            //do a complete inner loop iteration
+            placement_inner_loop(&state, placer_opts,
+                                 inner_recompute_limit, &stats,
+                                 &costs,
+                                 &moves_since_cost_recompute,
+                                 pin_timing_invalidator.get(),
+                                 place_delay_model.get(),
+                                 placer_criticalities.get(),
+                                 placer_setup_slacks.get(),
+                                 *current_move_generator,
+                                 blocks_affected,
+                                 timing_info.get(),
+                                 placer_opts.place_algorithm,
+                                 move_type_stat,
+                                 timing_bb_factor);
 
-        //move the update used move_generator to its original variable
-        update_move_generator(move_generator, move_generator2, agent_state, placer_opts, false, current_move_generator);
+            //move the update used move_generator to its original variable
+            update_move_generator(move_generator, move_generator2, agent_state, placer_opts, false, current_move_generator);
 
-        tot_iter += state.move_lim;
-        ++state.num_temps;
+            tot_iter += state.move_lim;
+            ++state.num_temps;
 
-        print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
-        if (placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_agent_multistate && agent_state == EARLY_IN_THE_ANNEAL) {
-            if (state.alpha < 0.85 && state.alpha > 0.6) {
-                agent_state = LATE_IN_THE_ANNEAL;
-                VTR_LOG("Agent's 2nd state: \n");
+            print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
+            if (placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_agent_multistate && agent_state == EARLY_IN_THE_ANNEAL) {
+                if (state.alpha < 0.85 && state.alpha > 0.6) {
+                    agent_state = LATE_IN_THE_ANNEAL;
+                    VTR_LOG("Agent's 2nd state: \n");
+                }
             }
-        }
 
-        sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
-                costs.cost, costs.bb_cost, costs.timing_cost, state.t);
-        update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
+            sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
+                    costs.cost, costs.bb_cost, costs.timing_cost, state.t);
+            update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
 
 #ifdef VERBOSE
-        if (getEchoEnabled()) {
-            print_clb_placement("first_iteration_clb_placement.echo");
-        }
+            if (getEchoEnabled()) {
+                print_clb_placement("first_iteration_clb_placement.echo");
+            }
 #endif
-    } while (state.outer_loop_update(stats.success_rate, costs, placer_opts, annealing_sched));
-    /* Outer loop of the simmulated annealing ends */
-
-#ifdef ENABLE_ANALYTIC_PLACE
-// guard quench label, otherwise compiler complains about unused label
-quench:
-#endif /* ENABLE_ANALYTIC_PLACE */
+        } while (state.outer_loop_update(stats.success_rate, costs, placer_opts, annealing_sched));
+        /* Outer loop of the simmulated annealing ends */
+    } //skip_anneal ends
 
     /* Start Quench */
     state.t = 0;                         //Freeze out: only accept solutions that improve placement.
