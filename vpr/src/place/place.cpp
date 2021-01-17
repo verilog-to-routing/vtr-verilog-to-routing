@@ -707,11 +707,10 @@ void try_place(const t_placer_opts& placer_opts,
     //Define the timing bb weight factor for the agent's reward function
     float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
 
-    if(skip_anneal == false){
+    if (skip_anneal == false) {
         //Table header
         VTR_LOG("\n");
         print_place_status_header();
-
 
         /* Outer loop of the simulated annealing begins */
         do {
