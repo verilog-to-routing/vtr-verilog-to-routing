@@ -20,7 +20,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
 
 static void ShowAnnealSched(const t_annealing_sched& AnnealSched);
-static void ShowRoutingArch(const t_det_routing_arch& RoutingArch);
 
 /******** Function Implementations ********/
 
@@ -55,8 +54,6 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
     }
 
-    if (DETAILED == vpr_setup.RouterOpts.route_type)
-        ShowRoutingArch(vpr_setup.RoutingArch);
 }
 
 void printClusteredNetlistStats() {
@@ -105,46 +102,6 @@ void printClusteredNetlistStats() {
     VTR_LOG("Netlist output pins: %d\n", L_num_p_outputs);
     VTR_LOG("\n");
     num_blocks_type.clear();
-}
-
-static void ShowRoutingArch(const t_det_routing_arch& RoutingArch) {
-    VTR_LOG("RoutingArch.directionality: ");
-    switch (RoutingArch.directionality) {
-        case BI_DIRECTIONAL:
-            VTR_LOG("BI_DIRECTIONAL\n");
-            break;
-        case UNI_DIRECTIONAL:
-            VTR_LOG("UNI_DIRECTIONAL\n");
-            break;
-        default:
-            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
-            break;
-    }
-
-    VTR_LOG("RoutingArch.switch_block_type: ");
-    switch (RoutingArch.switch_block_type) {
-        case SUBSET:
-            VTR_LOG("SUBSET\n");
-            break;
-        case WILTON:
-            VTR_LOG("WILTON\n");
-            break;
-        case UNIVERSAL:
-            VTR_LOG("UNIVERSAL\n");
-            break;
-        case FULL:
-            VTR_LOG("FULL\n");
-            break;
-        case CUSTOM:
-            VTR_LOG("CUSTOM\n");
-            break;
-        default:
-            VTR_LOG_ERROR("switch block type\n");
-    }
-
-    VTR_LOG("RoutingArch.Fs: %d\n", RoutingArch.Fs);
-
-    VTR_LOG("\n");
 }
 
 static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
