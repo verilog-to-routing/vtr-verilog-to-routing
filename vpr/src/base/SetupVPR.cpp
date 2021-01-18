@@ -24,6 +24,7 @@
 #include "read_options.h"
 #include "echo_files.h"
 #include "clock_modeling.h"
+#include "ShowSetup.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
@@ -70,7 +71,8 @@ void SetupVPR(const t_options* Options,
               int* GraphPause,
               bool* SaveGraphics,
               std::string* GraphicsCommands,
-              t_power_opts* PowerOpts) {
+              t_power_opts* PowerOpts,
+			  t_vpr_setup* vpr_setup) {
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -209,6 +211,8 @@ void SetupVPR(const t_options* Options,
             PackerOpts->doPacking = STAGE_DO;
         }
     }
+
+    ShowSetup(*vpr_setup);
 
     /* init global variables */
     vtr::out_file_prefix = Options->out_file_prefix;

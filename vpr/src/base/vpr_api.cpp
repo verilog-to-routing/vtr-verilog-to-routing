@@ -292,7 +292,8 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
              &vpr_setup->GraphicsCommands,
-             &vpr_setup->PowerOpts);
+             &vpr_setup->PowerOpts,
+			 vpr_setup);
 
     /* Check inputs are reasonable */
     CheckArch(*arch);
@@ -355,7 +356,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     fflush(stdout);
 
-    ShowSetup(*vpr_setup);
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
@@ -1129,7 +1129,8 @@ void vpr_setup_vpr(t_options* Options,
                    int* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
-                   t_power_opts* PowerOpts) {
+                   t_power_opts* PowerOpts,
+				   t_vpr_setup* vpr_setup) {
     SetupVPR(Options,
              TimingEnabled,
              readArchFile,
@@ -1151,7 +1152,8 @@ void vpr_setup_vpr(t_options* Options,
              GraphPause,
              SaveGraphics,
              GraphicsCommands,
-             PowerOpts);
+             PowerOpts,
+			 vpr_setup);
 }
 
 void vpr_check_arch(const t_arch& Arch) {
