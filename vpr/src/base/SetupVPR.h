@@ -28,5 +28,5 @@ void SetupVPR(const t_options* Options,
               bool* SaveGraphics,
               std::string* GraphicsCommands,
               t_power_opts* PowerOpts,
-			  t_vpr_setup* vpr_setup);
+              t_vpr_setup* vpr_setup);
 #endif

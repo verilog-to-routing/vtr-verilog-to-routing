@@ -72,7 +72,7 @@ void SetupVPR(const t_options* Options,
               bool* SaveGraphics,
               std::string* GraphicsCommands,
               t_power_opts* PowerOpts,
-			  t_vpr_setup* vpr_setup) {
+              t_vpr_setup* vpr_setup) {
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();

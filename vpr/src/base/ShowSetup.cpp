@@ -53,7 +53,6 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     if (vpr_setup.AnalysisOpts.doAnalysis) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
     }
-
 }
 
 void printClusteredNetlistStats() {
