@@ -70,6 +70,8 @@
 #include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
+#include "constraints_load.h"
+
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
@@ -2064,6 +2066,26 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     //Successfully create cluster
     auto block_type = clb_nlist->block_type(clb_index);
     num_used_type_instances[block_type]++;
+
+    /*Access the constraints info from context*/
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+
+	VprConstraints ctx_constraints = floorplanning_ctx.constraints;
+
+    /*determine whether seed atom belongs to a partition*/
+	PartitionId partid;
+	partid = ctx_constraints.get_atom_partition(root_atom);
+
+	/*if the seed atom does not belong to a partition, it is unconstrained, so the cluster will have an empty PartitionRegion
+	 *if there is a constraint,set cluster PartitionRegion to same in the vector map of the clusters in the constraints context
+	 */
+	if (partid == PartitionId::INVALID()) {
+		PartitionRegion empty_pr;
+		floorplanning_ctx.clb_constraints.insert({clb_index, empty_pr});
+	} else {
+		PartitionRegion pr = ctx_constraints.get_partition_pr(partid);
+		floorplanning_ctx.clb_constraints.insert({clb_index, pr});
+	}
 
     /* Expand FPGA size if needed */
     // Check used type instances against the possible equivalent physical locations

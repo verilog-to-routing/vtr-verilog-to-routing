@@ -377,8 +377,8 @@ struct RoutingContext : public Context {
  * to certain regions on the chip.
  */
 struct FloorplanningContext : public Context {
-    ///@brief Atom netlist
     VprConstraints constraints;
+    std::unordered_map<ClusterBlockId, PartitionRegion> clb_constraints;
 };
 
 /**

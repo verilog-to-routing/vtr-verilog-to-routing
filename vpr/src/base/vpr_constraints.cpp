@@ -55,3 +55,9 @@ int VprConstraints::get_num_partitions() {
 void VprConstraints::set_num_partitions(int num_parts) {
     num_partitions = num_parts;
 }
+
+PartitionRegion VprConstraints::get_partition_pr(PartitionId part_id) {
+	PartitionRegion pr;
+	pr = partitions[part_id].get_part_region();
+	return pr;
+}
