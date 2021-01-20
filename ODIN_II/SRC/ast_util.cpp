@@ -931,6 +931,7 @@ ast_node_t* ast_node_copy(ast_node_t* node) {
     if (node->types.variable.initial_value)
         node_copy->types.variable.initial_value = new VNumber((*node->types.variable.initial_value));
 
+    node_copy->types.variable.signedness = node->types.variable.signedness;
     node_copy->types.identifier = vtr::strdup(node->types.identifier);
     node_copy->identifier_node = ast_node_deep_copy(node_copy->identifier_node);
     node_copy->children = NULL;
