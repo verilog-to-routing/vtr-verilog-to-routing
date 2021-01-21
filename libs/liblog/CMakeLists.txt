@@ -21,4 +21,4 @@ set_target_properties(liblog PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 add_executable(test_log ${EXEC_SOURCES})
 target_link_libraries(test_log liblog)
 
-install(TARGETS test_log liblog DESTINATION bin)
+install(TARGETS liblog DESTINATION bin)
