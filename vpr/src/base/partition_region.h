@@ -25,6 +25,11 @@ class PartitionRegion {
     std::vector<Region> get_partition_region();
 
     /**
+     * @brief Check if the PartitionRegion is empty (ie. holds no regions in its vector)
+     */
+    bool empty();
+
+    /**
      * @brief Global friend function that returns the intersection of two PartitionRegions
      *
      *   @param pr1     One of the PartitionRegions to be intersected

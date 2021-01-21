@@ -8,6 +8,14 @@ std::vector<Region> PartitionRegion::get_partition_region() {
     return partition_region;
 }
 
+bool PartitionRegion::empty() {
+	if (partition_region.size() == 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2) {
     /**for N regions in part_region and M in the calling object you can get anywhere from
      * 0 to M*N regions in the resulting vector. Only intersection regions with non-zero area rectangles and
