@@ -189,7 +189,7 @@ endforeach()
 #Supress IPO link warnings if IPO is enabled
 get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)
 if (ODIN_USES_IPO)
-    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+    set_property(TARGET odin_II APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
 #add strict odin compiler flags, if set
