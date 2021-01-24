@@ -39,6 +39,8 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
     VTR_LOG("\n");
 
+    VTR_LOG("VPR was run with the following options:\n\n");
+
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
     if (vpr_setup.PackerOpts.doPacking) {

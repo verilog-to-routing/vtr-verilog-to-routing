@@ -114,6 +114,7 @@ void SetupVPR(const t_options* Options,
                     device_ctx.physical_tile_types,
                     device_ctx.logical_block_types);
     }
+    VTR_LOG("\n");
 
     *user_models = Arch->models;
     *library_models = Arch->model_library;
