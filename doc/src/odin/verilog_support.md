@@ -153,13 +153,12 @@
 
 ### C Functions support
 
-| Supported Functions|
-|--------------------|
-|$clog2              |
-|$unsigned           |
-|$signed             |
-|$finish             |
-|$display            |
+| Supported Functions| Unsupported Functions|
+|--------------------|----------------------|
+|$clog2              | $unsigned            |
+|                    | $signed              |
+|                    | $finish              |
+|                    | $display             |
 
 ### Verilog Synthesizable preprocessor Keywords Support
 
