@@ -9,11 +9,11 @@ std::vector<Region> PartitionRegion::get_partition_region() {
 }
 
 bool PartitionRegion::empty() {
-	if (partition_region.size() == 0) {
-		return true;
-	} else {
-		return false;
-	}
+    if (partition_region.size() == 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2) {
