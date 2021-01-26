@@ -114,6 +114,20 @@ struct t_options {
     argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
     argparse::ArgValue<bool> enable_analytic_placer;
+    argparse::ArgValue<std::vector<float>> place_static_move_prob;
+    argparse::ArgValue<std::vector<float>> place_static_notiming_move_prob;
+    argparse::ArgValue<int> place_high_fanout_net;
+
+    argparse::ArgValue<bool> RL_agent_placement;
+    argparse::ArgValue<bool> place_agent_multistate;
+    argparse::ArgValue<bool> place_checkpointing;
+    argparse::ArgValue<float> place_agent_epsilon;
+    argparse::ArgValue<float> place_agent_gamma;
+    argparse::ArgValue<float> place_dm_rlim;
+    argparse::ArgValue<e_agent_algorithm> place_agent_algorithm;
+    argparse::ArgValue<std::string> place_reward_fun;
+    //argparse::ArgValue<int> place_timing_cost_func;
+    argparse::ArgValue<float> place_crit_limit;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;

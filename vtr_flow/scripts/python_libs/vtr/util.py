@@ -28,22 +28,22 @@ class RawDefaultHelpFormatter(
 # pylint: disable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
 class CommandRunner:
     """
-        An object for running system commands with timeouts, memory limits and varying verbose-ness
+    An object for running system commands with timeouts, memory limits and varying verbose-ness
 
-        Arguments
-        =========
-            timeout_sec: maximum walk-clock-time of the command in seconds. Default: None
-            max_memory_mb: maximum memory usage of the command in megabytes (if supported).
-                Default: None
-            track_memory: Whether to track usage of the command (disabled if not supported).
-                Default: True
-            verbose_error: Produce more verbose output if the command fails.
-                Default: Equal to verbose
-            verbose: Produce more verbose output. Default: False
-            echo_cmd: Echo the command before running. Default: Equal to verbose
-            indent: The string specifying a single indent (used in verbose mode)
-            valgrind: Indicates if commands should be run with valgrind
-        """
+    Arguments
+    =========
+        timeout_sec: maximum walk-clock-time of the command in seconds. Default: None
+        max_memory_mb: maximum memory usage of the command in megabytes (if supported).
+            Default: None
+        track_memory: Whether to track usage of the command (disabled if not supported).
+            Default: True
+        verbose_error: Produce more verbose output if the command fails.
+            Default: Equal to verbose
+        verbose: Produce more verbose output. Default: False
+        echo_cmd: Echo the command before running. Default: Equal to verbose
+        indent: The string specifying a single indent (used in verbose mode)
+        valgrind: Indicates if commands should be run with valgrind
+    """
 
     def __init__(
         self,
@@ -278,7 +278,7 @@ def write_tab_delimitted_csv(filepath, rows):
 
 def load_tab_delimited_csv(filepath):
     """
-        loads a tab delimted csv as a list of ordered dictionaries
+    loads a tab delimted csv as a list of ordered dictionaries
     """
     data = []
     with open(filepath) as file:
@@ -307,12 +307,14 @@ def print_verbose(min_verbosity, curr_verbosity, string, endl=True):
         if endl:
             print(string)
         else:
-            print(string,)
+            print(
+                string,
+            )
 
 
 def file_replace(filename, search_replace_dict):
     """
-        searches file for specified values and replaces them with specified values.
+    searches file for specified values and replaces them with specified values.
     """
     lines = []
     with open(filename, "r") as file:
@@ -406,9 +408,9 @@ def load_config_lines(filepath, allow_includes=True):
 
 def verify_file(file, file_type, should_exist=True):
     """
-        Verifies that the file is a Pathlib object and if not makes it one.
-        Ensures that the file exists by default.
-        This makes it possible to pass files into the various files as strings or as pathlib objects
+    Verifies that the file is a Pathlib object and if not makes it one.
+    Ensures that the file exists by default.
+    This makes it possible to pass files into the various files as strings or as pathlib objects
     """
     if not isinstance(file, Path):
         file = Path(file)
@@ -422,14 +424,14 @@ def verify_file(file, file_type, should_exist=True):
 
 def format_elapsed_time(time_delta):
     """
-        formats a time into desired string format
+    formats a time into desired string format
     """
     return "%.2f seconds" % time_delta.total_seconds()
 
 
 def argparse_str2bool(str_val):
     """
-        parses a string boolean to a boolean
+    parses a string boolean to a boolean
     """
     str_val = str_val.lower()
     if str_val in ["yes", "on", "true", "1"]:

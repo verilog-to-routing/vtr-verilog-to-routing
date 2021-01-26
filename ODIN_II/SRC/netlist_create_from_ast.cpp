@@ -3523,12 +3523,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                             add_pin_to_signal_list(return_list, input_lists[0]->pins[i]);
                             input_lists[0]->pins[i]->node = NULL;
                         } else {
-                            npin_t* extension_pin = NULL;
-                            if (op->children[1]->types.variable.signedness == SIGNED) {
-                                extension_pin = copy_input_npin(input_lists[0]->pins[pad_bit]);
-                            } else {
-                                extension_pin = get_zero_pin(verilog_netlist);
-                            }
+                            npin_t* extension_pin = get_zero_pin(verilog_netlist);
 
                             add_pin_to_signal_list(return_list, extension_pin);
                             extension_pin->node = NULL;
@@ -3538,10 +3533,6 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                 }
                 case SR: //fallthrough
                 case ASR: {
-                    // This IF condition has been set to prevent showing error for SR
-                    if (operation_node->type == ASR)
-                        error_message(NETLIST, op->loc, "%s", "TODO: test that ASR works with signed number\n");
-
                     for (i = shift_size; i < input_port_width; i++) {
                         // connect higher output pin to lower input pin
                         if (i - shift_size < output_port_width) {
@@ -3553,7 +3544,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                     /* Extend pad_bit to outputs that don't have inputs connected */
                     for (i = output_port_width - 1; i >= input_port_width - shift_size; i--) {
                         npin_t* extension_pin = NULL;
-                        if (op->children[1]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
+                        if (op->children[0]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
                             extension_pin = copy_input_npin(input_lists[0]->pins[pad_bit]);
                         } else {
                             extension_pin = get_zero_pin(verilog_netlist);

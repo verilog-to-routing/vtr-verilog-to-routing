@@ -13,6 +13,7 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
+#include "placer_globals.h"
 #include "net_delay.h"
 #include "timing_place_lookup.h"
 #include "timing_place.h"
@@ -36,7 +37,7 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, cons
  *
  * If the criticality exponent has changed, we also need to update from scratch.
  */
-void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent) {
+void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params) {
     /* If update is not enabled, exit the routine. */
     if (!update_enabled) {
         /* re-computation is required on the next iteration */
@@ -45,14 +46,17 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
     }
 
     /* Determine what pins need updating */
-    if (!recompute_required && crit_exponent == last_crit_exponent_) {
+    if (!recompute_required && crit_params.crit_exponent == last_crit_exponent_) {
         incr_update_criticalities(timing_info);
     } else {
         recompute_criticalities();
 
         /* Record new criticality exponent */
-        last_crit_exponent_ = crit_exponent;
+        last_crit_exponent_ = crit_params.crit_exponent;
     }
+
+    ClusterBlockId crit_block;
+    auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     /* Performs a 1-to-1 mapping from criticality to timing_place_crit_.
      * For every pin on every net (or, equivalently, for every tedge ending
@@ -65,15 +69,39 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
 
         float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, clb_pin);
 
+        float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
+        /*
+         * Update the highly critical pins container
+         *
+         * If the old criticality < limit and the new criticality > limit --> add this pin to the highly critical pins
+         * If the old criticality > limit and the new criticality < limit --> remove this pin from the highly critical pins
+         */
+        if (!first_time_update_criticality) {
+            if (new_crit > crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_params.crit_limit) {
+                place_move_ctx.highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
+            } else if (new_crit < crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] > crit_params.crit_limit) {
+                place_move_ctx.highly_crit_pins.erase(std::remove(place_move_ctx.highly_crit_pins.begin(), place_move_ctx.highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)), place_move_ctx.highly_crit_pins.end());
+            }
+        } else {
+            if (new_crit > crit_params.crit_limit)
+                place_move_ctx.highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
+        }
+
         /* The placer likes a great deal of contrast between criticalities.
          * Since path criticality varies much more than timing, we "sharpen" timing
          * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-        timing_place_crit_[clb_net][pin_index_in_net] = pow(clb_pin_crit, crit_exponent);
+        timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
     }
 
     /* Criticalities updated. In sync with timing info.   */
     /* Can be incrementally updated on the next iteration */
     recompute_required = false;
+
+    first_time_update_criticality = false;
+}
+
+void PlacerCriticalities::set_recompute_required() {
+    recompute_required = true;
 }
 
 /**
