@@ -339,10 +339,14 @@ def run(
 
 
 def delete_intermediate_files(
-    next_stage_netlist, post_ace_activity_file, keep_result_files, temp_dir, power_tech_file,
+    next_stage_netlist,
+    post_ace_activity_file,
+    keep_result_files,
+    temp_dir,
+    power_tech_file,
 ):
     """
-        delete intermediate files
+    delete intermediate files
     """
     next_stage_netlist.unlink()
     exts = (".xml", ".sdf", ".v")
