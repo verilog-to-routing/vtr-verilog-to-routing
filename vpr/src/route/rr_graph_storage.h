@@ -218,6 +218,12 @@ class t_rr_graph_storage {
      *   // See if the node appears ONLY on 1 side
      *   if (1 == node_sides(id).count()) {
      *   }
+     *
+     * TODO: This function may be deprecated, depending its utilization
+     *       in client functions, router, GUI etc. It offers a shortcut
+     *       for developers who can check what sides a node appear on.
+     *       However, such query can be done outside RRGraph by iterating
+     *       over all the sides and using API is_node_on_specific_side()
      */
     std::bitset<NUM_SIDES> node_sides(RRNodeId id) const {
         return get_node_sides(
