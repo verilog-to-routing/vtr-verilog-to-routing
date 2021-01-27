@@ -12,9 +12,13 @@
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 
+/******************** Subroutine declarations ********************************/
+
 static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors);
 static void free_pb_graph(t_pb_graph_node* pb_graph_node);
 static void free_pb_type(t_pb_type* pb_type);
+
+/******************** End Subroutine declarations ****************************/
 
 InstPort::InstPort(std::string str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");
@@ -34,9 +38,9 @@ InstPort::InstPort(std::string str) {
 }
 
 InstPort::name_index InstPort::parse_name_index(const std::string& str) {
-    auto open_bracket_pos = str.find("[");
-    auto close_bracket_pos = str.find("]");
-    auto colon_pos = str.find(":");
+    auto open_bracket_pos = str.find('[');
+    auto close_bracket_pos = str.find(']');
+    auto colon_pos = str.find(':');
 
     //Parse checks
     if (open_bracket_pos == std::string::npos && close_bracket_pos != std::string::npos) {

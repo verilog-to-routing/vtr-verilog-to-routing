@@ -64,7 +64,7 @@ def drop_entries_on_failure(values):
 
 def patch_logs(values):
     """
-    patch the string logs 
+    patch the string logs
     """
     sub_re = {
         # strip username from the logs

@@ -25,7 +25,7 @@ static constexpr bool INCR_COMP_TD_COSTS = true;
  * Perform first time update on the timing graph, and initialize the values within
  * PlacerCriticalities, PlacerSetupSlacks, and connection_timing_cost.
  */
-void initialize_timing_info(float crit_exponent,
+void initialize_timing_info(const PlaceCritParams& crit_params,
                             const PlaceDelayModel* delay_model,
                             PlacerCriticalities* criticalities,
                             PlacerSetupSlacks* setup_slacks,
@@ -45,7 +45,7 @@ void initialize_timing_info(float crit_exponent,
     }
 
     //Perform first time update for all timing related classes
-    perform_full_timing_update(crit_exponent,
+    perform_full_timing_update(crit_params,
                                delay_model,
                                criticalities,
                                setup_slacks,
@@ -73,7 +73,7 @@ void initialize_timing_info(float crit_exponent,
  * Updates: SetupTimingInfo, PlacerCriticalities, PlacerSetupSlacks,
  *          timing_cost, connection_setup_slack.
  */
-void perform_full_timing_update(float crit_exponent,
+void perform_full_timing_update(const PlaceCritParams& crit_params,
                                 const PlaceDelayModel* delay_model,
                                 PlacerCriticalities* criticalities,
                                 PlacerSetupSlacks* setup_slacks,
@@ -83,7 +83,7 @@ void perform_full_timing_update(float crit_exponent,
     /* Update all timing related classes. */
     criticalities->enable_update();
     setup_slacks->enable_update();
-    update_timing_classes(crit_exponent,
+    update_timing_classes(crit_params,
                           timing_info,
                           criticalities,
                           setup_slacks,
@@ -123,7 +123,7 @@ void perform_full_timing_update(float crit_exponent,
  * the ClusteredPinTimingInvalidator to allow incremental STA update. These
  * changed connection delays are a direct result of moved blocks in try_swap().
  */
-void update_timing_classes(float crit_exponent,
+void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
@@ -132,7 +132,7 @@ void update_timing_classes(float crit_exponent,
     timing_info->update();
 
     /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
-    criticalities->update_criticalities(timing_info, crit_exponent);
+    criticalities->update_criticalities(timing_info, crit_params);
 
     /* Update the placer's raw setup slacks. */
     setup_slacks->update_setup_slacks(timing_info);

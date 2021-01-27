@@ -47,3 +47,26 @@ echo "========================================"
 export VPR_NUM_WORKERS=1
 ./run_reg_test.py $VTR_TEST $VTR_TEST_OPTIONS -j$NUM_CORES
 kill $MONITOR
+
+echo "========================================"
+echo "Cleaning benchmarks files"
+echo "========================================"
+# Removing Symbiflow archs and benchmarks
+find vtr_flow/arch/symbiflow/ -type f -not -name 'README.*' -delete
+find vtr_flow/benchmarks/symbiflow/ -type f -not -name 'README.*' -delete
+
+# Removing ISPD benchmarks
+find vtr_flow/benchmarks/ispd_blif/ -type f -not -name 'README.*' -delete
+
+# Removing Titan benchmarks
+find vtr_flow/benchmarks/titan_blif/ -type f -not -name 'README.*' -delete
+
+# Removing ISPD, Titan and Symbiflow tarballs
+find . -type f -regex ".*\.tar\.\(gz\|xz\)" -delete
+
+# Make sure working directory doesn't exceed disk space limit!
+echo "Working directory size: $(du -sh)"
+if [[ $(du -s | cut -d $'\t' -f 1) -gt $(expr 1024 \* 1024 \* 90) ]]; then
+    echo "Working directory too large!"
+    exit 1
+fi

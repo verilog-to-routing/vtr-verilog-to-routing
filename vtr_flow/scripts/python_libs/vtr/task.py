@@ -18,7 +18,7 @@ from vtr import (
     paths,
 )
 
-# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals,too-few-public-methods
+# pylint: disable=too-many-instance-attributes, too-many-arguments, too-many-locals, too-few-public-methods
 class TaskConfig:
     """
     An object representing a task config file
@@ -40,9 +40,12 @@ class TaskConfig:
         script_params_list_add=None,
         pass_requirements_file=None,
         sdc_dir=None,
+        place_constr_dir=None,
         qor_parse_file=None,
         cmos_tech_behavior=None,
         pad_file=None,
+        additional_files=None,
+        additional_files_list_add=None,
     ):
         self.task_name = task_name
         self.config_dir = config_dir
@@ -58,9 +61,12 @@ class TaskConfig:
         self.script_params_list_add = script_params_list_add
         self.pass_requirements_file = pass_requirements_file
         self.sdc_dir = sdc_dir
+        self.place_constr_dir = place_constr_dir
         self.qor_parse_file = qor_parse_file
         self.cmos_tech_behavior = cmos_tech_behavior
         self.pad_file = pad_file
+        self.additional_files = additional_files
+        self.additional_files_list_add = additional_files_list_add
 
 
 # pylint: enable=too-few-public-methods
@@ -169,12 +175,14 @@ def load_task_config(config_file):
         [
             "circuits_dir",
             "archs_dir",
+            "additional_files",
             "parse_file",
             "script_path",
             "script_params",
             "script_params_common",
             "pass_requirements_file",
             "sdc_dir",
+            "place_constr_dir",
             "qor_parse_file",
             "cmos_tech_behavior",
             "pad_file",
@@ -229,7 +237,7 @@ def load_task_config(config_file):
     if "script_params_common" in key_values:
         key_values["script_params_common"] = split(key_values["script_params_common"])
 
-    check_required_feilds(config_file, required_keys, key_values)
+    check_required_fields(config_file, required_keys, key_values)
 
     # Useful meta-data about the config
     config_dir = str(Path(config_file).parent)
@@ -240,7 +248,7 @@ def load_task_config(config_file):
     return TaskConfig(**key_values)
 
 
-def check_required_feilds(config_file, required_keys, key_values):
+def check_required_fields(config_file, required_keys, key_values):
     """
     Check that all required fields were specified
     """
@@ -284,6 +292,7 @@ def find_longest_task_description(configs):
     return longest
 
 
+# pylint: disable=too-many-branches
 def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run=False):
     """
     Create the jobs to be executed depending on the configs.
@@ -306,6 +315,14 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
 
             # Collect any extra script params from the config file
             cmd = [abs_circuit_filepath, abs_arch_filepath]
+
+            # Check if additional architectural data files are present
+            if config.additional_files_list_add:
+                for additional_file in config.additional_files_list_add:
+                    flag, file_name = additional_file.split(",")
+
+                    cmd += [flag]
+                    cmd += [resolve_vtr_source_file(config, file_name, config.arch_dir)]
 
             if hasattr(args, "show_failures") and args.show_failures:
                 cmd += ["-show_failures"]
@@ -331,10 +348,18 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
             )
 
             if config.sdc_dir:
-                cmd += [
-                    "-sdc_file",
-                    "{}/{}.sdc".format(config.sdc_dir, Path(circuit).stem),
-                ]
+                sdc_name = "{}.sdc".format(Path(circuit).stem)
+                sdc_file = resolve_vtr_source_file(config, sdc_name, config.sdc_dir)
+
+                cmd += ["-sdc_file", "{}".format(sdc_file)]
+
+            if config.place_constr_dir:
+                place_constr_name = "{}.place".format(Path(circuit).stem)
+                place_constr_file = resolve_vtr_source_file(
+                    config, place_constr_name, config.place_constr_dir
+                )
+
+                cmd += ["--fix_clusters", "{}".format(place_constr_file)]
 
             parse_cmd = None
             second_parse_cmd = None
@@ -342,7 +367,9 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
             if config.parse_file:
                 parse_cmd = [
                     resolve_vtr_source_file(
-                        config, config.parse_file, str(PurePath("parse").joinpath("parse_config")),
+                        config,
+                        config.parse_file,
+                        str(PurePath("parse").joinpath("parse_config")),
                     )
                 ]
 

@@ -22,7 +22,7 @@ BASIC_VERBOSITY = 1
 # pylint: disable=too-few-public-methods
 class VtrStageArgparseAction(argparse.Action):
     """
-        Class to parse the VTR stages to begin and end at.
+    Class to parse the VTR stages to begin and end at.
     """
 
     def __call__(self, parser, namespace, value, option_string=None):
@@ -43,7 +43,7 @@ class VtrStageArgparseAction(argparse.Action):
 
 def vtr_command_argparser(prog=None):
     """
-        The VTR command arg parser
+    The VTR command arg parser
     """
     usage = "%(prog)s circuit_file architecture_file [options]"
     description = textwrap.dedent(
@@ -314,6 +314,12 @@ def vtr_command_argparser(prog=None):
         type=int,
         help="Tells ODIN II the minimum adder size that should be implemented using hard adder.",
     )
+    odin.add_argument(
+        "-odin_xml",
+        default=None,
+        dest="odin_config",
+        help="Supplies Odin with a custom config file for optimizations.",
+    )
     #
     # VPR arguments
     #
@@ -327,7 +333,9 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR the amount of iterations allowed to obtain the critical path.",
     )
     vpr.add_argument(
-        "-fix_pins", type=str, help="Controls how the placer handles I/O pads during placement.",
+        "-fix_pins",
+        type=str,
+        help="Controls how the placer handles I/O pads during placement.",
     )
     vpr.add_argument(
         "-relax_w_factor",
@@ -354,7 +362,10 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR to run final analysis stage.",
     )
     vpr.add_argument(
-        "-check_place", default=False, action="store_true", help="Tells VPR to run routing stage",
+        "-check_place",
+        default=False,
+        action="store_true",
+        help="Tells VPR to run routing stage",
     )
     vpr.add_argument(
         "-sdc_file", default=None, type=str, help="Path to SDC timing constraints file."
@@ -371,7 +382,7 @@ def vtr_command_argparser(prog=None):
 
 def vtr_command_main(arg_list, prog=None):
     """
-        Running VTR with the specified arguemnts.
+    Running VTR with the specified arguemnts.
     """
     start = datetime.now()
     # Load the arguments
@@ -421,6 +432,7 @@ def vtr_command_main(arg_list, prog=None):
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
             min_hard_adder_size=args.min_hard_adder_size,
+            odin_config=args.odin_config,
             check_equivalent=args.check_equivalent,
             check_incremental_sta_consistency=args.check_incremental_sta_consistency,
             use_old_abc_script=args.use_old_abc_script,
@@ -516,7 +528,7 @@ def process_unknown_args(unknown_args):
 
 def process_abc_args(args):
     """
-        Finds arguments needed in the ABC stage of the flow
+    Finds arguments needed in the ABC stage of the flow
     """
     abc_args = OrderedDict()
     if args.iterative_bb:
@@ -538,7 +550,7 @@ def process_abc_args(args):
 
 def process_odin_args(args):
     """
-        Finds arguments needed in the ODIN stage of the flow
+    Finds arguments needed in the ODIN stage of the flow
     """
     odin_args = OrderedDict()
     odin_args["adder_type"] = args.adder_type
@@ -557,7 +569,7 @@ def process_odin_args(args):
 
 def process_vpr_args(args, prog, temp_dir, vpr_args):
     """
-        Finds arguments needed in the VPR stage of the flow
+    Finds arguments needed in the VPR stage of the flow
     """
     if args.crit_path_router_iterations:
         if "max_router_iterations" not in vpr_args:
@@ -575,7 +587,7 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
 
 def get_sdc_file(sdc_file, prog):
     """
-        takes in the sdc_file and returns a path to that file if it exists.
+    takes in the sdc_file and returns a path to that file if it exists.
     """
     if not Path(sdc_file).exists():
         if sdc_file.startswith("/"):
@@ -588,7 +600,7 @@ def get_sdc_file(sdc_file, prog):
 
 def except_vtr_error(error, expect_fail, verbose):
     """
-        Handle vtr exceptions
+    Handle vtr exceptions
     """
     error_status = None
     actual_error = None

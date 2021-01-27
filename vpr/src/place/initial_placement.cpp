@@ -5,7 +5,7 @@
 #include "globals.h"
 #include "read_place.h"
 #include "initial_placement.h"
-//#include "vpr_utils.h"
+#include "vpr_utils.h"
 #include "place_util.h"
 
 /* The maximum number of tries when trying to place a carry chain at a    *
@@ -14,9 +14,6 @@
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
 
 static std::vector<std::vector<std::vector<t_pl_loc>>> legal_pos; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1][0..num_sub_tiles - 1] */
-
-// initialize usage to 0 and blockID to EMPTY_BLOCK_ID for all place_ctx.grid_block locations
-static void zero_initialize_grid_blocks();
 
 static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles);
 
@@ -29,30 +26,6 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
                                                     std::vector<std::vector<int>>& free_locations);
-
-static void zero_initialize_grid_blocks() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    /* Initialize all occupancy to zero. */
-
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            place_ctx.grid_blocks[i][j].usage = 0;
-            auto tile = device_ctx.grid[i][j].type;
-
-            for (auto sub_tile : tile->sub_tiles) {
-                auto capacity = sub_tile.capacity;
-
-                for (int k = 0; k < capacity.total(); k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
-                        place_ctx.grid_blocks[i][j].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
-                    }
-                }
-            }
-        }
-    }
-}
 
 static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles) {
     for (int sub_tile : possible_sub_tiles) {
@@ -312,7 +285,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
         place_ctx.block_locs[blk_id].loc = to;
 
         //Mark IOs as fixed if specifying a (fixed) random placement
-        if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == RANDOM) {
+        if (is_io_type(pick_physical_type(logical_block)) && pad_loc_type == RANDOM) {
             place_ctx.block_locs[blk_id].is_fixed = true;
         }
 

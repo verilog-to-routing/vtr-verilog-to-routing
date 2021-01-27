@@ -573,6 +573,18 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
     PlacerOpts->timing_update_type = Options.timing_update_type;
     PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
+    PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
+    PlacerOpts->place_static_notiming_move_prob = Options.place_static_notiming_move_prob;
+    PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
+    PlacerOpts->RL_agent_placement = Options.RL_agent_placement;
+    PlacerOpts->place_agent_multistate = Options.place_agent_multistate;
+    PlacerOpts->place_checkpointing = Options.place_checkpointing;
+    PlacerOpts->place_agent_epsilon = Options.place_agent_epsilon;
+    PlacerOpts->place_agent_gamma = Options.place_agent_gamma;
+    PlacerOpts->place_dm_rlim = Options.place_dm_rlim;
+    PlacerOpts->place_reward_fun = Options.place_reward_fun;
+    PlacerOpts->place_crit_limit = Options.place_crit_limit;
+    PlacerOpts->place_agent_algorithm = Options.place_agent_algorithm;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

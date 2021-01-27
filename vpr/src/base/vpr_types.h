@@ -491,6 +491,11 @@ enum class e_timing_update_type {
  * Placement and routing data types
  ****************************************************************************/
 
+/* Values of number of placement available move types */
+#define NUM_PL_MOVE_TYPES 7
+#define NUM_PL_NONTIMING_MOVE_TYPES 3
+#define NUM_PL_1ST_STATE_MOVE_TYPES 4
+
 /* Timing data structures end */
 enum sched_type {
     AUTO_SCHED,
@@ -921,6 +926,18 @@ enum e_pad_loc_type {
     RANDOM
 };
 
+/**
+ * @brief Used to determine the RL agent's algorithm
+ *
+ * This algorithm controls the exploration-exploitation and how we select the new action
+ * Currently, the supported algorithms are: epsilon greedy and softmax
+ * For more details, check simpleRL_move_generator.cpp
+ */
+enum e_agent_algorithm {
+    E_GREEDY,
+    SOFTMAX
+};
+
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
     CIRCUIT,       ///<Effort scales based on circuit size only
@@ -1034,6 +1051,19 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
+    std::vector<float> place_static_move_prob;
+    std::vector<float> place_static_notiming_move_prob;
+    bool RL_agent_placement;
+    bool place_agent_multistate;
+    bool place_checkpointing;
+    int place_high_fanout_net;
+    e_agent_algorithm place_agent_algorithm;
+    float place_agent_epsilon;
+    float place_agent_gamma;
+    float place_dm_rlim;
+    //int place_timing_cost_func;
+    std::string place_reward_fun;
+    float place_crit_limit;
 
     /**
      * @brief Tile types that should be used during delay sampling.

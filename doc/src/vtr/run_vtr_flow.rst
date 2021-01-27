@@ -173,3 +173,13 @@ Detailed Command-line Options
     Tells ODIN II to connect the first cin in an adder/subtractor chain
     to a global gnd/vdd net. Instead of creating a dummy adder to generate
     the input signal of the first cin port of the chain.
+
+.. option:: -odin_xml <path_to_custom_xml>
+
+    Tells VTR flow to use a custom ODIN II configuration value. The default
+    behavior is to use the vtr_flow/misc/basic_odin_config_split.xml. 
+    Instead, an alternative config file might be supplied; compare the 
+    default and vtr_flow/misc/custom_odin_config_no_mults.xml for usage 
+    scenarios. This option is needed for running the entire VTR flow with 
+    additional parameters for ODIN II that are provided from within the 
+    .xml file.

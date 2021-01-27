@@ -4,8 +4,12 @@
  *        placement and utility functions used by the placer.
  */
 
-#pragma once
+#ifndef PLACE_UTIL_H
+#define PLACE_UTIL_H
+#include <string>
 #include "vpr_types.h"
+#include "vtr_util.h"
+#include "vtr_vector_map.h"
 
 /**
  * @brief Data structure that stores different cost values in the placer.
@@ -49,6 +53,7 @@ class t_placer_costs {
   public: //Constructor
     t_placer_costs(t_place_algorithm algo)
         : place_algorithm(algo) {}
+    t_placer_costs() {}
 
   public: //Mutator
     void update_norm_factors();
@@ -205,5 +210,12 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
 ///@brief Returns the standard deviation of data set x.
 double get_std_dev(int n, double sum_x_squared, double av_x);
 
-///@brief Builds legal_pos structure
+///@brief Initialize usage to 0 and blockID to EMPTY_BLOCK_ID for all place_ctx.grid_block locations
+void zero_initialize_grid_blocks();
+
+///@brief a utility to calculate grid_blocks given the updated block_locs (used in restore_checkpoint)
+void load_grid_blocks_from_block_locs();
+
+///@brief Builds legal_pos structure. legal_pos[type->index] is an array that gives every legal value of (x,y,z) that can accommodate a block.
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
+#endif

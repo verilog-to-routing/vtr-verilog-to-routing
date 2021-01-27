@@ -40,7 +40,7 @@ def main():
 def plot_results(param_names, param_options, results, params):
     """Create a directory based on key parameters and date and plot results vs iteration
 
-	Each of the parameter in results will receive its own plot, drawn by matplotlib"""
+    Each of the parameter in results will receive its own plot, drawn by matplotlib"""
 
     # circuit/run_num where run_num is one before the existing one
     directory = params.circuit
@@ -155,7 +155,16 @@ def annotate_last(lx, ly):
     if type(ly) == list:
         return
     plt.plot([lx, lx], [0, ly], linestyle="--")
-    plt.scatter([lx,], [ly,], 50, color="black")
+    plt.scatter(
+        [
+            lx,
+        ],
+        [
+            ly,
+        ],
+        50,
+        color="black",
+    )
 
     plt.annotate("({},{})".format(lx, ly), xy=(lx, ly), xytext=(0, 15), textcoords="offset points")
 
@@ -187,10 +196,10 @@ def export_results_to_csv(param_names, results, params):
 
 
 def parse_output(param_names, params):
-    """Return a dictionary mapping iteration -> [params...] 
-	
-	The index of the params list corresponds to the index of param_names
-	assuming consecutively matched groups"""
+    """Return a dictionary mapping iteration -> [params...]
+
+    The index of the params list corresponds to the index of param_names
+    assuming consecutively matched groups"""
     if not os.path.isfile(params.output_file):
         print("output file does not exist! ({})".format(params.output_file))
         sys.exit(NO_OUTPUT)

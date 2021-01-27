@@ -77,7 +77,10 @@ def vtr_command_argparser(prog=None):
     )
 
     parser = argparse.ArgumentParser(
-        prog=prog, description=description, epilog=epilog, formatter_class=RawDefaultHelpFormatter,
+        prog=prog,
+        description=description,
+        epilog=epilog,
+        formatter_class=RawDefaultHelpFormatter,
     )
 
     #
@@ -129,7 +132,10 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
-        "-short_task_names", default=False, action="store_true", help="Output shorter task names.",
+        "-short_task_names",
+        default=False,
+        action="store_true",
+        help="Output shorter task names.",
     )
 
     parser.add_argument(
@@ -256,7 +262,10 @@ def vtr_command_main(arg_list, prog=None):
 
 
 def run_tasks(
-    args, configs, longest_name, longest_arch_circuit,
+    args,
+    configs,
+    longest_name,
+    longest_arch_circuit,
 ):
     """
     Runs the specified set of tasks (configs)
@@ -283,7 +292,8 @@ def run_tasks(
 
         if args.parse:
             print("\nParsing test results...")
-            print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
+            if len(args.list_file) > 0:
+                print("scripts/parse_vtr_task.py -l {}".format(args.list_file[0]))
             parse_tasks(configs, jobs)
 
         if args.create_golden:

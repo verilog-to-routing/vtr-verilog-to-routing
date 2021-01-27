@@ -82,34 +82,34 @@ def run(
 
     if odin_config is None:
         odin_base_config = str(paths.odin_cfg_path)
+    else:
+        odin_base_config = str(Path(odin_config).resolve())
 
-        # Copy the config file
-        odin_config = "odin_config.xml"
-        odin_config_full_path = str(temp_dir / odin_config)
-        shutil.copyfile(odin_base_config, odin_config_full_path)
+    # Copy the config file
+    odin_config = "odin_config.xml"
+    odin_config_full_path = str(temp_dir / odin_config)
+    shutil.copyfile(odin_base_config, odin_config_full_path)
 
-        # Update the config file
-        file_replace(
-            odin_config_full_path,
-            {
-                "XXX": circuit_file.name,
-                "YYY": architecture_file.name,
-                "ZZZ": output_netlist.name,
-                "PPP": determine_memory_addr_width(str(architecture_file)),
-                "MMM": min_hard_mult_size,
-                "AAA": min_hard_adder_size,
-            },
-        )
-    disable_odin_xml = False
-    if "disable_odin_xml" in odin_args:
-        disable_odin_xml = True
-        del odin_args["disable_odin_xml"]
+    # Update the config file
+    file_replace(
+        odin_config_full_path,
+        {
+            "XXX": circuit_file.name,
+            "YYY": architecture_file.name,
+            "ZZZ": output_netlist.name,
+            "PPP": determine_memory_addr_width(str(architecture_file)),
+            "MMM": min_hard_mult_size,
+            "AAA": min_hard_adder_size,
+        },
+    )
+
+    cmd = [odin_exec]
     use_odin_simulation = False
+
     if "use_odin_simulation" in odin_args:
         use_odin_simulation = True
         del odin_args["use_odin_simulation"]
 
-    cmd = [odin_exec, "-c", odin_config]
     for arg, value in odin_args.items():
         if isinstance(value, bool) and value:
             cmd += ["--" + arg]
@@ -117,8 +117,11 @@ def run(
             cmd += ["--" + arg, str(value)]
         else:
             pass
+
     cmd += ["-U0"]
-    if disable_odin_xml:
+
+    if "disable_odin_xml" in odin_args:
+        del odin_args["disable_odin_xml"]
         cmd += [
             "-a",
             architecture_file.name,
@@ -127,6 +130,8 @@ def run(
             "-o",
             output_netlist.name,
         ]
+    else:
+        cmd += ["-c", odin_config]
 
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
@@ -149,7 +154,10 @@ def run(
             "-U0",
         ]
         command_runner.run_system_command(
-            cmd, temp_dir=temp_dir, log_filename="sim_produce_vector.out", indent_depth=1,
+            cmd,
+            temp_dir=temp_dir,
+            log_filename="sim_produce_vector.out",
+            indent_depth=1,
         )
 
 
