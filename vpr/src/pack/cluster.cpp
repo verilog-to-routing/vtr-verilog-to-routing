@@ -311,6 +311,8 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
 
 static void check_clustering();
 
+static void echo_clusters(char* filename);
+
 static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>& blocks_checked);
 
 static void mark_all_molecules_valid(t_pack_molecule* molecule_head);
@@ -770,6 +772,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *****************************************************************/
     VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
     check_clustering();
+
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERS)) {
+        echo_clusters(getEchoFileName(E_ECHO_CLUSTERS));
+    }
 
     output_clustering(intra_lb_routing, packer_opts.global_clocks, is_clock, arch->architecture_id, packer_opts.output_file.c_str(), false);
 
@@ -1250,11 +1256,11 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
             block_pack_status = intersect_atom_cluster_part_regions(molecule->atom_block_ids[j], clb_index, verbosity);
 
             if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
-                VTR_LOG("\t\t\t From intersect: block failed floorplanning check \n");
+                //VTR_LOG("\t\t\t From intersect: block failed floorplanning check \n");
                 return block_pack_status;
-            } else if (block_pack_status == BLK_PASSED) {
-                VTR_LOG("\t\t\t From intersect: block passed \n");
-            }
+            } /*else if (block_pack_status == BLK_PASSED) {
+               * VTR_LOG("\t\t\t From intersect: block passed \n");
+               * }*/
         }
     }
 
@@ -2540,6 +2546,43 @@ static void check_clustering() {
                             atom_ctx.nlist.block_name(blk_id).c_str());
         }
     }
+}
+
+static void echo_clusters(char* filename) {
+    FILE* fp;
+    fp = vtr::fopen(filename, "w");
+
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "Clusters\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    std::map<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        cluster_atoms.insert({blk_id, std::vector<AtomBlockId>()});
+    }
+
+    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+
+        cluster_atoms[clb_index].push_back(atom_blk_id);
+    }
+
+    for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
+        fprintf(fp, "\tCluster Id: %d \n", i->first);
+        fprintf(fp, "\tAtoms in cluster: \n");
+
+        for (auto j = 0; j < i->second.size(); j++) {
+            AtomBlockId atom_id = i->second[j];
+            fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
+        }
+    }
+
+    fclose(fp);
 }
 
 /* TODO: May want to check that all atom blocks are actually reached */
