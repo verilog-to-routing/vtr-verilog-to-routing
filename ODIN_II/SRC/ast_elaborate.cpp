@@ -1860,27 +1860,33 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                 break;
             }
             case IDENTIFIERS: {
-                /* TODO: hierarchical reference checking... */
+                if (node->types.identifier) {
+                    // resolve the source identifier
+                    long sc_spot = sc_lookup_string(local_symbol_table_sc, node->types.identifier);
+                    char* id = vtr::strdup(node->types.identifier);
+                    ast_node_t* var_declare = resolve_hierarchical_name_reference(local_ref, id);
+                    vtr::free(id);
 
-                // 	if (sc_lookup_string(local_symbol_table_sc, node->types.identifier) == -1)
-                // 	{
-                // 		char *id = vtr::strdup(node->types.identifier);
-                // 		ast_node_t *var_declare = resolve_hierarchical_name_reference(local_ref, id);
-                // 		vtr::free(id);
+                    if (var_declare) {
+                        if (sc_spot == -1) {
+                            // resolve the local identifier with it's source identifier
+                            sc_spot = sc_add_string(local_symbol_table_sc, node->types.identifier);
+                            local_symbol_table_sc->data[sc_spot] = (void*)ast_node_deep_copy(var_declare);
+                        } else {
+                            /* add the source identifier contents if the 
+                             * local identifier has been already resolved */
+                            if (var_declare->types.variable.initial_value)
+                                node->types.variable.initial_value = new VNumber((*var_declare->types.variable.initial_value));
 
-                // 		if (var_declare)
-                // 		{
-                // 			long sc_spot = sc_add_string(local_symbol_table_sc, node->types.identifier);
-                // 			local_symbol_table_sc->data[sc_spot] = (void *)ast_node_deep_copy(var_declare);
-                // 		}
-                // 		else
-                // 		{
-                // 			/* error - symbol either doesn't exist or is not accessible to this scope */
-                // 			error_message(AST,  node->loc,
-                // 				"Missing declaration of this symbol %s\n", node->types.identifier);
-                // 		}
-                // 	}
-
+                            node->types.variable.signedness = var_declare->types.variable.signedness;
+                            node->identifier_node = ast_node_deep_copy(var_declare->identifier_node);
+                        }
+                    } else {
+                        /* error - symbol either doesn't exist or is not accessible to this scope */
+                        error_message(AST, node->loc,
+                                      "Missing declaration of this symbol %s\n", node->types.identifier);
+                    }
+                }
                 break;
             }
             default: {
