@@ -190,6 +190,11 @@ static t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
 static t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb,
                                                                            t_cluster_placement_stats* cluster_placement_stats_ptr);
 
+static void print_pack_status(int num_clb,
+                              int tot_num_molecules,
+                              int num_molecules_processed,
+                              std::map<t_logical_block_type_ptr, size_t> clb_types);
+
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                   t_pack_molecule* molecule,
@@ -396,7 +401,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *****************************************************************/
     VTR_ASSERT(packer_opts.packer_algorithm == PACK_GREEDY);
 
-    int num_molecules, blocks_since_last_analysis, num_clb,
+    int num_molecules, num_molecules_processed, blocks_since_last_analysis, num_clb,
         num_blocks_hill_added, max_cluster_size, cur_cluster_size,
         max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
         seedindex, savedseedindex /* index of next most timing critical block */,
@@ -572,11 +577,15 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               balance_block_type_utilization,
                               packer_opts.feasible_block_array_size);
 
-            VTR_LOGV(verbosity == 2,
-                     "Complex block %d: '%s' (%s) ", num_clb,
-                     cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                     cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            VTR_LOGV(verbosity == 2, "."); //Progress dot for seed-block
+            //initial molecule in cluster has been processed
+            num_molecules_processed++;
+
+            /*VTR_LOGV(verbosity == 2,
+             * "Complex block %d: '%s' (%s) ", num_clb,
+             * cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+             * cluster_ctx.clb_nlist.block_type(clb_index)->name);
+             * VTR_LOGV(verbosity == 2, ".");*/
+            //Progress dot for seed-block
             fflush(stdout);
 
             t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
@@ -673,8 +682,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                              next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
                     VTR_LOG("\n");
                 }
-                VTR_LOGV(verbosity == 2, ".");
+                //VTR_LOGV(verbosity == 2, ".");
                 fflush(stdout);
+
+                //Since molecule passed, update num_molecules_processed
+                num_molecules_processed++;
 
                 update_cluster_stats(next_molecule, clb_index,
                                      is_clock, //Set of all clocks
@@ -701,7 +713,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          packer_opts.pack_verbosity);
             }
 
-            VTR_LOGV(verbosity == 2, "\n");
+            //VTR_LOGV(verbosity == 2, "\n");
 
             if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
                 /* is_mode_conflict does not affect this stage. It is needed when trying to route the packed clusters.
@@ -745,8 +757,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                     }
                 }
                 auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
+
                 // update the data structure holding the LE counts
                 update_le_count(cur_pb, logic_block_type, le_pb_type, le_count);
+                print_pack_status(num_clb, num_molecules, num_molecules_processed, num_used_type_instances);
                 free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
@@ -801,6 +815,22 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     free(primitives_list);
 
     return num_used_type_instances;
+}
+
+static void print_pack_status(int num_clb,
+                              int tot_num_molecules,
+                              int num_molecules_processed,
+                              std::map<t_logical_block_type_ptr, size_t> clb_types) {
+    //print an update every 10 clusters
+    if (num_clb % 10 == 0) {
+        VTR_LOG("\nCreated %d clusters\n", num_clb);
+        VTR_LOG("Processed %d out of %d molecules\n", num_molecules_processed, tot_num_molecules);
+        VTR_LOG("Cluster types:\n");
+
+        for (auto i = clb_types.begin(); i != clb_types.end(); i++) {
+            VTR_LOG("\t %s: # blocks %zu \n", i->first->name, size_t(i->second));
+        }
+    }
 }
 
 /* Determine if atom block is in pb */
@@ -2213,7 +2243,9 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     if (partid != PartitionId::INVALID()) {
         PartitionRegion pr = ctx_constraints.get_partition_pr(partid);
         floorplanning_ctx.clb_constraints[clb_index] = pr;
-        VTR_LOG("Cluster's partition region was updated to match seed atom\n");
+        if (verbosity > 2) {
+            VTR_LOG("Cluster's partition region was updated to match seed atom\n");
+        }
     }
 
     /* Expand FPGA size if needed */
@@ -2573,10 +2605,12 @@ static void echo_clusters(char* filename) {
     }
 
     for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
-        fprintf(fp, "\tCluster Id: %d \n", i->first);
+        fprintf(fp, "\tCluster Id: %zu \n", size_t(i->first));
         fprintf(fp, "\tAtoms in cluster: \n");
 
-        for (auto j = 0; j < i->second.size(); j++) {
+        int num_atoms = i->second.size();
+
+        for (auto j = 0; j < num_atoms; j++) {
             AtomBlockId atom_id = i->second[j];
             fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
         }
