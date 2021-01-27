@@ -234,6 +234,9 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <!-- Note that 16 enum solutions are used here in order to
+       maintain back-compatibility with old rr_graph XML files
+       where the first four types are the same -->
   <xs:simpleType name="loc_side">
     <xs:restriction base="xs:string">
       <xs:enumeration value="LEFT"/>
