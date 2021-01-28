@@ -648,16 +648,6 @@ class t_rr_graph_storage {
                             rr_node_typename[node_data.type_]);
         }
         std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
-        if (1 < side_tt.count()) {
-            /* Throw a non-fatal error which is suppressable */
-            VTR_LOG_WARN("Try to get one side for RR node '%d':\n\ttype='%s'\txlow,ylow=(%d,%d)\n\txhigh,yhigh=(%d,%d), which has multiple sides!",
-                         size_t(id),
-                         rr_node_typename[node_data.type_],
-                         node_data.xlow_,
-                         node_data.ylow_,
-                         node_data.xhigh_,
-                         node_data.yhigh_);
-        }
         for (const e_side& side : SIDES) {
             if (side_tt[size_t(side)]) {
                 return side;
