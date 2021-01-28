@@ -409,6 +409,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     const int verbosity = packer_opts.pack_verbosity;
 
+    num_molecules_processed = 0;
+
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 
     bool is_cluster_legal;
@@ -830,6 +832,7 @@ static void print_pack_status(int num_clb,
         for (auto i = clb_types.begin(); i != clb_types.end(); i++) {
             VTR_LOG("\t %s: # blocks %zu \n", i->first->name, size_t(i->second));
         }
+        VTR_LOG("\n");
     }
 }
 
