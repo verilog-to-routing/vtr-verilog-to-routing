@@ -1618,7 +1618,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
              */
             got->second = atom_pr;
             if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d \n", blk_id, clb_index);
+                VTR_LOG("\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d which has empty PR\n", blk_id, clb_index);
             }
             return BLK_PASSED;
         } else {
@@ -1634,7 +1634,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
             //update the cluster's PartitionRegion with the intersecting PartitionRegion
             got->second = intersect_pr;
             if (verbosity > 3) {
-                VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d \n", blk_id, clb_index);
+                VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n", blk_id, clb_index);
             }
             return BLK_PASSED;
         }
@@ -2580,7 +2580,9 @@ static void echo_clusters(char* filename) {
     }
 
     for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
-        fprintf(fp, "\tCluster Id: %zu \n", size_t(i->first));
+        std::string cluster_name;
+        cluster_name = cluster_ctx.clb_nlist.block_name(i->first);
+        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(i->first));
         fprintf(fp, "\tAtoms in cluster: \n");
 
         int num_atoms = i->second.size();
