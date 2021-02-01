@@ -825,7 +825,7 @@ static void print_pack_status(int num_clb,
                               int num_molecules_processed,
                               std::map<t_logical_block_type_ptr, size_t> clb_types) {
     //print an update every 10 clusters
-    if (num_clb % 10 == 0) {
+    if (num_clb % 50 == 0) {
         VTR_LOG("\nCreated %d clusters\n", num_clb);
         VTR_LOG("Processed %d out of %d molecules\n", num_molecules_processed, tot_num_molecules);
         VTR_LOG("Cluster types:\n");
