@@ -65,25 +65,24 @@ static bool warn_undriven(nnode_t* node, nnet_t* net) {
     return false;
 }
 
-// TODO Uncomment this for In Outs
-//static void merge_with_inputs(nnode_t* node, long pin_idx) {
-//    oassert(pin_idx < node->num_input_pins);
-//    nnet_t* net = node->input_pins[pin_idx]->net;
-//    warn_undriven(node, net);
-//    // Merge node with all inputs with fanout of 1
-//    if (net->num_fanout_pins <= 1) {
-//        for (int i = 0; i < net->num_driver_pins; i++) {
-//            npin_t* driver = net->driver_pins[i];
-//            if (driver->name != NULL && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY) || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
-//                vtr::free(driver->name);
-//                driver->name = vtr::strdup(node->name);
-//            } else {
-//                vtr::free(driver->node->name);
-//                driver->node->name = vtr::strdup(node->name);
-//            }
-//        }
-//    }
-//}
+static void merge_with_inputs(nnode_t* node, long pin_idx) {
+    oassert(pin_idx < node->num_input_pins);
+    nnet_t* net = node->input_pins[pin_idx]->net;
+    warn_undriven(node, net);
+    // Merge node with all inputs with fanout of 1
+    if (net->num_fanout_pins <= 1) {
+        for (int i = 0; i < net->num_driver_pins; i++) {
+            npin_t* driver = net->driver_pins[i];
+            if (driver->name != NULL && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY) || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
+                vtr::free(driver->name);
+                driver->name = vtr::strdup(node->name);
+            } else {
+                vtr::free(driver->node->name);
+                driver->node->name = vtr::strdup(node->name);
+            }
+        }
+    }
+}
 
 static void print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long driver_idx) {
     oassert(driver_idx < net->num_driver_pins);
@@ -133,21 +132,27 @@ static void print_output_pin(FILE* out, nnode_t* node) {
         fprintf(out, " %s", node->name);
 }
 
+static char* buffer_multi_drivers(FILE* out, nnode_t* node, long pin_idx)
+{
+    nnet_t* net = node->input_pins[pin_idx]->net;
+    if (net->num_driver_pins > 1) {
+        char* name = op_node_name(BUF_NODE, node->name);
+        // Assign each driver to the implicit buffer
+        for (int j = 0; j < net->num_driver_pins; j++) {
+            fprintf(out, ".names");
+            print_net_driver(out, node, net, j);
+            fprintf(out, " %s\n1 1\n\n", name);
+        }
+        return name;
+    }
+    return NULL;
+}
+
 static void print_dot_names_header(FILE* out, nnode_t* node) {
     char** names = (char**)vtr::calloc(node->num_input_pins, sizeof(char*));
 
-    // Create an implicit buffer if there are multiple drivers to the component
     for (int i = 0; i < node->num_input_pins; i++) {
-        nnet_t* input_net = node->input_pins[i]->net;
-        if (input_net->num_driver_pins > 1) {
-            names[i] = op_node_name(BUF_NODE, node->name);
-            // Assign each driver to the implicit buffer
-            for (int j = 0; j < input_net->num_driver_pins; j++) {
-                fprintf(out, ".names");
-                print_net_driver(out, node, input_net, j);
-                fprintf(out, " %s\n1 1\n\n", names[i]);
-            }
-        }
+        names[i] = buffer_multi_drivers(out, node, i);
     }
 
     // Print the actual header
@@ -221,14 +226,13 @@ void output_blif(FILE* out, netlist_t* netlist) {
     fprintf(out, "\n.names gnd\n.names unconn\n.names vcc\n1\n");
     fprintf(out, "\n");
 
-    // TODO Uncomment this for In Outs
     // connect all the outputs up to the last gate
-    // for (long i = 0; i < netlist->num_top_output_nodes; i++) {
-    //     nnode_t* node = netlist->top_output_nodes[i];
-    //     for (int j = 0; j < node->num_input_pins; j++) {
-    //         merge_with_inputs(node, j);
-    //     }
-    // }
+    for (long i = 0; i < netlist->num_top_output_nodes; i++) {
+        nnode_t* node = netlist->top_output_nodes[i];
+        for (int j = 0; j < node->num_input_pins; j++) {
+            merge_with_inputs(node, j);
+        }
+    }
 
     /* traverse the internals of the flat net-list */
     if (strcmp(configuration.output_type.c_str(), "blif") == 0) {
@@ -241,8 +245,7 @@ void output_blif(FILE* out, netlist_t* netlist) {
     for (long i = 0; i < netlist->num_top_output_nodes; i++) {
         nnode_t* node = netlist->top_output_nodes[i];
 
-        // TODO Change this to > 1 for In Outs
-        if (node->input_pins[0]->net->num_fanout_pins > 0) {
+        if (node->input_pins[0]->net->num_fanout_pins > 1) {
             nnet_t* net = node->input_pins[0]->net;
             warn_undriven(node, net);
             for (int j = 0; j < net->num_driver_pins; j++) {
@@ -541,14 +544,18 @@ void define_ff(nnode_t* node, FILE* out) {
     // grab the edge sensitivity of the flip flop
     const char* edge_type_str = edge_type_blif_str(node);
 
-    std::string input;
-    std::string output;
-    std::string clock_driver;
+    char* input_driver = buffer_multi_drivers(out, node, 0);
 
     fprintf(out, ".latch");
 
     /* input */
-    print_input_single_driver(out, node, 0);
+    if(!input_driver)
+        print_input_single_driver(out, node, 0);
+    else {
+        // Use the implicit buffer we created before
+        fprintf(out, " %s", input_driver);
+        vtr::free(input_driver);
+    }
 
     /* output */
     print_output_pin(out, node);
@@ -556,6 +563,7 @@ void define_ff(nnode_t* node, FILE* out) {
     /* sensitivity */
     fprintf(out, " %s", edge_type_str);
 
+    // TODO Should clocks support mutliple drivers?
     /* clock */
     print_input_single_driver(out, node, 1);
 

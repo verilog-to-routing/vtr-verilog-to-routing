@@ -106,7 +106,7 @@ _prt_cur_arg() {
 function help() {
 
 printf "Called program with $INPUT
-	Usage: 
+	Usage:
 		$0 [ OPTIONS / FLAGS ] [ SUBTEST_LIST ... ]
 
 	SUBTEST_LIST
@@ -121,8 +121,8 @@ printf "Called program with $INPUT
 		-c|--clean                      $(_prt_cur_arg off ) Clean temporary directory
 		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
 		--override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
-		--dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow 
-		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
+		--dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow
+		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow
 		--regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
 		--generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
 		--continue						$(_prt_cur_arg ${_CONTINUE}) continue running test in the same directory as the last run
@@ -133,8 +133,8 @@ printf "Called program with $INPUT
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-d|--output_dir < /abs/path >   $(_prt_cur_arg ${_RUN_DIR_OVERRIDE}) Change the run directory output
 		-C|--config <path/to/config>	$(_prt_cur_arg ${_EXTRA_CONFIG}) Add a config file to append to the config for the tests
-		-t|--test < test name >         $(_prt_cur_arg ${_TEST_INPUT_LIST[*]}) Test name is either a absolute or relative path to 
-		                                                       a directory containing a task.conf, task_list.conf 
+		-t|--test < test name >         $(_prt_cur_arg ${_TEST_INPUT_LIST[*]}) Test name is either a absolute or relative path to
+		                                                       a directory containing a task.conf, task_list.conf
 		                                                       (see CONFIG FILE HELP) or one of the following predefined test
 
 	AVAILABLE_TEST:
@@ -222,7 +222,7 @@ function create_temp() {
 
 		ln -s "${NEW_RUN_DIR}" "${REGRESSION_DIR}/latest"
 
-		# put in the passed parameter for keepsake 
+		# put in the passed parameter for keepsake
 		echo "${_TEST_INPUT_LIST[@]}" | xargs -n 1 -I {} echo {} > "${NEW_RUN_DIR}/cmd.task"
 		echo "========="
 		echo "$0 ${INPUT}" >> "${NEW_RUN_DIR}/cmd.task"
@@ -237,7 +237,7 @@ function cleanup_temp() {
 	fi
 
 	for runs in "${OUTPUT_DIRECTORY}"/run*
-	do 
+	do
 		rm -Rf "${runs}"
 	done
 
@@ -282,15 +282,15 @@ function disable_failed_bm() {
 function parse_args() {
 	PARSE_SUBTEST="off"
 	while [ "_$*" != "_" ]
-	do 
+	do
 		if [ ${PARSE_SUBTEST} == "on" ];
 		then
 		# parse subtest
 			_SUBTEST_LIST+=( "$1" )
 			shift
 		else
-		# parse [ OPTIONS / FLAGS ] 
-			case $1 in 
+		# parse [ OPTIONS / FLAGS ]
+			case $1 in
 
 			# Help Desk
 				-h|--help)
@@ -298,12 +298,12 @@ function parse_args() {
 					help
 					_exit_with_code "0"
 
-				
+
 			## directory in benchmark
 				;;-t|--test)
 					# this is handled down stream
 					if [ "_$2" == "_" ]
-					then 
+					then
 						echo "empty argument for $1"
 						_exit_with_code "-1"
 					fi
@@ -314,11 +314,11 @@ function parse_args() {
 				;;-d|--output_dir)
 
 					if [ "_$2" == "_" ]
-					then 
+					then
 						echo "empty argument for $1"
 						_exit_with_code "-1"
 					fi
-					
+
 					_RUN_DIR_OVERRIDE=$2
 
 					if [ ! -d "${_RUN_DIR_OVERRIDE}" ]
@@ -332,11 +332,11 @@ function parse_args() {
 				;;-C|--config)
 
 					if [ "_$2" == "_" ]
-					then 
+					then
 						echo "empty argument for $1"
 						_exit_with_code "-1"
 					fi
-					
+
 					_EXTRA_CONFIG=$2
 					echo "Reading extra config directive from ${_EXTRA_CONFIG}"
 
@@ -349,29 +349,29 @@ function parse_args() {
 					shift
 
 			# Boolean flags
-				;;-g|--generate_bench)		
+				;;-g|--generate_bench)
 					_GENERATE_BENCH="on"
 					echo "generating output vector for test given predefined input"
 
-				;;-o|--generate_output)		
+				;;-o|--generate_output)
 					_GENERATE_OUTPUT="on"
 					echo "generating input and output vector for test"
 
-				;;-b|--build_config)		
+				;;-b|--build_config)
 					_GENERATE_CONFIG="on"
 					echo "generating a config file for test directory"
 
-				;;-c|--clean)				
+				;;-c|--clean)
 					echo "Cleaning temporary run in directory"
 					cleanup_temp
 
-				;;-f|--force_simulate)   
+				;;-f|--force_simulate)
 					_FORCE_SIM="on"
-					echo "Forcing Simulation"   
+					echo "Forcing Simulation"
 
 				;;--override)
 					_OVERRIDE_CONFIG="on"
-					echo "Forcing override of config"    
+					echo "Forcing override of config"
 
 				;;--dry_run)
 					_DRY_RUN="on"
@@ -402,7 +402,7 @@ function parse_args() {
 					_CONTINUE="on"
 					echo "print the previous test report"
 
-				;;*) 
+				;;*)
 					PARSE_SUBTEST="on"
 			esac
 
@@ -449,9 +449,9 @@ printf "
 			simulation_parse_file 	= < path/to/parse/file >
 			script_synthesis_params = [see exec_wrapper.sh options]
 			script_simulation_params= [see exec_wrapper.sh options]
-			synthesis_params        = [see Odin options]	
+			synthesis_params        = [see Odin options]
 			simulation_params       = [see Odin options]
-			regression_params       = 
+			regression_params       =
 			{
 				--verbose                # display error logs after batch of tests
 				--concat_circuit_list    # concatenate the circuit list and pass it straight through to odin
@@ -503,13 +503,13 @@ function populate_arg_from_file() {
 			_key="$(echo "${formatted_line}" | cut -d '=' -f1 )"
 			_value="$(echo "${formatted_line}" | cut -d '=' -f2 )"
 
-			if [ "_${_key}" != "_" ] && [ "_${_value}" == "_" ] 
+			if [ "_${_key}" != "_" ] && [ "_${_value}" == "_" ]
 			then
 				echo "Specifying empty value for ${_key}, skipping assignment"
-			elif [ "_${_key}" == "_" ] && [ "_${_value}" != "_" ] 
+			elif [ "_${_key}" == "_" ] && [ "_${_value}" != "_" ]
 			then
 				echo "Specifying empty key for value: ${_value}, skipping assignment"
-			elif [ "_${_key}" != "_" ] && [ "_${_value}" != "_" ] 
+			elif [ "_${_key}" != "_" ] && [ "_${_value}" != "_" ]
 			then
 				case _${_key} in
 
@@ -522,7 +522,7 @@ function populate_arg_from_file() {
 
 					;;_circuit_list_add)
 						# glob the value
-						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
+						_circuit_list_add+=( "${_circuits_dir}"/${_value} )
 
 					;;_archs_dir)
 						if [ ! -d "${_value}" ]
@@ -548,8 +548,8 @@ function populate_arg_from_file() {
 						_local_synthesis_parse_file="${_value}"
 
 					;;_synthesis_params)
-						_local_synthesis_params="${_local_synthesis_params} ${_value}"					
-						
+						_local_synthesis_params="${_local_synthesis_params} ${_value}"
+
 					;;_simulation_params)
 						_local_simulation_params="${_local_simulation_params} ${_value}"
 
@@ -619,7 +619,7 @@ function populate_arg_from_file() {
 		fi
 	fi
 
-	
+
 	for circuit_list_item in "${_circuit_list_add[@]}"
 	do
 		if [ ! -f "${circuit_list_item}" ]
@@ -635,7 +635,7 @@ function populate_arg_from_file() {
 		echo "Passed a config file with no circuit to test"
 		_exit_with_code "-1"
 	fi
-	
+
 
 	for arch_list_item in "${_arch_list_add[@]}"
 	do
@@ -677,7 +677,7 @@ function move_vector() {
 	file_name="$2"
 	replacement_suffix="$3"
 
-	find_in_bench  "${file_dir}" "${file_name}" 
+	find_in_bench  "${file_dir}" "${file_name}"
 	# move the output vectors
 	for sim_vectors in "${TMP_BENCH_FIND_ARRAY[@]}"
 	do
@@ -1233,7 +1233,7 @@ function run_task() {
 	if [ ! -d "${test_dir}" ]
 	then
 		echo "${test_dir} Not Found! Skipping this test"
-	elif [ ! -f "${test_dir}/task.conf" ] 
+	elif [ ! -f "${test_dir}/task.conf" ]
 	then
 		if [ ${_GENERATE_CONFIG} == "on" ]
 		then
@@ -1261,7 +1261,7 @@ function run_vtr_reg() {
 
 ##########################
 # This function filters vtr test to only contain
-# tests using verilog files since Odin is unused 
+# tests using verilog files since Odin is unused
 # in blif tests
 function filter_vtr_test() {
 	# filter test prefix i.e vtr::
@@ -1276,10 +1276,10 @@ function filter_vtr_test() {
 
 		pushd "${VTR_REG_DIR}"  &> /dev/null
 		for test in $(cat "${VTR_TASK_PATH}")
-		do 
+		do
 			if grep -E "circuit_list_add=.*\.v" "${test/regression_tests\//}/config/config.txt" &> "/dev/null"
-			then 
-				echo $test >> "${FILTERED_VTR_TASK_PATH}"; 
+			then
+				echo $test >> "${FILTERED_VTR_TASK_PATH}";
 			fi
 		done
 		popd &> /dev/null

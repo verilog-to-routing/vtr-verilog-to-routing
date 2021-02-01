@@ -45,14 +45,17 @@
 //for module
 STRING_CACHE* modules_inputs_sc;
 STRING_CACHE* modules_outputs_sc;
+STRING_CACHE* modules_inouts_sc;
 STRING_CACHE* module_instances_sc;
 
 //for function
 STRING_CACHE* functions_inputs_sc;
 STRING_CACHE* functions_outputs_sc;
+STRING_CACHE* functions_inouts_sc;
 
 STRING_CACHE* tasks_inputs_sc;
 STRING_CACHE* tasks_outputs_sc;
+STRING_CACHE* tasks_inouts_sc;
 
 STRING_CACHE* module_names_to_idx;
 STRING_CACHE* instantiated_modules;
@@ -124,10 +127,13 @@ ast_t* init_parser() {
     /* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
     modules_inputs_sc = sc_new_string_cache();
     modules_outputs_sc = sc_new_string_cache();
+    modules_inouts_sc = sc_new_string_cache();
     functions_inputs_sc = sc_new_string_cache();
     functions_outputs_sc = sc_new_string_cache();
+    functions_inouts_sc = sc_new_string_cache();
     tasks_inputs_sc = sc_new_string_cache();
     tasks_outputs_sc = sc_new_string_cache();
+    tasks_inouts_sc = sc_new_string_cache();
     instantiated_modules = sc_new_string_cache();
     module_instances_sc = sc_new_string_cache();
     /* record of each of the individual modules */
@@ -158,10 +164,13 @@ ast_t* init_parser() {
 void cleanup_parser() {
     modules_inputs_sc = sc_free_string_cache(modules_inputs_sc);
     modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
+    modules_inouts_sc = sc_free_string_cache(modules_inouts_sc);
     functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
     functions_outputs_sc = sc_free_string_cache(functions_outputs_sc);
+    functions_inouts_sc = sc_free_string_cache(functions_inouts_sc);
     tasks_inputs_sc = sc_free_string_cache(tasks_inputs_sc);
     tasks_outputs_sc = sc_free_string_cache(tasks_outputs_sc);
+    tasks_inouts_sc = sc_free_string_cache(tasks_inouts_sc);
     instantiated_modules = sc_free_string_cache(instantiated_modules);
     module_instances_sc = sc_free_string_cache(module_instances_sc);
 }
@@ -359,52 +368,56 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
                 }
             } else {
                 long sc_spot = -1;
+                STRING_CACHE* sc = NULL;
 
                 if (top_type == MODULE) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
                     if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
-                        oassert(((ast_node_t*)modules_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                        free_whole_tree(symbol_list->children[i]);
-                        symbol_list->children[i] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
-                        oassert(symbol_list->children[i]->types.variable.is_input);
+                        sc = modules_inputs_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_input);
                     } else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
-                        oassert(((ast_node_t*)modules_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                        free_whole_tree(symbol_list->children[i]);
-                        symbol_list->children[i] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
-                        oassert(symbol_list->children[i]->types.variable.is_output);
+                        sc = modules_outputs_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_output);
+                    } else if ((sc_spot = sc_lookup_string(modules_inouts_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                        sc = modules_inouts_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_inout);
                     } else {
                         error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n", symbol_list->children[i]->identifier_node->types.identifier);
                     }
                 } else if (top_type == FUNCTION) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
                     if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
-                        oassert(((ast_node_t*)functions_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                        free_whole_tree(symbol_list->children[i]);
-                        symbol_list->children[i] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
-                        oassert(symbol_list->children[i]->types.variable.is_input);
+                        sc = functions_inputs_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_input);
                     } else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
-                        oassert(((ast_node_t*)functions_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                        free_whole_tree(symbol_list->children[i]);
-                        symbol_list->children[i] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
-                        oassert(symbol_list->children[i]->types.variable.is_output);
+                        sc = functions_outputs_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_output);
+                    } else if ((sc_spot = sc_lookup_string(functions_inouts_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                        sc = functions_inouts_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_inout);
                     } else {
                         error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n", symbol_list->children[i]->identifier_node->types.identifier);
                     }
                 } else if (top_type == TASK) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
                     if ((sc_spot = sc_lookup_string(tasks_inputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
-                        oassert(((ast_node_t*)tasks_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                        free_whole_tree(symbol_list->children[i]);
-                        symbol_list->children[i] = (ast_node_t*)tasks_inputs_sc->data[sc_spot];
-                        oassert(symbol_list->children[i]->types.variable.is_input);
+                        sc = tasks_inputs_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_input);
                     } else if ((sc_spot = sc_lookup_string(tasks_outputs_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
-                        oassert(((ast_node_t*)tasks_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                        free_whole_tree(symbol_list->children[i]);
-                        symbol_list->children[i] = (ast_node_t*)tasks_outputs_sc->data[sc_spot];
-                        oassert(symbol_list->children[i]->types.variable.is_output);
+                        sc = tasks_outputs_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_output);
+                    } else if ((sc_spot = sc_lookup_string(tasks_inouts_sc, symbol_list->children[i]->identifier_node->types.identifier)) != -1) {
+                        sc = tasks_inouts_sc;
+                        oassert(((ast_node_t*)sc->data[sc_spot])->types.variable.is_inout);
                     } else {
                         error_message(AST, symbol_list->children[i]->loc, "No matching declaration for port %s\n", symbol_list->children[i]->identifier_node->types.identifier);
                     }
+                }
+
+                if (sc) {
+                    oassert(((ast_node_t*)sc->data[sc_spot])->type == VAR_DECLARE);
+                    free_whole_tree(symbol_list->children[i]);
+                    symbol_list->children[i] = (ast_node_t*)sc->data[sc_spot];
                 }
             }
             symbol_list->children[i]->types.variable.is_port = true;
@@ -424,6 +437,7 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
     const char* top_type_name = NULL;
     STRING_CACHE* this_inputs_sc = NULL;
     STRING_CACHE* this_outputs_sc = NULL;
+    STRING_CACHE* this_inouts_sc = NULL;
 
     if (top_type == MODULE) {
         top_type_name = "Module";
@@ -435,20 +449,20 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
     ids temp_net_id = NO_ID;
 
-    if (port->types.variable.is_port) {
-        oassert(false && "Port was already marked");
-    }
+    oassert(!port->types.variable.is_port && "Port was already marked");
 
     if (top_type == MODULE) {
         this_inputs_sc = modules_inputs_sc;
         this_outputs_sc = modules_outputs_sc;
-
+        this_inouts_sc = modules_inouts_sc;
     } else if (top_type == FUNCTION) {
         this_inputs_sc = functions_inputs_sc;
         this_outputs_sc = functions_outputs_sc;
+        this_inouts_sc = functions_inouts_sc;
     } else if (top_type == TASK) {
         this_inputs_sc = tasks_inputs_sc;
         this_outputs_sc = tasks_outputs_sc;
+        this_inouts_sc = tasks_inouts_sc;
     }
 
     /* look for processed inputs with this name */
@@ -463,6 +477,13 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
     if (sc_spot > -1 && ((ast_node_t*)this_outputs_sc->data[sc_spot])->types.variable.is_port) {
         error_message(AST, port->loc, "%s already has output with this name %s\n",
                       top_type_name, ((ast_node_t*)this_outputs_sc->data[sc_spot])->identifier_node->types.identifier);
+    }
+
+    /* look for processed inouts with this name */
+    sc_spot = sc_lookup_string(this_inouts_sc, port->identifier_node->types.identifier);
+    if (sc_spot > -1 && ((ast_node_t*)this_inouts_sc->data[sc_spot])->types.variable.is_port) {
+        error_message(AST, port->loc, "%s already has inout with this name %s\n",
+                      top_type_name, ((ast_node_t*)this_inouts_sc->data[sc_spot])->identifier_node->types.identifier);
     }
 
     switch (net_id) {
@@ -545,9 +566,15 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
         case INOUT:
             port->types.variable.is_inout = true;
-            port->types.variable.is_input = false;
-            port->types.variable.is_output = false;
-            error_message(AST, port->loc, "Odin does not handle inouts (%s)\n", port->identifier_node->types.identifier);
+            port->types.variable.is_input = true;
+            port->types.variable.is_output = true;
+
+            /* add this output to the modules string cache */
+            sc_spot = sc_add_string(this_inouts_sc, port->identifier_node->types.identifier);
+
+            /* store the data which is an idx here */
+            this_inouts_sc->data[sc_spot] = (void*)port;
+
             break;
 
         default:
@@ -559,16 +586,9 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
                        && !(port->types.variable.is_input)
                        && !(port->types.variable.is_inout)) {
                 port = markAndProcessPortWith(top_type, OUTPUT, net_id, port, signedness);
-            } else if (port->types.variable.is_inout
-                       && !(port->types.variable.is_input)
-                       && !(port->types.variable.is_output)) {
-                error_message(AST, port->loc, "Odin does not handle inouts (%s)\n", port->identifier_node->types.identifier);
-                port = markAndProcessPortWith(top_type, INOUT, net_id, port, signedness);
             } else {
-                // shouldn't ever get here...
-                oassert(port->types.variable.is_input
-                        || port->types.variable.is_output
-                        || port->types.variable.is_inout);
+                oassert(port->types.variable.is_inout);
+                port = markAndProcessPortWith(top_type, INOUT, net_id, port, signedness);
             }
 
             break;
@@ -668,8 +688,8 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                     break;
                 case WIRE:
                     /**
-                     * functions cannot have their wire initialized, 
-                     * TODO: should'nt this apply to all? 
+                     * functions cannot have their wire initialized,
+                     * TODO: should'nt this apply to all?
                      */
                     if (top_type == FUNCTION) {
                         if ((symbol_list->children[i]->num_children == 5 && symbol_list->children[i]->children[4] != NULL)
@@ -745,7 +765,7 @@ ast_node_t* newRangeRef(char* id, ast_node_t* expression1, ast_node_t* expressio
 
 /*---------------------------------------------------------------------------------------------
  * (function: newPartSelectRangeRef)
- * 
+ *
  * NB!! only support [msb:lsb], will always resolve to this syntax
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newMinusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t* expression2, loc_t loc) {
@@ -773,7 +793,7 @@ ast_node_t* newMinusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t*
 
 /*---------------------------------------------------------------------------------------------
  * (function: newPartSelectRangeRef)
- * 
+ *
  * NB!! only support [msb:lsb], will always resolve to this syntax
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newPlusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t* expression2, loc_t loc) {
@@ -1646,7 +1666,18 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
     for (int i = 0; i < list_of_task_items->num_children; i++) {
         if (list_of_task_items->children[i]->type == VAR_DECLARE_LIST) {
             for (int j = 0; j < list_of_task_items->children[i]->num_children; j++) {
-                if (list_of_task_items->children[i]->children[j]->types.variable.is_input) {
+                if (list_of_task_items->children[i]->children[j]->types.variable.is_inout) {
+                    label = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
+                    var_node->types.variable.is_inout = true;
+                    var_node->types.variable.is_input = true;
+                    var_node->types.variable.is_output = true;
+                    if (list_of_ports) {
+                        newList_entry(list_of_ports, var_node);
+                    } else {
+                        list_of_ports = newList(VAR_DECLARE_LIST, var_node, loc);
+                    }
+                } else if (list_of_task_items->children[i]->children[j]->types.variable.is_input) {
                     label = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
                     var_node->types.variable.is_input = true;
@@ -1659,15 +1690,6 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
                     label = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
                     var_node->types.variable.is_output = true;
-                    if (list_of_ports) {
-                        newList_entry(list_of_ports, var_node);
-                    } else {
-                        list_of_ports = newList(VAR_DECLARE_LIST, var_node, loc);
-                    }
-                } else if (list_of_task_items->children[i]->children[j]->types.variable.is_inout) {
-                    label = vtr::strdup(list_of_task_items->children[i]->children[j]->identifier_node->types.identifier);
-                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, loc);
-                    var_node->types.variable.is_inout = true;
                     if (list_of_ports) {
                         newList_entry(list_of_ports, var_node);
                     } else {
@@ -1730,9 +1752,11 @@ void next_task() {
     /* old ones are done so clean */
     sc_free_string_cache(tasks_inputs_sc);
     sc_free_string_cache(tasks_outputs_sc);
+    sc_free_string_cache(tasks_inouts_sc);
     /* make for next task */
     tasks_inputs_sc = sc_new_string_cache();
     tasks_outputs_sc = sc_new_string_cache();
+    tasks_inouts_sc = sc_new_string_cache();
 }
 /*---------------------------------------------------------------------------------------------
  * (function: next_function)
@@ -1747,9 +1771,11 @@ void next_function() {
     /* old ones are done so clean */
     sc_free_string_cache(functions_inputs_sc);
     sc_free_string_cache(functions_outputs_sc);
+    sc_free_string_cache(functions_inouts_sc);
     /* make for next function */
     functions_inputs_sc = sc_new_string_cache();
     functions_outputs_sc = sc_new_string_cache();
+    functions_inouts_sc = sc_new_string_cache();
 }
 /*---------------------------------------------------------------------------------------------
  * (function: next_module)
@@ -1767,10 +1793,12 @@ void next_module() {
     /* old ones are done so clean */
     sc_free_string_cache(modules_inputs_sc);
     sc_free_string_cache(modules_outputs_sc);
+    sc_free_string_cache(modules_inouts_sc);
     sc_free_string_cache(module_instances_sc);
     /* make for next module */
     modules_inputs_sc = sc_new_string_cache();
     modules_outputs_sc = sc_new_string_cache();
+    modules_inouts_sc = sc_new_string_cache();
     module_instances_sc = sc_new_string_cache();
 }
 
@@ -1846,12 +1874,13 @@ void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* fro
 
     switch (node->type) {
         case VAR_DECLARE: {
-            if (node->types.variable.is_input)
+            std::stringstream temp;
+            if (node->types.variable.is_inout)
+                fprintf(fp, " inout");
+            else if (node->types.variable.is_input)
                 fprintf(fp, " input");
             else if (node->types.variable.is_output)
                 fprintf(fp, " output");
-            else if (node->types.variable.is_inout)
-                fprintf(fp, " inout");
             else if (node->types.variable.is_parameter)
                 fprintf(fp, " parameter");
 
