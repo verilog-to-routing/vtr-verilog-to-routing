@@ -425,8 +425,10 @@ def upgrade_device_layout(arch):
                 if "repeat" in loc.attrib:
                     repeat = loc.attrib["repeat"]
 
-                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(
-                    type_name, type_name
+                comment_str = (
+                    "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(
+                        type_name, type_name
+                    )
                 )
 
                 if have_perimeter:
@@ -479,8 +481,10 @@ def upgrade_device_layout(arch):
                         )
                     )
 
-                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(
-                    type_name, type_name
+                comment_str = (
+                    "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(
+                        type_name, type_name
+                    )
                 )
 
                 if have_perimeter:

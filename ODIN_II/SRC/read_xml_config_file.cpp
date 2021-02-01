@@ -44,6 +44,8 @@ void read_debug_switches(pugi::xml_node a_node, config_t* config, const pugiutil
 void read_optimizations(pugi::xml_node a_node, config_t* config, const pugiutil::loc_data& loc_data);
 void set_default_optimization_settings(config_t* config);
 
+extern HardSoftLogicMixer* mixer;
+
 /*-------------------------------------------------------------------------
  * (function: read_config_file)
  * This reads an XML config file that specifies what we will do in the tool.
@@ -215,6 +217,27 @@ void read_optimizations(pugi::xml_node a_node, config_t* config, const pugiutil:
             config->split_hard_multiplier = atoi(prop);
         } else /* Default: use fractured hard multiply size */
             config->split_hard_multiplier = 1;
+    }
+
+    child = get_single_child(a_node, "mix_soft_hard_blocks", loc_data, OPTIONAL);
+    if (child != NULL) {
+        prop = get_attribute(child, "mults_ratio", loc_data, OPTIONAL).as_string(NULL);
+        if (prop != NULL) {
+            float ratio = atof(prop);
+            if (ratio >= 0.0 && ratio <= 1.0) {
+                delete mixer->_opts[MULTIPLY];
+                mixer->_opts[MULTIPLY] = new MultsOpt(ratio);
+            }
+        }
+
+        prop = get_attribute(child, "exact_mults", loc_data, OPTIONAL).as_string(NULL);
+        if (prop != NULL) {
+            int exact = atoi(prop);
+            if (exact >= 0) {
+                delete mixer->_opts[MULTIPLY];
+                mixer->_opts[MULTIPLY] = new MultsOpt(exact);
+            }
+        }
     }
 
     child = get_single_child(a_node, "memory", loc_data, OPTIONAL);

@@ -50,4 +50,18 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids();
 t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations);
 
 int grid_to_compressed(const std::vector<int>& coords, int point);
+
+/**
+ * @brief  find the nearest location in the compressed grid.
+ *
+ * Useful when the point is of a different block type from coords.
+ * 
+ *   @param point represents a coordinate in one dimension of the point
+ *   @param coords represents vector of coordinate values of a single type only
+ *
+ * Hence, the exact point coordinate will not be found in coords if they are of different block types. In this case the function will return 
+ * the nearest compressed location to point by rounding it down 
+ */
+int grid_to_compressed_approx(const std::vector<int>& coords, int point);
+
 #endif

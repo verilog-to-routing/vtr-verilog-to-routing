@@ -13,3 +13,5 @@
 %include "timing/vpr.place.txt"
 %include "timing/vpr.route_min_chan_width.txt"
 %include "timing/vpr.route_relaxed_chan_width.txt"
+
+%include "timing/vpr.place_checks.txt"

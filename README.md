@@ -1,5 +1,5 @@
 # Verilog to Routing (VTR)
-[![Build Status](https://travis-ci.com/verilog-to-routing/vtr-verilog-to-routing.svg?branch=master)](https://travis-ci.com/verilog-to-routing/vtr-verilog-to-routing) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/)
+[![Build Status](https://github.com/verilog-to-routing/vtr-verilog-to-routing/workflows/Test/badge.svg)](https://github.com/verilog-to-routing/vtr-verilog-to-routing/actions?query=workflow%3ATest) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/)
 
 ## Introduction
 The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development.
@@ -16,7 +16,7 @@ VTR can also produce [FASM](https://symbiflow.readthedocs.io/en/latest/fasm/docs
 
 | Placement (carry-chains highlighted) | Critical Path |
 | ------------------------------------ | ------------- |
-| <img src="https://verilogtorouting.org/img/des90_placement_macros.gif" width="350"/> | <img src="https://verilogtorouting.org/img/des90_cpd.gif" width="350"/> | 
+| <img src="https://verilogtorouting.org/img/des90_placement_macros.gif" width="350"/> | <img src="https://verilogtorouting.org/img/des90_cpd.gif" width="350"/> |
 
 | Logical Connections | Routing Utilziation |
 | ------------------- | ------------------- |

@@ -73,7 +73,10 @@ def vtr_command_argparser(prog=None):
     )
 
     parser = argparse.ArgumentParser(
-        prog=prog, description=description, epilog=epilog, formatter_class=RawDefaultHelpFormatter,
+        prog=prog,
+        description=description,
+        epilog=epilog,
+        formatter_class=RawDefaultHelpFormatter,
     )
 
     #
@@ -323,7 +326,9 @@ def check_golden_results_for_task(config):
                 PurePath(config.config_dir).joinpath("golden_results.txt")
             )
             num_qor_failures = check_two_files(
-                config, task_results_filepath, golden_results_filepath,
+                config,
+                task_results_filepath,
+                golden_results_filepath,
             )
         pretty_print_table(task_results_filepath)
 
@@ -368,14 +373,20 @@ def check_two_files(
     pass_requirements = load_pass_requirements(pass_req_filepath)
 
     for metric in pass_requirements.keys():
-        for ((arch, circuit, script_params), result,) in first_results.all_metrics().items():
+        for (
+            (arch, circuit, script_params),
+            result,
+        ) in first_results.all_metrics().items():
             if metric not in result:
                 raise InspectError(
                     "Required metric '{}' missing from {} results".format(metric, first_name),
                     first_results_filepath,
                 )
 
-        for ((arch, circuit, script_params), result,) in second_results.all_metrics().items():
+        for (
+            (arch, circuit, script_params),
+            result,
+        ) in second_results.all_metrics().items():
             if metric not in result:
                 raise InspectError(
                     "Required metric '{}' missing from {} results".format(metric, second_name),
@@ -496,7 +507,9 @@ def calc_geomean(args, configs):
                 first = False
             lines = summary.readlines()
             print(
-                get_latest_run_number(str(Path(configs[0].config_dir).parent)), file=out, end="\t",
+                get_latest_run_number(str(Path(configs[0].config_dir).parent)),
+                file=out,
+                end="\t",
             )
             for index in range(len(params)):
                 geo_mean = 1
@@ -510,7 +523,9 @@ def calc_geomean(args, configs):
                     print(geo_mean, file=out, end="\t")
                 else:
                     print(
-                        previous_value if previous_value is not None else "-1", file=out, end="\t",
+                        previous_value if previous_value is not None else "-1",
+                        file=out,
+                        end="\t",
                     )
         print(datetime.date(datetime.now()), file=out, end="\t")
         print(args.revision, file=out)
