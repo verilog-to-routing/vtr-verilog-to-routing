@@ -1992,15 +1992,15 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
         auto type = candidate_types[i];
 
         t_pb* pb = new t_pb;
-        pb->pb_graph_node = type->pb_graph_head;
-        alloc_and_load_pb_stats(pb, feasible_block_array_size);
-        pb->parent_pb = nullptr;
 
         *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[type->index], type);
 
         //Try packing into each mode
         e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
         for (int j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
+            pb->pb_graph_node = type->pb_graph_head;
+            alloc_and_load_pb_stats(pb, feasible_block_array_size);
+            pb->parent_pb = nullptr;
             pb->mode = j;
 
             reset_cluster_placement_stats(&cluster_placement_stats[type->index]);
@@ -2022,6 +2022,9 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                                             FULL_EXTERNAL_PIN_UTIL);
 
             success = (pack_result == BLK_PASSED);
+            if (!success) {
+                free_pb(pb);
+            }
         }
 
         if (success) {
