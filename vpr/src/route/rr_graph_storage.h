@@ -2,6 +2,7 @@
 #define _RR_GRAPH_STORAGE_
 
 #include <exception>
+#include <bitset>
 
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
@@ -57,9 +58,19 @@ struct alignas(16) t_rr_node_data {
     int16_t yhigh_ = -1;
 
     t_rr_type type_ = NUM_RR_TYPES;
+
+    /* The character is a hex number which is a 4-bit truth table for node sides
+     * The 4-bits in serial represent 4 sides on which a node could appear 
+     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0) 
+     *   - When a node appears on a given side, it is set to "1"
+     *   - When a node does not appear on a given side, it is set to "0"
+     * For example,
+     *   - '1' means '0001' in hex number, which means the node appears on TOP 
+     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
+     */
     union {
-        e_direction direction; //Valid only for CHANX/CHANY
-        e_side side;           //Valid only for IPINs/OPINs
+        e_direction direction;     //Valid only for CHANX/CHANY
+        unsigned char sides = 0x0; //Valid only for IPINs/OPINs
     } dir_side_;
 
     uint16_t capacity_ = 0;
@@ -186,12 +197,49 @@ class t_rr_graph_storage {
     }
     const char* node_direction_string(RRNodeId id) const;
 
+    /* THIS FUNCTION IS GOING TO BE DEPRECATED
+     * Return the first valid side for the node
+     */
     e_side node_side(RRNodeId id) const {
         return get_node_side(
             vtr::array_view_id<RRNodeId, const t_rr_node_data>(
                 node_storage_.data(), node_storage_.size()),
             id);
     }
+
+    /* Return a bitmap for all the sides of a given node
+     * Currently, there are 4 sides: TOP, RIGHT, BOTTOM, LEFT
+     * The bit set is a 4-bit vector through which users can
+     * know on which sides the given nodes appear:
+     * For example, 
+     *   // See if the node is on TOP side
+     *   if (true == node_sides(id)[TOP]) {
+     *   }
+     *   // See if the node appears ONLY on 1 side
+     *   if (1 == node_sides(id).count()) {
+     *   }
+     *
+     * TODO: This function may be deprecated, depending its utilization
+     *       in client functions, router, GUI etc. It offers a shortcut
+     *       for developers who can check what sides a node appear on.
+     *       However, such query can be done outside RRGraph by iterating
+     *       over all the sides and using API is_node_on_specific_side()
+     */
+    std::bitset<NUM_SIDES> node_sides(RRNodeId id) const {
+        return get_node_sides(
+            vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+                node_storage_.data(), node_storage_.size()),
+            id);
+    }
+
+    /* Find if the given node appears on a specific side */
+    bool is_node_on_specific_side(RRNodeId id, e_side side) const {
+        return is_node_on_specific_side(
+            vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+                node_storage_.data(), node_storage_.size()),
+            id, side);
+    }
+
     const char* node_side_string(RRNodeId id) const;
 
     /* PTC get methods */
@@ -456,7 +504,18 @@ class t_rr_graph_storage {
     void set_node_rc_index(RRNodeId, short new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, e_direction new_direction);
+
+    /* Set a side to the node abbributes
+     * Note that this function will overwrite any existing side attributes
+     * If the node has multiple sides, you should use the method set_node_sides()
+     */
     void set_node_side(RRNodeId, e_side new_side);
+    /* Set multiple sides to the node abbributes */
+    void set_node_sides(RRNodeId, std::bitset<NUM_SIDES> new_side);
+    /* Add a side to the node abbributes
+     * This is the function to use when you just add a new side WITHOUT reseting side attributes
+     */
+    void add_node_side(RRNodeId, e_side new_side);
 
     /****************
      * Edge methods *
@@ -576,6 +635,9 @@ class t_rr_graph_storage {
         return node_storage[id].dir_side_.direction;
     }
 
+    /** THIS FUNCTION IS GOING TO BE DEPRECATED
+     *  Return the first valid side for the node
+     */
     static inline e_side get_node_side(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
         RRNodeId id) {
@@ -585,7 +647,52 @@ class t_rr_graph_storage {
                             "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
                             rr_node_typename[node_data.type_]);
         }
-        return node_storage[id].dir_side_.side;
+        std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
+        for (const e_side& side : SIDES) {
+            if (side_tt[size_t(side)]) {
+                return side;
+            }
+        }
+        /* No valid sides, return an invalid value */
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Invalid side for RR node '%d':\n\ttype='%s'\txlow,ylow=(%d,%d)\n\txhigh,yhigh=(%d,%d)",
+                        size_t(id),
+                        rr_node_typename[node_data.type_],
+                        node_data.xlow_,
+                        node_data.ylow_,
+                        node_data.xhigh_,
+                        node_data.yhigh_);
+        return NUM_SIDES;
+    }
+
+    static inline std::bitset<NUM_SIDES> get_node_sides(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+        const RRNodeId& id) {
+        auto& node_data = node_storage[id];
+        if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
+                            rr_node_typename[node_data.type_]);
+        }
+        // Return a vector showing only the sides that the node appears
+        std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
+        return side_tt;
+    }
+
+    /* Find if the given node appears on a specific side */
+    static inline bool is_node_on_specific_side(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+        const RRNodeId& id,
+        const e_side& side) {
+        auto& node_data = node_storage[id];
+        if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
+                            rr_node_typename[node_data.type_]);
+        }
+        // Return a vector showing only the sides that the node appears
+        std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
+        return side_tt[size_t(side)];
     }
 
   private:
@@ -734,6 +841,10 @@ class t_rr_graph_view {
 
     e_side node_side(RRNodeId id) const {
         return t_rr_graph_storage::get_node_side(node_storage_, id);
+    }
+
+    std::bitset<NUM_SIDES> node_sides(const RRNodeId& id) const {
+        return t_rr_graph_storage::get_node_sides(node_storage_, id);
     }
 
     /* PTC get methods */

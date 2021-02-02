@@ -124,3 +124,11 @@ void t_rr_node::set_direction(e_direction new_direction) {
 void t_rr_node::set_side(e_side new_side) {
     storage_->set_node_side(id_, new_side);
 }
+
+void t_rr_node::set_sides(std::bitset<NUM_SIDES> new_sides) {
+    storage_->set_node_sides(id_, new_sides);
+}
+
+void t_rr_node::add_side(e_side new_side) {
+    storage_->add_node_side(id_, new_side);
+}
