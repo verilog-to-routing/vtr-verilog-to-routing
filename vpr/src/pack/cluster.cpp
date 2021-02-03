@@ -1601,13 +1601,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
         atom_pr = ctx_constraints.get_partition_pr(partid);
 
         //intersect it with the pr of the current cluster
-        auto got = floorplanning_ctx.clb_constraints.find(clb_index);
-
-        if (got == floorplanning_ctx.clb_constraints.end()) {
-            VTR_LOG("\t\t\t Did not find PR of cluster");
-        } else {
-            cluster_pr = got->second;
-        }
+        cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
 
         if (cluster_pr.empty() == true) {
             /*
@@ -1616,7 +1610,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
              * Probably better to have another function at the end of try_pack_molecule that takes care of
              * updating the cluster PartitionRegion once the atom passes all the checks
              */
-            got->second = atom_pr;
+            floorplanning_ctx.cluster_constraints[clb_index] = atom_pr;
             if (verbosity > 3) {
                 VTR_LOG("\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d which has empty PR\n", blk_id, clb_index);
             }
@@ -1632,7 +1626,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
             return BLK_FAILED_FLOORPLANNING;
         } else {
             //update the cluster's PartitionRegion with the intersecting PartitionRegion
-            got->second = intersect_pr;
+            floorplanning_ctx.cluster_constraints[clb_index] = intersect_pr;
             if (verbosity > 3) {
                 VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n", blk_id, clb_index);
             }
@@ -2091,7 +2085,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 
     /*Cluster's PartitionRegion is empty initially, meaning it has no floorplanning constraints*/
     PartitionRegion empty_pr;
-    floorplanning_ctx.clb_constraints.insert({clb_index, empty_pr});
+    floorplanning_ctx.cluster_constraints.push_back(empty_pr);
 
     /* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
     AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
@@ -2217,7 +2211,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     //if seed atom belongs to a partition, update cluster PartitionRegion
     if (partid != PartitionId::INVALID()) {
         PartitionRegion pr = ctx_constraints.get_partition_pr(partid);
-        floorplanning_ctx.clb_constraints[clb_index] = pr;
+        floorplanning_ctx.cluster_constraints[clb_index] = pr;
         if (verbosity > 2) {
             VTR_LOG("Cluster's partition region was updated to match seed atom\n");
         }

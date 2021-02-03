@@ -378,7 +378,7 @@ struct RoutingContext : public Context {
  */
 struct FloorplanningContext : public Context {
     VprConstraints constraints;
-    std::unordered_map<ClusterBlockId, PartitionRegion> clb_constraints;
+    vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
 };
 
 /**
