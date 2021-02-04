@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
- * Input file: /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
- * md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
+ * Cmdline: uxsdcxx/uxsdcap.py /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+ * Input file: /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+ * md5sum of input file: cd57d47fc9dfa62c7030397ca759217e
  */
 
 #include <functional>
@@ -271,6 +271,28 @@ inline enum_loc_side conv_enum_loc_side(ucap::LocSide e, const std::function<voi
             return enum_loc_side::TOP;
         case ucap::LocSide::BOTTOM:
             return enum_loc_side::BOTTOM;
+        case ucap::LocSide::RIGHT_LEFT:
+            return enum_loc_side::RIGHT_LEFT;
+        case ucap::LocSide::RIGHT_BOTTOM:
+            return enum_loc_side::RIGHT_BOTTOM;
+        case ucap::LocSide::RIGHT_BOTTOM_LEFT:
+            return enum_loc_side::RIGHT_BOTTOM_LEFT;
+        case ucap::LocSide::TOP_RIGHT:
+            return enum_loc_side::TOP_RIGHT;
+        case ucap::LocSide::TOP_BOTTOM:
+            return enum_loc_side::TOP_BOTTOM;
+        case ucap::LocSide::TOP_LEFT:
+            return enum_loc_side::TOP_LEFT;
+        case ucap::LocSide::TOP_RIGHT_BOTTOM:
+            return enum_loc_side::TOP_RIGHT_BOTTOM;
+        case ucap::LocSide::TOP_RIGHT_LEFT:
+            return enum_loc_side::TOP_RIGHT_LEFT;
+        case ucap::LocSide::TOP_BOTTOM_LEFT:
+            return enum_loc_side::TOP_BOTTOM_LEFT;
+        case ucap::LocSide::TOP_RIGHT_BOTTOM_LEFT:
+            return enum_loc_side::TOP_RIGHT_BOTTOM_LEFT;
+        case ucap::LocSide::BOTTOM_LEFT:
+            return enum_loc_side::BOTTOM_LEFT;
         default:
             (*report_error)("Unknown enum_loc_side");
             throw std::runtime_error("Unreachable!");
@@ -289,6 +311,28 @@ inline ucap::LocSide conv_to_enum_loc_side(enum_loc_side e) {
             return ucap::LocSide::TOP;
         case enum_loc_side::BOTTOM:
             return ucap::LocSide::BOTTOM;
+        case enum_loc_side::RIGHT_LEFT:
+            return ucap::LocSide::RIGHT_LEFT;
+        case enum_loc_side::RIGHT_BOTTOM:
+            return ucap::LocSide::RIGHT_BOTTOM;
+        case enum_loc_side::RIGHT_BOTTOM_LEFT:
+            return ucap::LocSide::RIGHT_BOTTOM_LEFT;
+        case enum_loc_side::TOP_RIGHT:
+            return ucap::LocSide::TOP_RIGHT;
+        case enum_loc_side::TOP_BOTTOM:
+            return ucap::LocSide::TOP_BOTTOM;
+        case enum_loc_side::TOP_LEFT:
+            return ucap::LocSide::TOP_LEFT;
+        case enum_loc_side::TOP_RIGHT_BOTTOM:
+            return ucap::LocSide::TOP_RIGHT_BOTTOM;
+        case enum_loc_side::TOP_RIGHT_LEFT:
+            return ucap::LocSide::TOP_RIGHT_LEFT;
+        case enum_loc_side::TOP_BOTTOM_LEFT:
+            return ucap::LocSide::TOP_BOTTOM_LEFT;
+        case enum_loc_side::TOP_RIGHT_BOTTOM_LEFT:
+            return ucap::LocSide::TOP_RIGHT_BOTTOM_LEFT;
+        case enum_loc_side::BOTTOM_LEFT:
+            return ucap::LocSide::BOTTOM_LEFT;
         default:
             throw std::runtime_error("Unknown enum_loc_side");
     }

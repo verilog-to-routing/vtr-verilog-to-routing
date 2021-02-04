@@ -234,12 +234,26 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <!-- Note that 16 enum solutions are used here in order to
+       maintain back-compatibility with old rr_graph XML files
+       where the first four types are the same -->
   <xs:simpleType name="loc_side">
     <xs:restriction base="xs:string">
       <xs:enumeration value="LEFT"/>
       <xs:enumeration value="RIGHT"/>
       <xs:enumeration value="TOP"/>
       <xs:enumeration value="BOTTOM"/>
+      <xs:enumeration value="RIGHT_LEFT"/>
+      <xs:enumeration value="RIGHT_BOTTOM"/>
+      <xs:enumeration value="RIGHT_BOTTOM_LEFT"/>
+      <xs:enumeration value="TOP_RIGHT"/>
+      <xs:enumeration value="TOP_BOTTOM"/>
+      <xs:enumeration value="TOP_LEFT"/>
+      <xs:enumeration value="TOP_RIGHT_BOTTOM"/>
+      <xs:enumeration value="TOP_RIGHT_LEFT"/>
+      <xs:enumeration value="TOP_BOTTOM_LEFT"/>
+      <xs:enumeration value="TOP_RIGHT_BOTTOM_LEFT"/>
+      <xs:enumeration value="BOTTOM_LEFT"/>
     </xs:restriction>
   </xs:simpleType>
 
