@@ -18,6 +18,21 @@
  * It also specifies which regions the partitions should be placed in. Atoms cannot be placed in more than one partition.
  * If an atom is assigned to more than one partition, the last partition is was assigned to will be the partition it is placed in.
  *
+ * Related Classes
+ * ===============
+ * The following definitions are useful to understanding this class:
+ *
+ * Partition: a grouping of atoms that are constrained to a portion of an FPGA
+ * See vpr/base/partition.h for more detail
+ *
+ * Region: the x and y bounds of a rectangular region, optionally including a subtile value,
+ * that atoms in a partition are constrained to
+ * See vpr/base/region.h for more detail
+ *
+ * PartitionRegion: the union of regions that a partition can be placed in
+ * See vpr/base/partition_region.h for more detail
+ *
+ *
  */
 
 class VprConstraints {
@@ -66,13 +81,6 @@ class VprConstraints {
     int get_num_partitions();
 
     /**
-     * @brief Sets the number of partitions in the object
-     *
-     *   @param num_parts The number of partitions in the partitions vector
-     */
-    void set_num_partitions(int num_parts);
-
-    /**
      * @brief Returns the PartitionRegion belonging to the specified Partition
      *
      *   @param part_id The id of the partition whose PartitionRegion is needed
@@ -89,12 +97,6 @@ class VprConstraints {
      * Store all partitions
      */
     vtr::vector<PartitionId, Partition> partitions;
-
-    /**
-     * Store number of partitions - the number of partitions in the partitions vector.
-     * Used when echoing VprConstraints objects.
-     */
-    int num_partitions;
 };
 
 #endif /* VPR_CONSTRAINTS_H */

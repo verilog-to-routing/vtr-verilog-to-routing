@@ -49,11 +49,7 @@ std::vector<AtomBlockId> VprConstraints::get_part_atoms(PartitionId part_id) {
 }
 
 int VprConstraints::get_num_partitions() {
-    return num_partitions;
-}
-
-void VprConstraints::set_num_partitions(int num_parts) {
-    num_partitions = num_parts;
+    return partitions.size();
 }
 
 PartitionRegion VprConstraints::get_partition_pr(PartitionId part_id) {

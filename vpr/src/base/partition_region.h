@@ -25,7 +25,7 @@ class PartitionRegion {
     std::vector<Region> get_partition_region();
 
     /**
-     * @brief Check if the PartitionRegion is empty (ie. holds no regions in its vector)
+     * @brief Check if the PartitionRegion is empty (meaning there is no constraint on the object the PartitionRegion belongs to)
      */
     bool empty();
 

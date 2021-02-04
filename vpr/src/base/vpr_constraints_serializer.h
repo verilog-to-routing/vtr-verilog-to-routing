@@ -295,9 +295,6 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     virtual void finish_load() final {
-        //Pass the object the total number of partitions that were read in
-        //This number is used when echoing VprConstraints objects
-        constraints_.set_num_partitions(num_partitions_);
     }
 
     //temp data for loads

@@ -31,9 +31,6 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
             read_vpr_constraints_name);
     }
 
-    //VprConstraints constraints = reader.constraints_;
-    //int num_parts = reader.num_partitions_;
-
     //Update the floorplanning constraints in the floorplanning constraints context
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     floorplanning_ctx.constraints = reader.constraints_;

@@ -70,8 +70,6 @@
 #include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
-#include "constraints_load.h"
-
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
@@ -225,7 +223,7 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
 
 static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_id,
                                                                  const ClusterBlockId clb_index,
-                                                                 int verbosity,
+                                                                 const int verbosity,
                                                                  PartitionRegion& temp_cluster_pr,
                                                                  bool& cluster_pr_needs_update);
 
@@ -1249,7 +1247,6 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                   t_ext_pin_util max_external_pin_util) {
     int molecule_size, failed_location;
     int i;
-    int j;
     enum e_block_pack_status block_pack_status;
     t_pb* parent;
     t_pb* cur_pb;
@@ -1289,11 +1286,11 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
     PartitionRegion temp_cluster_pr;
     bool cluster_pr_needs_update = false;
 
-    //for loop to check if cluster PartitionRegion intersects with atom PartitionRegion
-    for (j = 0; j < molecule_size; j++) {
+    //check if every atom in the molecule is legal in the cluster from a floorplanning perspective
+    for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
         //try to intersect with atom PartitionRegion if atom exists
-        if (molecule->atom_block_ids[j]) {
-            block_pack_status = atom_cluster_floorplanning_check(molecule->atom_block_ids[j],
+        if (molecule->atom_block_ids[i_mol]) {
+            block_pack_status = atom_cluster_floorplanning_check(molecule->atom_block_ids[i_mol],
                                                                  clb_index, verbosity,
                                                                  temp_cluster_pr,
                                                                  cluster_pr_needs_update);
@@ -1590,7 +1587,7 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
  */
 static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_id,
                                                                  const ClusterBlockId clb_index,
-                                                                 int verbosity,
+                                                                 const int verbosity,
                                                                  PartitionRegion& temp_cluster_pr,
                                                                  bool& cluster_pr_needs_update) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
@@ -1622,13 +1619,6 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
         cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
 
         if (cluster_pr.empty() == true) {
-            /*
-             * TO-DO: If a constrained atom passes here but then fails somewhere later in try_pack_molecule,
-             * the cluster's PartitionRegion will have been updated needlessly.
-             * Probably better to have another function at the end of try_pack_molecule that takes care of
-             * updating the cluster PartitionRegion once the atom passes all the checks
-             */
-            //floorplanning_ctx.cluster_constraints[clb_index] = atom_pr;
             temp_cluster_pr = atom_pr;
             cluster_pr_needs_update = true;
             if (verbosity > 3) {
@@ -1647,7 +1637,6 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
             return BLK_FAILED_FLOORPLANNING;
         } else {
             //update the cluster's PartitionRegion with the intersecting PartitionRegion
-            //floorplanning_ctx.cluster_constraints[clb_index] = intersect_pr;
             temp_cluster_pr = intersect_pr;
             cluster_pr_needs_update = true;
             if (verbosity > 3) {
