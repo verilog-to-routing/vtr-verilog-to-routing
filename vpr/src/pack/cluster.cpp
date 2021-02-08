@@ -191,7 +191,9 @@ static t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb*
 static void print_pack_status(int num_clb,
                               int tot_num_molecules,
                               int num_molecules_processed,
-                              std::map<t_logical_block_type_ptr, size_t> clb_types);
+                              int& mols_since_last_print,
+                              int device_width,
+                              int device_height);
 
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -401,8 +403,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *****************************************************************/
     VTR_ASSERT(packer_opts.packer_algorithm == PACK_GREEDY);
 
-    int num_molecules, num_molecules_processed, blocks_since_last_analysis, num_clb,
-        num_blocks_hill_added, max_cluster_size, cur_cluster_size,
+    int num_molecules, num_molecules_processed, mols_since_last_print, blocks_since_last_analysis,
+        num_clb, num_blocks_hill_added, max_cluster_size, cur_cluster_size,
         max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
         seedindex, savedseedindex /* index of next most timing critical block */,
         detailed_routing_stage, *hill_climbing_inputs_avail;
@@ -410,6 +412,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     const int verbosity = packer_opts.pack_verbosity;
 
     num_molecules_processed = 0;
+    mols_since_last_print = 0;
 
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 
@@ -581,6 +584,13 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
             //initial molecule in cluster has been processed
             num_molecules_processed++;
+            mols_since_last_print++;
+            print_pack_status(num_clb,
+                              num_molecules,
+                              num_molecules_processed,
+                              mols_since_last_print,
+                              device_ctx.grid.width(),
+                              device_ctx.grid.height());
 
             VTR_LOGV(verbosity > 2,
                      "Complex block %d: '%s' (%s) ", num_clb,
@@ -689,6 +699,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
                 //Since molecule passed, update num_molecules_processed
                 num_molecules_processed++;
+                mols_since_last_print++;
+                print_pack_status(num_clb, num_molecules,
+                                  num_molecules_processed,
+                                  mols_since_last_print,
+                                  device_ctx.grid.width(),
+                                  device_ctx.grid.height());
 
                 update_cluster_stats(next_molecule, clb_index,
                                      is_clock, //Set of all clocks
@@ -762,7 +778,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 update_le_count(cur_pb, logic_block_type, le_pb_type, le_count);
 
                 //print clustering progress incrementally
-                print_pack_status(num_clb, num_molecules, num_molecules_processed, num_used_type_instances);
+                //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
 
                 free_pb_stats_recursive(cur_pb);
             } else {
@@ -823,17 +839,23 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 static void print_pack_status(int num_clb,
                               int tot_num_molecules,
                               int num_molecules_processed,
-                              std::map<t_logical_block_type_ptr, size_t> clb_types) {
-    //print an update every 10 clusters
-    if (num_clb % 50 == 0) {
+                              int& mols_since_last_print,
+                              int device_width,
+                              int device_height) {
+    const float print_frequency = 0.04;
+
+    double percentage = (num_molecules_processed / (double)tot_num_molecules) * 100;
+
+    int int_molecule_increment = (int)(print_frequency * tot_num_molecules);
+
+    //print update every 4% of molecules processed
+    if (mols_since_last_print == int_molecule_increment) {
+        VTR_LOG("\nMols since last print is %d", mols_since_last_print);
         VTR_LOG("\nCreated %d clusters\n", num_clb);
         VTR_LOG("Processed %d out of %d molecules\n", num_molecules_processed, tot_num_molecules);
-        VTR_LOG("Cluster types:\n");
-
-        for (auto i = clb_types.begin(); i != clb_types.end(); i++) {
-            VTR_LOG("\t %s: # blocks %zu \n", i->first->name, size_t(i->second));
-        }
-        VTR_LOG("\n");
+        VTR_LOG("%f percent of molecules processed\n", percentage);
+        VTR_LOG("FPGA size %d x %d\n", device_width, device_height);
+        mols_since_last_print = 0;
     }
 }
 
@@ -1406,6 +1428,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     if (cluster_pr_needs_update) {
                         floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
                         VTR_LOG("\nUpdated PartitionRegion of cluster %d\n", clb_index);
+                        std::vector<Region> pr = floorplanning_ctx.cluster_constraints[clb_index].get_partition_region();
+                        VTR_LOG("Cluster's partition region size is %d\n", pr.size());
                     }
 
                     for (i = 0; i < molecule_size; i++) {

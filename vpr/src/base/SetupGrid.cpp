@@ -406,6 +406,8 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         size_t incry = p.parse_formula(yspec.incr_expr, vars);
         size_t repeaty = p.parse_formula(yspec.repeat_expr, vars);
 
+        warn_out_of_range = false;
+
         //Check start against the device dimensions
         // Start locations outside the device will never create block instances
         if (startx > grid_width - 1) {
