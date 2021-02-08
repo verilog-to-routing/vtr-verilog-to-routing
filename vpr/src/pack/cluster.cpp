@@ -188,6 +188,8 @@ static t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
 static t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb,
                                                                            t_cluster_placement_stats* cluster_placement_stats_ptr);
 
+static void print_pack_status_header();
+
 static void print_pack_status(int num_clb,
                               int tot_num_molecules,
                               int num_molecules_processed,
@@ -556,6 +558,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, seed_atoms);
 
+    print_pack_status_header();
+
     /****************************************************************
      * Clustering
      *****************************************************************/
@@ -836,6 +840,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     return num_used_type_instances;
 }
 
+static void print_pack_status_header() {
+    VTR_LOG("-------------------   --------------------------   ---------\n");
+    VTR_LOG("Molecules processed   Number of clusters created   FPGA size\n");
+    VTR_LOG("-------------------   --------------------------   ---------\n");
+}
+
 static void print_pack_status(int num_clb,
                               int tot_num_molecules,
                               int num_molecules_processed,
@@ -846,15 +856,24 @@ static void print_pack_status(int num_clb,
 
     double percentage = (num_molecules_processed / (double)tot_num_molecules) * 100;
 
+    int int_percentage = int(percentage);
+
     int int_molecule_increment = (int)(print_frequency * tot_num_molecules);
 
-    //print update every 4% of molecules processed
     if (mols_since_last_print == int_molecule_increment) {
-        VTR_LOG("\nMols since last print is %d", mols_since_last_print);
-        VTR_LOG("\nCreated %d clusters\n", num_clb);
-        VTR_LOG("Processed %d out of %d molecules\n", num_molecules_processed, tot_num_molecules);
-        VTR_LOG("%f percent of molecules processed\n", percentage);
-        VTR_LOG("FPGA size %d x %d\n", device_width, device_height);
+        VTR_LOG(
+            "%6d/%-6d  %3d%%   "
+            "%26d   "
+            "%3d x %-3d   ",
+            num_molecules_processed,
+            tot_num_molecules,
+            int_percentage,
+            num_clb,
+            device_width,
+            device_height);
+
+        VTR_LOG("\n");
+        fflush(stdout);
         mols_since_last_print = 0;
     }
 }
@@ -1427,9 +1446,9 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     //update cluster PartitionRegion if atom with floorplanning constraints was added
                     if (cluster_pr_needs_update) {
                         floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
-                        VTR_LOG("\nUpdated PartitionRegion of cluster %d\n", clb_index);
-                        std::vector<Region> pr = floorplanning_ctx.cluster_constraints[clb_index].get_partition_region();
-                        VTR_LOG("Cluster's partition region size is %d\n", pr.size());
+                        if (verbosity > 2) {
+                            VTR_LOG("\nUpdated PartitionRegion of cluster %d\n", clb_index);
+                        }
                     }
 
                     for (i = 0; i < molecule_size; i++) {
@@ -2249,8 +2268,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 
     if (num_used_type_instances[block_type] > num_instances) {
         device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
-        VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
-                 device_ctx.grid.width(), device_ctx.grid.height());
+        /*VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
+         * device_ctx.grid.width(), device_ctx.grid.height());*/
     }
 }
 
