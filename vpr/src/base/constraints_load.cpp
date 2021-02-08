@@ -67,16 +67,18 @@ void print_constraints(FILE* fp, VprConstraints constraints, int num_parts) {
     }
 }
 
-void echo_constraints(char* filename, VprConstraints constraints, int num_parts) {
+void echo_constraints(char* filename, VprConstraints constraints) {
     FILE* fp;
     fp = vtr::fopen(filename, "w");
+
+    int num_of_parts = constraints.get_num_partitions();
 
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "Constraints\n");
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "\n");
-    fprintf(fp, "\n Number of partitions is %d \n", num_parts);
-    print_constraints(fp, constraints, num_parts);
+    fprintf(fp, "\n Number of partitions is %d \n", num_of_parts);
+    print_constraints(fp, constraints, num_of_parts);
 
     fclose(fp);
 }

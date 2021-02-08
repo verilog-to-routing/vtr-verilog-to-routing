@@ -7,6 +7,6 @@
 #include "vpr_constraints.h"
 #include "vtr_vector.h"
 
-void echo_constraints(char* filename, VprConstraints constraints, int num_parts);
+void echo_constraints(char* filename, VprConstraints constraints);
 
 #endif

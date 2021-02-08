@@ -131,6 +131,7 @@ static void print_stats() {
 }
 
 static void print_clustering_stats_header() {
+    VTR_LOG("Final Clustering Statistics: \n");
     VTR_LOG("----------   --------   ------------------------------------   --------------------------\n");
     VTR_LOG("Block Type   # Blocks   Avg. # of input clocks and pins used   Avg. # of output pins used\n");
     VTR_LOG("----------   --------   ------------------------------------   --------------------------\n");

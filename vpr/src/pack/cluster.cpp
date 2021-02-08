@@ -840,12 +840,15 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     return num_used_type_instances;
 }
 
+/*print the header for the clustering progress table*/
 static void print_pack_status_header() {
+    VTR_LOG("Starting Clustering - Clustering Progress: \n");
     VTR_LOG("-------------------   --------------------------   ---------\n");
     VTR_LOG("Molecules processed   Number of clusters created   FPGA size\n");
     VTR_LOG("-------------------   --------------------------   ---------\n");
 }
 
+/*incrementally print progress updates during clustering*/
 static void print_pack_status(int num_clb,
                               int tot_num_molecules,
                               int num_molecules_processed,
@@ -1444,6 +1447,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     }
 
                     //update cluster PartitionRegion if atom with floorplanning constraints was added
+                    /* TODO: Create temp_cluster_pr in start_new_cluster and pass to this function
+                     * by reference so that this check is not needed */
                     if (cluster_pr_needs_update) {
                         floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
                         if (verbosity > 2) {
@@ -2268,8 +2273,6 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 
     if (num_used_type_instances[block_type] > num_instances) {
         device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
-        /*VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
-         * device_ctx.grid.width(), device_ctx.grid.height());*/
     }
 }
 
@@ -2591,6 +2594,7 @@ static void check_clustering() {
     }
 }
 
+/*Print the contents of each cluster to an echo file*/
 static void echo_clusters(char* filename) {
     FILE* fp;
     fp = vtr::fopen(filename, "w");

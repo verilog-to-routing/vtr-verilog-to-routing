@@ -382,6 +382,8 @@ struct FloorplanningContext : public Context {
      *
      * Provides all information needed about floorplanning constraints, including
      * which atoms are constrained and the regions they are constrained to.
+     *
+     * The constraints are input into vpr and do not change.
      */
     VprConstraints constraints;
 
@@ -391,6 +393,8 @@ struct FloorplanningContext : public Context {
      * Each cluster will have a PartitionRegion specifying its regions constraints
      * according to the constrained atoms packed into it. This structure allows the floorplanning
      * constraints for a given cluster to be found easily given its ClusterBlockId.
+     *
+     * The constraints on each cluster are computed during the clustering process and can change.
      */
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
 };
