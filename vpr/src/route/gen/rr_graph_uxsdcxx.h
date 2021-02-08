@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
- * Input file: /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
- * md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
+ * Cmdline: uxsdcxx/uxsdcxx.py /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+ * Input file: /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+ * md5sum of input file: cd57d47fc9dfa62c7030397ca759217e
  */
 
 #include <functional>
@@ -1762,7 +1762,7 @@ constexpr const char* lookup_switch_type[] = {"UXSD_INVALID", "mux", "tristate",
 constexpr const char* lookup_pin_type[] = {"UXSD_INVALID", "OPEN", "OUTPUT", "INPUT"};
 constexpr const char* lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "SOURCE", "SINK", "OPIN", "IPIN"};
 constexpr const char* lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR"};
-constexpr const char* lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM"};
+constexpr const char* lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
 
 /* Lexers(string->token functions) for enums. */
 inline enum_switch_type lex_enum_switch_type(const char* in, bool throw_on_invalid, const std::function<void(const char*)>* report_error) {
@@ -2114,6 +2114,231 @@ inline enum_loc_side lex_enum_loc_side(const char* in, bool throw_on_invalid, co
                             switch (in[5]) {
                                 case onechar('M', 0, 8):
                                     return enum_loc_side::BOTTOM;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 8:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('T', 0, 64) | onechar('O', 8, 64) | onechar('P', 16, 64) | onechar('_', 24, 64) | onechar('L', 32, 64) | onechar('E', 40, 64) | onechar('F', 48, 64) | onechar('T', 56, 64):
+                    return enum_loc_side::TOP_LEFT;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 9:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('T', 0, 64) | onechar('O', 8, 64) | onechar('P', 16, 64) | onechar('_', 24, 64) | onechar('R', 32, 64) | onechar('I', 40, 64) | onechar('G', 48, 64) | onechar('H', 56, 64):
+                    switch (in[8]) {
+                        case onechar('T', 0, 8):
+                            return enum_loc_side::TOP_RIGHT;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 10:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('R', 0, 64) | onechar('I', 8, 64) | onechar('G', 16, 64) | onechar('H', 24, 64) | onechar('T', 32, 64) | onechar('_', 40, 64) | onechar('L', 48, 64) | onechar('E', 56, 64):
+                    switch (in[8]) {
+                        case onechar('F', 0, 8):
+                            switch (in[9]) {
+                                case onechar('T', 0, 8):
+                                    return enum_loc_side::RIGHT_LEFT;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case onechar('T', 0, 64) | onechar('O', 8, 64) | onechar('P', 16, 64) | onechar('_', 24, 64) | onechar('B', 32, 64) | onechar('O', 40, 64) | onechar('T', 48, 64) | onechar('T', 56, 64):
+                    switch (in[8]) {
+                        case onechar('O', 0, 8):
+                            switch (in[9]) {
+                                case onechar('M', 0, 8):
+                                    return enum_loc_side::TOP_BOTTOM;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 11:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('B', 0, 64) | onechar('O', 8, 64) | onechar('T', 16, 64) | onechar('T', 24, 64) | onechar('O', 32, 64) | onechar('M', 40, 64) | onechar('_', 48, 64) | onechar('L', 56, 64):
+                    switch (in[8]) {
+                        case onechar('E', 0, 8):
+                            switch (in[9]) {
+                                case onechar('F', 0, 8):
+                                    switch (in[10]) {
+                                        case onechar('T', 0, 8):
+                                            return enum_loc_side::BOTTOM_LEFT;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 12:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('R', 0, 64) | onechar('I', 8, 64) | onechar('G', 16, 64) | onechar('H', 24, 64) | onechar('T', 32, 64) | onechar('_', 40, 64) | onechar('B', 48, 64) | onechar('O', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('T', 0, 32) | onechar('T', 8, 32) | onechar('O', 16, 32) | onechar('M', 24, 32):
+                            return enum_loc_side::RIGHT_BOTTOM;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 14:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('T', 0, 64) | onechar('O', 8, 64) | onechar('P', 16, 64) | onechar('_', 24, 64) | onechar('R', 32, 64) | onechar('I', 40, 64) | onechar('G', 48, 64) | onechar('H', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('T', 0, 32) | onechar('_', 8, 32) | onechar('L', 16, 32) | onechar('E', 24, 32):
+                            switch (in[12]) {
+                                case onechar('F', 0, 8):
+                                    switch (in[13]) {
+                                        case onechar('T', 0, 8):
+                                            return enum_loc_side::TOP_RIGHT_LEFT;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 15:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('T', 0, 64) | onechar('O', 8, 64) | onechar('P', 16, 64) | onechar('_', 24, 64) | onechar('B', 32, 64) | onechar('O', 40, 64) | onechar('T', 48, 64) | onechar('T', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('O', 0, 32) | onechar('M', 8, 32) | onechar('_', 16, 32) | onechar('L', 24, 32):
+                            switch (in[12]) {
+                                case onechar('E', 0, 8):
+                                    switch (in[13]) {
+                                        case onechar('F', 0, 8):
+                                            switch (in[14]) {
+                                                case onechar('T', 0, 8):
+                                                    return enum_loc_side::TOP_BOTTOM_LEFT;
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 16:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('T', 0, 64) | onechar('O', 8, 64) | onechar('P', 16, 64) | onechar('_', 24, 64) | onechar('R', 32, 64) | onechar('I', 40, 64) | onechar('G', 48, 64) | onechar('H', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('T', 0, 64) | onechar('_', 8, 64) | onechar('B', 16, 64) | onechar('O', 24, 64) | onechar('T', 32, 64) | onechar('T', 40, 64) | onechar('O', 48, 64) | onechar('M', 56, 64):
+                            return enum_loc_side::TOP_RIGHT_BOTTOM;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 17:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('R', 0, 64) | onechar('I', 8, 64) | onechar('G', 16, 64) | onechar('H', 24, 64) | onechar('T', 32, 64) | onechar('_', 40, 64) | onechar('B', 48, 64) | onechar('O', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('T', 0, 64) | onechar('T', 8, 64) | onechar('O', 16, 64) | onechar('M', 24, 64) | onechar('_', 32, 64) | onechar('L', 40, 64) | onechar('E', 48, 64) | onechar('F', 56, 64):
+                            switch (in[16]) {
+                                case onechar('T', 0, 8):
+                                    return enum_loc_side::RIGHT_BOTTOM_LEFT;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 21:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('T', 0, 64) | onechar('O', 8, 64) | onechar('P', 16, 64) | onechar('_', 24, 64) | onechar('R', 32, 64) | onechar('I', 40, 64) | onechar('G', 48, 64) | onechar('H', 56, 64):
+                    switch (*((triehash_uu64*)&in[8])) {
+                        case onechar('T', 0, 64) | onechar('_', 8, 64) | onechar('B', 16, 64) | onechar('O', 24, 64) | onechar('T', 32, 64) | onechar('T', 40, 64) | onechar('O', 48, 64) | onechar('M', 56, 64):
+                            switch (*((triehash_uu32*)&in[16])) {
+                                case onechar('_', 0, 32) | onechar('L', 8, 32) | onechar('E', 16, 32) | onechar('F', 24, 32):
+                                    switch (in[20]) {
+                                        case onechar('T', 0, 8):
+                                            return enum_loc_side::TOP_RIGHT_BOTTOM_LEFT;
+                                            break;
+                                        default:
+                                            break;
+                                    }
                                     break;
                                 default:
                                     break;
