@@ -210,7 +210,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                   int verbosity,
                                                   bool enable_pin_feasibility_filter,
                                                   const int feasible_block_array_size,
-                                                  t_ext_pin_util max_external_pin_util);
+                                                  t_ext_pin_util max_external_pin_util,
+                                                  PartitionRegion& temp_cluster_pr);
 
 static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                                                          const AtomBlockId blk_id,
@@ -276,7 +277,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               int verbosity,
                               bool enable_pin_feasibility_filter,
                               bool balance_block_type_utilization,
-                              const int feasible_block_array_size);
+                              const int feasible_block_array_size,
+                              PartitionRegion& temp_cluster_pr);
 
 static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -572,6 +574,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
             VTR_LOGV(verbosity > 2, "Complex block %d:\n", num_clb);
 
+            /*this temp structure is used to store updates to the cluster's
+             * floorplanning constraints before they are stored long-term*/
+            PartitionRegion temp_cluster_pr;
+
             start_new_cluster(cluster_placement_stats, primitives_list,
                               atom_molecules, clb_index, istart,
                               num_used_type_instances,
@@ -584,7 +590,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               packer_opts.pack_verbosity,
                               packer_opts.enable_pin_feasibility_filter,
                               balance_block_type_utilization,
-                              packer_opts.feasible_block_array_size);
+                              packer_opts.feasible_block_array_size,
+                              temp_cluster_pr);
 
             //initial molecule in cluster has been processed
             num_molecules_processed++;
@@ -649,7 +656,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                       packer_opts.pack_verbosity,
                                                       packer_opts.enable_pin_feasibility_filter,
                                                       packer_opts.feasible_block_array_size,
-                                                      target_ext_pin_util);
+                                                      target_ext_pin_util,
+                                                      temp_cluster_pr);
                 prev_molecule = next_molecule;
 
                 auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
@@ -1288,7 +1296,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                   int verbosity,
                                                   bool enable_pin_feasibility_filter,
                                                   const int feasible_block_array_size,
-                                                  t_ext_pin_util max_external_pin_util) {
+                                                  t_ext_pin_util max_external_pin_util,
+                                                  PartitionRegion& temp_cluster_pr) {
     int molecule_size, failed_location;
     int i;
     enum e_block_pack_status block_pack_status;
@@ -1327,7 +1336,6 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
         return BLK_FAILED_FEASIBLE;
     }
 
-    PartitionRegion temp_cluster_pr;
     bool cluster_pr_needs_update = false;
 
     //check if every atom in the molecule is legal in the cluster from a floorplanning perspective
@@ -1447,8 +1455,6 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     }
 
                     //update cluster PartitionRegion if atom with floorplanning constraints was added
-                    /* TODO: Create temp_cluster_pr in start_new_cluster and pass to this function
-                     * by reference so that this check is not needed */
                     if (cluster_pr_needs_update) {
                         floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
                         if (verbosity > 2) {
@@ -2132,7 +2138,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               int verbosity,
                               bool enable_pin_feasibility_filter,
                               bool balance_block_type_utilization,
-                              const int feasible_block_array_size) {
+                              const int feasible_block_array_size,
+                              PartitionRegion& temp_cluster_pr) {
     /* Given a starting seed block, start_new_cluster determines the next cluster type to use
      * It expands the FPGA if it cannot find a legal cluster for the atom block
      */
@@ -2218,7 +2225,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                                             verbosity,
                                             enable_pin_feasibility_filter,
                                             feasible_block_array_size,
-                                            FULL_EXTERNAL_PIN_UTIL);
+                                            FULL_EXTERNAL_PIN_UTIL,
+                                            temp_cluster_pr);
 
             success = (pack_result == BLK_PASSED);
         }
@@ -2630,6 +2638,31 @@ static void echo_clusters(char* filename) {
         for (auto j = 0; j < num_atoms; j++) {
             AtomBlockId atom_id = i->second[j];
             fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
+        }
+    }
+
+    fprintf(fp, "\nCLUSTER CONSTRAINTS:\n");
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+
+    for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
+        std::vector<Region> reg = floorplanning_ctx.cluster_constraints[clb_id].get_partition_region();
+        if (reg.size() != 0) {
+            fprintf(fp, "\nRegions in Cluster %zu:\n", size_t(clb_id));
+            for (unsigned int i = 0; i < reg.size(); i++) {
+                vtr::Rect<int> rect = reg[i].get_region_rect();
+                int xmin = rect.xmin();
+                int xmax = rect.xmax();
+                int ymin = rect.ymin();
+                int ymax = rect.ymax();
+                int subtile = reg[i].get_sub_tile();
+
+                fprintf(fp, "\tRegion: \n");
+                fprintf(fp, "\txmin: %d\n", xmin);
+                fprintf(fp, "\tymin: %d\n", ymin);
+                fprintf(fp, "\txmax: %d\n", xmax);
+                fprintf(fp, "\tymax: %d\n", ymax);
+                fprintf(fp, "\tsubtile: %d\n\n", subtile);
+            }
         }
     }
 
