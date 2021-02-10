@@ -1181,6 +1181,18 @@ static void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_siz
 
 /**
  * Cleans up a pb after unsuccessful molecule packing
+ *
+ * Recursively frees pbs from a t_pb tree. The given root pb itself is not
+ * deleted.
+ *
+ * If a pb object has its children allocated then before freeing them the
+ * function checks if there is no atom that corresponds to any of them. The
+ * check is performed only for leaf (primitive) pbs. The function recurses for
+ * non-primitive pbs.
+ *
+ * The cleaning itself includes deleting all child pbs, resetting mode of the
+ * pb and also freeing its name. This prepares the pb for another round of
+ * molecule packing tryout. 
  */
 static bool cleanup_pb(t_pb* pb) {
     bool can_free = true;
@@ -1417,7 +1429,9 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     }
                 }
 
-                /* Placement failed, clean the pb */
+                /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
+                 * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
+                 * their modes reset. This task is performed by the cleanup_pb() function below. */
                 cleanup_pb(pb);
 
             } else {
