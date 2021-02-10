@@ -191,9 +191,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
             //Check if it satisfies the block counts
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts, maximum_device_utilization)) {
                 //Re-build the grid at the final size with out-of-range
-                //warnings turned on (so users are aware of out-of-range issues
-                //at the final device sizes)
-                grid = build_device_grid(grid_def, width, height, true, limiting_resources);
+                grid = build_device_grid(grid_def, width, height, false, limiting_resources);
                 return grid;
             }
 
@@ -405,8 +403,6 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         size_t endy = p.parse_formula(yspec.end_expr, vars);
         size_t incry = p.parse_formula(yspec.incr_expr, vars);
         size_t repeaty = p.parse_formula(yspec.repeat_expr, vars);
-
-        warn_out_of_range = false;
 
         //Check start against the device dimensions
         // Start locations outside the device will never create block instances

@@ -3,7 +3,7 @@
 static void print_region(FILE* fp, Region region);
 static void print_partition(FILE* fp, Partition part);
 static void print_partition_region(FILE* fp, PartitionRegion pr);
-static void print_constraints(FILE* fp, VprConstraints constraints, int num_parts);
+static void print_constraints(FILE* fp, VprConstraints constraints);
 
 void print_region(FILE* fp, Region region) {
     vtr::Rect<int> rect = region.get_region_rect();
@@ -42,9 +42,13 @@ void print_partition_region(FILE* fp, PartitionRegion pr) {
     }
 }
 
-void print_constraints(FILE* fp, VprConstraints constraints, int num_parts) {
+void print_constraints(FILE* fp, VprConstraints constraints) {
     Partition temp_part;
     std::vector<AtomBlockId> atoms;
+
+    int num_parts = constraints.get_num_partitions();
+
+    fprintf(fp, "\n Number of partitions is %d \n", num_parts);
 
     for (int i = 0; i < num_parts; i++) {
         PartitionId part_id(i);
@@ -71,14 +75,11 @@ void echo_constraints(char* filename, VprConstraints constraints) {
     FILE* fp;
     fp = vtr::fopen(filename, "w");
 
-    int num_of_parts = constraints.get_num_partitions();
-
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "Constraints\n");
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "\n");
-    fprintf(fp, "\n Number of partitions is %d \n", num_of_parts);
-    print_constraints(fp, constraints, num_of_parts);
+    print_constraints(fp, constraints);
 
     fclose(fp);
 }
