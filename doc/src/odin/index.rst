@@ -31,9 +31,9 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
 .. toctree::
    :glob:
    :maxdepth: 2
-   :Caption: Developper Guide
+   :Caption: Developer Guide
 
-   dev_guide/contributing   
-   dev_guide/regression_test   
-   dev_guide/verify_script   
-   dev_guide/testing   
+   dev_guide/contributing
+   dev_guide/regression_test
+   dev_guide/verify_script
+   dev_guide/testing

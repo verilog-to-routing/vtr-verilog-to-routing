@@ -3,7 +3,7 @@
 The verify_odin.sh script will simulate the microbenchmarks and a larger set of benchmark circuits.
 These scripts use simulation results which have been verified against ModelSim.
 
-After you build Odin II, run 'make test' to ensure that everything is working correctly on your system. 
+After you build Odin II, run 'make test' to ensure that everything is working correctly on your system.
 Unlike the verify\_regression\_tests.sh script, verify\_odin.sh also simulates the
 blif output, as well as simulating the verilog with and without the
 architecture file.
@@ -15,7 +15,7 @@ The Odin II simulator will produce a test.do file containing clock and input vec
 
 When additional circuits are found to agree with ModelSim, they should be added to the regression tests.
 When new features are added to Odin II, new microbenchmarks should be developed which test those features for regression.
-This process is illustrated in the Developper Guide, in the Regression Tests section.
+This process is illustrated in the Developer Guide, in the Regression Tests section.
 
 ## USING MODELSIM TO TEST ODIN II
 
