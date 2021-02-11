@@ -2124,7 +2124,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
     /* As nodes may appear on more than one side, walk through the possible nodes 
      * - draw the pin on each side that it appears
      */
-    for (const e_side& pin_side : SIDES) { 
+    for (const e_side& pin_side : SIDES) {
         if (!device_ctx.rr_nodes[inode].is_node_on_specific_side(pin_side)) {
             continue;
         }
@@ -3010,8 +3010,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
      * Note: Similar rules are applied for grid that has width > 1 and height > 1
      *       This is because (xlow, ylow) or (xhigh, yhigh) of the node follows 
      *       the actual offset of the pin in the context of grid width and height
-     *
-     */ 
+     */
     std::vector<e_side> pin_candidate_sides;
     for (const e_side& pin_candidate_side : SIDES) {
         if (pin_rr.is_node_on_specific_side(pin_candidate_side)) {
@@ -3021,7 +3020,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     /* Only 1 side will be picked in the end
      * Any rr_node of a grid should have at least 1 side!!!
      */
-    e_side pin_side = NUM_SIDES; 
+    e_side pin_side = NUM_SIDES;
     if (1 == pin_candidate_sides.size()) {
         pin_side = pin_candidate_sides[0];
     } else {
