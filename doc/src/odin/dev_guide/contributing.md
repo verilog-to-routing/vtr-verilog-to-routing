@@ -1,11 +1,11 @@
 # Contributing
 
 The Odin II team welcomes outside help from anyone interested.
-To fix issues or add a new feature submit a PR or WIP PR following the provided guidelines.  
+To fix issues or add a new feature submit a PR or WIP PR following the provided guidelines.
 
 ## Creating a Pull Request (PR)
 
-**Important** Before creating a Pull Request (PR), if it is a bug you have happened upon and intend to fix make sure you create an issue beforhand.
+**Important** Before creating a Pull Request (PR), if it is a bug you have happened upon and intend to fix make sure you create an issue beforehand.
 
 Pull requests are intended to correct bugs and improve Odin's performance.
 To create a pull request, clone the vtr-verilog-rooting repository and branch from the master.
@@ -18,12 +18,12 @@ Add a description of the changes made and reference the "issue" that it corrects
 
 ### Creating a "Work in progress" (WIP) PR
 
-**Important** Before creating a WIP PR, if it is a bug you have happened upon and intend to fix make sure you create an issue beforhand.
+**Important** Before creating a WIP PR, if it is a bug you have happened upon and intend to fix make sure you create an issue beforehand.
 
 A "work in progress" PR is a pull request that isn't complete or ready to be merged.
 It is intended to demonstrate that an Issue is being addressed and indicates to other developpers that they don't need to fix it.
 Creating a WIP PR is similar to a regular PR with a few adjustements.
-First, clone the vtr-verilog-rooting repository and branch from the master.
+First, clone the [vtr-verilog-rooting repository](https://github.com/verilog-to-routing/vtr-verilog-to-routing) and branch from the master.
 Make changes to that branch.
 Then, create a pull request with that branch and **include WIP in the title.**
 This will automatically indicate that this PR is not ready to be merged.
