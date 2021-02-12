@@ -41,4 +41,7 @@ class PartitionRegion {
     std::vector<Region> partition_region; ///< union of rectangular regions that a partition can be placed in
 };
 
+///@brief used to print data from a PartitionRegion
+void print_partition_region(FILE* fp, PartitionRegion pr);
+
 #endif /* PARTITION_REGIONS_H */

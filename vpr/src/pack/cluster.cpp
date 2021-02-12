@@ -574,8 +574,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
             VTR_LOGV(verbosity > 2, "Complex block %d:\n", num_clb);
 
-            /*this temp structure is used to store updates to the cluster's
-             * floorplanning constraints before they are stored long-term*/
+            /*Used to store cluster's PartitionRegion as primitives are added to it.
+             * Since some of the primitives might fail legality, this structure temporarily
+             * stores PartitionRegion information while the cluster is packed*/
             PartitionRegion temp_cluster_pr;
 
             start_new_cluster(cluster_placement_stats, primitives_list,
@@ -2641,7 +2642,7 @@ static void echo_clusters(char* filename) {
         }
     }
 
-    fprintf(fp, "\nCLUSTER CONSTRAINTS:\n");
+    fprintf(fp, "\nCluster Floorplanning Constraints:\n");
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
     for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
@@ -2649,19 +2650,7 @@ static void echo_clusters(char* filename) {
         if (reg.size() != 0) {
             fprintf(fp, "\nRegions in Cluster %zu:\n", size_t(clb_id));
             for (unsigned int i = 0; i < reg.size(); i++) {
-                vtr::Rect<int> rect = reg[i].get_region_rect();
-                int xmin = rect.xmin();
-                int xmax = rect.xmax();
-                int ymin = rect.ymin();
-                int ymax = rect.ymax();
-                int subtile = reg[i].get_sub_tile();
-
-                fprintf(fp, "\tRegion: \n");
-                fprintf(fp, "\txmin: %d\n", xmin);
-                fprintf(fp, "\tymin: %d\n", ymin);
-                fprintf(fp, "\txmax: %d\n", xmax);
-                fprintf(fp, "\tymax: %d\n", ymax);
-                fprintf(fp, "\tsubtile: %d\n\n", subtile);
+                print_region(fp, reg[i]);
             }
         }
     }

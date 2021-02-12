@@ -145,6 +145,10 @@ Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
 template<class T>
 Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs);
 
+//Prints a rectangle
+template<class T>
+static void print_rect(FILE* fp, const Rect<T> rect);
+
 //Sample on a uniformly spaced grid within a rectangle
 //  sample(vtr::Rect(l, h), 0, 0, M) == l
 //  sample(vtr::Rect(l, h), M, M, M) == h

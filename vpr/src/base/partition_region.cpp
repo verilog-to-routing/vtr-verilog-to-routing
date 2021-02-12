@@ -1,4 +1,5 @@
 #include "partition_region.h"
+#include "region.h"
 
 void PartitionRegion::add_to_part_region(Region region) {
     partition_region.push_back(region);
@@ -32,4 +33,16 @@ PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2) {
     }
 
     return pr;
+}
+
+void print_partition_region(FILE* fp, PartitionRegion pr) {
+    std::vector<Region> part_region = pr.get_partition_region();
+
+    int pr_size = part_region.size();
+
+    fprintf(fp, "\tNumber of regions in partition is: %d\n", pr_size);
+
+    for (unsigned int i = 0; i < part_region.size(); i++) {
+        print_region(fp, part_region[i]);
+    }
 }
