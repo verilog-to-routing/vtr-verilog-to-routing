@@ -20,6 +20,8 @@
 #include "vpr_error.h"
 #include "vpr_types.h"
 
+#include "read_blif.h"
+
 #include "netlist_walker.h"
 #include "netlist_writer.h"
 
@@ -625,7 +627,13 @@ class BlackBoxInst : public Instance {
 
         //Verilog parameters
         for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
-            os << indent(depth + 1) << "." << iter->first << "(" << iter->second << ")";
+            /* Prepend a prefix if needed */
+            std::stringstream prefix;
+            if (is_binary_param(iter->second)) {
+                prefix << iter->second.length() << "'b";
+            }
+
+            os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
             if (iter != --params_.end()) {
                 os << ",";
             }
