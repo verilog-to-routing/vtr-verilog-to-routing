@@ -3012,7 +3012,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     std::vector<e_side> pin_candidate_sides;
     for (const e_side& pin_candidate_side : SIDES) {
         if ((pin_rr.is_node_on_specific_side(pin_candidate_side))
-           && (grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_candidate_side][pin_rr.pin_num()])) {
+            && (grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_candidate_side][pin_rr.pin_num()])) {
             pin_candidate_sides.push_back(pin_candidate_side);
         }
     }
@@ -3034,7 +3034,6 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
             pin_side = LEFT;
         }
         /* The inferred side must be in the list of sides of the pin rr_node!!! */
-        if (pin_candidate_sides.end() == std::find(pin_candidate_sides.begin(), pin_candidate_sides.end(), pin_side))
         VTR_ASSERT(pin_candidate_sides.end() != std::find(pin_candidate_sides.begin(), pin_candidate_sides.end(), pin_side));
     }
     /* Sanity check */
