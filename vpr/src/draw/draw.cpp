@@ -2963,8 +2963,6 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
 
     const t_grid_tile& grid_tile = device_ctx.grid[pin_rr.xlow()][pin_rr.ylow()];
     t_physical_tile_type_ptr grid_type = grid_tile.type;
-    VTR_ASSERT_MSG(grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_rr.side()][pin_rr.pin_num()],
-                   "Pin coordinates should match block type pin locations");
 
     float draw_pin_offset;
     if (pin_rr.is_node_on_specific_side(TOP) || pin_rr.is_node_on_specific_side(RIGHT)) {
@@ -3000,10 +2998,10 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
      *
      *
      * Therefore, when there are multiple side:
-     * - a TOP side node is considered when the ylow of CHANX == ylow of the node
-     * - a BOTTOM side node is considered when the ylow of CHANX == ylow - 1 of the node
-     * - a RIGHT side node is considered when the xlow of CHANY == xlow of the node
-     * - a LEFT side node is considered when the xlow of CHANY == xlow - 1 of the node
+     * - a TOP side node is considered when the ylow of CHANX >= ylow of the node
+     * - a BOTTOM side node is considered when the ylow of CHANX <= ylow - 1 of the node
+     * - a RIGHT side node is considered when the xlow of CHANY >= xlow of the node
+     * - a LEFT side node is considered when the xlow of CHANY <= xlow - 1 of the node
      *
      * Note: ylow == yhigh for CHANX and xlow == xhigh for CHANY
      *
@@ -3013,7 +3011,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
      */
     std::vector<e_side> pin_candidate_sides;
     for (const e_side& pin_candidate_side : SIDES) {
-        if (pin_rr.is_node_on_specific_side(pin_candidate_side)) {
+        if ((pin_rr.is_node_on_specific_side(pin_candidate_side))
+           && (grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_candidate_side][pin_rr.pin_num()])) {
             pin_candidate_sides.push_back(pin_candidate_side);
         }
     }
@@ -3025,20 +3024,22 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
         pin_side = pin_candidate_sides[0];
     } else {
         VTR_ASSERT(1 < pin_candidate_sides.size());
-        if (CHANX == pin_rr.type() && pin_rr.ylow() == chan_rr.ylow()) {
+        if (CHANX == chan_rr.type() && pin_rr.ylow() <= chan_rr.ylow()) {
             pin_side = TOP;
-        } else if (CHANX == pin_rr.type() && pin_rr.ylow() - 1 == chan_rr.ylow()) {
+        } else if (CHANX == chan_rr.type() && pin_rr.ylow() - 1 >= chan_rr.ylow()) {
             pin_side = BOTTOM;
-        } else if (CHANY == pin_rr.type() && pin_rr.xlow() == chan_rr.xlow()) {
+        } else if (CHANY == chan_rr.type() && pin_rr.xlow() <= chan_rr.xlow()) {
             pin_side = RIGHT;
-        } else if (CHANY == pin_rr.type() && pin_rr.xlow() - 1 == chan_rr.xlow()) {
+        } else if (CHANY == chan_rr.type() && pin_rr.xlow() - 1 >= chan_rr.xlow()) {
             pin_side = LEFT;
         }
         /* The inferred side must be in the list of sides of the pin rr_node!!! */
+        if (pin_candidate_sides.end() == std::find(pin_candidate_sides.begin(), pin_candidate_sides.end(), pin_side))
         VTR_ASSERT(pin_candidate_sides.end() != std::find(pin_candidate_sides.begin(), pin_candidate_sides.end(), pin_side));
     }
     /* Sanity check */
     VTR_ASSERT(NUM_SIDES != pin_side);
+
     draw_get_rr_pin_coords(pin_node, &x1, &y1, pin_side);
 
     ezgl::rectangle chan_bbox = draw_get_rr_chan_bbox(chan_node);
@@ -3094,7 +3095,10 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     VTR_ASSERT(device_ctx.rr_nodes[opin_node].type() == OPIN);
     VTR_ASSERT(device_ctx.rr_nodes[ipin_node].type() == IPIN);
 
-    /* Direct connection between grid pins are applicable ONLY to pins that appear on 1 side!!!*/
+    /* FIXME: May use a smarter strategy
+     * Currently, we use the first side found for both OPIN and IPIN 
+     * when draw the direct connection between the two nodes
+     */
     float x1 = 0, y1 = 0;
     std::vector<e_side> opin_candidate_sides;
     for (const e_side& pin_candidate_side : SIDES) {
@@ -3102,7 +3106,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
             opin_candidate_sides.push_back(pin_candidate_side);
         }
     }
-    VTR_ASSERT(1 == opin_candidate_sides.size());
+    VTR_ASSERT(1 <= opin_candidate_sides.size());
     draw_get_rr_pin_coords(opin_node, &x1, &y1, opin_candidate_sides[0]);
 
     float x2 = 0, y2 = 0;
@@ -3112,7 +3116,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
             ipin_candidate_sides.push_back(pin_candidate_side);
         }
     }
-    VTR_ASSERT(1 == ipin_candidate_sides.size());
+    VTR_ASSERT(1 <= ipin_candidate_sides.size());
 
     draw_get_rr_pin_coords(ipin_node, &x2, &y2, ipin_candidate_sides[0]);
 
