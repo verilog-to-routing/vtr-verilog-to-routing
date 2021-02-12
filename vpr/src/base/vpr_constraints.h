@@ -102,5 +102,4 @@ class VprConstraints {
 ///@brief used to print floorplanning constraints data from a VprConstraints object
 void print_constraints(FILE* fp, VprConstraints constraints);
 
-
 #endif /* VPR_CONSTRAINTS_H */
