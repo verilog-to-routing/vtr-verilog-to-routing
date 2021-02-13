@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
- * Input file: /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
- * md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
+ * Cmdline: uxsdcxx/uxsdcxx.py /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+ * Input file: /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
+ * md5sum of input file: cd57d47fc9dfa62c7030397ca759217e
  */
 
 #include <functional>
@@ -49,7 +49,18 @@ enum class enum_loc_side { UXSD_INVALID = 0,
                            LEFT,
                            RIGHT,
                            TOP,
-                           BOTTOM };
+                           BOTTOM,
+                           RIGHT_LEFT,
+                           RIGHT_BOTTOM,
+                           RIGHT_BOTTOM_LEFT,
+                           TOP_RIGHT,
+                           TOP_BOTTOM,
+                           TOP_LEFT,
+                           TOP_RIGHT_BOTTOM,
+                           TOP_RIGHT_LEFT,
+                           TOP_BOTTOM_LEFT,
+                           TOP_RIGHT_BOTTOM_LEFT,
+                           BOTTOM_LEFT };
 
 /* Base class for the schema. */
 struct DefaultRrGraphContextTypes {
@@ -135,7 +146,7 @@ class RrGraphBase {
 
     /** Generated for complex type "x_list":
      * <xs:complexType name="x_list">
-     *   
+     *
      *   <xs:attribute name="index" type="xs:unsignedInt" use="required" />
      *   <xs:attribute name="info" type="xs:int" use="required" />
      * </xs:complexType>
@@ -177,7 +188,7 @@ class RrGraphBase {
 
     /** Generated for complex type "timing":
      * <xs:complexType name="timing">
-     *   
+     *
      *   <xs:attribute name="R" type="xs:float" />
      *   <xs:attribute name="Cin" type="xs:float" />
      *   <xs:attribute name="Cinternal" type="xs:float" />
@@ -212,9 +223,9 @@ class RrGraphBase {
      *     <xs:element name="sizing" type="sizing" />
      *   </xs:all>
      *   <xs:attribute name="id" type="xs:int" use="required" />
-     *   
+     *
      *   <xs:attribute name="name" type="xs:string" use="required" />
-     *   
+     *
      *   <xs:attribute name="type" type="switch_type" />
      * </xs:complexType>
      */
