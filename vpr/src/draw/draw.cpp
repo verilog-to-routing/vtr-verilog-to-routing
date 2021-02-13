@@ -3095,29 +3095,29 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     VTR_ASSERT(device_ctx.rr_nodes[ipin_node].type() == IPIN);
 
     /* FIXME: May use a smarter strategy
-     * Currently, we use the first side found for both OPIN and IPIN 
+     * Currently, we use the last side found for both OPIN and IPIN 
      * when draw the direct connection between the two nodes
+     * Note: tried first side but see missing connections
      */
     float x1 = 0, y1 = 0;
     std::vector<e_side> opin_candidate_sides;
-    for (const e_side& pin_candidate_side : SIDES) {
-        if (device_ctx.rr_nodes[opin_node].is_node_on_specific_side(pin_candidate_side)) {
-            opin_candidate_sides.push_back(pin_candidate_side);
+    for (const e_side& opin_candidate_side : SIDES) {
+        if (device_ctx.rr_nodes[opin_node].is_node_on_specific_side(opin_candidate_side)) {
+            opin_candidate_sides.push_back(opin_candidate_side);
         }
     }
     VTR_ASSERT(1 <= opin_candidate_sides.size());
-    draw_get_rr_pin_coords(opin_node, &x1, &y1, opin_candidate_sides[0]);
+    draw_get_rr_pin_coords(opin_node, &x1, &y1, opin_candidate_sides.back());
 
     float x2 = 0, y2 = 0;
     std::vector<e_side> ipin_candidate_sides;
-    for (const e_side& pin_candidate_side : SIDES) {
-        if (device_ctx.rr_nodes[ipin_node].is_node_on_specific_side(pin_candidate_side)) {
-            ipin_candidate_sides.push_back(pin_candidate_side);
+    for (const e_side& ipin_candidate_side : SIDES) {
+        if (device_ctx.rr_nodes[ipin_node].is_node_on_specific_side(ipin_candidate_side)) {
+            ipin_candidate_sides.push_back(ipin_candidate_side);
         }
     }
     VTR_ASSERT(1 <= ipin_candidate_sides.size());
-
-    draw_get_rr_pin_coords(ipin_node, &x2, &y2, ipin_candidate_sides[0]);
+    draw_get_rr_pin_coords(ipin_node, &x2, &y2, ipin_candidate_sides.back());
 
     g->draw_line({x1, y1}, {x2, y2});
 
