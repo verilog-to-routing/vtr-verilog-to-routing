@@ -411,13 +411,13 @@ For example:
     .param multiplier 0.50
     .param power 001101
 
-Would set the parameters ``feedback``, ``multipleir`` and ``power``  of the above ``pll`` ``.subckt`` to ``"internal"``, ``0.50`` and ``001101`` respectively.
+Would set the parameters ``feedback``, ``multiplier`` and ``power``  of the above ``pll`` ``.subckt`` to ``"internal"``, ``0.50`` and ``001101`` respectively.
 
 Interpretation of parameter values is out of scope of the BLIF format extension.
 
 ``.param`` statements propagate to ``<parameter>`` elements in the packed netlist.
 
-Paramerer values propagate also to post-route Verilog netlist. Strings and real numbers are passed directly while binary words are prepended with the ``<N>'b`` prefix where ``N`` denotes a binary word length.
+Paramerer values propagate also to the post-route Verilog netlist, if it is generated. Strings and real numbers are passed directly while binary words are prepended with the ``<N>'b`` prefix where ``N`` denotes a binary word length.
 
 .attr
 ~~~~~
