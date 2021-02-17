@@ -21,6 +21,7 @@
 #include <unordered_set>
 #include <cctype> //std::isdigit
 #include <algorithm>
+#include <regex>
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
@@ -720,22 +721,14 @@ bool is_binary_param(const std::string& param) {
 }
 
 bool is_real_param(const std::string& param) {
-    const std::string real_chars = "0123456789.";
-
     /* Must be non-empty */
     if (param.empty()) {
         return false;
     }
 
-    /* The string mustn't contain any other chars that the expected ones */
-    for (size_t i = 0; i < param.length(); ++i) {
-        if (real_chars.find(param[i]) == std::string::npos) {
-            return false;
-        }
-    }
-
-    /* There must only be a single dot */
-    if (std::count(param.begin(), param.end(), '.') != 1) {
+    /* The string must match the regular expression */
+    static const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
+    if (!std::regex_match(param, real_number_expr)) {
         return false;
     }
 
