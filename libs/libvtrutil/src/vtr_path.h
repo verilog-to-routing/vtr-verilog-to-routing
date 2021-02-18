@@ -3,6 +3,10 @@
 #include <string>
 #include <array>
 
+/**
+ * @file 
+ * @brief This file defines some useful utilities to handle paths
+ */
 namespace vtr {
 
 ///@brief Splits off the name and extension (including ".") of the specified filename

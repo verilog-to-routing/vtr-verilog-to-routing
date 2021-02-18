@@ -69,9 +69,9 @@
  *
  * The StrongId template class takes one required and three optional template parameters:
  *
- *    1) Tag        - the unique type used to identify this type of Ids [Required]
- *    2) T          - the underlying integral id type (default: int) [Optional]
- *    3) T sentinel - a value representing an invalid Id (default: -1) [Optional]
+ *    1. Tag        - the unique type used to identify this type of Ids [Required]
+ *    2. T          - the underlying integral id type (default: int) [Optional]
+ *    3. T sentinel - a value representing an invalid Id (default: -1) [Optional]
  *
  * If no value is supllied during construction the StrongId is initialized to the invalid/sentinel value.
  *

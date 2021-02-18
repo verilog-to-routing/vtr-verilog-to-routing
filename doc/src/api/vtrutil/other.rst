@@ -6,7 +6,21 @@ vtr_expr_eval
 -------------
 .. doxygenfile:: vtr_expr_eval.h
    :project: vtr
+   :sections: briefdescription detaileddescription func innernamespace enum
 
+.. doxygenclass:: vtr::Formula_Object
+   :project: vtr
+   :members:
+
+.. doxygenclass:: vtr::FormulaParser
+   :project: vtr
+   :members:
+
+.. doxygenclass:: vtr::t_formula_data
+   :project: vtr
+   :members:
+
+ 
 vtr_color_map
 -------------
 .. doxygenfile:: vtr_color_map.h
@@ -25,12 +39,19 @@ vtr_logic
 ---------
 .. doxygenfile:: vtr_logic.h
    :project: vtr
+   :sections: innernamespace enum
 
 vtr_math
 --------
 .. doxygenfile:: vtr_math.h
    :project: vtr
+   :sections: briefdescription innernamespace func prototype
 
+.. doxygenfile:: vtr_math.cpp
+   :project: vtr
+   :sections: briefdescription innernamespace func prototype
+
+ 
 vtr_ostream_guard
 -----------------
 .. doxygenfile:: vtr_ostream_guard.h
@@ -39,6 +60,10 @@ vtr_ostream_guard
 
 vtr_path
 --------
+.. doxygenfile:: vtr_path.h
+   :project: vtr
+   :sections: briefdescription
+
 .. doxygenfunction:: split_ext
    :project: vtr
 
@@ -78,7 +103,23 @@ vtr_string_interning
 --------------------
 .. doxygenfile:: vtr_string_interning.h
    :project: vtr
-   :sections: briefdescription detaileddescription innernamespace innerclass user-defined public-func typedef
+   :sections: briefdescription detaileddescription
+
+.. doxygenclass:: vtr::string_internment
+   :project: vtr
+   :members:
+
+.. doxygenclass:: vtr::interned_string
+   :project: vtr
+   :members:
+
+.. doxygenclass:: vtr::bound_interned_string
+   :project: vtr
+   :members:
+
+.. doxygenclass:: vtr::interned_string_iterator
+   :project: vtr
+   :members:
 
 vtr_token
 ---------
@@ -94,16 +135,4 @@ vtr_util
 .. doxygenfile:: vtr_util.cpp
    :project: vtr
    :sections: briefdescription detaileddescription innernamespace func
-
-vtr_strong_id
--------------
-.. doxygenfile:: vtr_strong_id.h
-   :project: vtr
-   :sections: briefdescription detaileddescription innernamespace func innerclass user-defined public-func
-
-vtr_strong_id_range
--------------------
-.. doxygenfile:: vtr_strong_id_range.h
-   :project: vtr
-   :sections: briefdescription detaileddescription innernamespace func innerclass user-defined public-func
 

@@ -1,5 +1,10 @@
 #ifndef VTR_SENTINELS_H
 #define VTR_SENTINELS_H
+
+/**
+ * @file
+ * @brief This header defines different sentinal value classes
+ */
 namespace vtr {
 
 /**

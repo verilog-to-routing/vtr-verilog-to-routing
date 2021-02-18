@@ -7,6 +7,12 @@
 
 #include "vtr_assert.h"
 
+/**
+ * @file
+ *
+ * @brief This file defines some math operations
+ */
+
 namespace vtr {
 /*********************** Math operations *************************************/
 

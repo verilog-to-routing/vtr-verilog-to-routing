@@ -11,7 +11,7 @@
 namespace vtr {
 
 /**
- * @brief Implements a view to a fixed length string.
+ * @brief Implements a view to a fixed length string (similar to std::basic_string_view).
  *
  * The underlying string does not need to be NULL terminated.
  */

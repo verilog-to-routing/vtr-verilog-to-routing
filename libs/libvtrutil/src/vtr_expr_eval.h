@@ -37,7 +37,7 @@ namespace vtr {
 
 /**** Structs ****/
 
-////@brief a class to hold the formula data
+///@brief a class to hold the formula data
 class t_formula_data {
   public:
     ///@brief clears all the formula data

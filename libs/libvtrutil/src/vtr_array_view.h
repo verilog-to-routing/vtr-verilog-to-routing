@@ -142,7 +142,7 @@ class array_view {
 /**
  * @brief Implements a fixed length view to an array which is indexed by vtr::StrongId
  *
- * The main use of this container is to behave like a std::array_view which is
+ * The main use of this container is to behave like a std::span which is
  * indexed by a vtr::StrongId instead of size_t. It assumes that K is explicitly 
  * convertable to size_t 
  * (i.e. via operator size_t()), and can be explicitly constructed from a size_t.

@@ -24,13 +24,13 @@
  *  requires reconstructing the string.
  * 
  *  Basic usage:
- *  1) Create a string_internment
- *  2) Invoke string_internment::intern_string, which returns the
+ *  -# Create a string_internment
+ *  -# Invoke string_internment::intern_string, which returns the
  *     interned_string object that is the interned string's unique idenfier.
  *     This idenfier can be checked for equality or hashed. If
  *     string_internment::intern_string is called with the same string, a value
  *     equivalent interned_string object will be returned.
- *  3. If the original string is required, interned_string::get can be invoked
+ *  -# If the original string is required, interned_string::get can be invoked
  *     to copy the string into a std::string.
  *     interned_string also provides iteration via begin/end, however the begin
  *     method requires a pointer to original string_internment object.  This is

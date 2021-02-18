@@ -16,7 +16,7 @@
  * By convention the message should state the condition *being checked* (and not the failure condition),
  * since that the condition failed is obvious from the assertion failure itself.
  *
- * The macro VTR_ASSERT_LEVEL specifies the level of assertion checking desired:
+ * The macro VTR_ASSERT_LEVEL specifies the level of assertion checking desired and is updated in CMAKE compilation:
  *
  *      VTR_ASSERT_LEVEL == 4: VTR_ASSERT_OPT, VTR_ASSERT, VTR_ASSERT_SAFE, VTR_ASSERT_DEBUG enabled
  *      VTR_ASSERT_LEVEL == 3: VTR_ASSERT_OPT, VTR_ASSERT, VTR_ASSERT_SAFE enabled
@@ -24,10 +24,10 @@
  *      VTR_ASSERT_LEVEL == 1: VTR_ASSERT_OPT enabled
  *      VTR_ASSERT_LEVEL == 0: No assertion checking enabled
  *
- * @Note that an assertion levels beyond 4 are currently treated the same as level 4
+ * @Note that an assertion levels beyond 4 are currently treated the same as level 4 and the default assertion level is 2
  */
 
-// brief Set a default assertion level if none is specified
+// Set a default assertion level if none is specified
 #ifndef VTR_ASSERT_LEVEL
 #    define VTR_ASSERT_LEVEL 2
 #endif
