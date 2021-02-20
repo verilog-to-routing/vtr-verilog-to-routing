@@ -2964,14 +2964,6 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     const t_grid_tile& grid_tile = device_ctx.grid[pin_rr.xlow()][pin_rr.ylow()];
     t_physical_tile_type_ptr grid_type = grid_tile.type;
 
-    float draw_pin_offset;
-    if (pin_rr.is_node_on_specific_side(TOP) || pin_rr.is_node_on_specific_side(RIGHT)) {
-        draw_pin_offset = draw_coords->pin_size;
-    } else {
-        VTR_ASSERT(pin_rr.is_node_on_specific_side(BOTTOM) || pin_rr.is_node_on_specific_side(LEFT));
-        draw_pin_offset = -draw_coords->pin_size;
-    }
-
     float x1 = 0, y1 = 0;
     /* If there is only one side, no need for the following inference!!!
      * When a node may have multiple sides,
@@ -3038,6 +3030,15 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     }
     /* Sanity check */
     VTR_ASSERT(NUM_SIDES != pin_side);
+
+    /* Now we determine which side to be used, calculate the offset to be drawn*/
+    float draw_pin_offset;
+    if (TOP == pin_side || RIGHT == pin_side) {
+        draw_pin_offset = draw_coords->pin_size;
+    } else {
+        VTR_ASSERT(BOTTOM == pin_side || LEFT == pin_side);
+        draw_pin_offset = -draw_coords->pin_size;
+    }
 
     draw_get_rr_pin_coords(pin_node, &x1, &y1, pin_side);
 
