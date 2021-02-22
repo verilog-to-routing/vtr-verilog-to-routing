@@ -9,30 +9,35 @@
 
 namespace vtr {
 
-//Splits the string 'text' along the specified delimiter characters in 'delims'
-//The split strings (excluding the delimiters) are returned
+/**
+ * @brief Splits the string 'text' along the specified delimiter characters in 'delims'
+ *
+ * The split strings (excluding the delimiters) are returned
+ */
 std::vector<std::string> split(const char* text, const std::string delims = " \t\n");
 std::vector<std::string> split(const std::string& text, const std::string delims = " \t\n");
 
-//Returns 'input' with the first instance of 'search' replaced with 'replace'
+///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
 
-//Returns 'input' with all instances of 'search' replaced with 'replace'
+///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
 std::string replace_all(const std::string& input, const std::string& search, const std::string& replace);
 
-//Retruns true if str starts with prefix
+///@brief Retruns true if str starts with prefix
 bool starts_with(std::string str, std::string prefix);
 
-//Returns a std::string formatted using a printf-style format string
+///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...);
 
-//Returns a std::string formatted using a printf-style format string taking
-//an explicit va_list
+///@brief Returns a std::string formatted using a printf-style format string taking an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args);
 
-//Joins a sequence by a specified delimeter
-//  For example the sequence {"home", "user", "my_files", "test.blif"} with delim="/"
-//  would return "home/user/my_files/test.blif"
+/**
+ * @brief Joins a sequence by a specified delimeter
+ *
+ *  For example the sequence {"home", "user", "my_files", "test.blif"} with delim="/"
+ *  would return "home/user/my_files/test.blif"
+ */
 template<typename Iter>
 std::string join(Iter begin, Iter end, std::string delim);
 
@@ -45,10 +50,6 @@ std::string join(std::initializer_list<T> list, std::string delim);
 template<typename Container>
 void uniquify(Container container);
 
-/*
- * Legacy c-style function replacements, typically these add extra error checking
- * and/or correct 'unexpected' behaviour of the standard c-functions
- */
 constexpr size_t bufsize = 32768; /* Maximum line length for various parsing proc. */
 char* strncpy(char* dest, const char* src, size_t size);
 char* strdup(const char* str);
@@ -62,8 +63,8 @@ unsigned atou(const std::string& value);
 float atof(const std::string& value);
 double atod(const std::string& value);
 
-/*
- * File utilities
+/**
+ * @brief File utilities
  */
 int get_file_line_number_of_last_opened_file();
 bool file_exists(const char* filename);
@@ -72,13 +73,13 @@ bool check_file_name_extension(const char* file_name,
 
 extern std::string out_file_prefix;
 
-/*
- * Legacy ReadLine Tokening
+/**
+ * @brief Legacy ReadLine Tokening
  */
 std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum);
 
-/*
- * Template implementations
+/**
+ * @brief Template join function implementation
  */
 template<typename Iter>
 std::string join(Iter begin, Iter end, std::string delim) {
@@ -102,6 +103,11 @@ std::string join(std::initializer_list<T> list, std::string delim) {
     return join(list.begin(), list.end(), delim);
 }
 
+/**
+ * @brief Template uniquify function implementation
+ *
+ * Removes repeated elements in the container
+ */
 template<typename Container>
 void uniquify(Container container) {
     std::sort(container.begin(), container.end());
