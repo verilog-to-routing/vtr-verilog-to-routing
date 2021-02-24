@@ -11,32 +11,37 @@
 
 namespace vtr {
 
-//For efficiency, STL containers usually don't
-//release their actual heap-allocated memory until
-//destruction (even if Container::clear() is called).
-//
-//This function will force the container to be cleared
-//and release it's held memory.
+/**
+ * @brief This function will force the container to be cleared
+ *
+ * It release it's held memory.
+ * For efficiency, STL containers usually don't
+ * release their actual heap-allocated memory until
+ * destruction (even if Container::clear() is called).
+ */
 template<typename Container>
 void release_memory(Container& container) {
-    //Force a re-allocation to happen by
-    //swapping in a new (empty) container.
+    ///@brief Force a re-allocation to happen by swapping in a new (empty) container.
     Container().swap(container);
 }
 
 struct t_linked_vptr; //Forward declaration
 
-/* This structure is to keep track of chunks of memory that is being	*
- * allocated to save overhead when allocating very small memory pieces. *
- * For a complete description, please see the comment in chunk_malloc*/
+/**
+ * This structure keeps track to chenks of memory
+ *
+ * This structure is to keep track of chunks of memory that is being	
+ * allocated to save overhead when allocating very small memory pieces. 
+ * For a complete description, please see the comment in chunk_malloc
+ */
 struct t_chunk {
     t_linked_vptr* chunk_ptr_head = nullptr;
-    /* chunk_ptr_head->data_vptr: head of the entire linked
-     * list of allocated "chunk" memory;
-     * chunk_ptr_head->next: pointer to the next chunk on the linked list*/
-    int mem_avail = 0;                /* number of bytes left in the current chunk */
-    char* next_mem_loc_ptr = nullptr; /* pointer to the first available (free) *
-                                       * byte in the current chunk		*/
+
+    //chunk_ptr_head->data_vptr: head of the entire linked
+    //list of allocated "chunk" memory;
+    //chunk_ptr_head->next: pointer to the next chunk on the linked list
+    int mem_avail = 0;                ///< number of bytes left in the current chunk
+    char* next_mem_loc_ptr = nullptr; ///< pointer to the first available (free) byte in the current chunk
 };
 
 void* free(void* some);
@@ -47,7 +52,7 @@ void* realloc(void* ptr, size_t size);
 void* chunk_malloc(size_t size, t_chunk* chunk_info);
 void free_chunk_memory(t_chunk* chunk_info);
 
-//Like chunk_malloc, but with proper C++ object initialization
+///@brief Like chunk_malloc, but with proper C++ object initialization
 template<typename T>
 T* chunk_new(t_chunk* chunk_info) {
     void* block = chunk_malloc(sizeof(T), chunk_info);
@@ -55,17 +60,20 @@ T* chunk_new(t_chunk* chunk_info) {
     return new (block) T(); //Placement new
 }
 
-//Call the destructor of an obj which must have been allocated in the specified chunk
+///@brief Call the destructor of an obj which must have been allocated in the specified chunk
 template<typename T>
 void chunk_delete(T* obj, t_chunk* /*chunk_info*/) {
     if (obj) {
-        obj->~T(); //Manually call destructor
-        //Currently we don't mark the unused memory as free
+        obj->~T(); // Manually call destructor
+        // Currently we don't mark the unused memory as free
     }
 }
 
-//Cross platform wrapper around GNU's malloc_trim()
-// TODO: This is only used in one place within VPR, consider removing it
+/**
+ * @brief Cross platform wrapper around GNU's malloc_trim()
+ *
+ * TODO: This is only used in one place within VPR, consider removing it
+ */
 int malloc_trim(size_t pad);
 
 inline int memalign(void** ptr_out, size_t align, size_t size) {
@@ -82,21 +90,24 @@ inline int memalign(void** ptr_out, size_t align, size_t size) {
 #endif
 }
 
-// This is a macro because it has to be.  rw and locality must be constants,
-// not just constexpr.
-//
-// This generates a prefetch instruction on all architectures that include it.
-// This is all modern x86 and ARM64 platforms.
-//
-// rw = 0, locality = 0 is the least intrusive software prefetch.  Higher
-// locality results in more CPU effort, and needs evidence for higher locality.
+/**
+ * @brief A macro generates a prefetch instruction on all architectures that include it.
+ * 
+ * This is all modern x86 and ARM64 platforms.
+ *
+ * This is a macro because it has to be.  rw and locality must be constants,
+ * not just constexpr.
+ */
 #define VTR_PREFETCH(addr, rw, locality) __builtin_prefetch(addr, rw, locality)
 
-// aligned_allocator is a STL allocator that allocates memory in an aligned
-// fashion (if supported by the platform).
-//
-// It is worth noting the C++20 std::allocator does aligned allocations, but
-// C++20 has poor support.
+/**
+ * @brief aligned_allocator is a STL allocator that allocates memory in an aligned fashion
+ *
+ * works if supported by the platform
+ * 
+ * It is worth noting the C++20 std::allocator does aligned allocations, but
+ * C++20 has poor support.
+ */
 template<class T>
 struct aligned_allocator {
     using value_type = T;

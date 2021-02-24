@@ -3,8 +3,8 @@
 #include <iterator>
 
 namespace vtr {
-/*
- * The vtr::Range template models a range defined by two iterators of type T.
+/**
+ * @brief The vtr::Range template models a range defined by two iterators of type T.
  *
  * It allows conveniently returning a range from a single function call
  * without having to explicity expose the underlying container, or make two
@@ -40,14 +40,21 @@ namespace vtr {
 template<typename T>
 class Range {
   public:
+    ///@brief constructor
     Range(T b, T e)
         : begin_(b)
         , end_(e) {}
+    ///@brief Return an iterator to the start of the range
     T begin() { return begin_; }
+    ///@brief Return an iterator to the end of the range
     T end() { return end_; }
+    ///@brief Return an iterator to the start of the range (immutable)
     const T begin() const { return begin_; }
+    ///@brief Return an iterator to the end of the range (immutable)
     const T end() const { return end_; }
+    ///@brief Return true if empty
     bool empty() { return begin_ == end_; }
+    ///@brief Return the range size
     size_t size() { return std::distance(begin_, end_); }
 
   private:
@@ -55,8 +62,8 @@ class Range {
     T end_;
 };
 
-/*
- * Creates a vtr::Range from a pair of iterators.
+/**
+ * @brief Creates a vtr::Range from a pair of iterators.
  *
  *  Unlike using the vtr::Range() constructor (which requires specifying
  *  the template type T, using vtr::make_range() infers T from the arguments.
@@ -67,8 +74,8 @@ class Range {
 template<typename T>
 auto make_range(T b, T e) { return Range<T>(b, e); }
 
-/*
- * Creates a vtr::Range from a container
+/**
+ * @brief Creates a vtr::Range from a container
  */
 template<typename Container>
 auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }

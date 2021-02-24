@@ -360,6 +360,7 @@ notfound_context = {
 if shutil.which("doxygen"):
     breathe_projects = {
         "vpr": "../_build/doxygen/vpr/xml",
+        "vtr": "../_build/doxygen/vtr/xml",
         "abc": "../_build/doxygen/abc/xml",
         "ace2": "../_build/doxygen/ace2/xml",
         "ODIN_II": "../_build/doxygen/ODIN_II/xml",
