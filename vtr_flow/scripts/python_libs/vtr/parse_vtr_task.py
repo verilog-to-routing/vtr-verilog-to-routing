@@ -566,5 +566,5 @@ def find_latest_run_dir(config):
 
 
 if __name__ == "__main__":
-    retval = vtr_command_main(sys.argv[1:])
-    sys.exit(retval)
+    RETVAL = vtr_command_main(sys.argv[1:])
+    sys.exit(RETVAL)

@@ -13,10 +13,10 @@ class VtrStage(Enum):
         Enum class for the VTR stages\
     """
 
-    odin = 1
-    abc = 2
-    ace = 3
-    vpr = 4
+    ODIN = 1
+    ABC = 2
+    ACE = 3
+    VPR = 4
 
     def __le__(self, other):
         if self.__class__ is other.__class__:
@@ -34,8 +34,8 @@ def run(
     architecture_file,
     circuit_file,
     power_tech_file=None,
-    start_stage=VtrStage.odin,
-    end_stage=VtrStage.vpr,
+    start_stage=VtrStage.ODIN,
+    end_stage=VtrStage.VPR,
     command_runner=vtr.CommandRunner(),
     temp_dir=Path("./temp"),
     odin_args=None,
@@ -175,7 +175,7 @@ def run(
     #
     # RTL Elaboration & Synthesis
     #
-    if should_run_stage(VtrStage.odin, start_stage, end_stage) and circuit_file.suffixes != ".blif":
+    if should_run_stage(VtrStage.ODIN, start_stage, end_stage) and circuit_file.suffixes != ".blif":
         vtr.odin.run(
             architecture_copy,
             next_stage_netlist,
@@ -195,7 +195,7 @@ def run(
     #
     # Logic Optimization & Technology Mapping
     #
-    if should_run_stage(VtrStage.abc, start_stage, end_stage):
+    if should_run_stage(VtrStage.ABC, start_stage, end_stage):
         vtr.abc.run(
             architecture_copy,
             next_stage_netlist,
@@ -216,7 +216,7 @@ def run(
     if power_tech_file:
         # The user provided a tech file, so do power analysis
 
-        if should_run_stage(VtrStage.ace, start_stage, end_stage):
+        if should_run_stage(VtrStage.ACE, start_stage, end_stage):
             vtr.ace.run(
                 next_stage_netlist,
                 old_netlist=post_odin_netlist,
@@ -241,7 +241,7 @@ def run(
     #
     # Pack/Place/Route
     #
-    if should_run_stage(VtrStage.vpr, start_stage, end_stage):
+    if should_run_stage(VtrStage.VPR, start_stage, end_stage):
         # Copy the input netlist for input to vpr
         shutil.copyfile(str(next_stage_netlist), str(pre_vpr_netlist))
         route_fixed_w = "route_chan_width" in vpr_args

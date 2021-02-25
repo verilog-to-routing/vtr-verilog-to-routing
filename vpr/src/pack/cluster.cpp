@@ -1180,6 +1180,76 @@ static void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_siz
 /*****************************************/
 
 /**
+ * Cleans up a pb after unsuccessful molecule packing
+ *
+ * Recursively frees pbs from a t_pb tree. The given root pb itself is not
+ * deleted.
+ *
+ * If a pb object has its children allocated then before freeing them the
+ * function checks if there is no atom that corresponds to any of them. The
+ * check is performed only for leaf (primitive) pbs. The function recurses for
+ * non-primitive pbs.
+ *
+ * The cleaning itself includes deleting all child pbs, resetting mode of the
+ * pb and also freeing its name. This prepares the pb for another round of
+ * molecule packing tryout. 
+ */
+static bool cleanup_pb(t_pb* pb) {
+    bool can_free = true;
+
+    /* Recursively check if there are any children with already assigned atoms */
+    if (pb->child_pbs != nullptr) {
+        const t_mode* mode = &pb->pb_graph_node->pb_type->modes[pb->mode];
+        VTR_ASSERT(mode != nullptr);
+
+        /* Check each mode */
+        for (int i = 0; i < mode->num_pb_type_children; ++i) {
+            /* Check each child */
+            if (pb->child_pbs[i] != nullptr) {
+                for (int j = 0; j < mode->pb_type_children[i].num_pb; ++j) {
+                    t_pb* pb_child = &pb->child_pbs[i][j];
+                    t_pb_type* pb_type = pb_child->pb_graph_node->pb_type;
+
+                    /* Primitive, check occupancy */
+                    if (pb_type->num_modes == 0) {
+                        if (pb_child->name != nullptr) {
+                            can_free = false;
+                        }
+                    }
+
+                    /* Non-primitive, recurse */
+                    else {
+                        if (!cleanup_pb(pb_child)) {
+                            can_free = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Free if can */
+        if (can_free) {
+            for (int i = 0; i < mode->num_pb_type_children; ++i) {
+                if (pb->child_pbs[i] != nullptr) {
+                    delete[] pb->child_pbs[i];
+                }
+            }
+
+            delete[] pb->child_pbs;
+            pb->child_pbs = nullptr;
+            pb->mode = 0;
+
+            if (pb->name) {
+                free(pb->name);
+                pb->name = nullptr;
+            }
+        }
+    }
+
+    return can_free;
+}
+
+/**
  * Try pack molecule into current cluster
  */
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
@@ -1358,6 +1428,12 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                         revert_place_atom_block(molecule->atom_block_ids[i], router_data, atom_molecules);
                     }
                 }
+
+                /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
+                 * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
+                 * their modes reset. This task is performed by the cleanup_pb() function below. */
+                cleanup_pb(pb);
+
             } else {
                 VTR_LOGV(verbosity > 3, "\t\tPASSED pack molecule\n");
             }

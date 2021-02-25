@@ -16,6 +16,9 @@ constexpr size_t IM = 2147483648u;
 
 static RandState random_state = 0;
 
+/**
+ * @brief The pseudo-random number generator is initialized using the argument passed as seed.
+ */
 void srandom(int seed) {
     random_state = (unsigned int)seed;
 }
