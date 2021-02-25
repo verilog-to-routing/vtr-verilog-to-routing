@@ -19,6 +19,8 @@ import vtr
 
 BASIC_VERBOSITY = 1
 
+VTR_STAGES = ["odin", "abc", "ace", "vpr"]
+
 # pylint: disable=too-few-public-methods
 class VtrStageArgparseAction(argparse.Action):
     """
@@ -27,13 +29,13 @@ class VtrStageArgparseAction(argparse.Action):
 
     def __call__(self, parser, namespace, value, option_string=None):
         if value == "odin":
-            setattr(namespace, self.dest, vtr.VtrStage.odin)
+            setattr(namespace, self.dest, vtr.VtrStage.ODIN)
         elif value == "abc":
-            setattr(namespace, self.dest, vtr.VtrStage.abc)
+            setattr(namespace, self.dest, vtr.VtrStage.ABC)
         elif value == "vpr":
-            setattr(namespace, self.dest, vtr.VtrStage.vpr)
+            setattr(namespace, self.dest, vtr.VtrStage.VPR)
         elif value == "lec":
-            setattr(namespace, self.dest, vtr.VtrStage.lec)
+            setattr(namespace, self.dest, vtr.VtrStage.LEC)
         else:
             raise argparse.ArgumentError(self, "Invalid VTR stage '" + value + "'")
 
@@ -107,8 +109,8 @@ def vtr_command_argparser(prog=None):
     parser.add_argument(
         "-start",
         "-starting_stage",
-        choices=str(list(vtr.VtrStage)),
-        default=vtr.VtrStage.odin,
+        choices=VTR_STAGES,
+        default=vtr.VtrStage.ODIN,
         action=VtrStageArgparseAction,
         help="Starting stage of the VTR flow.",
     )
@@ -129,8 +131,8 @@ def vtr_command_argparser(prog=None):
     parser.add_argument(
         "-end",
         "-ending_stage",
-        choices=str(list(vtr.VtrStage)),
-        default=vtr.VtrStage.vpr,
+        choices=VTR_STAGES,
+        default=vtr.VtrStage.VPR,
         action=VtrStageArgparseAction,
         help="Ending stage of the VTR flow.",
     )
