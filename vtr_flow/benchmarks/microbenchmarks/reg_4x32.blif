@@ -1,0 +1,200 @@
+.model top
+.inputs clk inp[0] inp[1] inp[2] inp[3] inp[4] inp[5] inp[6] inp[7] inp[8] inp[9] inp[10] inp[11] inp[12] inp[13] inp[14] inp[15] inp[16] inp[17] inp[18] inp[19] inp[20] inp[21] inp[22] inp[23] inp[24] inp[25] inp[26] inp[27] inp[28] inp[29] inp[30] inp[31]
+.outputs out[0] out[1] out[2] out[3] out[4] out[5] out[6] out[7] out[8] out[9] out[10] out[11] out[12] out[13] out[14] out[15] out[16] out[17] out[18] out[19] out[20] out[21] out[22] out[23] out[24] out[25] out[26] out[27] out[28] out[29] out[30] out[31]
+.names $false
+.names $true
+1
+.names $undef
+.latch r3[21] r4[21] re clk 2
+.latch r3[22] r4[22] re clk 2
+.latch r3[23] r4[23] re clk 2
+.latch r3[24] r4[24] re clk 2
+.latch r3[25] r4[25] re clk 2
+.latch r3[26] r4[26] re clk 2
+.latch r3[27] r4[27] re clk 2
+.latch r3[28] r4[28] re clk 2
+.latch r3[29] r4[29] re clk 2
+.latch r3[30] r4[30] re clk 2
+.latch r3[31] r4[31] re clk 2
+.latch r2[0] r3[0] re clk 2
+.latch r2[1] r3[1] re clk 2
+.latch r2[2] r3[2] re clk 2
+.latch r2[3] r3[3] re clk 2
+.latch r2[4] r3[4] re clk 2
+.latch r2[5] r3[5] re clk 2
+.latch r2[6] r3[6] re clk 2
+.latch r2[7] r3[7] re clk 2
+.latch r2[8] r3[8] re clk 2
+.latch r2[9] r3[9] re clk 2
+.latch r2[10] r3[10] re clk 2
+.latch r2[11] r3[11] re clk 2
+.latch r2[12] r3[12] re clk 2
+.latch r2[13] r3[13] re clk 2
+.latch r2[14] r3[14] re clk 2
+.latch r2[15] r3[15] re clk 2
+.latch r2[16] r3[16] re clk 2
+.latch r2[17] r3[17] re clk 2
+.latch r2[18] r3[18] re clk 2
+.latch r2[19] r3[19] re clk 2
+.latch r2[20] r3[20] re clk 2
+.latch r2[21] r3[21] re clk 2
+.latch r2[22] r3[22] re clk 2
+.latch r2[23] r3[23] re clk 2
+.latch r2[24] r3[24] re clk 2
+.latch r2[25] r3[25] re clk 2
+.latch r2[26] r3[26] re clk 2
+.latch r2[27] r3[27] re clk 2
+.latch r2[28] r3[28] re clk 2
+.latch r2[29] r3[29] re clk 2
+.latch r2[30] r3[30] re clk 2
+.latch r2[31] r3[31] re clk 2
+.latch r1[0] r2[0] re clk 2
+.latch r1[1] r2[1] re clk 2
+.latch r1[2] r2[2] re clk 2
+.latch r1[3] r2[3] re clk 2
+.latch r1[4] r2[4] re clk 2
+.latch r1[5] r2[5] re clk 2
+.latch r1[6] r2[6] re clk 2
+.latch r1[7] r2[7] re clk 2
+.latch r1[8] r2[8] re clk 2
+.latch r1[9] r2[9] re clk 2
+.latch r1[10] r2[10] re clk 2
+.latch r1[11] r2[11] re clk 2
+.latch r1[12] r2[12] re clk 2
+.latch r1[13] r2[13] re clk 2
+.latch r1[14] r2[14] re clk 2
+.latch r1[15] r2[15] re clk 2
+.latch r1[16] r2[16] re clk 2
+.latch r1[17] r2[17] re clk 2
+.latch r1[18] r2[18] re clk 2
+.latch r1[19] r2[19] re clk 2
+.latch r1[20] r2[20] re clk 2
+.latch r1[21] r2[21] re clk 2
+.latch r1[22] r2[22] re clk 2
+.latch r1[23] r2[23] re clk 2
+.latch r1[24] r2[24] re clk 2
+.latch r1[25] r2[25] re clk 2
+.latch r1[26] r2[26] re clk 2
+.latch r1[27] r2[27] re clk 2
+.latch r1[28] r2[28] re clk 2
+.latch r1[29] r2[29] re clk 2
+.latch r1[30] r2[30] re clk 2
+.latch r1[31] r2[31] re clk 2
+.latch inp[0] r1[0] re clk 2
+.latch inp[1] r1[1] re clk 2
+.latch inp[2] r1[2] re clk 2
+.latch inp[3] r1[3] re clk 2
+.latch inp[4] r1[4] re clk 2
+.latch inp[5] r1[5] re clk 2
+.latch inp[6] r1[6] re clk 2
+.latch inp[7] r1[7] re clk 2
+.latch inp[8] r1[8] re clk 2
+.latch inp[9] r1[9] re clk 2
+.latch inp[10] r1[10] re clk 2
+.latch inp[11] r1[11] re clk 2
+.latch inp[12] r1[12] re clk 2
+.latch inp[13] r1[13] re clk 2
+.latch inp[14] r1[14] re clk 2
+.latch inp[15] r1[15] re clk 2
+.latch inp[16] r1[16] re clk 2
+.latch inp[17] r1[17] re clk 2
+.latch inp[18] r1[18] re clk 2
+.latch inp[19] r1[19] re clk 2
+.latch inp[20] r1[20] re clk 2
+.latch inp[21] r1[21] re clk 2
+.latch inp[22] r1[22] re clk 2
+.latch inp[23] r1[23] re clk 2
+.latch inp[24] r1[24] re clk 2
+.latch inp[25] r1[25] re clk 2
+.latch inp[26] r1[26] re clk 2
+.latch inp[27] r1[27] re clk 2
+.latch inp[28] r1[28] re clk 2
+.latch inp[29] r1[29] re clk 2
+.latch inp[30] r1[30] re clk 2
+.latch inp[31] r1[31] re clk 2
+.latch r3[0] r4[0] re clk 2
+.latch r3[1] r4[1] re clk 2
+.latch r3[2] r4[2] re clk 2
+.latch r3[3] r4[3] re clk 2
+.latch r3[4] r4[4] re clk 2
+.latch r3[5] r4[5] re clk 2
+.latch r3[6] r4[6] re clk 2
+.latch r3[7] r4[7] re clk 2
+.latch r3[8] r4[8] re clk 2
+.latch r3[9] r4[9] re clk 2
+.latch r3[10] r4[10] re clk 2
+.latch r3[11] r4[11] re clk 2
+.latch r3[12] r4[12] re clk 2
+.latch r3[13] r4[13] re clk 2
+.latch r3[14] r4[14] re clk 2
+.latch r3[15] r4[15] re clk 2
+.latch r3[16] r4[16] re clk 2
+.latch r3[17] r4[17] re clk 2
+.latch r3[18] r4[18] re clk 2
+.latch r3[19] r4[19] re clk 2
+.latch r3[20] r4[20] re clk 2
+.names r4[0] out[0]
+1 1
+.names r4[1] out[1]
+1 1
+.names r4[2] out[2]
+1 1
+.names r4[3] out[3]
+1 1
+.names r4[4] out[4]
+1 1
+.names r4[5] out[5]
+1 1
+.names r4[6] out[6]
+1 1
+.names r4[7] out[7]
+1 1
+.names r4[8] out[8]
+1 1
+.names r4[9] out[9]
+1 1
+.names r4[10] out[10]
+1 1
+.names r4[11] out[11]
+1 1
+.names r4[12] out[12]
+1 1
+.names r4[13] out[13]
+1 1
+.names r4[14] out[14]
+1 1
+.names r4[15] out[15]
+1 1
+.names r4[16] out[16]
+1 1
+.names r4[17] out[17]
+1 1
+.names r4[18] out[18]
+1 1
+.names r4[19] out[19]
+1 1
+.names r4[20] out[20]
+1 1
+.names r4[21] out[21]
+1 1
+.names r4[22] out[22]
+1 1
+.names r4[23] out[23]
+1 1
+.names r4[24] out[24]
+1 1
+.names r4[25] out[25]
+1 1
+.names r4[26] out[26]
+1 1
+.names r4[27] out[27]
+1 1
+.names r4[28] out[28]
+1 1
+.names r4[29] out[29]
+1 1
+.names r4[30] out[30]
+1 1
+.names r4[31] out[31]
+1 1
+.end

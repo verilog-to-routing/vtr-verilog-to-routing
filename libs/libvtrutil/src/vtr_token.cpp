@@ -17,7 +17,7 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
 
 bool IsWhitespace(char c);
 
-/* Returns true if character is whatspace between tokens */
+///@brief Returns true if character is whatspace between tokens
 bool IsWhitespace(char c) {
     switch (c) {
         case ' ':
@@ -30,7 +30,7 @@ bool IsWhitespace(char c) {
     }
 }
 
-/* Returns a token list of the text for a given string. */
+///@brief Returns a token list of the text for a given string.
 t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     const char* cur;
     t_token* tokens;
@@ -104,6 +104,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     return tokens;
 }
 
+///@brief Free (tokens)
 void freeTokens(t_token* tokens, const int num_tokens) {
     int i;
     for (i = 0; i < num_tokens; i++) {
@@ -112,6 +113,7 @@ void freeTokens(t_token* tokens, const int num_tokens) {
     free(tokens);
 }
 
+///@brief Returns a token type of the given char
 enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
                                        const char cur) {
     if (IsWhitespace(cur)) {
@@ -137,6 +139,7 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
     }
 }
 
+///@brief Returns true if the token's type equals to token_type
 bool checkTokenType(const t_token token, enum e_token_type token_type) {
     if (token.type != token_type) {
         return false;
@@ -144,6 +147,7 @@ bool checkTokenType(const t_token token, enum e_token_type token_type) {
     return true;
 }
 
+///@brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring) {
     int i, j;
     char *cur, *cur2, *copy, *final;
@@ -185,10 +189,12 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
 }
 
 /* Date:July 2nd, 2013													*
- * Author: Daniel Chen													*
- * Purpose: Checks if the number of entries (separated by whitespace)	*
- *	        matches the the expected number (max_i * max_j),			*
- *			can be used before calling my_atof_2D						*/
+ * Author: Daniel Chen													*/
+/** 
+ * @brief Checks if the number of entries (separated by whitespace)	matches the the expected number (max_i * max_j)
+ *
+ * can be used before calling my_atof_2D						
+ */
 bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries) {
     /* Check if max_i * max_j matches number of entries in instring */
     const char* cur = instring;
