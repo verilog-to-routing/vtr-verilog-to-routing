@@ -208,7 +208,6 @@ Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
 template<class T>
 Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs);
 
-
 //Prints a rectangle
 template<class T>
 static void print_rect(FILE* fp, const Rect<T> rect);
