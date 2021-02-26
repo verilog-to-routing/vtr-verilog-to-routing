@@ -6,7 +6,7 @@
 
 /**
  * @file
- * @brief This file defines the PartitionRegions class. The PartitionRegions class is used to store the union
+ * @brief This file defines the PartitionRegion class. The PartitionRegion class is used to store the union
  * of regions that a partition can be placed in.
  */
 
