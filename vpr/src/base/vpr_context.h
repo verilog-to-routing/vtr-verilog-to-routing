@@ -24,6 +24,7 @@
 #include "place_macro.h"
 #include "compressed_grid.h"
 #include "metadata_storage.h"
+#include "vpr_constraints.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -370,6 +371,35 @@ struct RoutingContext : public Context {
 };
 
 /**
+ * @brief State relating to VPR's floorplanning constraints
+ *
+ * This should contain only data structures related to constraining blocks
+ * to certain regions on the chip.
+ */
+struct FloorplanningContext : public Context {
+    /**
+     * @brief Stores groups of constrained atoms, areas where the atoms are constrained to
+     *
+     * Provides all information needed about floorplanning constraints, including
+     * which atoms are constrained and the regions they are constrained to.
+     *
+     * The constraints are input into vpr and do not change.
+     */
+    VprConstraints constraints;
+
+    /**
+     * @brief Constraints for each cluster
+     *
+     * Each cluster will have a PartitionRegion specifying its regions constraints
+     * according to the constrained atoms packed into it. This structure allows the floorplanning
+     * constraints for a given cluster to be found easily given its ClusterBlockId.
+     *
+     * The constraints on each cluster are computed during the clustering process and can change.
+     */
+    vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
+};
+
+/**
  * @brief This object encapsulates VPR's state.
  *
  * There is typically a single instance which is
@@ -440,6 +470,9 @@ class VprContext : public Context {
     const RoutingContext& routing() const { return routing_; }
     RoutingContext& mutable_routing() { return routing_; }
 
+    const FloorplanningContext& floorplanning() const { return constraints_; }
+    FloorplanningContext& mutable_floorplanning() { return constraints_; }
+
   private:
     DeviceContext device_;
 
@@ -451,6 +484,7 @@ class VprContext : public Context {
     ClusteringContext clustering_;
     PlacementContext placement_;
     RoutingContext routing_;
+    FloorplanningContext constraints_;
 };
 
 #endif

@@ -82,3 +82,9 @@ Region intersection(Region r1, Region r2) {
 
     return intersect;
 }
+
+void print_region(FILE* fp, Region region) {
+    fprintf(fp, "\tRegion: \n");
+    print_rect(fp, region.get_region_rect());
+    fprintf(fp, "\tsubtile: %d\n\n", region.get_sub_tile());
+}
