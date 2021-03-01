@@ -3,6 +3,8 @@
 #include "vtr_range.h"
 #include "vtr_assert.h"
 
+#include <stdio.h> // vtr_geometry.tpp uses printf()
+
 #include <vector>
 #include <tuple>
 #include <limits>
