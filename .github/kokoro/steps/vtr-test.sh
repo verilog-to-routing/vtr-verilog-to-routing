@@ -69,7 +69,7 @@ find vtr_flow/benchmarks/titan_blif/ -type f -not -name 'README.*' -delete
 find . -type f -regex ".*\.tar\.\(gz\|xz\)" -delete
 
 # Make sure working directory doesn't exceed disk space limit!
-echo "Working directory size: $(du -h --max_depth 2)"
+echo "Working directory size: $(du -h --max-depth=2)"
 if [[ $(du -s | cut -d $'\t' -f 1) -gt $(expr 1024 \* 1024 \* 90) ]]; then
     echo "Working directory too large!"
     exit 1
