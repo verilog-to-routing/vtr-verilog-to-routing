@@ -4,8 +4,9 @@
 #include "vtr_range.h"
 
 namespace vtr {
-
-//Iterator which derefernces the 'first' element of a std::pair iterator
+/**
+ * @brief Iterator which derefernces the 'first' element of a std::pair iterator
+ */
 template<typename PairIter>
 class pair_first_iter {
   public:
@@ -15,27 +16,41 @@ class pair_first_iter {
     using pointer = value_type*;
     using reference = value_type&;
 
+    ///@brief constructor
     pair_first_iter(PairIter init)
         : iter_(init) {}
+
+    ///@brief increment operator (++)
     auto operator++() {
         iter_++;
         return *this;
     }
+
+    ///@brief decrement operator (\-\-)
     auto operator--() {
         iter_--;
         return *this;
     }
+
+    ///@brief dereference * operator
     auto operator*() { return iter_->first; }
+
+    ///@brief -> operator
     auto operator-> () { return &iter_->first; }
 
+    ///@brief == operator
     friend bool operator==(const pair_first_iter lhs, const pair_first_iter rhs) { return lhs.iter_ == rhs.iter_; }
+
+    ///@brief != operator
     friend bool operator!=(const pair_first_iter lhs, const pair_first_iter rhs) { return !(lhs == rhs); }
 
   private:
     PairIter iter_;
 };
 
-//Iterator which derefernces the 'second' element of a std::pair iterator
+/**
+ *Iterator which derefernces the 'second' element of a std::pair iterator
+ */
 template<typename PairIter>
 class pair_second_iter {
   public:
@@ -45,20 +60,32 @@ class pair_second_iter {
     using pointer = value_type*;
     using reference = value_type&;
 
+    ///@brief constructor
     pair_second_iter(PairIter init)
         : iter_(init) {}
+
+    ///@brief increment operator (++)
     auto operator++() {
         iter_++;
         return *this;
     }
+
+    ///@brief decrement operator (--)
     auto operator--() {
         iter_--;
         return *this;
     }
+
+    ///@brief dereference * operator
     auto operator*() { return iter_->second; }
+
+    ///@brief -> operator
     auto operator-> () { return &iter_->second; }
 
+    ///@brief == operator
     friend bool operator==(const pair_second_iter lhs, const pair_second_iter rhs) { return lhs.iter_ == rhs.iter_; }
+
+    ///@brief != operator
     friend bool operator!=(const pair_second_iter lhs, const pair_second_iter rhs) { return !(lhs == rhs); }
 
   private:

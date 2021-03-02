@@ -188,6 +188,15 @@ static t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
 static t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb,
                                                                            t_cluster_placement_stats* cluster_placement_stats_ptr);
 
+static void print_pack_status_header();
+
+static void print_pack_status(int num_clb,
+                              int tot_num_molecules,
+                              int num_molecules_processed,
+                              int& mols_since_last_print,
+                              int device_width,
+                              int device_height);
+
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                   t_pack_molecule* molecule,
@@ -201,7 +210,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                   int verbosity,
                                                   bool enable_pin_feasibility_filter,
                                                   const int feasible_block_array_size,
-                                                  t_ext_pin_util max_external_pin_util);
+                                                  t_ext_pin_util max_external_pin_util,
+                                                  PartitionRegion& temp_cluster_pr);
 
 static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                                                          const AtomBlockId blk_id,
@@ -215,6 +225,12 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
                                                          t_lb_router_data* router_data,
                                                          int verbosity,
                                                          const int feasible_block_array_size);
+
+static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_id,
+                                                                 const ClusterBlockId clb_index,
+                                                                 const int verbosity,
+                                                                 PartitionRegion& temp_cluster_pr,
+                                                                 bool& cluster_pr_needs_update);
 
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_data, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules);
 
@@ -261,7 +277,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               int verbosity,
                               bool enable_pin_feasibility_filter,
                               bool balance_block_type_utilization,
-                              const int feasible_block_array_size);
+                              const int feasible_block_array_size,
+                              PartitionRegion& temp_cluster_pr);
 
 static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -304,6 +321,8 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  int verbosity);
 
 static void check_clustering();
+
+static void echo_clusters(char* filename);
 
 static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>& blocks_checked);
 
@@ -388,13 +407,16 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *****************************************************************/
     VTR_ASSERT(packer_opts.packer_algorithm == PACK_GREEDY);
 
-    int num_molecules, blocks_since_last_analysis, num_clb,
-        num_blocks_hill_added, max_cluster_size, cur_cluster_size,
+    int num_molecules, num_molecules_processed, mols_since_last_print, blocks_since_last_analysis,
+        num_clb, num_blocks_hill_added, max_cluster_size, cur_cluster_size,
         max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
         seedindex, savedseedindex /* index of next most timing critical block */,
         detailed_routing_stage, *hill_climbing_inputs_avail;
 
     const int verbosity = packer_opts.pack_verbosity;
+
+    num_molecules_processed = 0;
+    mols_since_last_print = 0;
 
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 
@@ -538,6 +560,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, seed_atoms);
 
+    print_pack_status_header();
+
     /****************************************************************
      * Clustering
      *****************************************************************/
@@ -549,6 +573,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             ClusterBlockId clb_index(num_clb);
 
             VTR_LOGV(verbosity > 2, "Complex block %d:\n", num_clb);
+
+            /*Used to store cluster's PartitionRegion as primitives are added to it.
+             * Since some of the primitives might fail legality, this structure temporarily
+             * stores PartitionRegion information while the cluster is packed*/
+            PartitionRegion temp_cluster_pr;
 
             start_new_cluster(cluster_placement_stats, primitives_list,
                               atom_molecules, clb_index, istart,
@@ -562,13 +591,25 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               packer_opts.pack_verbosity,
                               packer_opts.enable_pin_feasibility_filter,
                               balance_block_type_utilization,
-                              packer_opts.feasible_block_array_size);
+                              packer_opts.feasible_block_array_size,
+                              temp_cluster_pr);
 
-            VTR_LOGV(verbosity == 2,
+            //initial molecule in cluster has been processed
+            num_molecules_processed++;
+            mols_since_last_print++;
+            print_pack_status(num_clb,
+                              num_molecules,
+                              num_molecules_processed,
+                              mols_since_last_print,
+                              device_ctx.grid.width(),
+                              device_ctx.grid.height());
+
+            VTR_LOGV(verbosity > 2,
                      "Complex block %d: '%s' (%s) ", num_clb,
                      cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
                      cluster_ctx.clb_nlist.block_type(clb_index)->name);
-            VTR_LOGV(verbosity == 2, "."); //Progress dot for seed-block
+            VTR_LOGV(verbosity > 2, ".");
+            //Progress dot for seed-block
             fflush(stdout);
 
             t_ext_pin_util target_ext_pin_util = ext_pin_util_targets.get_pin_util(cluster_ctx.clb_nlist.block_type(clb_index)->name);
@@ -616,7 +657,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                       packer_opts.pack_verbosity,
                                                       packer_opts.enable_pin_feasibility_filter,
                                                       packer_opts.feasible_block_array_size,
-                                                      target_ext_pin_util);
+                                                      target_ext_pin_util,
+                                                      temp_cluster_pr);
                 prev_molecule = next_molecule;
 
                 auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
@@ -633,6 +675,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                      next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
                             VTR_LOG("\n");
                             fflush(stdout);
+                        } else if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
+                            VTR_LOG("\tFAILED_FLOORPLANNING_CONSTRAINTS_CHECK: '%s' (%s)", blk_name.c_str(), blk_model->name);
+                            VTR_LOG("\n");
                         } else {
                             VTR_LOG("\tFAILED_FEASIBILITY_CHECK: '%s' (%s)", blk_name.c_str(), blk_model->name, block_pack_status);
                             VTR_LOGV(next_molecule->pack_pattern, " molecule %s molecule_size %zu",
@@ -662,8 +707,17 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                              next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
                     VTR_LOG("\n");
                 }
-                VTR_LOGV(verbosity == 2, ".");
+
                 fflush(stdout);
+
+                //Since molecule passed, update num_molecules_processed
+                num_molecules_processed++;
+                mols_since_last_print++;
+                print_pack_status(num_clb, num_molecules,
+                                  num_molecules_processed,
+                                  mols_since_last_print,
+                                  device_ctx.grid.width(),
+                                  device_ctx.grid.height());
 
                 update_cluster_stats(next_molecule, clb_index,
                                      is_clock, //Set of all clocks
@@ -689,8 +743,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          clb_index,
                                                          packer_opts.pack_verbosity);
             }
-
-            VTR_LOGV(verbosity == 2, "\n");
 
             if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
                 /* is_mode_conflict does not affect this stage. It is needed when trying to route the packed clusters.
@@ -734,8 +786,13 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                     }
                 }
                 auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
+
                 // update the data structure holding the LE counts
                 update_le_count(cur_pb, logic_block_type, le_pb_type, le_count);
+
+                //print clustering progress incrementally
+                //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
+
                 free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
@@ -762,6 +819,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
     check_clustering();
 
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERS)) {
+        echo_clusters(getEchoFileName(E_ECHO_CLUSTERS));
+    }
+
     output_clustering(intra_lb_routing, packer_opts.global_clocks, is_clock, arch->architecture_id, packer_opts.output_file.c_str(), false);
 
     VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
@@ -786,6 +847,47 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     free(primitives_list);
 
     return num_used_type_instances;
+}
+
+/*print the header for the clustering progress table*/
+static void print_pack_status_header() {
+    VTR_LOG("Starting Clustering - Clustering Progress: \n");
+    VTR_LOG("-------------------   --------------------------   ---------\n");
+    VTR_LOG("Molecules processed   Number of clusters created   FPGA size\n");
+    VTR_LOG("-------------------   --------------------------   ---------\n");
+}
+
+/*incrementally print progress updates during clustering*/
+static void print_pack_status(int num_clb,
+                              int tot_num_molecules,
+                              int num_molecules_processed,
+                              int& mols_since_last_print,
+                              int device_width,
+                              int device_height) {
+    const float print_frequency = 0.04;
+
+    double percentage = (num_molecules_processed / (double)tot_num_molecules) * 100;
+
+    int int_percentage = int(percentage);
+
+    int int_molecule_increment = (int)(print_frequency * tot_num_molecules);
+
+    if (mols_since_last_print == int_molecule_increment) {
+        VTR_LOG(
+            "%6d/%-6d  %3d%%   "
+            "%26d   "
+            "%3d x %-3d   ",
+            num_molecules_processed,
+            tot_num_molecules,
+            int_percentage,
+            num_clb,
+            device_width,
+            device_height);
+
+        VTR_LOG("\n");
+        fflush(stdout);
+        mols_since_last_print = 0;
+    }
 }
 
 /* Determine if atom block is in pb */
@@ -1180,6 +1282,76 @@ static void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_siz
 /*****************************************/
 
 /**
+ * Cleans up a pb after unsuccessful molecule packing
+ *
+ * Recursively frees pbs from a t_pb tree. The given root pb itself is not
+ * deleted.
+ *
+ * If a pb object has its children allocated then before freeing them the
+ * function checks if there is no atom that corresponds to any of them. The
+ * check is performed only for leaf (primitive) pbs. The function recurses for
+ * non-primitive pbs.
+ *
+ * The cleaning itself includes deleting all child pbs, resetting mode of the
+ * pb and also freeing its name. This prepares the pb for another round of
+ * molecule packing tryout. 
+ */
+static bool cleanup_pb(t_pb* pb) {
+    bool can_free = true;
+
+    /* Recursively check if there are any children with already assigned atoms */
+    if (pb->child_pbs != nullptr) {
+        const t_mode* mode = &pb->pb_graph_node->pb_type->modes[pb->mode];
+        VTR_ASSERT(mode != nullptr);
+
+        /* Check each mode */
+        for (int i = 0; i < mode->num_pb_type_children; ++i) {
+            /* Check each child */
+            if (pb->child_pbs[i] != nullptr) {
+                for (int j = 0; j < mode->pb_type_children[i].num_pb; ++j) {
+                    t_pb* pb_child = &pb->child_pbs[i][j];
+                    t_pb_type* pb_type = pb_child->pb_graph_node->pb_type;
+
+                    /* Primitive, check occupancy */
+                    if (pb_type->num_modes == 0) {
+                        if (pb_child->name != nullptr) {
+                            can_free = false;
+                        }
+                    }
+
+                    /* Non-primitive, recurse */
+                    else {
+                        if (!cleanup_pb(pb_child)) {
+                            can_free = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Free if can */
+        if (can_free) {
+            for (int i = 0; i < mode->num_pb_type_children; ++i) {
+                if (pb->child_pbs[i] != nullptr) {
+                    delete[] pb->child_pbs[i];
+                }
+            }
+
+            delete[] pb->child_pbs;
+            pb->child_pbs = nullptr;
+            pb->mode = 0;
+
+            if (pb->name) {
+                free(pb->name);
+                pb->name = nullptr;
+            }
+        }
+    }
+
+    return can_free;
+}
+
+/**
  * Try pack molecule into current cluster
  */
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
@@ -1195,7 +1367,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                   int verbosity,
                                                   bool enable_pin_feasibility_filter,
                                                   const int feasible_block_array_size,
-                                                  t_ext_pin_util max_external_pin_util) {
+                                                  t_ext_pin_util max_external_pin_util,
+                                                  PartitionRegion& temp_cluster_pr) {
     int molecule_size, failed_location;
     int i;
     enum e_block_pack_status block_pack_status;
@@ -1203,6 +1376,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
     t_pb* cur_pb;
 
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
     parent = nullptr;
 
@@ -1233,6 +1407,25 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
         return BLK_FAILED_FEASIBLE;
     }
 
+    bool cluster_pr_needs_update = false;
+
+    //check if every atom in the molecule is legal in the cluster from a floorplanning perspective
+    for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
+        //try to intersect with atom PartitionRegion if atom exists
+        if (molecule->atom_block_ids[i_mol]) {
+            block_pack_status = atom_cluster_floorplanning_check(molecule->atom_block_ids[i_mol],
+                                                                 clb_index, verbosity,
+                                                                 temp_cluster_pr,
+                                                                 cluster_pr_needs_update);
+            if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
+                return block_pack_status;
+            }
+        }
+    }
+
+    //change  status back to undefined before the while loop in case in was changed to BLK_PASSED in the above for loop
+    block_pack_status = BLK_STATUS_UNDEFINED;
+
     while (block_pack_status != BLK_PASSED) {
         if (get_next_primitive_list(cluster_placement_stats_ptr, molecule,
                                     primitives_list)) {
@@ -1250,6 +1443,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                                  verbosity, feasible_block_array_size);
                 }
             }
+
             if (enable_pin_feasibility_filter && block_pack_status == BLK_PASSED) {
                 /* Check if pin usage is feasible for the current packing assignment */
                 reset_lookahead_pins_used(pb);
@@ -1331,6 +1525,14 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                         }
                     }
 
+                    //update cluster PartitionRegion if atom with floorplanning constraints was added
+                    if (cluster_pr_needs_update) {
+                        floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
+                        if (verbosity > 2) {
+                            VTR_LOG("\nUpdated PartitionRegion of cluster %d\n", clb_index);
+                        }
+                    }
+
                     for (i = 0; i < molecule_size; i++) {
                         if (molecule->atom_block_ids[i]) {
                             /* invalidate all molecules that share atom block with current molecule */
@@ -1358,6 +1560,12 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                         revert_place_atom_block(molecule->atom_block_ids[i], router_data, atom_molecules);
                     }
                 }
+
+                /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
+                 * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
+                 * their modes reset. This task is performed by the cleanup_pb() function below. */
+                cleanup_pb(pb);
+
             } else {
                 VTR_LOGV(verbosity > 3, "\t\tPASSED pack molecule\n");
             }
@@ -1501,6 +1709,73 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
     }
 
     return block_pack_status;
+}
+
+/*
+ * Checks if the atom and cluster have compatible floorplanning constraints
+ * If the atom and cluster both have non-empty PartitionRegions, and the intersection
+ * of the PartitionRegions is empty, the atom cannot be packed in the cluster.
+ */
+static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlockId blk_id,
+                                                                 const ClusterBlockId clb_index,
+                                                                 const int verbosity,
+                                                                 PartitionRegion& temp_cluster_pr,
+                                                                 bool& cluster_pr_needs_update) {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
+
+    /*check if the atom can go in the cluster by checking if the atom and cluster have intersecting PartitionRegions*/
+
+    //get partition that atom belongs to
+    PartitionId partid;
+    partid = ctx_constraints.get_atom_partition(blk_id);
+
+    PartitionRegion atom_pr;
+    PartitionRegion cluster_pr;
+    PartitionRegion intersect_pr;
+
+    //if the atom does not belong to a partition, it can be put in the cluster
+    //regardless of what the cluster's PartitionRegion is because it has no constraints
+    if (partid == PartitionId::INVALID()) {
+        if (verbosity > 3) {
+            VTR_LOG("\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n", blk_id, clb_index);
+        }
+        cluster_pr_needs_update = false;
+        return BLK_PASSED;
+    } else {
+        //get pr of that partition
+        atom_pr = ctx_constraints.get_partition_pr(partid);
+
+        //intersect it with the pr of the current cluster
+        cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
+
+        if (cluster_pr.empty() == true) {
+            temp_cluster_pr = atom_pr;
+            cluster_pr_needs_update = true;
+            if (verbosity > 3) {
+                VTR_LOG("\t\t\t Intersect: Atom block %d has floorplanning constraints, passed cluster %d which has empty PR\n", blk_id, clb_index);
+            }
+            return BLK_PASSED;
+        } else {
+            intersect_pr = intersection(cluster_pr, atom_pr);
+        }
+
+        if (intersect_pr.empty() == true) {
+            if (verbosity > 3) {
+                VTR_LOG("\t\t\t Intersect: Atom block %d failed floorplanning check for cluster %d \n", blk_id, clb_index);
+            }
+            cluster_pr_needs_update = false;
+            return BLK_FAILED_FLOORPLANNING;
+        } else {
+            //update the cluster's PartitionRegion with the intersecting PartitionRegion
+            temp_cluster_pr = intersect_pr;
+            cluster_pr_needs_update = true;
+            if (verbosity > 3) {
+                VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n", blk_id, clb_index);
+            }
+            return BLK_PASSED;
+        }
+    }
 }
 
 /* Revert trial atom block iblock and free up memory space accordingly
@@ -1940,13 +2215,21 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               int verbosity,
                               bool enable_pin_feasibility_filter,
                               bool balance_block_type_utilization,
-                              const int feasible_block_array_size) {
+                              const int feasible_block_array_size,
+                              PartitionRegion& temp_cluster_pr) {
     /* Given a starting seed block, start_new_cluster determines the next cluster type to use
      * It expands the FPGA if it cannot find a legal cluster for the atom block
      */
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+
+    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
+
+    /*Cluster's PartitionRegion is empty initially, meaning it has no floorplanning constraints*/
+    PartitionRegion empty_pr;
+    floorplanning_ctx.cluster_constraints.push_back(empty_pr);
 
     /* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
     AtomBlockId root_atom = molecule->atom_block_ids[molecule->root];
@@ -2019,7 +2302,8 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                                             verbosity,
                                             enable_pin_feasibility_filter,
                                             feasible_block_array_size,
-                                            FULL_EXTERNAL_PIN_UTIL);
+                                            FULL_EXTERNAL_PIN_UTIL,
+                                            temp_cluster_pr);
 
             success = (pack_result == BLK_PASSED);
         }
@@ -2074,8 +2358,6 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 
     if (num_used_type_instances[block_type] > num_instances) {
         device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
-        VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
-                 device_ctx.grid.width(), device_ctx.grid.height());
     }
 }
 
@@ -2395,6 +2677,61 @@ static void check_clustering() {
                             atom_ctx.nlist.block_name(blk_id).c_str());
         }
     }
+}
+
+/*Print the contents of each cluster to an echo file*/
+static void echo_clusters(char* filename) {
+    FILE* fp;
+    fp = vtr::fopen(filename, "w");
+
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "Clusters\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    std::map<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        cluster_atoms.insert({blk_id, std::vector<AtomBlockId>()});
+    }
+
+    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+
+        cluster_atoms[clb_index].push_back(atom_blk_id);
+    }
+
+    for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
+        std::string cluster_name;
+        cluster_name = cluster_ctx.clb_nlist.block_name(i->first);
+        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(i->first));
+        fprintf(fp, "\tAtoms in cluster: \n");
+
+        int num_atoms = i->second.size();
+
+        for (auto j = 0; j < num_atoms; j++) {
+            AtomBlockId atom_id = i->second[j];
+            fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
+        }
+    }
+
+    fprintf(fp, "\nCluster Floorplanning Constraints:\n");
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+
+    for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
+        std::vector<Region> reg = floorplanning_ctx.cluster_constraints[clb_id].get_partition_region();
+        if (reg.size() != 0) {
+            fprintf(fp, "\nRegions in Cluster %zu:\n", size_t(clb_id));
+            for (unsigned int i = 0; i < reg.size(); i++) {
+                print_region(fp, reg[i]);
+            }
+        }
+    }
+
+    fclose(fp);
 }
 
 /* TODO: May want to check that all atom blocks are actually reached */

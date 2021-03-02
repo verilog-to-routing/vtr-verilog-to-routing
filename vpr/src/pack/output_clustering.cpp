@@ -31,6 +31,9 @@
 #define LINELENGTH 1024
 #define TAB_LENGTH 4
 
+static void print_clustering_stats_header();
+static void print_clustering_stats(char* block_name, int num_block_type, float num_inputs_clocks, float num_outputs);
+
 /**************** Subroutine definitions ************************************/
 
 /* Prints out one cluster (clb).  Both the external pins and the *
@@ -101,15 +104,15 @@ static void print_stats() {
         num_clb_types[logical_block->index]++;
     }
 
+    print_clustering_stats_header();
+
     for (itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
         if (num_clb_types[itype] == 0) {
-            VTR_LOG("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
-                    device_ctx.logical_block_types[itype].name, num_clb_types[itype], 0.0, 0.0);
+            print_clustering_stats(device_ctx.logical_block_types[itype].name, num_clb_types[itype], 0.0, 0.0);
         } else {
-            VTR_LOG("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
-                    device_ctx.logical_block_types[itype].name, num_clb_types[itype],
-                    (float)num_clb_inputs_used[itype] / (float)num_clb_types[itype],
-                    (float)num_clb_outputs_used[itype] / (float)num_clb_types[itype]);
+            print_clustering_stats(device_ctx.logical_block_types[itype].name, num_clb_types[itype],
+                                   (float)num_clb_inputs_used[itype] / (float)num_clb_types[itype],
+                                   (float)num_clb_outputs_used[itype] / (float)num_clb_types[itype]);
         }
     }
 
@@ -125,6 +128,29 @@ static void print_stats() {
     free(num_clb_inputs_used);
     free(num_clb_outputs_used);
     /* TODO: print more stats */
+}
+
+static void print_clustering_stats_header() {
+    VTR_LOG("Final Clustering Statistics: \n");
+    VTR_LOG("----------   --------   ------------------------------------   --------------------------\n");
+    VTR_LOG("Block Type   # Blocks   Avg. # of input clocks and pins used   Avg. # of output pins used\n");
+    VTR_LOG("----------   --------   ------------------------------------   --------------------------\n");
+}
+
+static void print_clustering_stats(char* block_name, int num_block_type, float num_inputs_clocks, float num_outputs) {
+    VTR_LOG(
+        "%10s   "
+        "%8d   "
+        "%36g   "
+        "%26g   ",
+        block_name,
+        num_block_type,
+        num_inputs_clocks,
+        num_outputs);
+
+    VTR_LOG("\n");
+
+    fflush(stdout);
 }
 
 static const char* clustering_xml_net_text(AtomNetId net_id) {

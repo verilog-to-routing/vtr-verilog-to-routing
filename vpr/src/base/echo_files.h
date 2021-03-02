@@ -12,6 +12,9 @@ enum e_echo_files {
     E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS,
     E_ECHO_VPR_CONSTRAINTS,
 
+    //Packing
+    E_ECHO_CLUSTERS,
+
     // Intra-block routing
     E_ECHO_INTRA_LB_FAILED_ROUTE,
 
