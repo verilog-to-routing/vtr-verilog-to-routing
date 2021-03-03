@@ -1,0 +1,139 @@
+<!-- This architecture definition is a very simplified version to expose usage
+     of heterogeneous tiles (sub tiles with different IOs and functionalities) -->
+<architecture xmlns:xi="http://www.w3.org/2001/XInclude">
+  <models>
+    <model name="PRIMITIVE">
+      <input_ports>
+        <port name="in" combinational_sink_ports="out" />
+        <port name="in_2" combinational_sink_ports="out_2" />
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+        <port name="out_2"/>
+      </output_ports>
+    </model>
+  </models>
+  <tiles>
+    <tile name="IO_TILE_WITH_PRIMITIVE">
+      <sub_tile name="PRIMITIVE_SUB_TILE">
+        <input name="stub_input" num_pins="25"/>
+        <input name="primitive_in" num_pins="1"/>
+        <input name="primitive_in_2" num_pins="1"/>
+        <output name="stub_output" num_pins="25"/>
+        <output name="primitive_out" num_pins="1"/>
+        <output name="primitive_out_2" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="PRIMITIVE_PB_TYPE" pin_mapping="custom">
+            <direct from="PRIMITIVE_SUB_TILE.primitive_in" to="PRIMITIVE_PB_TYPE.primitive_in"/>
+            <direct from="PRIMITIVE_SUB_TILE.primitive_in_2" to="PRIMITIVE_PB_TYPE.primitive_in_2"/>
+            <direct from="PRIMITIVE_SUB_TILE.primitive_out" to="PRIMITIVE_PB_TYPE.primitive_out"/>
+            <direct from="PRIMITIVE_SUB_TILE.primitive_out_2" to="PRIMITIVE_PB_TYPE.primitive_out_2"/>
+          </site>
+        </equivalent_sites>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+      <sub_tile name="IPAD_SUB_TILE_0">
+        <output name="ipad_out_rx_n" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="IPAD_PB_TYPE"/>
+        </equivalent_sites>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+      <sub_tile name="IPAD_SUB_TILE_1">
+        <output name="ipad_out_rx_p" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="IPAD_PB_TYPE"/>
+        </equivalent_sites>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+      <sub_tile name="OPAD_SUB_TILE_0">
+        <input name="opad_in_tx_n" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="OPAD_PB_TYPE"/>
+        </equivalent_sites>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+      <sub_tile name="OPAD_SUB_TILE_1">
+        <input name="opad_in_tx_p" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="OPAD_PB_TYPE"/>
+        </equivalent_sites>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+    </tile>
+  </tiles>
+  <complexblocklist>
+    <pb_type name="PRIMITIVE_PB_TYPE">
+      <input name="primitive_in" num_pins="1"/>
+      <input name="primitive_in_2" num_pins="1"/>
+      <output name="primitive_out" num_pins="1"/>
+      <output name="primitive_out_2" num_pins="1"/>
+      <pb_type blif_model=".subckt PRIMITIVE" name="PRIMITIVE" num_pb="1">
+        <input name="in" num_pins="1"/>
+        <input name="in_2" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <output name="out_2" num_pins="1"/>
+        <delay_constant max="1.667e-9" in_port="PRIMITIVE.in" out_port="PRIMITIVE.out"/>
+        <delay_constant max="1.667e-9" in_port="PRIMITIVE.in_2" out_port="PRIMITIVE.out_2"/>
+      </pb_type>
+      <interconnect>
+        <direct input="PRIMITIVE_PB_TYPE.primitive_in" name="in" output="PRIMITIVE.in"/>
+        <direct input="PRIMITIVE_PB_TYPE.primitive_in_2" name="in_2" output="PRIMITIVE.in_2"/>
+        <direct input="PRIMITIVE.out" name="out" output="PRIMITIVE_PB_TYPE.primitive_out"/>
+        <direct input="PRIMITIVE.out_2" name="out_2" output="PRIMITIVE_PB_TYPE.primitive_out_2"/>
+      </interconnect>
+    </pb_type>
+    <pb_type name="IPAD_PB_TYPE">
+      <output name="ipad_out" num_pins="1"/>
+      <pb_type blif_model=".input" name="IPAD" num_pb="1">
+        <output name="inpad" num_pins="1"/>
+      </pb_type>
+      <interconnect>
+        <direct input="IPAD.inpad" name="inpad" output="IPAD_PB_TYPE.ipad_out"/>
+      </interconnect>
+    </pb_type>
+    <pb_type name="OPAD_PB_TYPE">
+      <input name="opad_in" num_pins="1"/>
+      <pb_type blif_model=".output" name="OPAD" num_pb="1">
+        <input name="outpad" num_pins="1"/>
+      </pb_type>
+      <interconnect>
+        <direct output="OPAD.outpad" name="outpad" input="OPAD_PB_TYPE.opad_in"/>
+      </interconnect>
+    </pb_type>
+  </complexblocklist>
+  <layout>
+    <auto_layout>
+      <fill type="IO_TILE_WITH_PRIMITIVE" priority="1"/>
+      <perimeter type="IO_TILE_WITH_PRIMITIVE" priority="1"/>
+      <corners type="EMPTY" priority="3"/>
+    </auto_layout>
+  </layout>
+  <device>
+    <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
+    <area grid_logic_tile_area="14813.392"/>
+    <connection_block input_switch_name="sw"/>
+    <switch_block fs="3" type="universal"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.0"/>
+      <y distr="uniform" peak="1.0"/>
+    </chan_width_distr>
+  </device>
+  <switchlist>
+    <switch Cin=".77e-15" Cout="4e-15" R="1" Tdel="58e-12" buf_size="27.645901" mux_trans_size="2.630740" name="sw" type="mux"/>
+  </switchlist>
+  <segmentlist>
+    <segment Cmetal="22.5e-15" Rmetal="101" freq="1.0" name="wire" type="bidir" length="1">
+      <wire_switch name="sw"/>
+      <opin_switch name="sw"/>
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+  </segmentlist>
+  <directlist>
+    <direct from_pin="IO_TILE_WITH_PRIMITIVE.ipad_out_rx_n" to_pin="IO_TILE_WITH_PRIMITIVE.primitive_in" x_offset="0" y_offset="0" z_offset="-1" name="IPAD_rx_n_to_PRIMITIVE"/>
+    <direct from_pin="IO_TILE_WITH_PRIMITIVE.ipad_out_rx_p" to_pin="IO_TILE_WITH_PRIMITIVE.primitive_in_2" x_offset="0" y_offset="0" z_offset="-2" name="IPAD_rx_p_to_PRIMITIVE"/>
+    <direct from_pin="IO_TILE_WITH_PRIMITIVE.primitive_out" to_pin="IO_TILE_WITH_PRIMITIVE.opad_in_tx_n" x_offset="0" y_offset="0" z_offset="3" name="PRIMITIVE_to_OPAD_tx_n"/>
+    <direct from_pin="IO_TILE_WITH_PRIMITIVE.primitive_out_2" to_pin="IO_TILE_WITH_PRIMITIVE.opad_in_tx_p" x_offset="0" y_offset="0" z_offset="4" name="PRIMITIVE_to_OPAD_tx_p"/>
+  </directlist>
+</architecture>
