@@ -2704,15 +2704,69 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                 address->count = right_memory->addr_width;
             }
 
-            add_input_port_to_implicit_memory(right_memory, address, "addr1");
+            int input_pin_index = 0;
+            int output_pin_index = 0;
+            char* address_port = NULL;
+            char* output_port = NULL;
+
+            ast_node_t* right_memory_ast_node = right_memory->node->related_ast_node;
+
+            bool first_address_is_connected = is_signal_list_connected_to_memory(right_memory, address, "addr1");
+            bool second_address_is_connected = is_signal_list_connected_to_memory(right_memory, address, "addr2");
+            bool memory_is_single_port = !strcmp(right_memory_ast_node->identifier_node->types.identifier, SINGLE_PORT_RAM_string);
+
+            if (memory_is_single_port && !first_address_is_connected) {
+                if (right_memory->node->input_pins) {
+                    address_port = right_memory->node->input_pins[0]->mapping;
+
+                    if (address_port && !strcmp(address_port, "addr1")) {
+                        // changing to a dual-port ram, since the first port is already connected
+                        ast_node_t* identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), assignment->loc);
+
+                        // free the default identifier node (spram)
+                        if (right_memory_ast_node->identifier_node) {
+                            free_single_node(right_memory_ast_node->identifier_node);
+                        }
+
+                        right_memory_ast_node->identifier_node = identifier_node;
+
+                        input_pin_index = right_memory->data_width + right_memory->data_width + right_memory->addr_width + 2;
+                        output_pin_index = right_memory->data_width;
+
+                        // first address port is already been used, so that the second port should use for the next address port
+                        address_port = vtr::strdup("addr2");
+                        output_port = vtr::strdup("out2");
+                    }
+
+                } else {
+                    address_port = vtr::strdup("addr1");
+                    output_port = vtr::strdup("out1");
+                }
+
+                add_input_port_to_implicit_memory(right_memory, address, address_port);
+
+            } else if (!memory_is_single_port && second_address_is_connected) {
+                input_pin_index = right_memory->data_width + right_memory->data_width + right_memory->addr_width + 2;
+                output_pin_index = right_memory->data_width;
+
+                address_port = vtr::strdup("addr2");
+                output_port = vtr::strdup("out2");
+
+            } else if (first_address_is_connected) {
+                address_port = vtr::strdup("addr1");
+                output_port = vtr::strdup("out1");
+            }
+
             // Right inputs are the inputs to the memory. This will contain the address only.
             right_inputs = init_signal_list();
             char* name = right->identifier_node->types.identifier;
-            for (int i = 0; i < address->count; i++) {
+
+            int i;
+            for (i = 0; i < address->count; i++) {
                 npin_t* pin = address->pins[i];
                 if (pin->name)
                     vtr::free(pin->name);
-                pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, i);
+                pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index + i);
                 add_pin_to_signal_list(right_inputs, pin);
             }
             free_signal_list(address);
@@ -2721,10 +2775,10 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             // treated the same as the outputs from the RHS of any assignment.
             right_outputs = init_signal_list();
             signal_list_t* outputs = init_signal_list();
-            for (int i = 0; i < right_memory->data_width; i++) {
+            for (i = output_pin_index; i < right_memory->data_width + output_pin_index; i++) {
                 npin_t* pin = allocate_npin();
                 add_pin_to_signal_list(outputs, pin);
-                pin->name = make_full_ref_name("", NULL, NULL, right_memory->node->name, i);
+                pin->name = make_full_ref_name(right_memory->node->name, NULL, NULL, output_port, i - output_pin_index);
                 nnet_t* net = allocate_nnet();
                 add_driver_pin_to_net(net, pin);
                 pin = allocate_npin();
@@ -2732,8 +2786,11 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                 //right_outputs->pins[i] = pin;
                 add_pin_to_signal_list(right_outputs, pin);
             }
-            add_output_port_to_implicit_memory(right_memory, outputs, "out1");
+            add_output_port_to_implicit_memory(right_memory, outputs, output_port);
             free_signal_list(outputs);
+
+            vtr::free(address_port);
+            vtr::free(output_port);
         }
 
     } else {
@@ -2783,13 +2840,67 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                     address->count = left_memory->addr_width;
                 }
 
-                add_input_port_to_implicit_memory(left_memory, address, "addr2");
-
                 signal_list_t* data;
                 if (right_memory)
                     data = right_outputs;
                 else
                     data = in_1;
+
+                int input_pin_index = 0;
+                char* address_port = NULL;
+                char* data_port = NULL;
+                char* we_port = NULL;
+
+                ast_node_t* left_memory_ast_node = left_memory->node->related_ast_node;
+
+                bool first_address_is_connected = is_signal_list_connected_to_memory(left_memory, address, "addr1");
+                bool second_address_is_connected = is_signal_list_connected_to_memory(left_memory, address, "addr2");
+                bool memory_is_single_port = !strcmp(left_memory_ast_node->identifier_node->types.identifier, SINGLE_PORT_RAM_string);
+
+                if (memory_is_single_port && !first_address_is_connected) {
+                    if (left_memory->node->input_pins) {
+                        address_port = left_memory->node->input_pins[0]->mapping;
+
+                        if (address_port && !strcmp(address_port, "addr1")) {
+                            // changing to a dual-port ram, since the first port is already connected
+                            ast_node_t* identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), assignment->loc);
+
+                            // free the default identifier node (spram)
+                            if (left_memory_ast_node->identifier_node) {
+                                free_single_node(left_memory_ast_node->identifier_node);
+                            }
+
+                            left_memory_ast_node->identifier_node = identifier_node;
+
+                            input_pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
+
+                            // first address port is already been used, so that the second port should use for the next address port
+                            address_port = vtr::strdup("addr2");
+                            data_port = vtr::strdup("data2");
+                            we_port = vtr::strdup("we2");
+                        }
+
+                    } else {
+                        address_port = vtr::strdup("addr1");
+                        data_port = vtr::strdup("data1");
+                        we_port = vtr::strdup("we1");
+                    }
+
+                    add_input_port_to_implicit_memory(left_memory, address, address_port);
+
+                } else if (!memory_is_single_port && second_address_is_connected) {
+                    input_pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
+
+                    // first address port is already been used, so that the second port should use for the next address port
+                    address_port = vtr::strdup("addr2");
+                    data_port = vtr::strdup("data2");
+                    we_port = vtr::strdup("we2");
+
+                } else if (first_address_is_connected) {
+                    address_port = vtr::strdup("addr1");
+                    data_port = vtr::strdup("data1");
+                    we_port = vtr::strdup("we1");
+                }
 
                 // Pad/shrink the data to the width of the memory.
                 if (data) {
@@ -2798,21 +2909,21 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
 
                     data->count = left_memory->data_width;
 
-                    add_input_port_to_implicit_memory(left_memory, data, "data2");
+                    add_input_port_to_implicit_memory(left_memory, data, data_port);
 
                     signal_list_t* we = init_signal_list();
                     add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
-                    add_input_port_to_implicit_memory(left_memory, we, "we2");
+                    add_input_port_to_implicit_memory(left_memory, we, we_port);
 
                     in_1 = init_signal_list();
                     char* name = left->identifier_node->types.identifier;
+
                     int i;
-                    int pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
                     for (i = 0; i < address->count; i++) {
                         npin_t* pin = address->pins[i];
                         if (pin->name)
                             vtr::free(pin->name);
-                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
                         add_pin_to_signal_list(in_1, pin);
                     }
                     free_signal_list(address);
@@ -2821,7 +2932,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                         npin_t* pin = data->pins[i];
                         if (pin->name)
                             vtr::free(pin->name);
-                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
                         add_pin_to_signal_list(in_1, pin);
                     }
                     free_signal_list(data);
@@ -2830,13 +2941,17 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                         npin_t* pin = we->pins[i];
                         if (pin->name)
                             vtr::free(pin->name);
-                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, pin_index++);
+                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
                         add_pin_to_signal_list(in_1, pin);
                     }
                     free_signal_list(we);
 
                     out_list = NULL;
                 }
+
+                vtr::free(address_port);
+                vtr::free(data_port);
+                vtr::free(we_port);
             }
         }
     } else {
