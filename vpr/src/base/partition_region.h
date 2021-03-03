@@ -3,6 +3,7 @@
 
 #include "region.h"
 #include "atom_netlist_fwd.h"
+#include "vpr_types.h"
 
 /**
  * @file
@@ -28,6 +29,8 @@ class PartitionRegion {
      * @brief Check if the PartitionRegion is empty (meaning there is no constraint on the object the PartitionRegion belongs to)
      */
     bool empty();
+
+    bool is_loc_in_part_reg(t_pl_loc loc);
 
     /**
      * @brief Global friend function that returns the intersection of two PartitionRegions

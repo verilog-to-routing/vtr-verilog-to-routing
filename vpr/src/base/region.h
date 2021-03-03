@@ -2,6 +2,7 @@
 #define REGION_H
 
 #include <vtr_geometry.h>
+#include "vpr_types.h"
 
 /**
  * @file
@@ -48,6 +49,8 @@ class Region {
      * @brief Checks whether a block is locked down to a specific x, y, subtile location
      */
     bool locked();
+
+    bool is_loc_in_reg(t_pl_loc loc);
 
   private:
     //may need to include zmin, zmax for future use in 3D FPGA designs

@@ -41,6 +41,20 @@ bool Region::empty() {
     return region_bounds.empty();
 }
 
+bool Region::is_loc_in_reg(t_pl_loc loc) {
+    bool is_loc_in_reg = false;
+
+    vtr::Point<int> loc_coord(loc.x, loc.y);
+
+    bool in_rectangle = region_bounds.coincident(loc_coord);
+
+    if (in_rectangle && sub_tile == loc.sub_tile) {
+        is_loc_in_reg = true;
+    }
+
+    return is_loc_in_reg;
+}
+
 bool do_regions_intersect(Region r1, Region r2) {
     bool intersect = true;
 
