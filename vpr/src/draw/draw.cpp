@@ -3031,7 +3031,31 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     /* Sanity check */
     VTR_ASSERT(NUM_SIDES != pin_side);
 
-    /* Now we determine which side to be used, calculate the offset to be drawn*/
+    /* Now we determine which side to be used, calculate the offset for the pin to be drawn
+     * - For the pin locates above/right to the grid (at the top/right side), 
+     *   a positive offset (+ve) is required
+     * - For the pin locates below/left to the grid (at the bottom/left side), 
+     *   a negative offset (-ve) is required
+     *
+     *   y
+     *   ^                           +-----+ ---
+     *   |                           | PIN |  ^
+     *   |                           |     |  offset
+     *   |                           |     |  v
+     *   |               +-----------+-----+----------+
+     *   |               |                            |<- offset ->|
+     *   |    |<-offset->|                            +------------+
+     *   |    +----------+        Grid                |   PIN      |
+     *   |    | PIN      |                            +------------+
+     *   |    +----------+                            |
+     *   |               |                            |
+     *   |               +---+-----+------------------+
+     *   |               ^   |     |
+     *   |            offset | PIN |
+     *   |               v   |     |
+     *   |               ----+-----+  
+     *   +------------------------------------------------------------>x
+     */
     float draw_pin_offset;
     if (TOP == pin_side || RIGHT == pin_side) {
         draw_pin_offset = draw_coords->pin_size;
