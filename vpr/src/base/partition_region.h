@@ -6,7 +6,7 @@
 
 /**
  * @file
- * @brief This file defines the PartitionRegions class. The PartitionRegions class is used to store the union
+ * @brief This file defines the PartitionRegion class. The PartitionRegion class is used to store the union
  * of regions that a partition can be placed in.
  */
 
@@ -25,6 +25,11 @@ class PartitionRegion {
     std::vector<Region> get_partition_region();
 
     /**
+     * @brief Check if the PartitionRegion is empty (meaning there is no constraint on the object the PartitionRegion belongs to)
+     */
+    bool empty();
+
+    /**
      * @brief Global friend function that returns the intersection of two PartitionRegions
      *
      *   @param pr1     One of the PartitionRegions to be intersected
@@ -35,5 +40,8 @@ class PartitionRegion {
   private:
     std::vector<Region> partition_region; ///< union of rectangular regions that a partition can be placed in
 };
+
+///@brief used to print data from a PartitionRegion
+void print_partition_region(FILE* fp, PartitionRegion pr);
 
 #endif /* PARTITION_REGIONS_H */
