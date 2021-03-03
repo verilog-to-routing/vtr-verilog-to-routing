@@ -29,7 +29,6 @@ int check_placement_floorplanning() {
             //check if the location is in the PartitionRegion
             bool in_pr = pr.is_loc_in_part_reg(loc);
 
-
             if (!in_pr) {
                 error++;
                 VTR_LOG_ERROR("Block %zu is not in correct floorplanning region.\n", size_t(blk_id));
