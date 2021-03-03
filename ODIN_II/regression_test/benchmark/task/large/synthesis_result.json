@@ -1232,6 +1232,18 @@
         "Estimated LUTs": 209209,
         "Total Node": 295165
     },
+    "large/matmul_8x8_fp16/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "large/matmul_8x8_fp16/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "verilog": "matmul_8x8_fp16.v",
+        "exit": 134,
+        "errors": [
+            "matmul_8x8_fp16.v:1648:1 [AST] Can't find module name mac_fp"
+        ],
+        "warnings": [
+            "matmul_8x8_fp16.v:1212:7 [AST] Odin does not handle signed REG (counter)"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
