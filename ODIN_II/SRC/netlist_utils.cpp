@@ -589,7 +589,15 @@ signal_list_t* combine_lists(signal_list_t** signal_lists, int num_signal_lists)
         if (signal_lists[i]) {
             int j;
             for (j = 0; j < signal_lists[i]->count; j++) {
-                add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
+                int k;
+                bool pin_already_added = false;
+                for (k = 0; k < signal_lists[0]->count; k++) {
+                    if (!strcmp(signal_lists[0]->pins[k]->name, signal_lists[i]->pins[j]->name))
+                        pin_already_added = true;
+                }
+
+                if (!pin_already_added)
+                    add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
             }
 
             free_signal_list(signal_lists[i]);
