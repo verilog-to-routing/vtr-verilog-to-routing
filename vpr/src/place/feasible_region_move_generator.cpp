@@ -20,6 +20,10 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT; //No movable block found
     }
 
+    if (place_ctx.block_locs[b_from].is_fixed) {
+        return e_create_move::ABORT; //Block is fixed, cannot move
+    }
+
     //from block data
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
