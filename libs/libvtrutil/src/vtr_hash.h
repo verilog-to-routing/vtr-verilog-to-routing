@@ -4,9 +4,11 @@
 
 namespace vtr {
 
-//Hashes v and combines it with seed (as in boost)
-//
-//This is typically used to implement std::hash for composite types.
+/**
+ * @brief Hashes v and combines it with seed (as in boost)
+ *
+ * This is typically used to implement std::hash for composite types.
+ */
 template<class T>
 inline void hash_combine(std::size_t& seed, const T& v) {
     std::hash<T> hasher;

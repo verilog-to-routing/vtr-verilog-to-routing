@@ -164,6 +164,7 @@ enum e_block_pack_status {
     BLK_PASSED,
     BLK_FAILED_FEASIBLE,
     BLK_FAILED_ROUTE,
+    BLK_FAILED_FLOORPLANNING,
     BLK_STATUS_UNDEFINED
 };
 

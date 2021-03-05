@@ -1,0 +1,702 @@
+<!-- 
+Low-cost homogeneous FPGA Architecture.
+
+- Skywater 130 nm technology
+- General purpose logic block: 
+K = 4, N = 8, fracturable 4 LUTs (can operate as one 4-LUT or two 3-LUTs with all 3 inputs shared) 
+with optionally registered outputs
+- Routing architecture:
+- 10% L = 1, fc_in = 0.15, Fc_out = 0.10
+- 10% L = 2, fc_in = 0.15, Fc_out = 0.10
+- 80% L = 4, fc_in = 0.15, Fc_out = 0.10
+- 100 routing tracks per channel
+
+Authors: Xifan Tang
+
+The original VPR architecture file was taken from:
+https://github.com/lnis-uofu/SOFA/blob/da52aa67ebf5157d7aae2d334ca522ba97e7a723/ARCH/vpr_arch/k4_N8_tileable_reset_softadder_register_scan_chain_nonLR_caravel_io_skywater130nm.xml
+
+It was modified to be suitable for the upstream VPR
+-->
+<architecture>
+  <!-- 
+    ODIN II specific config begins 
+    Describes the types of user-specified netlist blocks (in blif, this corresponds to 
+    ".model [type_of_block]") that this architecture supports.
+
+    Note: Basic LUTs, I/Os, and flip-flops are not included here as there are 
+    already special structures in blif (.names, .input, .output, and .latch) 
+    that describe them.
+  -->
+  <models>
+    <!-- A virtual model for I/O to be used in the physical mode of io block -->
+    <model name="io">
+      <input_ports>
+        <port name="outpad"/>
+      </input_ports>
+      <output_ports>
+        <port name="inpad"/>
+      </output_ports>
+    </model>
+    <model name="frac_lut4">
+      <input_ports>
+        <port name="in" combinational_sink_ports="lut2_out lut4_out"/>
+      </input_ports>
+      <output_ports>
+        <port name="lut2_out"/>
+        <port name="lut4_out"/>
+      </output_ports>
+    </model>
+    <model name="carry_follower">
+      <input_ports>
+        <port name="a" combinational_sink_ports="cout"/>
+        <port name="b" combinational_sink_ports="cout"/>
+        <port name="cin" combinational_sink_ports="cout"/>
+      </input_ports>
+      <output_ports>
+        <port name="cout"/>
+      </output_ports>
+    </model>
+    <!-- A virtual model for scan-chain flip-flop to be used in the physical mode of FF -->
+    <model name="scff">
+      <input_ports>
+        <port name="D" clock="clk"/>
+        <port name="DI" clock="clk"/>
+        <port name="reset" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+      </input_ports>
+      <output_ports>
+        <port name="Q" clock="clk"/>
+      </output_ports>
+    </model>
+  </models>
+  <tiles>
+    <!-- Do NOT add clock pins to I/O here!!! VPR does not build clock network in the way that OpenFPGA can support
+      If you need to register the I/O, define clocks in the circuit models
+      These clocks can be handled in back-end
+    -->
+    <!-- Top-side has 1 I/O per tile -->
+    <!-- Right-side has 1 I/O per tile -->
+    <!-- Bottom-side has 9 I/O per tile -->
+    <!-- Left-side has 1 I/O per tile -->
+    <!-- CLB has most pins on the top and right sides -->
+    <tile name="io_top" area="0">
+      <sub_tile name="io_top" capacity="16">
+        <equivalent_sites>
+          <site pb_type="io"/>
+        </equivalent_sites>
+        <clock name="clk" num_pins="4"/>
+        <input name="f2a_i" num_pins="1"/>
+        <output name="a2f_o" num_pins="1"/>
+        <input name="sc_in" num_pins="1"/>
+        <output name="sc_out" num_pins="1"/>
+        <input name="reset" num_pins="1" is_non_clock_global="true"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_in" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_out" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="reset" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="bottom">io_top.a2f_o io_top.f2a_i io_top.clk io_top.sc_in io_top.sc_out io_top.reset</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+    <tile name="io_right" area="0">
+      <sub_tile name="io_right" capacity="16">
+        <equivalent_sites>
+          <site pb_type="io"/>
+        </equivalent_sites>
+        <clock name="clk" num_pins="4"/>
+        <input name="f2a_i" num_pins="1"/>
+        <output name="a2f_o" num_pins="1"/>
+        <input name="sc_in" num_pins="1"/>
+        <output name="sc_out" num_pins="1"/>
+        <input name="reset" num_pins="1" is_non_clock_global="true"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_in" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_out" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="reset" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left">io_right.a2f_o io_right.f2a_i io_right.clk io_right.sc_in io_right.sc_out io_right.reset</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+    <tile name="io_bottom" area="0">
+      <sub_tile name="io_bottom" capacity="16">
+        <equivalent_sites>
+          <site pb_type="io"/>
+        </equivalent_sites>
+        <clock name="clk" num_pins="4"/>
+        <input name="f2a_i" num_pins="1"/>
+        <output name="a2f_o" num_pins="1"/>
+        <input name="sc_in" num_pins="1"/>
+        <output name="sc_out" num_pins="1"/>
+        <input name="reset" num_pins="1" is_non_clock_global="true"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_in" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_out" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="reset" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="top">io_bottom.a2f_o io_bottom.f2a_i io_bottom.clk io_bottom.sc_in io_bottom.sc_out io_bottom.reset</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+    <tile name="io_left" area="0">
+      <sub_tile name="io_left" capacity="16">
+        <equivalent_sites>
+          <site pb_type="io"/>
+        </equivalent_sites>
+        <clock name="clk" num_pins="4"/>
+        <input name="f2a_i" num_pins="1"/>
+        <output name="a2f_o" num_pins="1"/>
+        <input name="sc_in" num_pins="1"/>
+        <output name="sc_out" num_pins="1"/>
+        <input name="reset" num_pins="1" is_non_clock_global="true"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_in" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_out" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="reset" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="right">io_left.a2f_o io_left.f2a_i io_left.clk io_left.sc_in io_left.sc_out io_left.reset</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+    <tile name="clb" area="53894">
+      <sub_tile name="clb">
+        <equivalent_sites>
+          <site pb_type="clb"/>
+        </equivalent_sites>
+        <input name="I" num_pins="24" equivalent="full"/>
+        <input name="reg_in" num_pins="1"/>
+        <input name="sc_in" num_pins="1"/>
+        <input name="cin" num_pins="1"/>
+        <input name="reset" num_pins="1" is_non_clock_global="true"/>
+        <output name="O" num_pins="8" equivalent="none"/>
+        <output name="reg_out" num_pins="1"/>
+        <output name="sc_out" num_pins="1"/>
+        <output name="cout" num_pins="1"/>
+        <output name="cout_copy" num_pins="1"/>
+        <clock name="clk" num_pins="4"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="reg_in" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="reg_out" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_in" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="sc_out" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="reset" fc_type="frac" fc_val="0"/>
+        </fc>
+        <!--pinlocations pattern="spread"/-->
+        <pinlocations pattern="custom">
+          <loc side="left">clb.clk clb.reset</loc>
+          <loc side="top">clb.reg_in clb.sc_in clb.cin clb.O[7:0] clb.I[11:0]</loc>
+          <loc side="right">clb.I[23:12]</loc>
+          <loc side="bottom">clb.reg_out clb.sc_out clb.cout clb.cout_copy</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+  </tiles>
+  <!-- ODIN II specific config ends -->
+  <!-- Physical descriptions begin -->
+  <device>
+    <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
+      models. We are modifying the delay values however, to include metal C and R, which allows more architecture
+      experimentation. We are also modifying the relative resistance of PMOS to be 1.8x that of NMOS
+      (vs. Ian's 3x) as 1.8x lines up with Jeff G's data from a 45 nm process (and is more typical of 
+      45 nm in general). I'm upping the Rmin_nmos from Ian's just over 6k to nearly 9k, and dropping 
+      RminW_pmos from 18k to 16k to hit this 1.8x ratio, while keeping the delays of buffers approximately
+      lined up with Stratix IV. 
+      We are using Jeff G.'s capacitance data for 45 nm (in tech/ptm_45nm).
+      Jeff's tables list C in for transistors with widths in multiples of the minimum feature size (45 nm).
+      The minimum contactable transistor is 2.5 * 45 nm, so I need to multiply drive strength sizes in this file
+      by 2.5x when looking up in Jeff's tables.
+      The delay values are lined up with Stratix IV, which has an architecture similar to this
+      proposed FPGA, and which is also 40 nm 
+      C_ipin_cblock: input capacitance of a track buffer, which VPR assumes is a single-stage
+    4x minimum drive strength buffer. -->
+    <sizing R_minW_nmos="8926" R_minW_pmos="16067"/>
+    <!-- The grid_logic_tile_area below will be used for all blocks that do not explicitly set their own (non-routing)
+        area; set to 0 since we explicitly set the area of all blocks currently in this architecture file.
+      -->
+    <area grid_logic_tile_area="0"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.000000"/>
+      <y distr="uniform" peak="1.000000"/>
+    </chan_width_distr>
+    <connection_block input_switch_name="ipin_cblock"/>
+    <switch_block type="wilton" fs="3"/>
+  </device>
+  <switchlist>
+    <!-- VB: the mux_trans_size and buf_size data below is in minimum width transistor *areas*, assuming the purple
+      book area formula. This means the mux transistors are about 5x minimum drive strength.
+      We assume the first stage of the buffer is 3x min drive strength to be reasonable given the large 
+      mux transistors, and this gives a reasonable stage ratio of a bit over 5x to the second stage. We assume
+      the n and p transistors in the first stage are equal-sized to lower the buffer trip point, since it's fed
+      by a pass transistor mux. We can then reverse engineer the buffer second stage to hit the specified 
+      buf_size (really buffer area) - 16.2x minimum drive nmos and 1.8*16.2 = 29.2x minimum drive.
+      I then took the data from Jeff G.'s PTM modeling of 45 nm to get the Cin (gate of first stage) and Cout 
+      (diff of second stage) listed below.  Jeff's models are in tech/ptm_45nm, and are in min feature multiples.
+      The minimum contactable transistor is 2.5 * 45 nm, so I need to multiply the drive strength sizes above by 
+      2.5x when looking up in Jeff's tables.
+      Finally, we choose a switch delay (58 ps) that leads to length 4 wires having a delay equal to that of SIV of 126 ps.
+    This also leads to the switch being 46% of the total wire delay, which is reasonable. -->
+    <switch type="mux" name="L1_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+    <switch type="mux" name="L2_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+    <switch type="mux" name="L4_mux" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+    <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+    <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
+  </switchlist>
+  <segmentlist>
+    <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
+      With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
+    reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
+    <!-- GIVE a specific name for the segment! OpenFPGA appreciate that! -->
+    <segment name="L1" freq="0.20" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+      <mux name="L1_mux"/>
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+    <segment name="L2" freq="0.10" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+      <mux name="L2_mux"/>
+      <sb type="pattern">1 1 1</sb>
+      <cb type="pattern">1 1</cb>
+    </segment>
+    <segment name="L4" freq="0.70" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+      <mux name="L4_mux"/>
+      <sb type="pattern">1 1 1 1 1</sb>
+      <cb type="pattern">1 1 1 1</cb>
+    </segment>
+  </segmentlist>
+  <directlist>
+    <direct name="carry_chain" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="shift_register" from_pin="clb.reg_out" to_pin="clb.reg_in" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="scan_chain" from_pin="clb.sc_out" to_pin="clb.sc_in" x_offset="0" y_offset="-1" z_offset="0"/>
+  </directlist>
+  <complexblocklist>
+    <!-- Define input pads begin -->
+    <pb_type name="io">
+      <clock name="clk" num_pins="4"/>
+      <input name="f2a_i" num_pins="1"/>
+      <output name="a2f_o" num_pins="1"/>
+      <input name="sc_in" num_pins="1"/>
+      <output name="sc_out" num_pins="1"/>
+      <input name="reset" num_pins="1" is_non_clock_global="true"/>
+      <mode name="io_output">
+        <pb_type name="io_output" num_pb="1">
+          <clock name="clk" num_pins="1"/>
+          <input name="f2a_i" num_pins="1"/>
+          <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+            <input name="D" num_pins="1" port_class="D"/>
+            <output name="Q" num_pins="1" port_class="Q"/>
+            <clock name="clk" num_pins="1" port_class="clock"/>
+            <T_setup value="66e-12" port="ff.D" clock="clk"/>
+            <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+          </pb_type>
+          <pb_type name="outpad" blif_model=".output" num_pb="1">
+            <input name="outpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="ff-clk" input="io_output.clk" output="ff.clk"/>
+            <direct name="ff-D" input="io_output.f2a_i" output="ff.D"/>
+            <mux name="mux1" input="ff.Q io_output.f2a_i" output="outpad.outpad">
+              <pack_pattern name="pack-OREG" in_port="ff.Q" out_port="outpad.outpad"/>
+              <delay_constant max="25e-12" in_port="io_output.f2a_i" out_port="outpad.outpad"/>
+              <delay_constant max="45e-12" in_port="ff.Q" out_port="outpad.outpad"/>
+            </mux>
+          </interconnect>
+        </pb_type>
+        <interconnect>
+          <complete name="io_output-clk" input="io.clk" output="io_output.clk"/>
+          <direct name="io_output-f2a_i" input="io.f2a_i" output="io_output.f2a_i"/>
+        </interconnect>
+      </mode>
+      <mode name="io_input">
+        <pb_type name="io_input" num_pb="1">
+          <clock name="clk" num_pins="1"/>
+          <output name="a2f_o" num_pins="1"/>
+          <pb_type name="inpad" blif_model=".input" num_pb="1">
+            <output name="inpad" num_pins="1"/>
+          </pb_type>
+          <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+            <input name="D" num_pins="1" port_class="D"/>
+            <output name="Q" num_pins="1" port_class="Q"/>
+            <clock name="clk" num_pins="1" port_class="clock"/>
+            <T_setup value="66e-12" port="ff.D" clock="clk"/>
+            <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+          </pb_type>
+          <interconnect>
+            <direct name="ff-clk" input="io_input.clk" output="ff.clk"/>
+            <direct name="ff-D" input="inpad.inpad" output="ff.D">
+              <pack_pattern name="pack-IREG" in_port="inpad.inpad" out_port="ff.D"/>
+            </direct>
+            <mux name="mux2" input="inpad.inpad ff.Q" output="io_input.a2f_o">
+              <delay_constant max="25e-12" in_port="inpad.inpad" out_port="io_input.a2f_o"/>
+              <delay_constant max="45e-12" in_port="ff.Q" out_port="io_input.a2f_o"/>
+            </mux>
+          </interconnect>
+        </pb_type>
+        <interconnect>
+          <direct name="io-a2f_o" input="io_input.a2f_o" output="io.a2f_o"/>
+          <complete name="io_input-clk" input="io.clk" output="io_input.clk"/>
+        </interconnect>
+      </mode>
+      <!-- Physical mode definition begin (physical implementation of the io) -->
+      <mode name="physical">
+        <pb_type name="iopad" num_pb="1">
+          <clock name="clk" num_pins="1"/>
+          <input name="f2a_i" num_pins="1"/>
+          <output name="a2f_o" num_pins="1"/>
+          <input name="sc_in" num_pins="1"/>
+          <input name="reset" num_pins="1"/>
+          <output name="sc_out" num_pins="1"/>
+          <pb_type name="ff" blif_model=".subckt scff" num_pb="2">
+            <input name="D" num_pins="1" port_class="D"/>
+            <input name="DI" num_pins="1"/>
+            <input name="reset" num_pins="1"/>
+            <output name="Q" num_pins="1" port_class="Q"/>
+            <clock name="clk" num_pins="1" port_class="clock"/>
+            <T_setup value="66e-12" port="ff.D" clock="clk"/>
+            <T_setup value="66e-12" port="ff.DI" clock="clk"/>
+            <T_setup value="66e-12" port="ff.reset" clock="clk"/>
+            <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+          </pb_type>
+          <pb_type name="pad" blif_model=".subckt io" num_pb="1">
+            <input name="outpad" num_pins="1"/>
+            <output name="inpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="ff[0:0]-clk" input="iopad.clk" output="ff[0:0].clk"/>
+            <direct name="ff[1:1]-clk" input="iopad.clk" output="ff[1:1].clk"/>
+            <direct name="ff[0:0]-D" input="iopad.f2a_i" output="ff[0:0].D"/>
+            <direct name="ff[1:1]-D" input="pad.inpad" output="ff[1:1].D"/>
+            <direct name="ff[0:0]-DI" input="iopad.sc_in" output="ff[0:0].DI"/>
+            <direct name="ff[1:1]-DI" input="ff[0:0].Q" output="ff[1:1].DI"/>
+            <direct name="iopad-sc_out" input="ff[1:1].Q" output="iopad.sc_out"/>
+            <complete name="complete1" input="iopad.reset" output="ff[1:0].reset"/>
+            <mux name="mux1" input="iopad.f2a_i ff[0:0].Q" output="pad.outpad">
+              <delay_constant max="25e-12" in_port="iopad.f2a_i" out_port="pad.outpad"/>
+              <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="pad.outpad"/>
+            </mux>
+            <mux name="mux2" input="pad.inpad ff[1:1].Q" output="iopad.a2f_o">
+              <delay_constant max="25e-12" in_port="pad.inpad" out_port="iopad.a2f_o"/>
+              <delay_constant max="45e-12" in_port="ff[1:1].Q" out_port="iopad.a2f_o"/>
+            </mux>
+          </interconnect>
+        </pb_type>
+        <interconnect>
+          <complete name="clks" input="io.clk" output="iopad.clk"/>
+          <direct name="direct3" input="io.f2a_i" output="iopad.f2a_i"/>
+          <direct name="direct4" input="iopad.a2f_o" output="io.a2f_o"/>
+          <direct name="direct6" input="io.sc_in" output="iopad.sc_in"/>
+          <direct name="direct7" input="iopad.sc_out" output="io.sc_out"/>
+          <direct name="direct8" input="io.reset" output="iopad.reset"/>
+        </interconnect>
+      </mode>
+      <!-- Physical mode definition end (physical implementation of the io) -->
+    </pb_type>
+    <!-- Define I/O pads ends -->
+    <!-- Define general purpose logic block (CLB) begin -->
+    <!-- -Due to the absence of local routing, 
+      the 4 inputs of fracturable LUT4 are no longer equivalent, 
+      because the 4th input can not be switched when the dual-LUT3 modes are used.
+      So pin equivalence should be applied to the first 3 inputs only
+    -->
+    <pb_type name="clb">
+      <input name="I" num_pins="24" equivalent="full"/>
+      <input name="reg_in" num_pins="1"/>
+      <input name="sc_in" num_pins="1"/>
+      <input name="cin" num_pins="1"/>
+      <input name="reset" num_pins="1" is_non_clock_global="true"/>
+      <output name="O" num_pins="8" equivalent="none"/>
+      <output name="reg_out" num_pins="1"/>
+      <output name="sc_out" num_pins="1"/>
+      <output name="cout" num_pins="1"/>
+      <output name="cout_copy" num_pins="1"/>
+      <clock name="clk" num_pins="4"/>
+      <!-- Describe fracturable logic element.  
+          Each fracturable logic element has a 6-LUT that can alternatively operate as two 5-LUTs with shared inputs. 
+          The outputs of the fracturable logic element can be optionally registered
+        -->
+      <pb_type name="fle" num_pb="8">
+        <input name="in" num_pins="4"/>
+        <input name="reg_in" num_pins="1"/>
+        <input name="sc_in" num_pins="1"/>
+        <input name="cin" num_pins="1"/>
+        <input name="reset" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <output name="reg_out" num_pins="1"/>
+        <output name="sc_out" num_pins="1"/>
+        <output name="cout" num_pins="1"/>
+        <clock name="clk" num_pins="1"/>
+        <mode name="n1_lut4">
+          <!-- Define 4-LUT mode -->
+          <pb_type name="ble4" num_pb="1">
+            <input name="in" num_pins="4"/>
+            <output name="out" num_pins="1"/>
+            <clock name="clk" num_pins="1"/>
+            <!-- Define LUT -->
+            <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+              <input name="in" num_pins="4" port_class="lut_in"/>
+              <output name="out" num_pins="1" port_class="lut_out"/>
+              <!-- LUT timing using delay matrix -->
+              <!-- These are the physical delay inputs on a Stratix IV LUT but because VPR cannot do LUT rebalancing,
+                  we instead take the average of these numbers to get more stable results
+                  82e-12
+                  173e-12
+                  261e-12
+                  263e-12
+                  398e-12
+                  397e-12
+                -->
+              <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+                261e-12
+                261e-12
+                261e-12
+                261e-12
+              </delay_matrix>
+            </pb_type>
+            <!-- Define flip-flop -->
+            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+              <input name="D" num_pins="1" port_class="D"/>
+              <output name="Q" num_pins="1" port_class="Q"/>
+              <clock name="clk" num_pins="1" port_class="clock"/>
+              <T_setup value="66e-12" port="ff.D" clock="clk"/>
+              <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+            </pb_type>
+            <interconnect>
+              <direct name="direct1" input="ble4.in" output="lut4[0:0].in"/>
+              <direct name="direct2" input="lut4.out" output="ff.D">
+                <!-- Advanced user option that tells CAD tool to find LUT+FF pairs in netlist -->
+                <pack_pattern name="ble4" in_port="lut4.out" out_port="ff.D"/>
+              </direct>
+              <direct name="direct3" input="ble4.clk" output="ff.clk"/>
+              <mux name="mux1" input="ff.Q lut4.out" output="ble4.out">
+                <!-- LUT to output is faster than FF to output on a Stratix IV -->
+                <delay_constant max="25e-12" in_port="lut4.out" out_port="ble4.out"/>
+                <delay_constant max="45e-12" in_port="ff.Q" out_port="ble4.out"/>
+              </mux>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct name="direct1" input="fle.in" output="ble4.in"/>
+            <direct name="direct2" input="ble4.out" output="fle.out"/>
+            <direct name="direct3" input="fle.clk" output="ble4.clk"/>
+          </interconnect>
+        </mode>
+        <!-- 4-LUT mode definition end -->
+        <!-- Define shift register begin -->
+        <mode name="shift_register" disable_packing="true">
+          <pb_type name="shift_reg" num_pb="1">
+            <input name="reg_in" num_pins="1"/>
+            <output name="ff_out" num_pins="1"/>
+            <output name="reg_out" num_pins="1"/>
+            <clock name="clk" num_pins="1"/>
+            <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+              <input name="D" num_pins="1" port_class="D"/>
+              <output name="Q" num_pins="1" port_class="Q"/>
+              <clock name="clk" num_pins="1" port_class="clock"/>
+              <T_setup value="66e-12" port="ff.D" clock="clk"/>
+              <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+            </pb_type>
+            <interconnect>
+              <direct name="direct1" input="shift_reg.reg_in" output="ff.D"/>
+              <direct name="direct2" input="ff.Q" output="shift_reg.reg_out"/>
+              <direct name="direct3" input="ff.Q" output="shift_reg.ff_out"/>
+              <complete name="complete1" input="shift_reg.clk" output="ff.clk"/>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct name="direct1" input="fle.reg_in" output="shift_reg.reg_in"/>
+            <direct name="direct2" input="shift_reg.reg_out" output="fle.reg_out"/>
+            <direct name="direct3" input="shift_reg.ff_out" output="fle.out"/>
+            <direct name="direct4" input="fle.clk" output="shift_reg.clk"/>
+          </interconnect>
+        </mode>
+        <!-- Define shift register end -->
+        <!-- Physical mode definition begin (physical implementation of the fle) -->
+        <mode name="physical">
+          <pb_type name="fabric" num_pb="1">
+            <input name="in" num_pins="4"/>
+            <input name="reg_in" num_pins="1"/>
+            <input name="sc_in" num_pins="1"/>
+            <input name="cin" num_pins="1"/>
+            <input name="reset" num_pins="1"/>
+            <output name="out" num_pins="1"/>
+            <output name="reg_out" num_pins="1"/>
+            <output name="sc_out" num_pins="1"/>
+            <output name="cout" num_pins="1"/>
+            <clock name="clk" num_pins="1"/>
+            <pb_type name="frac_logic" num_pb="1">
+              <input name="in" num_pins="4"/>
+              <input name="cin" num_pins="1"/>
+              <output name="out" num_pins="1"/>
+              <output name="cout" num_pins="1"/>
+              <!-- Define LUT -->
+              <pb_type name="frac_lut4" blif_model=".subckt frac_lut4" num_pb="1">
+                <input name="in" num_pins="4"/>
+                <output name="lut2_out" num_pins="2"/>
+                <output name="lut4_out" num_pins="1"/>
+                <!-- FIXME: Timing values taken from the pb_type implementing .names.
+                     May require adjustments as delays may differ between lut2_out and lut4_out -->
+                <delay_matrix type="max" in_port="frac_lut4.in" out_port="frac_lut4.lut2_out">
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                </delay_matrix>
+                <delay_matrix type="max" in_port="frac_lut4.in" out_port="frac_lut4.lut4_out">
+                  261e-12
+                  261e-12
+                  261e-12
+                  261e-12
+                </delay_matrix>
+              </pb_type>
+              <pb_type name="carry_follower" blif_model=".subckt carry_follower" num_pb="1">
+                <input name="a" num_pins="1"/>
+                <input name="b" num_pins="1"/>
+                <input name="cin" num_pins="1"/>
+                <output name="cout" num_pins="1"/>
+                <!-- FIXME: Completely fake timing data -->
+                <delay_constant max="100e-12" in_port="carry_follower.a" out_port="carry_follower.cout"/>
+                <delay_constant max="100e-12" in_port="carry_follower.b" out_port="carry_follower.cout"/>
+                <delay_constant max="100e-12" in_port="carry_follower.cin" out_port="carry_follower.cout"/>
+              </pb_type>
+              <interconnect>
+                <direct name="direct1" input="frac_logic.in[0:1]" output="frac_lut4.in[0:1]"/>
+                <direct name="direct2" input="frac_logic.in[3:3]" output="frac_lut4.in[3:3]"/>
+                <direct name="direct3" input="frac_logic.cin" output="carry_follower.b"/>
+                <direct name="direct4" input="frac_lut4.lut2_out[1:1]" output="carry_follower.a"/>
+                <direct name="direct5" input="frac_lut4.lut2_out[0:0]" output="carry_follower.cin"/>
+                <direct name="direct6" input="carry_follower.cout" output="frac_logic.cout"/>
+                <direct name="direct7" input="frac_lut4.lut4_out" output="frac_logic.out"/>
+                <mux name="mux2" input="frac_logic.cin frac_logic.in[2:2]" output="frac_lut4.in[2:2]"/>
+              </interconnect>
+            </pb_type>
+            <!-- Define flip-flop with scan-chain capability, DI is the scan-chain data input -->
+            <pb_type name="ff" blif_model=".subckt scff" num_pb="1">
+              <input name="D" num_pins="1"/>
+              <input name="DI" num_pins="1"/>
+              <input name="reset" num_pins="1"/>
+              <output name="Q" num_pins="1"/>
+              <clock name="clk" num_pins="1"/>
+              <T_setup value="66e-12" port="ff.D" clock="clk"/>
+              <T_setup value="66e-12" port="ff.DI" clock="clk"/>
+              <T_setup value="66e-12" port="ff.reset" clock="clk"/>
+              <T_clock_to_Q max="124e-12" port="ff.Q" clock="clk"/>
+            </pb_type>
+            <interconnect>
+              <direct name="direct1" input="fabric.in" output="frac_logic.in"/>
+              <direct name="direct2" input="fabric.sc_in" output="ff.DI"/>
+              <direct name="direct3" input="fabric.cin" output="frac_logic.cin"/>
+              <direct name="direct4" input="ff.Q" output="fabric.sc_out"/>
+              <direct name="direct5" input="ff.Q" output="fabric.reg_out"/>
+              <direct name="direct6" input="frac_logic.cout" output="fabric.cout"/>
+              <complete name="complete1" input="fabric.clk" output="ff.clk"/>
+              <complete name="complete2" input="fabric.reset" output="ff.reset"/>
+              <mux name="mux1" input="frac_logic.out fabric.reg_in" output="ff.D">
+                <delay_constant max="25e-12" in_port="frac_logic.out" out_port="ff.D"/>
+                <delay_constant max="45e-12" in_port="fabric.reg_in" out_port="ff.D"/>
+              </mux>
+              <mux name="mux2" input="ff.Q frac_logic.out" output="fabric.out">
+                <!-- LUT to output is faster than FF to output on a Stratix IV -->
+                <delay_constant max="25e-12" in_port="frac_logic.out" out_port="fabric.out"/>
+                <delay_constant max="45e-12" in_port="ff.Q" out_port="fabric.out"/>
+              </mux>
+            </interconnect>
+          </pb_type>
+          <interconnect>
+            <direct name="direct1" input="fle.in" output="fabric.in"/>
+            <direct name="direct2" input="fle.reg_in" output="fabric.reg_in"/>
+            <direct name="direct3" input="fle.sc_in" output="fabric.sc_in"/>
+            <direct name="direct4" input="fle.cin" output="fabric.cin"/>
+            <direct name="direct5" input="fabric.out" output="fle.out"/>
+            <direct name="direct6" input="fabric.reg_out" output="fle.reg_out"/>
+            <direct name="direct7" input="fabric.sc_out" output="fle.sc_out"/>
+            <direct name="direct8" input="fabric.cout" output="fle.cout"/>
+            <direct name="direct9" input="fle.clk" output="fabric.clk"/>
+            <direct name="direct10" input="fle.reset" output="fabric.reset"/>
+          </interconnect>
+        </mode>
+        <!-- Physical mode definition end (physical implementation of the fle) -->
+      </pb_type>
+      <interconnect>
+        <!-- We use direct connections to reduce the area to the most
+          The global local routing is going to compensate the loss in routability
+        -->
+        <!-- FIXME: The implicit port definition results in I0[0] connected to
+          in[2]. Such twisted connection is not expected.
+          I[0] should be connected to in[0]
+        -->
+        <complete name="crossbar" input="clb.I fle[7:0].out" output="fle[7:0].in">
+          <!-- TODO: Timing should be backannotated from post-PnR results -->
+        </complete>
+        <complete name="clks" input="clb.clk" output="fle[7:0].clk">
+        </complete>
+        <complete name="resets" input="clb.reset" output="fle[7:0].reset">
+        </complete>
+        <!-- This way of specifying direct connection to clb outputs is important because this architecture uses automatic spreading of opins.  
+          By grouping to output pins in this fashion, if a logic block is completely filled by 6-LUTs, 
+          then the outputs those 6-LUTs take get evenly distributed across all four sides of the CLB instead of clumped on two sides (which is what happens with a more
+          naive specification).
+        -->
+        <direct name="clbouts1" input="fle[3:0].out" output="clb.O[3:0]"/>
+        <direct name="clbouts2" input="fle[7:4].out" output="clb.O[7:4]"/>
+        <direct name="cout_copy" input="fle[7:7].cout" output="clb.cout_copy"/>
+        <!-- Shift register chain links -->
+        <direct name="shift_register_in" input="clb.reg_in" output="fle[0:0].reg_in">
+          <!-- Put all inter-block carry chain delay on this one edge -->
+          <delay_constant max="0.16e-9" in_port="clb.reg_in" out_port="fle[0:0].reg_in"/>
+        </direct>
+        <direct name="shift_register_out" input="fle[7:7].reg_out" output="clb.reg_out">
+        </direct>
+        <direct name="shift_register_link" input="fle[6:0].reg_out" output="fle[7:1].reg_in">
+        </direct>
+        <!-- Scan chain links -->
+        <direct name="scan_chain_in" input="clb.sc_in" output="fle[0:0].sc_in">
+          <!-- Put all inter-block carry chain delay on this one edge -->
+          <delay_constant max="0.16e-9" in_port="clb.sc_in" out_port="fle[0:0].sc_in"/>
+        </direct>
+        <direct name="scan_chain_out" input="fle[7:7].sc_out" output="clb.sc_out">
+        </direct>
+        <direct name="scan_chain_link" input="fle[6:0].sc_out" output="fle[7:1].sc_in">
+        </direct>
+        <!-- Carry chain links -->
+        <direct name="carry_chain_in" input="clb.cin" output="fle[0:0].cin">
+          <!-- Put all inter-block carry chain delay on this one edge -->
+          <delay_constant max="0.16e-9" in_port="clb.cin" out_port="fle[0:0].cin"/>
+        </direct>
+        <direct name="carry_chain_out" input="fle[7:7].cout" output="clb.cout">
+        </direct>
+        <direct name="carry_chain_link" input="fle[6:0].cout" output="fle[7:1].cin">
+        </direct>
+      </interconnect>
+      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
+      <!-- Place this general purpose logic block in any unspecified column -->
+    </pb_type>
+    <!-- Define general purpose logic block (CLB) ends -->
+  </complexblocklist>
+  <layout>
+    <fixed_layout name="32x32" width="34" height="34">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <row type="io_top" starty="H-1" priority="100"/>
+      <row type="io_bottom" starty="0" priority="100"/>
+      <col type="io_left" startx="0" priority="100"/>
+      <col type="io_right" startx="W-1" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+    </fixed_layout>
+  </layout>
+</architecture>
