@@ -35,7 +35,9 @@ void add_output_port_information(nnode_t* node, int port_width);
 void add_input_port_information(nnode_t* node, int port_width);
 
 void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist);
+void combine_nets_with_spot_copy(nnet_t* output_net, nnet_t* input_net, long sc_spot_output, netlist_t* netlist);
 void join_nets(nnet_t* net, nnet_t* input_net);
+void integrate_nets(char* alias_name, char* full_name, nnet_t* input_signal_net);
 
 void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net);
 void remap_pin_to_new_node(npin_t* pin, nnode_t* new_node, int pin_idx);
