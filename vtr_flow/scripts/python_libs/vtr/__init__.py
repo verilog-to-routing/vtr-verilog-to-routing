@@ -19,7 +19,7 @@ from .util import (
     pretty_print_table,
     find_task_dir,
 )
-from .inspect import (
+from .log_parse import (
     determine_lut_size,
     determine_min_w,
     determine_memory_addr_width,
