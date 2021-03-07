@@ -68,6 +68,9 @@ find vtr_flow/benchmarks/titan_blif/ -type f -not -name 'README.*' -delete
 # Removing ISPD, Titan and Symbiflow tarballs
 find . -type f -regex ".*\.tar\.\(gz\|xz\)" -delete
 
+#Gzip output net and pack files from vtr_reg_nightly tests to lower working directory disk space
+find vtr_flow/tasks/regression_tests/vtr_reg_nightly/ ( -name *.net -o -name *.pack ) -print0 | xargs -0 -P $(nproc) gzip -v
+
 # Make sure working directory doesn't exceed disk space limit!
 cd vtr_flow/tasks/
 echo "Working directory size: $(du -h --max-depth=3)"
