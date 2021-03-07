@@ -10,4 +10,8 @@
 
 int check_placement_floorplanning();
 
+bool is_cluster_constrained(ClusterBlockId blk_id);
+
+bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc);
+
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */
