@@ -194,10 +194,9 @@ void auto_zoom_rr_node(int rr_node_id) {
             int ipin = device_ctx.rr_nodes[rr_node_id].ptc_num();
             float xcen, ycen;
 
-            int iside;
-            for (iside = 0; iside < 4; iside++) {
-                if (type->pinloc[width_offset][height_offset][iside][ipin]) {
-                    draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen);
+            for (const e_side& iside : SIDES) {
+                if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
+                    draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen, iside);
                     rr_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
                                {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size}};
                 }

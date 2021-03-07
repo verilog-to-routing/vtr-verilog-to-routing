@@ -45,6 +45,7 @@ void add_output_port_to_implicit_memory(implicit_memory* memory, signal_list_t* 
 implicit_memory* lookup_implicit_memory_reference_ast(char* instance_name_prefix, ast_node_t* node);
 
 char is_valid_implicit_memory_reference_ast(char* instance_name_prefix, ast_node_t* node);
+bool is_signal_list_connected_to_memory(implicit_memory* memory, signal_list_t* signals, const char* port_name);
 
 implicit_memory* create_implicit_memory_block(int data_width, long words, char* name, char* instance_name_prefix, loc_t loc);
 
