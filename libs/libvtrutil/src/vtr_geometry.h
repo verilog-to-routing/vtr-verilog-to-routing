@@ -3,6 +3,8 @@
 #include "vtr_range.h"
 #include "vtr_assert.h"
 
+#include <cstdio> // vtr_geometry.tpp uses printf()
+
 #include <vector>
 #include <tuple>
 #include <limits>
@@ -208,6 +210,16 @@ Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
 template<class T>
 Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs);
 
+//Prints a rectangle
+template<class T>
+static void print_rect(FILE* fp, const Rect<T> rect);
+
+//Sample on a uniformly spaced grid within a rectangle
+//  sample(vtr::Rect(l, h), 0, 0, M) == l
+//  sample(vtr::Rect(l, h), M, M, M) == h
+//To avoid the edges, use `sample(r, x+1, y+1, N+1) for x, y, in 0..N-1
+//Only defined for integral types
+
 /**
  * @brief Sample on a uniformly spaced grid within a rectangle
  *
@@ -216,6 +228,7 @@ Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs);
  * To avoid the edges, use `sample(r, x+1, y+1, N+1) for x, y, in 0..N-1
  * Only defined for integral types
  */
+
 template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
 Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d);
 

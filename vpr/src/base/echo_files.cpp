@@ -74,6 +74,9 @@ void alloc_and_load_echo_file_info() {
     //Vpr constraints
     setEchoFileName(E_ECHO_VPR_CONSTRAINTS, "vpr_constraints.echo");
 
+    //Packing
+    setEchoFileName(E_ECHO_CLUSTERS, "clusters.echo");
+
     //Intra-block routing
     setEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE, "intra_lb_failed_route.echo");
 

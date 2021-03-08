@@ -10,13 +10,13 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 1876,
-        "latch": 2105,
+        "logic element": 1878,
+        "latch": 2106,
         "generic logic size": 6,
-        "Longest Path": 166,
+        "Longest Path": 94,
         "Average Path": 5,
-        "Estimated LUTs": 1876,
-        "Total Node": 3982
+        "Estimated LUTs": 1878,
+        "Total Node": 3985
     },
     "FIR/ex1BT16_fir_20/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex1BT16_fir_20/k6_N10_mem32K_40nm",
@@ -29,13 +29,13 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 1876,
-        "latch": 2105,
+        "logic element": 1878,
+        "latch": 2106,
         "generic logic size": 6,
-        "Longest Path": 166,
+        "Longest Path": 94,
         "Average Path": 5,
-        "Estimated LUTs": 1876,
-        "Total Node": 3982
+        "Estimated LUTs": 1878,
+        "Total Node": 3985
     },
     "FIR/ex1BT16_fir_20/no_arch": {
         "test_name": "FIR/ex1BT16_fir_20/no_arch",
@@ -47,12 +47,12 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 1876,
-        "latch": 2105,
-        "Longest Path": 166,
+        "logic element": 1878,
+        "latch": 2106,
+        "Longest Path": 94,
         "Average Path": 5,
-        "Estimated LUTs": 1876,
-        "Total Node": 3982
+        "Estimated LUTs": 1878,
+        "Total Node": 3985
     },
     "FIR/ex1EP16_fir_6/k6_N10_40nm": {
         "test_name": "FIR/ex1EP16_fir_6/k6_N10_40nm",
@@ -68,7 +68,7 @@
         "logic element": 608,
         "latch": 688,
         "generic logic size": 6,
-        "Longest Path": 112,
+        "Longest Path": 54,
         "Average Path": 5,
         "Estimated LUTs": 608,
         "Total Node": 1297
@@ -87,7 +87,7 @@
         "logic element": 608,
         "latch": 688,
         "generic logic size": 6,
-        "Longest Path": 112,
+        "Longest Path": 54,
         "Average Path": 5,
         "Estimated LUTs": 608,
         "Total Node": 1297
@@ -104,7 +104,7 @@
         "Po": 29,
         "logic element": 608,
         "latch": 688,
-        "Longest Path": 112,
+        "Longest Path": 54,
         "Average Path": 5,
         "Estimated LUTs": 608,
         "Total Node": 1297
@@ -123,7 +123,7 @@
         "logic element": 4196,
         "latch": 5430,
         "generic logic size": 6,
-        "Longest Path": 189,
+        "Longest Path": 160,
         "Average Path": 5,
         "Estimated LUTs": 4196,
         "Total Node": 9627
@@ -142,7 +142,7 @@
         "logic element": 4196,
         "latch": 5430,
         "generic logic size": 6,
-        "Longest Path": 189,
+        "Longest Path": 160,
         "Average Path": 5,
         "Estimated LUTs": 4196,
         "Total Node": 9627
@@ -159,7 +159,7 @@
         "Po": 29,
         "logic element": 4196,
         "latch": 5430,
-        "Longest Path": 189,
+        "Longest Path": 160,
         "Average Path": 5,
         "Estimated LUTs": 4196,
         "Total Node": 9627
@@ -178,7 +178,7 @@
         "logic element": 2905,
         "latch": 3223,
         "generic logic size": 6,
-        "Longest Path": 190,
+        "Longest Path": 119,
         "Average Path": 5,
         "Estimated LUTs": 2905,
         "Total Node": 6129
@@ -197,7 +197,7 @@
         "logic element": 2905,
         "latch": 3223,
         "generic logic size": 6,
-        "Longest Path": 190,
+        "Longest Path": 119,
         "Average Path": 5,
         "Estimated LUTs": 2905,
         "Total Node": 6129
@@ -214,7 +214,7 @@
         "Po": 29,
         "logic element": 2905,
         "latch": 3223,
-        "Longest Path": 190,
+        "Longest Path": 119,
         "Average Path": 5,
         "Estimated LUTs": 2905,
         "Total Node": 6129
@@ -288,7 +288,7 @@
         "logic element": 937,
         "latch": 873,
         "generic logic size": 6,
-        "Longest Path": 129,
+        "Longest Path": 55,
         "Average Path": 5,
         "Estimated LUTs": 937,
         "Total Node": 1811
@@ -307,7 +307,7 @@
         "logic element": 937,
         "latch": 873,
         "generic logic size": 6,
-        "Longest Path": 129,
+        "Longest Path": 55,
         "Average Path": 5,
         "Estimated LUTs": 937,
         "Total Node": 1811
@@ -324,7 +324,7 @@
         "Po": 29,
         "logic element": 937,
         "latch": 873,
-        "Longest Path": 129,
+        "Longest Path": 55,
         "Average Path": 5,
         "Estimated LUTs": 937,
         "Total Node": 1811
@@ -343,7 +343,7 @@
         "logic element": 11426,
         "latch": 15211,
         "generic logic size": 6,
-        "Longest Path": 431,
+        "Longest Path": 394,
         "Average Path": 5,
         "Estimated LUTs": 11426,
         "Total Node": 26638
@@ -362,7 +362,7 @@
         "logic element": 11426,
         "latch": 15211,
         "generic logic size": 6,
-        "Longest Path": 431,
+        "Longest Path": 394,
         "Average Path": 5,
         "Estimated LUTs": 11426,
         "Total Node": 26638
@@ -379,7 +379,7 @@
         "Po": 29,
         "logic element": 11426,
         "latch": 15211,
-        "Longest Path": 431,
+        "Longest Path": 394,
         "Average Path": 5,
         "Estimated LUTs": 11426,
         "Total Node": 26638
@@ -398,7 +398,7 @@
         "logic element": 6159,
         "latch": 8296,
         "generic logic size": 6,
-        "Longest Path": 254,
+        "Longest Path": 219,
         "Average Path": 5,
         "Estimated LUTs": 6159,
         "Total Node": 14456
@@ -417,7 +417,7 @@
         "logic element": 6159,
         "latch": 8296,
         "generic logic size": 6,
-        "Longest Path": 254,
+        "Longest Path": 219,
         "Average Path": 5,
         "Estimated LUTs": 6159,
         "Total Node": 14456
@@ -434,7 +434,7 @@
         "Po": 29,
         "logic element": 6159,
         "latch": 8296,
-        "Longest Path": 254,
+        "Longest Path": 219,
         "Average Path": 5,
         "Estimated LUTs": 6159,
         "Total Node": 14456
@@ -453,7 +453,7 @@
         "logic element": 1100,
         "latch": 1239,
         "generic logic size": 6,
-        "Longest Path": 136,
+        "Longest Path": 66,
         "Average Path": 5,
         "Estimated LUTs": 1100,
         "Total Node": 2340
@@ -472,7 +472,7 @@
         "logic element": 1100,
         "latch": 1239,
         "generic logic size": 6,
-        "Longest Path": 136,
+        "Longest Path": 66,
         "Average Path": 5,
         "Estimated LUTs": 1100,
         "Total Node": 2340
@@ -489,7 +489,7 @@
         "Po": 29,
         "logic element": 1100,
         "latch": 1239,
-        "Longest Path": 136,
+        "Longest Path": 66,
         "Average Path": 5,
         "Estimated LUTs": 1100,
         "Total Node": 2340
@@ -508,7 +508,7 @@
         "logic element": 20458,
         "latch": 30814,
         "generic logic size": 6,
-        "Longest Path": 800,
+        "Longest Path": 786,
         "Average Path": 5,
         "Estimated LUTs": 20458,
         "Total Node": 51273
@@ -527,7 +527,7 @@
         "logic element": 20458,
         "latch": 30814,
         "generic logic size": 6,
-        "Longest Path": 800,
+        "Longest Path": 786,
         "Average Path": 5,
         "Estimated LUTs": 20458,
         "Total Node": 51273
@@ -544,7 +544,7 @@
         "Po": 29,
         "logic element": 20458,
         "latch": 30814,
-        "Longest Path": 800,
+        "Longest Path": 786,
         "Average Path": 5,
         "Estimated LUTs": 20458,
         "Total Node": 51273
@@ -563,7 +563,7 @@
         "logic element": 14455,
         "latch": 19260,
         "generic logic size": 6,
-        "Longest Path": 533,
+        "Longest Path": 489,
         "Average Path": 5,
         "Estimated LUTs": 14455,
         "Total Node": 33716
@@ -582,7 +582,7 @@
         "logic element": 14455,
         "latch": 19260,
         "generic logic size": 6,
-        "Longest Path": 533,
+        "Longest Path": 489,
         "Average Path": 5,
         "Estimated LUTs": 14455,
         "Total Node": 33716
@@ -599,7 +599,7 @@
         "Po": 29,
         "logic element": 14455,
         "latch": 19260,
-        "Longest Path": 533,
+        "Longest Path": 489,
         "Average Path": 5,
         "Estimated LUTs": 14455,
         "Total Node": 33716
