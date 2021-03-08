@@ -4,16 +4,17 @@
 #include <unordered_set>
 #include <string>
 
-/*
- * This header defines useful logging macros for VTR projects.
+/**
+ * @file
+ * @brief This header defines useful logging macros for VTR projects.
  *
  * Message Type
  * ============
  *
  * Three types of log message types are defined:
- *      VTR_LOG         - The standard 'info' type log message
- *      VTR_LOG_WARN    - A warning log message
- *      VTR_LOG_ERROR   - An error log message
+ *     - VTR_LOG         : The standard 'info' type log message
+ *     - VTR_LOG_WARN    : A warning log message. This represents unusual condition that may indicate an issue but executiom continues
+ *     - VTR_LOG_ERROR   : An error log message. This represents a clear issue that will result in stopping the program execution
  * 
  * For example:
  *
@@ -39,11 +40,10 @@
  *
  * Each of the three message types also have a VTR_LOGF_* variant,
  * which will cause the message to be logged for a custom file and
- * line loation.
  *
  * For example:
  *
- *      VTR_LOGF("my_file.txt", 42 "This message will be logged from file 'my_file.txt' line %d\n", 42);
+ *      VTR_LOGF("my_file.txt", "This message will be logged from file 'my_file.txt' line %d\n", 42);
  *  
  * Debug Logging
  * =============
@@ -55,28 +55,28 @@
  * is defined (disabled by default).
  */
 
-//Unconditional logging macros
+// Unconditional logging macros
 #define VTR_LOG(...) VTR_LOGV(true, __VA_ARGS__)
 #define VTR_LOG_WARN(...) VTR_LOGV_WARN(true, __VA_ARGS__)
 #define VTR_LOG_ERROR(...) VTR_LOGV_ERROR(true, __VA_ARGS__)
 #define VTR_LOG_NOP(...) VTR_LOGV_NOP(true, __VA_ARGS__)
 
-//Conditional logging macros
+// Conditional logging macros
 #define VTR_LOGV(expr, ...) VTR_LOGVF(expr, __FILE__, __LINE__, __VA_ARGS__)
 #define VTR_LOGV_WARN(expr, ...) VTR_LOGVF_WARN(expr, __FILE__, __LINE__, __VA_ARGS__)
 #define VTR_LOGV_ERROR(expr, ...) VTR_LOGVF_ERROR(expr, __FILE__, __LINE__, __VA_ARGS__)
 #define VTR_LOGV_NOP(expr, ...) VTR_LOGVF_NOP(expr, __FILE__, __LINE__, __VA_ARGS__)
 
-//Custom file-line location logging macros
+// Custom file-line location logging macros
 #define VTR_LOGF(file, line, ...) VTR_LOGVF(true, file, line, __VA_ARGS__)
 #define VTR_LOGF_WARN(file, line, ...) VTR_LOGVF_WARN(true, file, line, __VA_ARGS__)
 #define VTR_LOGF_ERROR(file, line, ...) VTR_LOGVF_ERROR(true, file, line, __VA_ARGS__)
 #define VTR_LOGF_NOP(file, line, ...) VTR_LOGVF_NOP(true, file, line, __VA_ARGS__)
 
-//Custom file-line-func location logging macros
+// Custom file-line-func location logging macros
 #define VTR_LOGFF_WARN(file, line, func, ...) VTR_LOGVFF_WARN(true, file, line, func, __VA_ARGS__)
 
-//Conditional logging and custom file-line location macros
+// Conditional logging and custom file-line location macros
 #define VTR_LOGVF(expr, file, line, ...)    \
     do {                                    \
         if (expr) vtr::printf(__VA_ARGS__); \
@@ -98,14 +98,16 @@
         if (expr) print_or_suppress_warning(file, line, func, __VA_ARGS__); \
     } while (false)
 
-//No-op version of logging macro which avoids unused parameter warnings.
-//
-//Note that to avoid unused parameter warnings we call sizeof() and cast
-//the result to void. sizeof is evaluated at compile time so there is no
-//run-time overhead.
-//
-//Also note the use of std::make_tuple to ensure all arguments in VA_ARGS
-//are used.
+/*
+ * No-op version of logging macro which avoids unused parameter warnings.
+ *
+ * Note that to avoid unused parameter warnings we call sizeof() and cast
+ * the result to void. sizeof is evaluated at compile time so there is no
+ * run-time overhead.
+ *
+ * Also note the use of std::make_tuple to ensure all arguments in VA_ARGS
+ * are used.
+ */
 #define VTR_LOGVF_NOP(expr, file, line, ...)                     \
     do {                                                         \
         static_cast<void>(sizeof(expr));                         \
@@ -114,7 +116,7 @@
         static_cast<void>(sizeof(std::make_tuple(__VA_ARGS__))); \
     } while (false)
 
-//Debug logging macros
+// Debug logging macros
 #ifdef VTR_ENABLE_DEBUG_LOGGING //Enable
 #    define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
 #    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
@@ -140,20 +142,26 @@ void set_log_file(const char* filename);
 
 } // namespace vtr
 
-// The following data structure and functions allow to suppress noisy warnings
-// and direct them into an external file, if specified.
 static std::unordered_set<std::string> warnings_to_suppress;
 static std::string noisy_warn_log_file;
 
+/**
+ * @brief The following data structure and functions allow to suppress noisy warnings and direct them into an external file, if specified.
+ */
 void add_warnings_to_suppress(std::string function_name);
 
-// This function creates a new log file to hold the suppressed warnings.
-// If the file already exists, it is cleared out first.
+/**
+ * @brief This function creates a new log file to hold the suppressed warnings. If the file already exists, it is cleared out first.
+ */
 void set_noisy_warn_log_file(std::string log_file_name);
 
-// This function checks whether the function from which the warning has been called
-// is in the set of warnings_to_suppress. If so, the warning is printed on the
-// noisy_warn_log_file, otherwise it is printed on stdout (or the regular log file)
+/** 
+ * @brief This function checks whether to print or to suppress warning
+ *
+ * This function checks whether the function from which the warning has been called
+ *  is in the set of warnings_to_suppress. If so, the warning is printed on the
+ * noisy_warn_log_file, otherwise it is printed on stdout (or the regular log file)
+ */
 void print_or_suppress_warning(const char* pszFileName, unsigned int lineNum, const char* pszFuncName, const char* pszMessage, ...);
 
 #endif

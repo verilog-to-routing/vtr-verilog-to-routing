@@ -61,6 +61,7 @@ For more specific documentation about VPR see :ref:`vpr`.
    :caption: API Reference
 
    api/vpr/index
+   api/vtrutil/index
 
 Indices and tables
 ==================

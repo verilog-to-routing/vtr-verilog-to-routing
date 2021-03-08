@@ -177,7 +177,7 @@ For large scale reformatting (should only be performed by VTR maintainers) the s
 
 ## Python Linting
 
-Python files are automatically checked using `pylint` to ensure they follow established Python conventions.  You can check an individual Python file by running `pylint <your_python_file>`, or check the entire repository by running `./dev/pylint_check.py`.
+Python files are automatically checked using `pylint` to ensure they follow established Python conventions.  You can run `pylint` on the entire repository by running `./dev/pylint_check.py`.  Certain files which were created before we adopted Python lint checking are grandfathered and are not checked.  To check *all* files, provide the `--check_grandfathered` argument.  You can also manually check individual files using `./dev/pylint_check.py <path_to_file1> <path_to_file2> ...`.
 
 # Running Tests
 

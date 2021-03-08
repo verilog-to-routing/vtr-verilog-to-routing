@@ -1,0 +1,17 @@
+PROJECT_NAME           = "Verilog to Routing - VTR"
+OUTPUT_DIRECTORY       = ../_build/doxygen/vtr
+FULL_PATH_NAMES        = NO
+OPTIMIZE_OUTPUT_FOR_C  = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+WARN_IF_UNDOCUMENTED   = NO
+INPUT                  = ../../libs/libvtrutil
+SORT_MEMBER_DOCS       = NO
+SORT_BRIEF_DOCS        = NO
+SORT_GROUP_NAMES       = NO
+SORT_BY_SCOPE_NAME     = NO
+RECURSIVE              = YES
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES

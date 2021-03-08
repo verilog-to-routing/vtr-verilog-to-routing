@@ -76,4 +76,7 @@ bool do_regions_intersect(Region r1, Region r2);
  */
 Region intersection(Region r1, Region r2);
 
+///@brief Used to print data from a Region
+void print_region(FILE* fp, Region region);
+
 #endif /* REGION_H */

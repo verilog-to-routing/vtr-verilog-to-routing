@@ -7,6 +7,7 @@
 
 namespace vtr {
 
+///@brief Calculates the value pow(base, exp)
 int ipow(int base, int exp) {
     int result = 1;
 
@@ -34,11 +35,15 @@ float median(std::vector<float> vector) {
     return (float)vector[size / 2];
 }
 
-/* Performs linear interpolation or extrapolation on the set of (x,y) values specified by the xy_map.
+/**
+ * @brief Linear interpolation/Extrapolation 
+ *
+ * Performs linear interpolation or extrapolation on the set of (x,y) values specified by the xy_map.
  * A requested x value is passed in, and we return the interpolated/extrapolated y value at this requested value of x.
  * Meant for maps where both key and element are numbers.
  * This is specifically enforced by the explicit instantiations below this function. i.e. only templates
- * using those types listed in the explicit instantiations below are allowed */
+ * using those types listed in the explicit instantiations below are allowed 
+ */
 template<typename X, typename Y>
 Y linear_interpolate_or_extrapolate(const std::map<X, Y>* xy_map, X requested_x) {
     Y result;

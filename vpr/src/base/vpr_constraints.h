@@ -18,6 +18,21 @@
  * It also specifies which regions the partitions should be placed in. Atoms cannot be placed in more than one partition.
  * If an atom is assigned to more than one partition, the last partition is was assigned to will be the partition it is placed in.
  *
+ * Related Classes
+ * ===============
+ * The following definitions are useful to understanding this class:
+ *
+ * Partition: a grouping of atoms that are constrained to a portion of an FPGA
+ * See vpr/base/partition.h for more detail
+ *
+ * Region: the x and y bounds of a rectangular region, optionally including a subtile value,
+ * that atoms in a partition are constrained to
+ * See vpr/base/region.h for more detail
+ *
+ * PartitionRegion: the union of regions that a partition can be placed in
+ * See vpr/base/partition_region.h for more detail
+ *
+ *
  */
 
 class VprConstraints {
@@ -33,7 +48,7 @@ class VprConstraints {
     /**
      * @brief Return id of the partition the atom belongs to
      *
-     * If an atom is not in a partition (unconstrained), PartitionId::Invalid() is returned.
+     * If an atom is not in a partition (unconstrained), PartitionId::INVALID() is returned.
      *
      *   @param blk_id      The atom for which the partition id is needed
      */
@@ -60,6 +75,18 @@ class VprConstraints {
      */
     std::vector<AtomBlockId> get_part_atoms(PartitionId part_id);
 
+    /**
+     * @brief Returns the number of partitions in the object
+     */
+    int get_num_partitions();
+
+    /**
+     * @brief Returns the PartitionRegion belonging to the specified Partition
+     *
+     *   @param part_id The id of the partition whose PartitionRegion is needed
+     */
+    PartitionRegion get_partition_pr(PartitionId part_id);
+
   private:
     /**
      * Store all constrained atoms
@@ -71,5 +98,8 @@ class VprConstraints {
      */
     vtr::vector<PartitionId, Partition> partitions;
 };
+
+///@brief used to print floorplanning constraints data from a VprConstraints object
+void print_constraints(FILE* fp, VprConstraints constraints);
 
 #endif /* VPR_CONSTRAINTS_H */

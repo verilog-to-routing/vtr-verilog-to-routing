@@ -137,18 +137,18 @@ static void build_unidir_rr_opins(const int i,
                                   const int num_seg_types,
                                   t_opin_connections_scratchpad* scratchpad);
 
-static int get_opin_direct_connecions(int x,
-                                      int y,
-                                      e_side side,
-                                      int opin,
-                                      int from_rr_node,
-                                      t_rr_edge_info_set& rr_edges_to_create,
-                                      const t_rr_node_indices& L_rr_node_indices,
-                                      const t_rr_graph_storage& rr_nodes,
-                                      const t_direct_inf* directs,
-                                      const int num_directs,
-                                      const t_clb_to_clb_directs* clb_to_clb_directs,
-                                      t_opin_connections_scratchpad* scratchpad);
+static int get_opin_direct_connections(int x,
+                                       int y,
+                                       e_side side,
+                                       int opin,
+                                       int from_rr_node,
+                                       t_rr_edge_info_set& rr_edges_to_create,
+                                       const t_rr_node_indices& L_rr_node_indices,
+                                       const t_rr_graph_storage& rr_nodes,
+                                       const t_direct_inf* directs,
+                                       const int num_directs,
+                                       const t_clb_to_clb_directs* clb_to_clb_directs,
+                                       t_opin_connections_scratchpad* scratchpad);
 
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_storage& L_rr_node,
                                                                   const int num_seg_types,
@@ -1328,9 +1328,9 @@ static void build_bidir_rr_opins(const int i,
         }
 
         /* Add in direct connections */
-        get_opin_direct_connecions(i, j, side, pin_index,
-                                   node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
-                                   directs, num_directs, clb_to_clb_directs, scratchpad);
+        get_opin_direct_connections(i, j, side, pin_index,
+                                    node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
+                                    directs, num_directs, clb_to_clb_directs, scratchpad);
     }
 }
 
@@ -2573,8 +2573,8 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side, c
         }
 
         /* Add in direct connections */
-        get_opin_direct_connecions(i, j, side, pin_index, opin_node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
-                                   directs, num_directs, clb_to_clb_directs, scratchpad);
+        get_opin_direct_connections(i, j, side, pin_index, opin_node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
+                                    directs, num_directs, clb_to_clb_directs, scratchpad);
     }
 }
 
@@ -2688,18 +2688,18 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
  *
  * The current opin is located at (x,y) along the specified side
  */
-static int get_opin_direct_connecions(int x,
-                                      int y,
-                                      e_side side,
-                                      int opin,
-                                      int from_rr_node,
-                                      t_rr_edge_info_set& rr_edges_to_create,
-                                      const t_rr_node_indices& L_rr_node_indices,
-                                      const t_rr_graph_storage& rr_nodes,
-                                      const t_direct_inf* directs,
-                                      const int num_directs,
-                                      const t_clb_to_clb_directs* clb_to_clb_directs,
-                                      t_opin_connections_scratchpad* scratchpad) {
+static int get_opin_direct_connections(int x,
+                                       int y,
+                                       e_side side,
+                                       int opin,
+                                       int from_rr_node,
+                                       t_rr_edge_info_set& rr_edges_to_create,
+                                       const t_rr_node_indices& L_rr_node_indices,
+                                       const t_rr_graph_storage& rr_nodes,
+                                       const t_direct_inf* directs,
+                                       const int num_directs,
+                                       const t_clb_to_clb_directs* clb_to_clb_directs,
+                                       t_opin_connections_scratchpad* scratchpad) {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr curr_type = device_ctx.grid[x][y].type;
@@ -2731,6 +2731,7 @@ static int get_opin_direct_connecions(int x,
                 && y + directs[i].y_offset > 0) {
                 //Only add connections if the target clb type matches the type in the direct specification
                 t_physical_tile_type_ptr target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
+
                 if (clb_to_clb_directs[i].to_clb_type == target_type
                     && z + directs[i].sub_tile_offset < int(target_type->capacity)
                     && z + directs[i].sub_tile_offset >= 0) {
@@ -2765,11 +2766,12 @@ static int get_opin_direct_connecions(int x,
                             }
                         }
 
+                        int target_sub_tile = z + directs[i].sub_tile_offset;
+                        if (relative_ipin >= target_type->sub_tiles[target_sub_tile].num_phy_pins) continue;
+
                         //If this block has capacity > 1 then the pins of z position > 0 are offset
                         //by the number of pins per capacity instance
-                        int ipin = get_physical_pin_from_capacity_location(target_type, relative_ipin, z + directs[i].sub_tile_offset);
-
-                        //if (ipin > target_type->num_pins) continue; //Invalid z-offset
+                        int ipin = get_physical_pin_from_capacity_location(target_type, relative_ipin, target_sub_tile);
 
                         /* Add new ipin edge to list of edges */
                         std::vector<int>& inodes = scratchpad->scratch[0];

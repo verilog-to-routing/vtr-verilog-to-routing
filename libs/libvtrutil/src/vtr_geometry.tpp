@@ -189,6 +189,13 @@ Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs) {
                    std::min(lhs.xmax(), rhs.xmax()),
                    std::min(lhs.ymax(), rhs.ymax()));
 }
+template<class T>
+static void print_rect(FILE* fp, const Rect<T> rect) {
+    fprintf(fp, "\txmin: %d\n", rect.xmin());
+    fprintf(fp, "\tymin: %d\n", rect.ymin());
+    fprintf(fp, "\txmax: %d\n", rect.xmax());
+    fprintf(fp, "\tymax: %d\n", rect.ymax());
+}
 //Only defined for integral types
 template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
 Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {

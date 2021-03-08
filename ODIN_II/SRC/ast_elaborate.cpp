@@ -1167,9 +1167,6 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                                       "%s", "Cannot mix port connections by name and port connections by ordered list\n");
                     }
                 }
-
-                skip_children = true;
-
                 break;
             }
             case TASK: {
@@ -1198,9 +1195,6 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                                       "%s", "Cannot mix port connections by name and port connections by ordered list\n");
                     }
                 }
-
-                skip_children = true;
-
                 break;
             }
             case MODULE_ITEMS: {

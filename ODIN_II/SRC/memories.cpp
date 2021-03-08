@@ -1711,6 +1711,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
         npin_t* not_output = allocate_npin();
         add_output_pin_to_node(not_g, not_output, 0);
         nnet_t* net = allocate_nnet();
+        net->name = make_full_ref_name(NULL, NULL, NULL, not_g->name, 0);
         add_driver_pin_to_net(net, not_output);
         not_output = allocate_npin();
         add_fanout_pin_to_net(net, not_output);
@@ -1750,6 +1751,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
         npin_t* output = allocate_npin();
         nnet_t* net = allocate_nnet();
         add_output_pin_to_node(and_g, output, 0);
+        net->name = make_full_ref_name(NULL, NULL, NULL, and_g->name, 0);
         add_driver_pin_to_net(net, output);
         output = allocate_npin();
         add_fanout_pin_to_net(net, output);

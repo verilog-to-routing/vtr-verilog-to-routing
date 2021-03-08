@@ -1,0 +1,8 @@
+.model top
+.inputs in_0 in_1
+.outputs out_0 out_1
+.names $false
+.names $true
+1
+.subckt PRIMITIVE in=in_0 in_2=in_1 out=out_0 out_2=out_1
+.end
