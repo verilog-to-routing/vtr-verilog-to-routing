@@ -625,6 +625,9 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
                 var_node = free_whole_tree(var_node);
             }
         }
+    } else if (var_node->type == BINARY_OPERATION || var_node->type == UNARY_OPERATION || var_node->type == TERNARY_OPERATION) {
+        if (!var_node->net_node)
+            error_message(AST, var_node->loc, "Expression is not allowed for outputs in instance port connections. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
     } else {
         return_string = NULL;
 
