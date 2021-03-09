@@ -579,13 +579,13 @@ k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v   	common       	9f591f6-
 
 ### Example: Titan Benchmarks QoR Measurements
 
-The Titan benchmarks are a group of large benchmark circuits from a wide range of applications, which are compatible with the VTR project.
+The [Titan benchmarks](https://docs.verilogtorouting.org/en/latest/vtr/benchmarks/#titan-benchmarks) are a group of large benchmark circuits from a wide range of applications, which are compatible with the VTR project.
 The are typically used as post-technology mapped netlists which have been pre-synthesized with Quartus.
 They are substantially larger and more realistic than the VTR benchmarks, but can only target specifically compatible architectures.
 They are used primarily to evaluate the optimization quality and scalability of VTR's CAD algorithms while targeting a fixed architecture (e.g. at a fixed channel width).
 
 A typical approach to evaluating an algorithm change would be to run `vtr_reg_titan` task from the weekly regression test:
-
+#### [Running and Integrating the Titan Benchmarks with VTR](https://docs.verilogtorouting.org/en/latest/tutorials/titan_benchmarks/)
 ```shell
 #From the VTR root
 
