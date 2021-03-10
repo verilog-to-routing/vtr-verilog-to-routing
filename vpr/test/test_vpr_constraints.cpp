@@ -435,6 +435,10 @@ TEST_CASE("PlaceConstraintsIntegrity", "[vpr]") {
     vpr_initialize_logging();
 
     // Command line arguments
+    //
+    // parameters description:
+    //      - place_static_move_prob: Timing Feasible Region move type is always selected.
+    //      - RL_agent_placement: disabled. This way the desired move type is selected.
     const char* argv[] = {
         "test_vpr",
         kArchFile,
