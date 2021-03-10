@@ -30,7 +30,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
 static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro);
 static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations);
 
-static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type);
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type, std::vector<ClusterBlockId> sorted_blocks);
 
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
@@ -226,15 +226,15 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
 
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
-static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type) {
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type, std::vector<ClusterBlockId> sorted_blocks) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
+    //auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    auto blocks = cluster_ctx.clb_nlist.blocks();
+    //auto blocks = cluster_ctx.clb_nlist.blocks();
 
     // Sorting blocks to place to have most constricted ones to be placed first
-    std::vector<ClusterBlockId> sorted_blocks(blocks.begin(), blocks.end());
+    /*std::vector<ClusterBlockId> sorted_blocks(blocks.begin(), blocks.end());
 
     auto criteria = [&cluster_ctx](const ClusterBlockId lhs, ClusterBlockId rhs) {
         auto lhs_logical_block = cluster_ctx.clb_nlist.block_type(lhs);
@@ -248,9 +248,11 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
 
     if (device_ctx.has_multiple_equivalent_tiles) {
         std::sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
-    }
+    }*/
 
     for (auto blk_id : sorted_blocks) {
+    	bool placed = false;
+    	while (!placed) {
 			/* -1 is a sentinel for a non-placed block, which the code in this routine will choose a location for.
 			 * If the x value is not -1, we assume something else has already placed this block and we should leave it there.
 			 * For example, if the user constrained it to a certain location, the block has already been placed.
@@ -292,24 +294,34 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
 			// Make sure that the position is EMPTY_BLOCK before placing the block down
 			VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
 
+			bool floorplan_good = cluster_floorplanning_check(blk_id, to);
+			VTR_LOG("cluster_floorplanning_check returned %d  for block %zu \n", floorplan_good, size_t(blk_id));
+			VTR_LOG("attempted location x: %d y: %d subtile: %d \n", to.x, to.y, to.sub_tile);
 
-			place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk_id;
-			place_ctx.grid_blocks[to.x][to.y].usage++;
+			if (floorplan_good) {
+				place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk_id;
+				place_ctx.grid_blocks[to.x][to.y].usage++;
 
-			place_ctx.block_locs[blk_id].loc = to;
+				place_ctx.block_locs[blk_id].loc = to;
 
-			//Mark IOs as fixed if specifying a (fixed) random placement
-			if (is_io_type(pick_physical_type(logical_block)) && pad_loc_type == RANDOM) {
-				place_ctx.block_locs[blk_id].is_fixed = true;
+				//Mark IOs as fixed if specifying a (fixed) random placement
+				if (is_io_type(pick_physical_type(logical_block)) && pad_loc_type == RANDOM) {
+					place_ctx.block_locs[blk_id].is_fixed = true;
+				}
+
+				/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
+				 * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
+				 * just move the last entry in legal_pos to the spot we just used and decrement the
+				 * count of free_locations. */
+				legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1]; /* overwrite used block position */
+				free_locations[itype][isub_tile]--;
+
+
+				placed = true;
 			}
 
-			/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
-			 * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
-			 * just move the last entry in legal_pos to the spot we just used and decrement the
-			 * count of free_locations. */
-			legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1]; /* overwrite used block position */
-			free_locations[itype][isub_tile]--;
-
+			VTR_LOG("Placed bool is %d \n", placed);
+    	}
     }
 
 
@@ -475,8 +487,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         }
     } // Finish updating the legal_pos[][] and free_locations[] array
 
-    initial_placement_blocks(free_locations, pad_loc_type);
-
+    initial_placement_blocks(free_locations, pad_loc_type, sorted_blocks);
 
     /* Restore legal_pos */
     alloc_and_load_legal_placement_locations(legal_pos);
