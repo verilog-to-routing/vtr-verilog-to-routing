@@ -14,11 +14,12 @@ bool PartitionRegion::empty() {
 }
 
 bool PartitionRegion::is_loc_in_part_reg(t_pl_loc loc) {
-    bool is_in_pr = true;
+
+    bool is_in_pr = false;
 
     for (unsigned int i = 0; i < partition_region.size(); i++) {
         is_in_pr = partition_region[i].is_loc_in_reg(loc);
-        if (is_in_pr == false) {
+        if (is_in_pr == true) {
             break;
         }
     }

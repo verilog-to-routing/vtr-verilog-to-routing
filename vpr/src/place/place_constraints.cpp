@@ -8,14 +8,6 @@
 #include "globals.h"
 #include "place_constraints.h"
 
-struct t_block_scores {
-    int macro_size = 0; //how many member does the macro have, if it is part of one
-
-    int num_floorplan_constraints = 0; //how many floorplan constraints does it have, if any
-
-    int num_equivalent_tiles = 1; //how many equivalent tiles does block have to be placed at
-};
-
 int check_placement_floorplanning() {
     int error = 0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -61,7 +53,7 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
 
 	if(!cluster_constrained) {
 		//not constrained so will not have floorplanning issues
-		//VTR_LOG("The block is not constrained in cluster_floorplanning_check \n");
+		//VTR_LOG("The block %zu is not constrained in cluster_floorplanning_check \n", size_t(blk_id));
 		floorplanning_good = true;
 		return floorplanning_good;
 	} else {
@@ -72,78 +64,23 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
         //if location is in partitionregion, floorplanning is respected
         //if not it is not
         if(in_pr){
-        	//VTR_LOG("The block is in the part_region in cluster_floorplanning_check \n");
+        	/*VTR_LOG("The block %zu is in the part_region in cluster_floorplanning_check \n", size_t(blk_id));
+
+        	std::vector<Region> regions = pr.get_partition_region();
+
+        	VTR_LOG("\n PartitionRegion includes \n");
+        	for (unsigned int j = 0; j < regions.size(); j++){
+        		vtr::Rect<int> rect;
+        		rect = regions[j].get_region_rect();
+        		VTR_LOG("xlow: %d, ylow: %d, xhigh: %d, yhigh: %d \n", rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax());
+        	}
+        	VTR_LOG("Loc is x: %d, y: %d, subtile: %d \n", loc.x, loc.y, loc.sub_tile );*/
         	floorplanning_good = true;
         	return floorplanning_good;
         }
-        //VTR_LOG("The block did not pass cluster_floorplanning_check \n");
+        VTR_LOG("The block %zu did not pass cluster_floorplanning_check \n", size_t(blk_id));
+        VTR_LOG("Loc is x: %d, y: %d, subtile: %d \n", loc.x, loc.y, loc.sub_tile );
         return floorplanning_good;
 	}
 }
 
-void sort_blocks(){
-
-	auto& cluster_ctx = g_vpr_ctx.clustering();
-	auto& place_ctx = g_vpr_ctx.placement();
-
-	auto blocks = cluster_ctx.clb_nlist.blocks();
-	auto pl_macros = place_ctx.pl_macros;
-
-	vtr::vector<ClusterBlockId, t_block_scores> block_scores;
-
-	t_block_scores score;
-
-	for (auto blk_id : blocks) {
-		block_scores.push_back(score);
-	}
-
-	std::vector<ClusterBlockId> sorted_blocks(blocks.begin(), blocks.end());
-
-	//go through all blocks and store floorplan constraints and num equivalent tiles
-	for (auto blk_id : blocks) {
-		if (is_cluster_constrained(blk_id)) {
-			block_scores[blk_id].num_floorplan_constraints = 1;
-		}
-
-		auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-
-		auto num_tiles = logical_block->equivalent_tiles.size();
-
-		block_scores[blk_id].num_equivalent_tiles = num_tiles;
-	}
-
-	//go through placement macros and store size of macro for each block
-	for (auto pl_macro : pl_macros) {
-		int size = pl_macro.members.size();
-
-		for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
-			block_scores[pl_macro.members[i].blk_index].macro_size = size;
-		}
-	}
-
-    auto criteria = [block_scores](ClusterBlockId lhs, ClusterBlockId rhs) {
-        int lhs_score = 100*block_scores[lhs].macro_size +
-        		        10*block_scores[lhs].num_floorplan_constraints +
-						10/(block_scores[lhs].num_equivalent_tiles);
-
-        int rhs_score = 100*block_scores[rhs].macro_size +
-                		10*block_scores[rhs].num_floorplan_constraints +
-        		        10/(block_scores[rhs].num_equivalent_tiles);
-
-        return lhs_score > rhs_score;
-    };
-
-    std::stable_sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
-
-    print_sorted_blocks(sorted_blocks);
-}
-
-void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks) {
-
-	VTR_LOG("\nPrinting sorted blocks: \n");
-
-	for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
-		VTR_LOG("Block_Id: %zu \n", sorted_blocks[i]);
-	}
-
-}
