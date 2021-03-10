@@ -1,17 +1,17 @@
 #include "region.h"
 
 /// @brief sentinel value for indicating that a subtile has not been specified
-constexpr int NO_SUBTILE = -1;
+constexpr int NO_SUBTILE = 0;
 
 Region::Region() {
     sub_tile = NO_SUBTILE;
 
     //default rect for a region is (-1, -1, -1, -1)
     //these values indicate an empty rectangle, they are set as default values to help catch uninitialized use
-    region_bounds.set_xmin(-1);
-    region_bounds.set_ymin(-1);
-    region_bounds.set_xmax(-1);
-    region_bounds.set_ymax(-1);
+    region_bounds.set_xmin(0);
+    region_bounds.set_ymin(0);
+    region_bounds.set_xmax(0);
+    region_bounds.set_ymax(0);
 }
 
 vtr::Rect<int> Region::get_region_rect() {

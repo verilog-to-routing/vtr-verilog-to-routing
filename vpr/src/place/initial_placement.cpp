@@ -245,6 +245,8 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
 
     //VTR_LOG("NUMBER OF CONSTRAINED BLOCKS IS %d \n", constrained_blocks.size());
 
+    VTR_LOG("\n PRINTING SORTED BLOCKS FROM initial_placement_blocks \n");
+
     for (auto blk_id : sorted_blocks) {
     	if (is_cluster_constrained(blk_id)) {
     		constrained_blocks.push_back(blk_id);
@@ -348,6 +350,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
      * the legal_pos array already being loaded.  That legal_pos[itype] is an
      * array that gives every legal value of (x,y,z) that can accommodate a block.
      */
+
+    //Sort blocks
+    sort_blocks();
 
     // Loading legal placement locations
     zero_initialize_grid_blocks();
