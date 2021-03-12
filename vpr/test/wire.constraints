@@ -1,0 +1,4 @@
+#block name	x	y	subblk	block number
+#----------	--	--	------	------------
+out:do		2	1	1	#0
+di		2	1	5	#1
