@@ -679,6 +679,10 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                         }
                     }
                     symbol_list->children[i]->types.variable.is_wire = true;
+                    // this should be an array
+                    if (symbol_list->children[i]->children[2]) {
+                        symbol_list->children[i]->types.variable.is_array = true;
+                    }
                     break;
                 case REG:
                     symbol_list->children[i]->types.variable.is_reg = true;

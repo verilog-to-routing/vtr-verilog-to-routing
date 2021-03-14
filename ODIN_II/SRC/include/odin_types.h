@@ -350,6 +350,8 @@ enum ids {
     HARD_BLOCK_CONNECT,
     // EDDIE: new enum value for ids to replace MEMORY from operation_t
     RAM,
+    // EDDIE: new enum value for ids to replace BUF_NODE from operation_t
+    BUFFER,
     ids_END
 };
 
@@ -388,6 +390,7 @@ struct typ {
         short is_reg;
         short is_genvar;
         short is_memory;
+        short is_array;
         operation_list signedness;
         VNumber* initial_value = nullptr;
     } variable;

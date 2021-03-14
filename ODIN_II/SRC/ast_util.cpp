@@ -171,6 +171,7 @@ ast_node_t* create_node_w_type(ids id, loc_t loc) {
     new_node->types.variable.is_reg = false;
     new_node->types.variable.is_genvar = false;
     new_node->types.variable.is_memory = false;
+    new_node->types.variable.is_array = false;
     new_node->types.variable.signedness = UNSIGNED;
 
     new_node->types.concat.num_bit_strings = 0;

@@ -1999,20 +1999,22 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                 if (node_is_constant(new_node)) {
                     /* resize as needed */
                     long new_size;
-                    long this_size = new_node->types.vnumber->size();
+                    long this_size = (long)new_node->types.vnumber->get_value();
 
-                    if (assignment_size > 0) {
+                    if (this_size > 0){
+                        new_size = this_size;    
+                    } else if (assignment_size > 0) {
                         new_size = assignment_size;
                     } else if (max_size) {
                         new_size = *max_size;
                     } else {
-                        new_size = this_size;
+                        new_size = new_node->types.vnumber->size();
                     }
 
                     /* clean up */
                     free_resolved_children(node);
 
-                    change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
+                    change_to_number_node(node, VNumber(*(new_node->types.vnumber)));
                 }
                 new_node = free_whole_tree(new_node);
                 break;
@@ -2041,7 +2043,7 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                     /* clean up */
                     free_resolved_children(node);
 
-                    change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
+                    change_to_number_node(node, VNumber(*(new_node->types.vnumber)));
                 }
                 new_node = free_whole_tree(new_node);
                 break;

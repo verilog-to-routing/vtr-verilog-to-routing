@@ -132,6 +132,13 @@ signal_list_t* create_soft_dual_port_ram_block(ast_node_t* block, char* instance
 void look_for_clocks(netlist_t* netlist);
 void reorder_connections_from_name(ast_node_t* instance_node, ast_node_t* instanciated_instance, ids type);
 
+void create_array_nets(int data_width, long array_depth, char* name, char* instance_name_prefix, loc_t loc);
+nnet_t* lookup_explicit_array_reference(char* instance_name_prefix, ast_node_t* node, sc_hierarchy* local_ref, long idx);
+signal_list_t* alias_array_output_signals(ast_node_t* node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size);
+signal_list_t* alias_array_input_signals(ast_node_t* node, signal_list_t* data, char* instance_name_prefix, long assignment_size);
+signal_list_t** alias_memory_address_and_output_signals(ast_node_t* right, implicit_memory* right_memory, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc);
+signal_list_t* alias_memory_input_signals(ast_node_t* left, implicit_memory* left_memory, signal_list_t* data, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc);
+
 /*---------------------------------------------------------------------------------------------
  * (function: create_netlist)
  *--------------------------------------------------------------------------*/
@@ -486,9 +493,36 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 break;
             /* ---------------------- */
             /* All these are input references that we need to grab their pins from by create_pin */
-            case ARRAY_REF: // fallthrough
-            {
-                // skip_children = true;
+            case ARRAY_REF: {
+                STRING_CACHE* local_symbol_table_sc = local_ref->local_symbol_table_sc;
+                long sc_spot;
+                if (!local_symbol_table_sc) {
+                    return_sig_list = create_pins(node, NULL, instance_name_prefix, local_ref);
+                } else {
+                    if ((sc_spot = sc_lookup_string(local_symbol_table_sc, node->identifier_node->types.identifier)) == -1) {
+                        error_message(NETLIST, node->loc,
+                                      "the symbol (%s) is not defined in the local scope\n", node->identifier_node->types.identifier);
+                    }
+
+                    ast_node_t* local_symbol = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
+                    if (local_symbol && local_symbol->types.variable.is_array) {
+                        return_sig_list = alias_array_output_signals(node, instance_name_prefix, local_ref, assignment_size);
+                        skip_children = true;
+
+                    } else if (local_symbol && local_symbol->types.variable.is_memory) {
+                        implicit_memory* memory = lookup_implicit_memory_reference_ast(instance_name_prefix, node);
+                        signal_list_t** memory_signal_lists = alias_memory_address_and_output_signals(node, memory, instance_name_prefix, local_ref, assignment_size, node->loc);
+
+                        return_sig_list = memory_signal_lists[1];
+                        
+                        free_signal_list(memory_signal_lists[0]);
+                        skip_children = true;
+
+                    } else {
+                        return_sig_list = create_pins(node, NULL, instance_name_prefix, local_ref);
+                    }
+                }
+                break;
             }
             case IDENTIFIERS:
             case RANGE_REF:
@@ -1043,8 +1077,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
             }
         }
     }
-    /* Implicit memory */
-    else if (var_declare->children[2] != NULL && var_declare->types.variable.is_memory) {
+    /* Implicit memory or arrays */
+    else if (var_declare->children[2] != NULL) {
         ast_node_t* node_max1 = var_declare->children[0];
         ast_node_t* node_min1 = var_declare->children[1];
 
@@ -1083,20 +1117,26 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
 
         if (data_min != 0)
             error_message(NETLIST, var_declare->loc,
-                          "%s: right memory index must be zero\n", name);
+                          "%s: right memory/array index must be zero\n", name);
 
         oassert(data_min <= data_max);
 
         if (addr_min != 0)
             error_message(NETLIST, var_declare->loc,
-                          "%s: right memory address index must be zero\n", name);
+                          "%s: right memory/array address index must be zero\n", name);
 
         oassert(addr_min <= addr_max);
 
         long data_width = data_max - data_min + 1;
         long address_width = addr_max - addr_min + 1;
 
-        create_implicit_memory_block(data_width, address_width, name, instance_name_prefix, var_declare->loc);
+        if (var_declare->types.variable.is_memory) {
+            // the declared variable is memory (reg)
+            create_implicit_memory_block(data_width, address_width, name, instance_name_prefix, var_declare->loc);
+        } else if (var_declare->types.variable.is_array) {
+            // the declared variable is array (wire)
+            create_array_nets(data_width, address_width, name, instance_name_prefix, var_declare->loc);
+        }
     }
 
     return new_net;
@@ -2703,6 +2743,7 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
                 sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
                 input_nets_sc->data[sc_spot] = output_nets_sc->data[sc_spot_output];
                 add_fanout_pin_to_net((nnet_t*)input_nets_sc->data[sc_spot], new_pin);
+
             } else {
                 if (sc_spot == -1) {
                     new_in_net = allocate_nnet();
@@ -2759,8 +2800,18 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
     ast_node_t* left = assignment->children[0];
     ast_node_t* right = assignment->children[1];
 
+    nnet_t* left_array = NULL;
+    nnet_t* right_array = NULL;
+
     implicit_memory* left_memory = lookup_implicit_memory_reference_ast(instance_name_prefix, left);
     implicit_memory* right_memory = lookup_implicit_memory_reference_ast(instance_name_prefix, right);
+    
+    if (!left_memory) {
+        left_array = lookup_explicit_array_reference(instance_name_prefix, left, local_ref, 0);
+    }
+    if (!right_memory) {
+        right_array = lookup_explicit_array_reference(instance_name_prefix, right, local_ref, 0);
+    }
 
     signal_list_t* in_1 = NULL;
 
@@ -2768,127 +2819,17 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
     signal_list_t* right_inputs = NULL;
 
     /* process the signal for the input gate */
-    if (right_memory) {
-        if (!is_valid_implicit_memory_reference_ast(instance_name_prefix, right))
-            error_message(NETLIST, assignment->loc,
-                          "Invalid addressing mode for implicit memory %s.\n", right_memory->name);
+    if (right_array) {
+        // the output signals of the RHS array will be resolved
+        right_outputs = alias_array_output_signals(right, instance_name_prefix, local_ref, assignment_size);
 
-        signal_list_t* address = netlist_expand_ast_of_module(&(right->children[0]), instance_name_prefix, local_ref, assignment_size);
-        // Pad/shrink the address to the depth of the memory.
+    } else if (right_memory) {
+        
+        signal_list_t** right_memory_signals;
+        right_memory_signals = alias_memory_address_and_output_signals(right, right_memory, instance_name_prefix, local_ref, assignment_size, assignment->loc);
 
-        if (address->count == 0) {
-            warning_message(NETLIST, assignment->loc,
-                            "indexing into memory with %s has address of length 0, skipping memory read", instance_name_prefix);
-        } else {
-            if (address->count != right_memory->addr_width) {
-                if (address->count > right_memory->addr_width) {
-                    std::string unused_pins_name = "";
-                    for (long i = right_memory->addr_width; i < address->count; i++) {
-                        if (address->pins && address->pins[i] && address->pins[i]->name)
-                            unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
-                    }
-                    warning_message(NETLIST, assignment->loc,
-                                    "indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
-                } else {
-                    warning_message(NETLIST, assignment->loc,
-                                    "indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
-                }
-
-                while (address->count < right_memory->addr_width)
-                    add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
-
-                address->count = right_memory->addr_width;
-            }
-
-            int input_pin_index = 0;
-            int output_pin_index = 0;
-            char* address_port = NULL;
-            char* output_port = NULL;
-
-            ast_node_t* right_memory_ast_node = right_memory->node->related_ast_node;
-
-            bool first_address_is_connected = is_signal_list_connected_to_memory(right_memory, address, "addr1");
-            bool second_address_is_connected = is_signal_list_connected_to_memory(right_memory, address, "addr2");
-            bool memory_is_single_port = !strcmp(right_memory_ast_node->identifier_node->types.identifier, SINGLE_PORT_RAM_string);
-
-            if (memory_is_single_port && !first_address_is_connected) {
-                if (right_memory->node->input_pins) {
-                    address_port = right_memory->node->input_pins[0]->mapping;
-
-                    if (address_port && !strcmp(address_port, "addr1")) {
-                        // changing to a dual-port ram, since the first port is already connected
-                        ast_node_t* identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), assignment->loc);
-
-                        // free the default identifier node (spram)
-                        if (right_memory_ast_node->identifier_node) {
-                            free_single_node(right_memory_ast_node->identifier_node);
-                        }
-
-                        right_memory_ast_node->identifier_node = identifier_node;
-
-                        input_pin_index = right_memory->data_width + right_memory->data_width + right_memory->addr_width + 2;
-                        output_pin_index = right_memory->data_width;
-
-                        // first address port is already been used, so that the second port should use for the next address port
-                        address_port = vtr::strdup("addr2");
-                        output_port = vtr::strdup("out2");
-                    }
-
-                } else {
-                    address_port = vtr::strdup("addr1");
-                    output_port = vtr::strdup("out1");
-                }
-
-                add_input_port_to_implicit_memory(right_memory, address, address_port);
-
-            } else if (!memory_is_single_port && second_address_is_connected) {
-                input_pin_index = right_memory->data_width + right_memory->data_width + right_memory->addr_width + 2;
-                output_pin_index = right_memory->data_width;
-
-                address_port = vtr::strdup("addr2");
-                output_port = vtr::strdup("out2");
-
-            } else if (first_address_is_connected) {
-                address_port = vtr::strdup("addr1");
-                output_port = vtr::strdup("out1");
-            }
-
-            // Right inputs are the inputs to the memory. This will contain the address only.
-            right_inputs = init_signal_list();
-            char* name = right->identifier_node->types.identifier;
-
-            int i;
-            for (i = 0; i < address->count; i++) {
-                npin_t* pin = address->pins[i];
-                if (pin->name)
-                    vtr::free(pin->name);
-                pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index + i);
-                add_pin_to_signal_list(right_inputs, pin);
-            }
-            free_signal_list(address);
-
-            // Right outputs will be the outputs of the memory. They will be
-            // treated the same as the outputs from the RHS of any assignment.
-            right_outputs = init_signal_list();
-            signal_list_t* outputs = init_signal_list();
-            for (i = output_pin_index; i < right_memory->data_width + output_pin_index; i++) {
-                npin_t* pin = allocate_npin();
-                add_pin_to_signal_list(outputs, pin);
-                pin->name = make_full_ref_name(right_memory->node->name, NULL, NULL, output_port, i - output_pin_index);
-                nnet_t* net = allocate_nnet();
-                net->name = vtr::strdup(pin->name);
-                add_driver_pin_to_net(net, pin);
-                pin = allocate_npin();
-                add_fanout_pin_to_net(net, pin);
-                //right_outputs->pins[i] = pin;
-                add_pin_to_signal_list(right_outputs, pin);
-            }
-            add_output_port_to_implicit_memory(right_memory, outputs, output_port);
-            free_signal_list(outputs);
-
-            vtr::free(address_port);
-            vtr::free(output_port);
-        }
+        right_inputs = right_memory_signals[0];
+        right_outputs = right_memory_signals[1];
 
     } else {
         in_1 = netlist_expand_ast_of_module(&(assignment->children[1]), instance_name_prefix, local_ref, assignment_size);
@@ -2896,161 +2837,42 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
         right = assignment->children[1];
     }
 
-    char_list_t* out_list;
+    char_list_t* out_list = NULL;
 
-    if (left_memory) {
-        if (!is_valid_implicit_memory_reference_ast(instance_name_prefix, left))
-            error_message(NETLIST, assignment->loc,
-                          "Invalid addressing mode for implicit memory %s.\n", left_memory->name);
+    if (left_array) {
+        // specify the output data drom RHS
+        signal_list_t* data;
+        if (right_memory || right_array)
+            data = right_outputs;
+        else
+            data = in_1;
 
-        // A memory can only be written from a clocked rising edge block.
-        if (type_of_circuit != SEQUENTIAL) {
-            out_list = NULL;
-            error_message(NETLIST, assignment->loc, "%s",
-                          "Assignment to implicit memories is only supported within sequential circuits.\n");
-        } else {
-            // Make sure the memory is addressed.
-            signal_list_t* address = netlist_expand_ast_of_module(&(left->children[0]), instance_name_prefix, local_ref, assignment_size);
+        // padding the RHS output data if the size is less than assignment_size
+        while (data->count < assignment_size)
+            add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
 
-            // Pad/shrink the address to the depth of the memory.
-            if (address->count == 0) {
-                warning_message(NETLIST, assignment->loc,
-                                "indexing into memory with %s has address of length 0, skipping memory write", instance_name_prefix);
-            } else {
-                if (address->count != left_memory->addr_width) {
-                    if (address->count > left_memory->addr_width) {
-                        std::string unused_pins_name = "";
-                        for (long i = left_memory->addr_width; i < address->count; i++) {
-                            if (address->pins && address->pins[i] && address->pins[i]->name)
-                                unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
-                        }
-                        warning_message(NETLIST, assignment->loc,
-                                        "indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
-                    } else {
-                        warning_message(NETLIST, assignment->loc,
-                                        "indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
-                    }
+        /* 
+         * create a signal list to add new pins. they will be alias of
+         * the input signals of the LHS array which will be driven by 
+         * RHS output. 
+         */
+        in_1 = alias_array_input_signals(left, data, instance_name_prefix, assignment_size);
+        free_signal_list(data);
 
-                    while (address->count < left_memory->addr_width)
-                        add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
+        // out_list = NULL;
 
-                    address->count = left_memory->addr_width;
-                }
+    } else if (left_memory) {
 
-                signal_list_t* data;
-                if (right_memory)
-                    data = right_outputs;
-                else
-                    data = in_1;
+        signal_list_t* data;
+        if (right_memory)
+            data = right_outputs;
+        else
+            data = in_1;
 
-                int input_pin_index = 0;
-                char* address_port = NULL;
-                char* data_port = NULL;
-                char* we_port = NULL;
+        in_1 = alias_memory_input_signals(left, left_memory, data, instance_name_prefix, local_ref, assignment_size, assignment->loc);
 
-                ast_node_t* left_memory_ast_node = left_memory->node->related_ast_node;
-
-                bool first_address_is_connected = is_signal_list_connected_to_memory(left_memory, address, "addr1");
-                bool second_address_is_connected = is_signal_list_connected_to_memory(left_memory, address, "addr2");
-                bool memory_is_single_port = !strcmp(left_memory_ast_node->identifier_node->types.identifier, SINGLE_PORT_RAM_string);
-
-                if (memory_is_single_port && !first_address_is_connected) {
-                    if (left_memory->node->input_pins) {
-                        address_port = left_memory->node->input_pins[0]->mapping;
-
-                        if (address_port && !strcmp(address_port, "addr1")) {
-                            // changing to a dual-port ram, since the first port is already connected
-                            ast_node_t* identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), assignment->loc);
-
-                            // free the default identifier node (spram)
-                            if (left_memory_ast_node->identifier_node) {
-                                free_single_node(left_memory_ast_node->identifier_node);
-                            }
-
-                            left_memory_ast_node->identifier_node = identifier_node;
-
-                            input_pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
-
-                            // first address port is already been used, so that the second port should use for the next address port
-                            address_port = vtr::strdup("addr2");
-                            data_port = vtr::strdup("data2");
-                            we_port = vtr::strdup("we2");
-                        }
-
-                    } else {
-                        address_port = vtr::strdup("addr1");
-                        data_port = vtr::strdup("data1");
-                        we_port = vtr::strdup("we1");
-                    }
-
-                    add_input_port_to_implicit_memory(left_memory, address, address_port);
-
-                } else if (!memory_is_single_port && second_address_is_connected) {
-                    input_pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
-
-                    // first address port is already been used, so that the second port should use for the next address port
-                    address_port = vtr::strdup("addr2");
-                    data_port = vtr::strdup("data2");
-                    we_port = vtr::strdup("we2");
-
-                } else if (first_address_is_connected) {
-                    address_port = vtr::strdup("addr1");
-                    data_port = vtr::strdup("data1");
-                    we_port = vtr::strdup("we1");
-                }
-
-                // Pad/shrink the data to the width of the memory.
-                if (data) {
-                    while (data->count < left_memory->data_width)
-                        add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
-
-                    data->count = left_memory->data_width;
-
-                    add_input_port_to_implicit_memory(left_memory, data, data_port);
-
-                    signal_list_t* we = init_signal_list();
-                    add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
-                    add_input_port_to_implicit_memory(left_memory, we, we_port);
-
-                    in_1 = init_signal_list();
-                    char* name = left->identifier_node->types.identifier;
-
-                    int i;
-                    for (i = 0; i < address->count; i++) {
-                        npin_t* pin = address->pins[i];
-                        if (pin->name)
-                            vtr::free(pin->name);
-                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
-                        add_pin_to_signal_list(in_1, pin);
-                    }
-                    free_signal_list(address);
-
-                    for (i = 0; i < data->count; i++) {
-                        npin_t* pin = data->pins[i];
-                        if (pin->name)
-                            vtr::free(pin->name);
-                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
-                        add_pin_to_signal_list(in_1, pin);
-                    }
-                    free_signal_list(data);
-
-                    for (i = 0; i < we->count; i++) {
-                        npin_t* pin = we->pins[i];
-                        if (pin->name)
-                            vtr::free(pin->name);
-                        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
-                        add_pin_to_signal_list(in_1, pin);
-                    }
-                    free_signal_list(we);
-
-                    out_list = NULL;
-                }
-
-                vtr::free(address_port);
-                vtr::free(data_port);
-                vtr::free(we_port);
-            }
-        }
+        // out_list = NULL;
+        
     } else {
         out_list = get_name_of_pins_with_prefix(left, instance_name_prefix, local_ref);
     }
@@ -3058,7 +2880,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
     signal_list_t* return_list;
     return_list = init_signal_list();
 
-    if (!right_memory && !left_memory) {
+    if (!right_memory && !left_memory && !left_array && !right_array) {
         int output_size = alias_output_assign_pins_to_inputs(out_list, in_1, assignment);
 
         if (in_1 && output_size < in_1->count) {
@@ -3086,18 +2908,19 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
         vtr::free(out_list->strings);
         vtr::free(out_list);
     } else {
-        if (right_memory) {
+        if (right_memory || right_array) {
             // Register inputs for later assignment directly to the memory.
-            oassert(right_inputs);
+            if (right_memory)
+                oassert(right_inputs);
             int i;
-            for (i = 0; i < right_inputs->count; i++) {
+            for (i = 0; right_inputs && i < right_inputs->count; i++) {
                 add_pin_to_signal_list(return_list, right_inputs->pins[i]);
                 register_implicit_memory_input(right_inputs->pins[i]->name, right_memory);
             }
             free_signal_list(right_inputs);
 
             // Alias the outputs like a regular assignment if the thing on the left isn't a memory.
-            if (!left_memory) {
+            if (!left_memory && !left_array) {
                 int output_size = alias_output_assign_pins_to_inputs(out_list, right_outputs, assignment);
                 for (i = 0; i < output_size; i++) {
                     add_pin_to_signal_list(return_list, right_outputs->pins[i]);
@@ -3108,13 +2931,14 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             }
         }
 
-        if (left_memory) {
+        if (left_memory || left_array) {
             // Index all inputs to the left memory for implicit memory direct assignment.
             oassert(in_1);
             int i;
             for (i = 0; i < in_1->count; i++) {
                 add_pin_to_signal_list(return_list, in_1->pins[i]);
-                register_implicit_memory_input(in_1->pins[i]->name, left_memory);
+                if (left_memory)
+                    register_implicit_memory_input(in_1->pins[i]->name, left_memory);
             }
             free_signal_list(in_1);
         }
@@ -5505,4 +5329,432 @@ ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hi
         }
     }
     return (node);
+}
+
+/*--------------------------------------------------------------------------
+ * (function: create_array_nets)
+ * 	Expanding an array and creates the realted driver netss
+ *------------------------------------------------------------------------*/
+void create_array_nets(int data_width, long array_depth, char* name, char* instance_name_prefix, loc_t loc) {
+    oassert(array_depth > 0
+            && "explicit arrayy depth must be greater than 0");
+
+    long i, j;
+    for (i = 0; i < array_depth; i++) {
+        for (j = 0; j < data_width; j++) {
+            char* indexed_node_name = make_full_ref_name(NULL, NULL, NULL, name, i);
+            nnet_t* buf_output_net = allocate_nnet();
+
+            /* create the string to add to the cache */
+            char* net_name = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_node_name, j);
+
+            long sc_spot = sc_add_string(output_nets_sc, net_name);
+            if (output_nets_sc->data[sc_spot] != NULL) {
+                error_message(NETLIST, loc,
+                              "Net (%s) with the same name already created\n", net_name);
+            }
+            /* store the data which is an idx here */
+            output_nets_sc->data[sc_spot] = (void*)buf_output_net;
+            buf_output_net->name = net_name;
+            vtr::free(indexed_node_name);
+        }
+    }
+}
+
+/*--------------------------------------------------------------------------
+ * (function: lookup_explicit_array_reference)
+ * 	find out the related net of specified index(idx) of an array
+ *------------------------------------------------------------------------*/
+nnet_t* lookup_explicit_array_reference(char* instance_name_prefix, ast_node_t* node, sc_hierarchy* local_ref, long idx) {
+    long sc_spot;
+    STRING_CACHE* local_symbol_table_sc = local_ref->local_symbol_table_sc;
+    
+    ast_node_t* local_symbol = NULL;
+    nnet_t* indexed_array_buf_net = NULL;
+
+    if (local_symbol_table_sc && node->type == ARRAY_REF) {
+        if ((sc_spot = sc_lookup_string(local_symbol_table_sc, node->identifier_node->types.identifier)) == -1) {
+            error_message(NETLIST, node->loc,
+                        "the symbol (%s) is not defined in the local scope\n", node->identifier_node->types.identifier);
+        }
+
+        local_symbol = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
+        if (local_symbol && local_symbol->types.variable.is_array){
+            
+            if (!node->children[0]->types.vnumber) {
+                error_message(NETLIST, node->loc,
+                            "Arrays (%s) index should be a constant\n", node->identifier_node->types.identifier);
+            }
+
+            int index = node->children[0]->types.vnumber->get_value();
+            char* indexed_net_name = make_full_ref_name(NULL, NULL, NULL, node->identifier_node->types.identifier, index);
+            char* output_net = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_net_name, idx);
+
+            if ((sc_spot = sc_lookup_string(output_nets_sc, output_net)) == -1) {
+                /*
+                * [WARNING]: array (%s) width is less than assignment size. Will be padding with GND. 
+                * This has not been notified to user due to recurring call of this function which cause
+                * too many warning mesagges.
+                */
+
+                indexed_array_buf_net = get_zero_pin(verilog_netlist)->net;
+                //indexed_array_buf_net->name = vtr::strdup(get_zero_pin(verilog_netlist)->net->name);
+            } else {
+                indexed_array_buf_net = (nnet_t*)output_nets_sc->data[sc_spot];
+            }
+
+            vtr::free(indexed_net_name);
+            vtr::free(output_net);
+            return indexed_array_buf_net;
+        }
+    }
+
+    return indexed_array_buf_net;
+}
+
+/*--------------------------------------------------------------------------
+ * (function: alias_array_output_signals)
+ * return a signal list including the output pins of am array
+ * Also, of they are undriven the function will be connect them
+ * to GND. (i.e. first initialization of an array to GND)
+ *------------------------------------------------------------------------*/
+signal_list_t* alias_array_output_signals(ast_node_t* node, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size) {
+    int i;
+    nnet_t* array = NULL;
+    signal_list_t* return_sig_list;
+
+    // Right outputs will be the outputs of the memory. They will be
+    // treated the same as the outputs from the RHS of any assignment.
+    return_sig_list = init_signal_list();
+    // signal_list_t* outputs = init_signal_list();
+    for (i = 0; i < assignment_size; i++) {
+        array = lookup_explicit_array_reference(instance_name_prefix, node, local_ref, i);
+        if (!array || array->num_driver_pins == 0) {
+        error_message(NETLIST, node->loc,
+                        "using uninitialized array (%s[%d]) can not drive any signal in Odin.", node->identifier_node->types.identifier, node->children[0]->types.vnumber->get_value());
+        }
+
+        nnet_t* net = array;
+        npin_t* pin = allocate_npin();
+
+        int index = node->children[0]->types.vnumber->get_value();
+        char* indexed_net_name = make_full_ref_name(NULL, NULL, NULL, node->identifier_node->types.identifier, index);
+        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_net_name, i);
+
+        add_fanout_pin_to_net(net, pin);
+        add_pin_to_signal_list(return_sig_list, pin);
+        
+        vtr::free(indexed_net_name);
+    }
+
+    return return_sig_list;
+}
+
+/*--------------------------------------------------------------------------
+ * (function: alias_array_input_signals)
+ * create a signal list to add new pins. they will be alias of
+ * the input signals of the LHS array which will be driven by 
+ * RHS output. 
+ *------------------------------------------------------------------------*/
+signal_list_t* alias_array_input_signals(ast_node_t* node, signal_list_t* data, char* instance_name_prefix, long assignment_size) {
+    signal_list_t* return_sig_list = init_signal_list();
+
+    int index = node->children[0]->types.vnumber->get_value();
+    char* indexed_node_name = make_full_ref_name(NULL, NULL, NULL, node->identifier_node->types.identifier, index);
+    long i;
+    for (i = 0; i < assignment_size; i++) {
+        npin_t* pin = data->pins[i];
+        if (pin->name)
+            vtr::free(pin->name);
+        pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_node_name, i);
+        add_pin_to_signal_list(return_sig_list, pin);
+    }
+
+    vtr::free(indexed_node_name);
+    return return_sig_list;
+}
+
+signal_list_t** alias_memory_address_and_output_signals(ast_node_t* right, implicit_memory* right_memory, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc) {
+
+    signal_list_t** return_signal_lists = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
+    signal_list_t* right_inputs = NULL;
+    signal_list_t* right_outputs = NULL;
+
+
+    if (!is_valid_implicit_memory_reference_ast(instance_name_prefix, right))
+        error_message(NETLIST, loc,
+                        "Invalid addressing mode for implicit memory %s.\n", right_memory->name);
+
+    signal_list_t* address = netlist_expand_ast_of_module(&(right->children[0]), instance_name_prefix, local_ref, assignment_size);
+    // Pad/shrink the address to the depth of the memory.
+
+    if (address->count == 0) {
+        warning_message(NETLIST, loc,
+                        "indexing into memory with %s has address of length 0, skipping memory read", instance_name_prefix);
+    } else {
+        if (address->count != right_memory->addr_width) {
+            if (address->count > right_memory->addr_width) {
+                std::string unused_pins_name = "";
+                for (long i = right_memory->addr_width; i < address->count; i++) {
+                    if (address->pins && address->pins[i] && address->pins[i]->name)
+                        unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+                }
+                warning_message(NETLIST, loc,
+                                "indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+            } else {
+                warning_message(NETLIST, loc,
+                                "indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+            }
+
+            while (address->count < right_memory->addr_width)
+                add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
+
+            address->count = right_memory->addr_width;
+        }
+
+        int input_pin_index = 0;
+        int output_pin_index = 0;
+        char* address_port = NULL;
+        char* output_port = NULL;
+
+        ast_node_t* right_memory_ast_node = right_memory->node->related_ast_node;
+
+        bool first_address_is_connected = is_signal_list_connected_to_memory(right_memory, address, "addr1");
+        bool second_address_is_connected = is_signal_list_connected_to_memory(right_memory, address, "addr2");
+        bool memory_is_single_port = !strcmp(right_memory_ast_node->identifier_node->types.identifier, SINGLE_PORT_RAM_string);
+
+        if (memory_is_single_port && !first_address_is_connected) {
+            if (right_memory->node->input_pins) {
+                address_port = right_memory->node->input_pins[0]->mapping;
+
+                if (address_port && !strcmp(address_port, "addr1")) {
+                    // changing to a dual-port ram, since the first port is already connected
+                    ast_node_t* identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), loc);
+
+                    // free the default identifier node (spram)
+                    if (right_memory_ast_node->identifier_node) {
+                        free_single_node(right_memory_ast_node->identifier_node);
+                    }
+
+                    right_memory_ast_node->identifier_node = identifier_node;
+
+                    input_pin_index = right_memory->data_width + right_memory->data_width + right_memory->addr_width + 2;
+                    output_pin_index = right_memory->data_width;
+
+                    // first address port is already been used, so that the second port should use for the next address port
+                    address_port = vtr::strdup("addr2");
+                    output_port = vtr::strdup("out2");
+                }
+
+            } else {
+                address_port = vtr::strdup("addr1");
+                output_port = vtr::strdup("out1");
+            }
+
+            add_input_port_to_implicit_memory(right_memory, address, address_port);
+
+        } else if (!memory_is_single_port && second_address_is_connected) {
+            input_pin_index = right_memory->data_width + right_memory->data_width + right_memory->addr_width + 2;
+            output_pin_index = right_memory->data_width;
+
+            address_port = vtr::strdup("addr2");
+            output_port = vtr::strdup("out2");
+
+        } else if (first_address_is_connected) {
+            address_port = vtr::strdup("addr1");
+            output_port = vtr::strdup("out1");
+        }
+
+        // Right inputs are the inputs to the memory. This will contain the address only.
+        right_inputs = init_signal_list();
+        char* name = right->identifier_node->types.identifier;
+
+        int i;
+        for (i = 0; i < address->count; i++) {
+            npin_t* pin = address->pins[i];
+            if (pin->name)
+                vtr::free(pin->name);
+            pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index + i);
+            add_pin_to_signal_list(right_inputs, pin);
+        }
+        free_signal_list(address);
+
+        // Right outputs will be the outputs of the memory. They will be
+        // treated the same as the outputs from the RHS of any assignment.
+        right_outputs = init_signal_list();
+        signal_list_t* outputs = init_signal_list();
+        for (i = output_pin_index; i < right_memory->data_width + output_pin_index; i++) {
+            npin_t* pin = allocate_npin();
+            add_pin_to_signal_list(outputs, pin);
+            pin->name = make_full_ref_name(right_memory->node->name, NULL, NULL, output_port, i - output_pin_index);
+            nnet_t* net = allocate_nnet();
+            net->name = vtr::strdup(pin->name);
+            add_driver_pin_to_net(net, pin);
+            pin = allocate_npin();
+            add_fanout_pin_to_net(net, pin);
+            //right_outputs->pins[i] = pin;
+            add_pin_to_signal_list(right_outputs, pin);
+        }
+        add_output_port_to_implicit_memory(right_memory, outputs, output_port);
+        free_signal_list(outputs);
+
+        vtr::free(address_port);
+        vtr::free(output_port);
+    }
+
+    return_signal_lists[0] = right_inputs;
+    return_signal_lists[1] = right_outputs;
+
+    return return_signal_lists;
+}
+
+signal_list_t* alias_memory_input_signals(ast_node_t* left, implicit_memory* left_memory, signal_list_t* data, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc) {
+    signal_list_t* in_1 = NULL;
+
+
+    if (!is_valid_implicit_memory_reference_ast(instance_name_prefix, left))
+        error_message(NETLIST, loc,
+                        "Invalid addressing mode for implicit memory %s.\n", left_memory->name);
+
+    // A memory can only be written from a clocked rising edge block.
+    if (type_of_circuit != SEQUENTIAL) {
+        error_message(NETLIST, loc, "%s",
+                        "Assignment to implicit memories is only supported within sequential circuits.\n");
+    } else {
+        // Make sure the memory is addressed.
+        signal_list_t* address = netlist_expand_ast_of_module(&(left->children[0]), instance_name_prefix, local_ref, assignment_size);
+
+        // Pad/shrink the address to the depth of the memory.
+        if (address->count == 0) {
+            warning_message(NETLIST, loc,
+                            "indexing into memory with %s has address of length 0, skipping memory write", instance_name_prefix);
+        } else {
+            if (address->count != left_memory->addr_width) {
+                if (address->count > left_memory->addr_width) {
+                    std::string unused_pins_name = "";
+                    for (long i = left_memory->addr_width; i < address->count; i++) {
+                        if (address->pins && address->pins[i] && address->pins[i]->name)
+                            unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
+                    }
+                    warning_message(NETLIST, loc,
+                                    "indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
+                } else {
+                    warning_message(NETLIST, loc,
+                                    "indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
+                }
+
+                while (address->count < left_memory->addr_width)
+                    add_pin_to_signal_list(address, get_zero_pin(verilog_netlist));
+
+                address->count = left_memory->addr_width;
+            }
+
+            int input_pin_index = 0;
+            char* address_port = NULL;
+            char* data_port = NULL;
+            char* we_port = NULL;
+
+            ast_node_t* left_memory_ast_node = left_memory->node->related_ast_node;
+
+            bool first_address_is_connected = is_signal_list_connected_to_memory(left_memory, address, "addr1");
+            bool second_address_is_connected = is_signal_list_connected_to_memory(left_memory, address, "addr2");
+            bool memory_is_single_port = !strcmp(left_memory_ast_node->identifier_node->types.identifier, SINGLE_PORT_RAM_string);
+
+            if (memory_is_single_port && !first_address_is_connected) {
+                if (left_memory->node->input_pins) {
+                    address_port = left_memory->node->input_pins[0]->mapping;
+
+                    if (address_port && !strcmp(address_port, "addr1")) {
+                        // changing to a dual-port ram, since the first port is already connected
+                        ast_node_t* identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), loc);
+
+                        // free the default identifier node (spram)
+                        if (left_memory_ast_node->identifier_node) {
+                            free_single_node(left_memory_ast_node->identifier_node);
+                        }
+
+                        left_memory_ast_node->identifier_node = identifier_node;
+
+                        input_pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
+
+                        // first address port is already been used, so that the second port should use for the next address port
+                        address_port = vtr::strdup("addr2");
+                        data_port = vtr::strdup("data2");
+                        we_port = vtr::strdup("we2");
+                    }
+
+                } else {
+                    address_port = vtr::strdup("addr1");
+                    data_port = vtr::strdup("data1");
+                    we_port = vtr::strdup("we1");
+                }
+
+                add_input_port_to_implicit_memory(left_memory, address, address_port);
+
+            } else if (!memory_is_single_port && second_address_is_connected) {
+                input_pin_index = left_memory->data_width + left_memory->data_width + left_memory->addr_width + 2;
+
+                // first address port is already been used, so that the second port should use for the next address port
+                address_port = vtr::strdup("addr2");
+                data_port = vtr::strdup("data2");
+                we_port = vtr::strdup("we2");
+
+            } else if (first_address_is_connected) {
+                address_port = vtr::strdup("addr1");
+                data_port = vtr::strdup("data1");
+                we_port = vtr::strdup("we1");
+            }
+
+            // Pad/shrink the data to the width of the memory.
+            if (data) {
+                while (data->count < left_memory->data_width)
+                    add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
+
+                data->count = left_memory->data_width;
+
+                add_input_port_to_implicit_memory(left_memory, data, data_port);
+
+                signal_list_t* we = init_signal_list();
+                add_pin_to_signal_list(we, get_one_pin(verilog_netlist));
+                add_input_port_to_implicit_memory(left_memory, we, we_port);
+
+                in_1 = init_signal_list();
+                char* name = left->identifier_node->types.identifier;
+
+                int i;
+                for (i = 0; i < address->count; i++) {
+                    npin_t* pin = address->pins[i];
+                    if (pin->name)
+                        vtr::free(pin->name);
+                    pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
+                    add_pin_to_signal_list(in_1, pin);
+                }
+                free_signal_list(address);
+
+                for (i = 0; i < data->count; i++) {
+                    npin_t* pin = data->pins[i];
+                    if (pin->name)
+                        vtr::free(pin->name);
+                    pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
+                    add_pin_to_signal_list(in_1, pin);
+                }
+                free_signal_list(data);
+
+                for (i = 0; i < we->count; i++) {
+                    npin_t* pin = we->pins[i];
+                    if (pin->name)
+                        vtr::free(pin->name);
+                    pin->name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, input_pin_index++);
+                    add_pin_to_signal_list(in_1, pin);
+                }
+                free_signal_list(we);
+            }
+
+            vtr::free(address_port);
+            vtr::free(data_port);
+            vtr::free(we_port);
+        }
+    }
+
+    return in_1;
 }
