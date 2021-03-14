@@ -222,11 +222,13 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     int j = node->num_output_pins;
 
     // Make sure the port is not already assigned.
+    // more complicated logic needs to be implementd this is temporary solution
     for (i = 0; i < j; i++) {
         npin_t* pin = node->output_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST, node->loc,
-                          "Attempted to reassign output port %s to node %s.", port_name, node->name);
+            // error_message(NETLIST, node->loc,
+            //               "Attempted to reassign output port %s to node %s.", port_name, node->name);
+            return;
         }
     }
 
