@@ -516,6 +516,7 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                         return_sig_list = memory_signal_lists[1];
                         
                         free_signal_list(memory_signal_lists[0]);
+                        vtr::free(memory_signal_lists);
                         skip_children = true;
 
                     } else {
@@ -2831,6 +2832,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
         right_inputs = right_memory_signals[0];
         right_outputs = right_memory_signals[1];
 
+        vtr::free(right_memory_signals);
     } else {
         in_1 = netlist_expand_ast_of_module(&(assignment->children[1]), instance_name_prefix, local_ref, assignment_size);
         oassert(in_1 != NULL);
