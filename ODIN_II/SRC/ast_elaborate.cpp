@@ -1793,9 +1793,10 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
             case NON_BLOCKING_STATEMENT: {
                 /* try to resolve */
                 if (node->children[1]->type != FUNCTION_INSTANCE) {
-                    node->children[0] = reduce_expressions(node->children[0], local_ref, NULL, 0);
-
+                    
                     assignment_size = get_size_of_variable(node->children[0], local_ref);
+                    node->children[0] = reduce_expressions(node->children[0], local_ref, &assignment_size, 0);
+
                     max_size = (long*)calloc(1, sizeof(long));
 
                     if (node->children[1]->type != NUMBERS) {
@@ -1998,23 +1999,40 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                 ast_node_t* new_node = fold_binary(&node);
                 if (node_is_constant(new_node)) {
                     /* resize as needed */
+
+                    // /* resize as needed */
+                    // long new_size;
+                    // long this_size = new_node->types.vnumber->size();
+
+                    // if (assignment_size > 0) {
+                    //     new_size = assignment_size;
+                    // } else if (max_size) {
+                    //     new_size = *max_size;
+                    // } else {
+                    //     new_size = this_size;
+                    // }
+
+                    bool is_negative = new_node->types.vnumber->is_negative();
                     long new_size;
                     long this_size = (long)new_node->types.vnumber->get_value();
 
-                    if (this_size > 0){
-                        new_size = this_size;    
-                    } else if (assignment_size > 0) {
+                    if (is_negative && assignment_size > 0) {
                         new_size = assignment_size;
-                    } else if (max_size) {
-                        new_size = *max_size;
                     } else {
-                        new_size = new_node->types.vnumber->size();
+                        new_size = this_size;
+                    }
+
+                    if (new_size > *max_size || new_size < 0) {
+                        if (new_size < assignment_size)
+                            new_size = *max_size;
+                        else
+                            new_size = assignment_size;
                     }
 
                     /* clean up */
                     free_resolved_children(node);
 
-                    change_to_number_node(node, VNumber(*(new_node->types.vnumber)));
+                    change_to_number_node(node, VNumber(*(new_node->types.vnumber), new_size));
                 }
                 new_node = free_whole_tree(new_node);
                 break;
@@ -2029,15 +2047,21 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                 ast_node_t* new_node = fold_unary(&node);
                 if (node_is_constant(new_node)) {
                     /* resize as needed */
+                    bool is_negative = new_node->types.vnumber->is_negative();
                     long new_size;
-                    long this_size = new_node->types.vnumber->size();
+                    long this_size = (long)new_node->types.vnumber->get_value();
 
-                    if (assignment_size > 0) {
+                    if (is_negative && assignment_size > 0) {
                         new_size = assignment_size;
-                    } else if (max_size) {
-                        new_size = *max_size;
                     } else {
                         new_size = this_size;
+                    }
+
+                    if (new_size > *max_size || new_size < 0) {
+                        if (new_size < assignment_size)
+                            new_size = *max_size;
+                        else
+                            new_size = assignment_size;
                     }
 
                     /* clean up */

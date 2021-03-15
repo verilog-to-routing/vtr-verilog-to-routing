@@ -756,7 +756,7 @@ class VNumber {
 
         size_t end = this->size();
         if (end > integer_t_size) {
-            printf(" === Warning: Returning a 64 bit integer from a larger bitstring (%zu). The bitstring will be truncated\n", bit_size);
+            printf(" === Warning: Returning a 64 bit integer from a larger bitstring (%zu). The bitstring will be truncated\n", end);
             end = bit_size;
         }
 

@@ -138,6 +138,7 @@ signal_list_t* alias_array_output_signals(ast_node_t* node, char* instance_name_
 signal_list_t* alias_array_input_signals(ast_node_t* node, signal_list_t* data, char* instance_name_prefix, long assignment_size);
 signal_list_t** alias_memory_address_and_output_signals(ast_node_t* right, implicit_memory* right_memory, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc);
 signal_list_t* alias_memory_input_signals(ast_node_t* left, implicit_memory* left_memory, signal_list_t* data, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc);
+signal_list_t* create_pins_for_reg_array_with_not_constant_reference(ast_node_t* node, ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref);
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_netlist)
@@ -505,24 +506,31 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                     }
 
                     ast_node_t* local_symbol = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
-                    if (local_symbol && local_symbol->types.variable.is_array) {
-                        return_sig_list = alias_array_output_signals(node, instance_name_prefix, local_ref, assignment_size);
-                        skip_children = true;
+                    if (local_symbol) {
 
-                    } else if (local_symbol && local_symbol->types.variable.is_memory) {
-                        implicit_memory* memory = lookup_implicit_memory_reference_ast(instance_name_prefix, node);
-                        signal_list_t** memory_signal_lists = alias_memory_address_and_output_signals(node, memory, instance_name_prefix, local_ref, assignment_size, node->loc);
+                        if (local_symbol->types.variable.is_array) {
+                            if (local_symbol->types.variable.is_reg) {
+                                return_sig_list = create_pins_for_reg_array_with_not_constant_reference(node, local_symbol, instance_name_prefix, local_ref); //TODO
 
-                        return_sig_list = memory_signal_lists[1];
-                        
-                        free_signal_list(memory_signal_lists[0]);
-                        vtr::free(memory_signal_lists);
-                        skip_children = true;
+                            } else if (local_symbol->types.variable.is_wire) {
+                                return_sig_list = create_pins(node, NULL, instance_name_prefix, local_ref);
+                            }
 
+                        } else if (local_symbol->types.variable.is_memory) {
+                            implicit_memory* memory = lookup_implicit_memory_reference_ast(instance_name_prefix, node);
+                            signal_list_t** memory_signal_lists = alias_memory_address_and_output_signals(node, memory, instance_name_prefix, local_ref, assignment_size, node->loc);
+
+                            return_sig_list = memory_signal_lists[1];
+                            
+                            free_signal_list(memory_signal_lists[0]);
+                            vtr::free(memory_signal_lists);
+                            skip_children = true;
+                        }
                     } else {
                         return_sig_list = create_pins(node, NULL, instance_name_prefix, local_ref);
                     }
                 }
+
                 break;
             }
             case IDENTIFIERS:
@@ -1118,24 +1126,33 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
 
         if (data_min != 0)
             error_message(NETLIST, var_declare->loc,
-                          "%s: right memory/array index must be zero\n", name);
+                          "%s: right array/memory index must be zero\n", name);
 
         oassert(data_min <= data_max);
 
         if (addr_min != 0)
             error_message(NETLIST, var_declare->loc,
-                          "%s: right memory/array address index must be zero\n", name);
+                          "%s: right array/memory address index must be zero\n", name);
 
         oassert(addr_min <= addr_max);
 
         long data_width = data_max - data_min + 1;
         long address_width = addr_max - addr_min + 1;
 
+        if (var_declare->types.variable.is_reg) {
+            if (address_width < 7) {
+                // this won't be inferred as implicit memory since the number of regs is less than the threshold
+                // it will infer as an array of registers
+                var_declare->types.variable.is_memory = false;
+                var_declare->types.variable.is_array = true;    
+            }
+        }
+
         if (var_declare->types.variable.is_memory) {
             // the declared variable is memory (reg)
             create_implicit_memory_block(data_width, address_width, name, instance_name_prefix, var_declare->loc);
         } else if (var_declare->types.variable.is_array) {
-            // the declared variable is array (wire)
+            // the declared variable is array (wire/reg)
             create_array_nets(data_width, address_width, name, instance_name_prefix, var_declare->loc);
         }
     }
@@ -2801,18 +2818,18 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
     ast_node_t* left = assignment->children[0];
     ast_node_t* right = assignment->children[1];
 
-    nnet_t* left_array = NULL;
-    nnet_t* right_array = NULL;
+    // nnet_t* left_array = NULL;
+    // nnet_t* right_array = NULL;
 
     implicit_memory* left_memory = lookup_implicit_memory_reference_ast(instance_name_prefix, left);
     implicit_memory* right_memory = lookup_implicit_memory_reference_ast(instance_name_prefix, right);
     
-    if (!left_memory) {
-        left_array = lookup_explicit_array_reference(instance_name_prefix, left, local_ref, 0);
-    }
-    if (!right_memory) {
-        right_array = lookup_explicit_array_reference(instance_name_prefix, right, local_ref, 0);
-    }
+    // if (!left_memory) {
+    //     left_array = lookup_explicit_array_reference(instance_name_prefix, left, local_ref, 0);
+    // }
+    // if (!right_memory) {
+    //     right_array = lookup_explicit_array_reference(instance_name_prefix, right, local_ref, 0);
+    // }
 
     signal_list_t* in_1 = NULL;
 
@@ -2820,11 +2837,11 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
     signal_list_t* right_inputs = NULL;
 
     /* process the signal for the input gate */
-    if (right_array) {
+    /* if (right_array) {
         // the output signals of the RHS array will be resolved
         right_outputs = alias_array_output_signals(right, instance_name_prefix, local_ref, assignment_size);
 
-    } else if (right_memory) {
+    } else */ if (right_memory) {
         
         signal_list_t** right_memory_signals;
         right_memory_signals = alias_memory_address_and_output_signals(right, right_memory, instance_name_prefix, local_ref, assignment_size, assignment->loc);
@@ -2841,7 +2858,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
 
     char_list_t* out_list = NULL;
 
-    if (left_array) {
+    /* if (left_array) {
         // specify the output data drom RHS
         signal_list_t* data;
         if (right_memory || right_array)
@@ -2853,17 +2870,17 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
         while (data->count < assignment_size)
             add_pin_to_signal_list(data, get_zero_pin(verilog_netlist));
 
-        /* 
+        
          * create a signal list to add new pins. they will be alias of
          * the input signals of the LHS array which will be driven by 
          * RHS output. 
-         */
+         
         in_1 = alias_array_input_signals(left, data, instance_name_prefix, assignment_size);
         free_signal_list(data);
 
         // out_list = NULL;
 
-    } else if (left_memory) {
+    } else */ if (left_memory) {
 
         signal_list_t* data;
         if (right_memory)
@@ -2882,7 +2899,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
     signal_list_t* return_list;
     return_list = init_signal_list();
 
-    if (!right_memory && !left_memory && !left_array && !right_array) {
+    if (!right_memory && !left_memory /* && !left_array && !right_array */) {
         int output_size = alias_output_assign_pins_to_inputs(out_list, in_1, assignment);
 
         if (in_1 && output_size < in_1->count) {
@@ -2910,7 +2927,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
         vtr::free(out_list->strings);
         vtr::free(out_list);
     } else {
-        if (right_memory || right_array) {
+        if (right_memory /* || right_array */) {
             // Register inputs for later assignment directly to the memory.
             if (right_memory)
                 oassert(right_inputs);
@@ -2922,7 +2939,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             free_signal_list(right_inputs);
 
             // Alias the outputs like a regular assignment if the thing on the left isn't a memory.
-            if (!left_memory && !left_array) {
+            if (!left_memory /* && !left_array */) {
                 int output_size = alias_output_assign_pins_to_inputs(out_list, right_outputs, assignment);
                 for (i = 0; i < output_size; i++) {
                     add_pin_to_signal_list(return_list, right_outputs->pins[i]);
@@ -2933,7 +2950,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             }
         }
 
-        if (left_memory || left_array) {
+        if (left_memory /* || left_array */) {
             // Index all inputs to the left memory for implicit memory direct assignment.
             oassert(in_1);
             int i;
@@ -5394,7 +5411,7 @@ nnet_t* lookup_explicit_array_reference(char* instance_name_prefix, ast_node_t* 
 
             if ((sc_spot = sc_lookup_string(output_nets_sc, output_net)) == -1) {
                 /*
-                * [WARNING]: array (%s) width is less than assignment size. Will be padding with GND. 
+                * [WARNING]: The array width is less than assignment size. Will be padding with GND. 
                 * This has not been notified to user due to recurring call of this function which cause
                 * too many warning mesagges.
                 */
@@ -5759,4 +5776,137 @@ signal_list_t* alias_memory_input_signals(ast_node_t* left, implicit_memory* lef
     }
 
     return in_1;
+}
+
+signal_list_t* create_pins_for_reg_array_with_not_constant_reference(ast_node_t* node, ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref) {
+    long i, j, k, z;
+    signal_list_t* return_sig_list = init_signal_list();
+
+    ast_node_t* node_max1 = var_declare->children[0];
+    ast_node_t* node_min1 = var_declare->children[1];
+
+    oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
+    long data_min = node_min1->types.vnumber->get_value();
+    long data_max = node_max1->types.vnumber->get_value();
+
+    ast_node_t* node_max2 = var_declare->children[2];
+    ast_node_t* node_min2 = var_declare->children[3];
+
+    oassert(node_min2->type == NUMBERS && node_max2->type == NUMBERS);
+    long addr_min = node_min2->types.vnumber->get_value();
+    long addr_max = node_max2->types.vnumber->get_value();
+
+    oassert(data_min <= data_max);
+    oassert(addr_min <= addr_max);
+
+    long data_width = data_max - data_min + 1;
+    long array_size = addr_max - addr_min + 1;
+
+    for (i = 0; i < array_size; i++) {
+        char* indexed_net_name = make_full_ref_name(NULL, NULL, NULL, node->identifier_node->types.identifier, i);
+        for (j = 0; j < data_width; j++) {
+            char* output_net = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_net_name, j);
+            // [0]: reference index signals
+            // [1]: reggister output signals
+            // [2]: GND signals
+            signal_list_t** mux_expression_list = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
+
+            signal_list_t* mux_selector = netlist_expand_ast_of_module(&(node->children[0]), instance_name_prefix, local_ref, 0);
+            mux_expression_list[0] = create_pins(NULL, output_net, instance_name_prefix, local_ref);
+
+            mux_expression_list[1] = init_signal_list();
+            for (k = 0; k < mux_expression_list[0]->count; k++) {
+                add_pin_to_signal_list(mux_expression_list[1], get_zero_pin(verilog_netlist));
+            }
+            //create mux node for each register
+            nnode_t* mux_node;
+
+            /* create the node */
+            mux_node = allocate_nnode(node->loc);
+            /* store all the relevant info */
+            mux_node->related_ast_node = node;
+            mux_node->type = MULTI_PORT_MUX; // port 1 = control, port 2+ = mux options
+            mux_node->name = node_name(mux_node, instance_name_prefix);
+
+            /* record the port information */
+            add_input_port_information(mux_node, 1);
+            /* allocate a port the width of selector signal ... one MUX */
+            allocate_more_input_pins(mux_node, mux_selector->count);
+            /* record the port information */
+            add_input_port_information(mux_node, 1);
+            /* allocate a port the width of selector signal ... one MUX */
+            allocate_more_input_pins(mux_node, mux_expression_list[0]->count);
+            /* record the port information */
+            add_input_port_information(mux_node, 1);
+            /* allocate a port the width of selector signal ... one MUX */
+            allocate_more_input_pins(mux_node, mux_expression_list[1]->count);
+
+            // connect selector signals to mux node input pins. as the first port
+            for (k = 0; k < mux_selector->count; k++) {
+                add_input_pin_to_node(mux_node, mux_selector->pins[k], k);
+            }
+
+            int max_index = -1;
+
+            /* find the biggest element */
+            for (k = 0; k < 2; k++) {
+                if (max_index < mux_expression_list[k]->count) {
+                    max_index = mux_expression_list[k]->count;
+                }
+            }
+
+
+            for (k = 0; k < max_index; k++) {
+
+                npin_t* new_pin1;
+                npin_t* new_pin2;
+                nnet_t* new_net;
+                new_pin1 = allocate_npin();
+                new_pin2 = allocate_npin();
+                new_net = allocate_nnet();
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, mux_node->name, i);
+                
+                /* allocate the pins for the ouput port and pass out that pin for higher statements */
+                allocate_more_output_pins(mux_node, 1);
+                add_output_pin_to_node(mux_node, new_pin1, k);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
+                /* name it with this name */
+                new_pin2->name = NULL;
+                /* add this pin to the return list */
+                add_pin_to_signal_list(return_sig_list, new_pin2);
+
+
+                /* going through each of the statement lists looking for common ones and building implied ones if they're not there */
+                for (z = 0; z < 2; z++) {
+                    int pin_index = mux_selector->count + (z * mux_expression_list[z]->count) + k;
+
+                    /* check if the current element for this case statement is defined */
+                    if (k < mux_expression_list[z]->count) {
+                        /* If there is a signal */
+                        add_input_pin_to_node(mux_node, mux_expression_list[z]->pins[k], pin_index);
+
+                    } else {
+                        /* Don't match, so this signal is an IMPLIED SIGNAL !!! */
+                        /* implied signal for mux */
+                        /* DON'T CARE - so hookup zero */
+                        add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
+                    }
+                }
+            }
+
+            // signal_list_t* mux_output_pins = NULL;
+            // mux_output_pins = create_mux_expressions(mux_expression_list, mux_node, 2, instance_name_prefix);
+
+            // for (k = 0; k < mux_output_pins->count; k++) {
+            //     add_pin_to_signal_list(return_sig_list, mux_output_pins->pins[k]);
+            // }
+            // free_signal_list(mux_output_pins);
+            vtr::free(mux_expression_list);
+        }        
+    }
+
+    return return_sig_list;
 }
