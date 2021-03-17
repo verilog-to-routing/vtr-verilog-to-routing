@@ -1,7 +1,7 @@
 #include "region.h"
 
 /// @brief sentinel value for indicating that a subtile has not been specified
-constexpr int NO_SUBTILE = 0;
+constexpr int NO_SUBTILE = -1;
 
 Region::Region() {
     sub_tile = NO_SUBTILE;
@@ -46,9 +46,16 @@ bool Region::is_loc_in_reg(t_pl_loc loc) {
 
     vtr::Point<int> loc_coord(loc.x, loc.y);
 
+    //check that loc x and y coordinates are within region bounds
     bool in_rectangle = region_bounds.coincident(loc_coord);
 
+    //if a subtile is specified for the region, the location subtile should match
     if (in_rectangle && sub_tile == loc.sub_tile) {
+        is_loc_in_reg = true;
+    }
+
+    //if no subtile is specified for the region, it is enough for the location to be in the rectangle
+    if (in_rectangle && sub_tile == NO_SUBTILE) {
         is_loc_in_reg = true;
     }
 
