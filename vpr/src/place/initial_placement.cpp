@@ -244,7 +244,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
              */
             if (place_ctx.block_locs[blk_id].loc.x != -1) {
                 //put VTR assert
-            	placed = true;
+                placed = true;
                 continue;
             }
 
