@@ -126,6 +126,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
      */
     printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
     create_netlist(verilog_ast);
+    printf("Implcit Memory Inferrence Threshold: %ld\n", configuration.implicit_memory_threshold);
     if (verilog_netlist) {
         // Can't levelize yet since the large muxes can look like combinational loops when they're not
         check_netlist(verilog_netlist);
@@ -441,6 +442,11 @@ void get_options(int argc, char** argv) {
         .default_value("N/A")
         .metavar("N/A");
 
+    other_grp.add_argument(global_args.implicit_memory_threshold, "--implicit_memory_threshold")
+        .help("Specify the threshold for inferring implicit memory")
+        .default_value("128")
+        .metavar("IMPLICIT_MEMORY_THRESHOLD");
+
     other_grp.add_argument(global_args.adder_cin_global, "--adder_cin_global")
         .help("Defines if the first cin of an adder/subtractor is connected to a global gnd/vdd instead of a dummy adder generating a gnd/vdd.")
         .default_value("false")
@@ -607,6 +613,28 @@ void get_options(int argc, char** argv) {
         configuration.adder_cin_global = global_args.adder_cin_global;
     }
 
+    if (global_args.implicit_memory_threshold.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.implicit_memory_threshold = global_args.implicit_memory_threshold;
+        //find closest power of 2 from memory depth.
+        long width = 0;
+        long real_threshold = 1;
+        while (real_threshold < configuration.implicit_memory_threshold) {
+            width += 1;
+            if (real_threshold < 0)
+                printf("requesting a shift left that is negative [%ld]\n", width);
+            else if (width >= (long)ODIN_STD_BITWIDTH - 1)
+                printf("requesting a shift left of size %ld that will overflow the maximum size of %ld\n", width, ODIN_STD_BITWIDTH - 1);
+
+            real_threshold = real_threshold << 1;
+        }
+
+        //verify if it is a power of two (only one bit set)
+        if ((configuration.implicit_memory_threshold != real_threshold)) {
+            printf("Rounding Implicit Memory Threshold of size <%ld> to closest power of two: %ld.\n", configuration.implicit_memory_threshold, real_threshold);
+            configuration.implicit_memory_threshold = real_threshold;
+        }
+    }
+
     if (global_args.print_parse_tokens.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.print_parse_tokens = global_args.print_parse_tokens;
     }
@@ -651,6 +679,7 @@ void set_default_config() {
     configuration.split_memory_depth = 0;
 
     configuration.adder_cin_global = false;
+    configuration.implicit_memory_threshold = 128;
 
     /*
      * Soft logic cutoffs. If a memory or a memory resulting from a split

@@ -105,6 +105,8 @@ struct global_args_t {
     // or generated using a dummy adder with both inputs set to gnd/vdd
     argparse::ArgValue<bool> adder_cin_global;
 
+    argparse::ArgValue<long> implicit_memory_threshold;
+    
     /////////////////////
     // For simulation.
     /////////////////////

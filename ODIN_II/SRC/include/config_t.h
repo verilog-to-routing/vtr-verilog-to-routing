@@ -47,6 +47,8 @@ struct config_t {
     int soft_logic_memory_width_threshold;
 
     std::string arch_file; // Name of the FPGA architecture file
+
+    long implicit_memory_threshold;
 };
 
 extern config_t configuration;

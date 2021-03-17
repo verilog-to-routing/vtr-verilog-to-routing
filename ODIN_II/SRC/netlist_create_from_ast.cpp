@@ -1147,7 +1147,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         long address_width = addr_max - addr_min + 1;
 
         if (var_declare->types.variable.is_reg) {
-            if (address_width < shift_left_value_with_overflow_check(0x1, 7, var_declare->loc)) {
+            if (address_width < configuration.implicit_memory_threshold) {
                 // this won't be inferred as implicit memory since the number of regs is less than the threshold
                 // it will infer as an array of registers
                 var_declare->types.variable.is_memory = false;
