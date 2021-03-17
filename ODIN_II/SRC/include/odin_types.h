@@ -204,6 +204,7 @@ enum init_value_e {
 enum operation_list {
     NO_OP,
     MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
+    MULTI_PORT_SINGLE_BIT_MUX, // port 1 = control, port 2+ = mux options
     FF_NODE,
     BUF_NODE,
     INPUT_NODE,

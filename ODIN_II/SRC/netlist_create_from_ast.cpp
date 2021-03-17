@@ -139,6 +139,7 @@ signal_list_t* alias_array_input_signals(ast_node_t* node, signal_list_t* data, 
 signal_list_t** alias_memory_address_and_output_signals(ast_node_t* right, implicit_memory* right_memory, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc);
 signal_list_t* alias_memory_input_signals(ast_node_t* left, implicit_memory* left_memory, signal_list_t* data, char* instance_name_prefix, sc_hierarchy* local_ref, long assignment_size, loc_t loc);
 signal_list_t* create_pins_for_reg_array_with_not_constant_reference(ast_node_t* node, ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref);
+signal_list_t* create_pins_for_reg_array_with_constant_reference(ast_node_t* node, ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref);
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_netlist)
@@ -510,7 +511,10 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
 
                         if (local_symbol->types.variable.is_array) {
                             if (local_symbol->types.variable.is_reg) {
-                                return_sig_list = create_pins_for_reg_array_with_not_constant_reference(node, local_symbol, instance_name_prefix, local_ref); //TODO
+                                if (node->children[0]->type == NUMBERS)
+                                    return_sig_list = create_pins_for_reg_array_with_constant_reference(node, local_symbol, instance_name_prefix, local_ref); //TODO
+                                else
+                                    return_sig_list = create_pins_for_reg_array_with_not_constant_reference(node, local_symbol, instance_name_prefix, local_ref); //TODO
 
                             } else if (local_symbol->types.variable.is_wire) {
                                 return_sig_list = create_pins(node, NULL, instance_name_prefix, local_ref);
@@ -525,6 +529,9 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                             free_signal_list(memory_signal_lists[0]);
                             vtr::free(memory_signal_lists);
                             skip_children = true;
+                        }
+                        else {
+                            return_sig_list = create_pins(node, NULL, instance_name_prefix, local_ref);
                         }
                     } else {
                         return_sig_list = create_pins(node, NULL, instance_name_prefix, local_ref);
@@ -1140,7 +1147,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         long address_width = addr_max - addr_min + 1;
 
         if (var_declare->types.variable.is_reg) {
-            if (address_width < 7) {
+            if (address_width < shift_left_value_with_overflow_check(0x1, 7, var_declare->loc)) {
                 // this won't be inferred as implicit memory since the number of regs is less than the threshold
                 // it will infer as an array of registers
                 var_declare->types.variable.is_memory = false;
@@ -2892,6 +2899,8 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
 
         // out_list = NULL;
         
+    } else if (left->type == ARRAY_REF) {
+        out_list = get_name_of_array_pins_with_prefix(left, instance_name_prefix, local_ref);
     } else {
         out_list = get_name_of_pins_with_prefix(left, instance_name_prefix, local_ref);
     }
@@ -2924,7 +2933,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             // }
         }
 
-        vtr::free(out_list->strings);
+        //vtr::free(out_list->strings);
         vtr::free(out_list);
     } else {
         if (right_memory /* || right_array */) {
@@ -5779,7 +5788,7 @@ signal_list_t* alias_memory_input_signals(ast_node_t* left, implicit_memory* lef
 }
 
 signal_list_t* create_pins_for_reg_array_with_not_constant_reference(ast_node_t* node, ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref) {
-    long i, j, k, z;
+    long i, j;
     signal_list_t* return_sig_list = init_signal_list();
 
     ast_node_t* node_max1 = var_declare->children[0];
@@ -5800,113 +5809,147 @@ signal_list_t* create_pins_for_reg_array_with_not_constant_reference(ast_node_t*
     oassert(addr_min <= addr_max);
 
     long data_width = data_max - data_min + 1;
-    long array_size = addr_max - addr_min + 1;
+    long original_array_size = addr_max - addr_min + 1;
 
-    for (i = 0; i < array_size; i++) {
+    //find closest power of 2 from memory depth.
+    long addr_width = 0;
+    long real_array_depth = 1;
+    long array_size = 0;
+    while (real_array_depth < original_array_size) {
+        addr_width += 1;
+        real_array_depth = shift_left_value_with_overflow_check(real_array_depth, 0x1, node->loc);
+    }
+
+    array_size = real_array_depth;
+    
+    signal_list_t* mux_selector = netlist_expand_ast_of_module(&(node->children[0]), instance_name_prefix, local_ref, 0);
+
+    if (mux_selector->count > addr_width) {
+        while (mux_selector->count > addr_width) {
+            free_npin(mux_selector->pins[mux_selector->count - 1]);
+            mux_selector->pins[mux_selector->count - 1] = NULL;
+            mux_selector->count -= 1;
+        }
+    }
+
+    int selector_depth = shift_left_value_with_overflow_check(0x1, mux_selector->count, node->loc);
+    int num_expressions = (array_size > selector_depth) ? selector_depth : array_size;
+    signal_list_t** mux_expressions = (signal_list_t**)vtr::calloc(num_expressions, sizeof(signal_list_t*));
+
+    for (i = 0; i < num_expressions; i++) {
+        mux_expressions[i] = (signal_list_t*)vtr::calloc(data_width, sizeof(signal_list_t));
+
+        if (i > original_array_size) {
+            for (j = 0; j < data_width; j++) {
+                add_pin_to_signal_list(mux_expressions[i], get_zero_pin(verilog_netlist));
+            }
+            continue;
+        }
+
         char* indexed_net_name = make_full_ref_name(NULL, NULL, NULL, node->identifier_node->types.identifier, i);
         for (j = 0; j < data_width; j++) {
             char* output_net = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_net_name, j);
-            // [0]: reference index signals
-            // [1]: reggister output signals
-            // [2]: GND signals
-            signal_list_t** mux_expression_list = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
 
-            signal_list_t* mux_selector = netlist_expand_ast_of_module(&(node->children[0]), instance_name_prefix, local_ref, 0);
-            mux_expression_list[0] = create_pins(NULL, output_net, instance_name_prefix, local_ref);
+            signal_list_t* pin_of_register;
+            pin_of_register = create_pins(NULL, output_net, instance_name_prefix, local_ref);
 
-            mux_expression_list[1] = init_signal_list();
-            for (k = 0; k < mux_expression_list[0]->count; k++) {
-                add_pin_to_signal_list(mux_expression_list[1], get_zero_pin(verilog_netlist));
-            }
-            //create mux node for each register
-            nnode_t* mux_node;
-
-            /* create the node */
-            mux_node = allocate_nnode(node->loc);
-            /* store all the relevant info */
-            mux_node->related_ast_node = node;
-            mux_node->type = MULTI_PORT_MUX; // port 1 = control, port 2+ = mux options
-            mux_node->name = node_name(mux_node, instance_name_prefix);
-
-            /* record the port information */
-            add_input_port_information(mux_node, 1);
-            /* allocate a port the width of selector signal ... one MUX */
-            allocate_more_input_pins(mux_node, mux_selector->count);
-            /* record the port information */
-            add_input_port_information(mux_node, 1);
-            /* allocate a port the width of selector signal ... one MUX */
-            allocate_more_input_pins(mux_node, mux_expression_list[0]->count);
-            /* record the port information */
-            add_input_port_information(mux_node, 1);
-            /* allocate a port the width of selector signal ... one MUX */
-            allocate_more_input_pins(mux_node, mux_expression_list[1]->count);
-
-            // connect selector signals to mux node input pins. as the first port
-            for (k = 0; k < mux_selector->count; k++) {
-                add_input_pin_to_node(mux_node, mux_selector->pins[k], k);
-            }
-
-            int max_index = -1;
-
-            /* find the biggest element */
-            for (k = 0; k < 2; k++) {
-                if (max_index < mux_expression_list[k]->count) {
-                    max_index = mux_expression_list[k]->count;
-                }
-            }
-
-
-            for (k = 0; k < max_index; k++) {
-
-                npin_t* new_pin1;
-                npin_t* new_pin2;
-                nnet_t* new_net;
-                new_pin1 = allocate_npin();
-                new_pin2 = allocate_npin();
-                new_net = allocate_nnet();
-                new_net->name = make_full_ref_name(NULL, NULL, NULL, mux_node->name, i);
-                
-                /* allocate the pins for the ouput port and pass out that pin for higher statements */
-                allocate_more_output_pins(mux_node, 1);
-                add_output_pin_to_node(mux_node, new_pin1, k);
-                /* hook up new pin 1 into the new net */
-                add_driver_pin_to_net(new_net, new_pin1);
-                /* hook up the new pin 2 to this new net */
-                add_fanout_pin_to_net(new_net, new_pin2);
-                /* name it with this name */
-                new_pin2->name = NULL;
-                /* add this pin to the return list */
-                add_pin_to_signal_list(return_sig_list, new_pin2);
-
-
-                /* going through each of the statement lists looking for common ones and building implied ones if they're not there */
-                for (z = 0; z < 2; z++) {
-                    int pin_index = mux_selector->count + (z * mux_expression_list[z]->count) + k;
-
-                    /* check if the current element for this case statement is defined */
-                    if (k < mux_expression_list[z]->count) {
-                        /* If there is a signal */
-                        add_input_pin_to_node(mux_node, mux_expression_list[z]->pins[k], pin_index);
-
-                    } else {
-                        /* Don't match, so this signal is an IMPLIED SIGNAL !!! */
-                        /* implied signal for mux */
-                        /* DON'T CARE - so hookup zero */
-                        add_input_pin_to_node(mux_node, get_zero_pin(verilog_netlist), pin_index);
-                    }
-                }
-            }
-
-            // signal_list_t* mux_output_pins = NULL;
-            // mux_output_pins = create_mux_expressions(mux_expression_list, mux_node, 2, instance_name_prefix);
-
-            // for (k = 0; k < mux_output_pins->count; k++) {
-            //     add_pin_to_signal_list(return_sig_list, mux_output_pins->pins[k]);
-            // }
-            // free_signal_list(mux_output_pins);
-            vtr::free(mux_expression_list);
+            oassert(pin_of_register->count == 1);
+            add_pin_to_signal_list(mux_expressions[i], pin_of_register->pins[0]);
         }        
     }
+
+    //create mux node for each register
+    nnode_t** muxes = (nnode_t**)vtr::calloc(data_width, sizeof(nnode_t*));
+    for (i = 0; i < data_width; i++) {
+        muxes[i] = allocate_nnode(node->loc);
+
+        /* store all the relevant info */
+        muxes[i]->related_ast_node = node;
+        muxes[i]->type = MULTI_PORT_SINGLE_BIT_MUX; // port 1 = control, port 2+ = mux options
+        muxes[i]->name = node_name(muxes[i], instance_name_prefix);
+
+        // connect selector to each mux
+        /* record the port information */
+        add_input_port_information(muxes[i], mux_selector->count);
+        /* allocate a port the width of selector signal ... one MUX */
+        allocate_more_input_pins(muxes[i], mux_selector->count);
+
+        // connect selector signals to mux node input pins. as the first port
+        for (j = 0; j < mux_selector->count; j++) {
+            if (i == 0)
+                add_input_pin_to_node(muxes[i], mux_selector->pins[j], j);
+            else
+                add_input_pin_to_node(muxes[i], copy_input_npin(muxes[0]->input_pins[j]), j);
+            
+        }
+        //connect expressions pins to mux
+        for (j = 0; j < num_expressions; j++) {
+            /* record the port information */
+            add_input_port_information(muxes[i], 1);
+            /* allocate a port the width of selector signal ... one MUX */
+            allocate_more_input_pins(muxes[i], 1);
+            // connect signal to mux node as input pins
+            if (i == 0)
+                add_input_pin_to_node(muxes[i], mux_expressions[j]->pins[i], j + mux_selector->count);
+            else
+                add_input_pin_to_node(muxes[i], copy_input_npin(muxes[0]->input_pins[j + mux_selector->count]), j + mux_selector->count);
+        }
+
+        // allocate output pins
+        npin_t* new_pin1;
+        npin_t* new_pin2;
+        nnet_t* new_net;
+        new_pin1 = allocate_npin();
+        new_pin2 = allocate_npin();
+        new_net = allocate_nnet();
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, muxes[i]->name, i);
+        
+        /* allocate the pins for the ouput port and pass out that pin for higher statements */
+        allocate_more_output_pins(muxes[i], 1);
+        add_output_pin_to_node(muxes[i], new_pin1, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, new_pin2);
+        /* name it with this name */
+        new_pin2->name = NULL;
+        /* add this pin to the return list */
+        add_pin_to_signal_list(return_sig_list, new_pin2);        
+    }
+
+    return return_sig_list;
+}
+
+signal_list_t* create_pins_for_reg_array_with_constant_reference(ast_node_t* node, ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref) {
+    long i, j;
+    signal_list_t* return_sig_list = init_signal_list();
+
+    ast_node_t* node_max1 = var_declare->children[0];
+    ast_node_t* node_min1 = var_declare->children[1];
+
+    oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
+    long data_min = node_min1->types.vnumber->get_value();
+    long data_max = node_max1->types.vnumber->get_value();
+
+    oassert(data_min <= data_max);
+
+    long data_width = data_max - data_min + 1;
+
+    int index = node->children[0]->types.vnumber->get_value();
+    char* indexed_net_name = make_full_ref_name(NULL, NULL, NULL, node->identifier_node->types.identifier, index);
+    signal_list_t** output_pins = (signal_list_t**)vtr::calloc(data_width, sizeof(signal_list_t*));
+    for (i = 0; i < data_width; i++) {
+        output_pins[i] = init_signal_list();
+        char* output_net = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_net_name, i);
+
+        output_pins[i] = create_pins(NULL, output_net, instance_name_prefix, local_ref);
+        for (j = 0; j < output_pins[i]->count; j++) {
+            add_pin_to_signal_list(return_sig_list, output_pins[i]->pins[j]);
+        }
+
+        //vtr::free(output_net);
+    }
+    vtr::free(indexed_net_name);
 
     return return_sig_list;
 }

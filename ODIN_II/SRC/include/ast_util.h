@@ -44,6 +44,7 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
 char* get_name_of_var_declare_at_bit(ast_node_t* var_declare, int bit);
 char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, sc_hierarchy* local_ref);
 char_list_t* get_name_of_pins_with_prefix(ast_node_t* var_node, char* instance_name_prefix, sc_hierarchy* local_ref);
+char_list_t* get_name_of_array_pins_with_prefix(ast_node_t* var_node, char* instance_name_prefix, sc_hierarchy* local_ref);
 long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref);
 
 bool node_is_constant(ast_node_t* node);

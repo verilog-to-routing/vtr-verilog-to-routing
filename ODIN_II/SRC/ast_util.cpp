@@ -803,6 +803,64 @@ char_list_t* get_name_of_pins_with_prefix(ast_node_t* var_node, char* instance_n
     return return_list;
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: get_name_of_pins_with_prefix
+ *-------------------------------------------------------------------------------------------*/
+char_list_t* get_name_of_array_pins_with_prefix(ast_node_t* node, char* instance_name_prefix, sc_hierarchy* local_ref) {
+    int i;
+    char** return_string;
+    char_list_t* return_list = (char_list_t*)vtr::malloc(sizeof(char_list_t));
+
+    long sc_spot;
+    STRING_CACHE* local_symbol_table_sc = local_ref->local_symbol_table_sc;
+    
+    ast_node_t* local_symbol = NULL;
+
+    if (local_symbol_table_sc && node->type == ARRAY_REF) {
+        if ((sc_spot = sc_lookup_string(local_symbol_table_sc, node->identifier_node->types.identifier)) == -1) {
+            error_message(NETLIST, node->loc,
+                        "the symbol (%s) is not defined in the local scope\n", node->identifier_node->types.identifier);
+        }
+
+        local_symbol = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
+        if (local_symbol && local_symbol->types.variable.is_array){
+            
+            if (!node->children[0]->types.vnumber) {
+                error_message(NETLIST, node->loc,
+                            "(%s) has been considered as an array of register, Odin can not handle signal index reference" 
+                            "for an array acces on the LHS of an assignment.index should be a constant\n", node->identifier_node->types.identifier);
+            }
+
+            int index = node->children[0]->types.vnumber->get_value();
+            char* indexed_net_name = make_full_ref_name(NULL, NULL, NULL, node->identifier_node->types.identifier, index);
+            
+            ast_node_t* node_max1 = local_symbol->children[0];
+            ast_node_t* node_min1 = local_symbol->children[1];
+
+            oassert(node_min1->type == NUMBERS && node_max1->type == NUMBERS);
+            long data_min = node_min1->types.vnumber->get_value();
+            long data_max = node_max1->types.vnumber->get_value();
+
+            oassert(data_min <= data_max);
+
+            long data_width = data_max - data_min + 1;
+
+            return_string = (char**)vtr::malloc(data_width*sizeof(char*));
+
+            for (i = 0; i < data_width; i++) {
+                return_string[i] = make_full_ref_name(instance_name_prefix, NULL, NULL, indexed_net_name, i);
+            }
+            
+            return_list->strings = return_string;
+            return_list->num_strings = data_width;
+
+            vtr::free(indexed_net_name);
+        }
+    }
+
+    return return_list;
+}
+
 /*----------------------------------------------------------------------------
  * (function: get_size_of_variable)
  *--------------------------------------------------------------------------*/
