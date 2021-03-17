@@ -116,6 +116,10 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
+    if (place_ctx.block_locs[b_from].is_fixed) {
+        return e_block_move_result::ABORT;
+    }
+
     VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
 
     ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
