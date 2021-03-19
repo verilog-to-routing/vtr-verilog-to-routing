@@ -100,34 +100,42 @@ char is_valid_implicit_memory_reference_ast(char* instance_name_prefix, ast_node
 bool is_signal_list_connected_to_memory(implicit_memory* memory, signal_list_t* signals, const char* port_name) {
     oassert(port_name);
 
-    bool signals_are_connected = true;
     // is any port of the memory connected
     if (memory->node->input_port_sizes) {
         int i, j;
         long pin_index = 0;
         for (i = 0; i < memory->node->num_input_port_sizes; i++) {
             int input_port_size = memory->node->input_port_sizes[i];
+            bool* signals_connectivity = (bool*)vtr::calloc(input_port_size, sizeof(bool));
+            memset(signals_connectivity, false, input_port_size * sizeof(bool));
 
-            for (j = 0; signals_are_connected && (input_port_size == signals->count) && j < signals->count; j++) {
+            for (j = 0; (input_port_size == signals->count) && j < signals->count; j++) {
                 npin_t* memory_input_pin = memory->node->input_pins[pin_index + j];
 
                 if (!strcmp(memory_input_pin->mapping, port_name)) {
                     if (memory_input_pin->net->name && signals->pins[j]->net->name) {
-                        if (strcmp(memory_input_pin->net->name, signals->pins[j]->net->name)) {
-                            signals_are_connected = false;
+                        if (!strcmp(memory_input_pin->net->name, signals->pins[j]->net->name)) {
+                            signals_connectivity[j] = true;
                         }
-                    } else {
-                        signals_are_connected = false;
                     }
+                } else {
+                    break;
                 }
             }
+            bool connected = true;
+            for (j = 0; j < input_port_size; j++) {
+                connected &= signals_connectivity[j];
+            }
+
             pin_index += input_port_size;
+            vtr::free(signals_connectivity);
+
+            if (connected)
+                return true;
         }
-    } else {
-        signals_are_connected = false;
     }
 
-    return signals_are_connected;
+    return false;
 }
 
 /*
