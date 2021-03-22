@@ -43,7 +43,7 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 //Sort the blocks according to how difficult they are to place, prior to initial placement
 std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_score> block_scores);
 
-void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks);
+void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks, vtr::vector<ClusterBlockId, t_block_score> block_scores);
 
 static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles) {
     for (int sub_tile : possible_sub_tiles) {
@@ -373,15 +373,15 @@ std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_scor
     };
 
     std::stable_sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
-    print_sorted_blocks(sorted_blocks);
+    print_sorted_blocks(sorted_blocks, block_scores);
 
     return sorted_blocks;
 }
 
-void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks) {
+void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks, vtr::vector<ClusterBlockId, t_block_score> block_scores) {
     VTR_LOG("\nPrinting sorted blocks: \n");
     for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
-        VTR_LOG("Block_Id: %zu \n", sorted_blocks[i]);
+        VTR_LOG("Block_Id: %zu, Macro size: %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size);
     }
 }
 
