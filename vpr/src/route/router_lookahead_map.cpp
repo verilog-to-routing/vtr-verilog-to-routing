@@ -1018,7 +1018,20 @@ static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y) {
     x = rr_graph.node_xlow(rr);
     y = rr_graph.node_ylow(rr);
 
-    e_side rr_side = rr_graph.node_side(rr);
+    /* Use the first side we can find
+     * Note that this may NOT return an accurate coordinate
+     * when a rr node appears on different sides
+     * However, current test show that the simple strategy provides
+     * a good trade-off between runtime and quality of results
+     */
+    e_side rr_side = NUM_SIDES;
+    for (const e_side& candidate_side : SIDES) {
+        if (rr_graph.is_node_on_specific_side(rr, candidate_side)) {
+            rr_side = candidate_side;
+            break;
+        }
+    }
+    VTR_ASSERT_SAFE(NUM_SIDES != rr_side);
 
     if (rr_side == LEFT) {
         x -= 1;
