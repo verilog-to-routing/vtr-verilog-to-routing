@@ -96,6 +96,8 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
         }
     }
 
+    //check if macro has constrained members, and check if head is in an appropriate location if so
+
     return (macro_can_be_placed);
 }
 
@@ -381,7 +383,7 @@ std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_scor
 void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks, vtr::vector<ClusterBlockId, t_block_score> block_scores) {
     VTR_LOG("\nPrinting sorted blocks: \n");
     for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
-        VTR_LOG("Block_Id: %zu, Macro size: %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size);
+        VTR_LOG("Block_Id: %zu, Macro size: %d, Num floorplan constraints: %d, Num equivalent tiles %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].num_floorplan_constraints, block_scores[sorted_blocks[i]].num_equivalent_tiles);
     }
 }
 

@@ -40,68 +40,79 @@ bool is_cluster_constrained(ClusterBlockId blk_id) {
 }
 
 bool is_macro_constrained(t_pl_macro pl_macro) {
-	bool is_macro_constrained = false;
-	bool is_member_constrained = false;
+    bool is_macro_constrained = false;
+    bool is_member_constrained = false;
 
-	for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-		ClusterBlockId iblk = pl_macro.members[imember].blk_index;
-		is_member_constrained = is_cluster_constrained(iblk);
+    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
+        ClusterBlockId iblk = pl_macro.members[imember].blk_index;
+        is_member_constrained = is_cluster_constrained(iblk);
 
-		if (is_member_constrained) {
-			is_macro_constrained = true;
-			break;
-		}
-	}
+        if (is_member_constrained) {
+            is_macro_constrained = true;
+            break;
+        }
+    }
 
-	return is_macro_constrained;
+    return is_macro_constrained;
 }
 
-std::vector<t_pl_loc> constrained_macro_locs(t_pl_macro pl_macro) {
-	std::vector<t_pl_loc> locations;
-	PartitionRegion macro_pr;
-	bool is_member_constrained = false;
-	int num_constrained_members;
-	auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+PartitionRegion constrained_macro_locs(t_pl_macro pl_macro) {
+    PartitionRegion macro_pr;
+    bool is_member_constrained = false;
+    int num_constrained_members = 0;
+    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-	for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-		ClusterBlockId iblk = pl_macro.members[imember].blk_index;
-		is_member_constrained = is_cluster_constrained(iblk);
+    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
+        ClusterBlockId iblk = pl_macro.members[imember].blk_index;
+        is_member_constrained = is_cluster_constrained(iblk);
 
-		if (is_member_constrained) {
-			num_constrained_members++;
-			//PartitionRegion of the block
-			PartitionRegion block_pr;
-			//PartitionRegion of the constrained cluster modified for the head according to the offset
-			PartitionRegion modified_pr;
+        if (is_member_constrained) {
+            num_constrained_members++;
+            //PartitionRegion of the constrained block
+            PartitionRegion block_pr;
+            //PartitionRegion of the constrained block modified for the head according to the offset
+            PartitionRegion modified_pr;
 
-			block_pr = floorplanning_ctx.cluster_constraints[iblk];
-			std::vector<Region> block_regions = block_pr.get_partition_region();
+            block_pr = floorplanning_ctx.cluster_constraints[iblk];
+            std::vector<Region> block_regions = block_pr.get_partition_region();
 
-			for (unsigned int i = 0; i < block_regions.size(); i++) {
-				Region modified_reg;
-				auto offset = pl_macro.members[imember].offset;
+            for (unsigned int i = 0; i < block_regions.size(); i++) {
+                Region modified_reg;
+                auto offset = pl_macro.members[imember].offset;
 
-				vtr::Rect<int> reg_rect = block_regions[i].region_bounds;
+                vtr::Rect<int> reg_rect = block_regions[i].get_region_rect();
 
-				int m_xmin = reg_rect.xmin() + offset;
-				int m_ymin = reg_rect.ymin() + offset;
-				int m_xmax = reg_rect.xmax() + offset;
-				int m_ymax = reg_rect.ymax() + offset;
+                t_pl_loc min_pl_loc(reg_rect.xmin(), reg_rect.ymin(), block_regions[i].get_sub_tile());
 
-				int m_subtile = block_regions[i].sub_tile + offset;
-			}
+                t_pl_loc modified_min_pl_loc = min_pl_loc + offset;
 
-			if (num_constrained_members == 1) {
-				macro_pr = modified_pr;
-			} else {
-				macro_pr = intersection(macro_pr, modified_pr);
-			}
-		}
+                t_pl_loc max_pl_loc(reg_rect.xmax(), reg_rect.ymax(), block_regions[i].get_sub_tile());
 
+                t_pl_loc modified_max_pl_loc = max_pl_loc + offset;
 
-	}
+                modified_reg.set_region_rect(modified_min_pl_loc.x, modified_min_pl_loc.y, modified_max_pl_loc.x, modified_max_pl_loc.y);
+                //check that subtile is not an invalid value before changing, otherwise it just stays -1
+                if (block_regions[i].get_sub_tile() != -1) {
+                    modified_reg.set_sub_tile(modified_min_pl_loc.sub_tile);
+                }
 
-	return locations;
+                modified_pr.add_to_part_region(modified_reg);
+            }
+
+            if (num_constrained_members == 1) {
+                macro_pr = modified_pr;
+            } else {
+                macro_pr = intersection(macro_pr, modified_pr);
+            }
+        }
+    }
+
+    //if the intersection is empty, no way to place macro members together, give an error
+    if (macro_pr.empty()) {
+        //give a vpr error message
+    }
+
+    return macro_pr;
 }
 
 /*returns true if location is compatible with floorplanning constraints, false if not*/

@@ -30,8 +30,8 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc);
 bool is_macro_constrained(t_pl_macro pl_macro);
 
 /*
- * Return valid locations for the head of the macro based on floorplan constraints
+ * Returns region of valid locations for the head of the macro based on floorplan constraints
  */
-std::vector<t_pl_loc> constrained_macro_locs(t_pl_macro pl_macro);
+PartitionRegion constrained_macro_locs(t_pl_macro pl_macro);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */
