@@ -332,12 +332,8 @@ void create_rr_graph(const t_graph_type graph_type,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          router_opts.read_rr_edge_metadata,
                          router_opts.do_check_rr_graph);
-            reorder_rr_graph_nodes(router_opts);
 
-            /* Update RRGraph overlay with new data pointers */
-            DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
-            mutable_device_ctx.rr_graph.set_internal_data(&(mutable_device_ctx.rr_nodes),
-                                                          &(mutable_device_ctx.rr_node_indices));
+            reorder_rr_graph_nodes(router_opts);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
