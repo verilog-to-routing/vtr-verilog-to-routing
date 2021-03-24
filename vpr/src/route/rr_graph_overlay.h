@@ -62,7 +62,7 @@ class RRGraphOverlay {
     /* node-level storage including edge storages */
     t_rr_graph_storage* node_storage_;
     /* Fast look-up */
-    t_rr_node_indices* rr_node_indices_; 
+    t_rr_node_indices* rr_node_indices_;
 };
 
 #endif
