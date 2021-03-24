@@ -109,7 +109,7 @@ PartitionRegion constrained_macro_locs(t_pl_macro pl_macro) {
 
     //if the intersection is empty, no way to place macro members together, give an error
     if (macro_pr.empty()) {
-        //give a vpr error message
+        VPR_ERROR(VPR_ERROR_PLACE, " \n Feasible floorplanning constraints could not be calculated for the placement macro.\n");
     }
 
     return macro_pr;
