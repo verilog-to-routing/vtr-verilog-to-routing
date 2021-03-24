@@ -41,14 +41,19 @@ class RRGraphOverlay {
    ****************/
   public:
     RRGraphOverlay();
-    RRGraphOverlay(t_rr_graph_storage* node_storage,
-                   t_rr_node_indices* rr_node_indices);
 
   /****************
-   * Node methods *
+   * Accessors
    ****************/
   public:
     t_rr_type node_type(const RRNodeId& id) const;
+
+  /****************
+   * Mutators
+   ****************/
+  public:
+    void set_internal_data(t_rr_graph_storage* node_storage,
+                           t_rr_node_indices* rr_node_indices);
 
   /****************
    * internal data

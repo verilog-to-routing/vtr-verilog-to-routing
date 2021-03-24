@@ -369,6 +369,11 @@ void create_rr_graph(const t_graph_type graph_type,
 
     verify_rr_node_indices(grid, device_ctx.rr_node_indices, device_ctx.rr_nodes);
 
+    /* Update RRGraph overlay with new data pointers */
+    DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    mutable_device_ctx.rr_graph.set_internal_data(&(mutable_device_ctx.rr_nodes),
+                                                  &(mutable_device_ctx.rr_node_indices));
+
     print_rr_graph_stats();
 
     //Write out rr graph file if needed
