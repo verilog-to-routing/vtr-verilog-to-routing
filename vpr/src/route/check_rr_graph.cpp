@@ -579,10 +579,10 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
      */
     VTR_ASSERT(node.type() == IPIN || node.type() == OPIN);
 
-    if ((node.xlow() == 0 && node.side() != RIGHT)                          //left device edge connects only along block's right side
-        || (node.ylow() == int(grid.height() - 1) && node.side() != BOTTOM) //top device edge connects only along block's bottom side
-        || (node.xlow() == int(grid.width() - 1) && node.side() != LEFT)    //right deivce edge connects only along block's left side
-        || (node.ylow() == 0 && node.side() != TOP)                         //bottom deivce edge connects only along block's top side
+    if ((node.xlow() == 0 && !node.is_node_on_specific_side(RIGHT))                          //left device edge connects only along block's right side
+        || (node.ylow() == int(grid.height() - 1) && !node.is_node_on_specific_side(BOTTOM)) //top device edge connects only along block's bottom side
+        || (node.xlow() == int(grid.width() - 1) && !node.is_node_on_specific_side(LEFT))    //right deivce edge connects only along block's left side
+        || (node.ylow() == 0 && !node.is_node_on_specific_side(TOP))                         //bottom deivce edge connects only along block's top side
     ) {
         return false;
     }

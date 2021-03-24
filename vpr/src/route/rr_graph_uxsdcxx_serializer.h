@@ -1593,13 +1593,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             } else if (node.type() == IPIN || node.type() == OPIN) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.ptc_num() >= (int)indices[OPIN][ix][iy][node.side()].size()) {
-                            indices[OPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
+                        for (const e_side& side : SIDES) {
+                            if (!node.is_node_on_specific_side(side)) {
+                                continue;
+                            }
+                            if (node.ptc_num() >= (int)indices[OPIN][ix][iy][side].size()) {
+                                indices[OPIN][ix][iy][side].resize(node.ptc_num() + 1, OPEN);
+                            }
+                            if (node.ptc_num() >= (int)indices[IPIN][ix][iy][side].size()) {
+                                indices[IPIN][ix][iy][side].resize(node.ptc_num() + 1, OPEN);
+                            }
+                            indices[node.type()][ix][iy][side][node.ptc_num()] = inode;
                         }
-                        if (node.ptc_num() >= (int)indices[IPIN][ix][iy][node.side()].size()) {
-                            indices[IPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
-                        }
-                        indices[node.type()][ix][iy][node.side()][node.ptc_num()] = inode;
                     }
                 }
             } else if (node.type() == CHANX) {
