@@ -392,7 +392,7 @@ std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_scor
     };
 
     std::stable_sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
-    //print_sorted_blocks(sorted_blocks, block_scores);
+    print_sorted_blocks(sorted_blocks, block_scores);
 
     return sorted_blocks;
 }

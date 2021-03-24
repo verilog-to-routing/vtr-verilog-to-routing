@@ -1409,7 +1409,6 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
 
     bool cluster_pr_needs_update = false;
     bool cluster_pr_update_check = false;
-    //PartitionRegion temp_cluster_pr_for_update;
 
     //check if every atom in the molecule is legal in the cluster from a floorplanning perspective
     for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
@@ -1424,7 +1423,6 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
             }
             if (cluster_pr_needs_update == true) {
                 cluster_pr_update_check = true;
-                //temp_cluster_pr_for_update = temp_cluster_pr;
             }
         }
     }
@@ -1743,9 +1741,9 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
     //if the atom does not belong to a partition, it can be put in the cluster
     //regardless of what the cluster's PartitionRegion is because it has no constraints
     if (partid == PartitionId::INVALID()) {
-        /*if (verbosity > 3) {
-         * VTR_LOG("\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n", blk_id, clb_index);
-         * }*/
+        if (verbosity > 3) {
+        		VTR_LOG("\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n", blk_id, clb_index);
+        }
         cluster_pr_needs_update = false;
         return BLK_PASSED;
     } else {
