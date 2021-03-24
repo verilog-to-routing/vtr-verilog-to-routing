@@ -369,11 +369,6 @@ void create_rr_graph(const t_graph_type graph_type,
 
     verify_rr_node_indices(grid, device_ctx.rr_node_indices, device_ctx.rr_nodes);
 
-    /* Update RRGraph overlay with new data pointers */
-    DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
-    mutable_device_ctx.rr_graph.set_internal_data(&(mutable_device_ctx.rr_nodes),
-                                                  &(mutable_device_ctx.rr_node_indices));
-
     print_rr_graph_stats();
 
     //Write out rr graph file if needed
@@ -738,6 +733,10 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.chan_width = nodes_per_chan;
 
     rr_graph_externals(segment_inf, *wire_to_rr_ipin_switch, base_cost_type);
+
+    /* Update RRGraph overlay with new data pointers */
+    device_ctx.rr_graph.set_internal_data(&(device_ctx.rr_nodes),
+                                          &(device_ctx.rr_node_indices));
 
     check_rr_graph(graph_type, grid, types);
 
