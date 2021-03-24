@@ -1499,7 +1499,6 @@ static void build_rr_sinks_sources(const int i,
                             L_rr_node[inode].add_side(side);
 
                             // Sanity check
-                            VTR_ASSERT(1 <= L_rr_node[inode].sides().size());
                             VTR_ASSERT(L_rr_node[inode].is_node_on_specific_side(side));
                             VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node[inode].pin_num()]);
                         }

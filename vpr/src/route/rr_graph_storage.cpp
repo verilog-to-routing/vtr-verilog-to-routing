@@ -713,26 +713,6 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, e_direction new_directi
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
-void t_rr_graph_storage::set_node_sides(RRNodeId id, std::bitset<NUM_SIDES> new_sides) {
-    if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
-    }
-    /* The new sides will overwrite existing side storage */
-    if (new_sides.to_ulong() > CHAR_MAX) {
-        std::string new_sides_str;
-        for (const e_side& side : SIDES) {
-            if (new_sides[side]) {
-                if (!new_sides_str.empty()) {
-                    new_sides_str.append(", ");
-                }
-                new_sides_str.append(SIDE_STRING[side]);
-            }
-        }
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid sides '%s' to be added to rr node %u", new_sides_str.c_str(), size_t(id));
-    }
-    node_storage_[id].dir_side_.sides = static_cast<unsigned char>(new_sides.to_ulong());
-}
-
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
