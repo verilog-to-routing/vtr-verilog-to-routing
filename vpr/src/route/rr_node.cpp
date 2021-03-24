@@ -25,7 +25,13 @@ const char* t_rr_node::direction_string() const {
 }
 
 const char* t_rr_node::side_string() const {
-    return SIDE_STRING[side()];
+    for (const e_side& side : SIDES) {
+        if (is_node_on_specific_side(side)) {
+            return SIDE_STRING[side];
+        }
+    }
+    /* Not found, return an invalid string*/
+    return SIDE_STRING[NUM_SIDES];
 }
 
 //Returns the max 'length' over the x or y direction
@@ -119,10 +125,6 @@ void t_rr_node::set_capacity(short new_capacity) {
 
 void t_rr_node::set_direction(e_direction new_direction) {
     storage_->set_node_direction(id_, new_direction);
-}
-
-void t_rr_node::set_side(e_side new_side) {
-    storage_->set_node_side(id_, new_side);
 }
 
 void t_rr_node::set_sides(std::bitset<NUM_SIDES> new_sides) {

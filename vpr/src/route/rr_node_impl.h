@@ -155,10 +155,6 @@ inline e_direction t_rr_node::direction() const {
     return storage_->node_direction(id_);
 }
 
-inline e_side t_rr_node::side() const {
-    return storage_->node_side(id_);
-}
-
 inline std::bitset<NUM_SIDES> t_rr_node::sides() const {
     return storage_->node_sides(id_);
 }
