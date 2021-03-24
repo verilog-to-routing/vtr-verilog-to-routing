@@ -12,7 +12,7 @@ RRGraphOverlay::RRGraphOverlay() {
  * Accessors
  ****************************/
 t_rr_type RRGraphOverlay::node_type(const RRNodeId& id) const {
-    return (*node_storage_).node_type(id);
+    return node_storage_->node_type(id);
 }
 
 /****************************
