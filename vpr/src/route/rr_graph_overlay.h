@@ -22,7 +22,7 @@
  * - rr_node_indices
  *
  * Note that the overlay does not own the storage
- * It serves a virtual protocol for 
+ * It serves a virtual protocol for
  * - rr_graph builder
  * - placer
  * - router
@@ -33,29 +33,29 @@
  * - This helps to reduce the memory footprint for each client
  * - This avoids massive changes for each client on using the APIs
  *   as each frame view provides adhoc APIs for each client
- *  
+ *
  */
 class RRGraphOverlay {
-  /****************
+    /****************
    * Constructors
    ****************/
   public:
     RRGraphOverlay();
 
-  /****************
+    /****************
    * Accessors
    ****************/
   public:
     t_rr_type node_type(const RRNodeId& id) const;
 
-  /****************
+    /****************
    * Mutators
    ****************/
   public:
     void set_internal_data(t_rr_graph_storage* node_storage,
                            t_rr_node_indices* rr_node_indices);
 
-  /****************
+    /****************
    * internal data
    ****************/
   private:
