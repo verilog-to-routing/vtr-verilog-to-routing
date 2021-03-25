@@ -11,11 +11,11 @@
 
 //Used to assign each block a score for how difficult it is to place
 struct t_block_score {
-    int macro_size = 0; //how many members does the macro have, if the block is part of one
+    int macro_size = 0; //how many members does the macro have, if the block is part of one, this value is zero if the block is not in a macro
 
-    int num_floorplan_constraints = 0; //how many floorplan constraints does it have, if any
+    int floorplan_constraints = 0; //how many floorplan constraints does it have, if any
 
-    int num_equivalent_tiles = 1; //how many equivalent tiles does block have to be placed at
+    int num_equivalent_tiles = 1; //num of physical locations at which this block could be placed
 };
 
 /* The maximum number of tries when trying to place a carry chain at a    *
@@ -37,7 +37,11 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
                                                     int num_needed_types,
                                                     std::vector<std::vector<int>>& free_locations);
 
-//Assign scores to each block based on macro size, floorplanning constraints, and number of equivalent tiles
+/*
+ * Assign scores to each block based on macro size, floorplanning constraints, and number of equivalent tiles.
+ * Used for relative placement, so that the blocks that are more difficult to place can be placed first during initial placement.
+ * A higher score indicates that the block is more difficult to place.
+ */
 vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 
 //Sort the blocks according to how difficult they are to place, prior to initial placement
@@ -352,14 +356,12 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     vtr::vector<ClusterBlockId, t_block_score> block_scores;
 
-    for (unsigned int i = 0; i < blocks.size(); i++) {
-        block_scores.push_back(score);
-    }
+    block_scores.resize(blocks.size());
 
     //go through all blocks and store floorplan constraints and num equivalent tiles
     for (auto blk_id : blocks) {
         if (is_cluster_constrained(blk_id)) {
-            block_scores[blk_id].num_floorplan_constraints = 1;
+            block_scores[blk_id].floorplan_constraints = 1;
         }
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto num_tiles = logical_block->equivalent_tiles.size();
@@ -385,8 +387,8 @@ std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_scor
     std::vector<ClusterBlockId> sorted_blocks(blocks.begin(), blocks.end());
 
     auto criteria = [block_scores](ClusterBlockId lhs, ClusterBlockId rhs) {
-        int lhs_score = 100 * block_scores[lhs].macro_size + 10 * block_scores[lhs].num_floorplan_constraints + 10 / (block_scores[lhs].num_equivalent_tiles);
-        int rhs_score = 100 * block_scores[rhs].macro_size + 10 * block_scores[rhs].num_floorplan_constraints + 10 / (block_scores[rhs].num_equivalent_tiles);
+        int lhs_score = 100 * block_scores[lhs].macro_size + 10 * block_scores[lhs].floorplan_constraints + 10 / (block_scores[lhs].num_equivalent_tiles);
+        int rhs_score = 100 * block_scores[rhs].macro_size + 10 * block_scores[rhs].floorplan_constraints + 10 / (block_scores[rhs].num_equivalent_tiles);
 
         return lhs_score > rhs_score;
     };
@@ -400,7 +402,7 @@ std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_scor
 void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks, vtr::vector<ClusterBlockId, t_block_score> block_scores) {
     VTR_LOG("\nPrinting sorted blocks: \n");
     for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
-        VTR_LOG("Block_Id: %zu, Macro size: %d, Num floorplan constraints: %d, Num equivalent tiles %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].num_floorplan_constraints, block_scores[sorted_blocks[i]].num_equivalent_tiles);
+        VTR_LOG("Block_Id: %zu, Macro size: %d, Num floorplan constraints: %d, Num equivalent tiles %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].floorplan_constraints, block_scores[sorted_blocks[i]].num_equivalent_tiles);
     }
 }
 

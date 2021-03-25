@@ -9,6 +9,8 @@
  * @file
  * @brief This file defines the PartitionRegion class. The PartitionRegion class is used to store the union
  * of regions that a partition can be placed in.
+ *
+ * For more details on what a region is, see vpr/src/base/region.h
  */
 
 class PartitionRegion {
@@ -30,6 +32,12 @@ class PartitionRegion {
      */
     bool empty();
 
+    /**
+     * @brief Check if the given location is within the legal bounds of the  PartitionRegion.
+     * The location provided is assumed to be valid.
+     *
+     *   @param loc       The location to be checked
+     */
     bool is_loc_in_part_reg(t_pl_loc loc);
 
     /**

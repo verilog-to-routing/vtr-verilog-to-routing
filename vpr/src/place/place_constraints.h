@@ -10,7 +10,8 @@
 #define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
 
 /*
- * Check that placement adheres to the floorplanning constraints of all blocks
+ * Check that placement of each block is within the floorplan constraint region of that block (if the block has any constraints).
+ * Returns the number of errors (inconsistencies in adherence to floorplanning constraints).
  */
 int check_placement_floorplanning();
 

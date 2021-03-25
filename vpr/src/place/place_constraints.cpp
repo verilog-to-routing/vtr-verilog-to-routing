@@ -3,6 +3,9 @@
  *
  *  Created on: Mar. 1, 2021
  *      Author: khalid88
+ *
+ *  This file contains routines that help with making sure floorplanning constraints are respected throughout
+ *  the placement stage of VPR.
  */
 
 #include "globals.h"
@@ -16,9 +19,7 @@ int check_placement_floorplanning() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto& loc = place_ctx.block_locs[blk_id].loc;
-        if (cluster_floorplanning_check(blk_id, loc)) {
-            continue;
-        } else {
+        if (!cluster_floorplanning_check(blk_id, loc)) {
             error++;
             VTR_LOG_ERROR("Block %zu is not in correct floorplanning region.\n", size_t(blk_id));
         }
@@ -32,11 +33,7 @@ bool is_cluster_constrained(ClusterBlockId blk_id) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     PartitionRegion pr;
     pr = floorplanning_ctx.cluster_constraints[blk_id];
-    if (pr.empty()) {
-        return false;
-    } else {
-        return true;
-    }
+    return (!pr.empty());
 }
 
 bool is_macro_constrained(t_pl_macro pl_macro) {
@@ -126,7 +123,6 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
     if (!cluster_constrained) {
         //not constrained so will not have floorplanning issues
         floorplanning_good = true;
-        return floorplanning_good;
     } else {
         PartitionRegion pr;
         pr = floorplanning_ctx.cluster_constraints[blk_id];
@@ -136,10 +132,11 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
         //if not it is not
         if (in_pr) {
             floorplanning_good = true;
-            return floorplanning_good;
+        } else {
+            VTR_LOG("Block %zu did not pass cluster_floorplanning_check \n", size_t(blk_id));
+            VTR_LOG("Loc is x: %d, y: %d, subtile: %d \n", loc.x, loc.y, loc.sub_tile);
         }
-        VTR_LOG("The block %zu did not pass cluster_floorplanning_check \n", size_t(blk_id));
-        VTR_LOG("Loc is x: %d, y: %d, subtile: %d \n", loc.x, loc.y, loc.sub_tile);
-        return floorplanning_good;
     }
+
+    return floorplanning_good;
 }
