@@ -1742,7 +1742,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
     //regardless of what the cluster's PartitionRegion is because it has no constraints
     if (partid == PartitionId::INVALID()) {
         if (verbosity > 3) {
-        		VTR_LOG("\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n", blk_id, clb_index);
+            VTR_LOG("\t\t\t Intersect: Atom block %d has no floorplanning constraints, passed for cluster %d \n", blk_id, clb_index);
         }
         cluster_pr_needs_update = false;
         return BLK_PASSED;
