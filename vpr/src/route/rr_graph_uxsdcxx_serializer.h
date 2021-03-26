@@ -16,7 +16,7 @@
 #include "check_rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-#include "rr_graph_overlay.h"
+#include "rr_graph_view.h"
 
 class MetadataBind {
   public:
@@ -259,7 +259,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::string* read_rr_graph_filename,
         bool read_edge_metadata,
         t_chan_width* chan_width,
-        RRGraphOverlay* rr_graph,
+        RRGraphView* rr_graph,
         t_rr_graph_storage* rr_nodes,
         std::vector<t_rr_switch_inf>* rr_switch_inf,
         std::vector<t_rr_indexed_data>* rr_indexed_data,
@@ -1548,7 +1548,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         VTR_ASSERT(read_rr_graph_name_ != nullptr);
         read_rr_graph_filename_->assign(read_rr_graph_name_);
 
-        /* Update RRGraph overlay with new data pointers */
+        /* Update RRGraph viewer with new data pointers */
         rr_graph_->set_internal_data(rr_nodes_,
                                      rr_node_indices_);
 
@@ -1969,7 +1969,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     // Output for loads, and constant data for writes.
     int* wire_to_rr_ipin_switch_;
     t_chan_width* chan_width_;
-    RRGraphOverlay* rr_graph_;
+    RRGraphView* rr_graph_;
     t_rr_graph_storage* rr_nodes_;
     std::vector<t_rr_switch_inf>* rr_switch_inf_;
     std::vector<t_rr_indexed_data>* rr_indexed_data_;
