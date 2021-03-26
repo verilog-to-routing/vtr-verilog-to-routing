@@ -24,16 +24,6 @@ const char* t_rr_node::direction_string() const {
     return "NO_DIR";
 }
 
-const char* t_rr_node::side_string() const {
-    for (const e_side& side : SIDES) {
-        if (is_node_on_specific_side(side)) {
-            return SIDE_STRING[side];
-        }
-    }
-    /* Not found, return an invalid string*/
-    return SIDE_STRING[NUM_SIDES];
-}
-
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
     return std::max(
