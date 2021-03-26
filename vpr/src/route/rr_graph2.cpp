@@ -16,6 +16,8 @@
 #include "read_xml_arch_file.h"
 #include "rr_types.h"
 
+#include "rr_graph_builder_view.h"
+
 constexpr short UN_SET = -1;
 
 /************************** Subroutines local to this module ****************/
@@ -973,6 +975,12 @@ static void load_chan_rr_indices(const int max_chan_width,
 static void load_block_rr_indices(const DeviceGrid& grid,
                                   t_rr_node_indices& indices,
                                   int* index) {
+    /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
+     * TODO: these building functions should only talk to a RRGraphBuilderView object
+     */
+    RRGraphBuilderView rr_graph_builder_view(&(g_vpr_ctx.mutable_device().rr_nodes),
+                                             &indices);
+
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
@@ -982,15 +990,15 @@ static void load_block_rr_indices(const DeviceGrid& grid,
 
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
-                for (const auto& class_inf : type->class_inf) {
-                    auto class_type = class_inf.type;
+                for (size_t iclass = 0; iclass < type->class_inf.size(); ++iclass) {
+                    auto class_type = type->class_inf[iclass].type;
                     if (class_type == DRIVER) {
-                        indices[SOURCE][x][y][0].push_back(*index);
-                        indices[SINK][x][y][0].push_back(OPEN);
+                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId(*index), x, y, SOURCE, iclass, SIDES[0]);
+                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId::INVALID(), x, y, SINK, iclass, SIDES[0]);
                     } else {
                         VTR_ASSERT(class_type == RECEIVER);
-                        indices[SINK][x][y][0].push_back(*index);
-                        indices[SOURCE][x][y][0].push_back(OPEN);
+                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId(*index), x, y, SINK, iclass, SIDES[0]);
+                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId::INVALID(), x, y, SOURCE, iclass, SIDES[0]);
                     }
                     ++(*index);
                 }
