@@ -53,28 +53,28 @@ RRNodeId RRGraphView::find_node(const int& x,
         return RRNodeId::INVALID();
     }
 
-    if (node_x >= (*rr_node_indices_)[type].dim_size(1)) {
+    if (node_x >= (*rr_node_indices_)[type].dim_size(0)) {
         /* Node x is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
-    if (node_y >= (*rr_node_indices_)[type].dim_size(2)) {
+    if (node_y >= (*rr_node_indices_)[type].dim_size(1)) {
         /* Node y is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
-    if (node_side >= (*rr_node_indices_)[type].dim_size(3)) {
+    if (node_side >= (*rr_node_indices_)[type].dim_size(2)) {
         /* Node side is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
-    if (ptc >= (*rr_node_indices_)[type][x][y][node_side].size()) {
+    if (size_t(ptc) >= (*rr_node_indices_)[type][node_x][node_y][node_side].size()) {
       /* Ptc is out of range, return an invalid index */
       return RRNodeId::INVALID();
     }
 
     /* Reaching here, it means that node exists in the look-up, return the id */
-    return RRNodeId((*rr_node_indices_)[type][x][y][node_side][ptc]);
+    return RRNodeId((*rr_node_indices_)[type][node_x][node_y][node_side][ptc]);
 }
 
 /****************************
