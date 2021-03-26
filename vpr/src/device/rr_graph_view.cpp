@@ -16,7 +16,7 @@ RRGraphView::RRGraphView() {
  * Accessors
  ****************************/
 t_rr_type RRGraphView::node_type(const RRNodeId& node) const {
-  return node_storage_->node_type(node);
+    return node_storage_->node_type(node);
 }
 
 RRNodeId RRGraphView::find_node(const int& x,
@@ -69,8 +69,8 @@ RRNodeId RRGraphView::find_node(const int& x,
     }
 
     if (size_t(ptc) >= (*rr_node_indices_)[type][node_x][node_y][node_side].size()) {
-      /* Ptc is out of range, return an invalid index */
-      return RRNodeId::INVALID();
+        /* Ptc is out of range, return an invalid index */
+        return RRNodeId::INVALID();
     }
 
     /* Reaching here, it means that node exists in the look-up, return the id */

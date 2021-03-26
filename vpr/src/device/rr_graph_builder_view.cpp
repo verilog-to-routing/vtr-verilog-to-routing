@@ -34,7 +34,7 @@ void RRGraphBuilderView::add_node_to_fast_lookup(const RRNodeId& node,
         || (size_t(side) >= (*rr_node_indices_)[type].dim_size(2))) {
         (*rr_node_indices_)[type].resize({size_t(x), size_t(y), size_t(side)});
     }
-   
+
     if (size_t(ptc) >= (*rr_node_indices_)[type][x][y][side].size()) {
         (*rr_node_indices_)[type][x][y][side].resize(ptc);
     }
