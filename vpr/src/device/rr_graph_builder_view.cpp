@@ -7,9 +7,10 @@
 /****************************
  * Constructors
  ****************************/
-RRGraphBuilderView::RRGraphBuilderView() {
-    node_storage_ = nullptr;
-    rr_node_indices_ = nullptr;
+RRGraphBuilderView::RRGraphBuilderView(t_rr_graph_storage* node_storage,
+                                       t_rr_node_indices* rr_node_indices) {
+    node_storage_ = node_storage;
+    rr_node_indices_ = rr_node_indices;
 }
 
 /****************************
@@ -32,11 +33,13 @@ void RRGraphBuilderView::add_node_to_fast_lookup(const RRNodeId& node,
     if ((size_t(x) >= (*rr_node_indices_)[type].dim_size(0))
         || (size_t(y) >= (*rr_node_indices_)[type].dim_size(1))
         || (size_t(side) >= (*rr_node_indices_)[type].dim_size(2))) {
-        (*rr_node_indices_)[type].resize({size_t(x), size_t(y), size_t(side)});
+        (*rr_node_indices_)[type].resize({std::max((*rr_node_indices_)[type].dim_size(0), size_t(x) + 1),
+                                          std::max((*rr_node_indices_)[type].dim_size(1), size_t(y) + 1),
+                                          std::max((*rr_node_indices_)[type].dim_size(2), size_t(side) + 1)});
     }
 
     if (size_t(ptc) >= (*rr_node_indices_)[type][x][y][side].size()) {
-        (*rr_node_indices_)[type][x][y][side].resize(ptc);
+        (*rr_node_indices_)[type][x][y][side].resize(ptc + 1);
     }
 
     /* Resize on demand finished; Register the node */

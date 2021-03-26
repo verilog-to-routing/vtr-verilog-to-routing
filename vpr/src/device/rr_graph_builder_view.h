@@ -30,7 +30,8 @@ class RRGraphBuilderView : public RRGraphView {
      * Constructors
      ****************/
   public:
-    RRGraphBuilderView();
+    RRGraphBuilderView(t_rr_graph_storage* node_storage,
+                       t_rr_node_indices* rr_node_indices);
 
     /****************
      * Accessors all come from RRGraph View
@@ -47,15 +48,6 @@ class RRGraphBuilderView : public RRGraphView {
                                  const t_rr_type& type,
                                  const int& ptc,
                                  const e_side& side);
-
-    /****************
-     * internal data
-     ****************/
-  protected:
-    /* node-level storage including edge storages */
-    t_rr_graph_storage* node_storage_;
-    /* Fast look-up */
-    t_rr_node_indices* rr_node_indices_;
 };
 
 #endif
