@@ -1013,7 +1013,7 @@ void instantiate_shift(nnode_t* node, operation_list type, short mark, netlist_t
                 npin_t* new_pin1 = allocate_npin();
                 npin_t* new_pin2 = allocate_npin();
                 nnet_t* new_net = allocate_nnet();
-                new_net->name = vtr::strdup(muxes[i][j]->name);
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, muxes[i][j]->name, j);
                 /* hook the output pin into the node */
                 add_output_pin_to_node(muxes[i][j], new_pin1, 0);
                 /* hook up new pin 1 into the new net */

@@ -18,6 +18,10 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
         return e_create_move::ABORT; //No movable block found
     }
 
+    if (place_ctx.block_locs[b_from].is_fixed) {
+        return e_create_move::ABORT; //Block is fixed, cannot move
+    }
+
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;

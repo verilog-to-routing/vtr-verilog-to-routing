@@ -2121,24 +2121,32 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
     g->set_color(color);
 
     /* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
-    draw_get_rr_pin_coords(inode, &xcen, &ycen);
-    g->fill_rectangle({xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-                      {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
-    sprintf(str, "%d", ipin);
-    g->set_color(ezgl::BLACK);
-    g->draw_text({xcen, ycen}, str, 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
-    g->set_color(color);
+    /* As nodes may appear on more than one side, walk through the possible nodes 
+     * - draw the pin on each side that it appears
+     */
+    for (const e_side& pin_side : SIDES) {
+        if (!device_ctx.rr_nodes[inode].is_node_on_specific_side(pin_side)) {
+            continue;
+        }
+        draw_get_rr_pin_coords(inode, &xcen, &ycen, pin_side);
+        g->fill_rectangle({xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+                          {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
+        sprintf(str, "%d", ipin);
+        g->set_color(ezgl::BLACK);
+        g->draw_text({xcen, ycen}, str, 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
+        g->set_color(color);
+    }
 }
 
 /* Returns the coordinates at which the center of this pin should be drawn. *
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
-void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen) {
+void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen, const e_side& pin_side) {
     auto& device_ctx = g_vpr_ctx.device();
-    draw_get_rr_pin_coords(device_ctx.rr_nodes[inode], xcen, ycen);
+    draw_get_rr_pin_coords(device_ctx.rr_nodes[inode], xcen, ycen, pin_side);
 }
 
-void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen) {
+void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     int i, j, k, ipin, pins_per_sub_tile;
@@ -2164,7 +2172,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen) {
     step = (float)(draw_coords->get_tile_width()) / (float)(type->num_pins + type->capacity);
     offset = (ipin + k + 1) * step;
 
-    switch (node.side()) {
+    switch (pin_side) {
         case LEFT:
             yc += offset;
             break;
@@ -2185,7 +2193,8 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen) {
 
         default:
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side %s.\n", node.side_string());
+                      "in draw_get_rr_pin_coords: Unexpected side %s.\n",
+                      SIDE_STRING[pin_side]);
             break;
     }
 
@@ -2588,11 +2597,10 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
                 int height_offset = device_ctx.grid[i][j].height_offset;
                 int ipin = device_ctx.rr_nodes[inode].ptc_num();
                 float xcen, ycen;
-                int iside;
-                for (iside = 0; iside < 4; iside++) {
+                for (const e_side& iside : SIDES) {
                     // If pin exists on this side of the block, then get pin coordinates
-                    if (type->pinloc[width_offset][height_offset][iside][ipin]) {
-                        draw_get_rr_pin_coords(inode, &xcen, &ycen);
+                    if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
+                        draw_get_rr_pin_coords(inode, &xcen, &ycen, iside);
 
                         // Now check if we clicked on this pin
                         if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
@@ -2955,19 +2963,108 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
 
     const t_grid_tile& grid_tile = device_ctx.grid[pin_rr.xlow()][pin_rr.ylow()];
     t_physical_tile_type_ptr grid_type = grid_tile.type;
-    VTR_ASSERT_MSG(grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_rr.side()][pin_rr.pin_num()],
-                   "Pin coordinates should match block type pin locations");
 
+    float x1 = 0, y1 = 0;
+    /* If there is only one side, no need for the following inference!!!
+     * When a node may have multiple sides,
+     * we lack direct information about which side of the node drives the channel node
+     * However, we can infer which side is actually used by the driver based on the
+     * coordinates of the channel node.
+     * In principle, in a regular rr_graph that can pass check_rr_graph() function,
+     * the coordinates should follow the illustration: 
+     *
+     *                +----------+
+     *                |  CHANX   |
+     *                |  [x][y]  |
+     *                +----------+
+     *   +----------+ +----------+ +--------+
+     *   |          | |          | |        |
+     *   |  CHANY   | |  Grid    | | CHANY  |
+     *   | [x-1][y] | | [x][y]   | | [x][y] |
+     *   |          | |          | |        |
+     *   +----------+ +----------+ +--------+
+     *                +----------+
+     *                |  CHANX   |
+     *                | [x][y-1] |
+     *                +----------+
+     *
+     *
+     * Therefore, when there are multiple side:
+     * - a TOP side node is considered when the ylow of CHANX >= ylow of the node
+     * - a BOTTOM side node is considered when the ylow of CHANX <= ylow - 1 of the node
+     * - a RIGHT side node is considered when the xlow of CHANY >= xlow of the node
+     * - a LEFT side node is considered when the xlow of CHANY <= xlow - 1 of the node
+     *
+     * Note: ylow == yhigh for CHANX and xlow == xhigh for CHANY
+     *
+     * Note: Similar rules are applied for grid that has width > 1 and height > 1
+     *       This is because (xlow, ylow) or (xhigh, yhigh) of the node follows 
+     *       the actual offset of the pin in the context of grid width and height
+     */
+    std::vector<e_side> pin_candidate_sides;
+    for (const e_side& pin_candidate_side : SIDES) {
+        if ((pin_rr.is_node_on_specific_side(pin_candidate_side))
+            && (grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_candidate_side][pin_rr.pin_num()])) {
+            pin_candidate_sides.push_back(pin_candidate_side);
+        }
+    }
+    /* Only 1 side will be picked in the end
+     * Any rr_node of a grid should have at least 1 side!!!
+     */
+    e_side pin_side = NUM_SIDES;
+    if (1 == pin_candidate_sides.size()) {
+        pin_side = pin_candidate_sides[0];
+    } else {
+        VTR_ASSERT(1 < pin_candidate_sides.size());
+        if (CHANX == chan_rr.type() && pin_rr.ylow() <= chan_rr.ylow()) {
+            pin_side = TOP;
+        } else if (CHANX == chan_rr.type() && pin_rr.ylow() - 1 >= chan_rr.ylow()) {
+            pin_side = BOTTOM;
+        } else if (CHANY == chan_rr.type() && pin_rr.xlow() <= chan_rr.xlow()) {
+            pin_side = RIGHT;
+        } else if (CHANY == chan_rr.type() && pin_rr.xlow() - 1 >= chan_rr.xlow()) {
+            pin_side = LEFT;
+        }
+        /* The inferred side must be in the list of sides of the pin rr_node!!! */
+        VTR_ASSERT(pin_candidate_sides.end() != std::find(pin_candidate_sides.begin(), pin_candidate_sides.end(), pin_side));
+    }
+    /* Sanity check */
+    VTR_ASSERT(NUM_SIDES != pin_side);
+
+    /* Now we determine which side to be used, calculate the offset for the pin to be drawn
+     * - For the pin locates above/right to the grid (at the top/right side), 
+     *   a positive offset (+ve) is required
+     * - For the pin locates below/left to the grid (at the bottom/left side), 
+     *   a negative offset (-ve) is required
+     *
+     *   y
+     *   ^                           +-----+ ---
+     *   |                           | PIN |  ^
+     *   |                           |     |  offset
+     *   |                           |     |  v
+     *   |               +-----------+-----+----------+
+     *   |               |                            |<- offset ->|
+     *   |    |<-offset->|                            +------------+
+     *   |    +----------+        Grid                |   PIN      |
+     *   |    | PIN      |                            +------------+
+     *   |    +----------+                            |
+     *   |               |                            |
+     *   |               +---+-----+------------------+
+     *   |               ^   |     |
+     *   |            offset | PIN |
+     *   |               v   |     |
+     *   |               ----+-----+  
+     *   +------------------------------------------------------------>x
+     */
     float draw_pin_offset;
-    if (pin_rr.side() == TOP || pin_rr.side() == RIGHT) {
+    if (TOP == pin_side || RIGHT == pin_side) {
         draw_pin_offset = draw_coords->pin_size;
     } else {
-        VTR_ASSERT(pin_rr.side() == BOTTOM || pin_rr.side() == LEFT);
+        VTR_ASSERT(BOTTOM == pin_side || LEFT == pin_side);
         draw_pin_offset = -draw_coords->pin_size;
     }
 
-    float x1 = 0, y1 = 0;
-    draw_get_rr_pin_coords(pin_node, &x1, &y1);
+    draw_get_rr_pin_coords(pin_node, &x1, &y1, pin_side);
 
     ezgl::rectangle chan_bbox = draw_get_rr_chan_bbox(chan_node);
 
@@ -3022,11 +3119,30 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     VTR_ASSERT(device_ctx.rr_nodes[opin_node].type() == OPIN);
     VTR_ASSERT(device_ctx.rr_nodes[ipin_node].type() == IPIN);
 
+    /* FIXME: May use a smarter strategy
+     * Currently, we use the last side found for both OPIN and IPIN 
+     * when draw the direct connection between the two nodes
+     * Note: tried first side but see missing connections
+     */
     float x1 = 0, y1 = 0;
-    draw_get_rr_pin_coords(opin_node, &x1, &y1);
+    std::vector<e_side> opin_candidate_sides;
+    for (const e_side& opin_candidate_side : SIDES) {
+        if (device_ctx.rr_nodes[opin_node].is_node_on_specific_side(opin_candidate_side)) {
+            opin_candidate_sides.push_back(opin_candidate_side);
+        }
+    }
+    VTR_ASSERT(1 <= opin_candidate_sides.size());
+    draw_get_rr_pin_coords(opin_node, &x1, &y1, opin_candidate_sides.back());
 
     float x2 = 0, y2 = 0;
-    draw_get_rr_pin_coords(ipin_node, &x2, &y2);
+    std::vector<e_side> ipin_candidate_sides;
+    for (const e_side& ipin_candidate_side : SIDES) {
+        if (device_ctx.rr_nodes[ipin_node].is_node_on_specific_side(ipin_candidate_side)) {
+            ipin_candidate_sides.push_back(ipin_candidate_side);
+        }
+    }
+    VTR_ASSERT(1 <= ipin_candidate_sides.size());
+    draw_get_rr_pin_coords(ipin_node, &x2, &y2, ipin_candidate_sides.back());
 
     g->draw_line({x1, y1}, {x2, y2});
 
@@ -3039,16 +3155,23 @@ static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
 
     float x1 = 0, y1 = 0;
-    draw_get_rr_pin_coords(ipin_node, &x1, &y1);
+    /* Draw the line for each ipin on different sides */
+    for (const e_side& pin_side : SIDES) {
+        if (!device_ctx.rr_nodes[ipin_node].is_node_on_specific_side(pin_side)) {
+            continue;
+        }
 
-    float x2 = 0, y2 = 0;
-    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[sink_node], &x2, &y2);
+        draw_get_rr_pin_coords(ipin_node, &x1, &y1, pin_side);
 
-    g->draw_line({x1, y1}, {x2, y2});
+        float x2 = 0, y2 = 0;
+        draw_get_rr_src_sink_coords(device_ctx.rr_nodes[sink_node], &x2, &y2);
 
-    float xend = x2 + (x1 - x2) / 10.;
-    float yend = y2 + (y1 - y2) / 10.;
-    draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
+        g->draw_line({x1, y1}, {x2, y2});
+
+        float xend = x2 + (x1 - x2) / 10.;
+        float yend = y2 + (y1 - y2) / 10.;
+        draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
+    }
 }
 
 static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g) {
@@ -3057,14 +3180,21 @@ static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g
     float x1 = 0, y1 = 0;
     draw_get_rr_src_sink_coords(device_ctx.rr_nodes[source_node], &x1, &y1);
 
-    float x2 = 0, y2 = 0;
-    draw_get_rr_pin_coords(opin_node, &x2, &y2);
+    /* Draw the line for each ipin on different sides */
+    for (const e_side& pin_side : SIDES) {
+        if (!device_ctx.rr_nodes[opin_node].is_node_on_specific_side(pin_side)) {
+            continue;
+        }
 
-    g->draw_line({x1, y1}, {x2, y2});
+        float x2 = 0, y2 = 0;
+        draw_get_rr_pin_coords(opin_node, &x2, &y2, pin_side);
 
-    float xend = x2 + (x1 - x2) / 10.;
-    float yend = y2 + (y1 - y2) / 10.;
-    draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
+        g->draw_line({x1, y1}, {x2, y2});
+
+        float xend = x2 + (x1 - x2) / 10.;
+        float yend = y2 + (y1 - y2) / 10.;
+        draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
+    }
 }
 
 static inline void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g) {

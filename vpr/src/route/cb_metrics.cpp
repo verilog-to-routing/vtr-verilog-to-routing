@@ -1201,10 +1201,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
 
     /* the config vector represents some distribution of signals over available wires. i.e. x wires of type 0 get used, y wires of type 1, etc
      * this vector is created here, but is updated inside the count_switch_configurations function */
-    std::vector<int> config;
-    for (int i = 0; i < (int)count_map.size(); i++) {
-        config.push_back(0);
-    }
+    std::vector<int> config(count_map.size(), 0); // Prefill with zeroes
 
     /* the nuber of wires that are used */
     int wires_used = vtr::nint(fraction_wires_used * (float)capacity);

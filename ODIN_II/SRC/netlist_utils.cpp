@@ -443,6 +443,44 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: combine_nets_with_spot_copy)
+ * // output net is a net with a driver
+ * // input net is a net with all the fanouts
+ * In addition to combining two nets, it will change the value of 
+ * all input nets driven by the output_net previously.
+ *-------------------------------------------------------------------------------------------*/
+void combine_nets_with_spot_copy(nnet_t* output_net, nnet_t* input_net, long sc_spot_output, netlist_t* netlist) {
+    long in_net_idx;
+    long idx_array_size = 0;
+    long* idx_array = NULL;
+
+    // check to see if any matching input_net exist, then save its index
+    for (in_net_idx = 0; in_net_idx < input_nets_sc->size; in_net_idx++) {
+        if (input_nets_sc->data[in_net_idx] == output_net) {
+            idx_array = (long*)vtr::realloc(idx_array, sizeof(long*) * (idx_array_size + 1));
+            idx_array[idx_array_size] = in_net_idx;
+            idx_array_size += 1;
+        }
+    }
+
+    combine_nets(output_net, input_net, netlist);
+    output_net = NULL;
+    /* since the driver net is deleted, copy the spot of the input_net over */
+    output_nets_sc->data[sc_spot_output] = (void*)input_net;
+
+    // copy the spot of input_nets for other inputs driven by the output_net
+    for (in_net_idx = 0; in_net_idx < idx_array_size; in_net_idx++) {
+        char* net_name = input_nets_sc->string[idx_array[in_net_idx]];
+        input_nets_sc->data[idx_array[in_net_idx]] = (void*)input_net;
+        // check to see if there is any matching output net too.
+        if ((sc_spot_output = sc_lookup_string(output_nets_sc, net_name)) != -1)
+            output_nets_sc->data[sc_spot_output] = (void*)input_net;
+    }
+
+    vtr::free(idx_array);
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: join_nets)
  * 	Copies the fanouts from input net into net
  * TODO: improve error message
@@ -480,6 +518,71 @@ void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
     }
 }
 
+/*---------------------------------------------------------------------------------------------
+ * (function: integrate_nets)
+ * processing the integration of the input net, named with the 
+ * full_name string (if not exist in input_nets_sc then use driver_net), 
+ * with the alias net (a related module/function/task instance connection).
+ *-------------------------------------------------------------------------------------------*/
+void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
+    long sc_spot_output;
+    long sc_spot_input_old;
+    long sc_spot_input_new;
+
+    sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name);
+    oassert(sc_spot_input_old != -1);
+
+    /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
+    if (strstr(full_name, ONE_VCC_CNS)) {
+        join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
+    } else if (strstr(full_name, ZERO_GND_ZERO)) {
+        join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
+    }
+    /* check if the instantiation pin exists. */
+    else if ((sc_spot_output = sc_lookup_string(output_nets_sc, full_name)) == -1) {
+        /* IF - no driver, then assume that it needs to be aliased to move up as an input */
+        if ((sc_spot_input_new = sc_lookup_string(input_nets_sc, full_name)) == -1) {
+            /* if this input is not yet used in this module then we'll add it */
+            sc_spot_input_new = sc_add_string(input_nets_sc, full_name);
+
+            if (driver_net == NULL) {
+                /* copy the pin to the old spot */
+                input_nets_sc->data[sc_spot_input_new] = input_nets_sc->data[sc_spot_input_old];
+            } else {
+                /* copy the pin to the old spot */
+                input_nets_sc->data[sc_spot_input_new] = (void*)driver_net;
+                nnet_t* old_in_net = (nnet_t*)input_nets_sc->data[sc_spot_input_old];
+                join_nets((nnet_t*)input_nets_sc->data[sc_spot_input_new], old_in_net);
+                //net = NULL;
+                old_in_net = free_nnet(old_in_net);
+                input_nets_sc->data[sc_spot_input_old] = (void*)driver_net;
+            }
+        } else {
+            /* already exists so we'll join the nets */
+            combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], verilog_netlist);
+            input_nets_sc->data[sc_spot_input_old] = NULL;
+        }
+    } else {
+        /* ELSE - we've found a matching net, so add this pin to the net */
+        nnet_t* out_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
+        nnet_t* in_net = (nnet_t*)input_nets_sc->data[sc_spot_input_old];
+
+        if ((out_net != in_net) && (out_net->combined == true)) {
+            /* if they haven't been combined already, then join the inputs and output */
+            join_nets(out_net, in_net);
+            in_net = free_nnet(in_net);
+            /* since the driver net is deleted, copy the spot of the in_net over */
+            input_nets_sc->data[sc_spot_input_old] = (void*)out_net;
+        } else if ((out_net != in_net) && (out_net->combined == false)) {
+            // merge the out_net into the in_net and alter related string cache data for all nets driven by the out_net
+            combine_nets_with_spot_copy(out_net, in_net, sc_spot_output, verilog_netlist);
+        }
+    }
+}
 /*---------------------------------------------------------------------------------------------
  * (function: remap_pin_to_new_net)
  *-------------------------------------------------------------------------------------------*/
@@ -589,7 +692,15 @@ signal_list_t* combine_lists(signal_list_t** signal_lists, int num_signal_lists)
         if (signal_lists[i]) {
             int j;
             for (j = 0; j < signal_lists[i]->count; j++) {
-                add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
+                int k;
+                bool pin_already_added = false;
+                for (k = 0; k < signal_lists[0]->count; k++) {
+                    if (!strcmp(signal_lists[0]->pins[k]->name, signal_lists[i]->pins[j]->name))
+                        pin_already_added = true;
+                }
+
+                if (!pin_already_added)
+                    add_pin_to_signal_list(signal_lists[0], signal_lists[i]->pins[j]);
             }
 
             free_signal_list(signal_lists[i]);
