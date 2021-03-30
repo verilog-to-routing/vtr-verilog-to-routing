@@ -83,16 +83,16 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
     int macro_can_be_placed = true;
 
     //Check if macro is constrained
+    auto start = std::chrono::high_resolution_clock::now();
+
     bool macro_constrained = is_macro_constrained(pl_macro);
     PartitionRegion macro_pr;
 
-    auto start = std::chrono::high_resolution_clock::now();
+    auto stop = std::chrono::high_resolution_clock::now();
 
     if (macro_constrained) {
         macro_pr = constrained_macro_locs(pl_macro);
     }
-
-    auto stop = std::chrono::high_resolution_clock::now();
 
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
@@ -404,7 +404,7 @@ std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_scor
     };
 
     std::stable_sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
-    print_sorted_blocks(sorted_blocks, block_scores);
+    //print_sorted_blocks(sorted_blocks, block_scores);
 
     return sorted_blocks;
 }
