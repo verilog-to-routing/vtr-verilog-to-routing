@@ -222,11 +222,13 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     int j = node->num_output_pins;
 
     // Make sure the port is not already assigned.
+    // TODO: more complicated logic needs to be implementd this is temporary solution
     for (i = 0; i < j; i++) {
         npin_t* pin = node->output_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST, node->loc,
-                          "Attempted to reassign output port %s to node %s.", port_name, node->name);
+            // error_message(NETLIST, node->loc,
+            //               "Attempted to reassign output port %s to node %s.", port_name, node->name);
+            return;
         }
     }
 
@@ -1711,6 +1713,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
         npin_t* not_output = allocate_npin();
         add_output_pin_to_node(not_g, not_output, 0);
         nnet_t* net = allocate_nnet();
+        net->name = make_full_ref_name(NULL, NULL, NULL, not_g->name, 0);
         add_driver_pin_to_net(net, not_output);
         not_output = allocate_npin();
         add_fanout_pin_to_net(net, not_output);
@@ -1750,6 +1753,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
         npin_t* output = allocate_npin();
         nnet_t* net = allocate_nnet();
         add_output_pin_to_node(and_g, output, 0);
+        net->name = make_full_ref_name(NULL, NULL, NULL, and_g->name, 0);
         add_driver_pin_to_net(net, output);
         output = allocate_npin();
         add_fanout_pin_to_net(net, output);

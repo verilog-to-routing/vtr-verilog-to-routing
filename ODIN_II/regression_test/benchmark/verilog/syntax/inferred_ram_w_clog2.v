@@ -4,16 +4,16 @@
 
 module inferred_ram_w_clog2(
 	clk,
+	address,
 	data_in,
-	data_out,
-	address
+	data_out
 );
 	parameter WORD_SIZE_LOCAL = `WORD_SIZE;
 	parameter RAM_DEPTH_LOCAL = `RAM_DEPTH;
 	parameter DEPTH_LOG2_LOCAL = $clog2(RAM_DEPTH_LOCAL);
 
 	input clk;
-	input [`DEPTH_LOG2-1:0] address;
+	input [DEPTH_LOG2_LOCAL-1:0] address;
 	input [`WORD_SIZE-1:0] data_in;
 	output [`WORD_SIZE-1:0] data_out;
 
@@ -29,13 +29,13 @@ endmodule
 
 module top(
 	clk,
+	address,
 	data_in,
 	data_out1,
 	data_out2,
 	data_out3,
 	data_out4,
-	data_out5,
-	address
+	data_out5
 );
 
 	input clk;
@@ -47,16 +47,16 @@ module top(
 	output [`WORD_SIZE-1:0] data_out4;
 	output [`WORD_SIZE-1:0] data_out5;
 
-	parameter NEW_RAM_DEPTH = 2**3;
+	parameter NEW_RAM_DEPTH = 2**4;
 
 	// ram_depth = 2**5, depth_log2 = 5
-	inferred_ram_w_clog2 inst_1 (clk, data_in, data_out1, address);
+	inferred_ram_w_clog2 										inst_1 (clk, address, data_in, data_out1);
 
-	// ram_depth = 2**3, depth_log2 = 3
-	inferred_ram_w_clog2 #(.RAM_DEPTH_LOCAL(NEW_RAM_DEPTH)) inst_2 (clk, data_in, data_out2, address);
+	// ram_depth = 2**3, depth_log2 = 4
+	inferred_ram_w_clog2 #(.RAM_DEPTH_LOCAL(NEW_RAM_DEPTH)) 	inst_2 (clk, address, data_in, data_out2);
 
-	// ram_depth = 2**4, depth_log2 = 4
-	inferred_ram_w_clog2 #(.RAM_DEPTH_LOCAL(2**($clog2(16)))) inst_3 (clk, data_in, data_out3, address);
+	// ram_depth = 2**4, depth_log2 = 3
+	inferred_ram_w_clog2 #(.RAM_DEPTH_LOCAL(2**($clog2(8)))) 	inst_3 (clk, address, data_in, data_out3);
 
 	assign data_out4 = $clog2(`RAM_DEPTH);
 

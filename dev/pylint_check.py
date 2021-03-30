@@ -121,7 +121,7 @@ def expand_paths():
             if path.suffix.lower() != ".py":
                 print(path, "does note have extension '.py'")
                 sys.exit(-1)
-            paths.append(path)
+            paths.append(path.resolve())
 
         # If path is a directory, search for .py files
         elif path.is_dir():
@@ -151,11 +151,22 @@ def main():
         action="store_true",
         help="Also check grandfathered files for lint errors.",
     )
+    parser.add_argument("files", nargs="*", help="List of files to check using pylint.")
     args = parser.parse_args()
 
-    # Expand all paths
-    paths = expand_paths()
-    print(TermColor.BLUE + "Linting", len(paths), "python files.", TermColor.END)
+    # Check if we are doing all files, or user-provided list
+    if args.files:
+        # Check that all files exist, and build pathlib objects
+        paths = []
+        for file in args.files:
+            f_path = pathlib.Path(file).resolve()
+            if not f_path.is_file():
+                error(f_path, "does not exist")
+            paths.append(f_path)
+    else:
+        # Expand all paths
+        paths = expand_paths()
+    print(TermColor.BLUE + "Linting", len(paths), "python file(s).", TermColor.END)
 
     # Lint files
     num_error_files = 0
