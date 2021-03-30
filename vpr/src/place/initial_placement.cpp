@@ -9,6 +9,8 @@
 #include "place_util.h"
 #include "place_constraints.h"
 
+#include <chrono>
+#include <time.h>
 //Used to assign each block a score for how difficult it is to place
 struct t_block_score {
     int macro_size = 0; //how many members does the macro have, if the block is part of one, this value is zero if the block is not in a macro
@@ -84,9 +86,17 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
     bool macro_constrained = is_macro_constrained(pl_macro);
     PartitionRegion macro_pr;
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     if (macro_constrained) {
         macro_pr = constrained_macro_locs(pl_macro);
     }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+    VTR_LOG("\n Duration of macro constrained check: %d \n", duration);
 
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
