@@ -53,6 +53,7 @@ bool is_macro_constrained(t_pl_macro pl_macro) {
     return is_macro_constrained;
 }
 
+/*Returns PartitionRegion of where the head of the macro could go*/
 PartitionRegion constrained_macro_locs(t_pl_macro pl_macro) {
     PartitionRegion macro_pr;
     bool is_member_constrained = false;

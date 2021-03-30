@@ -82,21 +82,12 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
     // Every macro can be placed until proven otherwise
     int macro_can_be_placed = true;
 
-    //Check if macro is constrained
-    auto start = std::chrono::high_resolution_clock::now();
-
     bool macro_constrained = is_macro_constrained(pl_macro);
     PartitionRegion macro_pr;
-
-    auto stop = std::chrono::high_resolution_clock::now();
 
     if (macro_constrained) {
         macro_pr = constrained_macro_locs(pl_macro);
     }
-
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-
-    VTR_LOG("\n Duration of macro constrained check: %d \n", duration);
 
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
