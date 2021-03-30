@@ -2729,7 +2729,7 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_output_pin)
- * 	Create OUTPUT pin creates a pin representing this naming isntance, adds it to the input
+ * 	Create OUTPUT pin creates a pin representing this naming instance, adds it to the input
  * 	nets list (if not already there) and adds the pin to the list.
  * 	Note: only for output drivers...
  *-------------------------------------------------------------------------------------------*/
