@@ -2774,7 +2774,12 @@ void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph
         for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
             auto rr_type = rr_node.type();
             if (rr_type == IPIN || rr_type == OPIN) {
-                insert_at_ptc_index(rr_node_indices[rr_node.type()][x][y][rr_node.side()], rr_node.ptc_num(), inode);
+                for (const e_side& side : SIDES) {
+                    if (!rr_node.is_node_on_specific_side(side)) {
+                        continue;
+                    }
+                    insert_at_ptc_index(rr_node_indices[rr_node.type()][x][y][side], rr_node.ptc_num(), inode);
+                }
             } else if (rr_type == CHANX) {
                 //CHANX uses odd swapped x/y indices....
                 insert_at_ptc_index(rr_node_indices[rr_node.type()][y][x][0], rr_node.ptc_num(), inode);
