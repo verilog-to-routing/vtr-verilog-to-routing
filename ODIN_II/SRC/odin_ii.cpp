@@ -432,14 +432,26 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
-        // if we started with a verilog file read the output that was made since
-        // the simulator can only simulate blifs
-        if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
+        if (configuration.blif_type == blif_type_e::_ODIN_BLIF) {
+            // if we started with a verilog file read the output that was made since
+            // the simulator can only simulate blifs
+            if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
+                configuration.list_of_file_names = {global_args.output_file};
+                my_location.file = 0;
+            } else {
+                printf("Blif: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+                fflush(stdout);
+            }
+
+        } else {
+            /*
+             * Considering the output blif file (whether specified or default one)
+             * as the blif for simulation process. This is because the input blif 
+             * from other tools are not compatible with Odin simulation process, 
+             * so they need to be processed first.
+             */
             configuration.list_of_file_names = {global_args.output_file};
             my_location.file = 0;
-        } else {
-            printf("Blif: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
-            fflush(stdout);
         }
 
         try {
@@ -736,8 +748,13 @@ void get_options(int argc, char** argv) {
         //parse comma separated list of verilog files
         configuration.list_of_file_names = global_args.verilog_files.value();
         configuration.is_verilog_input = true;
+
+        if (global_args.yosys_blif.provenance() == argparse::Provenance::SPECIFIED)
+            error_message(PARSE_ARGS, unknown_location, "%s", "Using --yosys argument, Odin should have provided with the generated BLIF file from Yosys.\n");
+
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
+        configuration.is_blif_input = true;
 
         if (global_args.yosys_blif.provenance() == argparse::Provenance::SPECIFIED)
             configuration.blif_type = blif_type_e::_YOSYS_BLIF;
