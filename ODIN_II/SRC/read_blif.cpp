@@ -122,6 +122,7 @@ hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* por
 void free_hard_block_models(hard_block_models* models);
 
 hard_block_models* create_hard_block_models();
+hard_block_model* create_hard_block_model(char* name, hard_block_ports* ports);
 
 int count_blif_lines(FILE* file);
 
@@ -496,11 +497,15 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
     // Determine the type of hard block.
     char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
     subcircuit_name_prefix[5] = '\0';
-    if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_"))
+    if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_")
+     || !strcmp(subcircuit_name, "$mul") || !strcmp(subcircuit_name_prefix, "$mul"))
         new_node->type = MULTIPLY;
-    else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder"))
+    else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder")
+          || !strcmp(subcircuit_name, "$add") || !strcmp(subcircuit_name_prefix, "$add")) {
         new_node->type = ADD;
-    else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub"))
+
+    } else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub")
+          || !strcmp(subcircuit_name, "$sub") || !strcmp(subcircuit_name_prefix, "$sub"))
         new_node->type = MINUS;
     else {
         new_node->type = MEMORY;
@@ -1236,8 +1241,12 @@ hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* por
             }
         }
 
-        if (!model || feof(file))
-            error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
+        if (!model || feof(file)) {
+            if (!strcmp("$add", name_subckt) || !strcmp("$sub", name_subckt))
+                model = create_hard_block_model(name_subckt, ports);
+            else
+                error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
+        }
 
         // Sort the names.
         qsort(model->inputs->names, model->inputs->count, sizeof(char*), compare_hard_block_pin_names);
@@ -1522,6 +1531,54 @@ hard_block_models* create_hard_block_models() {
     m->index = new Hashtable();
 
     return m;
+}
+
+/*
+ * (function: create_hard_block
+ * create a hard block model based on the given hard block port
+ */
+hard_block_model* create_hard_block_model(char* name, hard_block_ports* ports) {
+    oassert(ports);
+
+    int i, j;
+    hard_block_model* model = (hard_block_model*)vtr::calloc(1, sizeof(hard_block_model));
+    model->name = vtr::strdup(name);
+
+    hard_block_pins* inputs = (hard_block_pins*)vtr::calloc(1, sizeof(hard_block_pins));
+    hard_block_pins* outputs = (hard_block_pins*)vtr::calloc(1, sizeof(hard_block_pins));
+
+    inputs->count = 0;
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < ports->sizes[i]; j++) {
+            char pin_name[READ_BLIF_BUFFER] = {0};
+            inputs->names = (char**)vtr::realloc(inputs->names, (inputs->count + 1) * sizeof(char*));
+
+            if (ports->sizes[i] == 1)
+                sprintf(pin_name, "%s", ports->names[i]);
+            else
+                sprintf(pin_name, "%s[%d]", ports->names[i], j);
+            inputs->names[inputs->count] = vtr::strdup(pin_name);
+            inputs->count++;
+        }
+    }
+
+    outputs->count = 0;
+    for (i = 0; i < ports->sizes[2]; i++) {
+            char pin_name[READ_BLIF_BUFFER] = {0};
+            outputs->names = (char**)vtr::realloc(outputs->names, (outputs->count + 1) * sizeof(char*));
+
+            if (ports->sizes[2] == 1)
+                sprintf(pin_name, "%s", ports->names[2]);
+            else
+                sprintf(pin_name, "%s[%d]", ports->names[2], i);
+            outputs->names[outputs->count] = vtr::strdup(pin_name);
+            outputs->count++;
+    }
+
+    model->inputs = inputs;
+    model->outputs = outputs;
+
+    return model;
 }
 
 /*

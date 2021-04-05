@@ -44,6 +44,7 @@
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
+#include "blif_elaborate.h"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "read_blif.h"
@@ -90,6 +91,124 @@ enum ODIN_ERROR_CODE {
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
+
+static ODIN_ERROR_CODE partial_mapping() {
+    double partial_mapping_time = wall_time();
+
+    printf("--------------------------------------------------------------------\n");
+    printf("High-level synthesis Begin\n");
+
+    FILE* output_blif_file = create_blif(global_args.output_file.value().c_str());
+
+    /* Perform any initialization routines here */
+    find_hard_multipliers();
+    find_hard_adders();
+    //find_hard_adders_for_sub();
+    register_hard_blocks();
+
+    module_names_to_idx = sc_new_string_cache();
+
+    // /* parse to abstract syntax tree */
+    // printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
+    // verilog_ast = init_parser();
+    // parse_to_ast();
+    /**
+     *  Note that the entry point for ast optimzations is done per module with the
+     * function void next_parsed_verilog_file(ast_node_t *file_items_list)
+     */
+
+    /* after the ast is made potentially do tagging for downstream links to verilog */
+    // if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
+    //     add_tag_data(verilog_ast);
+
+    /**
+     *  Now that we have a parse tree (abstract syntax tree [ast]) of
+     *	the Verilog we want to make into a netlist.
+     */
+    // printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
+    // create_netlist(verilog_ast);
+    printf("Elaborating the netlist created from the input BLIF file to make it compatible with ODIN_II partial mapping\n");
+    blif_elaborate_top(verilog_netlist);
+    if (verilog_netlist) {
+        // Can't levelize yet since the large muxes can look like combinational loops when they're not
+        check_netlist(verilog_netlist);
+
+        //START ################# NETLIST OPTIMIZATION ############################
+
+        /* point for all netlist optimizations. */
+        printf("Performing Optimizations of the Netlist\n");
+        if (hard_multipliers) {
+            /* Perform a splitting of the multipliers for hard block mults */
+            reduce_operations(verilog_netlist, MULTIPLY);
+            iterate_multipliers(verilog_netlist);
+            clean_multipliers();
+        }
+
+        if (single_port_rams || dual_port_rams) {
+            /* Perform a splitting of any hard block memories */
+            iterate_memories(verilog_netlist);
+            free_memory_lists();
+        }
+
+        if (hard_adders) {
+            /* Perform a splitting of the adders for hard block add */
+            reduce_operations(verilog_netlist, ADD);
+            iterate_adders(verilog_netlist);
+            clean_adders();
+
+            /* Perform a splitting of the adders for hard block sub */
+            reduce_operations(verilog_netlist, MINUS);
+            iterate_adders_for_sub(verilog_netlist);
+            clean_adders_for_sub();
+        }
+
+        //END ################# NETLIST OPTIMIZATION ############################
+
+        if (configuration.output_netlist_graphs)
+            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, verilog_netlist); /* Path is where we are */
+
+        /* point where we convert netlist to FPGA or other hardware target compatible format */
+        printf("Performing Partial Map to target device\n");
+        partial_map_top(verilog_netlist);
+        mixer->perform_optimizations(verilog_netlist);
+
+        /* Find any unused logic in the netlist and remove it */
+        remove_unused_logic(verilog_netlist);
+
+        /**
+         * point for outputs.  This includes soft and hard mapping all structures to the
+         * target format.  Some of these could be considred optimizations
+         */
+        printf("Outputting the netlist to the specified output format\n");
+
+        output_blif(output_blif_file, verilog_netlist);
+        module_names_to_idx = sc_free_string_cache(module_names_to_idx);
+
+        cleanup_parser();
+
+        printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n", global_args.output_file.value().c_str());
+        report_mult_distribution();
+        report_add_distribution();
+        report_sub_distribution();
+
+        compute_statistics(verilog_netlist, true);
+
+        deregister_hard_blocks();
+
+        //cleanup netlist
+        free_netlist(verilog_netlist);
+    } else {
+        printf("Empty blif generated, Empty input or no module declared\n");
+    }
+    fclose(output_blif_file);
+
+    partial_mapping_time = wall_time() - partial_mapping_time;
+    printf("Partial Mapping Time: ");
+    print_time(partial_mapping_time);
+    printf("\n--------------------------------------------------------------------\n");
+
+    return SUCCESS;
+}
 
 static ODIN_ERROR_CODE synthesize_verilog() {
     double elaboration_time = wall_time();
@@ -266,16 +385,29 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     printf("Using Lut input width of: %d\n", physical_lut_size);
 
     /* do High level Synthesis */
-    if (!configuration.list_of_file_names.empty() && configuration.is_verilog_input) {
-        for (std::string v_file : global_args.verilog_files.value()) {
-            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
-        }
-        fflush(stdout);
+    if (!configuration.list_of_file_names.empty()) {
+        ODIN_ERROR_CODE error_code;
 
-        ODIN_ERROR_CODE error_code = synthesize_verilog();
-        if (error_code) {
-            printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
-            exit(error_code);
+        if (configuration.is_verilog_input) {
+            for (std::string v_file : global_args.verilog_files.value()) {
+                printf("Verilog: %s\n", vtr::basename(v_file).c_str());
+            }
+            fflush(stdout);
+
+            error_code = synthesize_verilog();
+            if (error_code) {
+                printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
+                exit(error_code);
+            }
+        } else if (configuration.is_blif_input) {
+            printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+            fflush(stdout);
+
+            verilog_netlist = read_blif();
+            error_code = partial_mapping();
+            // if (error_code) {
+            //     printf("Odin Failed to parse input BLIF file with exit status: %d\n", error_code);
+            // }
         }
 
         printf("\n");
@@ -589,6 +721,7 @@ void get_options(int argc, char** argv) {
         configuration.is_verilog_input = true;
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
+        configuration.is_blif_input = true;
     }
 
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {

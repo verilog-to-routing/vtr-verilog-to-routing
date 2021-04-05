@@ -57,6 +57,7 @@
 
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
+#define BLIF_ELABORATE_TRAVERSE_VALUE 11
 #define OUTPUT_TRAVERSE_VALUE 12
 #define COUNT_NODES 14 /* NOTE that you can't call countnodes one after the other or the mark will be incorrect */
 #define COMBO_LOOP 15
