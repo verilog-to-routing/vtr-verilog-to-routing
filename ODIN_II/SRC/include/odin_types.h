@@ -57,7 +57,6 @@
 
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
-#define BLIF_ELABORATE_TRAVERSE_VALUE 11
 #define OUTPUT_TRAVERSE_VALUE 12
 #define COUNT_NODES 14 /* NOTE that you can't call countnodes one after the other or the mark will be incorrect */
 #define COMBO_LOOP 15
@@ -65,6 +64,8 @@
 #define GRAPH_CRUNCH 17
 #define STATS 18
 #define SEQUENTIAL_LEVELIZE 19
+
+#define YOSYS_BLIF_ELABORATE_TRAVERSE_VALUE 30
 
 /* unique numbers for using void *data entries in some of the datastructures */
 #define RESET -1
@@ -99,6 +100,7 @@ struct global_args_t {
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
+    argparse::ArgValue<bool> yosys_blif;
 
     argparse::ArgValue<std::string> adder_def; //DEPRECATED
 

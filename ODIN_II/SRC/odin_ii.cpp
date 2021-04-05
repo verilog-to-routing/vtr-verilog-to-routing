@@ -403,11 +403,22 @@ netlist_t* start_odin_ii(int argc, char** argv) {
             printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
             fflush(stdout);
 
-            verilog_netlist = read_blif();
-            error_code = partial_mapping();
-            // if (error_code) {
-            //     printf("Odin Failed to parse input BLIF file with exit status: %d\n", error_code);
-            // }
+            /*
+             * Nothing to do here since partial map 
+             * is already done with the previous run
+             */
+            if (configuration.blif_type != blif_type_e::_ODIN_BLIF) {
+                try {
+                    verilog_netlist = read_blif();
+                    error_code = partial_mapping();
+                    // if (error_code) {
+                    //     printf("Odin Failed to parse input BLIF file with exit status: %d\n", error_code);
+                    // }
+                } catch (vtr::VtrError& vtr_error) {
+                    printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
+                    exit(ERROR_PARSE_BLIF);
+                }
+            }
         }
 
         printf("\n");
@@ -537,6 +548,12 @@ void get_options(int argc, char** argv) {
     other_grp.add_argument(global_args.show_help, "-h")
         .help("Display this help message")
         .action(argparse::Action::HELP);
+
+    other_grp.add_argument(global_args.yosys_blif, "--yosys")
+        .help("elaborate the yosys blif file to prepare it for odin's partial mapping")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("YOSYS_INPUT_BLIF");
 
     other_grp.add_argument(global_args.arch_file, "-a")
         .help("VTR FPGA architecture description file (XML)")
@@ -721,7 +738,9 @@ void get_options(int argc, char** argv) {
         configuration.is_verilog_input = true;
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
-        configuration.is_blif_input = true;
+
+        if (global_args.yosys_blif.provenance() == argparse::Provenance::SPECIFIED)
+            configuration.blif_type = blif_type_e::_YOSYS_BLIF;
     }
 
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
@@ -770,6 +789,7 @@ void get_options(int argc, char** argv) {
 void set_default_config() {
     /* Set up the global configuration. */
     configuration.output_type = std::string("blif");
+    configuration.blif_type = blif_type_e::_ODIN_BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;

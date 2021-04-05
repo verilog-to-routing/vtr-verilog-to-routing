@@ -777,8 +777,8 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
     for (i = offset; i < count - 1; i++) {
         for (j = 0; j < node[i]->num_output_pins - 1; j++) {
             char* new_output_pin_name = (char*)vtr::malloc((strlen(node[i]->name) + 20) * sizeof(char)); /* 6 chars for pin idx */
-                odin_sprintf(new_output_pin_name, "%s[1]", node[i]->name);
-                node[i]->output_pins[1]->name = new_output_pin_name;
+            odin_sprintf(new_output_pin_name, "%s[1]", node[i]->name);
+            node[i]->output_pins[1]->name = new_output_pin_name;
         }
     }
 

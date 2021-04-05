@@ -1,5 +1,6 @@
 #include <vector>
 #include <string>
+#include "blif_type.h"
 
 #ifndef CONFIG_T_H
 #    define CONFIG_T_H
@@ -13,6 +14,8 @@ struct config_t {
     std::string debug_output_path; // path for where to output the debug outputs
     bool is_verilog_input;
     bool is_blif_input;
+    blif_type_e blif_type;
+
     bool output_ast_graphs;     // switch that outputs ast graphs per node for use with GRaphViz tools
     bool output_netlist_graphs; // switch that outputs netlist graphs per node for use with GraphViz tools
     bool print_parse_tokens;    // switch that controls whether or not each token is printed during parsing
