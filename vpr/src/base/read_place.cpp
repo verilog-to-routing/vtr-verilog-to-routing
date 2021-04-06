@@ -67,7 +67,7 @@ void read_constraints(const char* constraints_file) {
 
     read_place_body(fstream, constraints_file, is_place_file);
 
-    VTR_LOG("Successfully read %s.\n", constraints_file);
+    VTR_LOG("Successfully read constraints file %s.\n", constraints_file);
     VTR_LOG("\n");
 }
 
