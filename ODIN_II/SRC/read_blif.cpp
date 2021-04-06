@@ -40,6 +40,7 @@
 #include "vtr_memory.h"
 
 #define TOKENS " \t\n"
+#define YOSYS_TOKENS "[]"
 #define GND_NAME "gnd"
 #define VCC_NAME "vcc"
 #define HBPAD_NAME "unconn"
@@ -88,6 +89,7 @@ struct hard_block_models {
 netlist_t* blif_netlist;
 bool static skip_reading_bit_map = false;
 bool insert_global_clock;
+char* scope_model_name = NULL;
 
 void rb_create_top_driver_nets(const char* instance_name_prefix, Hashtable* output_nets_hash);
 void rb_look_for_clocks(); // not sure if this is needed
@@ -95,6 +97,8 @@ void add_top_input_nodes(FILE* file, Hashtable* output_nets_hash);
 void rb_create_top_output_nodes(FILE* file);
 int read_tokens(char* buffer, hard_block_models* models, FILE* file, Hashtable* output_nets_hash);
 static void dum_parse(char* buffer, FILE* file);
+static void model_parse(char* buffer, FILE* file);
+static char* resolve_signal_name_based_on_blif_type(const char* name_str);
 void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash);
 operation_list assign_node_type_from_node_name(char* output_name); // function will decide the node->type of the given node
 operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FILE* file);
@@ -198,7 +202,9 @@ int read_tokens(char* buffer, hard_block_models* models, FILE* file, Hashtable* 
             dum_parse(buffer, file);
         } else {
             skip_reading_bit_map = false;
-            if (strcmp(token, ".inputs") == 0) {
+            if (strcmp(token, ".model") == 0) {
+                model_parse(buffer, file); // store the scope model name for in/out name processing
+            } else if (strcmp(token, ".inputs") == 0) {
                 add_top_input_nodes(file, output_nets_hash); // create the top input nodes
             } else if (strcmp(token, ".outputs") == 0) {
                 rb_create_top_output_nodes(file); // create the top output nodes
@@ -212,10 +218,9 @@ int read_tokens(char* buffer, hard_block_models* models, FILE* file, Hashtable* 
                 // Marks the end of the main module of the blif
                 // Call function to hook up the nets
                 hook_up_nets(output_nets_hash);
+                // [TODO] For yosys we need to read other .model as well as the first one!
+                //return (configuration.blif_type ! = blif_type_e::_ODIN_BLIF);
                 return false;
-            } else if (strcmp(token, ".model") == 0) {
-                // Ignore models.
-                dum_parse(buffer, file);
             }
         }
     }
@@ -436,6 +441,7 @@ char* search_clock_name(FILE* file) {
 void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* output_nets_hash) {
     char buffer[READ_BLIF_BUFFER];
     char* subcircuit_name = vtr::strtok(NULL, TOKENS, file, buffer);
+    // subcircuit_name = make_full_ref_name(scope_model_name, NULL, subcircuit_name, NULL,-1);
 
     /* storing the names on the formal-actual parameter */
     char* token;
@@ -453,7 +459,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
     int i = 0;
     for (i = 0; i < count; i++) {
         mappings[i] = vtr::strdup(strtok(names_parameters[i], "="));
-        names[i] = vtr::strdup(strtok(NULL, "="));
+        names[i] = resolve_signal_name_based_on_blif_type(vtr::strdup(strtok(NULL, "=")));
     }
 
     // Associate mappings with their connections.
@@ -498,16 +504,19 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
     char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
     subcircuit_name_prefix[5] = '\0';
     if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_")
-        || !strcmp(subcircuit_name, "$mul") || !strcmp(subcircuit_name_prefix, "$mul"))
+        || !strcmp(subcircuit_name, "$mul") || !strcmp(subcircuit_name_prefix, "$mul")) {
         new_node->type = MULTIPLY;
-    else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder")
+    } else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder")
              || !strcmp(subcircuit_name, "$add") || !strcmp(subcircuit_name_prefix, "$add")) {
         new_node->type = ADD;
 
     } else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub")
-               || !strcmp(subcircuit_name, "$sub") || !strcmp(subcircuit_name_prefix, "$sub"))
+               || !strcmp(subcircuit_name, "$sub") || !strcmp(subcircuit_name_prefix, "$sub")) {
         new_node->type = MINUS;
-    else {
+
+    } else if (!strcmp(subcircuit_name, "$dff") || !strcmp(subcircuit_name_prefix, "$dff")) {
+        new_node->type = FF_NODE;
+    } else {
         new_node->type = MEMORY;
     }
     vtr::free(subcircuit_name_prefix);
@@ -958,11 +967,50 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
 
 /*
  *---------------------------------------------------------------------------------------------
+ * function: resolve_signal_name_based_on_blif_type
+ * to change the signal names of a blif input file to odin style
+ *-------------------------------------------------------------------------------------------*/
+static char* resolve_signal_name_based_on_blif_type(const char* name_str) {
+    char* return_string = NULL;
+    if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
+        
+        char* name = NULL;
+        char* index = NULL;
+        const char* pos = strchr(name_str, '[');
+        if (pos) {
+            name = (char*)vtr::malloc((pos-name_str+1)*sizeof(char));
+            memcpy(name, name_str, pos-name_str);
+            name[pos-name_str] = '\0';
+        }
+
+        const char* pos2 = strchr(name_str, ']');
+        if (pos2) {
+            index = (char*)vtr::malloc((pos2-(pos+1)+1)*sizeof(char));
+            memcpy(index, pos+1, pos2-(pos+1));
+            index[pos2-(pos+1)] = '\0';
+        }
+
+        if (name) {
+            int idx = vtr::atoi(index);
+            return_string = make_full_ref_name(scope_model_name, NULL, NULL, name, idx);
+        } else {
+            return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);    
+        }
+    } else {
+        return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
+    }
+
+    return return_string;
+}
+
+/*
+ *---------------------------------------------------------------------------------------------
  * function: add_top_input_nodes
  * to add the top level inputs to the netlist
  *-------------------------------------------------------------------------------------------*/
 static void build_top_input_node(const char* name_str, Hashtable* output_nets_hash) {
-    char* temp_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
+
+    char* temp_string = resolve_signal_name_based_on_blif_type(name_str);
 
     /* create a new top input node and net*/
 
@@ -1031,8 +1079,7 @@ void rb_create_top_output_nodes(FILE* file) {
     char buffer[READ_BLIF_BUFFER];
 
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-        char* temp_string = make_full_ref_name(ptr, NULL, NULL, NULL, -1);
-        ;
+        char* temp_string = resolve_signal_name_based_on_blif_type(ptr);
 
         /*add_a_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);*/
 
@@ -1143,6 +1190,18 @@ static void dum_parse(char* buffer, FILE* file) {
     /* Continue parsing to the end of this (possibly continued) line. */
     while (vtr::strtok(NULL, TOKENS, file, buffer))
         ;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: model_parse)
+ *-------------------------------------------------------------------------------------------*/
+static void model_parse(char* buffer, FILE* file) {
+    if (configuration.blif_type == blif_type_e::_ODIN_BLIF) {
+        // Ignore models.
+        dum_parse(buffer, file);
+    } else if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
+        scope_model_name = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+    }
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1582,6 +1641,8 @@ hard_block_model* create_hard_block_model(const char* name, hard_block_ports* po
 
                 model->inputs = inputs;
                 model->outputs = outputs;
+            } else if (strcmp(name, "$dff") == 0) {
+               
             } else {
                 error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name);
             }
