@@ -20,6 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,11 +49,18 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
 
 void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* netlist);
 
-void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
+static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+// static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
+static void split_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
-/*-------------------------------------------------------------------------
+/**
+ *-------------------------------------------------------------------------
  * (function: blif_elaborate_top)
+ * 
+ * @brief elaborating the netlist created from input blif file
+ * to make it compatible with Odin's partial mapping
+ * 
+ * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------*/
 void blif_elaborate_top(netlist_t* netlist) {
     /* 
@@ -70,8 +78,14 @@ void blif_elaborate_top(netlist_t* netlist) {
        */
 }
 
-/*---------------------------------------------------------------------------------------------
+/**
+ *---------------------------------------------------------------------------------------------
  * (function: depth_first_traversal_to_blif_elaborate()
+ * 
+ * @brief traverse the netlist to do elaboration
+ * 
+ * @param marker_value unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
  *-------------------------------------------------------------------------------------------*/
 void depth_first_traversal_to_blif_elaborate(short marker_value, netlist_t* netlist) {
     int i;
@@ -88,8 +102,15 @@ void depth_first_traversal_to_blif_elaborate(short marker_value, netlist_t* netl
     depth_first_traverse_blif_elaborate(netlist->pad_node, marker_value, netlist);
 }
 
-/*---------------------------------------------------------------------------------------------
+/**
+ *---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
+ * 
+ * @brief traverse the netlist to do elaboration
+ * 
+ * @param node pointing to the netlist internal nodes
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
  *-------------------------------------------------------------------------------------------*/
 void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     int i, j;
@@ -121,8 +142,15 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
     }
 }
 
-/*----------------------------------------------------------------------
- * (function: partial_map_node)
+/**
+ *----------------------------------------------------------------------
+ * (function: blif_elaborate_node)
+ * 
+ * @brief elaborating each netlist node based on their type
+ * 
+ * @param node pointing to the netlist internal nodes
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
  *--------------------------------------------------------------------*/
 void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlist) {
     switch (node->type) {
@@ -146,6 +174,21 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
                 check_block_ports(node, traverse_number, netlist);
 
             sub_list = insert_in_vptr_list(sub_list, node);
+            break;
+        }
+        case FF_NODE: {
+            /*
+             * split the dff node read from yosys blif to
+             * FF nodes with input/output width one 
+             */
+            split_dff_node(node, traverse_number, netlist);
+            break;
+        }
+        case GND_NODE:
+        case VCC_NODE:
+        case PAD_NODE:
+        case INPUT_NODE:
+        case OUTPUT_NODE: {
             break;
         }
         case BITWISE_NOT:
@@ -180,29 +223,29 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case ADDER_FUNC:
         case CARRY_FUNC:
         case MUX_2:
-        case INPUT_NODE:
         case CLOCK_NODE:
-        case OUTPUT_NODE:
-        case GND_NODE:
-        case VCC_NODE:
-        case FF_NODE:
-        case PAD_NODE:
         case CASE_EQUAL:
         case CASE_NOT_EQUAL:
         case DIVIDE:
         case MODULO:
         default:
-            // error_message(NETLIST, node->loc, "%s", "BLIF Elaboration: node should have been converted to softer version.");
+            error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;
     }
 }
 
-/*-------------------------------------------------------------------------------------------
+/**
+ *-------------------------------------------------------------------------------------------
  * (function: check_block_ports )
- * check for missing ports such as carry-in/out in case of dealing 
- * with generated netlist from other blif files such Yosys.
+ * 
+ * @brief check for missing ports such as carry-in/out in case of 
+ * dealing with generated netlist from other blif files such Yosys.
+ * 
+ * @param node pointing to the netlist node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------------------------*/
-void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node);
     oassert(netlist);
 
@@ -229,40 +272,112 @@ void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
             }
             case MULTIPLY:
             default: {
-                error_message(NETLIST, node->loc,
+                error_message(BLIF_ELBORATION, node->loc,
                               "This should not happen for node(%s) since the check block port function only should have called for add, sub or mult", node->name);
             }
         }
     } /*else other blif files*/
 }
 
-/*
- * Adding a dummy carry out output pin to the adder hard block 
+/**
+ * (function: add_dummy_carry_out_to_adder_hard_block)
+ * 
+ * @brief Adding a dummy carry out output pin to the adder hard block 
  * for the possible future processing of soft adder instatiation
+ * 
+ * @param node pointing to the netlist node 
  */
-void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node) {
-    char* dummy_cout_name = (char*)vtr::malloc(11 * sizeof(char));
-    strcpy(dummy_cout_name, "dummy_cout");
+/*
+ * static void add_dummy_carry_out_to_adder_hard_block(nnode_t* node) {
+ * char* dummy_cout_name = (char*)vtr::malloc(11 * sizeof(char));
+ * strcpy(dummy_cout_name, "dummy_cout");
+ *
+ * npin_t* new_pin = allocate_npin();
+ * new_pin->name = vtr::strdup(dummy_cout_name);
+ * new_pin->type = OUTPUT;
+ *
+ * char* mapping = (char*)vtr::malloc(6 * sizeof(char));
+ * strcpy(mapping, "cout");
+ * new_pin->mapping = vtr::strdup(mapping);
+ *
+ * //add_output_port_information(new_node, 1);
+ * node->output_port_sizes[node->num_output_port_sizes - 1]++;
+ * allocate_more_output_pins(node, 1);
+ *
+ * add_output_pin_to_node(node, new_pin, node->num_output_pins - 1);
+ *
+ * nnet_t* new_net = allocate_nnet();
+ * new_net->name = vtr::strdup(dummy_cout_name);
+ *
+ * add_driver_pin_to_net(new_net, new_pin);
+ *
+ * vtr::free(dummy_cout_name);
+ * vtr::free(mapping);
+ * }
+ */
 
-    npin_t* new_pin = allocate_npin();
-    new_pin->name = vtr::strdup(dummy_cout_name);
-    new_pin->type = OUTPUT;
+/**
+ * (function: split_dff_node)
+ * 
+ * @brief split the dff node read from yosys blif to
+ * FF nodes with input/output width one
+ * 
+ * @param node pointing to the dff node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void split_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->num_output_pins + 1 == node->num_input_pins);
 
-    char* mapping = (char*)vtr::malloc(6 * sizeof(char));
-    strcpy(mapping, "cout");
-    new_pin->mapping = vtr::strdup(mapping);
+    int i;
+    int num_ff_nodes = node->num_output_pins;
 
-    //add_output_port_information(new_node, 1);
-    new_node->output_port_sizes[new_node->num_output_port_sizes - 1]++;
-    allocate_more_output_pins(new_node, 1);
+    /**
+     * input_pin[0] -> CLK
+     * input_pin[1..n] -> D
+     * output_pin[0..n-1] -> Q
+     */
+    for (i = 0; i < num_ff_nodes; i++) {
+        nnode_t* ff_node = allocate_nnode(node->loc);
 
-    add_output_pin_to_node(new_node, new_pin, new_node->num_output_pins - 1);
+        ff_node->type = FF_NODE;
+        ff_node->traverse_visited = traverse_mark_number;
+        /* [TODO]: clock sensitivity is not specified in the yosys blif file */
+        ff_node->edge_type = ASYNCHRONOUS_SENSITIVITY;
 
-    nnet_t* new_net = allocate_nnet();
-    new_net->name = vtr::strdup(dummy_cout_name);
+        /* Name the flipflop based on the name of its output pin */
+        const char* ff_base_name = node_name_based_on_op(ff_node);
+        ff_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(ff_base_name) + 2));
+        odin_sprintf(ff_node->name, "%s_%s", node->output_pins[i]->name, ff_base_name);
 
-    add_driver_pin_to_net(new_net, new_pin);
+        add_input_port_information(ff_node, 2);
+        allocate_more_input_pins(ff_node, 2);
 
-    vtr::free(dummy_cout_name);
-    vtr::free(mapping);
+        add_output_port_information(ff_node, 1);
+        allocate_more_output_pins(ff_node, 1);
+
+        if (i == num_ff_nodes - 1) {
+            /**
+             * remap the CLK pin from the dff node to the last splitted 
+             * ff node since we do not need it in dff node anymore 
+             **/
+            remap_pin_to_new_node(node->input_pins[0], ff_node, 1);
+        } else {
+            /* add a copy of CLK pin from the dff node to the splitted ff node */
+            add_input_pin_to_node(ff_node, copy_input_npin(node->input_pins[0]), 1);
+        }
+
+        /**
+         * remap the input_pin[i+1]/output_pin[i] from the dff node to the 
+         * last splitted ff node since we do not need it in dff node anymore 
+         **/
+        remap_pin_to_new_node(node->input_pins[i + 1], ff_node, 0);
+        remap_pin_to_new_node(node->output_pins[i], ff_node, 0);
+
+        netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
+        netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
+        netlist->num_ff_nodes++;
+    }
+
+    free_nnode(node);
 }
