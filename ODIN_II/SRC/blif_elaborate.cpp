@@ -137,7 +137,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             add_list = insert_in_vptr_list(add_list, node);
             break;
         }
-        case MINUS:{
+        case MINUS: {
             /* 
              * check for missing ports such as carry-in/out in case of 
              * dealing with generated netlist from Yosys blif file.

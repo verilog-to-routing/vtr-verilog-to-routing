@@ -48,6 +48,7 @@
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "read_blif.h"
+#include "read_yosys_blif.h"
 #include "output_blif.h"
 #include "netlist_cleanup.h"
 
@@ -409,7 +410,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              */
             if (configuration.blif_type != blif_type_e::_ODIN_BLIF) {
                 try {
-                    verilog_netlist = read_blif();
+                    verilog_netlist = yosys::read_blif();
                     error_code = partial_mapping();
                     // if (error_code) {
                     //     printf("Odin Failed to parse input BLIF file with exit status: %d\n", error_code);
