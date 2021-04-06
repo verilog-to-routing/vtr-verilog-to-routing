@@ -1604,7 +1604,7 @@ hard_block_model* create_hard_block_model(const char* name, hard_block_ports* po
 
     switch (configuration.blif_type) {
         case (blif_type_e::_YOSYS_BLIF): {
-            if (strcmp(name, "$add") == 0) {
+            if (strcmp(name, "$add") == 0 || strcmp(name, "$sub") == 0) {
                 model = (hard_block_model*)vtr::calloc(1, sizeof(hard_block_model));
                 model->name = vtr::strdup(name);
 

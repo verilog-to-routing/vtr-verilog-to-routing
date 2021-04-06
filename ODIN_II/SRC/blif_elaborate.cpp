@@ -137,6 +137,17 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             add_list = insert_in_vptr_list(add_list, node);
             break;
         }
+        case MINUS:{
+            /* 
+             * check for missing ports such as carry-in/out in case of 
+             * dealing with generated netlist from Yosys blif file.
+             */
+            if (hard_adders)
+                check_block_ports(node, traverse_number, netlist);
+
+            sub_list = insert_in_vptr_list(sub_list, node);
+            break;
+        }
         case BITWISE_NOT:
         case BUF_NODE:
         case BITWISE_AND:
@@ -152,7 +163,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case LOGICAL_XOR:
         case LOGICAL_XNOR:
         case LOGICAL_NOT:
-        case MINUS:
         case LOGICAL_EQUAL:
         case NOT_EQUAL:
         case GTE:
@@ -201,7 +211,8 @@ void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
 
     if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
         switch (node->type) {
-            case ADD: {
+            case ADD:
+            case MINUS: {
                 if (node->num_input_port_sizes == 2) {
                     add_input_port_information(node, 1);
                     allocate_more_input_pins(node, 1);
@@ -216,7 +227,6 @@ void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
                 }
                 break;
             }
-            case MINUS:
             case MULTIPLY:
             default: {
                 error_message(NETLIST, node->loc,
