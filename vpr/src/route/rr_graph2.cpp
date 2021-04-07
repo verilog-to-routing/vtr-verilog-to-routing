@@ -16,7 +16,7 @@
 #include "read_xml_arch_file.h"
 #include "rr_types.h"
 
-#include "rr_graph_builder_view.h"
+#include "rr_graph_builder.h"
 
 constexpr short UN_SET = -1;
 
@@ -978,8 +978,8 @@ static void load_block_rr_indices(const DeviceGrid& grid,
     /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
      * TODO: these building functions should only talk to a RRGraphBuilderView object
      */
-    RRGraphBuilderView rr_graph_builder_view(&(g_vpr_ctx.mutable_device().rr_nodes),
-                                             &indices);
+    RRGraphBuilder rr_graph_builder(g_vpr_ctx.mutable_device().rr_nodes,
+                                    g_vpr_ctx.mutable_device().rr_spatial_lookup);
 
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (size_t x = 0; x < grid.width(); x++) {
@@ -993,12 +993,12 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                 for (size_t iclass = 0; iclass < type->class_inf.size(); ++iclass) {
                     auto class_type = type->class_inf[iclass].type;
                     if (class_type == DRIVER) {
-                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId(*index), x, y, SOURCE, iclass, SIDES[0]);
-                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId::INVALID(), x, y, SINK, iclass, SIDES[0]);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, iclass, SIDES[0]);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x, y, SINK, iclass, SIDES[0]);
                     } else {
                         VTR_ASSERT(class_type == RECEIVER);
-                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId(*index), x, y, SINK, iclass, SIDES[0]);
-                        rr_graph_builder_view.add_node_to_fast_lookup(RRNodeId::INVALID(), x, y, SOURCE, iclass, SIDES[0]);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, iclass, SIDES[0]);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x, y, SOURCE, iclass, SIDES[0]);
                     }
                     ++(*index);
                 }
@@ -1142,16 +1142,15 @@ static void load_block_rr_indices(const DeviceGrid& grid,
     }
 }
 
-t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
-                                                 const DeviceGrid& grid,
-                                                 int* index,
-                                                 const t_chan_details& chan_details_x,
-                                                 const t_chan_details& chan_details_y) {
+void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
+                                    const int max_chan_width,
+                                    const DeviceGrid& grid,
+                                    int* index,
+                                    const t_chan_details& chan_details_x,
+                                    const t_chan_details& chan_details_y) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
-
-    t_rr_node_indices indices;
 
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
@@ -1170,8 +1169,6 @@ t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
                          CHANX, chan_details_x, indices, index);
     load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
                          CHANY, chan_details_y, indices, index);
-
-    return indices;
 }
 
 bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes) {

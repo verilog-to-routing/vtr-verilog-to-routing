@@ -574,8 +574,8 @@ static void check_unbuffered_edges(int from_node) {
 }
 
 static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) {
-    /* TODO: this function should be reworked later to adapt overlay interface 
-     *       once xlow(), ylow(), side() APIs are implemented in overlay interface 
+    /* TODO: this function should be reworked later to adapt RRGraphView interface 
+     *       once xlow(), ylow(), side() APIs are implemented
      */
     VTR_ASSERT(node.type() == IPIN || node.type() == OPIN);
 

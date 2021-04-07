@@ -16,7 +16,6 @@
 #include "check_rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-#include "rr_graph_view.h"
 
 class MetadataBind {
   public:
@@ -259,7 +258,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::string* read_rr_graph_filename,
         bool read_edge_metadata,
         t_chan_width* chan_width,
-        RRGraphView* rr_graph,
         t_rr_graph_storage* rr_nodes,
         std::vector<t_rr_switch_inf>* rr_switch_inf,
         std::vector<t_rr_indexed_data>* rr_indexed_data,
@@ -274,7 +272,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::string_internment* strings)
         : wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
         , chan_width_(chan_width)
-        , rr_graph_(rr_graph)
         , rr_nodes_(rr_nodes)
         , rr_switch_inf_(rr_switch_inf)
         , rr_indexed_data_(rr_indexed_data)
@@ -1536,10 +1533,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         VTR_ASSERT(read_rr_graph_filename_ != nullptr);
         VTR_ASSERT(read_rr_graph_name_ != nullptr);
         read_rr_graph_filename_->assign(read_rr_graph_name_);
-
-        /* Update RRGraph viewer with new data pointers */
-        rr_graph_->set_internal_data(rr_nodes_,
-                                     rr_node_indices_);
 
         if (do_check_rr_graph_) {
             check_rr_graph(graph_type_, grid_, physical_tile_types_);

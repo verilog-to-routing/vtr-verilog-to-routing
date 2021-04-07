@@ -573,8 +573,10 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* Alloc node lookups, count nodes, alloc rr nodes */
     int num_rr_nodes = 0;
 
-    device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
-                                                                &num_rr_nodes, chan_details_x, chan_details_y);
+    alloc_and_load_rr_node_indices(device_ctx.rr_node_indices,
+                                   max_chan_width, grid,
+                                   &num_rr_nodes, chan_details_x, chan_details_y);
+
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
         expected_node_count += ClockRRGraphBuilder::estimate_additional_nodes(grid);
@@ -734,10 +736,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.chan_width = nodes_per_chan;
 
     rr_graph_externals(segment_inf, *wire_to_rr_ipin_switch, base_cost_type);
-
-    /* Update RRGraph overlay with new data pointers */
-    device_ctx.rr_graph.set_internal_data(&(device_ctx.rr_nodes),
-                                          &(device_ctx.rr_node_indices));
 
     check_rr_graph(graph_type, grid, types);
 
