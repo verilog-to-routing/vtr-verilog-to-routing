@@ -1,7 +1,7 @@
 #include "median_move_generator.h"
 #include "globals.h"
 #include <algorithm>
-
+#include "place_constraints.h"
 #include "placer_globals.h"
 
 static bool get_bb_incrementally(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew);
@@ -122,7 +122,21 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to))
         return e_create_move::ABORT;
 
-    return ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move;
+    create_move = ::create_move(blocks_affected, b_from, to);
+
+    //Check if the move is legal from a floorplan perspective
+    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    bool floorplan_legal = true;
+    for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
+    	floorplan_legal = cluster_floorplanning_check(blocks_affected.moved_blocks[i].block_num, blocks_affected.moved_blocks[i].new_loc);
+        if (!floorplan_legal) {
+        	VTR_LOG("Move aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n", size_t(blocks_affected.moved_blocks[i].block_num), blocks_affected.moved_blocks[i].new_loc.x, blocks_affected.moved_blocks[i].new_loc.y, blocks_affected.moved_blocks[i].new_loc.sub_tile);
+        	return e_create_move::ABORT;
+        }
+    }
+
+    return create_move;
 }
 
 /* Finds the bounding box of a net and stores its coordinates in the  *

@@ -123,8 +123,10 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
 
     if (!cluster_constrained) {
         //not constrained so will not have floorplanning issues
+    	//VTR_LOG("Cluster not constrained \n");
         floorplanning_good = true;
     } else {
+    	//VTR_LOG("Cluster is constrained \n");
         PartitionRegion pr;
         pr = floorplanning_ctx.cluster_constraints[blk_id];
         bool in_pr = pr.is_loc_in_part_reg(loc);
@@ -132,6 +134,7 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
         //if location is in partitionregion, floorplanning is respected
         //if not it is not
         if (in_pr) {
+        	//VTR_LOG("Block %zu passed floorplan check \n", size_t(blk_id));
             floorplanning_good = true;
         } else {
             VTR_LOG("Block %zu did not pass cluster_floorplanning_check \n", size_t(blk_id));
