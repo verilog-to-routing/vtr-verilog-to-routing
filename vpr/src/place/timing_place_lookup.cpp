@@ -350,14 +350,14 @@ static float route_connection_delay(
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
 
-        RRNodeId source_rr_node = device_ctx.rr_graph.find_node(source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
 
-            RRNodeId sink_rr_node = device_ctx.rr_graph.find_node(sink_x, sink_y, SINK, sink_ptc);
+            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc);
 
             VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -444,7 +444,7 @@ static void generic_compute_matrix_dijkstra_expansion(
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid[source_x][source_y].type);
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.find_node(source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
         auto delays = calculate_all_path_delays_from_rr_node(size_t(source_rr_node), router_opts);
@@ -479,7 +479,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
 
-                        RRNodeId sink_rr_node = device_ctx.rr_graph.find_node(sink_x, sink_y, SINK, sink_ptc);
+                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc);
 
                         VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
@@ -979,7 +979,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool from_pin_found = false;
             if (direct->from_side != NUM_SIDES) {
-                RRNodeId from_pin_rr = device_ctx.rr_graph.find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
+                RRNodeId from_pin_rr = device_ctx.rr_graph.node_lookup().find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
                 from_pin_found = (from_pin_rr != RRNodeId::INVALID());
             } else {
                 std::vector<int>& from_pin_rrs = *scratch;
@@ -997,7 +997,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool to_pin_found = false;
             if (direct->to_side != NUM_SIDES) {
-                RRNodeId to_pin_rr = device_ctx.rr_graph.find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
+                RRNodeId to_pin_rr = device_ctx.rr_graph.node_lookup().find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
                 to_pin_found = (to_pin_rr != RRNodeId::INVALID());
             } else {
                 std::vector<int>& to_pin_rrs = *scratch;
