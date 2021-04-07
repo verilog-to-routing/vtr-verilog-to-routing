@@ -1,5 +1,6 @@
 #include "uniform_move_generator.h"
 #include "globals.h"
+#include "place_constraints.h"
 
 e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     /* Pick a random block to be swapped with another random block.   */
@@ -34,5 +35,19 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
     VTR_LOG("\n");
 #endif
 
-    return ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move;
+    create_move = ::create_move(blocks_affected, b_from, to);
+
+    //Check if the move is legal from a floorplan perspective
+    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    bool floorplan_legal = true;
+    for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
+    	floorplan_legal = cluster_floorplanning_check(blocks_affected.moved_blocks[i].block_num, blocks_affected.moved_blocks[i].new_loc);
+        if (!floorplan_legal) {
+        	VTR_LOG("Move aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n", size_t(blocks_affected.moved_blocks[i].block_num), blocks_affected.moved_blocks[i].new_loc.x, blocks_affected.moved_blocks[i].new_loc.y, blocks_affected.moved_blocks[i].new_loc.sub_tile);
+        	return e_create_move::ABORT;
+        }
+    }
+
+    return create_move;
 }
