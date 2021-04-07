@@ -8,7 +8,7 @@ void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const Partit
 
     /**
      * Each atom can only be in one partition. If the atoms already has a partition id assigned to it,
-     * the idea will be switched to the new part_id being passed in instead
+     * the id will be switched to the new part_id being passed in instead
      */
     if (got == constrained_atoms.end()) {
         constrained_atoms.insert({blk_id, part_id});

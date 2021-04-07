@@ -13,6 +13,19 @@ bool PartitionRegion::empty() {
     return partition_region.size() == 0;
 }
 
+bool PartitionRegion::is_loc_in_part_reg(t_pl_loc loc) {
+    bool is_in_pr = false;
+
+    for (unsigned int i = 0; i < partition_region.size(); i++) {
+        is_in_pr = partition_region[i].is_loc_in_reg(loc);
+        if (is_in_pr == true) {
+            break;
+        }
+    }
+
+    return is_in_pr;
+}
+
 PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2) {
     /**for N regions in part_region and M in the calling object you can get anywhere from
      * 0 to M*N regions in the resulting vector. Only intersection regions with non-zero area rectangles and

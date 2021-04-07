@@ -38,6 +38,7 @@
 #include "move_transactions.h"
 #include "move_utils.h"
 #include "read_place.h"
+#include "place_constraints.h"
 
 #include "static_move_generator.h"
 #include "simpleRL_move_generator.h"
@@ -2585,6 +2586,7 @@ static void check_place(const t_placer_costs& costs,
 
     error += check_placement_consistency();
     error += check_placement_costs(costs, delay_model, criticalities, place_algorithm);
+    error += check_placement_floorplanning();
 
     if (error == 0) {
         VTR_LOG("\n");
