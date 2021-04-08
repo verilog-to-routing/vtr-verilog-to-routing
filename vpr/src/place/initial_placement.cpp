@@ -304,7 +304,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
             // Make sure that the position is EMPTY_BLOCK before placing the block down
             VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
 
-            bool floorplan_good = cluster_floorplanning_check(blk_id, to);
+            bool floorplan_good = cluster_floorplanning_legal(blk_id, to);
 
             if (floorplan_good) {
                 place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk_id;

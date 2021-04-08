@@ -111,10 +111,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
     bool floorplan_legal = true;
     for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
-    	floorplan_legal = cluster_floorplanning_check(blocks_affected.moved_blocks[i].block_num, blocks_affected.moved_blocks[i].new_loc);
+        floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num, blocks_affected.moved_blocks[i].new_loc);
         if (!floorplan_legal) {
-        	VTR_LOG("Move aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n", size_t(blocks_affected.moved_blocks[i].block_num), blocks_affected.moved_blocks[i].new_loc.x, blocks_affected.moved_blocks[i].new_loc.y, blocks_affected.moved_blocks[i].new_loc.sub_tile);
-        	return e_create_move::ABORT;
+            VTR_LOG("Move aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n", size_t(blocks_affected.moved_blocks[i].block_num), blocks_affected.moved_blocks[i].new_loc.x, blocks_affected.moved_blocks[i].new_loc.y, blocks_affected.moved_blocks[i].new_loc.sub_tile);
+            return e_create_move::ABORT;
         }
     }
 
