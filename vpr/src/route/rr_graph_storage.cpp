@@ -565,7 +565,13 @@ const char* t_rr_graph_storage::node_direction_string(RRNodeId id) const {
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
-    return SIDE_STRING[node_side(id)];
+    for (const e_side& side : SIDES) {
+        if (is_node_on_specific_side(id, side)) {
+            return SIDE_STRING[side];
+        }
+    }
+    /* Not found, return an invalid string*/
+    return SIDE_STRING[NUM_SIDES];
 }
 
 float t_rr_graph_storage::node_R(RRNodeId id) const {
@@ -705,39 +711,6 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, e_direction new_directi
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", node_type_string(id));
     }
     node_storage_[id].dir_side_.direction = new_direction;
-}
-
-void t_rr_graph_storage::set_node_side(RRNodeId id, e_side new_side) {
-    if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
-    }
-    std::bitset<NUM_SIDES> side_bits;
-    /* The new side will overwrite existing side storage */
-    side_bits[size_t(new_side)] = true;
-    if (side_bits.to_ulong() > CHAR_MAX) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
-    }
-    node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
-}
-
-void t_rr_graph_storage::set_node_sides(RRNodeId id, std::bitset<NUM_SIDES> new_sides) {
-    if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
-    }
-    /* The new sides will overwrite existing side storage */
-    if (new_sides.to_ulong() > CHAR_MAX) {
-        std::string new_sides_str;
-        for (const e_side& side : SIDES) {
-            if (new_sides[side]) {
-                if (!new_sides_str.empty()) {
-                    new_sides_str.append(", ");
-                }
-                new_sides_str.append(SIDE_STRING[side]);
-            }
-        }
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid sides '%s' to be added to rr node %u", new_sides_str.c_str(), size_t(id));
-    }
-    node_storage_[id].dir_side_.sides = static_cast<unsigned char>(new_sides.to_ulong());
 }
 
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {

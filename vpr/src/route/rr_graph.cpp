@@ -1502,13 +1502,8 @@ static void build_rr_sinks_sources(const int i,
                             L_rr_node[inode].add_side(side);
 
                             // Sanity check
-                            VTR_ASSERT(1 <= L_rr_node[inode].sides().size());
-                            if (1 == L_rr_node[inode].sides().size()) {
-                                VTR_ASSERT(type->pinloc[width_offset][height_offset][L_rr_node[inode].side()][L_rr_node[inode].pin_num()]);
-                            } else {
-                                VTR_ASSERT(L_rr_node[inode].is_node_on_specific_side(side));
-                                VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node[inode].pin_num()]);
-                            }
+                            VTR_ASSERT(L_rr_node[inode].is_node_on_specific_side(side));
+                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node[inode].pin_num()]);
                         }
                     }
                 }
@@ -2925,39 +2920,50 @@ static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_
     //This function attempts to pick the 'best/closest' of the candidates.
 
     VTR_ASSERT(rr_nodes[from_rr].type() == OPIN);
-    e_side from_side = rr_nodes[from_rr].side();
 
     float best_dist = std::numeric_limits<float>::infinity();
     int best_rr = OPEN;
 
-    for (int to_rr : candidate_rr_nodes) {
-        VTR_ASSERT(rr_nodes[to_rr].type() == IPIN);
-        float to_dist = std::abs(rr_nodes[from_rr].xlow() - rr_nodes[to_rr].xlow())
-                        + std::abs(rr_nodes[from_rr].ylow() - rr_nodes[to_rr].ylow());
-
-        e_side to_side = rr_nodes[to_rr].side();
-
-        //Include a partial unit of distance based on side alignment to ensure
-        //we preferr facing sides
-        if ((from_side == RIGHT && to_side == LEFT)
-            || (from_side == LEFT && to_side == RIGHT)
-            || (from_side == TOP && to_side == BOTTOM)
-            || (from_side == BOTTOM && to_side == TOP)) {
-            //Facing sides
-            to_dist += 0.25;
-        } else if (((from_side == RIGHT || from_side == LEFT) && (to_side == TOP || to_side == BOTTOM))
-                   || ((from_side == TOP || from_side == BOTTOM) && (to_side == RIGHT || to_side == LEFT))) {
-            //Perpendicular sides
-            to_dist += 0.5;
-
-        } else {
-            //Opposite sides
-            to_dist += 0.75;
+    for (const e_side& from_side : SIDES) {
+        /* Bypass those side where the node does not appear */
+        if (!rr_nodes[from_rr].is_node_on_specific_side(from_side)) {
+            continue;
         }
 
-        if (to_dist < best_dist) {
-            best_dist = to_dist;
-            best_rr = to_rr;
+        for (int to_rr : candidate_rr_nodes) {
+            VTR_ASSERT(rr_nodes[to_rr].type() == IPIN);
+            float to_dist = std::abs(rr_nodes[from_rr].xlow() - rr_nodes[to_rr].xlow())
+                            + std::abs(rr_nodes[from_rr].ylow() - rr_nodes[to_rr].ylow());
+
+            for (const e_side& to_side : SIDES) {
+                /* Bypass those side where the node does not appear */
+                if (!rr_nodes[to_rr].is_node_on_specific_side(to_side)) {
+                    continue;
+                }
+
+                //Include a partial unit of distance based on side alignment to ensure
+                //we preferr facing sides
+                if ((from_side == RIGHT && to_side == LEFT)
+                    || (from_side == LEFT && to_side == RIGHT)
+                    || (from_side == TOP && to_side == BOTTOM)
+                    || (from_side == BOTTOM && to_side == TOP)) {
+                    //Facing sides
+                    to_dist += 0.25;
+                } else if (((from_side == RIGHT || from_side == LEFT) && (to_side == TOP || to_side == BOTTOM))
+                           || ((from_side == TOP || from_side == BOTTOM) && (to_side == RIGHT || to_side == LEFT))) {
+                    //Perpendicular sides
+                    to_dist += 0.5;
+
+                } else {
+                    //Opposite sides
+                    to_dist += 0.75;
+                }
+
+                if (to_dist < best_dist) {
+                    best_dist = to_dist;
+                    best_rr = to_rr;
+                }
+            }
         }
     }
 
