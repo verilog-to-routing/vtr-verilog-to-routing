@@ -18,8 +18,8 @@ int check_placement_floorplanning() {
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto& loc = place_ctx.block_locs[blk_id].loc;
-        if (!cluster_floorplanning_check(blk_id, loc)) {
+        auto loc = place_ctx.block_locs[blk_id].loc;
+        if (!cluster_floorplanning_legal(blk_id, loc)) {
             error++;
             VTR_LOG_ERROR("Block %zu is not in correct floorplanning region.\n", size_t(blk_id));
         }
@@ -114,7 +114,7 @@ PartitionRegion constrained_macro_locs(t_pl_macro pl_macro) {
 }
 
 /*returns true if location is compatible with floorplanning constraints, false if not*/
-bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
+bool cluster_floorplanning_legal(ClusterBlockId blk_id, t_pl_loc& loc) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     bool floorplanning_good = false;
@@ -123,10 +123,10 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
 
     if (!cluster_constrained) {
         //not constrained so will not have floorplanning issues
-    	//VTR_LOG("Cluster not constrained \n");
+        //VTR_LOG("Cluster not constrained \n");
         floorplanning_good = true;
     } else {
-    	//VTR_LOG("Cluster is constrained \n");
+        //VTR_LOG("Cluster is constrained \n");
         PartitionRegion pr;
         pr = floorplanning_ctx.cluster_constraints[blk_id];
         bool in_pr = pr.is_loc_in_part_reg(loc);
@@ -134,7 +134,7 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
         //if location is in partitionregion, floorplanning is respected
         //if not it is not
         if (in_pr) {
-        	//VTR_LOG("Block %zu passed floorplan check \n", size_t(blk_id));
+            //VTR_LOG("Block %zu passed floorplan check \n", size_t(blk_id));
             floorplanning_good = true;
         } else {
             VTR_LOG("Block %zu did not pass cluster_floorplanning_check \n", size_t(blk_id));

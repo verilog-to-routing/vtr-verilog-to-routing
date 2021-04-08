@@ -23,7 +23,7 @@ bool is_cluster_constrained(ClusterBlockId blk_id);
 /*
  * Check if the placement location would respect floorplan constraints of the block, if it has any
  */
-bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc);
+bool cluster_floorplanning_legal(ClusterBlockId blk_id, t_pl_loc& loc);
 
 /*
  * Check whether any member of the macro has floorplan constraints
