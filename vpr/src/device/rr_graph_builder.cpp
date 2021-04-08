@@ -8,7 +8,8 @@
  ****************************/
 RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage& node_storage,
                                RRSpatialLookup& node_lookup)
-    : node_storage_(node_storage), node_lookup_(node_lookup) {
+    : node_storage_(node_storage)
+    , node_lookup_(node_lookup) {
 }
 
 /****************************
