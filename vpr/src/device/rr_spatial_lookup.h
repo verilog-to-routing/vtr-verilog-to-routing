@@ -50,7 +50,15 @@ class RRSpatialLookup {
      * Mutators
      ****************/
   public:
-    /* Register a node in the fast look-up */
+    /* Register a node in the fast look-up 
+     * - You must have a node id
+     * - (x, y) are the coordinate of the node to be indexable in the fast look-up
+     * - type is the type of a node
+     * - ptc is a feature number of a node, which can be
+     *   1. pin index in a tile when type is OPIN/IPIN
+     *   2. track index in a routing channel when type is CHANX/CHANY
+     * - side is the side of node on the tile, applicable to OPIN/IPIN 
+     */
     void add_node(RRNodeId node,
                   int x,
                   int y,

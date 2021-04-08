@@ -8,7 +8,8 @@
  ****************************/
 RRGraphView::RRGraphView(t_rr_graph_storage& node_storage,
                          RRSpatialLookup& node_lookup)
-    : node_storage_(node_storage), node_lookup_(node_lookup) {
+    : node_storage_(node_storage)
+    , node_lookup_(node_lookup) {
 }
 
 /****************************
@@ -19,6 +20,6 @@ t_rr_type RRGraphView::node_type(const RRNodeId& node) const {
 }
 
 const RRSpatialLookup& RRGraphView::node_lookup() const {
-  /* Return a constant object rather than a writable one */
-  return const_cast<const RRSpatialLookup&>(node_lookup_);
+    /* Return a constant object rather than a writable one */
+    return const_cast<const RRSpatialLookup&>(node_lookup_);
 }
