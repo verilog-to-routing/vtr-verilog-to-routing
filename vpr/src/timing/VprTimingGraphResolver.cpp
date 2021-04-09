@@ -298,8 +298,14 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
             net_component.type_name = device_ctx.rr_nodes[node->inode].type_string(); //write the component's type as a routing resource node
             net_component.type_name += ":" + std::to_string(node->inode) + " ";       //add the index of the routing resource node
             if (device_ctx.rr_nodes[node->inode].type() == OPIN || device_ctx.rr_nodes[node->inode].type() == IPIN) {
-                net_component.type_name += "side:";                                        //add the side of the routing resource node
-                net_component.type_name += device_ctx.rr_nodes[node->inode].side_string(); //add the side of the routing resource node
+                net_component.type_name += "side: ("; //add the side of the routing resource node
+                for (const e_side& node_side : SIDES) {
+                    if (!device_ctx.rr_nodes.is_node_on_specific_side(RRNodeId(node->inode), node_side)) {
+                        continue;
+                    }
+                    net_component.type_name += std::string(SIDE_STRING[node_side]) + ","; //add the side of the routing resource node
+                }
+                net_component.type_name += ")"; //add the side of the routing resource node
                 // For OPINs and IPINs the starting and ending coordinate are identical, so we can just arbitrarily assign the start to larger values
                 // and the end to the lower coordinate
                 start_x = " (" + std::to_string(device_ctx.rr_nodes[node->inode].xhigh()) + ","; //start and end coordinates are the same for OPINs and IPINs

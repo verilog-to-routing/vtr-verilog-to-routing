@@ -636,12 +636,23 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     inode, node.type());
             }
         } else {
-            node.set_sides(from_uxsd_loc_side(side));
+            std::bitset<NUM_SIDES> sides_to_add = from_uxsd_loc_side(side);
+            for (const e_side& side_to_add : SIDES) {
+                if (sides_to_add[side_to_add]) {
+                    node.add_side(side_to_add);
+                }
+            }
         }
     }
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
         if (node.type() == IPIN || node.type() == OPIN) {
-            return to_uxsd_loc_side(node.sides());
+            std::bitset<NUM_SIDES> sides_bitset;
+            for (const e_side& side : SIDES) {
+                if (node.is_node_on_specific_side(side)) {
+                    sides_bitset.set(side);
+                }
+            }
+            return to_uxsd_loc_side(sides_bitset);
         } else {
             return uxsd::enum_loc_side::UXSD_INVALID;
         }
