@@ -52,12 +52,17 @@ class RRSpatialLookup {
   public:
     /* Register a node in the fast look-up 
      * - You must have a node id
+     *   1. a valid one is to register a node in the lookup
+     *   2. an invalid id means the removal of a node from the lookup
      * - (x, y) are the coordinate of the node to be indexable in the fast look-up
      * - type is the type of a node
      * - ptc is a feature number of a node, which can be
      *   1. pin index in a tile when type is OPIN/IPIN
      *   2. track index in a routing channel when type is CHANX/CHANY
      * - side is the side of node on the tile, applicable to OPIN/IPIN 
+     *
+     * Note that the add node here will not create a node in the node list
+     * You MUST add the node in the t_rr_node_storage so that the node is valid  
      */
     void add_node(RRNodeId node,
                   int x,
@@ -70,6 +75,15 @@ class RRSpatialLookup {
      * internal data storage
      ****************/
   private:
+    /* TODO: When the refactoring effort finishes, 
+     * the data structure will be the owner of the data storages. 
+     * That is why the reference is used here.
+     * It can avoid a lot of code changes once the refactoring is finished 
+     * (there is no function get data directly through the rr_node_indices in DeviceContext).
+     * If pointers are used, it may cause many codes in client functions 
+     * or inside the data structures to be changed later.
+     * That explains why the reference is used here temporarily
+     */
     /* Fast look-up */
     t_rr_node_indices& rr_node_indices_;
 };
