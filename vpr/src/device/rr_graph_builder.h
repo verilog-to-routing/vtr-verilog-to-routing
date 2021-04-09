@@ -36,6 +36,15 @@ class RRGraphBuilder {
      * internal data storage
      ****************/
   private:
+    /* TODO: When the refactoring effort finishes, 
+     * the builder data structure will be the owner of the data storages. 
+     * That is why the reference to storage/lookup is used here.
+     * It can avoid a lot of code changes once the refactoring is finished 
+     * (there is no function get data directly through the node_storage in DeviceContext).
+     * If pointers are used, it may cause many codes in client functions 
+     * or inside the data structures to be changed later.
+     * That explains why the reference is used here temporarily
+     */
     /* node-level storage including edge storages */
     t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
