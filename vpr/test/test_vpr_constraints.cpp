@@ -1,6 +1,8 @@
 #include "../src/base/partition_region.h"
 #include "catch.hpp"
 
+#include "vpr_api.h"
+#include "globals.h"
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "region.h"
@@ -34,6 +36,7 @@ TEST_CASE("Region", "[vpr]") {
     is_def_empty = def_rect.empty();
     REQUIRE(is_def_empty == true);
     REQUIRE(def_rect.xmin() == -1);
+    REQUIRE(def_region.get_sub_tile() == -1);
 }
 
 //Test PartitionRegion class accessors and mutators
@@ -420,4 +423,65 @@ TEST_CASE("RegionLocked", "[vpr]") {
     is_r2_locked = r2.locked();
 
     REQUIRE(is_r2_locked == false);
+}
+
+static constexpr const char kArchFile[] = "test_read_arch_metadata.xml";
+
+// Test that place constraints are not changed during placement
+TEST_CASE("PlaceConstraintsIntegrity", "[vpr]") {
+    auto options = t_options();
+    auto arch = t_arch();
+    auto vpr_setup = t_vpr_setup();
+
+    vpr_initialize_logging();
+
+    // Command line arguments
+    //
+    // parameters description:
+    //      - place_static_move_prob: Timing Feasible Region move type is always selected.
+    //      - RL_agent_placement: disabled. This way the desired move type is selected.
+    const char* argv[] = {
+        "test_vpr",
+        kArchFile,
+        "wire.eblif",
+        "--fix_clusters", "wire.constraints",
+        "--place_static_move_prob", "0", "0", "0", "0", "0", "100", "0",
+        "--RL_agent_placement", "off"};
+    vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
+             &options, &vpr_setup, &arch);
+
+    vpr_pack_flow(vpr_setup, arch);
+    vpr_create_device(vpr_setup, arch);
+    vpr_place_flow(vpr_setup, arch);
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    // Check if constraints are preserved
+
+    // Input block
+    ClusterBlockId input_blk_id = cluster_ctx.clb_nlist.find_block("di");
+    int input_x = 2;
+    int input_y = 1;
+    int input_sub_tile = 5;
+
+    auto input_loc = place_ctx.block_locs[input_blk_id].loc;
+
+    REQUIRE(input_x == input_loc.x);
+    REQUIRE(input_y == input_loc.y);
+    REQUIRE(input_sub_tile == input_loc.sub_tile);
+
+    // Output block
+    ClusterBlockId output_blk_id = cluster_ctx.clb_nlist.find_block("out:do");
+    int output_x = 2;
+    int output_y = 1;
+    int output_sub_tile = 1;
+
+    auto output_loc = place_ctx.block_locs[output_blk_id].loc;
+
+    REQUIRE(output_x == output_loc.x);
+    REQUIRE(output_y == output_loc.y);
+    REQUIRE(output_sub_tile == output_loc.sub_tile);
+
+    vpr_free_all(arch, vpr_setup);
 }

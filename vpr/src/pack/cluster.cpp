@@ -1408,6 +1408,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
     }
 
     bool cluster_pr_needs_update = false;
+    bool cluster_pr_update_check = false;
 
     //check if every atom in the molecule is legal in the cluster from a floorplanning perspective
     for (int i_mol = 0; i_mol < molecule_size; i_mol++) {
@@ -1419,6 +1420,9 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                                  cluster_pr_needs_update);
             if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
                 return block_pack_status;
+            }
+            if (cluster_pr_needs_update == true) {
+                cluster_pr_update_check = true;
             }
         }
     }
@@ -1526,7 +1530,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                     }
 
                     //update cluster PartitionRegion if atom with floorplanning constraints was added
-                    if (cluster_pr_needs_update) {
+                    if (cluster_pr_update_check) {
                         floorplanning_ctx.cluster_constraints[clb_index] = temp_cluster_pr;
                         if (verbosity > 2) {
                             VTR_LOG("\nUpdated PartitionRegion of cluster %d\n", clb_index);
