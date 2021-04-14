@@ -8,7 +8,7 @@
 #include "move_transactions.h"
 
 #ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
-#define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
+#    define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
 
 /*
  * Check that placement of each block is within the floorplan constraint region of that block (if the block has any constraints).
@@ -42,9 +42,9 @@ inline bool floorplan_legal(t_pl_blocks_to_be_moved& blocks_affected) {
     for (int i = 0; i < blocks_affected.num_moved_blocks; i++) {
         floorplan_legal = cluster_floorplanning_legal(blocks_affected.moved_blocks[i].block_num, blocks_affected.moved_blocks[i].new_loc);
         if (!floorplan_legal) {
-#ifdef VERBOSE
+#    ifdef VERBOSE
             VTR_LOG("Move aborted for block %zu, location tried was x: %d, y: %d, subtile: %d \n", size_t(blocks_affected.moved_blocks[i].block_num), blocks_affected.moved_blocks[i].new_loc.x, blocks_affected.moved_blocks[i].new_loc.y, blocks_affected.moved_blocks[i].new_loc.sub_tile);
-#endif
+#    endif
             return false;
         }
     }

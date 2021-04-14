@@ -133,10 +133,10 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, t_pl_loc& loc) {
         if (in_pr) {
             floorplanning_good = true;
         } else {
-			#ifdef VERBOSE
+#ifdef VERBOSE
             VTR_LOG("Block %zu did not pass cluster_floorplanning_check \n", size_t(blk_id));
             VTR_LOG("Loc is x: %d, y: %d, subtile: %d \n", loc.x, loc.y, loc.sub_tile);
-			#endif
+#endif
         }
     }
 
