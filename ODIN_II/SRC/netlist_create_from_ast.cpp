@@ -196,16 +196,32 @@ void create_netlist(ast_t* ast) {
     }
 }
 
-/*---------------------------------------------------------------------------------------------
+/**
+ *---------------------------------------------------------------------------------------------
  * (function: look_for_clocks)
+ * 
+ * @brief going through all FF nodes looking for the clock signals.
+ * If they are not clock type, they should alter to one. Since BUF
+ * nodes be removed in the partial mapping, the driver of the BUF
+ * nodes should be considered as a clock node. 
+ * 
+ * @param netlist pointer to the current netlist file
  *-------------------------------------------------------------------------------------------*/
 void look_for_clocks(netlist_t* netlist) {
     int i;
 
     for (i = 0; i < netlist->num_ff_nodes; i++) {
+        /* at this step, clock nodes must have been driving by one driver */
         oassert(netlist->ff_nodes[i]->input_pins[1]->net->num_driver_pins == 1);
-        if (netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type != CLOCK_NODE) {
-            netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type = CLOCK_NODE;
+        /* node: clock driver node */
+        nnode_t* node = netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node;
+
+        /* as far as a clock driver node is a BUF node, going through its drivers till finding a non-BUF node */
+        while (node->type == BUF_NODE)
+            node = node->input_pins[0]->net->driver_pins[0]->node;
+
+        if (node->type != CLOCK_NODE) {
+            node->type = CLOCK_NODE;
         }
     }
 }
