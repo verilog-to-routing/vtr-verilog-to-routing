@@ -16,8 +16,6 @@
 #include "read_xml_arch_file.h"
 #include "rr_types.h"
 
-#include "rr_graph_builder.h"
-
 constexpr short UN_SET = -1;
 
 /************************** Subroutines local to this module ****************/
@@ -37,8 +35,9 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  t_rr_node_indices& indices,
                                  int* index);
 
-static void load_block_rr_indices(const DeviceGrid& grid,
+static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   t_rr_node_indices& indices,
+                                  const DeviceGrid& grid,
                                   int* index);
 
 static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
@@ -972,14 +971,13 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
-static void load_block_rr_indices(const DeviceGrid& grid,
+/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
+ * TODO: these building functions should only talk to a RRGraphBuilder object
+ */
+static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   t_rr_node_indices& indices,
+                                  const DeviceGrid& grid,
                                   int* index) {
-    /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
-     * TODO: these building functions should only talk to a RRGraphBuilderView object
-     */
-    RRGraphBuilder rr_graph_builder(&(g_vpr_ctx.mutable_device().rr_nodes),
-                                    &(g_vpr_ctx.mutable_device().rr_spatial_lookup));
 
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (size_t x = 0; x < grid.width(); x++) {
@@ -1142,6 +1140,16 @@ static void load_block_rr_indices(const DeviceGrid& grid,
     }
 }
 
+/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
+ * TODO: these building functions should only talk to a RRGraphBuilder object
+ *       The biggest and fatal issue is 
+ *       - the rr_graph2.h is included in the rr_graph_storage.h,
+ *         which is included in the rr_graph_builder.h
+ *         If we include rr_graph_builder.h in rr_graph2.h, this creates a loop
+ *         for C++ compiler to identify data structures, which cannot be solved!!!
+ *         This will block us when putting the RRGraphBuilder object as an input arguement 
+ *         of this function
+ */
 void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
                                     const int max_chan_width,
                                     const DeviceGrid& grid,
@@ -1162,7 +1170,7 @@ void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(grid, indices, index);
+    load_block_rr_indices(g_vpr_ctx.mutable_device().rr_graph_builder, indices, grid, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
