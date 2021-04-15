@@ -165,7 +165,7 @@ struct DeviceContext : public Context {
     /* A read-only view of routing resource graph to be the ONLY database 
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
-    RRGraphView rr_graph{rr_nodes, rr_spatial_lookup}; 
+    RRGraphView rr_graph{rr_nodes, rr_spatial_lookup};
 
     /* TODO: remove this interface from device_context once the code refactoring is completed
      * because it should be part of the rr_graph view
