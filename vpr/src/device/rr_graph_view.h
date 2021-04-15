@@ -32,35 +32,32 @@
  *
  */
 class RRGraphView {
-    /****************
-     * Constructors
-     ****************/
+    /* -- Constructors -- */
   public:
+    /* See detailed comments about the data structures in the internal data storage section of this file */
     RRGraphView(const t_rr_graph_storage& node_storage,
                 const RRSpatialLookup& node_lookup);
 
-    /* Disable copy constructors
+    /* Disable copy constructors and copy assignment operator
      * This is to avoid any duplication of the object
      * as it is only interface allowed to access routing resource graph
      */
     RRGraphView(const RRGraphView&) = delete;
-
-    /* Disable copy assignment operator */
     void operator=(const RRGraphView&) = delete;
 
-    /****************
-     * Accessors
-     ****************/
+    /* -- Accessors -- */
+    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin' 
+     * kind of accessors
+     */
   public:
     /* Get the type of a routing resource node */
     t_rr_type node_type(RRNodeId node) const;
 
-    /* Return a read-only object for performing fast look-up in rr_node */
+    /* Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const;
 
-    /****************
-     * internal data storage
-     ****************/
+    /* -- Internal data storage -- */
+    /* Note: only read-only object or data structures are allowed!!! */
   private:
     /* node-level storage including edge storages */
     const t_rr_graph_storage& node_storage_;

@@ -16,34 +16,27 @@
  *
  */
 class RRGraphBuilder {
-    /****************
-     * Constructors
-     ****************/
+    /* -- Constructors -- */
   public:
+    /* See detailed comments about the data structures in the internal data storage section of this file */
     RRGraphBuilder(t_rr_graph_storage* node_storage,
                    RRSpatialLookup* node_lookup);
 
-    /* Disable copy constructors
+    /* Disable copy constructors and copy assignment operator
      * This is to avoid any duplication of the object
      * as it is only interface allowed to modify routing resource graph
      */
     RRGraphBuilder(const RRGraphBuilder&) = delete;
-
-    /* Disable copy assignment operator */
     void operator=(const RRGraphBuilder&) = delete;
 
-    /****************
-     * Mutators
-     ****************/
+    /* -- Mutators -- */
   public:
     /* Return a writable object for rr_nodes */
     t_rr_graph_storage& node_storage();
     /* Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
 
-    /****************
-     * internal data storage
-     ****************/
+    /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
      * the builder data structure will be the owner of the data storages. 

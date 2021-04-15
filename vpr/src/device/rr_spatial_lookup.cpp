@@ -1,19 +1,10 @@
-/***************************************
- * Methods for Object RRSpatialLookup
- ***************************************/
 #include "vtr_assert.h"
 #include "rr_spatial_lookup.h"
 
-/****************************
- * Constructors
- ****************************/
 RRSpatialLookup::RRSpatialLookup(t_rr_node_indices& rr_node_indices)
     : rr_node_indices_(rr_node_indices) {
 }
 
-/****************************
- * Accessors
- ****************************/
 RRNodeId RRSpatialLookup::find_node(int x,
                                     int y,
                                     t_rr_type type,
@@ -28,7 +19,12 @@ RRNodeId RRSpatialLookup::find_node(int x,
         node_side = SIDES[0];
     }
 
-    /* Currently need to swap x and y for CHANX because of chan, seg convention */
+    /* Currently need to swap x and y for CHANX because of chan, seg convention 
+     * This is due to that the fast look-up builders uses (y, x) coordinate when
+     * registering a CHANX node in the look-up
+     * TODO: Once the builders is reworked for use consistent (x, y) convention,
+     * the following swapping can be removed
+     */
     size_t node_x = x;
     size_t node_y = y;
     if (CHANX == type) {
@@ -38,43 +34,32 @@ RRNodeId RRSpatialLookup::find_node(int x,
     VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
 
     /* Sanity check to ensure the x, y, side and ptc are in range 
-     * Data type of rr_node_indice:
-     *   typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
-     * Note that x, y and side are the 1st, 2nd and 3rd dimensions of the vtr::NdMatrix
-     * ptc is in the std::vector<int>
+     * - Return an valid id by searching in look-up when all the parameters are in range
+     * - Return an invalid id if any out-of-range is detected
      */
     if (size_t(type) >= rr_node_indices_.size()) {
-        /* Node type is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
     if (node_x >= rr_node_indices_[type].dim_size(0)) {
-        /* Node x is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
     if (node_y >= rr_node_indices_[type].dim_size(1)) {
-        /* Node y is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
     if (node_side >= rr_node_indices_[type].dim_size(2)) {
-        /* Node side is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
     if (size_t(ptc) >= rr_node_indices_[type][node_x][node_y][node_side].size()) {
-        /* Ptc is out of range, return an invalid index */
         return RRNodeId::INVALID();
     }
 
-    /* Reaching here, it means that node exists in the look-up, return the id */
     return RRNodeId(rr_node_indices_[type][node_x][node_y][node_side][ptc]);
 }
 
-/****************************
- * Mutators
- ****************************/
 void RRSpatialLookup::add_node(RRNodeId node,
                                int x,
                                int y,
