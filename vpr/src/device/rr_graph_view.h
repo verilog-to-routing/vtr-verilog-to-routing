@@ -44,7 +44,7 @@ class RRGraphView {
      * as it is only interface allowed to access routing resource graph
      */
     RRGraphView(const RRGraphView&) = delete;
-    
+
     /* Disable copy assignment operator */
     void operator=(const RRGraphView&) = delete;
 

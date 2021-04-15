@@ -24,7 +24,7 @@ class RRSpatialLookup {
      * as it is only interface allowed to access node look-up of a routing resource graph
      */
     RRSpatialLookup(const RRSpatialLookup&) = delete;
-    
+
     /* Disable copy assignment operator */
     void operator=(const RRSpatialLookup&) = delete;
 

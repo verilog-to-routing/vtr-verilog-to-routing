@@ -28,7 +28,7 @@ class RRGraphBuilder {
      * as it is only interface allowed to modify routing resource graph
      */
     RRGraphBuilder(const RRGraphBuilder&) = delete;
-    
+
     /* Disable copy assignment operator */
     void operator=(const RRGraphBuilder&) = delete;
 
