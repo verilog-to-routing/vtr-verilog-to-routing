@@ -16,7 +16,17 @@ class RRSpatialLookup {
      * Constructors
      ****************/
   public:
-    RRSpatialLookup(t_rr_node_indices& rr_node_indices);
+    /* Explicitly define the only way to create an object */
+    explicit RRSpatialLookup(t_rr_node_indices& rr_node_indices);
+
+    /* Disable copy constructors
+     * This is to avoid any duplication of the object
+     * as it is only interface allowed to access node look-up of a routing resource graph
+     */
+    RRSpatialLookup(const RRSpatialLookup&) = delete;
+    
+    /* Disable copy assignment operator */
+    void operator=(const RRSpatialLookup&) = delete;
 
     /****************
      * Accessors
@@ -63,6 +73,12 @@ class RRSpatialLookup {
      *
      * Note that the add node here will not create a node in the node list
      * You MUST add the node in the t_rr_node_storage so that the node is valid  
+     *
+     * TODO: Consider to try to return a reference to *this so that we can do chain calls
+     *   - .add_node(...)
+     *   - .add_node(...)
+     *   - .add_node(...)
+     *   As such, multiple node addition could be efficiently implemented
      */
     void add_node(RRNodeId node,
                   int x,

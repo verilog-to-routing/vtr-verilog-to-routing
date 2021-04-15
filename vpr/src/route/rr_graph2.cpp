@@ -978,8 +978,8 @@ static void load_block_rr_indices(const DeviceGrid& grid,
     /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
      * TODO: these building functions should only talk to a RRGraphBuilderView object
      */
-    RRGraphBuilder rr_graph_builder(g_vpr_ctx.mutable_device().rr_nodes,
-                                    g_vpr_ctx.mutable_device().rr_spatial_lookup);
+    RRGraphBuilder rr_graph_builder(&(g_vpr_ctx.mutable_device().rr_nodes),
+                                    &(g_vpr_ctx.mutable_device().rr_spatial_lookup));
 
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (size_t x = 0; x < grid.width(); x++) {
