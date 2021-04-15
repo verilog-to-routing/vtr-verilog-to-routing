@@ -12,25 +12,19 @@
  * - Find the id of a node with given information, e.g., x, y, type etc.
  ********************************************************************/
 class RRSpatialLookup {
-    /****************
-     * Constructors
-     ****************/
+    /* -- Constructors -- */
   public:
     /* Explicitly define the only way to create an object */
     explicit RRSpatialLookup(t_rr_node_indices& rr_node_indices);
 
-    /* Disable copy constructors
+    /* Disable copy constructors and copy assignment operator
      * This is to avoid any duplication of the object
      * as it is only interface allowed to access node look-up of a routing resource graph
      */
     RRSpatialLookup(const RRSpatialLookup&) = delete;
-
-    /* Disable copy assignment operator */
     void operator=(const RRSpatialLookup&) = delete;
 
-    /****************
-     * Accessors
-     ****************/
+    /* -- Accessors -- */
   public:
     /* Returns the index of the specified routing resource node.  (x,y) are
      * the location within the FPGA, rr_type specifies the type of resource,
@@ -56,9 +50,7 @@ class RRSpatialLookup {
                        int ptc,
                        e_side side = NUM_SIDES) const;
 
-    /****************
-     * Mutators
-     ****************/
+    /* -- Mutators -- */
   public:
     /* Register a node in the fast look-up 
      * - You must have a node id
@@ -87,9 +79,7 @@ class RRSpatialLookup {
                   int ptc,
                   e_side side);
 
-    /****************
-     * internal data storage
-     ****************/
+    /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
      * the data structure will be the owner of the data storages. 

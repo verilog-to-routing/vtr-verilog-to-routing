@@ -978,7 +978,6 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   t_rr_node_indices& indices,
                                   const DeviceGrid& grid,
                                   int* index) {
-
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
