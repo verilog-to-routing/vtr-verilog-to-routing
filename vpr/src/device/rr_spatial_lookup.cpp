@@ -88,12 +88,14 @@ void RRSpatialLookup::add_node(RRNodeId node,
      * should ensure the fast look-up well organized  
      */
     VTR_ASSERT(type < rr_node_indices_.size());
+    VTR_ASSERT(0 <= x);
+    VTR_ASSERT(0 <= y);
 
-    if ((size_t(x) >= rr_node_indices_[type].dim_size(0))
-        || (size_t(y) >= rr_node_indices_[type].dim_size(1))
+    if ((x >= int(rr_node_indices_[type].dim_size(0)))
+        || (y >= int(rr_node_indices_[type].dim_size(1)))
         || (size_t(side) >= rr_node_indices_[type].dim_size(2))) {
-        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0), size_t(x) + 1),
-                                       std::max(rr_node_indices_[type].dim_size(1), size_t(y) + 1),
+        rr_node_indices_[type].resize({std::max(int(rr_node_indices_[type].dim_size(0)), x + 1),
+                                       std::max(int(rr_node_indices_[type].dim_size(1)), y + 1),
                                        std::max(rr_node_indices_[type].dim_size(2), size_t(side) + 1)});
     }
 

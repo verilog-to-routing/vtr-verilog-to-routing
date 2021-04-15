@@ -20,8 +20,17 @@ class RRGraphBuilder {
      * Constructors
      ****************/
   public:
-    RRGraphBuilder(t_rr_graph_storage& node_storage,
-                   RRSpatialLookup& node_lookup);
+    RRGraphBuilder(t_rr_graph_storage* node_storage,
+                   RRSpatialLookup* node_lookup);
+
+    /* Disable copy constructors
+     * This is to avoid any duplication of the object
+     * as it is only interface allowed to modify routing resource graph
+     */
+    RRGraphBuilder(const RRGraphBuilder&) = delete;
+    
+    /* Disable copy assignment operator */
+    void operator=(const RRGraphBuilder&) = delete;
 
     /****************
      * Mutators
