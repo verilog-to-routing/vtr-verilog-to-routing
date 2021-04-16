@@ -39,8 +39,10 @@ class RRGraphView {
                 const RRSpatialLookup& node_lookup);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid any duplication of the object
-     * as it is only interface allowed to access routing resource graph
+     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * memory footprint of the data structure could ~ Gb
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * by compiler
      */
     RRGraphView(const RRGraphView&) = delete;
     void operator=(const RRGraphView&) = delete;
