@@ -18,8 +18,10 @@ class RRSpatialLookup {
     explicit RRSpatialLookup(t_rr_node_indices& rr_node_indices);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid any duplication of the object
-     * as it is only interface allowed to access node look-up of a routing resource graph
+     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * memory footprint of the data structure could ~ Gb
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * by compiler
      */
     RRSpatialLookup(const RRSpatialLookup&) = delete;
     void operator=(const RRSpatialLookup&) = delete;

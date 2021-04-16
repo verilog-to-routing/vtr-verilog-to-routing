@@ -23,8 +23,10 @@ class RRGraphBuilder {
                    RRSpatialLookup* node_lookup);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid any duplication of the object
-     * as it is only interface allowed to modify routing resource graph
+     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * memory footprint of the data structure could ~ Gb
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * by compiler
      */
     RRGraphBuilder(const RRGraphBuilder&) = delete;
     void operator=(const RRGraphBuilder&) = delete;
