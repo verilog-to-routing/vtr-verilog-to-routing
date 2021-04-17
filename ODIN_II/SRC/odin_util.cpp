@@ -47,6 +47,12 @@
 #    include <sys/stat.h>
 #endif
 
+
+std::string& SSS (const char* s)
+{
+    return *(new std::string(s));
+}
+
 long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc) {
     if (shift_by < 0)
         error_message(NETLIST, loc, "requesting a shift left that is negative [%ld]\n", shift_by);

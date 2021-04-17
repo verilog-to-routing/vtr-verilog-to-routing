@@ -188,7 +188,17 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case VCC_NODE:
         case PAD_NODE:
         case INPUT_NODE:
-        case OUTPUT_NODE: {
+        case OUTPUT_NODE: 
+        case LOGICAL_OR:
+        case LOGICAL_AND:
+        case LOGICAL_NOR:
+        case LOGICAL_NAND:
+        case LOGICAL_XOR:
+        case LOGICAL_XNOR:
+        case LOGICAL_NOT:
+        case LOGICAL_EQUAL: 
+        case MULTI_PORT_MUX: {
+            /* some are already resolved for this phase */
             break;
         }
         case BITWISE_NOT:
@@ -199,14 +209,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case BITWISE_NOR:
         case BITWISE_XNOR:
         case BITWISE_XOR:
-        case LOGICAL_OR:
-        case LOGICAL_AND:
-        case LOGICAL_NOR:
-        case LOGICAL_NAND:
-        case LOGICAL_XOR:
-        case LOGICAL_XNOR:
-        case LOGICAL_NOT:
-        case LOGICAL_EQUAL:
         case NOT_EQUAL:
         case GTE:
         case LTE:
@@ -216,7 +218,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case ASL:
         case SR:
         case ASR:
-        case MULTI_PORT_MUX:
         case MULTIPLY:
         case MEMORY:
         case HARD_IP:
