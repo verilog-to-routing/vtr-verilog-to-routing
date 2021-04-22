@@ -14,7 +14,8 @@
 void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
     vtr::ScopedStartFinishTimer timer("Loading VPR constraints file");
 
-    VprConstraintsSerializer reader;
+    test_partition part;
+    VprConstraintsSerializer reader(part);
 
     if (vtr::check_file_name_extension(read_vpr_constraints_name, ".xml")) {
         try {
@@ -41,3 +42,4 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
         echo_constraints(getEchoFileName(E_ECHO_VPR_CONSTRAINTS), ctx_constraints);
     }
 }
+
