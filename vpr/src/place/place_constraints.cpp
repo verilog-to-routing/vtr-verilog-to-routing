@@ -31,8 +31,13 @@ int check_placement_floorplanning() {
 /*returns true if cluster has floorplanning constraints, false if it doesn't*/
 bool is_cluster_constrained(ClusterBlockId blk_id) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    PartitionRegion pr;
-    pr = floorplanning_ctx.cluster_constraints[blk_id];
+
+    auto keys = floorplanning_ctx.cluster_constraints.keys();
+    auto res = std::find(keys.begin(), keys.end(), blk_id);
+
+    if (res == keys.end()) return false;
+
+    auto pr = floorplanning_ctx.cluster_constraints[blk_id];
     return (!pr.empty());
 }
 
