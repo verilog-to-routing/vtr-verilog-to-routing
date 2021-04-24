@@ -28,10 +28,10 @@ The router, graphics, sanity checker, and statistics routines all work only with
 If you change the routines that build this graph (in ``rr_graph*.c``) so that they create a graph describing your FPGA, you should be able to route your FPGA.
 If you want to read a text file describing the entire routing resource graph, call the ``dump_rr_graph`` subroutine.
 
-Placer and Router Debugger
-==========================
+Placer and Router Breakpoint
+============================
 
-.. image:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/debuggerWindow.png
+.. image:: https://www.verilogtorouting.org/img/debuggerWindow.png
     :align: center
 
 Overview
@@ -62,7 +62,7 @@ Upon reaching a breakpoint, the program will stop, notify the user which breakpo
 Available Variables
 ~~~~~~~~~~~~~~~~~~~
 
-.. image:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/advancedWindow.png
+.. image:: https://www.verilogtorouting.org/img/advancedWindow.png
     :align: center
 
 You can also find the variables’ list in the Advanced Settings Window, on the left.
@@ -106,3 +106,42 @@ Available Operators
           * Ex. in_blocks_affected == 11 || temp_count == 9
   * +=
           * Ex. move_num += 8
+          
+          
+Setting moves maually during placement
+======================================
+
+Overview
+~~~~~~~~
+
+The manual move generator, when enabled, allows the user to specify the next move in placement. The user can set a breakpoint to stop the placer at a specific point and start making manual moves. After specifying the move, the user is presented with the costs of the move and can then decide to accept or reject it.
+
+How to use the manual move generator
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First, you should make sure the manual move option is enabled, as seen in the figure.
+
+.. image:: https://www.verilogtorouting.org/img/manualMoveCheckbox.png
+    :align: center
+    
+Then after pressing the “Proceed” button a window pops up that asks for the block you want to move, and the location you want to move it to. 
+
+.. image:: https://www.verilogtorouting.org/img/manualMoveWindow.png
+    :align: center
+    
+If your move is legal, by pressing the “calculate costs” button you can see all the costs of your move, and then decide to reject or accept the move. The window will also indicate the placer's move_outcome, as in whether the placer would choose to accept or reject the move. If your proposed move is invalid however, a window pops up showing you the error (i.e x value out of bounds) and you can try again. Your move won't be passed into the placer until valid.
+
+.. image:: https://www.verilogtorouting.org/img/moveCosts.png
+    :align: center
+
+If you want to make another manual move simply press proceed again and repeat the process, otherwise disable the manual move feature and continue.
+
+Selecting the block to move
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can choose the block you want to move by entering its block id or block name in the corresponding entry field, or you can simply click on that specific block. For better visualization, once you indicate your block through the entry field and press proceed, your block will be highlighted on the GUI. Note: You cannot move blocks that are part of a placement macro, when trying to do so, the proposed move will get aborted and you'll get the error message.
+
+Selecting the to location
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The “to location” of your move consists of the x location, y location, and subtile. If you’re unsure of the subtile value input 0, as most (x,y) locations in most devices have only a single subtile.
