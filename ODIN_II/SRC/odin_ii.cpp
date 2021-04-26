@@ -410,7 +410,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              */
             if (configuration.blif_type != blif_type_e::_ODIN_BLIF) {
                 try {
-                    verilog_netlist = yosys::read_blif();
+                    verilog_netlist = read_blif_top();
                     error_code = partial_mapping();
                     // if (error_code) {
                     //     printf("Odin Failed to parse input BLIF file with exit status: %d\n", error_code);
@@ -456,6 +456,10 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         }
 
         try {
+            /**
+             * The blif file for simulation should follow odin_ii blif style 
+             * So, here we call odin_ii's read_blif
+             */
             odin_netlist = read_blif();
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);

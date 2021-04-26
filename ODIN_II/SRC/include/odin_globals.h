@@ -3,6 +3,7 @@
 
 #include "odin_types.h"
 #include "string_cache.h"
+#include "Hashtable.hpp"
 #include "read_xml_arch_file.h"
 #include "HardSoftLogicMixer.hpp"
 
@@ -20,6 +21,9 @@ extern STRING_CACHE* module_names_to_idx;
 
 extern STRING_CACHE* output_nets_sc;
 extern STRING_CACHE* input_nets_sc;
+
+// Output nets hashtable generated in read blif files
+extern Hashtable* output_nets_hash;
 
 extern netlist_t* verilog_netlist;
 

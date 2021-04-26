@@ -49,25 +49,26 @@ struct hard_block_models {
     Hashtable* index;
 };
 
+netlist_t* read_blif_top();
 netlist_t* read_blif();
 extern int line_count;
 
 extern bool skip_reading_bit_map;
 extern bool insert_global_clock;
 
-void rb_create_top_driver_nets(const char* instance_name_prefix, Hashtable* output_nets_hash);
+void rb_create_top_driver_nets(const char* instance_name_prefix);
 void rb_look_for_clocks(); // not sure if this is needed
-void add_top_input_nodes(FILE* file, Hashtable* output_nets_hash);
+void add_top_input_nodes(FILE* file);
 void rb_create_top_output_nodes(FILE* file);
-int read_tokens(char* buffer, hard_block_models* models, FILE* file, Hashtable* output_nets_hash);
+int read_tokens(char* buffer, hard_block_models* models, FILE* file);
 void dum_parse(char* buffer, FILE* file);
-void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash);
+void create_internal_node_and_driver(FILE* file);
 operation_list assign_node_type_from_node_name(char* output_name); // function will decide the node->type of the given node
 operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FILE* file);
-void create_latch_node_and_driver(FILE* file, Hashtable* output_nets_hash);
-void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* output_nets_hash);
-void hook_up_nets(Hashtable* output_nets_hash);
-void hook_up_node(nnode_t* node, Hashtable* output_nets_hash);
+void create_latch_node_and_driver(FILE* file);
+void create_hard_block_nodes(hard_block_models* models, FILE* file);
+void hook_up_nets();
+void hook_up_node(nnode_t* node);
 char* search_clock_name(FILE* file);
 void free_hard_block_model(hard_block_model* model);
 char* get_hard_block_port_name(char* name);

@@ -214,7 +214,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_shift(node, node->type, traverse_number, netlist);
             break;
         case MULTI_PORT_MUX:
-            instantiate_multi_port_mux(node, traverse_number, netlist);
+            instantiate_multi_port_single_bit_mux(node, traverse_number, netlist);
             break;
         case MULTIPLY: {
             mixer->partial_map_node(node, traverse_number, netlist);
@@ -311,6 +311,94 @@ void instantiate_multi_port_mux(nnode_t* node, short mark, netlist_t* /*netlist*
         remap_pin_to_new_node(node->output_pins[j], muxes[j], 0);
     }
     vtr::free(muxes);
+    free_nnode(node);
+}
+
+
+/*---------------------------------------------------------------------------------------------
+ * (function: instantiate_multi_port_mux )
+ * 	Makes the multiport into a series of 2-Mux-decoded
+ *-------------------------------------------------------------------------------------------*/
+void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t* /*netlist*/) {
+    int i, j;
+    int num_expressions;
+    int port_offset;
+    int selector_width;
+    nnode_t*** muxes;
+
+    num_expressions = node->num_input_port_sizes - 1;
+    port_offset = node->input_port_sizes[0];
+    selector_width = node->input_port_sizes[0];
+    muxes = (nnode_t***)vtr::calloc(selector_width, sizeof(nnode_t**));
+
+    signal_list_t** output_signals = (signal_list_t**)vtr::calloc(selector_width, sizeof(signal_list_t*));
+    for (i = 0; i < selector_width; i++){
+
+        int num_of_muxes = shift_left_value_with_overflow_check(0x1, selector_width - (i + 1), node->loc);
+        muxes[i] = (nnode_t**)vtr::calloc(num_of_muxes, sizeof(nnode_t*));
+        output_signals[i] = init_signal_list();
+
+        for (j = 0; j < num_of_muxes; j++) {
+
+            muxes[i][j] = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
+            // connect related pin of second_input to related multiplexer as a selector
+            nnode_t* select = make_1port_gate(BUF_NODE, 1, 1, node, mark);
+            // node->input_pins[i] === selector[i]
+            if(j == 0)
+                remap_pin_to_new_node(node->input_pins[i], select, 0);
+            else
+                add_input_pin_to_node(select, copy_input_npin(muxes[i][0]->input_pins[1]), 0);
+
+            connect_nodes(select, 0, muxes[i][j], 1);
+
+            nnode_t* not_select = make_not_gate(select, mark);
+            connect_nodes(select, 0, not_select, 0);
+            connect_nodes(not_select, 0, muxes[i][j], 0);
+
+            if (i == 0) {
+                remap_pin_to_new_node(node->input_pins[port_offset + j],
+                                      muxes[i][j],
+                                      2);
+
+                remap_pin_to_new_node(node->input_pins[port_offset + j + (num_expressions/2)],
+                                      muxes[i][j],
+                                      3);
+            } else {
+                add_input_pin_to_node(muxes[i][j],
+                                      output_signals[i-1]->pins[j],
+                                      2);
+
+                add_input_pin_to_node(muxes[i][j],
+                                      output_signals[i-1]->pins[j + (num_expressions/2)],
+                                      3);
+            }
+
+
+            // Connect output pin to related input pin
+            if (i != selector_width - 1) {
+                npin_t* new_pin1 = allocate_npin();
+                npin_t* new_pin2 = allocate_npin();
+                nnet_t* new_net = allocate_nnet();
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, muxes[i][j]->name, j);
+                /* hook the output pin into the node */
+                add_output_pin_to_node(muxes[i][j], new_pin1, 0);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
+
+                // Storing the output pins of the current mux stage as the input of the next one
+                add_pin_to_signal_list(output_signals[i], new_pin2);
+
+            } else {
+                remap_pin_to_new_node(node->output_pins[j], muxes[i][j], 0);
+            }
+        }
+        num_expressions -= num_expressions/2;
+     }
+
+    vtr::free(muxes);
+    vtr::free(output_signals);
     free_nnode(node);
 }
 

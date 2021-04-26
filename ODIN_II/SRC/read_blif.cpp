@@ -28,6 +28,7 @@
 #include "odin_util.h"
 #include "ast_util.h"
 #include "read_blif.h"
+#include "read_yosys_blif.h"
 #include "string_cache.h"
 
 #include "netlist_utils.h"
@@ -43,6 +44,29 @@ int line_count;
 netlist_t* blif_netlist;
 bool skip_reading_bit_map = false;
 bool insert_global_clock;
+Hashtable* output_nets_hash;
+
+/**
+ * (function: read_blif_top)
+ * 
+ * @brief call blif reader based on the input blif type
+*/
+netlist_t* read_blif_top() {
+    netlist_t* netlist;
+    output_nets_hash = new Hashtable();
+
+    if (configuration.blif_type == blif_type_e::_ODIN_BLIF) {
+        netlist = read_blif();
+
+    } else if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
+        netlist = yosys::read_blif();
+
+    }/*  else {
+        other blif types could go here
+    } */
+
+    return (netlist);
+}
 
 /*
  * Reads a blif file with the given filename and produces
@@ -64,12 +88,12 @@ netlist_t* read_blif() {
     }
     int num_lines = count_blif_lines(file);
 
-    Hashtable* output_nets_hash = new Hashtable();
+    output_nets_hash = new Hashtable();
 
     printf("Reading top level module\n");
     fflush(stdout);
     /* create the top level module */
-    rb_create_top_driver_nets("top", output_nets_hash);
+    rb_create_top_driver_nets("top");
 
     /* Extracting the netlist by reading the blif file */
     printf("Reading blif netlist...");
@@ -82,7 +106,7 @@ netlist_t* read_blif() {
     hard_block_models* models = create_hard_block_models();
     printf("\n");
     char buffer[READ_BLIF_BUFFER];
-    while (vtr::fgets(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models, file, output_nets_hash)) { // Print a progress bar indicating completeness.
+    while (vtr::fgets(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models, file)) { // Print a progress bar indicating completeness.
         position = print_progress_bar((++line_count) / (double)num_lines, position, 50, wall_time() - time);
     }
     free_hard_block_models(models);
@@ -95,7 +119,7 @@ netlist_t* read_blif() {
 
     // Outputs netlist graph.
     check_netlist(blif_netlist);
-    delete output_nets_hash;
+    // delete output_nets_hash;
     fclose(file);
     return blif_netlist;
 }
@@ -106,7 +130,7 @@ netlist_t* read_blif() {
  * Parses the given line from the blif file. Returns true if there are more lines
  * to read.
  *-------------------------------------------------------------------------------------------*/
-int read_tokens(char* buffer, hard_block_models* models, FILE* file, Hashtable* output_nets_hash) {
+int read_tokens(char* buffer, hard_block_models* models, FILE* file) {
     /* Figures out which, if any token is at the start of this line and *
      * takes the appropriate action.                                    */
     char* token = vtr::strtok(buffer, TOKENS, file, buffer);
@@ -117,19 +141,19 @@ int read_tokens(char* buffer, hard_block_models* models, FILE* file, Hashtable* 
         } else {
             skip_reading_bit_map = false;
             if (strcmp(token, ".inputs") == 0) {
-                add_top_input_nodes(file, output_nets_hash); // create the top input nodes
+                add_top_input_nodes(file); // create the top input nodes
             } else if (strcmp(token, ".outputs") == 0) {
                 rb_create_top_output_nodes(file); // create the top output nodes
             } else if (strcmp(token, ".names") == 0) {
-                create_internal_node_and_driver(file, output_nets_hash);
+                create_internal_node_and_driver(file);
             } else if (strcmp(token, ".latch") == 0) {
-                create_latch_node_and_driver(file, output_nets_hash);
+                create_latch_node_and_driver(file);
             } else if (strcmp(token, ".subckt") == 0) {
-                create_hard_block_nodes(models, file, output_nets_hash);
+                create_hard_block_nodes(models, file);
             } else if (strcmp(token, ".end") == 0) {
                 // Marks the end of the main module of the blif
                 // Call function to hook up the nets
-                hook_up_nets(output_nets_hash);
+                hook_up_nets();
                 return false;
             } else if (strcmp(token, ".model") == 0) {
                 // Ignore models.
@@ -183,7 +207,7 @@ operation_list assign_node_type_from_node_name(char* output_name) {
  * to create an ff node and driver from that node
  * format .latch <input> <output> [<type> <control/clock>] <initial val>
  *-------------------------------------------------------------------------------------------*/
-void create_latch_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
+void create_latch_node_and_driver(FILE* file) {
     /* Storing the names of the input and the final output in array names */
     char** names = NULL;       // Store the names of the tokens
     int input_token_count = 0; /*to keep track whether controlling clock is specified or not */
@@ -351,7 +375,7 @@ char* search_clock_name(FILE* file) {
  * function:create_hard_block_nodes
  * to create the hard block nodes
  *-------------------------------------------------------------------------------------------*/
-void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* output_nets_hash) {
+void create_hard_block_nodes(hard_block_models* models, FILE* file) {
     char buffer[READ_BLIF_BUFFER];
     char* subcircuit_name = vtr::strtok(NULL, TOKENS, file, buffer);
 
@@ -503,7 +527,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
  * to create an internal node and driver from that node
  *-------------------------------------------------------------------------------------------*/
 
-void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
+void create_internal_node_and_driver(FILE* file) {
     /* Storing the names of the input and the final output in array names */
     char* ptr = NULL;
     char** names = NULL; // stores the names of the input and the output, last name stored would be of the output
@@ -875,7 +899,7 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
  * function: add_top_input_nodes
  * to add the top level inputs to the netlist
  *-------------------------------------------------------------------------------------------*/
-static void build_top_input_node(const char* name_str, Hashtable* output_nets_hash) {
+static void build_top_input_node(const char* name_str) {
     char* temp_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
 
     /* create a new top input node and net*/
@@ -917,7 +941,7 @@ static void build_top_input_node(const char* name_str, Hashtable* output_nets_ha
     output_nets_hash->add(temp_string, new_net);
 }
 
-void add_top_input_nodes(FILE* file, Hashtable* output_nets_hash) {
+void add_top_input_nodes(FILE* file) {
     /**
      * insert a global clock for fall back.
      * in case of undriven internal clocks, they will attach to the global clock
@@ -926,13 +950,13 @@ void add_top_input_nodes(FILE* file, Hashtable* output_nets_hash) {
      */
     if (insert_global_clock) {
         insert_global_clock = false;
-        build_top_input_node(DEFAULT_CLOCK_NAME, output_nets_hash);
+        build_top_input_node(DEFAULT_CLOCK_NAME);
     }
 
     char* ptr;
     char buffer[READ_BLIF_BUFFER];
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-        build_top_input_node(ptr, output_nets_hash);
+        build_top_input_node(ptr);
     }
 }
 
@@ -997,7 +1021,7 @@ void rb_look_for_clocks() {
  * ---------------------------------------------------------------------------
  */
 
-void rb_create_top_driver_nets(const char* instance_name_prefix, Hashtable* output_nets_hash) {
+void rb_create_top_driver_nets(const char* instance_name_prefix) {
     npin_t* new_pin;
     /* create the constant nets */
 
@@ -1062,7 +1086,7 @@ void dum_parse(char* buffer, FILE* file) {
  * function: hook_up_nets()
  * find the output nets and add the corresponding nets
  *-------------------------------------------------------------------------------------------*/
-void hook_up_nets(Hashtable* output_nets_hash) {
+void hook_up_nets() {
     nnode_t** node_sets[] = {blif_netlist->internal_nodes, blif_netlist->ff_nodes, blif_netlist->top_output_nodes};
     int counts[] = {blif_netlist->num_internal_nodes, blif_netlist->num_ff_nodes, blif_netlist->num_top_output_nodes};
     int num_sets = 3;
@@ -1073,7 +1097,7 @@ void hook_up_nets(Hashtable* output_nets_hash) {
         int j;
         for (j = 0; j < counts[i]; j++) {
             nnode_t* node = node_sets[i][j];
-            hook_up_node(node, output_nets_hash);
+            hook_up_node(node);
         }
     }
 }
@@ -1082,7 +1106,7 @@ void hook_up_nets(Hashtable* output_nets_hash) {
  * Connect the given node's input pins to their corresponding nets by
  * looking each one up in the output_nets_sc.
  */
-void hook_up_node(nnode_t* node, Hashtable* output_nets_hash) {
+void hook_up_node(nnode_t* node) {
     int j;
     for (j = 0; j < node->num_input_pins; j++) {
         npin_t* input_pin = node->input_pins[j];
