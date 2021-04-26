@@ -47,8 +47,11 @@ int read_tokens(char* buffer, hard_block_models* models, FILE* file);
 void create_hard_block_nodes(const char* name_prefix, hard_block_models* models, FILE* file);
 void create_internal_node_and_driver(const char* name_prefix, FILE* file);
 void add_top_input_nodes(const char* name_prefix, FILE* file, hard_block_model* model);
+void add_internal_input_nodes(const char* name_prefix, FILE* file, hard_block_model* model);
 void rb_create_top_output_nodes(const char* name_prefix, FILE* file, hard_block_model* model);
+void rb_create_internal_output_nodes(const char* name_prefix, FILE* file, hard_block_model* model);
 static void build_top_input_node(const char* name_prefix, const char* name_str);
+static void build_internal_input_node(const char* name_prefix, const char* name_str);
 static void model_parse(char* buffer, FILE* file);
 static char* resolve_signal_name_based_on_blif_type(const char* name_prefix, const char* name_str);
 bool verify_hard_block_ports_against_model(hard_block_ports* ports, hard_block_model* model);
@@ -366,14 +369,6 @@ void create_hard_block_nodes(const char* name_prefix, hard_block_models* models,
 
         add_driver_pin_to_net(new_net, new_pin);
 
-        int sc_spot = -1;
-        if (((sc_spot = sc_lookup_string(output_nets_sc, new_net->name)) != -1) && (output_nets_sc->data[sc_spot] != NULL)) {
-            error_message(PARSE_YOSYS_BLIF, my_location,
-                          "Net (%s) with the same name already created\n", new_net->name);
-        }
-        sc_spot = sc_add_string(output_nets_sc, new_net->name);
-        output_nets_sc->data[sc_spot] = (void*) new_net;
-
         // Index the net by name.
         output_nets_hash->add(name, new_net);
     }
@@ -393,9 +388,14 @@ void create_hard_block_nodes(const char* name_prefix, hard_block_models* models,
     vtr::free(names);
 }
 
-/*---------------------------------------------------------------------------------------------
- * function:create_internal_node_and_driver
- * to create an internal node and driver from that node
+/**
+ * ---------------------------------------------------------------------------------------------
+ * (function:create_internal_node_and_driver)
+ * 
+ * @brief to create an internal node and driver from that node
+ * 
+ * @param name_prefix
+ * @param file
  *-------------------------------------------------------------------------------------------*/
 
 void create_internal_node_and_driver(const char* name_prefix, FILE* file) {
@@ -507,13 +507,6 @@ void create_internal_node_and_driver(const char* name_prefix, FILE* file) {
             out_net = allocate_nnet();
             out_net->name = new_node->name;
             output_nets_hash->add(new_node->name, out_net);
-            int sc_spot = -1;
-            if (((sc_spot = sc_lookup_string(output_nets_sc, out_net->name)) != -1) && (output_nets_sc->data[sc_spot] != NULL)) {
-                error_message(PARSE_YOSYS_BLIF, my_location,
-                            "Net (%s) with the same name already created\n", out_net->name);
-            }
-            sc_spot = sc_add_string(output_nets_sc, out_net->name);
-            output_nets_sc->data[sc_spot] = (void*) out_net;
         }
         add_driver_pin_to_net(out_net, new_pin);
     }
@@ -565,14 +558,6 @@ static void build_top_input_node(const char* name_prefix, const char* name_str) 
 
     add_driver_pin_to_net(new_net, new_pin);
 
-    int sc_spot = -1;
-    if (((sc_spot = sc_lookup_string(output_nets_sc, new_net->name)) != -1) && (output_nets_sc->data[sc_spot] != NULL)) {
-        error_message(PARSE_YOSYS_BLIF, my_location,
-                        "Net (%s) with the same name already created\n", new_net->name);
-    }
-    sc_spot = sc_add_string(output_nets_sc, new_net->name);
-    output_nets_sc->data[sc_spot] = (void*) new_net;
-
     blif_netlist->top_input_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_input_nodes, sizeof(nnode_t*) * (blif_netlist->num_top_input_nodes + 1));
     blif_netlist->top_input_nodes[blif_netlist->num_top_input_nodes++] = new_node;
 
@@ -614,6 +599,80 @@ void add_top_input_nodes(const char* name_prefix, FILE* file, hard_block_model* 
         }
 
         yosys::build_top_input_node(name_prefix, ptr);
+    }
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: build_internal_input_node)
+ * 
+ * @brief to build a the top level input
+ * 
+ * @param name_str representing the name input signal
+ *-------------------------------------------------------------------------------------------*/
+static void build_internal_input_node(const char* name_prefix, const char* name_str) {
+    char* temp_string = resolve_signal_name_based_on_blif_type(name_prefix, name_str);
+
+    /* create the .model input port if they do not exist */
+
+
+    /* create a new top input node and net*/
+
+    nnode_t* new_node = allocate_nnode(my_location);
+
+    new_node->related_ast_node = NULL;
+    new_node->type = INPUT_NODE;
+
+    /* add the name of the input variable */
+    new_node->name = temp_string;
+
+    /* allocate the pins needed */
+    allocate_more_output_pins(new_node, 1);
+    add_output_port_information(new_node, 1);
+
+    /* Create the pin connection for the net */
+    npin_t* new_pin = allocate_npin();
+    new_pin->name = vtr::strdup(temp_string);
+    new_pin->type = OUTPUT;
+
+    /* hookup the pin, net, and node */
+    add_output_pin_to_node(new_node, new_pin, 0);
+
+    nnet_t* new_net = allocate_nnet();
+    new_net->name = vtr::strdup(temp_string);
+
+    add_driver_pin_to_net(new_net, new_pin);
+
+    blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
+    blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
+
+    //long sc_spot = sc_add_string(output_nets_sc, temp_string);
+    //if (output_nets_sc->data[sc_spot])
+    //warning_message(NETLIST,linenum,-1, "Net (%s) with the same name already created\n",temp_string);
+
+    //output_nets_sc->data[sc_spot] = new_net;
+
+    output_nets_hash->add(temp_string, new_net);
+}
+
+/**
+ * (function: add_internal_input_nodes)
+ * 
+ * @brief to add the top level inputs to the netlist
+ *
+ * @param file pointer to the input blif file
+ *-------------------------------------------------------------------------------------------*/
+void add_internal_input_nodes(const char* name_prefix, FILE* file, hard_block_model* model) {
+    char* ptr;
+    char buffer[READ_BLIF_BUFFER];
+    while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
+        /* initialize the model struct input names*/
+        if (model) {
+            model->inputs->names = (char**)vtr::realloc(model->inputs->names, sizeof(char*) * (model->inputs->count + 1));
+            model->inputs->names[model->inputs->count++] = vtr::strdup(ptr);
+        }
+
+        yosys::build_internal_input_node(name_prefix, ptr);
     }
 }
 
@@ -662,6 +721,54 @@ void rb_create_top_output_nodes(const char* name_prefix, FILE* file, hard_block_
          * add_node_to_netlist() function can also be used */
         blif_netlist->top_output_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_output_nodes, sizeof(nnode_t*) * (blif_netlist->num_top_output_nodes + 1));
         blif_netlist->top_output_nodes[blif_netlist->num_top_output_nodes++] = new_node;
+    }
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: rb_create_internal_output_nodes)
+ * 
+ * @brief to add the top level outputs to the netlist
+ * 
+ * @param file pointer to the input blif file
+ *-------------------------------------------------------------------------------------------*/
+void rb_create_internal_output_nodes(const char* name_prefix, FILE* file, hard_block_model* model) {
+    char* ptr;
+    char buffer[READ_BLIF_BUFFER];
+
+    while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
+        /* initialize the model struct output names*/
+         if (model) {
+            model->outputs->names = (char**)vtr::realloc(model->outputs->names, sizeof(char*) * (model->outputs->count + 1));
+            model->outputs->names[model->outputs->count++] = vtr::strdup(ptr);
+         }
+
+        char* temp_string = resolve_signal_name_based_on_blif_type(name_prefix, ptr);
+
+        /*add_a_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);*/
+
+        /* create a new top output node and */
+        nnode_t* new_node = allocate_nnode(my_location);
+        new_node->related_ast_node = NULL;
+        new_node->type = OUTPUT_NODE;
+
+        /* add the name of the output variable */
+        new_node->name = temp_string;
+
+        /* allocate the input pin needed */
+        allocate_more_input_pins(new_node, 1);
+        add_input_port_information(new_node, 1);
+
+        /* Create the pin connection for the net */
+        npin_t* new_pin = allocate_npin();
+        new_pin->name = temp_string;
+        /* hookup the pin, net, and node */
+        add_input_pin_to_node(new_node, new_pin, 0);
+
+        /*adding the node to the blif_netlist output nodes
+         * add_node_to_netlist() function can also be used */
+        blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
+        blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
     }
 }
 
@@ -778,9 +885,7 @@ bool verify_hard_block_ports_against_model(hard_block_ports* ports, hard_block_m
                 int port_index = atoi(token);
 
                 rename_port_name(ports, p->names[j], port_index);
-
-                printf("===========================================> %s\n", token);
-                
+                                
                 idx = (int*)ports->index->get(name);
                 if (!idx)
                     return false;
@@ -834,7 +939,7 @@ void rename_port_name(hard_block_ports* ports, char* const new_name, int port_in
         vtr::free(ports->names[port_index-1]);
 
     // chaning the na,e of the port
-    ports->names[port_index-1] = new_name;
+    ports->names[port_index-1] = vtr::strdup(new_name);
     // adding the hash key and data to the hashtable
     ports->index->add(ports->names[port_index-1], data);
 }
@@ -885,9 +990,9 @@ hard_block_model* read_hard_block_model(char* name_prefix, char* name_subckt, ha
                     char* first_word = vtr::strtok(buffer, TOKENS, file, buffer);
                     if (first_word) {
                         if (!strcmp(first_word, ".inputs")) {
-                            yosys::add_top_input_nodes(model->name, file, model); // create the top input nodes
+                            yosys::add_internal_input_nodes(model->name, file, model); // create the top input nodes
                         } else if (!strcmp(first_word, ".outputs")) {
-                            yosys::rb_create_top_output_nodes(model->name, file, model); // create the top output nodes
+                            yosys::rb_create_internal_output_nodes(model->name, file, model); // create the top output nodes
                         } else if (!strcmp(first_word, ".subckt")) {
                             // need to call this function recursively to create the subcircuit node and assign its in/outputs
                             yosys::create_hard_block_nodes(model->name, models, file);

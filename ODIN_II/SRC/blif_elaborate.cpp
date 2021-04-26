@@ -508,7 +508,7 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
             if (!output_net)
                 error_message(BLIF_ELBORATION, my_location, "Error: Could not hook up the pin %s: not available.", input_pin->name);
 
-            free_nnode(output_net->driver_pins[0]->node);// [TODO] free related node
+            // free_nnode(output_net->driver_pins[0]->node); [TODO] free related node
             output_net->num_driver_pins = 0;
             output_net->driver_pins[0] = NULL;
             add_driver_pin_to_net(output_net, input_pin_driver_pin);
@@ -541,8 +541,6 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
         }
         acc_port_sizes += node->input_port_sizes[i];
     }
-
-    // free_nnode(node);
 }
 
 /**
