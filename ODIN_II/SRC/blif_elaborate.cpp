@@ -493,7 +493,7 @@ static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mar
  * @param node pointing to the netlist node 
  */
 void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
-    int i, j;
+    int i, j, k;
     int acc_port_sizes = 0;
     for (i = 0; i < node->num_input_port_sizes; i++) {
         for (j = 0; j < node->input_port_sizes[i]; j++) {
@@ -508,9 +508,11 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
             if (!output_net)
                 error_message(BLIF_ELBORATION, my_location, "Error: Could not hook up the pin %s: not available.", input_pin->name);
 
-            // free_nnode(output_net->driver_pins[0]->node); [TODO] free related node
+
+            output_net->driver_pins[0]->net = NULL;
+            free_nnode(output_net->driver_pins[0]->node); //[TODO] free related node
+
             output_net->num_driver_pins = 0;
-            output_net->driver_pins[0] = NULL;
             add_driver_pin_to_net(output_net, input_pin_driver_pin);
 
             std::cout << "hi" << std::endl;
@@ -522,20 +524,20 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
     for (i = 0; i < node->num_output_port_sizes; i++) {
         for (j = 0; j < node->output_port_sizes[i]; j++) {
             npin_t* output_pin = node->output_pins[j + acc_port_sizes];
-            npin_t* output_pin_driver_pin = output_pin->net->driver_pins[0];
+            nnet_t* node_output_net = output_pin->net;
             char* net_name = make_full_ref_name(node->name, NULL, NULL, output_pin->mapping, j);
+
+            // find the new driver and its net
             std::cout << net_name << std::endl;
+            nnet_t* mapped_output_net = (nnet_t*)output_nets_hash->get(net_name);
 
-
-            nnet_t* output_net = (nnet_t*)output_nets_hash->get(net_name);
-
-            if (!output_net)
-                error_message(BLIF_ELBORATION, my_location, "Error: Could not hook up the pin %s: not available.", output_pin->name);
-
-            // free_nnode(output_net->driver_pins[0]->node); [TODO] free related node
-            output_net->num_driver_pins = 0;
-            output_net->driver_pins[0] = NULL;
-            add_driver_pin_to_net(output_net, output_pin_driver_pin);
+            if (!mapped_output_net)
+                error_message(BLIF_ELBORATION, my_location, "Error: Could not hook up the pin %s: not available.", node_output_net->name);
+            
+            remove_fanout_pins_from_net(mapped_output_net, mapped_output_net->fanout_pins[0], 0);
+            for (k = 0; k < node_output_net->num_fanout_pins; k++) {
+                add_fanout_pin_to_net(mapped_output_net, node_output_net->fanout_pins[k]);
+            }
 
             std::cout << "hi" << std::endl;
         }

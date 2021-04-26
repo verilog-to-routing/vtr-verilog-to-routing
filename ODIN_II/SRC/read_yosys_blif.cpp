@@ -297,8 +297,8 @@ void create_hard_block_nodes(const char* name_prefix, hard_block_models* models,
     new_node->name = vtr::strdup(unique_subckt_name);
 
     // Determine the type of hard block.
-    char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
-    subcircuit_name_prefix[5] = '\0';
+    char subcircuit_name_prefix[] = {subcircuit_name[0], subcircuit_name[1], subcircuit_name[2], subcircuit_name[3], subcircuit_name[4], '\0'};
+
     if (!strcmp(subcircuit_name, "$mul") || !strcmp(subcircuit_name_prefix, "$mul")) {
         new_node->type = MULTIPLY;
     } else if (!strcmp(subcircuit_name, "$add") || !strcmp(subcircuit_name_prefix, "$add")) {
@@ -314,7 +314,7 @@ void create_hard_block_nodes(const char* name_prefix, hard_block_models* models,
     } else {
         new_node->type = GENERIC; // TODO resolve .model into lower logic
     }
-    vtr::free(subcircuit_name_prefix);
+    // vtr::free(subcircuit_name_prefix);
 
     /* Add input and output ports to the new node. */
     {
