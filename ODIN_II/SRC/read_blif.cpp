@@ -55,10 +55,7 @@ netlist_t* read_blif_top() {
     netlist_t* netlist;
     output_nets_hash = new Hashtable();
 
-    if (configuration.blif_type == blif_type_e::_ODIN_BLIF) {
-        netlist = read_blif();
-
-    } else if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
+    if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
         netlist = yosys::read_blif();
 
     }/*  else {
@@ -88,7 +85,7 @@ netlist_t* read_blif() {
     }
     int num_lines = count_blif_lines(file);
 
-    output_nets_hash = new Hashtable();
+    output_nets_hash = new Hashtable(); 
 
     printf("Reading top level module\n");
     fflush(stdout);

@@ -86,15 +86,11 @@ netlist_t* read_blif() {
     }
     int num_lines = count_blif_lines(file);
 
-    output_nets_hash = new Hashtable();
-
     /* initialize the string caches that hold the aliasing of module nets and input pins */
     output_nets_sc = sc_new_string_cache();
 
     printf("Reading top level module\n");
     fflush(stdout);
-    /* create the top level module */
-    rb_create_top_driver_nets("top");
 
     /* Extracting the netlist by reading the blif file */
     printf("Reading blif netlist...");
@@ -148,6 +144,8 @@ int read_tokens(char* buffer, hard_block_models* models, FILE* file) {
             skip_reading_bit_map = false;
             if (strcmp(token, ".model") == 0) {
                 yosys::model_parse(buffer, file); // store the scope model name for in/out name processing
+                /* create the top level module */
+                rb_create_top_driver_nets(blif_netlist->identifier);
             } else if (strcmp(token, ".inputs") == 0) {
                 yosys::add_top_input_nodes(blif_netlist->identifier, file, NULL); // create the top input nodes
             } else if (strcmp(token, ".outputs") == 0) {
@@ -251,7 +249,7 @@ void create_hard_block_nodes(const char* name_prefix, hard_block_models* models,
     int i = 0;
     for (i = 0; i < count; i++) {
         mappings[i] = vtr::strdup(strtok(names_parameters[i], "="));
-        names[i] = resolve_signal_name_based_on_blif_type(name_prefix, vtr::strdup(strtok(NULL, "=")));
+        names[i] = resolve_signal_name_based_on_blif_type(name_prefix, strtok(NULL, "="));
     }
 
     // Sort the mappings.
@@ -294,7 +292,7 @@ void create_hard_block_nodes(const char* name_prefix, hard_block_models* models,
 
     nnode_t* new_node = allocate_nnode(my_location);
 
-    new_node->name = vtr::strdup(unique_subckt_name);
+    new_node->name = unique_subckt_name;
 
     // Determine the type of hard block.
     char subcircuit_name_prefix[] = {subcircuit_name[0], subcircuit_name[1], subcircuit_name[2], subcircuit_name[3], subcircuit_name[4], '\0'};
@@ -844,6 +842,11 @@ static char* resolve_signal_name_based_on_blif_type(const char* name_prefix, con
                     return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
             }
         }
+
+        if (name)
+            vtr::free(name);
+        if (index)
+            vtr::free(index);
     } else {
         return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
     }

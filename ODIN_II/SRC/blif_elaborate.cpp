@@ -478,7 +478,6 @@ static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mar
         }
 
         remap_pin_to_new_node(node->output_pins[i], mux_node, 0);
-        std::cout << "hi" << std::endl;
     }
 
     free_nnode(node);
@@ -500,8 +499,6 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
             npin_t* input_pin = node->input_pins[j + acc_port_sizes];
             npin_t* input_pin_driver_pin = input_pin->net->driver_pins[0];
             char* net_name = make_full_ref_name(node->name, NULL, NULL, input_pin->mapping, j);
-            std::cout << net_name << std::endl;
-
 
             nnet_t* output_net = (nnet_t*)output_nets_hash->get(net_name);
 
@@ -514,8 +511,7 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
 
             output_net->num_driver_pins = 0;
             add_driver_pin_to_net(output_net, input_pin_driver_pin);
-
-            std::cout << "hi" << std::endl;
+            vtr::free(net_name);
         }
         acc_port_sizes += node->input_port_sizes[i];
     }
@@ -528,7 +524,6 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
             char* net_name = make_full_ref_name(node->name, NULL, NULL, output_pin->mapping, j);
 
             // find the new driver and its net
-            std::cout << net_name << std::endl;
             nnet_t* mapped_output_net = (nnet_t*)output_nets_hash->get(net_name);
 
             if (!mapped_output_net)
@@ -538,8 +533,7 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
             for (k = 0; k < node_output_net->num_fanout_pins; k++) {
                 add_fanout_pin_to_net(mapped_output_net, node_output_net->fanout_pins[k]);
             }
-
-            std::cout << "hi" << std::endl;
+            vtr::free(net_name);
         }
         acc_port_sizes += node->input_port_sizes[i];
     }
