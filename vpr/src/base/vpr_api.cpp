@@ -69,6 +69,7 @@
 #include "cluster.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
+#include "place_constraints.h"
 
 #include "pack_report.h"
 #include "overuse_report.h"
@@ -502,6 +503,8 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     if (packer_opts.doPacking == STAGE_SKIP) {
         //pass
+        //Load cluster_constraints data structure here since skipping pack stage
+        check_cluster_constraints_init();
     } else {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
@@ -517,6 +520,8 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
             //Load a previous packing from the .net file
             vpr_load_packing(vpr_setup, arch);
+            //Load cluster_constraints data structure here since loading pack file
+            check_cluster_constraints_init();
         }
 
         /* Sanity check the resulting netlist */

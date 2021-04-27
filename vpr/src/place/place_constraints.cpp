@@ -141,3 +141,17 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
 
     return floorplanning_good;
 }
+
+void check_cluster_constraints_init() {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (floorplanning_ctx.cluster_constraints.size() == 0) {
+        floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
+
+        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+            PartitionRegion empty_pr;
+            floorplanning_ctx.cluster_constraints[blk_id] = empty_pr;
+        }
+    }
+}
