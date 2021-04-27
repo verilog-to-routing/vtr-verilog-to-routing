@@ -149,6 +149,7 @@ void check_cluster_constraints_init() {
     if (floorplanning_ctx.cluster_constraints.size() == 0) {
         floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
+        //Assign an empty PartitionRegion to each cluster block
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
             PartitionRegion empty_pr;
             floorplanning_ctx.cluster_constraints[blk_id] = empty_pr;
