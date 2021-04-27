@@ -26,8 +26,6 @@ void write_place_constraints(const char* file_name) {
 
     test_partition part;
 
-    part.atom_names = {"[327]", "n_n1240", "o_7_"};
-
     for (auto blk_id : atom_ctx.nlist.blocks()) {
     	part.atom_names.push_back(atom_ctx.nlist.block_name(blk_id));
     }
