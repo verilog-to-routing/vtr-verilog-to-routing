@@ -214,6 +214,9 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_shift(node, node->type, traverse_number, netlist);
             break;
         case MULTI_PORT_MUX:
+            instantiate_multi_port_mux(node, traverse_number, netlist);
+            break;
+        case MULTI_BIT_MUX_2:
             instantiate_multi_port_single_bit_mux(node, traverse_number, netlist);
             break;
         case MULTIPLY: {

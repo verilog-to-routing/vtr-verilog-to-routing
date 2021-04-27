@@ -197,7 +197,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case MUX_2:
-        case MULTI_PORT_MUX: {
+        case MULTI_PORT_MUX: 
+        case MULTI_BIT_MUX_2: {
             /* need to reorder the input pins, so that the selector signal comes at the first place */
             make_selector_as_the_first_port(node);
             /* 
@@ -438,9 +439,10 @@ static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mar
         mux_node->traverse_visited = traverse_mark_number;
 
         /* Name the flipflop based on the name of its output pin */
-        const char* mux_base_name = node_name_based_on_op(mux_node);
-        mux_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(mux_base_name) + 2));
-        odin_sprintf(mux_node->name, "%s_%s", node->output_pins[i]->name, mux_base_name);
+        // const char* mux_base_name = node_name_based_on_op(mux_node);
+        // mux_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(mux_base_name) + 2));
+        // odin_sprintf(mux_node->name, "%s_%s", node->output_pins[i]->name, mux_base_name);
+        mux_node->name = node_name(mux_node, NULL);
 
         add_input_port_information(mux_node, selector_width);
         allocate_more_input_pins(mux_node, selector_width);

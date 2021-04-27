@@ -308,7 +308,7 @@ void create_hard_block_nodes(const char* name_prefix, hard_block_models* models,
     } else if (!strcmp(subcircuit_name, "$dff") || !strcmp(subcircuit_name_prefix, "$dff")) {
         new_node->type = FF_NODE;
     } else if (!strcmp(subcircuit_name, "$mux") || !strcmp(subcircuit_name_prefix, "$mux")) {
-        new_node->type = MULTI_PORT_MUX;
+        new_node->type = MULTI_BIT_MUX_2;
     } else {
         new_node->type = GENERIC; // TODO resolve .model into lower logic
     }
@@ -827,10 +827,10 @@ static char* resolve_signal_name_based_on_blif_type(const char* name_prefix, con
 
         } else {
             if (!strcmp(name_str, "$true")) {
-                return_string =  make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
+                return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
 
             } else if (!strcmp(name_str, "$false")) {
-                return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
+                return_string =  make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
 
             } else if (!strcmp(name_str, "$undef")) {
                 return_string =  make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
