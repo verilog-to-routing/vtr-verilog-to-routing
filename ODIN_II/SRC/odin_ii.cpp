@@ -63,7 +63,7 @@
 #include "vtr_memory.h"
 #include "HardSoftLogicMixer.hpp"
 
-#include "GenericReader.hpp"
+#include "GenericReader.hh"
 
 #define DEFAULT_OUTPUT "."
 
