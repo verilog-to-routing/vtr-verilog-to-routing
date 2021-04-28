@@ -27,6 +27,7 @@ struct t_options {
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
     argparse::ArgValue<std::string> read_vpr_constraints_file;
+    argparse::ArgValue<std::string> write_vpr_constraints_file;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
