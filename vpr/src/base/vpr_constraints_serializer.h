@@ -49,36 +49,16 @@
  *
  * For more detail on how the load and write interfaces work with uxsdcxx, refer to 'vpr/src/route/SCHEMA_GENERATOR.md'
  */
-struct test_partition {
-    std::vector<std::string> atom_names;
-
-    int x_low = 0;
-
-    int y_low = 0;
-
-    int x_high;
-
-    int y_high;
-
-    int subtile = 0;
-
-    std::string part_name = "";
-
-    int num_part;
-
-    int num_atom;
-
-    int num_region;
-
-    int chip_size_x;
-
-    int chip_size_y;
+struct partition_info {
+    Partition part;
+    std::vector<AtomBlockId> atoms;
+    PartitionId part_id;
 };
 
 struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTypes {
-    using AddAtomReadContext = int;
-    using AddRegionReadContext = void*;
-    using PartitionReadContext = void*;
+    using AddAtomReadContext = AtomBlockId;
+    using AddRegionReadContext = Region;
+    using PartitionReadContext = partition_info;
     using PartitionListReadContext = void*;
     using VprConstraintsReadContext = void*;
     using AddAtomWriteContext = void*;
@@ -95,7 +75,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
 
 	//VprConstraintsSerializer() : report_error_(nullptr) {}
-	VprConstraintsSerializer (test_partition part) : part_(part), report_error_(nullptr) {}
+	VprConstraintsSerializer (VprConstraints constraints) : constraints_(constraints), report_error_(nullptr) {}
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
         // report_error_in should be invoked if VprConstraintsSerializer encounters
@@ -121,11 +101,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
      * </xs:complexType>
      */
-    virtual inline const char* get_add_atom_name_pattern(int& n) final {
-    	//std::string atom_name = "[327]";
-        //return atom_name.c_str();
-
-    	return part_.atom_names[n].c_str();
+    virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
+    	auto& atom_ctx = g_vpr_ctx.atom();
+    	auto atom_name = atom_ctx.nlist.block_name(blk_id);
+    	return atom_name.c_str();
     }
 
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
@@ -176,29 +155,33 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="subtile" type="xs:int" />
      * </xs:complexType>
      */
-    virtual inline int get_add_region_subtile(void*& /*ctx*/) final {
-        int i = 0;
-        return i;
+    virtual inline int get_add_region_subtile(Region& r) final {
+        return r.get_sub_tile();
     }
 
     virtual inline void set_add_region_subtile(int subtile, void*& /*ctx*/) final {
         loaded_region.set_sub_tile(subtile);
     }
 
-    virtual inline int get_add_region_x_high(void*& /*ctx*/) final {
-        return part_.x_high;
+    virtual inline int get_add_region_x_high(Region& r) final {
+
+    	vtr::Rect<int> rect = r.get_region_rect();
+        return rect.xmax();
     }
 
-    virtual inline int get_add_region_x_low(void*& /*ctx*/) final {
-    	return part_.x_low;
+    virtual inline int get_add_region_x_low(Region& r) final {
+    	vtr::Rect<int> rect = r.get_region_rect();
+    	return rect.xmin();
     }
 
-    virtual inline int get_add_region_y_high(void*& /*ctx*/) final {
-    	return part_.y_high;
+    virtual inline int get_add_region_y_high(Region& r) final {
+    	vtr::Rect<int> rect = r.get_region_rect();
+    	return rect.ymax();
     }
 
-    virtual inline int get_add_region_y_low(void*& /*ctx*/) final {
-    	return part_.y_low;
+    virtual inline int get_add_region_y_low(Region& r) final {
+    	vtr::Rect<int> rect = r.get_region_rect();
+    	return rect.ymin();
     }
 
     /** Generated for complex type "partition":
@@ -210,8 +193,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="name" type="xs:string" use="required" />
      * </xs:complexType>
      */
-    virtual inline const char* get_partition_name(void*& /*ctx*/) final {
-        return part_.part_name.c_str();
+    virtual inline const char* get_partition_name(partition_info& part_info) final {
+
+    	return part_info.part.get_name().c_str();
+
     }
     virtual inline void set_partition_name(const char* name, void*& /*ctx*/) final {
         loaded_partition.set_name(name);
@@ -231,11 +216,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         }
     }
 
-    virtual inline size_t num_partition_add_atom(void*& /*ctx*/) final {
-        return part_.num_atom;
+    virtual inline size_t num_partition_add_atom(partition_info& part_info) final {
+
+
+        return part_info.atoms.size();
     }
-    virtual inline int get_partition_add_atom(int n, void*& /*ctx*/) final {
-        return n;
+    virtual inline AtomBlockId get_partition_add_atom(int n, partition_info& part_info) final {
+        return part_info.atoms[n];
     }
 
     virtual inline void preallocate_partition_add_region(void*& /*ctx*/, size_t /*size*/) final {}
@@ -253,11 +240,16 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         loaded_region = clear_region;
     }
 
-    virtual inline size_t num_partition_add_region(void*& /*ctx*/) final {
-        return part_.num_region;
+    virtual inline size_t num_partition_add_region(partition_info& part_info) final {
+
+        PartitionRegion pr = part_info.part.get_part_region();
+        std::vector<Region> regions = pr.get_partition_region();
+        return regions.size();
     }
-    virtual inline void* get_partition_add_region(int /*n*/, void*& /*ctx*/) final {
-        return nullptr;
+    virtual inline Region get_partition_add_region(int n, partition_info& part_info) final {
+    	PartitionRegion pr = part_info.part.get_part_region();
+    	std::vector<Region> regions = pr.get_partition_region();
+    	return regions[n];
     }
 
     /** Generated for complex type "partition_list":
@@ -285,11 +277,20 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         num_partitions_++;
     }
     virtual inline size_t num_partition_list_partition(void*& /*ctx*/) final {
-        return part_.num_part;
+        return constraints_.get_num_partitions();
     }
 
-    virtual inline void* get_partition_list_partition(int /*n*/, void*& /*ctx*/) final {
-        return nullptr;
+    virtual inline partition_info get_partition_list_partition(int n, void*& /*ctx*/) final {
+    	PartitionId partid(n);
+        Partition part = constraints_.get_partition(partid);
+        std::vector<AtomBlockId> atoms = constraints_.get_part_atoms(partid);
+
+        partition_info part_info;
+        part_info.part = part;
+        part_info.part_id = partid;
+        part_info.atoms = atoms;
+
+        return part_info;
     }
 
     /** Generated for complex type "vpr_constraints":
@@ -344,8 +345,9 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     AtomBlockId atom_id_;
     std::vector<AtomBlockId> atoms_;
 
-    //constant data for writes
-    test_partition part_;
+    //for writing
+    //partition_info part_info_;
+
 };
 
 #endif /* VPR_CONSTRAINTS_SERIALIZER_H_ */
