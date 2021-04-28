@@ -47,6 +47,13 @@ class GenericReader : public GenericIO {
         ~GenericReader();
 
         void* read();
+        void* read_verilog();
+        void* read_blif();
+        /**
+         * [TODO]
+         * void* read_systemverilog();
+         * void* read_ilang(); 
+         */
 
     private:
         VerilogReader*  verilog_reader;
@@ -56,14 +63,6 @@ class GenericReader : public GenericIO {
          * SystemVerilog* systemverilog_reader;
          * ILangReader* ilang_reader;
         */
-
-        void* read_verilog();
-        void* read_blif();
-        /**
-         * [TODO]
-         * void* read_systemverilog();
-         * void* read_ilang(); 
-         */
 
 };
 

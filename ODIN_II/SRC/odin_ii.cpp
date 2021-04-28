@@ -295,7 +295,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            odin_netlist = static_cast<netlist_t*>(gr->read());
+            odin_netlist = static_cast<netlist_t*>(gr->read_blif());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);
