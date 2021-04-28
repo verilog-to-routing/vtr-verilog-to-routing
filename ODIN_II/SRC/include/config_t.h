@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
-#include "blif_type.h"
+#include "file_types.hh"
+#include "blif_types.hh"
 
 #ifndef CONFIG_T_H
 #    define CONFIG_T_H
@@ -12,9 +13,10 @@ struct config_t {
     std::string output_type; // string name of the type of output file
 
     std::string debug_output_path; // path for where to output the debug outputs
-    bool is_verilog_input;
-    bool is_blif_input;
-    blif_type_e blif_type;
+    // bool is_verilog_input;
+    // bool is_blif_input;
+    file_type_e input_file_type;
+    blif_type_e in_blif_type;
 
     bool output_ast_graphs;     // switch that outputs ast graphs per node for use with GRaphViz tools
     bool output_netlist_graphs; // switch that outputs netlist graphs per node for use with GraphViz tools

@@ -47,8 +47,6 @@
 #include "blif_elaborate.h"
 #include "multipliers.h"
 #include "netlist_check.h"
-#include "read_blif.h"
-#include "read_yosys_blif.h"
 #include "output_blif.h"
 #include "netlist_cleanup.h"
 
@@ -65,6 +63,8 @@
 #include "vtr_memory.h"
 #include "HardSoftLogicMixer.hpp"
 
+#include "GenericReader.hpp"
+
 #define DEFAULT_OUTPUT "."
 
 loc_t my_location;
@@ -76,142 +76,14 @@ std::vector<t_logical_block_type> logical_block_types;
 short physical_lut_size = -1;
 int block_tag = -1;
 ids default_net_type = WIRE;
+GenericReader* gr;
 HardSoftLogicMixer* mixer;
-
-enum ODIN_ERROR_CODE {
-    SUCCESS,
-    ERROR_INITIALIZATION,
-    ERROR_PARSE_CONFIG,
-    ERROR_PARSE_ARGS,
-    ERROR_PARSE_ARCH,
-    ERROR_SYNTHESIS,
-    ERROR_PARSE_BLIF,
-
-};
 
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
 
-static ODIN_ERROR_CODE partial_mapping() {
-    double partial_mapping_time = wall_time();
-
-    printf("--------------------------------------------------------------------\n");
-    printf("High-level synthesis Begin\n");
-
-    FILE* output_blif_file = create_blif(global_args.output_file.value().c_str());
-
-    /* Perform any initialization routines here */
-    find_hard_multipliers();
-    find_hard_adders();
-    //find_hard_adders_for_sub();
-    register_hard_blocks();
-
-    module_names_to_idx = sc_new_string_cache();
-
-    // /* parse to abstract syntax tree */
-    // printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
-    // verilog_ast = init_parser();
-    // parse_to_ast();
-    /**
-     *  Note that the entry point for ast optimzations is done per module with the
-     * function void next_parsed_verilog_file(ast_node_t *file_items_list)
-     */
-
-    /* after the ast is made potentially do tagging for downstream links to verilog */
-    // if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
-    //     add_tag_data(verilog_ast);
-
-    /**
-     *  Now that we have a parse tree (abstract syntax tree [ast]) of
-     *	the Verilog we want to make into a netlist.
-     */
-    // printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
-    // create_netlist(verilog_ast);
-    printf("Elaborating the netlist created from the input BLIF file to make it compatible with ODIN_II partial mapping\n");
-    blif_elaborate_top(verilog_netlist);
-    if (verilog_netlist) {
-        // Can't levelize yet since the large muxes can look like combinational loops when they're not
-        check_netlist(verilog_netlist);
-
-        //START ################# NETLIST OPTIMIZATION ############################
-
-        /* point for all netlist optimizations. */
-        printf("Performing Optimizations of the Netlist\n");
-        if (hard_multipliers) {
-            /* Perform a splitting of the multipliers for hard block mults */
-            reduce_operations(verilog_netlist, MULTIPLY);
-            iterate_multipliers(verilog_netlist);
-            clean_multipliers();
-        }
-
-        if (single_port_rams || dual_port_rams) {
-            /* Perform a splitting of any hard block memories */
-            iterate_memories(verilog_netlist);
-            free_memory_lists();
-        }
-
-        if (hard_adders) {
-            /* Perform a splitting of the adders for hard block add */
-            reduce_operations(verilog_netlist, ADD);
-            iterate_adders(verilog_netlist);
-            clean_adders();
-
-            /* Perform a splitting of the adders for hard block sub */
-            reduce_operations(verilog_netlist, MINUS);
-            iterate_adders_for_sub(verilog_netlist);
-            clean_adders_for_sub();
-        }
-
-        //END ################# NETLIST OPTIMIZATION ############################
-
-        if (configuration.output_netlist_graphs)
-            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, verilog_netlist); /* Path is where we are */
-
-        /* point where we convert netlist to FPGA or other hardware target compatible format */
-        printf("Performing Partial Map to target device\n");
-        partial_map_top(verilog_netlist);
-        mixer->perform_optimizations(verilog_netlist);
-
-        /* Find any unused logic in the netlist and remove it */
-        remove_unused_logic(verilog_netlist);
-
-        /**
-         * point for outputs.  This includes soft and hard mapping all structures to the
-         * target format.  Some of these could be considred optimizations
-         */
-        printf("Outputting the netlist to the specified output format\n");
-
-        output_blif(output_blif_file, verilog_netlist);
-        module_names_to_idx = sc_free_string_cache(module_names_to_idx);
-
-        cleanup_parser();
-
-        printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n", global_args.output_file.value().c_str());
-        report_mult_distribution();
-        report_add_distribution();
-        report_sub_distribution();
-
-        compute_statistics(verilog_netlist, true);
-
-        deregister_hard_blocks();
-
-        //cleanup netlist
-        free_netlist(verilog_netlist);
-    } else {
-        printf("Empty blif generated, Empty input or no module declared\n");
-    }
-    fclose(output_blif_file);
-
-    partial_mapping_time = wall_time() - partial_mapping_time;
-    printf("Partial Mapping Time: ");
-    print_time(partial_mapping_time);
-    printf("\n--------------------------------------------------------------------\n");
-
-    return SUCCESS;
-}
-
-static ODIN_ERROR_CODE synthesize_verilog() {
+static ODIN_ERROR_CODE synthesize() {
     double elaboration_time = wall_time();
 
     printf("--------------------------------------------------------------------\n");
@@ -227,25 +99,8 @@ static ODIN_ERROR_CODE synthesize_verilog() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    /* parse to abstract syntax tree */
-    printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using GraphViz (see documentation)\n");
-    verilog_ast = init_parser();
-    parse_to_ast();
-    /**
-     *  Note that the entry point for ast optimzations is done per module with the
-     * function void next_parsed_verilog_file(ast_node_t *file_items_list)
-     */
+    verilog_netlist = static_cast<netlist_t*>(gr->read());
 
-    /* after the ast is made potentially do tagging for downstream links to verilog */
-    if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
-        add_tag_data(verilog_ast);
-
-    /**
-     *  Now that we have a parse tree (abstract syntax tree [ast]) of
-     *	the Verilog we want to make into a netlist.
-     */
-    printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
-    create_netlist(verilog_ast);
     if (verilog_netlist) {
         // Can't levelize yet since the large muxes can look like combinational loops when they're not
         check_netlist(verilog_netlist);
@@ -340,6 +195,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         printf("Odin failed to initialize %s with exit code%d\n", vtr_error.what(), ERROR_INITIALIZATION);
         exit(ERROR_INITIALIZATION);
     }
+    gr = new GenericReader();
     mixer = new HardSoftLogicMixer();
     try {
         /* Set up the global arguments to their default. */
@@ -389,36 +245,15 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     if (!configuration.list_of_file_names.empty()) {
         ODIN_ERROR_CODE error_code;
 
-        if (configuration.is_verilog_input) {
-            for (std::string v_file : global_args.verilog_files.value()) {
-                printf("Verilog: %s\n", vtr::basename(v_file).c_str());
-            }
-            fflush(stdout);
+        print_input_files_info();
 
-            error_code = synthesize_verilog();
-            if (error_code) {
-                printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
-                exit(error_code);
-            }
-        } else if (configuration.is_blif_input) {
-            printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
-            fflush(stdout);
-
-            /*
-             * Nothing to do here since partial map 
-             * is already done with the previous run
-             */
-            if (configuration.blif_type != blif_type_e::_ODIN_BLIF) {
-                try {
-                    verilog_netlist = read_blif_top();
-                    error_code = partial_mapping();
-                    // if (error_code) {
-                    //     printf("Odin Failed to parse input BLIF file with exit status: %d\n", error_code);
-                    // }
-                } catch (vtr::VtrError& vtr_error) {
-                    printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
-                    exit(ERROR_PARSE_BLIF);
-                }
+        if (configuration.input_file_type == file_type_e::_VERILOG || configuration.in_blif_type != blif_type_e::_ODIN_BLIF) {
+            try {
+                error_code = synthesize();
+                printf("Odin_II synthesis has finished with code: %d\n", error_code);
+            } catch (vtr::VtrError& vtr_error) {
+                printf("Odin Failed to parse Verilog / load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
+                exit(ERROR_PARSE_BLIF);
             }
         }
 
@@ -433,7 +268,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
-        if (configuration.blif_type == blif_type_e::_ODIN_BLIF) {
+        if (configuration.in_blif_type == blif_type_e::_ODIN_BLIF) {
             // if we started with a verilog file read the output that was made since
             // the simulator can only simulate blifs
             if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
@@ -460,7 +295,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            odin_netlist = read_blif();
+            odin_netlist = static_cast<netlist_t*>(gr->read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);
@@ -566,11 +401,17 @@ void get_options(int argc, char** argv) {
         .help("Display this help message")
         .action(argparse::Action::HELP);
 
-    other_grp.add_argument(global_args.yosys_blif, "--yosys")
-        .help("elaborate the yosys blif file to prepare it for odin's partial mapping")
+    other_grp.add_argument(global_args.subckt_blif_type, "--subckt")
+        .help("elaborate the subckt based BLIF file to prepare it for odin's partial mapping")
         .default_value("false")
         .action(argparse::Action::STORE_TRUE)
-        .metavar("YOSYS_INPUT_BLIF");
+        .metavar("SUBCKT_BLIF_INPUT");
+
+    other_grp.add_argument(global_args.eblif_type, "--eblif")
+        .help("elaborate the eBLIF file to prepare it for odin's partial mapping")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("EBLIF_INPUT");
 
     other_grp.add_argument(global_args.arch_file, "-a")
         .help("VTR FPGA architecture description file (XML)")
@@ -752,17 +593,26 @@ void get_options(int argc, char** argv) {
     if (!global_args.verilog_files.value().empty()) {
         //parse comma separated list of verilog files
         configuration.list_of_file_names = global_args.verilog_files.value();
-        configuration.is_verilog_input = true;
+        configuration.input_file_type = file_type_e::_VERILOG;
 
-        if (global_args.yosys_blif.provenance() == argparse::Provenance::SPECIFIED)
-            error_message(PARSE_ARGS, unknown_location, "%s", "Using --yosys argument, Odin should have provided with the generated BLIF file from Yosys.\n");
+        if (global_args.subckt_blif_type.provenance() == argparse::Provenance::SPECIFIED)
+            error_message(PARSE_ARGS, unknown_location, 
+                         "%s", "Using --subckt argument, Odin should have provided with a subckt based BLIF file.\n");
+
+        if (global_args.eblif_type.provenance() == argparse::Provenance::SPECIFIED)
+            error_message(PARSE_ARGS, unknown_location, 
+                         "%s", "Using --eblif argument, Odin should have provided with an eBLIF file.\n");
 
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
-        configuration.is_blif_input = true;
+        configuration.input_file_type = file_type_e::_BLIF;
 
-        if (global_args.yosys_blif.provenance() == argparse::Provenance::SPECIFIED)
-            configuration.blif_type = blif_type_e::_YOSYS_BLIF;
+        if (global_args.subckt_blif_type.provenance() == argparse::Provenance::SPECIFIED)
+            configuration.in_blif_type = blif_type_e::_SUBCKT_BLIF;
+        else if (global_args.eblif_type.provenance() == argparse::Provenance::SPECIFIED)
+            configuration.in_blif_type = blif_type_e::_EBLIF;
+        else
+            configuration.in_blif_type = blif_type_e::_ODIN_BLIF;
     }
 
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
@@ -811,7 +661,7 @@ void get_options(int argc, char** argv) {
 void set_default_config() {
     /* Set up the global configuration. */
     configuration.output_type = std::string("blif");
-    configuration.blif_type = blif_type_e::_ODIN_BLIF;
+    configuration.in_blif_type = blif_type_e::_ODIN_BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;

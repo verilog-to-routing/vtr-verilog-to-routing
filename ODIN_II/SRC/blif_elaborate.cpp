@@ -71,7 +71,7 @@ void blif_elaborate_top(netlist_t* netlist) {
      * Worth noting blif elaboration does not perform for odin's blif
      * since it is already generated from odin's partial mapping
      */
-    if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
+    if (configuration.in_blif_type == blif_type_e::_SUBCKT_BLIF) {
         /* do the elaboration without any larger structures identified */
         depth_first_traversal_to_blif_elaborate(YOSYS_BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
     } /*
@@ -276,7 +276,7 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
     if (node->traverse_visited == traverse_mark_number)
         return;
 
-    if (configuration.blif_type == blif_type_e::_YOSYS_BLIF) {
+    if (configuration.in_blif_type == blif_type_e::_SUBCKT_BLIF) {
         switch (node->type) {
             case ADD:
             case MINUS: {

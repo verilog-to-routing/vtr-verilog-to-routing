@@ -73,5 +73,6 @@ char* str_collate(char* str1, char* str2);
 void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src);
 
 std::string& SSS (const char* s);
+void print_input_files_info ();
 
 #endif
