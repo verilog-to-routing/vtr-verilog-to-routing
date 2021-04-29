@@ -17,66 +17,56 @@
 #include <fstream>
 #include "vpr_constraints_writer.h"
 
-void write_place_constraints(const char* file_name) {
+void write_vpr_floorplan_constraints(const char* file_name) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    //Fill in all the information needed for putting all atoms in one big partition
-
-    /*test_partition part;
-
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-    	part.atom_names.push_back(atom_ctx.nlist.block_name(blk_id));
-    }
-
-    part.x_high = device_ctx.grid.width() - 1;
-    part.y_high = device_ctx.grid.height() - 1;
-
-    part.part_name = "my_part";
-
-    part.num_part = 1;
-
-    part.num_atom = atom_ctx.nlist.blocks().size();
-
-    part.num_region = 1;*/
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Fill in all the info needed for locking atoms to their locations
     VprConstraints constraints;
-    Partition part1;
-    part1.set_name("mypart1");
-    Partition part2;
-    part2.set_name("mypart2");
 
-    Region  reg1;
-    reg1.set_region_rect(0,0,18,18);
-    PartitionRegion pr1;
-    pr1.add_to_part_region(reg1);
-    part1.set_part_region(pr1);
+    std::map<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
 
-    Region reg2;
-    reg2.set_region_rect(0,0,18,18);
-    PartitionRegion pr2;
-    pr2.add_to_part_region(reg2);
-    part2.set_part_region(pr2);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		cluster_atoms.insert({blk_id, std::vector<AtomBlockId>()});
+	}
 
-    constraints.add_partition(part1);
-    constraints.add_partition(part2);
+	for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+		ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
 
-    PartitionId pid1(0);
-    PartitionId pid2(1);
+		cluster_atoms[clb_index].push_back(atom_blk_id);
+	}
 
-    AtomBlockId id0(0);
-    AtomBlockId id1(1);
-    AtomBlockId id2(2);
-    constraints.add_constrained_atom(id0,pid1);
-    constraints.add_constrained_atom(id1,pid1);
-    constraints.add_constrained_atom(id2,pid1);
+	int part_id = 0;
+    for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
+        std::string part_name;
+        part_name = cluster_ctx.clb_nlist.block_name(i->first);
 
-    AtomBlockId id3(3);
-    AtomBlockId id4(4);
-    constraints.add_constrained_atom(id3,pid2);
-    constraints.add_constrained_atom(id4,pid2);
+        PartitionId partid(part_id);
+
+        Partition part;
+        part.set_name(part_name);
+
+        PartitionRegion pr;
+        Region reg;
+
+        auto loc = place_ctx.block_locs[i->first].loc;
+
+        reg.set_region_rect(loc.x, loc.y, loc.x, loc.y);
+        //reg.set_region_rect(loc.x - exp, loc.y - exp, loc.x + exp, loc.y + exp);
+
+        pr.add_to_part_region(reg);
+        part.set_part_region(pr);
+        constraints.add_partition(part);
+
+        int num_atoms = i->second.size();
+
+        for (auto j = 0; j < num_atoms; j++) {
+            AtomBlockId atom_id = i->second[j];
+            constraints.add_constrained_atom(atom_id, partid);
+        }
+        part_id++;
+    }
 
 
     VprConstraintsSerializer reader(constraints);

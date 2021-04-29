@@ -69,7 +69,7 @@
 #include "cluster.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
-
+#include "vpr_constraints_writer.h"
 #include "pack_report.h"
 #include "overuse_report.h"
 
@@ -635,6 +635,13 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         post_place_sync();
     }
 
+    //Write out a vpr floorplanning constraints file if the option is specified
+    /*auto& filename_opts = vpr_setup.FileNameOpts;
+    if (!filename_opts.write_vpr_constraints_file.empty()) {
+        std::string write_file = "test_write_xml.xml";
+        write_vpr_floorplan_constraints(write_file.c_str());
+    }*/
+
     return true;
 }
 
@@ -665,6 +672,12 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
     print_place(filename_opts.NetFile.c_str(),
                 cluster_ctx.clb_nlist.netlist_id().c_str(),
                 filename_opts.PlaceFile.c_str());
+
+    //Write out a vpr floorplanning constraints file if the option is specified
+    if (!filename_opts.write_vpr_constraints_file.empty()) {
+        std::string write_file = "test_write_xml.xml";
+        write_vpr_floorplan_constraints(write_file.c_str());
+    }
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
