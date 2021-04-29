@@ -54,7 +54,7 @@
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 
-#include "vpr_constraints_writer.cpp"
+
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
@@ -880,10 +880,6 @@ void try_place(const t_placer_opts& placer_opts,
 #endif
 
     check_place(costs, place_delay_model.get(), placer_criticalities.get(), placer_opts.place_algorithm);
-
-    //Write out XML placement constraints file
-    std::string write_file = "test_write_xml.xml";
-    write_place_constraints(write_file.c_str());
 
     //Some stats
     VTR_LOG("\n");

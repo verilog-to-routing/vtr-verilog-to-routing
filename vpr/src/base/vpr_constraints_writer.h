@@ -7,7 +7,7 @@
 #ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 #define VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 
-void write_place_constraints(const char* file_name);
+void write_vpr_floorplan_constraints(const char* file_name);
 
 
 
