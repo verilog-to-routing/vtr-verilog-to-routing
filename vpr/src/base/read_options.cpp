@@ -1886,10 +1886,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.place_constraint_subtile, "--place_constraint_subtile")
+    place_grp.add_argument<bool, ParseOnOff>(args.place_constraint_subtile, "--place_constraint_subtile")
         .help(
             "The value used to specify a subtile constraints when writing a floorplan constraints XML file.")
-        .default_value("-1")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     /*
