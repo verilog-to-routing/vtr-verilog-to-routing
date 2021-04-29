@@ -129,6 +129,8 @@ struct t_options {
     argparse::ArgValue<std::string> place_reward_fun;
     //argparse::ArgValue<int> place_timing_cost_func;
     argparse::ArgValue<float> place_crit_limit;
+    argparse::ArgValue<int> place_constraint_expand;
+    argparse::ArgValue<int> place_constraint_subtile;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
