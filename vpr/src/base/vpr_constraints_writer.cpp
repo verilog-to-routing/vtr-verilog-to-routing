@@ -17,7 +17,7 @@
 #include <fstream>
 #include "vpr_constraints_writer.h"
 
-void write_vpr_floorplan_constraints(const char* file_name, int expand, int subtile) {
+void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -53,7 +53,10 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, int subt
         auto loc = place_ctx.block_locs[i->first].loc;
 
         reg.set_region_rect(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand);
-        reg.set_sub_tile(subtile);
+        if (subtile) {
+        	int st = loc.sub_tile;
+        	reg.set_sub_tile(st);
+        }
 
         pr.add_to_part_region(reg);
         part.set_part_region(pr);

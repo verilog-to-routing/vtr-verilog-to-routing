@@ -1066,7 +1066,7 @@ struct t_placer_opts {
     std::string place_reward_fun;
     float place_crit_limit;
     int place_constraint_expand;
-    int place_constraint_subtile;
+    bool place_constraint_subtile;
 
     /**
      * @brief Tile types that should be used during delay sampling.
