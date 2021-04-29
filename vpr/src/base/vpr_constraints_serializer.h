@@ -319,13 +319,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     }
 
     //temp data for loads
+    VprConstraints constraints_;
     const std::function<void(const char*)>* report_error_;
 
     //temp data structures to be loaded during file reading
     Region loaded_region;
     Partition loaded_partition;
     PartitionRegion loaded_part_region;
-    VprConstraints constraints_;
 
     //temp string used when a method must return a const char*
     std::string temp_ = "test";
