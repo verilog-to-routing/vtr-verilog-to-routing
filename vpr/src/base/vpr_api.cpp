@@ -635,13 +635,6 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         post_place_sync();
     }
 
-    //Write out a vpr floorplanning constraints file if the option is specified
-    /*auto& filename_opts = vpr_setup.FileNameOpts;
-    if (!filename_opts.write_vpr_constraints_file.empty()) {
-        std::string write_file = "test_write_xml.xml";
-        write_vpr_floorplan_constraints(write_file.c_str());
-    }*/
-
     return true;
 }
 
@@ -667,6 +660,7 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
               arch.num_directs);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
+    auto& placer_opts = vpr_setup.PlacerOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     print_place(filename_opts.NetFile.c_str(),
@@ -675,8 +669,7 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Write out a vpr floorplanning constraints file if the option is specified
     if (!filename_opts.write_vpr_constraints_file.empty()) {
-        std::string write_file = "test_write_xml.xml";
-        write_vpr_floorplan_constraints(write_file.c_str());
+        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile);
     }
 }
 

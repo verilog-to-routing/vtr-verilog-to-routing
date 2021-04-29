@@ -17,7 +17,7 @@
 #include <fstream>
 #include "vpr_constraints_writer.h"
 
-void write_vpr_floorplan_constraints(const char* file_name) {
+void write_vpr_floorplan_constraints(const char* file_name, int expand, int subtile) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -27,17 +27,17 @@ void write_vpr_floorplan_constraints(const char* file_name) {
 
     std::map<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
 
-	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		cluster_atoms.insert({blk_id, std::vector<AtomBlockId>()});
-	}
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        cluster_atoms.insert({blk_id, std::vector<AtomBlockId>()});
+    }
 
-	for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
-		ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
 
-		cluster_atoms[clb_index].push_back(atom_blk_id);
-	}
+        cluster_atoms[clb_index].push_back(atom_blk_id);
+    }
 
-	int part_id = 0;
+    int part_id = 0;
     for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
         std::string part_name;
         part_name = cluster_ctx.clb_nlist.block_name(i->first);
@@ -52,8 +52,8 @@ void write_vpr_floorplan_constraints(const char* file_name) {
 
         auto loc = place_ctx.block_locs[i->first].loc;
 
-        reg.set_region_rect(loc.x, loc.y, loc.x, loc.y);
-        //reg.set_region_rect(loc.x - exp, loc.y - exp, loc.x + exp, loc.y + exp);
+        reg.set_region_rect(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand);
+        reg.set_sub_tile(subtile);
 
         pr.add_to_part_region(reg);
         part.set_part_region(pr);
@@ -67,7 +67,6 @@ void write_vpr_floorplan_constraints(const char* file_name) {
         }
         part_id++;
     }
-
 
     VprConstraintsSerializer reader(constraints);
 
@@ -83,4 +82,3 @@ void write_vpr_floorplan_constraints(const char* file_name) {
                         file_name);
     }
 }
-

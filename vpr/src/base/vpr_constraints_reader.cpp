@@ -42,4 +42,3 @@ void load_vpr_constraints_file(const char* read_vpr_constraints_name) {
         echo_constraints(getEchoFileName(E_ECHO_VPR_CONSTRAINTS), ctx_constraints);
     }
 }
-
