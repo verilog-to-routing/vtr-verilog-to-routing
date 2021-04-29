@@ -24,12 +24,12 @@
 #ifndef __ODIN_BLIF_READER_H__
 #define __ODIN_BLIF_READER_H__
 
-#include "BLIFReader.hh"
+#include "BLIF.hh"
 
 /**
  * @brief A class to provide the general object of an input BLIF file reader
 */
-class OdinBLIFReader : public BLIFReader {
+class OdinBLIFReader : public BLIF::Reader {
 
     public:
         /**
@@ -50,7 +50,7 @@ class OdinBLIFReader : public BLIFReader {
          * 
          * @return the generated netlist file 
          */
-        void* read();
+        void* __read();
 
     protected:
         /**

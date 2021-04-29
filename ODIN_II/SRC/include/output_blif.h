@@ -5,6 +5,6 @@
 #include <stdlib.h>
 
 FILE* create_blif(const char* file_name);
-void output_blif(FILE* out, netlist_t* netlist);
+void output_blif(FILE* out, const netlist_t* netlist);
 
 #endif

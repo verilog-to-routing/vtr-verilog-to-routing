@@ -24,24 +24,24 @@
 #ifndef __SUBCKT_BLIF_READER_H__
 #define __SUBCKT_BLIF_READER_H__
 
-#include "BLIFReader.hh"
+#include "BLIF.hh"
 
 /**
  * @brief A class to provide the general object of an input BLIF file reader
 */
-class SubcktBLIFReader : public BLIFReader {
+class SubcktBLIFReader : public BLIF::Reader {
 
     public:
         /**
-         * @brief Construct the BLIFReader object
+         * @brief Construct the SubcktBLIFReader object
          * required by compiler
          */
-        SubcktBLIFReader(): BLIFReader() {}
+        SubcktBLIFReader();
         /**
-         * @brief Destruct the BLIFReader object
+         * @brief Destruct the SubcktBLIFReader object
          * to avoid memory leakage
          */
-        ~SubcktBLIFReader() = default;
+        ~SubcktBLIFReader();
 
         /**
          * @brief Reads a blif file with the given filename and produces
@@ -50,7 +50,7 @@ class SubcktBLIFReader : public BLIFReader {
          * 
          * @return the generated netlist file 
          */
-        void* read();
+        void* __read();
 
     protected:
         /**

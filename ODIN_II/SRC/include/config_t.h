@@ -16,6 +16,7 @@ struct config_t {
     // bool is_verilog_input;
     // bool is_blif_input;
     file_type_e input_file_type;
+    file_type_e output_file_type;
     blif_type_e in_blif_type;
 
     bool output_ast_graphs;     // switch that outputs ast graphs per node for use with GRaphViz tools

@@ -44,8 +44,11 @@
 #include "node_creation_library.h"
 
 
+SubcktBLIFReader::SubcktBLIFReader(): BLIF::Reader() {}
 
-void* SubcktBLIFReader::read() {
+SubcktBLIFReader::~SubcktBLIFReader() = default;
+
+void* SubcktBLIFReader::__read() {
     printf("Reading top level module\n");
     fflush(stdout);
 
@@ -116,7 +119,6 @@ void* SubcktBLIFReader::read() {
                 // Marks the end of the main module of the blif
                 // Call function to hook up the nets
                 hook_up_nets();
-                // [TODO] For yosys we need to read other .model as well as the first one!
                 //return (configuration.blif_type ! = blif_type_e::_ODIN_BLIF);
                 return false;
             }

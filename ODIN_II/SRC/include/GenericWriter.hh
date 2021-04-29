@@ -21,29 +21,51 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __VERILOG_READER_H__
-#define __VERILOG_READER_H__
+#ifndef __GENERIC_WRITER_H__
+#define __GENERIC_WRITER_H__
 
-#include "GenericReader.hh"
-#include "ast_util.h"
+#include "GenericIO.hh"
 
 /**
- * @brief A class to provide the general object of an input Verilog file reader
+ * @brief A class to provide the general object of an input file reader
 */
-class VerilogReader : public GenericReader {
+class GenericWriter : public GenericIO {
+
     public:
         /**
-         * @brief Construct the VerilogReader object
+         * @brief Construct the GenericWriter object
          * required by compiler
          */
-        VerilogReader();
+        GenericWriter();
         /**
-         * @brief Destruct the VerilogReader object
+         * @brief Destruct the GenericWriter object
          * to avoid memory leakage
          */
-        ~VerilogReader();
+        ~GenericWriter();
 
-        void* __read();
+        /* No need to have reader in Generic Writer */
+        void* __read() {
+            error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
+            return (NULL);
+        }
+
+        void __write (const netlist_t* netlist, FILE* output_file);
+        void _write_blif(const netlist_t* netlist, FILE* output_file);
+        /**
+         * [TODO]
+         * void  write_verilog(const netlist_t* netlist, FILE* output_file);
+         * void  write_systemverilog(const netlist_t* netlist, FILE* output_file);
+         * void  write_ilang(const netlist_t* netlist, FILE* output_file); 
+         */
+
+    private:
+        GenericWriter*  blif_writer;
+        /**
+         * [TODO]
+         * GenericWriter*  verilog_writer;
+         * GenericWriter*  systemverilog_writer;
+         * GenericWriter*  ilang_writer;
+        */
 
 };
 

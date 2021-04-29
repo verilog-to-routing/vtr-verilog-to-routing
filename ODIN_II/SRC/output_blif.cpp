@@ -43,7 +43,7 @@
 
 bool haveOutputLatchBlackbox = false;
 
-void depth_first_traversal_to_output(short marker_value, FILE* fp, netlist_t* netlist);
+void depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist);
 void depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_mark_number, FILE* fp);
 void output_node(nnode_t* node, short traverse_number, FILE* fp);
 void define_logical_function(nnode_t* node, FILE* out);
@@ -191,7 +191,7 @@ FILE* create_blif(const char* file_name) {
  * (function: output_blif)
  * 	The function that prints out the details for a blif formatted file
  *-------------------------------------------------------------------------*/
-void output_blif(FILE* out, netlist_t* netlist) {
+void output_blif(FILE* out, const netlist_t* netlist) {
     fprintf(out, ".model %s\n", netlist->identifier);
 
     /* generate all the signals */
@@ -270,7 +270,7 @@ void output_blif(FILE* out, netlist_t* netlist) {
 /*---------------------------------------------------------------------------
  * (function: depth_first_traversal_to_parital_map()
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traversal_to_output(short marker_value, FILE* fp, netlist_t* netlist) {
+void depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist) {
     int i;
 
     netlist->gnd_node->name = vtr::strdup("gnd");

@@ -44,7 +44,7 @@
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
-#include "blif_elaborate.h"
+#include "blif_elaborate.hh"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "output_blif.h"
@@ -64,6 +64,7 @@
 #include "HardSoftLogicMixer.hpp"
 
 #include "GenericReader.hh"
+#include "OdinBLIFReader.hh"
 
 #define DEFAULT_OUTPUT "."
 
@@ -77,6 +78,7 @@ short physical_lut_size = -1;
 int block_tag = -1;
 ids default_net_type = WIRE;
 GenericReader* gr;
+GenericWriter* gw;
 HardSoftLogicMixer* mixer;
 
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
@@ -99,7 +101,7 @@ static ODIN_ERROR_CODE synthesize() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    verilog_netlist = static_cast<netlist_t*>(gr->read());
+    verilog_netlist = static_cast<netlist_t*>(gr->__read());
 
     if (verilog_netlist) {
         // Can't levelize yet since the large muxes can look like combinational loops when they're not
@@ -153,7 +155,8 @@ static ODIN_ERROR_CODE synthesize() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        output_blif(output_blif_file, verilog_netlist);
+        gw->__write(verilog_netlist, output_blif_file);
+        // output_blif(output_blif_file, verilog_netlist);
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
         cleanup_parser();
@@ -196,6 +199,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         exit(ERROR_INITIALIZATION);
     }
     gr = new GenericReader();
+    gw = new GenericWriter();
     mixer = new HardSoftLogicMixer();
     try {
         /* Set up the global arguments to their default. */
@@ -295,7 +299,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            odin_netlist = static_cast<netlist_t*>(gr->read_blif());
+            OdinBLIFReader* simulator_blif_reader = new OdinBLIFReader();
+            odin_netlist = static_cast<netlist_t*>(simulator_blif_reader->__read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);
@@ -401,7 +406,7 @@ void get_options(int argc, char** argv) {
         .help("Display this help message")
         .action(argparse::Action::HELP);
 
-    other_grp.add_argument(global_args.subckt_blif_type, "--subckt")
+    other_grp.add_argument(global_args.subckt_blif_type, "--subckt_blif")
         .help("elaborate the subckt based BLIF file to prepare it for odin's partial mapping")
         .default_value("false")
         .action(argparse::Action::STORE_TRUE)
@@ -662,6 +667,7 @@ void set_default_config() {
     /* Set up the global configuration. */
     configuration.output_type = std::string("blif");
     configuration.in_blif_type = blif_type_e::_ODIN_BLIF;
+    configuration.output_file_type = file_type_e::_BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;

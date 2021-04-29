@@ -28,14 +28,13 @@ GenericIO::GenericIO() = default;
 
 GenericIO::~GenericIO() = default;
 
-void* GenericIO::read() {
+void* GenericIO::__read() {
     error_message(UTIL, unknown_location, 
                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__); 
     return NULL;     
 }
 
-void* GenericIO::write (const netlist_t* /* netlist */, file_type_e /* output_type */) {
+void GenericIO::__write (const netlist_t* /* netlist */, FILE* /* output_file */) {
     error_message(UTIL, unknown_location, 
                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__); 
-    return NULL; 
 }

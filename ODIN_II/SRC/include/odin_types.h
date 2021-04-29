@@ -65,7 +65,7 @@
 #define STATS 18
 #define SEQUENTIAL_LEVELIZE 19
 
-#define YOSYS_BLIF_ELABORATE_TRAVERSE_VALUE 30
+#define SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE 30
 
 /* unique numbers for using void *data entries in some of the datastructures */
 #define RESET -1

@@ -25,9 +25,7 @@
 #define __GENERIC_READER_H__
 
 #include "GenericIO.hh"
-
-class VerilogReader;
-class BLIFReader;
+#include <string>
 
 /**
  * @brief A class to provide the general object of an input file reader
@@ -46,22 +44,27 @@ class GenericReader : public GenericIO {
          */
         ~GenericReader();
 
-        void* read();
-        void* read_verilog();
-        void* read_blif();
+        void* __read();
+        void* _read_verilog();
+        void* _read_blif();
         /**
          * [TODO]
          * void* read_systemverilog();
          * void* read_ilang(); 
          */
 
+        /* No need to have writer in Generic Reader */
+        void __write(const netlist_t* /* netlist */, FILE* /* output_file */) {
+            error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
+        }
+
     private:
-        VerilogReader*  verilog_reader;
-        BLIFReader*     blif_reader;
+        GenericReader*  verilog_reader;
+        GenericReader*  blif_reader;
         /**
          * [TODO]
-         * SystemVerilog* systemverilog_reader;
-         * ILangReader* ilang_reader;
+         * GenericReader* systemverilog_reader;
+         * GenericReader* ilang_reader;
         */
 
 };

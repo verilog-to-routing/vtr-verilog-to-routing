@@ -23,8 +23,8 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef BLIF_ELABORATE_H
-#define BLIF_ELABORATE_H
+#ifndef __BLIF_ELABORATE_H
+#define __BLIF_ELABORATE_H
 
 // PROTOTYPES
 void blif_elaborate_top(netlist_t* netlist);

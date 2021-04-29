@@ -34,7 +34,7 @@
 #include "node_creation_library.h"
 #include "odin_util.h"
 
-#include "blif_elaborate.h"
+#include "blif_elaborate.hh"
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "math.h"
@@ -71,9 +71,15 @@ void blif_elaborate_top(netlist_t* netlist) {
      * Worth noting blif elaboration does not perform for odin's blif
      * since it is already generated from odin's partial mapping
      */
-    if (configuration.in_blif_type == blif_type_e::_SUBCKT_BLIF) {
+    if (configuration.in_blif_type == blif_type_e::_ODIN_BLIF) {
+        /**
+         *  nothing needs to be done since the netlist 
+         *  is already compatible with Odin_II style 
+         */
+    }
+    else if (configuration.in_blif_type == blif_type_e::_SUBCKT_BLIF) {
         /* do the elaboration without any larger structures identified */
-        depth_first_traversal_to_blif_elaborate(YOSYS_BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
+        depth_first_traversal_to_blif_elaborate(SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
     } /*
        * else if (...)
        * This spot could be used for other blif files

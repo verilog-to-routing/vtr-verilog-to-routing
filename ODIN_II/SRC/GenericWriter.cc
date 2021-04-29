@@ -22,56 +22,44 @@
  */
 
 
-#include "GenericReader.hh"
+#include "GenericWriter.hh"
 #include "VerilogReader.hh"
 #include "BLIF.hh"
 #include "config_t.h"
 #include "odin_ii.h"
 
-GenericReader::GenericReader(): GenericIO() {}
+GenericWriter::GenericWriter(): GenericIO() {}
 
-GenericReader::~GenericReader() {
-    if (this->verilog_reader)
-        static_cast<VerilogReader*>(this->verilog_reader)->~VerilogReader();
-    
-    if (this->blif_reader)
-        this->blif_reader->~GenericReader();
+GenericWriter::~GenericWriter() {    
+    if (this->blif_writer)
+        static_cast<BLIF::Writer*>(this->blif_writer)->~Writer();
 }
 
-inline void* GenericReader::__read() {
-    void* netlist = NULL;
-    
-    switch(configuration.input_file_type) {
-        case (file_type_e::_VERILOG): {
-            netlist = this->_read_verilog();
+inline void GenericWriter::__write(const netlist_t* netlist, FILE* output_file) { 
+    switch(configuration.output_file_type) {
+        case (file_type_e::_BLIF): {
+            this->_write_blif(netlist, output_file);
             break;
         }
         /**
          * [TODO]
+         *  case (file_type_e::_VERILOG): {
+                netlist = this->write_verilog();
+                break;
+            }
          *  case (file_type_e::_SYSTEM_VERILOG): {
-                this->read_systemverilog();
+                this->write_systemverilog();
                 break;
             }
          */ 
-        case (file_type_e::_BLIF): {
-            netlist = this->_read_blif();
-            break;
-        }
         default : {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file format! Should have specified in command line arguments\n");
             exit(ERROR_PARSE_ARGS);
         }
     }
-
-    return static_cast<void*>(netlist);   
 }
 
-inline void* GenericReader::_read_verilog() {
-    this->verilog_reader = new VerilogReader();
-    return static_cast<void*>(this->verilog_reader->__read());
-}
-
-inline void* GenericReader::_read_blif() {
-    this->blif_reader = new BLIF::Reader();
-    return static_cast<void*>(this->blif_reader->__read());
+inline void GenericWriter::_write_blif(const netlist_t* netlist, FILE* output_file) {
+    this->blif_writer = new BLIF::Writer();
+    this->blif_writer->__write(netlist, output_file);
 }

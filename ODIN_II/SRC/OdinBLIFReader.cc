@@ -43,11 +43,11 @@
 #include "string_cache.h"
 #include "node_creation_library.h"
 
-OdinBLIFReader::OdinBLIFReader(): BLIFReader() {}
+OdinBLIFReader::OdinBLIFReader(): BLIF::Reader() {}
 
 OdinBLIFReader::~OdinBLIFReader() = default;
 
-void* OdinBLIFReader::read() {
+void* OdinBLIFReader::__read() {
     printf("Reading top level module\n");
     fflush(stdout);
     /* create the top level module */

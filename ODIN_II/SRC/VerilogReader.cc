@@ -31,7 +31,7 @@ VerilogReader::VerilogReader(): GenericReader() {}
 
 VerilogReader::~VerilogReader() = default;
 
-void* VerilogReader::read() {
+void* VerilogReader::__read() {
     /* parse to abstract syntax tree */
     printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
     verilog_ast = init_parser();
