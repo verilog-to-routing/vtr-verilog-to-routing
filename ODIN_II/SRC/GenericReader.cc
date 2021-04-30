@@ -46,17 +46,21 @@ inline void* GenericReader::__read() {
             netlist = this->_read_verilog();
             break;
         }
+        case (file_type_e::_BLIF): {
+            netlist = this->_read_blif();
+            break;
+        }
         /**
          * [TODO]
+         *  case (file_type_e::_EBLIF): {
+                this->read_systemverilog();
+                break;
+            }
          *  case (file_type_e::_SYSTEM_VERILOG): {
                 this->read_systemverilog();
                 break;
             }
          */ 
-        case (file_type_e::_BLIF): {
-            netlist = this->_read_blif();
-            break;
-        }
         default : {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file format! Should have specified in command line arguments\n");
             exit(ERROR_PARSE_ARGS);

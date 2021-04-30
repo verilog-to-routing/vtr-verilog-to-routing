@@ -52,6 +52,11 @@ class OdinBLIFReader : public BLIF::Reader {
          */
         void* __read();
 
+        /* No need to have writer in Generic Reader */
+        void __write(const netlist_t* /* netlist */) {
+            error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
+        }
+
     protected:
         /**
          *---------------------------------------------------------------------------------------------

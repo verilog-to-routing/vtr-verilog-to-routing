@@ -47,7 +47,6 @@
 #include "blif_elaborate.hh"
 #include "multipliers.h"
 #include "netlist_check.h"
-#include "output_blif.h"
 #include "netlist_cleanup.h"
 
 #include "hard_blocks.h"
@@ -64,6 +63,7 @@
 #include "HardSoftLogicMixer.hpp"
 
 #include "GenericReader.hh"
+#include "BLIF.hh"
 #include "OdinBLIFReader.hh"
 
 #define DEFAULT_OUTPUT "."
@@ -90,8 +90,6 @@ static ODIN_ERROR_CODE synthesize() {
 
     printf("--------------------------------------------------------------------\n");
     printf("High-level synthesis Begin\n");
-
-    FILE* output_blif_file = create_blif(global_args.output_file.value().c_str());
 
     /* Perform any initialization routines here */
     find_hard_multipliers();
@@ -155,7 +153,7 @@ static ODIN_ERROR_CODE synthesize() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        gw->__write(verilog_netlist, output_blif_file);
+        gw->__write(verilog_netlist);
         // output_blif(output_blif_file, verilog_netlist);
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
@@ -175,7 +173,6 @@ static ODIN_ERROR_CODE synthesize() {
     } else {
         printf("Empty blif generated, Empty input or no module declared\n");
     }
-    fclose(output_blif_file);
 
     elaboration_time = wall_time() - elaboration_time;
     printf("Elaboration Time: ");

@@ -49,8 +49,8 @@ class GenericWriter : public GenericIO {
             return (NULL);
         }
 
-        void __write (const netlist_t* netlist, FILE* output_file);
-        void _write_blif(const netlist_t* netlist, FILE* output_file);
+        void __write (const netlist_t* netlist);
+        void _write_blif(const netlist_t* netlist);
         /**
          * [TODO]
          * void  write_verilog(const netlist_t* netlist, FILE* output_file);
@@ -58,6 +58,9 @@ class GenericWriter : public GenericIO {
          * void  write_ilang(const netlist_t* netlist, FILE* output_file); 
          */
 
+    protected:
+        FILE*           output_file;
+        
     private:
         GenericWriter*  blif_writer;
         /**

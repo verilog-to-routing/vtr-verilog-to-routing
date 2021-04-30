@@ -33,17 +33,25 @@ GenericWriter::GenericWriter(): GenericIO() {}
 GenericWriter::~GenericWriter() {    
     if (this->blif_writer)
         static_cast<BLIF::Writer*>(this->blif_writer)->~Writer();
+    if (this->output_file) {
+        std::cout << "CLOSIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIING\n";
+        fclose(this->output_file);
+    }
 }
 
-inline void GenericWriter::__write(const netlist_t* netlist, FILE* output_file) { 
+inline void GenericWriter::__write(const netlist_t* netlist) { 
     switch(configuration.output_file_type) {
         case (file_type_e::_BLIF): {
-            this->_write_blif(netlist, output_file);
+            this->_write_blif(netlist);
             break;
         }
         /**
          * [TODO]
          *  case (file_type_e::_VERILOG): {
+                netlist = this->write_verilog();
+                break;
+            }
+         *  case (file_type_e::_EBLIF): {
                 netlist = this->write_verilog();
                 break;
             }
@@ -59,7 +67,7 @@ inline void GenericWriter::__write(const netlist_t* netlist, FILE* output_file) 
     }
 }
 
-inline void GenericWriter::_write_blif(const netlist_t* netlist, FILE* output_file) {
+inline void GenericWriter::_write_blif(const netlist_t* netlist) {
     this->blif_writer = new BLIF::Writer();
-    this->blif_writer->__write(netlist, output_file);
+    this->blif_writer->__write(netlist);
 }

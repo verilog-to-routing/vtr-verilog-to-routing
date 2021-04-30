@@ -402,7 +402,106 @@ class BLIF {
                  */
                 ~Writer();
 
-                void __write(const netlist_t* netlist, FILE* output_file);
+                void __write(const netlist_t* netlist);
+
+            protected:
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: warn_undriven)
+                 * 	to check is a net undriven
+                 *---------------------------------------------------------------------------------------------
+                 */
+                static bool warn_undriven(nnode_t* node, nnet_t* net);
+                // TODO Uncomment this for In Outs
+                //static void merge_with_inputs(nnode_t* node, long pin_idx);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: print_net_driver)
+                 * 	The function that prints the driver of a given net
+                 *---------------------------------------------------------------------------------------------
+                 */
+                static void print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long driver_idx);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: print_input_single_driver)
+                 * 	The function that prints the single input pin driver 
+                 *---------------------------------------------------------------------------------------------
+                 */
+                static void print_input_single_driver(FILE* out, nnode_t* node, long pin_idx);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: print_output_pin)
+                 * 	The function that prints the output pins of a given node
+                 *---------------------------------------------------------------------------------------------
+                 */
+                static void print_output_pin(FILE* out, nnode_t* node);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: print_dot_names_header)
+                 * 	The function that prints .model, .inputs, .outputs, etc.
+                 *---------------------------------------------------------------------------------------------
+                 */
+                static void print_dot_names_header(FILE* out, nnode_t* node);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: create_blif)
+                 * 	The function that creates the output blif file
+                 *---------------------------------------------------------------------------------------------
+                 */
+                FILE* create_blif(const char* file_name);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: output_blif)
+                 * 	The function that prints out the details for a blif formatted file
+                 *---------------------------------------------------------------------------------------------
+                 */
+                void output_blif(FILE* out, const netlist_t* netlist);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: depth_first_traversal_to_parital_map()
+                 * ---------------------------------------------------------------------------------------------
+                 */
+                void depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: depth_first_traverse)
+                 * ---------------------------------------------------------------------------------------------
+                 */
+                void depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_mark_number, FILE* fp);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: output_node)
+                 * 	Depending on node type, figures out what to print for this node
+                 * ---------------------------------------------------------------------------------------------
+                 */
+                void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: define_logical_function)
+                 * ---------------------------------------------------------------------------------------------
+                 */
+                void define_logical_function(nnode_t* node, FILE* out);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: define_set_input_logical_function)
+                 * ---------------------------------------------------------------------------------------------
+                 */
+                void define_set_input_logical_function(nnode_t* node, const char* bit_output, FILE* out);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: define_ff)
+                 * ---------------------------------------------------------------------------------------------
+                 */
+                void define_ff(nnode_t* node, FILE* out);
+                /**
+                 * ---------------------------------------------------------------------------------------------
+                 * (function: define_decoded_mux)
+                 * ---------------------------------------------------------------------------------------------
+                 */
+                void define_decoded_mux(nnode_t* node, FILE* out);
+
+            private:
+                bool haveOutputLatchBlackbox;
         };
 };
 
