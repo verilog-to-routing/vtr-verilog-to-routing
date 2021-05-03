@@ -36,13 +36,18 @@ bool is_macro_constrained(t_pl_macro pl_macro);
 PartitionRegion constrained_macro_locs(t_pl_macro pl_macro);
 
 /*
- * Check if the cluster_constraints data structure has been initialized.
- * If it has not, initialize with an empty PartitionRegion for each cluster in the cluster netlist.
- * Used to load cluster_constraints if the pack stage of VPR is skipped, as the cluster_constraints
- * data structure is loaded during packing.
+ * Load cluster_constraints if the pack stage of VPR is skipped. The cluster_constraints
+ * data structure is normally loaded during packing, so this routine is called when the packing stage is not performed.
+ * If no constraints file is specified, every cluster is assigned
+ * an empty PartitionRegion. If a constraints file is specified, cluster_constraints is loaded according to
+ * the floorplan constraints specified in the file.
  */
 void check_cluster_constraints_init(std::string constraints_file);
 
+/*
+ * Load cluster_constraints according to the floorplan constraints specified in
+ * the constraints XML file.
+ */
 void load_cluster_constraints();
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */
