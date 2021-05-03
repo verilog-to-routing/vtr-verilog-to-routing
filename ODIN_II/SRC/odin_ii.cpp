@@ -77,8 +77,8 @@ std::vector<t_logical_block_type> logical_block_types;
 short physical_lut_size = -1;
 int block_tag = -1;
 ids default_net_type = WIRE;
-GenericReader* gr;
-GenericWriter* gw;
+GenericReader* generic_reader;
+GenericWriter* generic_writer;
 HardSoftLogicMixer* mixer;
 
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
@@ -99,7 +99,7 @@ static ODIN_ERROR_CODE synthesize() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    verilog_netlist = static_cast<netlist_t*>(gr->__read());
+    verilog_netlist = static_cast<netlist_t*>(generic_reader->__read());
 
     if (verilog_netlist) {
         // Can't levelize yet since the large muxes can look like combinational loops when they're not
@@ -153,7 +153,7 @@ static ODIN_ERROR_CODE synthesize() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        gw->__write(verilog_netlist);
+        generic_writer->__write(verilog_netlist);
         // output_blif(output_blif_file, verilog_netlist);
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
@@ -195,8 +195,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         printf("Odin failed to initialize %s with exit code%d\n", vtr_error.what(), ERROR_INITIALIZATION);
         exit(ERROR_INITIALIZATION);
     }
-    gr = new GenericReader();
-    gw = new GenericWriter();
+    generic_reader = new GenericReader();
+    generic_writer = new GenericWriter();
     mixer = new HardSoftLogicMixer();
     try {
         /* Set up the global arguments to their default. */
