@@ -41,6 +41,8 @@ PartitionRegion constrained_macro_locs(t_pl_macro pl_macro);
  * Used to load cluster_constraints if the pack stage of VPR is skipped, as the cluster_constraints
  * data structure is loaded during packing.
  */
-void check_cluster_constraints_init();
+void check_cluster_constraints_init(std::string constraints_file);
+
+void load_cluster_constraints();
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

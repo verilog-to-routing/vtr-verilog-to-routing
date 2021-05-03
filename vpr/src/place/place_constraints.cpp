@@ -142,11 +142,12 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
     return floorplanning_good;
 }
 
-void check_cluster_constraints_init() {
+void check_cluster_constraints_init(std::string constraints_file) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if (floorplanning_ctx.cluster_constraints.size() == 0) {
+    if (floorplanning_ctx.cluster_constraints.size() == 0 && constraints_file.empty()) {
+        VTR_LOG("No constraints file case \n");
         floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
         //Assign an empty PartitionRegion to each cluster block
@@ -154,5 +155,75 @@ void check_cluster_constraints_init() {
             PartitionRegion empty_pr;
             floorplanning_ctx.cluster_constraints[blk_id] = empty_pr;
         }
+    } else if (floorplanning_ctx.cluster_constraints.size() == 0 && !constraints_file.empty()) {
+        VTR_LOG("Constraints file case\n");
+    	load_cluster_constraints();
     }
+}
+
+void load_cluster_constraints() {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    VTR_LOG("In load_cluster_constraints \n");
+
+    vtr::vector<ClusterBlockId, std::vector<AtomBlockId>> cluster_constrained_atoms;
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    	cluster_constrained_atoms.push_back(std::vector<AtomBlockId>());
+    }
+
+    VTR_LOG("Initialized cluster_constrained_atoms \n");
+
+    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+        PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom_blk_id);
+
+        if (partid != PartitionId::INVALID()) {
+			ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+			cluster_constrained_atoms[clb_index].push_back(atom_blk_id);
+        }
+    }
+
+    VTR_LOG("Filled in cluster_constrained_atoms \n");
+
+    floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
+
+    for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
+    	std::vector<AtomBlockId> atoms = cluster_constrained_atoms[cluster_id];
+    	if (atoms.size() != 0) {
+    		for (unsigned int i = 0; i < atoms.size(); i++) {
+    			PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atoms[i]);
+    			PartitionRegion pr = floorplanning_ctx.constraints.get_partition_pr(partid);
+
+    			if (i == 0) {
+    				floorplanning_ctx.cluster_constraints[cluster_id] = pr;
+    			} else {
+    				PartitionRegion intersect_pr = intersection(pr, floorplanning_ctx.cluster_constraints[cluster_id]);
+    				if (intersect_pr.empty()) {
+    					VTR_LOG_ERROR("Cluster block %zu has atoms with incompatible floorplan constraints.\n", size_t(cluster_id));
+    				} else {
+    					floorplanning_ctx.cluster_constraints[cluster_id] = intersect_pr;
+    				}
+    			}
+    		}
+    	} else {
+            PartitionRegion empty_pr;
+            floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
+    	}
+    }
+
+    VTR_LOG("Filled in cluster_constraints \n");
+
+    for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
+        std::vector<Region> reg = floorplanning_ctx.cluster_constraints[clb_id].get_partition_region();
+        if (reg.size() != 0) {
+            VTR_LOG("\nRegions in Cluster %zu:\n", size_t(clb_id));
+            for (unsigned int i = 0; i < reg.size(); i++) {
+            	vtr::Rect<int> rect = reg[i].get_region_rect();
+            	VTR_LOG("\n xlow: %d, ylow: %d, xhigh: %d, yhigh: %d, subtile: %d\n", rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax(), reg[i].get_sub_tile());
+            }
+        }
+    }
+
 }
