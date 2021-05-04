@@ -101,8 +101,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      */
     virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
         auto& atom_ctx = g_vpr_ctx.atom();
-        auto atom_name = atom_ctx.nlist.block_name(blk_id);
-        return atom_name.c_str();
+        temp_atom_string_ = atom_ctx.nlist.block_name(blk_id);
+        return temp_atom_string_.c_str();
     }
 
     virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
@@ -191,7 +191,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline const char* get_partition_name(partition_info& part_info) final {
-        return part_info.part.get_name().c_str();
+        temp_part_string_ = part_info.part.get_name();
+        return temp_part_string_.c_str();
     }
     virtual inline void set_partition_name(const char* name, void*& /*ctx*/) final {
         loaded_partition.set_name(name);
@@ -317,6 +318,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual void finish_load() final {
     }
+
+    //temp names
+    std::string temp_atom_string_;
+    std::string temp_part_string_;
 
     //temp data for loads
     VprConstraints constraints_;

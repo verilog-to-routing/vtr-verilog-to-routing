@@ -41,7 +41,6 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
     for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
         std::string part_name;
         part_name = cluster_ctx.clb_nlist.block_name(i->first);
-
         PartitionId partid(part_id);
 
         Partition part;
@@ -54,8 +53,8 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 
         reg.set_region_rect(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand);
         if (subtile) {
-        	int st = loc.sub_tile;
-        	reg.set_sub_tile(st);
+            int st = loc.sub_tile;
+            reg.set_sub_tile(st);
         }
 
         pr.add_to_part_region(reg);
