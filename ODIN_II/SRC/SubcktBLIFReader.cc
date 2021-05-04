@@ -267,7 +267,7 @@ void* SubcktBLIFReader::__read() {
     } else if (!strcmp(subcircuit_name, "$mux") || !strcmp(subcircuit_name_prefix, "$mux")) {
         new_node->type = MULTI_BIT_MUX_2;
     } else {
-        new_node->type = GENERIC; // TODO resolve .model into lower logic
+        new_node->type = INSTANCE; // TODO resolve .model into lower logic
     }
     // vtr::free(subcircuit_name_prefix);
 
@@ -766,9 +766,6 @@ void* SubcktBLIFReader::__read() {
 
     return model;
 }
-
-
-
 
 
 /**

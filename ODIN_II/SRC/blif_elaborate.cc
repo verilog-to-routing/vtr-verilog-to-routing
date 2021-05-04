@@ -53,8 +53,9 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
 static void transform_to_one_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
-void make_selector_as_the_first_port(nnode_t* node);
+static void resolve_instance_node(nnode_t* node);
+static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
+static void make_selector_as_the_first_port(nnode_t* node);
 
 /**
  *-------------------------------------------------------------------------
@@ -193,13 +194,13 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             transform_to_one_bit_dff_nodes(node, traverse_number, netlist);
             break;
         }
-        case GENERIC: {
+        case INSTANCE: {
             /*
-             * GENERIC nodes represent the module/funtion or task instantiation.
+             * INSTANCE nodes represent the module/funtion or task instantiation.
              * As a result, they are only showing the connection of an instantiated item.
              * Here we connect the drivers of instantiated instance to the input signals.
             */
-            remap_input_pins_drivers_based_on_mapping(node);
+            resolve_instance_node(node);
             break;
         }
         case MUX_2:
@@ -220,6 +221,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case PAD_NODE:
         case INPUT_NODE:
         case OUTPUT_NODE: 
+        case BUF_NODE:
         case LOGICAL_OR:
         case LOGICAL_AND:
         case LOGICAL_NOR:
@@ -232,7 +234,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case BITWISE_NOT:
-        case BUF_NODE:
         case BITWISE_AND:
         case BITWISE_OR:
         case BITWISE_NAND:
@@ -256,6 +257,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case CLOCK_NODE:
         case CASE_EQUAL:
         case CASE_NOT_EQUAL:
+        case GENERIC:
         case DIVIDE:
         case MODULO:
         default:
@@ -499,7 +501,7 @@ static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mar
  * 
  * @param node pointing to the netlist node 
  */
-void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
+static void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
     int i, j, k;
     int acc_port_sizes = 0;
     for (i = 0; i < node->num_input_port_sizes; i++) {
@@ -545,6 +547,17 @@ void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
         }
         acc_port_sizes += node->input_port_sizes[i];
     }
+}
+
+static void resolve_instance_node(nnode_t* node) {
+    /* to the input pin drivers' name based on the input pin mapping */
+    remap_input_pins_drivers_based_on_mapping(node);
+    /*
+     * changes its type to buffer, 
+     * since the signals are already connected, 
+     * we do not need to keep instance node for final output 
+     */
+    node->type = BUF_NODE;
 }
 
 /**
