@@ -154,7 +154,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline int get_add_region_subtile(Region& r) final {
-        return r.get_sub_tile();
+    	return r.get_sub_tile();
     }
 
     virtual inline void set_add_region_subtile(int subtile, void*& /*ctx*/) final {
@@ -322,7 +322,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     //temp names
     std::string temp_atom_string_;
     std::string temp_part_string_;
-
+    int subtile_;
     //temp data for loads
     VprConstraints constraints_;
     const std::function<void(const char*)>* report_error_;

@@ -25,6 +25,10 @@
 #include "pugixml.hpp"
 
 #include "vpr_constraints_uxsdcxx_interface.h"
+
+//sentinel value for indicating that a subtile has not been specified
+constexpr int NO_SUBTILE = -1;
+
 /* All uxsdcxx functions and structs live in this namespace. */
 namespace uxsd {
 
@@ -730,7 +734,7 @@ inline void write_partition(T& in, std::ostream& os, Context& context) {
         for (size_t i = 0, n = in.num_partition_add_region(context); i < n; i++) {
             auto child_context = in.get_partition_add_region(i, context);
             os << "<add_region";
-            if ((bool)in.get_add_region_subtile(child_context))
+            if (in.get_add_region_subtile(child_context) != NO_SUBTILE)
                 os << " subtile=\"" << in.get_add_region_subtile(child_context) << "\"";
             os << " x_high=\"" << in.get_add_region_x_high(child_context) << "\"";
             os << " x_low=\"" << in.get_add_region_x_low(child_context) << "\"";
