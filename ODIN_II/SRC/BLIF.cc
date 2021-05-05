@@ -50,8 +50,6 @@
 
 #include "VerilogReader.hh"
 #include "BLIF.hh"
-#include "OdinBLIFReader.hh"
-#include "SubcktBLIFReader.hh"
 
 
 /**

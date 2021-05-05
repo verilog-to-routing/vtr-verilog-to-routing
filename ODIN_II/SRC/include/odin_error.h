@@ -28,7 +28,6 @@ enum odin_error {
     NETLIST,
     /* for blif parser errors */
     PARSE_BLIF,
-    PARSE_YOSYS_BLIF,
     /* for errors in the netlist simulation */
     SIMULATION,
 };

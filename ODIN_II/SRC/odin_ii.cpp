@@ -64,7 +64,6 @@
 
 #include "GenericReader.hh"
 #include "BLIF.hh"
-#include "OdinBLIFReader.hh"
 
 #define DEFAULT_OUTPUT "."
 
@@ -248,7 +247,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
         print_input_files_info();
 
-        if (configuration.input_file_type == file_type_e::_VERILOG || configuration.in_blif_type != blif_type_e::_ODIN_BLIF) {
+        if (configuration.input_file_type == file_type_e::_VERILOG || configuration.coarsen) {
             try {
                 error_code = synthesize();
                 printf("Odin_II synthesis has finished with code: %d\n", error_code);
@@ -269,7 +268,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
-        if (configuration.in_blif_type == blif_type_e::_ODIN_BLIF) {
+        if (global_args.coarsen.provenance() != argparse::Provenance::SPECIFIED) {
             // if we started with a verilog file read the output that was made since
             // the simulator can only simulate blifs
             if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
@@ -296,7 +295,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            OdinBLIFReader* simulator_blif_reader = new OdinBLIFReader();
+            GenericReader* simulator_blif_reader = new BLIF::Reader();
             odin_netlist = static_cast<netlist_t*>(simulator_blif_reader->__read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
@@ -403,18 +402,6 @@ void get_options(int argc, char** argv) {
         .help("Display this help message")
         .action(argparse::Action::HELP);
 
-    other_grp.add_argument(global_args.subckt_blif_type, "--subckt_blif")
-        .help("elaborate the subckt based BLIF file to prepare it for odin's partial mapping")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("SUBCKT_BLIF_INPUT");
-
-    other_grp.add_argument(global_args.eblif_type, "--eblif")
-        .help("elaborate the eBLIF file to prepare it for odin's partial mapping")
-        .default_value("false")
-        .action(argparse::Action::STORE_TRUE)
-        .metavar("EBLIF_INPUT");
-
     other_grp.add_argument(global_args.arch_file, "-a")
         .help("VTR FPGA architecture description file (XML)")
         .metavar("ARCHITECTURE_FILE");
@@ -424,6 +411,12 @@ void get_options(int argc, char** argv) {
         .default_value("false")
         .action(argparse::Action::STORE_TRUE)
         .metavar("PRINT_PARSE_TOKEN");
+
+    other_grp.add_argument(global_args.coarsen, "--coarsen")
+        .help("specify the input blif is flatten or coarsen")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("INPUT_BLIF_FLATNESS");
 
     other_grp.add_argument(global_args.permissive, "--permissive")
         .help("Turn possible_error_messages into warning_messages ... unexpected behaviour may occur")
@@ -597,24 +590,9 @@ void get_options(int argc, char** argv) {
         configuration.list_of_file_names = global_args.verilog_files.value();
         configuration.input_file_type = file_type_e::_VERILOG;
 
-        if (global_args.subckt_blif_type.provenance() == argparse::Provenance::SPECIFIED)
-            error_message(PARSE_ARGS, unknown_location, 
-                         "%s", "Using --subckt argument, Odin should have provided with a subckt based BLIF file.\n");
-
-        if (global_args.eblif_type.provenance() == argparse::Provenance::SPECIFIED)
-            error_message(PARSE_ARGS, unknown_location, 
-                         "%s", "Using --eblif argument, Odin should have provided with an eBLIF file.\n");
-
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
         configuration.input_file_type = file_type_e::_BLIF;
-
-        if (global_args.subckt_blif_type.provenance() == argparse::Provenance::SPECIFIED)
-            configuration.in_blif_type = blif_type_e::_SUBCKT_BLIF;
-        else if (global_args.eblif_type.provenance() == argparse::Provenance::SPECIFIED)
-            configuration.in_blif_type = blif_type_e::_EBLIF;
-        else
-            configuration.in_blif_type = blif_type_e::_ODIN_BLIF;
     }
 
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
@@ -635,6 +613,10 @@ void get_options(int argc, char** argv) {
 
     if (global_args.print_parse_tokens.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.print_parse_tokens = global_args.print_parse_tokens;
+    }
+
+    if (global_args.coarsen.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.coarsen = global_args.coarsen;
     }
 
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {
@@ -663,7 +645,7 @@ void get_options(int argc, char** argv) {
 void set_default_config() {
     /* Set up the global configuration. */
     configuration.output_type = std::string("blif");
-    configuration.in_blif_type = blif_type_e::_ODIN_BLIF;
+    configuration.coarsen = false;
     configuration.output_file_type = file_type_e::_BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;

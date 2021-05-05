@@ -100,9 +100,8 @@ struct global_args_t {
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
-    
-    argparse::ArgValue<bool> subckt_blif_type; // to specify the type of input blif file
-    argparse::ArgValue<bool> eblif_type; // to specify the type of input blif file
+
+    argparse::ArgValue<bool> coarsen;
 
     argparse::ArgValue<std::string> adder_def; //DEPRECATED
 

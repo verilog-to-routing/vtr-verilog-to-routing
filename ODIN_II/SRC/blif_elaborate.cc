@@ -68,24 +68,26 @@ static void make_selector_as_the_first_port(nnode_t* node);
  *-----------------------------------------------------------------------*/
 void blif_elaborate_top(netlist_t* netlist) {
     /* 
-     * depending on the input blif target choose how to do elaboration 
-     * Worth noting blif elaboration does not perform for odin's blif
-     * since it is already generated from odin's partial mapping
+     * depending on the input blif target how to do elaboration 
+     * Worth noting blif elaboration does not perform for odin's 
+     * blif since it is already generated from odin's partial 
+     * mapping and is completely elaborated
      */
-    if (configuration.in_blif_type == blif_type_e::_ODIN_BLIF) {
+    if (!configuration.coarsen) {
         /**
          *  nothing needs to be done since the netlist 
          *  is already compatible with Odin_II style 
          */
     }
-    else if (configuration.in_blif_type == blif_type_e::_SUBCKT_BLIF) {
+    else if (configuration.coarsen) {
         /* do the elaboration without any larger structures identified */
         depth_first_traversal_to_blif_elaborate(SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
-    } /*
-       * else if (...)
-       * This spot could be used for other blif files
-       * generated from different parsing tools
-       */
+        /**
+         * After blif elaboration, the netlist is flatten. 
+         * change it to not do flattening for simulation blif reading 
+         */
+        configuration.coarsen = false;
+    }
 }
 
 /**
@@ -257,8 +259,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case CLOCK_NODE:
         case CASE_EQUAL:
         case CASE_NOT_EQUAL:
-        case GENERIC:
         case DIVIDE:
+        case GENERIC:
         case MODULO:
         default:
             error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
@@ -284,7 +286,7 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
     if (node->traverse_visited == traverse_mark_number)
         return;
 
-    if (configuration.in_blif_type == blif_type_e::_SUBCKT_BLIF) {
+    if (configuration.coarsen) {
         switch (node->type) {
             case ADD:
             case MINUS: {
@@ -308,7 +310,7 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
                               "This should not happen for node(%s) since the check block port function only should have called for add, sub or mult", node->name);
             }
         }
-    } /*else other blif files*/
+    }
 }
 
 /**
