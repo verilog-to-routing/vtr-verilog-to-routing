@@ -102,7 +102,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     if (!find_to_loc_centroid(cluster_from_type, from, w_median_point, range_limiters, to)) {
         return e_create_move::ABORT;
     }
-    //return ::create_move(blocks_affected, b_from, to);
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 

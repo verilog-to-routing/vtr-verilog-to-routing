@@ -36,7 +36,7 @@ bool is_cluster_constrained(ClusterBlockId blk_id) {
     return (!pr.empty());
 }
 
-bool is_macro_constrained(t_pl_macro& pl_macro) {
+bool is_macro_constrained(const t_pl_macro& pl_macro) {
     bool is_macro_constrained = false;
     bool is_member_constrained = false;
 
@@ -54,7 +54,7 @@ bool is_macro_constrained(t_pl_macro& pl_macro) {
 }
 
 /*Returns PartitionRegion of where the head of the macro could go*/
-PartitionRegion constrained_macro_locs(t_pl_macro& pl_macro) {
+PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro) {
     PartitionRegion macro_pr;
     bool is_member_constrained = false;
     int num_constrained_members = 0;
@@ -114,7 +114,7 @@ PartitionRegion constrained_macro_locs(t_pl_macro& pl_macro) {
 }
 
 /*returns true if location is compatible with floorplanning constraints, false if not*/
-bool cluster_floorplanning_legal(ClusterBlockId blk_id, t_pl_loc& loc) {
+bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     bool floorplanning_good = false;
