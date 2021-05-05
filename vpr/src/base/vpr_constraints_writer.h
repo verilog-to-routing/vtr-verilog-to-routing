@@ -1,12 +1,23 @@
-/*
- * vpr_constraints_writer.h
+/**
+ * @file
+ * @brief This file contains functions related to writing out a vpr constraints XML file.
  *
- *      Author: khalid88
+ * Overview
+ * ========
+ * VPR floorplan constraints consist of region constraints specified for primitives that must be respected during packing and placement.
+ * The constraints XML file is printed using the XML schema vpr/src/base/vpr_constraints.xsd
+ *
+ * Routines related to writing out the file are in vpr/src/base/vpr_constraints_serializer.h. For more information on how
+ * the writing interface works, refer to vpr/src/route/SCHEMA_GENERATOR.md
+ *
+ *
  */
 
 #ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 #define VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile);
+
+void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);
 
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

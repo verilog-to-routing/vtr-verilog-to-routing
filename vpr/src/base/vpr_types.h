@@ -1014,6 +1014,13 @@ enum class e_place_delta_delay_algorithm {
  *   @param doPlacement
  *              True if placement is supposed to be done in the CAD flow.
  *              False if otherwise.
+ *   @param place_constraint_expand
+ *              Integer value that specifies how far to expand the floorplan
+ *              region when printing out floorplan constraints based on
+ *              current placement.
+ *   @param place_constraint_subtile
+ *              True if subtiles should be specified when printing floorplan
+ *              constraints. False if not.
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
