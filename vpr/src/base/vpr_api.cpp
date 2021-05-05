@@ -617,6 +617,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
+    const auto& filename_opts = vpr_setup.FileNameOpts;
     if (placer_opts.doPlacement == STAGE_SKIP) {
         //pass
     } else {
@@ -633,6 +634,11 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         sync_grid_to_blocks();
         post_place_sync();
+    }
+
+    //Write out a vpr floorplanning constraints file if the option is specified
+    if (!filename_opts.write_vpr_constraints_file.empty()) {
+        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile);
     }
 
     return true;
@@ -660,17 +666,11 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
               arch.num_directs);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
-    auto& placer_opts = vpr_setup.PlacerOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     print_place(filename_opts.NetFile.c_str(),
                 cluster_ctx.clb_nlist.netlist_id().c_str(),
                 filename_opts.PlaceFile.c_str());
-
-    //Write out a vpr floorplanning constraints file if the option is specified
-    if (!filename_opts.write_vpr_constraints_file.empty()) {
-        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile);
-    }
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {

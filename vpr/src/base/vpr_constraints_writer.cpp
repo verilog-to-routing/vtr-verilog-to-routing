@@ -18,12 +18,30 @@
 #include "vpr_constraints_writer.h"
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile) {
+    //Fill in the constraints object to be printed out.
+    VprConstraints constraints;
+
+    setup_vpr_floorplan_constraints(constraints, expand, subtile);
+
+    VprConstraintsSerializer writer(constraints);
+
+    if (vtr::check_file_name_extension(file_name, ".xml")) {
+        std::fstream fp;
+        fp.open(file_name, std::fstream::out | std::fstream::trunc);
+        fp.precision(std::numeric_limits<float>::max_digits10);
+        void* context;
+        uxsd::write_vpr_constraints_xml(writer, context, fp);
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Unknown extension on output %s",
+                        file_name);
+    }
+}
+
+void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    //Fill in all the info needed for locking atoms to their locations
-    VprConstraints constraints;
 
     std::map<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
 
@@ -68,19 +86,5 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
             constraints.add_constrained_atom(atom_id, partid);
         }
         part_id++;
-    }
-
-    VprConstraintsSerializer reader(constraints);
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(reader, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
     }
 }

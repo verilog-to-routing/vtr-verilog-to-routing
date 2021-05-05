@@ -49,12 +49,21 @@
  *
  * For more detail on how the load and write interfaces work with uxsdcxx, refer to 'vpr/src/route/SCHEMA_GENERATOR.md'
  */
+
+/*
+ * Used for the PartitionReadContext, which is used when writing out a constraints XML file.
+ * Groups together the information needed when printing a partition.
+ */
 struct partition_info {
     Partition part;
     std::vector<AtomBlockId> atoms;
     PartitionId part_id;
 };
 
+/*
+ * The contexts that end with "ReadContext" are used when writing out the XML file.
+ * The contexts that end with "WriteContext" are used when reading in the XML file.
+ */
 struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTypes {
     using AddAtomReadContext = AtomBlockId;
     using AddRegionReadContext = Region;
@@ -70,7 +79,8 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
 
 class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstraintsContextTypes> {
   public:
-    //VprConstraintsSerializer() : report_error_(nullptr) {}
+    VprConstraintsSerializer()
+        : report_error_(nullptr) {}
     VprConstraintsSerializer(VprConstraints constraints)
         : constraints_(constraints)
         , report_error_(nullptr) {}
@@ -154,7 +164,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline int get_add_region_subtile(Region& r) final {
-    	return r.get_sub_tile();
+        return r.get_sub_tile();
     }
 
     virtual inline void set_add_region_subtile(int subtile, void*& /*ctx*/) final {
@@ -273,6 +283,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return constraints_.get_num_partitions();
     }
 
+    /*
+     * The argument n is the partition id. Get all the data for partition n so it can be
+     * written out.
+     */
     virtual inline partition_info get_partition_list_partition(int n, void*& /*ctx*/) final {
         PartitionId partid(n);
         Partition part = constraints_.get_partition(partid);
@@ -319,11 +333,16 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     virtual void finish_load() final {
     }
 
-    //temp names
+    //temp data for writes
     std::string temp_atom_string_;
     std::string temp_part_string_;
-    int subtile_;
-    //temp data for loads
+
+    /*
+     * Temp data for loads and writes.
+     * During loads, constraints_ is filled in based on the data read in from the XML file.
+     * During writes, constraints_ contains the data that is to be written out to the XML file,
+     * and is passed in via the constructor.
+     */
     VprConstraints constraints_;
     const std::function<void(const char*)>* report_error_;
 
@@ -333,7 +352,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     PartitionRegion loaded_part_region;
 
     //temp string used when a method must return a const char*
-    std::string temp_ = "test";
+    std::string temp_ = "vpr";
 
     //used to count the number of partitions read in from the file
     int num_partitions_ = 0;
