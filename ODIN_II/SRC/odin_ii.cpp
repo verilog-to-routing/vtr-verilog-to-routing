@@ -108,7 +108,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
     module_names_to_idx = sc_new_string_cache();
 
     /* parse to abstract syntax tree */
-    printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
+    printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using GraphViz (see documentation)\n");
     verilog_ast = init_parser();
     parse_to_ast();
     /**
