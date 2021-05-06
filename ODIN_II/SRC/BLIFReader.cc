@@ -151,15 +151,15 @@ void* BLIF::Reader::__read() {
                 /* create the top level module */
                 rb_create_top_driver_nets(blif_netlist->identifier);
             } else if (strcmp(token, ".inputs") == 0) {
-                add_top_input_nodes(blif_netlist->identifier, NULL); // create the top input nodes
+                add_top_input_nodes(); // create the top input nodes
             } else if (strcmp(token, ".outputs") == 0) {
-                rb_create_top_output_nodes(blif_netlist->identifier, NULL); // create the top output nodes
+                rb_create_top_output_nodes(); // create the top output nodes
             } else if (strcmp(token, ".names") == 0) {
-                create_internal_node_and_driver(blif_netlist->identifier);
+                create_internal_node_and_driver();
             } else if (strcmp(token, ".latch") == 0) {
                 create_latch_node_and_driver();
             } else if (strcmp(token, ".subckt") == 0) {
-                create_hard_block_nodes(blif_netlist->identifier, models);
+                create_hard_block_nodes(models);
             } else if (strcmp(token, ".end") == 0) {
                 // Marks the end of the main module of the blif
                 // Call function to hook up the nets
@@ -215,7 +215,6 @@ void* BLIF::Reader::__read() {
         add_fanout_pin_to_net(output_net, input_pin);
     }
 }
-
 /**
  *------------------------------------------------------------------------------------------- 
  * (function:create_hard_block_nodes)
@@ -223,17 +222,12 @@ void* BLIF::Reader::__read() {
  * @brief to create the hard block nodes
  * 
  * @param models list of hard block models
- * @param file pointer to the input blif file
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::create_hard_block_nodes(const char* name_prefix, hard_block_models* models) {
+ * -------------------------------------------------------------------------------------------
+ */
+void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     char buffer[READ_BLIF_BUFFER];
     char* subcircuit_name = vtr::strtok(NULL, TOKENS, file, buffer);
 
-    // Name the node subcircuit_name~hard_block_number so that the name is unique.
-    static long hard_block_number = 0;
-    odin_sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
-    char* unique_subckt_name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);
-    
     /* storing the names on the formal-actual parameter */
     char* token;
     int count = 0;
@@ -250,7 +244,7 @@ void* BLIF::Reader::__read() {
     int i = 0;
     for (i = 0; i < count; i++) {
         mappings[i] = vtr::strdup(strtok(names_parameters[i], "="));
-        names[i] = resolve_signal_name_based_on_blif_type(name_prefix, strtok(NULL, "="));
+        names[i] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, strtok(NULL, "="));
     }
 
     // Associate mappings with their connections.
@@ -275,80 +269,39 @@ void* BLIF::Reader::__read() {
     vtr::free(mappings);
     mappings = NULL;
 
-     /* 
-     * since yosys does not see the in/out of the model while instantiation,
-     * it creates ports using numeric names, i.e. $1[] $2[] ..., in this case, 
-     * we need to update the port names and mapping_index hashtable  
-     * */
-    // harmonize_mappings_with_model_pin_names(model, mappings);
-
     nnode_t* new_node = allocate_nnode(my_location);
 
-    new_node->name = unique_subckt_name;
+    // Name the node subcircuit_name~hard_block_number so that the name is unique.
+    static long hard_block_number = 0;
+    odin_sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
+    new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);
 
     // Determine the type of hard block.
-    char subcircuit_name_prefix[] = {subcircuit_name[0], subcircuit_name[1], subcircuit_name[2], subcircuit_name[3], subcircuit_name[4], '\0'};
-
-    if (!strcmp(subcircuit_name, "$mul") || !strcmp(subcircuit_name_prefix, "$mul") ||
-        !strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_")) {
+    char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
+    subcircuit_name_prefix[5] = '\0';
+    if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_") || !strcmp(subcircuit_name, "$mul"))
         new_node->type = MULTIPLY;
-    } else if (!strcmp(subcircuit_name, "$add") || !strcmp(subcircuit_name_prefix, "$add") ||
-               !strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder")) {
+    else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder") || !strcmp(subcircuit_name, "$add"))
         new_node->type = ADD;
-    } else if (!strcmp(subcircuit_name, "$sub") || !strcmp(subcircuit_name_prefix, "$sub")) {
+    else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub") || !strcmp(subcircuit_name, "$sub"))
         new_node->type = MINUS;
-    } else if (!strcmp(subcircuit_name, "$dff") || !strcmp(subcircuit_name_prefix, "$dff")) {
+    else if (!strcmp(subcircuit_name, "$dff"))
         new_node->type = FF_NODE;
-    } else if (!strcmp(subcircuit_name, "$adff") || !strcmp(subcircuit_name_prefix, "$adff")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "adff");
-    } else if (!strcmp(subcircuit_name, "$dffsr") || !strcmp(subcircuit_name_prefix, "$dffsr")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "dffsr");
-    } else if (!strcmp(subcircuit_name, "$not") || !strcmp(subcircuit_name_prefix, "$not")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "not");
-    } else if (!strcmp(subcircuit_name, "$eq") || !strcmp(subcircuit_name_prefix, "$eq")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "eq");
-    } else if (!strcmp(subcircuit_name, "$le") || !strcmp(subcircuit_name_prefix, "$le")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "le");
-    } else if (!strcmp(subcircuit_name, "$gt") || !strcmp(subcircuit_name_prefix, "$gt")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "gt");
-    } else if (!strcmp(subcircuit_name, "$reducebool") || !strcmp(subcircuit_name_prefix, "$reducebool")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "reducebool");
-    } else if (!strcmp(subcircuit_name, "$reduceor") || !strcmp(subcircuit_name_prefix, "$reduceor")) {
-        new_node->type = FF_NODE;
-        error_message(PARSE_BLIF, my_location, "The support for (%s) sub-circuit type has not added yet!", "reduceor");
-    } else if (!strcmp(subcircuit_name, "$mux") || !strcmp(subcircuit_name_prefix, "$mux")) {
+    else if (!strcmp(subcircuit_name, "$mux") || !strcmp(subcircuit_name_prefix, "$mux"))
         new_node->type = MULTI_BIT_MUX_2;
-    } else {
-        // resolve .model showing a module/function/task instances into lower logic 
-        new_node->type = (configuration.coarsen) ? INSTANCE : GENERIC; 
+    else {
+        new_node->type = MEMORY;
     }
-    // vtr::free(subcircuit_name_prefix);
-
+    vtr::free(subcircuit_name_prefix);
     // Look up the model in the models cache.
     hard_block_model* model = NULL;
-    if (subcircuit_name != NULL) {
-        if (configuration.coarsen) {
-            // If the model isn's present, scan ahead and find it.
-            model = read_hard_block_model(subcircuit_name, new_node->type, unique_subckt_name, ports, models);
-            // Add it to the cache.
-            add_hard_block_model(model, ports, models);
-        } else {
-            if (!(model = get_hard_block_model(subcircuit_name, ports, models))) {
-                model = read_hard_block_model(subcircuit_name, new_node->type, unique_subckt_name, ports, models);
-                // Add it to the cache.
-                add_hard_block_model(model, ports, models);
-            }
-        }
-        
+    if ((subcircuit_name != NULL) && (!(model = get_hard_block_model(subcircuit_name, ports, models)))) {
+        // If the model isn's present, scan ahead and find it.
+        model = read_hard_block_model(subcircuit_name, new_node->type, ports);
+        // Add it to the cache.
+        add_hard_block_model(model, ports, models);
     }
-
+    
     /* Add input and output ports to the new node. */
     {
         hard_block_ports* p;
@@ -378,7 +331,7 @@ void* BLIF::Reader::__read() {
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
         new_pin->type = INPUT;
-        new_pin->mapping = (configuration.coarsen) ? get_hard_block_port_name(mapping) : NULL;
+        new_pin->mapping = get_hard_block_port_name(mapping);
 
         add_input_pin_to_node(new_node, new_pin, i);
     }
@@ -393,7 +346,7 @@ void* BLIF::Reader::__read() {
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
         new_pin->type = OUTPUT;
-        new_pin->mapping = (configuration.coarsen) ? get_hard_block_port_name(mapping) : NULL;
+        new_pin->mapping = get_hard_block_port_name(mapping);
 
         add_output_pin_to_node(new_node, new_pin, i);
 
@@ -406,11 +359,10 @@ void* BLIF::Reader::__read() {
         output_nets_hash->add(name, new_net);
     }
 
-    if (configuration.coarsen) { // Create a fake ast node.
-        new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
-        new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-        new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
-    }
+    // Create a fake ast node.
+    new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
+    new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
+    new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
 
     /*add this node to blif_netlist as an internal node */
     blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
@@ -429,9 +381,9 @@ void* BLIF::Reader::__read() {
  * @brief to create an internal node and driver from that node
  * 
  * @param name_prefix
- *-------------------------------------------------------------------------------------------*/
-
- void BLIF::Reader::create_internal_node_and_driver(const char* name_prefix) {
+ * -------------------------------------------------------------------------------------------
+ */
+void BLIF::Reader::create_internal_node_and_driver() {
     /* Storing the names of the input and the final output in array names */
     char* ptr = NULL;
     char* resolved_name = NULL;
@@ -440,7 +392,7 @@ void* BLIF::Reader::__read() {
     char buffer[READ_BLIF_BUFFER];
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
         names = (char**)vtr::realloc(names, sizeof(char*) * (input_count + 1));
-        resolved_name = resolve_signal_name_based_on_blif_type(name_prefix, ptr);
+        resolved_name = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
         names[input_count++] = vtr::strdup(resolved_name);
         vtr::free(resolved_name);
     }
@@ -458,25 +410,17 @@ void* BLIF::Reader::__read() {
         free_nnode(new_node);
     } else {
         /* assign the node type by seeing the name */
-        operation_list node_type;
-        
-        if (configuration.coarsen) {
-            node_type = BUF_NODE;
-        } else {
-            node_type = (operation_list)assign_node_type_from_node_name(names[input_count - 1]);
+        operation_list node_type = (operation_list)assign_node_type_from_node_name(names[input_count - 1]);
 
-            if (node_type != GENERIC) {
-                node_type = node_type;
-                skip_reading_bit_map = true;
-            }
-            /* Check for GENERIC type , change the node by reading the bit map */
-            else if (node_type == GENERIC) {
-                node_type = (operation_list)read_bit_map_find_unknown_gate(input_count - 1, new_node);
-                skip_reading_bit_map = true;
-            }
+        if (node_type != GENERIC) {
+            new_node->type = node_type;
+            skip_reading_bit_map = true;
         }
-
-        new_node->type = node_type;
+        /* Check for GENERIC type , change the node by reading the bit map */
+        else if (node_type == GENERIC) {
+            new_node->type = (operation_list)read_bit_map_find_unknown_gate(input_count - 1, new_node);
+            skip_reading_bit_map = true;
+        }
 
         /* allocate the input pin (= input_count-1)*/
         if (input_count - 1 > 0) // check if there is any input pins
@@ -484,7 +428,7 @@ void* BLIF::Reader::__read() {
             allocate_more_input_pins(new_node, input_count - 1);
 
             /* add the port information */
-            if (!configuration.coarsen && new_node->type == MUX_2) {
+            if (new_node->type == MUX_2) {
                 add_input_port_information(new_node, (input_count - 1) / 2);
                 add_input_port_information(new_node, (input_count - 1) / 2);
             } else {
@@ -565,12 +509,10 @@ void* BLIF::Reader::__read() {
  * @brief to build a the top level input
  * 
  * @param name_str representing the name input signal
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::build_top_input_node(const char* name_prefix, const char* name_str) {
-    char* temp_string = resolve_signal_name_based_on_blif_type(name_prefix, name_str);
-
-    /* create the .model input port if they do not exist */
-
+ * -------------------------------------------------------------------------------------------
+ */
+void BLIF::Reader::build_top_input_node(const char* name_str) {
+    char* temp_string = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, name_str);
 
     /* create a new top input node and net*/
 
@@ -609,15 +551,16 @@ void* BLIF::Reader::__read() {
     //output_nets_sc->data[sc_spot] = new_net;
 
     output_nets_hash->add(temp_string, new_net);
-}
+} 
 
 /**
  * (function: add_top_input_nodes)
  * 
  * @brief to add the top level inputs to the netlist
  *
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::add_top_input_nodes(const char* name_prefix, hard_block_model* model) {
+ * -------------------------------------------------------------------------------------------
+ */
+void BLIF::Reader::add_top_input_nodes() {
     /**
      * insert a global clock for fall back.
      * in case of undriven internal clocks, they will attach to the global clock
@@ -626,19 +569,13 @@ void* BLIF::Reader::__read() {
      */
     if (insert_global_clock) {
         insert_global_clock = false;
-        build_top_input_node(name_prefix, DEFAULT_CLOCK_NAME);
+        build_top_input_node(DEFAULT_CLOCK_NAME);
     }
 
     char* ptr;
     char buffer[READ_BLIF_BUFFER];
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-        /* initialize the model struct input names*/
-        if (model) {
-            model->inputs->names = (char**)vtr::realloc(model->inputs->names, sizeof(char*) * (model->inputs->count + 1));
-            model->inputs->names[model->inputs->count++] = vtr::strdup(ptr);
-        }
-
-        build_top_input_node(name_prefix, ptr);
+        build_top_input_node(ptr);
     }
 }
 
@@ -648,19 +585,14 @@ void* BLIF::Reader::__read() {
  * 
  * @brief to add the top level outputs to the netlist
  * 
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::rb_create_top_output_nodes(const char* name_prefix, hard_block_model* model) {
+ * -------------------------------------------------------------------------------------------
+ */
+void BLIF::Reader::rb_create_top_output_nodes() {
     char* ptr;
     char buffer[READ_BLIF_BUFFER];
 
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-        /* initialize the model struct output names*/
-         if (model) {
-            model->outputs->names = (char**)vtr::realloc(model->outputs->names, sizeof(char*) * (model->outputs->count + 1));
-            model->outputs->names[model->outputs->count++] = vtr::strdup(ptr);
-         }
-
-        char* temp_string = resolve_signal_name_based_on_blif_type(name_prefix, ptr);
+        char* temp_string = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
 
         /*add_a_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);*/
 
@@ -689,6 +621,65 @@ void* BLIF::Reader::__read() {
     }
 }
 
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: verify_hard_block_ports_against_model)
+ * 
+ * @brief Check for inconsistencies between the hard block model and the ports found
+ * in the hard block instance. Returns false if differences are found.
+ * 
+ * @param ports list of a hard block ports
+ * @param model hard block model
+ * 
+ * @return the hard is verified against model or no.
+ * -------------------------------------------------------------------------------------------
+ */
+bool BLIF::Reader::verify_hard_block_ports_against_model(hard_block_ports* ports, hard_block_model* model) {
+    hard_block_ports* port_sets[] = {model->input_ports, model->output_ports};
+    int i;
+    for (i = 0; i < 2; i++) {
+        hard_block_ports* p = port_sets[i];
+        int j;
+        for (j = 0; j < p->count; j++) {
+            // Look up each port from the model in "ports"
+            char* name = p->names[j];
+            int size = p->sizes[j];
+            int* idx = (int*)ports->index->get(name);
+            // Model port not specified in ports.
+            if (!idx) {
+                //printf("Model port not specified in ports. %s\n", name);
+                return false;
+            }
+
+            // Make sure they match in size.
+            int instance_size = ports->sizes[*idx];
+            // Port sizes differ.
+            if (size != instance_size) {
+                //printf("Port sizes differ. %s\n", name);
+                return false;
+            }
+        }
+    }
+
+    hard_block_ports* in = model->input_ports;
+    hard_block_ports* out = model->output_ports;
+    int j;
+    for (j = 0; j < ports->count; j++) {
+        // Look up each port from the subckt to make sure it appears in the model.
+        char* name = ports->names[j];
+        int* in_idx = (int*)in->index->get(name);
+        int* out_idx = (int*)out->index->get(name);
+        // Port does not appear in the model.
+        if (!in_idx && !out_idx) {
+            //printf("Port does not appear in the model. %s\n", name);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /**
  *---------------------------------------------------------------------------------------------
  * (function: read_hard_block_model)
@@ -700,27 +691,28 @@ void* BLIF::Reader::__read() {
  * @param ports list of a hard block ports
  * 
  * @return the file to its original position when finished.
- *-------------------------------------------------------------------------------------------*/
- hard_block_model* BLIF::Reader::read_hard_block_model(char* name_prefix, operation_list type, char* name_subckt, hard_block_ports* ports, hard_block_models* models) {
+ * -------------------------------------------------------------------------------------------
+ */
+hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, operation_list type, hard_block_ports* ports) {
     // Store the current position in the file.
     fpos_t pos;
     int last_line = my_location.line;
     fgetpos(file, &pos);
-    
+
     hard_block_model* model;
 
     while (1) {
         model = NULL;
 
-        // Search the file for .model followed by the subcircuit name.
+        // Search the file for .model followed buy the subcircuit name.
         char buffer[READ_BLIF_BUFFER];
         while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             char* token = vtr::strtok(buffer, TOKENS, file, buffer);
             // match .model followed by the subcircuit name.
-            if (token && !strcmp(token, ".model") && !strcmp(vtr::strtok(NULL, TOKENS, file, buffer), name_prefix)) {
+            if (token && !strcmp(token, ".model") && !strcmp(vtr::strtok(NULL, TOKENS, file, buffer), name_subckt)) {
                 model = (hard_block_model*)vtr::calloc(1, sizeof(hard_block_model));
-                model->name = (configuration.coarsen) ? vtr::strdup(name_subckt) : vtr::strdup(name_prefix);
+                model->name = vtr::strdup(name_subckt);
                 model->inputs = (hard_block_pins*)vtr::calloc(1, sizeof(hard_block_pins));
                 model->inputs->count = 0;
                 model->inputs->names = NULL;
@@ -734,47 +726,21 @@ void* BLIF::Reader::__read() {
                     char* first_word = vtr::strtok(buffer, TOKENS, file, buffer);
                     if (first_word) {
                         if (!strcmp(first_word, ".inputs")) {
-                            if (configuration.coarsen) {
-                                // create the top input nodes
-                                add_internal_input_nodes(model->name, model) ;
-                            } else {
-                                char* name;
-                                while ((name = vtr::strtok(NULL, TOKENS, file, buffer))) {
-                                    model->inputs->names = (char**)vtr::realloc(model->inputs->names, sizeof(char*) * (model->inputs->count + 1));
-                                    model->inputs->names[model->inputs->count++] = vtr::strdup(name);
-                                }
-                            } 
+                            char* name;
+                            while ((name = vtr::strtok(NULL, TOKENS, file, buffer))) {
+                                model->inputs->names = (char**)vtr::realloc(model->inputs->names, sizeof(char*) * (model->inputs->count + 1));
+                                model->inputs->names[model->inputs->count++] = vtr::strdup(name);
+                            }
                         } else if (!strcmp(first_word, ".outputs")) {
-                            if (configuration.coarsen) {
-                                // create the top output nodes
-                                rb_create_internal_output_nodes(model->name, model); 
-                            } else {
-                                char* name;
-                                while ((name = vtr::strtok(NULL, TOKENS, file, buffer))) {
-                                    model->outputs->names = (char**)vtr::realloc(model->outputs->names, sizeof(char*) * (model->outputs->count + 1));
-                                    model->outputs->names[model->outputs->count++] = vtr::strdup(name);
-                                }
-                            } 
-                        } else if (!strcmp(first_word, ".subckt")) {
-                            if (configuration.coarsen) {
-                                // need to call this function recursively to create the subcircuit node and assign its in/outputs
-                                create_hard_block_nodes(model->name, models);
-                            } else {
-                                error_message(PARSE_BLIF, my_location, 
-                                              "Invalid subcircuit model '%s' is found. In flatten BLIF Odin does not support instances!", name_subckt);
-                            } 
-                        } else if (!strcmp(first_word, ".names")) {
-                            if (configuration.coarsen) {
-                                // to alias the .names with the driver pin
-                                create_internal_node_and_driver(model->name);
-                            } else {
-                                error_message(PARSE_BLIF, my_location, 
-                                              "Invalid subcircuit model '%s' is found. In flatten BLIF Odin does not support instances!", name_subckt);
-                            } 
+                            char* name;
+                            while ((name = vtr::strtok(NULL, TOKENS, file, buffer))) {
+                                model->outputs->names = (char**)vtr::realloc(model->outputs->names, sizeof(char*) * (model->outputs->count + 1));
+                                model->outputs->names[model->outputs->count++] = vtr::strdup(name);
+                            }
                         } else if (!strcmp(first_word, ".end")) {
                             break;
                         }
-                    } 
+                    }
                 }
                 break;
             }
@@ -782,7 +748,7 @@ void* BLIF::Reader::__read() {
 
         if (!model || feof(file)) {
             if (configuration.coarsen)
-                model = create_hard_block_model(name_prefix, type, ports);
+                model = create_hard_block_model(name_subckt, type, ports);
             else
                 error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
         }
@@ -813,8 +779,6 @@ void* BLIF::Reader::__read() {
 
     return model;
 }
-
-
 
 /**
  * #############################################################################################################################
@@ -898,7 +862,6 @@ void BLIF::Reader::rb_look_for_clocks() {
     }
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: dum_parse)
@@ -908,6 +871,20 @@ void BLIF::Reader::dum_parse(char* buffer) {
     /* Continue parsing to the end of this (possibly continued) line. */
     while (vtr::strtok(NULL, TOKENS, file, buffer))
         ;
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: model_parse)
+ * 
+ * @brief in case of having other tool's blif file like yosys odin needs to read all .model
+ * however the odin generated blif file includes only one .model representing the top module
+ * 
+ * @param buffer a global buffer for tokenizing
+ * -------------------------------------------------------------------------------------------
+ */
+ void BLIF::Reader::model_parse(char* buffer) {    
+    blif_netlist->identifier = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
 }
 
 
@@ -960,6 +937,10 @@ operation_list BLIF::Reader::assign_node_type_from_node_name(char* output_name) 
  * ---------------------------------------------------------------------------------------------
  */
 operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nnode_t* node) {
+    
+    if (configuration.coarsen)
+        return BUF_NODE;    
+    
     operation_list to_return = operation_list_END;
 
     fpos_t pos;
@@ -1620,63 +1601,6 @@ hard_block_models* BLIF::Reader::create_hard_block_models() {
 }
 
 /**
- *---------------------------------------------------------------------------------------------
- * (function: verify_hard_block_ports_against_model)
- * 
- * @brief Check for inconsistencies between the hard block model and the ports found
- * in the hard block instance. Returns false if differences are found.
- * 
- * @param ports list of a hard block ports
- * @param model hard block model
- * 
- * @return the hard is verified against model or no.
- *-------------------------------------------------------------------------------------------*/
-bool BLIF::Reader::verify_hard_block_ports_against_model(hard_block_ports* ports, hard_block_model* model) {
-    hard_block_ports* port_sets[] = {model->input_ports, model->output_ports};
-    int i;
-    for (i = 0; i < 2; i++) {
-        hard_block_ports* p = port_sets[i];
-        int j;
-        for (j = 0; j < p->count; j++) {
-            // Look up each port from the model in "ports"
-            char* name = p->names[j];
-            int size = p->sizes[j];
-            int* idx = (int*)ports->index->get(name);
-            // Model port not specified in ports.
-            if (!idx) {
-                //printf("Model port not specified in ports. %s\n", name);
-                return false;
-            }
-
-            // Make sure they match in size.
-            int instance_size = ports->sizes[*idx];
-            // Port sizes differ.
-            if (size != instance_size) {
-                //printf("Port sizes differ. %s\n", name);
-                return false;
-            }
-        }
-    }
-
-    hard_block_ports* in = model->input_ports;
-    hard_block_ports* out = model->output_ports;
-    int j;
-    for (j = 0; j < ports->count; j++) {
-        // Look up each port from the subckt to make sure it appears in the model.
-        char* name = ports->names[j];
-        int* in_idx = (int*)in->index->get(name);
-        int* out_idx = (int*)out->index->get(name);
-        // Port does not appear in the model.
-        if (!in_idx && !out_idx) {
-            //printf("Port does not appear in the model. %s\n", name);
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/**
  * ---------------------------------------------------------------------------------------------
  * Counts the number of lines in the given blif file
  * before a .end token is hit.
@@ -1763,146 +1687,12 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
 }
 
 
+
 /**
  * #############################################################################################################################
  * ##################################################### PRIVATE METHODS #######################################################
  * #############################################################################################################################
 */
-
-/**
- *---------------------------------------------------------------------------------------------
- * (function: build_internal_input_node)
- * 
- * @brief to build a the top level input
- * 
- * @param name_str representing the name input signal
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::build_internal_input_node(const char* name_prefix, const char* name_str) {
-    char* temp_string = resolve_signal_name_based_on_blif_type(name_prefix, name_str);
-
-    /* create the .model input port if they do not exist */
-
-
-    /* create a new top input node and net*/
-
-    nnode_t* new_node = allocate_nnode(my_location);
-
-    new_node->related_ast_node = NULL;
-    new_node->type = INPUT_NODE;
-
-    /* add the name of the input variable */
-    new_node->name = temp_string;
-
-    /* allocate the pins needed */
-    allocate_more_output_pins(new_node, 1);
-    add_output_port_information(new_node, 1);
-
-    /* Create the pin connection for the net */
-    npin_t* new_pin = allocate_npin();
-    new_pin->name = vtr::strdup(temp_string);
-    new_pin->type = OUTPUT;
-
-    /* hookup the pin, net, and node */
-    add_output_pin_to_node(new_node, new_pin, 0);
-
-    nnet_t* new_net = allocate_nnet();
-    new_net->name = vtr::strdup(temp_string);
-
-    add_driver_pin_to_net(new_net, new_pin);
-
-    blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
-    blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
-
-    //long sc_spot = sc_add_string(output_nets_sc, temp_string);
-    //if (output_nets_sc->data[sc_spot])
-    //warning_message(NETLIST,linenum,-1, "Net (%s) with the same name already created\n",temp_string);
-
-    //output_nets_sc->data[sc_spot] = new_net;
-
-    output_nets_hash->add(temp_string, new_net);
-}
-
-/**
- * (function: add_internal_input_nodes)
- * 
- * @brief to add the top level inputs to the netlist
- *
- * @param file pointer to the input blif file
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::add_internal_input_nodes(const char* name_prefix, hard_block_model* model) {
-    char* ptr;
-    char buffer[READ_BLIF_BUFFER];
-    while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-        /* initialize the model struct input names*/
-        if (model) {
-            model->inputs->names = (char**)vtr::realloc(model->inputs->names, sizeof(char*) * (model->inputs->count + 1));
-            model->inputs->names[model->inputs->count++] = vtr::strdup(ptr);
-        }
-
-        build_internal_input_node(name_prefix, ptr);
-    }
-}
-
-/**
- *---------------------------------------------------------------------------------------------
- * (function: rb_create_internal_output_nodes)
- * 
- * @brief to add the top level outputs to the netlist
- * 
- * @param file pointer to the input blif file
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::rb_create_internal_output_nodes(const char* name_prefix, hard_block_model* model) {
-    char* ptr;
-    char buffer[READ_BLIF_BUFFER];
-
-    while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-        /* initialize the model struct output names*/
-         if (model) {
-            model->outputs->names = (char**)vtr::realloc(model->outputs->names, sizeof(char*) * (model->outputs->count + 1));
-            model->outputs->names[model->outputs->count++] = vtr::strdup(ptr);
-         }
-
-        char* temp_string = resolve_signal_name_based_on_blif_type(name_prefix, ptr);
-
-        /*add_a_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);*/
-
-        /* create a new top output node and */
-        nnode_t* new_node = allocate_nnode(my_location);
-        new_node->related_ast_node = NULL;
-        new_node->type = OUTPUT_NODE;
-
-        /* add the name of the output variable */
-        new_node->name = temp_string;
-
-        /* allocate the input pin needed */
-        allocate_more_input_pins(new_node, 1);
-        add_input_port_information(new_node, 1);
-
-        /* Create the pin connection for the net */
-        npin_t* new_pin = allocate_npin();
-        new_pin->name = temp_string;
-        /* hookup the pin, net, and node */
-        add_input_pin_to_node(new_node, new_pin, 0);
-
-        /*adding the node to the blif_netlist output nodes
-         * add_node_to_netlist() function can also be used */
-        blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
-        blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
-    }
-}
-
-/**
- *---------------------------------------------------------------------------------------------
- * (function: model_parse)
- * 
- * @brief in case of having other tool's blif file like yosys odin needs to read all .model
- * however the odin generated blif file includes only one .model representing the top module
- * 
- * @param buffer a global buffer for tokenizing
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::model_parse(char* buffer) {    
-    blif_netlist->identifier = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
-}
 
 /**
  *---------------------------------------------------------------------------------------------
@@ -1913,80 +1703,56 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
  * 
  * @param name_str representing the name input signal
  *-------------------------------------------------------------------------------------------*/
- char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_prefix, const char* name_str) {
+char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_prefix, const char* name_str) {
     char* return_string = NULL;
-    char* name = NULL;
-    char* index = NULL;
-    const char* pos = strchr(name_str, '[');
-    if (pos) {
-        name = (char*)vtr::malloc((pos - name_str + 1) * sizeof(char));
-        memcpy(name, name_str, pos - name_str);
-        name[pos - name_str] = '\0';
-    }
 
-    const char* pos2 = strchr(name_str, ']');
-    if (pos2) {
-        index = (char*)vtr::malloc((pos2 - (pos + 1) + 1) * sizeof(char));
-        memcpy(index, pos + 1, pos2 - (pos + 1));
-        index[pos2 - (pos + 1)] = '\0';
-    }
+        char* name = NULL;
+        char* index = NULL;
+        const char* pos = strchr(name_str, '[');
+        if (pos) {
+            name = (char*)vtr::malloc((pos - name_str + 1) * sizeof(char));
+            memcpy(name, name_str, pos - name_str);
+            name[pos - name_str] = '\0';
+        }
 
-    if (name) {
-        int idx = vtr::atoi(index);
-        if (name_prefix)
-            return_string = make_full_ref_name(name_prefix, NULL, NULL, name, idx);
-        else 
-            return_string = make_full_ref_name(NULL, NULL, NULL, name, idx);
+        const char* pos2 = strchr(name_str, ']');
+        if (pos2) {
+            index = (char*)vtr::malloc((pos2 - (pos + 1) + 1) * sizeof(char));
+            memcpy(index, pos + 1, pos2 - (pos + 1));
+            index[pos2 - (pos + 1)] = '\0';
+        }
 
-    } else {
-        if (!strcmp(name_str, "$true")) {
-            return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
-
-        } else if (!strcmp(name_str, "$false")) {
-            return_string =  make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
-
-        } else if (!strcmp(name_str, "$undef")) {
-            return_string =  make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
+        if (name) {
+            int idx = vtr::atoi(index);
+            if (name_prefix && configuration.coarsen)
+                return_string = make_full_ref_name(name_prefix, NULL, NULL, name, idx);
+            else 
+                return_string = make_full_ref_name(NULL, NULL, NULL, name, idx);
 
         } else {
-            if (name_prefix && configuration.coarsen)
-                return_string = make_full_ref_name(name_prefix, NULL, NULL, name_str, -1);
-            else 
-                return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
-        }
-    }
+            if (!strcmp(name_str, "$true")) {
+                return_string =  make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
 
-    if (name)
-        vtr::free(name);
-    if (index)
-        vtr::free(index);
+            } else if (!strcmp(name_str, "$false")) {
+                return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
+
+            } else if (!strcmp(name_str, "$undef")) {
+                return_string =  make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
+
+            } else {
+                if (name_prefix && configuration.coarsen && strcmp(name_str, DEFAULT_CLOCK_NAME))
+                    return_string = make_full_ref_name(name_prefix, NULL, NULL, name_str, -1);
+                else 
+                    return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
+            }
+        }
+
+        if (name)
+            vtr::free(name);
+        if (index)
+            vtr::free(index);
 
     return return_string;
-}
-
-/**
- *---------------------------------------------------------------------------------------------
- * (function: rename_port_name)
- * 
- * @brief changing the mapping name of a port to make it compatible 
- * with its model in the following of chaning its name
- * 
- * @param ports list of a hard block ports
- * @param port_index the index of a port that is to be changed
- *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::rename_port_name(hard_block_ports* ports, char* const new_name, int port_index) {
-    
-    // keep the data in a container
-    void* data = ports->index->get(ports->names[port_index-1]);
-    ports->index->remove(ports->names[port_index-1]);
-    // free the memory that contains the previous name
-    if (ports->names[port_index-1])
-        vtr::free(ports->names[port_index-1]);
-
-    // chaning the na,e of the port
-    ports->names[port_index-1] = vtr::strdup(new_name);
-    // adding the hash key and data to the hashtable
-    ports->index->add(ports->names[port_index-1], data);
 }
 
 /**
@@ -1997,7 +1763,8 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
  * 
  * @param name representing the name of a hard block
  * @param ports list of a hard block ports
- *-------------------------------------------------------------------------------------------*/
+ * -------------------------------------------------------------------------------------------
+ */
  hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operation_list type, hard_block_ports* ports) {
     oassert(ports);
 
@@ -2030,12 +1797,13 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
  * 
  * @param name representing the name of a hard block
  * @param ports list of a hard block ports
- *-------------------------------------------------------------------------------------------*/
+ * -------------------------------------------------------------------------------------------
+ */
  hard_block_model* BLIF::Reader::create_multiple_inputs_one_output_port_model(const char* name, hard_block_ports* ports) {
     int i, j;
     char* pin_name;
     hard_block_model* model = NULL;
-    
+
     model = (hard_block_model*)vtr::calloc(1, sizeof(hard_block_model));
     model->name = vtr::strdup(name);
 
@@ -2077,5 +1845,3 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
 
     return model;
 }
-
-
