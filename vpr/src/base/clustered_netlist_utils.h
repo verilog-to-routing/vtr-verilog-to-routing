@@ -27,4 +27,15 @@ class ClusteredPinAtomPinsLookup {
     vtr::vector<AtomPinId, ClusterPinId> atom_pin_connected_cluster_pin_;
 };
 
+class ClusterAtomsLookup {
+  public:
+    ClusterAtomsLookup();
+    std::vector<AtomBlockId> atoms_in_cluster(ClusterBlockId blk_id);
+
+  private:
+    void init_lookup();
+
+  private:
+    vtr::vector<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
+};
 #endif
