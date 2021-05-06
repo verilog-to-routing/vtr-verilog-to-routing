@@ -16,6 +16,16 @@
 #ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 #define VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 
+/**
+ * @brief Write out floorplan constraints to an XML file based on current placement
+ *
+ *   @param file_name   The name of the file that the constraints will be written to
+ *   @param expand      The amount the floorplan region will be expanded around the current
+ *   					x, y location of the block. Ex. if location is (1, 1) and expand = 1,
+ *   					the floorplan region will be from (0, 0) to (2, 2).
+ *   @param subtile     Specifies whether to write out the constraint regions with or without
+ *                      subtile values.
+ */
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile);
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);

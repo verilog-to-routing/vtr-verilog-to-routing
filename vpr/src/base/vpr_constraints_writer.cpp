@@ -13,6 +13,7 @@
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "echo_files.h"
+#include "clustered_netlist_utils.h"
 
 #include <fstream>
 #include "vpr_constraints_writer.h"
@@ -39,26 +40,14 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 }
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    std::map<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
-
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        cluster_atoms.insert({blk_id, std::vector<AtomBlockId>()});
-    }
-
-    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
-        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
-
-        cluster_atoms[clb_index].push_back(atom_blk_id);
-    }
+    auto& place_ctx = g_vpr_ctx.placement();
+    ClusterAtomsLookup atoms_lookup;
 
     int part_id = 0;
-    for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         std::string part_name;
-        part_name = cluster_ctx.clb_nlist.block_name(i->first);
+        part_name = cluster_ctx.clb_nlist.block_name(blk_id);
         PartitionId partid(part_id);
 
         Partition part;
@@ -67,7 +56,7 @@ void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bo
         PartitionRegion pr;
         Region reg;
 
-        auto loc = place_ctx.block_locs[i->first].loc;
+        auto loc = place_ctx.block_locs[blk_id].loc;
 
         reg.set_region_rect(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand);
         if (subtile) {
@@ -79,10 +68,11 @@ void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bo
         part.set_part_region(pr);
         constraints.add_partition(part);
 
-        int num_atoms = i->second.size();
+        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
+        int num_atoms = atoms.size();
 
-        for (auto j = 0; j < num_atoms; j++) {
-            AtomBlockId atom_id = i->second[j];
+        for (auto atm = 0; atm < num_atoms; atm++) {
+            AtomBlockId atom_id = atoms[atm];
             constraints.add_constrained_atom(atom_id, partid);
         }
         part_id++;
