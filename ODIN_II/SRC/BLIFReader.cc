@@ -156,6 +156,8 @@ void* BLIF::Reader::__read() {
                 rb_create_top_output_nodes(blif_netlist->identifier, NULL); // create the top output nodes
             } else if (strcmp(token, ".names") == 0) {
                 create_internal_node_and_driver(blif_netlist->identifier);
+            } else if (strcmp(token, ".latch") == 0) {
+                create_latch_node_and_driver();
             } else if (strcmp(token, ".subckt") == 0) {
                 create_hard_block_nodes(blif_netlist->identifier, models);
             } else if (strcmp(token, ".end") == 0) {
@@ -331,11 +333,20 @@ void* BLIF::Reader::__read() {
 
     // Look up the model in the models cache.
     hard_block_model* model = NULL;
-    if ((subcircuit_name != NULL) /* && (!(model = get_hard_block_model(subcircuit_name, ports, models))) */) {
-        // If the model isn's present, scan ahead and find it.
-        model = read_hard_block_model(subcircuit_name, new_node->type, unique_subckt_name, ports, models);
-        // Add it to the cache.
-        add_hard_block_model(model, ports, models);
+    if (subcircuit_name != NULL) {
+        if (configuration.coarsen) {
+            // If the model isn's present, scan ahead and find it.
+            model = read_hard_block_model(subcircuit_name, new_node->type, unique_subckt_name, ports, models);
+            // Add it to the cache.
+            add_hard_block_model(model, ports, models);
+        } else {
+            if (!(model = get_hard_block_model(subcircuit_name, ports, models))) {
+                model = read_hard_block_model(subcircuit_name, new_node->type, unique_subckt_name, ports, models);
+                // Add it to the cache.
+                add_hard_block_model(model, ports, models);
+            }
+        }
+        
     }
 
     /* Add input and output ports to the new node. */
@@ -367,7 +378,7 @@ void* BLIF::Reader::__read() {
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
         new_pin->type = INPUT;
-        new_pin->mapping = get_hard_block_port_name(mapping);
+        new_pin->mapping = (configuration.coarsen) ? get_hard_block_port_name(mapping) : NULL;
 
         add_input_pin_to_node(new_node, new_pin, i);
     }
@@ -382,7 +393,7 @@ void* BLIF::Reader::__read() {
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
         new_pin->type = OUTPUT;
-        new_pin->mapping = get_hard_block_port_name(mapping);
+        new_pin->mapping = (configuration.coarsen) ? get_hard_block_port_name(mapping) : NULL;
 
         add_output_pin_to_node(new_node, new_pin, i);
 
@@ -395,10 +406,11 @@ void* BLIF::Reader::__read() {
         output_nets_hash->add(name, new_net);
     }
 
-    // Create a fake ast node.
-    new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
-    new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-    new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
+    if (configuration.coarsen) { // Create a fake ast node.
+        new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
+        new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
+        new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
+    }
 
     /*add this node to blif_netlist as an internal node */
     blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
@@ -708,7 +720,7 @@ void* BLIF::Reader::__read() {
             // match .model followed by the subcircuit name.
             if (token && !strcmp(token, ".model") && !strcmp(vtr::strtok(NULL, TOKENS, file, buffer), name_prefix)) {
                 model = (hard_block_model*)vtr::calloc(1, sizeof(hard_block_model));
-                model->name = vtr::strdup(name_subckt);
+                model->name = (configuration.coarsen) ? vtr::strdup(name_subckt) : vtr::strdup(name_prefix);
                 model->inputs = (hard_block_pins*)vtr::calloc(1, sizeof(hard_block_pins));
                 model->inputs->count = 0;
                 model->inputs->names = NULL;
@@ -723,7 +735,7 @@ void* BLIF::Reader::__read() {
                     if (first_word) {
                         if (!strcmp(first_word, ".inputs")) {
                             if (configuration.coarsen) {
-                                 // create the top input nodes
+                                // create the top input nodes
                                 add_internal_input_nodes(model->name, model) ;
                             } else {
                                 char* name;

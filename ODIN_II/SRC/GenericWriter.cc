@@ -33,10 +33,9 @@ GenericWriter::GenericWriter(): GenericIO() {}
 GenericWriter::~GenericWriter() {    
     if (this->blif_writer)
         static_cast<BLIF::Writer*>(this->blif_writer)->~Writer();
-    if (this->output_file) {
-        std::cout << "CLOSIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIING\n";
+        
+    if (this->output_file)
         fclose(this->output_file);
-    }
 }
 
 inline void GenericWriter::__write(const netlist_t* netlist) { 

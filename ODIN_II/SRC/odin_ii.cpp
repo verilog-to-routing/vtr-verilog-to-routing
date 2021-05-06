@@ -98,11 +98,11 @@ static ODIN_ERROR_CODE synthesize() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    verilog_netlist = static_cast<netlist_t*>(generic_reader->__read());
+    netlist_t* general_netlist = static_cast<netlist_t*>(generic_reader->__read());
 
-    if (verilog_netlist) {
+    if (general_netlist) {
         // Can't levelize yet since the large muxes can look like combinational loops when they're not
-        check_netlist(verilog_netlist);
+        check_netlist(general_netlist);
 
         //START ################# NETLIST OPTIMIZATION ############################
 
@@ -110,41 +110,41 @@ static ODIN_ERROR_CODE synthesize() {
         printf("Performing Optimizations of the Netlist\n");
         if (hard_multipliers) {
             /* Perform a splitting of the multipliers for hard block mults */
-            reduce_operations(verilog_netlist, MULTIPLY);
-            iterate_multipliers(verilog_netlist);
+            reduce_operations(general_netlist, MULTIPLY);
+            iterate_multipliers(general_netlist);
             clean_multipliers();
         }
 
         if (single_port_rams || dual_port_rams) {
             /* Perform a splitting of any hard block memories */
-            iterate_memories(verilog_netlist);
+            iterate_memories(general_netlist);
             free_memory_lists();
         }
 
         if (hard_adders) {
             /* Perform a splitting of the adders for hard block add */
-            reduce_operations(verilog_netlist, ADD);
-            iterate_adders(verilog_netlist);
+            reduce_operations(general_netlist, ADD);
+            iterate_adders(general_netlist);
             clean_adders();
 
             /* Perform a splitting of the adders for hard block sub */
-            reduce_operations(verilog_netlist, MINUS);
-            iterate_adders_for_sub(verilog_netlist);
+            reduce_operations(general_netlist, MINUS);
+            iterate_adders_for_sub(general_netlist);
             clean_adders_for_sub();
         }
 
         //END ################# NETLIST OPTIMIZATION ############################
 
         if (configuration.output_netlist_graphs)
-            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, verilog_netlist); /* Path is where we are */
+            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, general_netlist); /* Path is where we are */
 
         /* point where we convert netlist to FPGA or other hardware target compatible format */
         printf("Performing Partial Map to target device\n");
-        partial_map_top(verilog_netlist);
-        mixer->perform_optimizations(verilog_netlist);
+        partial_map_top(general_netlist);
+        mixer->perform_optimizations(general_netlist);
 
         /* Find any unused logic in the netlist and remove it */
-        remove_unused_logic(verilog_netlist);
+        remove_unused_logic(general_netlist);
 
         /**
          * point for outputs.  This includes soft and hard mapping all structures to the
@@ -152,7 +152,7 @@ static ODIN_ERROR_CODE synthesize() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        generic_writer->__write(verilog_netlist);
+        generic_writer->__write(general_netlist);
         // output_blif(output_blif_file, verilog_netlist);
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
@@ -163,12 +163,13 @@ static ODIN_ERROR_CODE synthesize() {
         report_add_distribution();
         report_sub_distribution();
 
-        compute_statistics(verilog_netlist, true);
+        compute_statistics(general_netlist, true);
 
         deregister_hard_blocks();
 
         //cleanup netlist
-        free_netlist(verilog_netlist);
+        free_netlist(general_netlist);
+        vtr::free(general_netlist);
     } else {
         printf("Empty blif generated, Empty input or no module declared\n");
     }
@@ -268,6 +269,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.input_file_type = file_type_e::_BLIF;
+
         if (global_args.coarsen.provenance() != argparse::Provenance::SPECIFIED) {
             // if we started with a verilog file read the output that was made since
             // the simulator can only simulate blifs
@@ -295,8 +298,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            GenericReader* simulator_blif_reader = new BLIF::Reader();
-            odin_netlist = static_cast<netlist_t*>(simulator_blif_reader->__read());
+            odin_netlist = static_cast<netlist_t*>(generic_reader->__read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);

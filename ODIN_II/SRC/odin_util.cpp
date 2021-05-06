@@ -48,9 +48,7 @@
 #    include <sys/stat.h>
 #endif
 
-
-std::string& SSS (const char* s)
-{
+std::string& SSS(const char* s) {
     return *(new std::string(s));
 }
 
@@ -1043,12 +1041,12 @@ char* str_collate(char* str1, char* str2) {
 
 /**
  * This shows the name of niput file, whether Verilog or BLIF
-*/
-void print_input_files_info () {
+ */
+void print_input_files_info() {
     if (configuration.input_file_type == file_type_e::_VERILOG) {
-        for (std::string v_file : global_args.verilog_files.value()) 
+        for (std::string v_file : global_args.verilog_files.value())
             printf("Verilog: %s\n", vtr::basename(v_file).c_str());
-        
+
     } else if (configuration.input_file_type == file_type_e::_BLIF) {
         printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
     }

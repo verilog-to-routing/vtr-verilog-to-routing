@@ -41,8 +41,8 @@ const char* DUAL_PORT_RAM_string = "dual_port_ram";
 
 const char* operation_list_STR[][2] = {
     {"NO_OP", "nOP"},
-    {"MULTI_PORT_MUX", "nMUX"}, // port 1 = control, port 2+ = mux options
-    {"MULTI_BIT_MUX_2", "nbMUX"}, // port 1 = control, port 2+ = mux options
+    {"MULTI_PORT_MUX", "nMUX"},   // port 1 = control, port 2+ = mux options
+    {"MULTI_BIT_MUX_2", "nbMUX"}, // like MUX_2 but with n-bit input/output
     {"FF_NODE", "FF"},
     {"BUF_NODE", "BUF"},
     {"INPUT_NODE", "IN"},

@@ -32,10 +32,10 @@ GenericReader::GenericReader(): GenericIO() {}
 
 GenericReader::~GenericReader() {
     if (this->verilog_reader)
-        static_cast<VerilogReader*>(this->verilog_reader)->~VerilogReader();
+        delete this->verilog_reader;
     
     if (this->blif_reader)
-        this->blif_reader->~GenericReader();
+        delete this->blif_reader;
 }
 
 inline void* GenericReader::__read() {
