@@ -45,6 +45,11 @@ void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bo
     ClusterAtomsLookup atoms_lookup;
 
     int part_id = 0;
+    /*
+     * For each cluster block, create a partition filled with the atoms that are currently in the cluster.
+     * The PartitionRegion will be the location of the block in current placement, modified by the expansion factor.
+     * The subtile can also optionally be set in the PartitionRegion, based on the value passed in by the user.
+     */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         std::string part_name;
         part_name = cluster_ctx.clb_nlist.block_name(blk_id);
