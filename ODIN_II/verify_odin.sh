@@ -449,11 +449,13 @@ printf "
 			archs_dir                = < path/to/arch/dir >
 			arch_list_add            = < architecture file path relative to [archs_dir] >
 			synthesis_parse_file 	 = < path/to/parse/file >
+			techmap_parse_file 	     = < path/to/parse/file >
 			simulation_parse_file 	 = < path/to/parse/file >
 			script_synthesis_params  = [see exec_wrapper.sh options]
 			script_techmap_params    = [see exec_wrapper.sh options]
 			script_simulation_params = [see exec_wrapper.sh options]
 			synthesis_params         = [see Odin options]	
+			techmap_params           = [see Odin options]	
 			simulation_params        = [see Odin options]
 			regression_params        = 
 			{
@@ -603,7 +605,7 @@ function populate_arg_from_file() {
 		_script_techmap_params="${_local_script_techmap_params} ${_script_techmap_params}"
 		_script_synthesis_params="${_local_script_synthesis_params} ${_script_synthesis_params}"
 		_synthesis_params="${_local_synthesis_params} ${_synthesis_params}"
-		_techmap_params="${_local__techmap_params} ${_techmap_params}"
+		_techmap_params="${_local_techmap_params} ${_techmap_params}"
 		_simulation_params="${_local_simulation_params} ${_simulation_params}"
 	fi
 
@@ -870,10 +872,11 @@ function sim() {
 	synthesis_result_failure_log_file="${synthesis_failure}_result.log"
 
     # techmap
+    techmap_pass="true"
 	techmap_failure_name="techmap_failures"
 	techmap_parse_result_file_name="techmap_result.json"
-	techmap_params_file_name="techamp_params"
-	synthesis_wrapper_file_name="techmap_wrapper_params"
+	techmap_params_file_name="techmap_params"
+	techmap_wrapper_file_name="techmap_wrapper_params"
 	techmap_log_file_name="techmap.log"
 
 	techmap_failure="${NEW_RUN_DIR}/${bench_name}/${techmap_failure_name}"
@@ -881,7 +884,7 @@ function sim() {
 	techmap_failure_log_file="${techmap_failure}.log"
 	techmap_result_failure_log_file="${techmap_failure}_result.log"
 
-	# simulation
+    # simulation
 	simulation_failure_name="simulation_failures"
 	simulation_parse_result_file_name="simulation_result.json"
 	simulation_params_file_name="simulation_params"
@@ -913,9 +916,18 @@ function sim() {
 
 		case "${circuit_file}" in
 			*.blif)
-				input_blif_file="${circuit}"
-				# disable synthesis for blif files
-				_synthesis="off"
+                # disable synthesis for blif files
+                _synthesis="off"
+                case "${circuit_file}" in
+                    # disable techmap for generated blif files
+                    *_generated.blif)
+                    techmap_pass="false"
+                ;;
+                *)
+                    input_blif_file="${circuit}"
+                    techmap_pass="true"
+                ;;
+                esac
 			;;
 			*)
 				_synthesis="on"
@@ -1018,13 +1030,10 @@ function sim() {
 
 					chmod +x "${DIR}/${synthesis_params_file_name}"
 
-                    # specify the input blif file of the simulation phase
-                    input_blif_file="${generated_blif_file}"
-
 				fi
                 ###############################
 				# Techmap
-				if [ "${_techmap}" == "on" ]
+				if [ "${_techmap}" == "on" ] && [ "${techmap_pass}" == "true" ]
 				then
 
 					# specifying the outpur blif file name with postfix _techmap
@@ -1052,6 +1061,7 @@ function sim() {
 					wrapper_command="${wrapper_command}
 										${DIR}/${techmap_params_file_name}"
 
+
 					techmap_command="${ODIN_EXEC}
 										${_techmap_params}
 										${arch_cmd}
@@ -1059,6 +1069,7 @@ function sim() {
 										-o ${generated_blif_file}
 										-sim_dir ${DIR}"
 
+                    
 					_echo_args "${wrapper_command}"	\
 						> "${DIR}/${techmap_wrapper_file_name}"
 
@@ -1067,14 +1078,13 @@ function sim() {
 
 					chmod +x "${DIR}/${techmap_params_file_name}"
 
-                    # specify the input blif file of the simulation phase
-                    input_blif_file="${generated_blif_file}"
-
 				fi
 				###############################
 				# Simulation
 				if [ "${_simulation}" == "on" ]
 				then
+                    # specifying the outpur blif file name with postfix _techmap
+					sim_blif_file="${DIR}/${circuit_name}_generated.blif"
 
 					wrapper_command="${WRAPPER_EXEC}
 											${_disable_color}
@@ -1100,7 +1110,7 @@ function sim() {
 					simulation_command="${ODIN_EXEC}
 											${_simulation_params}
 											${arch_cmd}
-											-b ${input_blif_file}
+											-b ${sim_blif_file}
 											-sim_dir ${DIR} "
 
 					simulation_wrapper_file_name="${simulation_wrapper_generate_io_file_name}"
@@ -1228,7 +1238,6 @@ function sim() {
 
 
     #techmap the circuits
-
 
 	find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${techmap_wrapper_file_name}"
 	if [ "${_techmap}" == "on" ]\
