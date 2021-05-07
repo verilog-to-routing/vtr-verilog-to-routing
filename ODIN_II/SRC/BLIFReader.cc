@@ -93,6 +93,12 @@ void* BLIF::Reader::__read() {
     printf("Reading blif netlist...");
     fflush(stdout);
 
+    /* find the top module name */
+    find_top_module();
+
+    /* create the top level module */
+    rb_create_top_driver_nets(blif_netlist->identifier);
+
     int position = -1;
     double time = wall_time();
     // A cache of hard block models indexed by name. As each one is read, it's stored here to be used again.
@@ -148,8 +154,6 @@ void* BLIF::Reader::__read() {
             skip_reading_bit_map = false;
             if (strcmp(token, ".model") == 0) {
                 model_parse(buffer); // store the scope model name for in/out name processing
-                /* create the top level module */
-                rb_create_top_driver_nets(blif_netlist->identifier);
             } else if (strcmp(token, ".inputs") == 0) {
                 add_top_input_nodes(); // create the top input nodes
             } else if (strcmp(token, ".outputs") == 0) {
@@ -169,6 +173,49 @@ void* BLIF::Reader::__read() {
         }
     }
     return true;
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: resolve_signal_name_based_on_blif_type)
+ * 
+ * @brief to find the name of top module
+ * -------------------------------------------------------------------------------------------
+ */
+void BLIF::Reader::find_top_module() {
+    fpos_t pos;
+    int last_line = my_location.line;
+    fgetpos(file, &pos);
+    rewind(file);
+
+    char* top_module = NULL;
+
+    bool found = false;
+    while (!found) {
+        char buffer[READ_BLIF_BUFFER];
+        vtr::fgets(buffer, READ_BLIF_BUFFER, file);
+        my_location.line += 1;
+
+        // not sure if this is needed
+        if (feof(file))
+            break;
+
+        char* token = vtr::strtok(buffer, TOKENS, file, buffer);
+        if (token && !strcmp(token, ".model")) {
+            top_module = vtr::strtok(buffer, TOKENS, file, buffer);
+            found = true;
+        }
+    }
+
+    if (!found || !top_module) {
+        warning_message(PARSE_BLIF, unknown_location, 
+                        "%s", "The top module name has not been specifed in the BLIF file, automatically considered as 'top'.\n");
+
+        blif_netlist->identifier = vtr::strdup("top");                       
+    }
+
+    my_location.line = last_line;
+    fsetpos(file, &pos);
 }
 
 /**
@@ -1702,7 +1749,8 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
  * file compatible with the odin's name convention
  * 
  * @param name_str representing the name input signal
- *-------------------------------------------------------------------------------------------*/
+ * -------------------------------------------------------------------------------------------
+ */
 char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_prefix, const char* name_str) {
     char* return_string = NULL;
 

@@ -136,6 +136,14 @@ class BLIF {
                 */
                 int read_tokens(char* buffer, hard_block_models* models);
                 /**
+                 *---------------------------------------------------------------------------------------------
+                 * (function: resolve_signal_name_based_on_blif_type)
+                 * 
+                 * @brief to find the name of top module
+                 * -------------------------------------------------------------------------------------------
+                 */
+                static void find_top_module();
+                /**
                  * ---------------------------------------------------------------------------------------------
                  * (function: hook_up_nets)
                  * 
