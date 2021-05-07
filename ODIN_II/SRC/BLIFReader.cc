@@ -1206,7 +1206,7 @@ void BLIF::Reader::create_latch_node_and_driver() {
         input_token_count += 1;
         names = (char**)vtr::realloc(names, (sizeof(char*)) * (input_token_count));
 
-        names[input_token_count - 1] = vtr::strdup(ptr);
+        names[input_token_count - 1] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier ,ptr);
     }
 
     /* assigning the new_node */
@@ -1708,6 +1708,8 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
 
         char* name = NULL;
         char* index = NULL;
+        char* first_part = NULL;
+        char* second_part = NULL;
         const char* pos = strchr(name_str, '[');
         if (pos) {
             name = (char*)vtr::malloc((pos - name_str + 1) * sizeof(char));
@@ -1720,21 +1722,33 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             index = (char*)vtr::malloc((pos2 - (pos + 1) + 1) * sizeof(char));
             memcpy(index, pos + 1, pos2 - (pos + 1));
             index[pos2 - (pos + 1)] = '\0';
+
+            const char* end = strchr(name_str, '\0');
+            if (end) {
+                second_part = (char*)vtr::malloc((end - (pos2 + 1) + 1) * sizeof(char));
+                memcpy(second_part, pos2 + 1, end - (pos2 + 1));
+                second_part[end - (pos2 + 1)] = '\0';
+            } else {
+                error_message(PARSE_BLIF, my_location, "Invalid pin name (%s)\n", name_str);
+            }
         }
 
-        if (name) {
+        if (name && configuration.coarsen) {
+            oassert(index && "Invalid signal indexing!\n");
             int idx = vtr::atoi(index);
-            if (name_prefix && configuration.coarsen)
-                return_string = make_full_ref_name(name_prefix, NULL, NULL, name, idx);
+            if (name_prefix)
+                first_part = make_full_ref_name(name_prefix, NULL, NULL, name, idx);
             else 
-                return_string = make_full_ref_name(NULL, NULL, NULL, name, idx);
-
+                first_part = make_full_ref_name(NULL, NULL, NULL, name, idx);
+                
+            return_string = (char*)vtr::malloc((strlen(first_part) + strlen(second_part)) * sizeof(char));
+            odin_sprintf(return_string, "%s%s", first_part, second_part);
         } else {
             if (!strcmp(name_str, "$true")) {
-                return_string =  make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
+                return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
 
             } else if (!strcmp(name_str, "$false")) {
-                return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
+                return_string =  make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
 
             } else if (!strcmp(name_str, "$undef")) {
                 return_string =  make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
@@ -1751,6 +1765,10 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             vtr::free(name);
         if (index)
             vtr::free(index);
+        if (first_part)
+            vtr::free(first_part);
+        if (second_part)
+            vtr::free(second_part);
 
     return return_string;
 }
