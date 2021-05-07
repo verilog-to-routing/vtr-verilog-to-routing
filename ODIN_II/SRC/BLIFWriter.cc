@@ -71,11 +71,12 @@ BLIF::Writer::Writer(): GenericWriter() {
 
 BLIF::Writer::~Writer() = default;
 
-void BLIF::Writer::__write(const netlist_t* netlist) {
-
-    this->output_file = create_blif(global_args.output_file.value().c_str());
-
+inline void BLIF::Writer::__write(const netlist_t* netlist) {
     output_blif(this->output_file, netlist);
+}
+
+inline void BLIF::Writer::__create_file(const file_type_e /* file_type */) {
+    this->output_file = create_blif(global_args.output_file.value().c_str());
 }
 /**
  * ---------------------------------------------------------------------------------------------

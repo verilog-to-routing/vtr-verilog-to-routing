@@ -47,6 +47,9 @@ class GenericIO {
         virtual void* __read();
         virtual void  __write (const netlist_t* netlist);
 
+        /* to create the output file */
+        virtual void __create_file(const file_type_e file_type);
+
 };
 
 #endif

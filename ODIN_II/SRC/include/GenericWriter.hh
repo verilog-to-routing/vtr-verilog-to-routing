@@ -58,6 +58,9 @@ class GenericWriter : public GenericIO {
          * void  write_ilang(const netlist_t* netlist, FILE* output_file); 
          */
 
+        /* to create the output file */
+        void __create_file(const file_type_e file_type);
+
     protected:
         FILE*           output_file;
         

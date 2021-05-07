@@ -90,6 +90,8 @@ static ODIN_ERROR_CODE synthesize() {
     printf("--------------------------------------------------------------------\n");
     printf("High-level synthesis Begin\n");
 
+    generic_writer->__create_file(configuration.output_file_type);
+
     /* Perform any initialization routines here */
     find_hard_multipliers();
     find_hard_adders();
@@ -195,12 +197,14 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         printf("Odin failed to initialize %s with exit code%d\n", vtr_error.what(), ERROR_INITIALIZATION);
         exit(ERROR_INITIALIZATION);
     }
-    generic_reader = new GenericReader();
-    generic_writer = new GenericWriter();
     mixer = new HardSoftLogicMixer();
     try {
         /* Set up the global arguments to their default. */
         set_default_config();
+
+        /* Intantiating the generic reader and writer */
+        generic_reader = new GenericReader();
+        generic_writer = new GenericWriter();
 
         /* get the command line options */
         get_options(argc, argv);

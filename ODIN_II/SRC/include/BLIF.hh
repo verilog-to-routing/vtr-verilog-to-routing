@@ -76,9 +76,6 @@ struct hard_block_models {
     Hashtable* index;
 };
 
-class OdinBLIFReader;
-class SubcktBLIFReader;
-
 extern int line_count;
 extern int num_lines;
 extern bool skip_reading_bit_map;
@@ -464,6 +461,7 @@ class BLIF {
                 }
 
                 void __write(const netlist_t* netlist);
+                void __create_file(const file_type_e file_type);
 
             protected:
                 /**
