@@ -28,7 +28,9 @@
 #include "config_t.h"
 #include "odin_ii.h"
 
-GenericWriter::GenericWriter(): GenericIO() {}
+GenericWriter::GenericWriter(): GenericIO() {
+    this->blif_writer = NULL;
+}
 
 GenericWriter::~GenericWriter() {    
     if (this->blif_writer)
@@ -67,6 +69,7 @@ inline void GenericWriter::__write(const netlist_t* netlist) {
 }
 
 inline void GenericWriter::_write_blif(const netlist_t* netlist) {
+    oassert(this->blif_writer);
     this->blif_writer->__write(netlist);
 }
 

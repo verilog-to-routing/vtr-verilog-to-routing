@@ -28,7 +28,10 @@
 #include "config_t.h"
 #include "odin_ii.h"
 
-GenericReader::GenericReader(): GenericIO() {}
+GenericReader::GenericReader(): GenericIO() {
+    this->verilog_reader = NULL;
+    this->blif_reader = NULL;
+}
 
 GenericReader::~GenericReader() {
     if (this->verilog_reader)
