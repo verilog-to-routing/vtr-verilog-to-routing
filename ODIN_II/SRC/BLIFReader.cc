@@ -207,13 +207,15 @@ void BLIF::Reader::find_top_module() {
         }
     }
 
-    if (!found || !top_module) {
+    if (!found && !top_module) {
         warning_message(PARSE_BLIF, unknown_location, 
                         "%s", "The top module name has not been specifed in the BLIF file, automatically considered as 'top'.\n");
 
         blif_netlist->identifier = vtr::strdup("top");                       
+    } else {
+        blif_netlist->identifier = top_module;
     }
-
+ 
     my_location.line = last_line;
     fsetpos(file, &pos);
 }
