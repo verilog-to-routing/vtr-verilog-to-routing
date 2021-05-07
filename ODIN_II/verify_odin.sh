@@ -426,10 +426,13 @@ function warn_is_defined() {
 
 _regression_params=""
 _script_synthesis_params=""
+_script_techmap_params=""
 _script_simulation_params=""
 _synthesis_parse_file=""
+_techmap_parse_file=""
 _simulation_parse_file=""
 _synthesis_params=""
+_techmap_params=""
 _simulation_params=""
 _circuit_list=()
 _arch_list=()
@@ -442,21 +445,23 @@ printf "
 	the following key=value, ... are available:
 
 			circuits_dir             = < path/to/circuit/dir >
-			circuit_list_add        = < circuit file path relative to [circuits_dir] >
+			circuit_list_add         = < circuit file path relative to [circuits_dir] >
 			archs_dir                = < path/to/arch/dir >
-			arch_list_add           = < architecture file path relative to [archs_dir] >
-			synthesis_parse_file 	= < path/to/parse/file >
-			simulation_parse_file 	= < path/to/parse/file >
-			script_synthesis_params = [see exec_wrapper.sh options]
-			script_simulation_params= [see exec_wrapper.sh options]
-			synthesis_params        = [see Odin options]	
-			simulation_params       = [see Odin options]
-			regression_params       = 
+			arch_list_add            = < architecture file path relative to [archs_dir] >
+			synthesis_parse_file 	 = < path/to/parse/file >
+			simulation_parse_file 	 = < path/to/parse/file >
+			script_synthesis_params  = [see exec_wrapper.sh options]
+			script_techmap_params    = [see exec_wrapper.sh options]
+			script_simulation_params = [see exec_wrapper.sh options]
+			synthesis_params         = [see Odin options]	
+			simulation_params        = [see Odin options]
+			regression_params        = 
 			{
 				--verbose                # display error logs after batch of tests
 				--concat_circuit_list    # concatenate the circuit list and pass it straight through to odin
 				--generate_bench         # generate input and output vectors from scratch
 				--generate_output        # generate output vectors only if input vectors already exist
+				--enable_techmap         # enable the technology mapping for this task (only coarsen blif files should pass)
 				--disable_simulation     # disable the simulation for this task
 				--disable_parallel_jobs  # disable running circuit/task pairs in parralel
 				--include_default_arch   # run odin also without architecture file
@@ -468,10 +473,13 @@ printf "
 init_args_for_test() {
 	_regression_params=""
 	_script_synthesis_params=""
+	_script_techmap_params=""
 	_script_simulation_params=""
 	_synthesis_parse_file=""
+	_techmap_parse_file=""
 	_simulation_parse_file=""
 	_synthesis_params=""
+	_techmap_params=""
 	_simulation_params=""
 	_circuit_list=()
 	_arch_list=()
@@ -484,10 +492,13 @@ function populate_arg_from_file() {
 	_circuit_list_add=()
 	_arch_list_add=()
 	_local_synthesis_parse_file=""
+	_local_techmap_parse_file=""
 	_local_simulation_parse_file=""
 	_local_script_synthesis_params=""
+	_local_script_techmap_params=""
 	_local_script_simulation_params=""
 	_local_synthesis_params=""
+	_local_techmap_params=""
 	_local_simulation_params=""
 	_local_regression_params=""
 
@@ -538,17 +549,26 @@ function populate_arg_from_file() {
 					;;_script_synthesis_params)
 						_local_script_synthesis_params="${_local_script_synthesis_params} ${_value}"
 
+                    ;;_script_techmap_params)
+						_local_script_techmap_params="${_local_script_techmap_params} ${_value}"
+
 					;;_script_simulation_params)
 						_local_script_simulation_params="${_local_script_simulation_params} ${_value}"
 
 					;;_simulation_parse_file)
 						_local_simulation_parse_file="${_value}"
 
-					;;_synthesis_parse_file)
+					;;_techmap_parse_file)
+						_local_techmap_parse_file="${_value}"
+
+                    ;;_synthesis_parse_file)
 						_local_synthesis_parse_file="${_value}"
 
 					;;_synthesis_params)
-						_local_synthesis_params="${_local_synthesis_params} ${_value}"					
+						_local_synthesis_params="${_local_synthesis_params} ${_value}"
+
+                    ;;_techmap_params)
+						_local_techmap_params="${_local_techmap_params} ${_value}"					
 						
 					;;_simulation_params)
 						_local_simulation_params="${_local_simulation_params} ${_value}"
@@ -572,14 +592,18 @@ function populate_arg_from_file() {
 	then
 		_regression_params="${_local_regression_params}"
 		_script_simulation_params="${_local_script_simulation_params}"
+		_script_techmap_params="${_local_script_techmap_params}"
 		_script_synthesis_params="${_local_script_synthesis_params}"
 		_synthesis_params="${_local_synthesis_params}"
+		_techmap_params="${_local_techmap_params}"
 		_simulation_params="${_local_simulation_params}"
 	else
 		_regression_params="${_local_regression_params} ${_regression_params}"
 		_script_simulation_params="${_local_script_simulation_params} ${_script_simulation_params}"
+		_script_techmap_params="${_local_script_techmap_params} ${_script_techmap_params}"
 		_script_synthesis_params="${_local_script_synthesis_params} ${_script_synthesis_params}"
 		_synthesis_params="${_local_synthesis_params} ${_synthesis_params}"
+		_techmap_params="${_local__techmap_params} ${_techmap_params}"
 		_simulation_params="${_local_simulation_params} ${_simulation_params}"
 	fi
 
@@ -598,6 +622,24 @@ function populate_arg_from_file() {
 			echo "file ${_local_synthesis_parse_file} not found, skipping"
 		else
 			_synthesis_parse_file="${_local_synthesis_parse_file}"
+		fi
+	fi
+
+    if [ "_${_local_techmap_parse_file}" != "_" ]
+	then
+		if [ ! -f "${_local_techmap_parse_file}" ]
+		then
+			_local_techmap_parse_file="${THIS_DIR}/${_local_techmap_parse_file}"
+		fi
+	fi
+
+	if [ "_${_local_techmap_parse_file}" != "_" ]
+	then
+		if [ ! -f "${_local_techmap_parse_file}" ]
+		then
+			echo "file ${_local_techmap_parse_file} not found, skipping"
+		else
+			_techmap_parse_file="${_local_techmap_parse_file}"
 		fi
 	fi
 
@@ -747,6 +789,7 @@ function sim() {
 	_generate_output="${_GENERATE_OUTPUT}"
 	_concat_circuit_list="off"
 	_synthesis="on"
+    _techmap="off"
 	_simulation="on"
 	_verbose_failures="off"
 	_disable_color=""
@@ -769,6 +812,12 @@ function sim() {
 			--generate_output)
 				echo "This test will have the output regenerated"
 				_generate_output="on"
+				;;
+
+            --enable_techmap)
+				echo "This test will only be technology mapped"
+				_techmap="on"
+				_synthesis="off"
 				;;
 
 			--disable_simulation)
@@ -820,6 +869,18 @@ function sim() {
 	synthesis_failure_log_file="${synthesis_failure}.log"
 	synthesis_result_failure_log_file="${synthesis_failure}_result.log"
 
+    # techmap
+	techmap_failure_name="techmap_failures"
+	techmap_parse_result_file_name="techmap_result.json"
+	techmap_params_file_name="techamp_params"
+	synthesis_wrapper_file_name="techmap_wrapper_params"
+	techmap_log_file_name="techmap.log"
+
+	techmap_failure="${NEW_RUN_DIR}/${bench_name}/${techmap_failure_name}"
+	techmap_golden_result_file="${benchmark_dir}/${techmap_parse_result_file_name}"
+	techmap_failure_log_file="${techmap_failure}.log"
+	techmap_result_failure_log_file="${techmap_failure}_result.log"
+
 	# simulation
 	simulation_failure_name="simulation_failures"
 	simulation_parse_result_file_name="simulation_result.json"
@@ -848,6 +909,7 @@ function sim() {
 		circuit_file=$(basename "${circuit}")
 		input_verilog_file=""
 		input_blif_file=""
+        generated_blif_file=""
 
 		case "${circuit_file}" in
 			*.blif)
@@ -917,7 +979,7 @@ function sim() {
 				then
 
 					# if synthesis was on, we need to specify a blif output name
-					input_blif_file="${DIR}/${circuit_name}.blif"
+					generated_blif_file="${DIR}/${circuit_name}_generated.blif"
 
 					wrapper_command="${WRAPPER_EXEC}
 										${_disable_color}
@@ -945,7 +1007,7 @@ function sim() {
 										${_synthesis_params}
 										${arch_cmd}
 										-V ${input_verilog_file}
-										-o ${input_blif_file}
+										-o ${generated_blif_file}
 										-sim_dir ${DIR}"
 
 					_echo_args "${wrapper_command}"	\
@@ -955,6 +1017,58 @@ function sim() {
 						> "${DIR}/${synthesis_params_file_name}"
 
 					chmod +x "${DIR}/${synthesis_params_file_name}"
+
+                    # specify the input blif file of the simulation phase
+                    input_blif_file="${generated_blif_file}"
+
+				fi
+                ###############################
+				# Techmap
+				if [ "${_techmap}" == "on" ]
+				then
+
+					# specifying the outpur blif file name with postfix _techmap
+					generated_blif_file="${DIR}/${circuit_name}_generated.blif"
+
+					wrapper_command="${WRAPPER_EXEC}
+										${_disable_color}
+										${_script_techmap_params}
+										--log_file ${DIR}/${techmap_log_file_name}
+										--test_name ${TEST_FULL_REF}
+										--failure_log ${techmap_failure_log_file}"
+
+					if [ "_${_RANDOM_DRY_RUN}" == "_on" ] && [ "_0" == "_$(( RANDOM % 2 ))" ] \
+					 || [ "_${_DRY_RUN}" == "_on" ]
+					then
+						wrapper_command="${wrapper_command}
+											--dry_run $(( RANDOM % 2 ))"
+					fi
+					if [ "_${_techmap_parse_file}" != "_" ]
+					then
+						wrapper_command="${wrapper_command}
+											--parse ${_techmap_parse_file} ${DIR}/${techmap_parse_result_file_name}"
+					fi
+
+					wrapper_command="${wrapper_command}
+										${DIR}/${techmap_params_file_name}"
+
+					techmap_command="${ODIN_EXEC}
+										${_techmap_params}
+										${arch_cmd}
+										-b ${input_blif_file}
+										-o ${generated_blif_file}
+										-sim_dir ${DIR}"
+
+					_echo_args "${wrapper_command}"	\
+						> "${DIR}/${techmap_wrapper_file_name}"
+
+					_echo_args "${techmap_command}; echo \"Odin exited with code: \$?\";" \
+						> "${DIR}/${techmap_params_file_name}"
+
+					chmod +x "${DIR}/${techmap_params_file_name}"
+
+                    # specify the input blif file of the simulation phase
+                    input_blif_file="${generated_blif_file}"
 
 				fi
 				###############################
@@ -1111,6 +1225,103 @@ function sim() {
 			fi
 		fi
 	fi
+
+
+    #techmap the circuits
+
+
+	find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${techmap_wrapper_file_name}"
+	if [ "${_techmap}" == "on" ]\
+	&& (( ${#TMP_BENCH_FIND_ARRAY[@]} > 0 ))
+	then
+		run_cmd_file_in_parallel \
+			"Techmap Test" \
+			"${_threads}" \
+			"${TMP_BENCH_FIND_ARRAY[@]}"
+
+		disable_failed_bm "${techmap_failure}" "${bench_name}"
+
+		sync
+
+		if [ "_${_techmap_parse_file}" != "_" ]
+		then
+			echo " -------- Parsing Techmap Result --------- "
+			find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${techmap_parse_result_file_name}"
+			"${PARSER_EXEC}" join "${_disable_color}" \
+				"${_techmap_parse_file}" \
+				"${TMP_BENCH_FIND_ARRAY[@]}" \
+				> "${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}"
+
+			if [ "_${techmap_golden_result_file}" != "_" ] \
+			&& [ -f "${techmap_golden_result_file}" ]
+			then
+				"${PARSER_EXEC}" compare "${run_subtest_only}" "${_disable_color}" \
+					"${_techmap_parse_file}" \
+					"${techmap_golden_result_file}" \
+					"${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}" \
+					"${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}.diff" \
+						2> "${techmap_result_failure_log_file}"
+			fi
+
+			if [ "_${_GENERATE_EXPECTATION}" == "_on" ]
+			then
+				if [ -f "${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}" ];
+				then
+					cat "${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}" \
+						> "${techmap_golden_result_file}"
+				fi
+			elif [ "_${_REGENERATE_EXPECTATION}" == "_on" ]
+			then
+				if [ -f "${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}.diff" ];
+				then
+					cat "${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}.diff" \
+						> "${techmap_golden_result_file}"
+				elif [ -f "${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}" ];
+				then
+					cat "${NEW_RUN_DIR}/${bench_name}/${techmap_parse_result_file_name}" \
+						> "${techmap_golden_result_file}"
+				fi
+			fi
+		fi
+
+		error_log="${tehmap_failure_log_file}"
+		if [ "_${techmap_golden_result_file}" != "_" ]
+		then
+			error_log="${techmap_result_failure_log_file}"
+		fi
+
+		if [ "_${error_log}" != "_" ] && [ -f "${error_log}" ]
+		then
+			cat "${error_log}" >> "${NEW_RUN_DIR}/${global_failure}"
+		fi
+
+		# display logs if verbosity is on
+		if [ "_${_verbose_failures}" == "_on" ]
+		then
+			if [ "_${techmap_failure_log_file}" != "_" ] \
+			&& [ -f "${techmap_failure_log_file}" ]
+			then
+				if [ "_${techmap_result_failure_log_file}" != "_" ] \
+				&& [ -f "${techmap_result_failure_log_file}" ]
+				then
+					for test_failed in $(sort "${techmap_failure_log_file}" "${techmap_result_failure_log_file}" | uniq -d)
+					do
+						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
+						cat "${NEW_RUN_DIR}/${test_failed}/techmap.log"
+					done
+					printf "\n\n"
+				else
+					for test_failed in $(sort "${techmap_failure_log_file}" | uniq)
+					do
+						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
+						cat "${NEW_RUN_DIR}/${test_failed}/techmap.log"
+					done
+					printf "\n\n"
+				fi
+			fi
+		fi
+	fi
+
 
 	find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${simulation_wrapper_generate_io_file_name}"
 	simulation_gio_bench_list=( "${TMP_BENCH_FIND_ARRAY[@]}" )
