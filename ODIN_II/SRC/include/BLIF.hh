@@ -259,17 +259,6 @@ class BLIF {
                  */
                 static void dum_parse(char* buffer);
                 /**
-                 *---------------------------------------------------------------------------------------------
-                 * (function: model_parse)
-                 * 
-                 * @brief in case of having other tool's blif file like yosys odin needs to read all .model
-                 * however the odin generated blif file includes only one .model representing the top module
-                 * 
-                 * @param buffer a global buffer for tokenizing
-                 * -------------------------------------------------------------------------------------------
-                 */
-                void model_parse(char* buffer);
-                /**
                  * ---------------------------------------------------------------------------------------------
                  * function:assign_node_type_from_node_name(char *)
                  * This function tries to assign the node->type by looking at the name

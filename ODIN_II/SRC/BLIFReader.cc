@@ -155,9 +155,7 @@ void* BLIF::Reader::__read() {
             dum_parse(buffer);
         } else {
             skip_reading_bit_map = false;
-            if (strcmp(token, ".model") == 0) {
-                model_parse(buffer); // store the scope model name for in/out name processing
-            } else if (strcmp(token, ".inputs") == 0) {
+            if (strcmp(token, ".inputs") == 0) {
                 add_top_input_nodes(); // create the top input nodes
             } else if (strcmp(token, ".outputs") == 0) {
                 rb_create_top_output_nodes(); // create the top output nodes
@@ -210,15 +208,15 @@ void BLIF::Reader::find_top_module() {
         }
     }
 
-    if (!found && !top_module) {
+    if (!found) {
         warning_message(PARSE_BLIF, unknown_location, 
                         "%s", "The top module name has not been specifed in the BLIF file, automatically considered as 'top'.\n");
 
-        blif_netlist->identifier = vtr::strdup("top");                       
+        blif_netlist->identifier = vtr::strdup("top");
     } else {
-        blif_netlist->identifier = top_module;
+        blif_netlist->identifier = vtr::strdup(top_module);
     }
- 
+
     my_location.line = last_line;
     fsetpos(file, &pos);
 }
@@ -398,7 +396,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         if (!name) error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", model->outputs->names[i]);
 
         npin_t* new_pin = allocate_npin();
-        new_pin->name = vtr::strdup(name);
+        new_pin->name = NULL;//vtr::strdup(name);
         new_pin->type = OUTPUT;
         new_pin->mapping = get_hard_block_port_name(mapping);
 
@@ -923,21 +921,6 @@ void BLIF::Reader::dum_parse(char* buffer) {
     while (vtr::strtok(NULL, TOKENS, file, buffer))
         ;
 }
-
-/**
- *---------------------------------------------------------------------------------------------
- * (function: model_parse)
- * 
- * @brief in case of having other tool's blif file like yosys odin needs to read all .model
- * however the odin generated blif file includes only one .model representing the top module
- * 
- * @param buffer a global buffer for tokenizing
- * -------------------------------------------------------------------------------------------
- */
- void BLIF::Reader::model_parse(char* buffer) {    
-    blif_netlist->identifier = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
-}
-
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -1793,8 +1776,8 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             else 
                 first_part = make_full_ref_name(NULL, NULL, NULL, name, idx);
                 
-            return_string = (char*)vtr::malloc((strlen(first_part) + strlen(second_part)) * sizeof(char));
-            odin_sprintf(return_string, "%s%s", first_part, second_part);
+            std::strcat(first_part, second_part);
+            return_string = vtr::strdup(first_part);
         } else {
             if (!strcmp(name_str, "$true")) {
                 return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);

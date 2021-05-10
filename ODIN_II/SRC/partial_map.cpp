@@ -396,8 +396,16 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
         num_expressions -= num_expressions / 2;
     }
 
+    for (i = 0; i < selector_width; i++) {
+        vtr::free(muxes[i]);
+    }
     vtr::free(muxes);
+
+    for (i = 0; i < selector_width; i++) {
+        free_signal_list(output_signals[i]);
+    }
     vtr::free(output_signals);
+
     free_nnode(node);
 }
 

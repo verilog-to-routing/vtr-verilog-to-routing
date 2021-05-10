@@ -196,8 +196,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             transform_to_single_bit_dff_nodes(node, traverse_number, netlist);
             break;
         }
-        case MUX_2:
-        case MULTI_PORT_MUX: 
         case MULTI_BIT_MUX_2: {
             /* need to reorder the input pins, so that the selector signal comes at the first place */
             make_selector_as_first_port(node);
@@ -232,6 +230,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             /* some are already resolved for this phase */
             break;
         }
+        case MUX_2:
+        case MULTI_PORT_MUX: 
         case BITWISE_NOT:
         case BITWISE_AND:
         case BITWISE_OR:
@@ -287,17 +287,52 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
             case ADD:
             case MINUS: {
                 if (node->num_input_port_sizes == 2) {
-                    add_input_port_information(node, 1);
-                    allocate_more_input_pins(node, 1);
 
-                    char* cin_name = make_full_ref_name(NULL, NULL, node->name, "cin", 0);
+                    int i;
+                    nnode_t* new_node = allocate_nnode(node->loc);
+
+                    new_node->type = node->type;
+                    new_node->name = vtr::strdup(node->name);
+                    new_node->traverse_visited = node->traverse_visited;
+
+                    int port1_size = node->input_port_sizes[0];
+                    int port2_size = node->input_port_sizes[1];
+
+                    add_input_port_information(new_node, port1_size);
+                    allocate_more_input_pins(new_node, port1_size);
+
+                    for (i = 0; i < port1_size; i++) {
+                        remap_pin_to_new_node(node->input_pins[i], new_node, i);
+                    }
+                    
+                    add_input_port_information(new_node, port2_size);
+                    allocate_more_input_pins(new_node, port2_size);
+
+                    for (i = 0; i < port2_size; i++) {
+                        remap_pin_to_new_node(node->input_pins[i + port1_size], new_node, i + port1_size);
+                    }
+                    
+
+                    add_input_port_information(new_node, 1);
+                    allocate_more_input_pins(new_node, 1);
+
                     npin_t* cin_pin = get_pad_pin(netlist);
-                    cin_pin->name = vtr::strdup(cin_name);
+                    cin_pin->name = make_full_ref_name(NULL, NULL, new_node->name, "cin", 0);
                     cin_pin->type = INPUT;
                     cin_pin->mapping = vtr::strdup("cin");
 
-                    add_input_pin_to_node(node, cin_pin, node->num_input_pins - 1);
+                    add_input_pin_to_node(new_node, cin_pin, new_node->num_input_pins - 1);
+
+                    // moving the output pins to the new node
+                    add_output_port_information(new_node, node->num_output_pins);
+                    allocate_more_output_pins(new_node, node->num_output_pins);
+
+                    for (i = 0; i < port2_size; i++) {
+                        remap_pin_to_new_node(node->output_pins[i], new_node, i);
+                    }
                 }
+
+                free_nnode(node);
                 break;
             }
             case MULTIPLY:
@@ -447,7 +482,7 @@ static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_
         mux_node->type = node->type;
         mux_node->traverse_visited = traverse_mark_number;
 
-        /* Name the flipflop based on the name of its output pin */
+        /* Name the mux based on the name of its output pin */
         // const char* mux_base_name = node_name_based_on_op(mux_node);
         // mux_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(mux_base_name) + 2));
         // odin_sprintf(mux_node->name, "%s_%s", node->output_pins[i]->name, mux_base_name);
@@ -476,7 +511,7 @@ static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_
         }
 
         /**
-         * remap the input_pin[i+1]/output_pin[i] from the dff node to the 
+         * remap the input_pin[i+1]/output_pin[i] from the mux node to the 
          * last splitted ff node since we do not need it in dff node anymore 
          **/
         int acc_port_sizes = selector_width;
@@ -590,6 +625,9 @@ static void make_selector_as_first_port(nnode_t* node) {
         }
         acc_port_sizes += input_port_sizes[i];
     }
+
+    vtr::free(node->input_pins);
+    vtr::free(node->input_port_sizes);
     
     node->input_pins = input_pins;
     node->input_port_sizes = input_port_sizes;
