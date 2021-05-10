@@ -29,13 +29,11 @@
 #include "odin_ii.h"
 
 GenericWriter::GenericWriter(): GenericIO() {
+    this->output_file = NULL;
     this->blif_writer = NULL;
 }
 
-GenericWriter::~GenericWriter() {    
-    if (this->blif_writer)
-        static_cast<BLIF::Writer*>(this->blif_writer)->~Writer();
-        
+GenericWriter::~GenericWriter() {            
     if (this->output_file)
         fclose(this->output_file);
 }
@@ -71,6 +69,9 @@ inline void GenericWriter::__write(const netlist_t* netlist) {
 inline void GenericWriter::_write_blif(const netlist_t* netlist) {
     oassert(this->blif_writer);
     this->blif_writer->__write(netlist);
+    
+    if (this->blif_writer)
+        delete this->blif_writer;
 }
 
 inline void GenericWriter::__create_file(const file_type_e file_type) {

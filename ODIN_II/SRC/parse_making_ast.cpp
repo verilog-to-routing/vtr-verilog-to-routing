@@ -164,7 +164,6 @@ void cleanup_parser() {
     tasks_outputs_sc = sc_free_string_cache(tasks_outputs_sc);
     instantiated_modules = sc_free_string_cache(instantiated_modules);
     module_instances_sc = sc_free_string_cache(module_instances_sc);
-    delete output_nets_hash;
 }
 
 /*---------------------------------------------------------------------------------------------

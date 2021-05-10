@@ -52,11 +52,6 @@
 #include "BLIF.hh"
 
 
-
-netlist_t* blif_netlist;
-Hashtable* output_nets_hash;
-
-
 /**
  * -----------------------------------------------------------------------------------------------------------------------------
  * ---------------------------------------------------------- Writer -----------------------------------------------------------
@@ -335,9 +330,18 @@ void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
 void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist) {
     int i;
 
+    if (netlist->gnd_node->name)
+        vtr::free(netlist->gnd_node->name);
     netlist->gnd_node->name = vtr::strdup("gnd");
+    
+    if (netlist->vcc_node->name)
+        vtr::free(netlist->vcc_node->name);
     netlist->vcc_node->name = vtr::strdup("vcc");
+    
+    if (netlist->pad_node->name)
+        vtr::free(netlist->pad_node->name);
     netlist->pad_node->name = vtr::strdup("unconn");
+    
     /* now traverse the ground, vcc, and unconn pins */
     depth_traverse_output_blif(netlist->gnd_node, marker_value, fp);
     depth_traverse_output_blif(netlist->vcc_node, marker_value, fp);

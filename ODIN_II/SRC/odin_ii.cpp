@@ -83,6 +83,8 @@ HardSoftLogicMixer* mixer;
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
+static void  cleanup_odin();
+
 
 static ODIN_ERROR_CODE synthesize() {
     double elaboration_time = wall_time();
@@ -338,6 +340,8 @@ int terminate_odin_ii(netlist_t* odin_netlist) {
     free_arch(&Arch);
     free_type_descriptors(logical_block_types);
     free_type_descriptors(physical_tile_types);
+
+    cleanup_odin();
 
     return 0;
 }
@@ -709,4 +713,20 @@ static void set_physical_lut_size() {
             }
         }
     }
+}
+
+/**
+ * (function: cleanup odin)
+ * to destruct global variables
+*/
+static void  cleanup_odin() {
+    if (one_string)
+        vtr::free(one_string);
+    if (zero_string)
+        vtr::free(zero_string);
+    if (pad_string)
+        vtr::free(pad_string);
+
+    delete generic_writer;
+    delete generic_reader;
 }

@@ -257,7 +257,6 @@ enum operation_list {
     PAD_NODE,
     HARD_IP,
     GENERIC,  /*added for the unknown node type */
-    INSTANCE, /* added for module, function and task instances */
     CLOG2,    // $clog2
     UNSIGNED, // $unsigned
     SIGNED,   // $signed

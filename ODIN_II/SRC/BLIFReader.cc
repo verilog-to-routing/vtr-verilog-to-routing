@@ -52,6 +52,8 @@ bool skip_reading_bit_map;
 bool insert_global_clock;
 
 FILE* file;
+netlist_t* blif_netlist;
+Hashtable* output_nets_hash;
 
 
 /**
@@ -202,7 +204,7 @@ void BLIF::Reader::find_top_module() {
 
         char* token = vtr::strtok(buffer, TOKENS, file, buffer);
         if (token && !strcmp(token, ".model")) {
-            top_module = vtr::strtok(buffer, TOKENS, file, buffer);
+            top_module = vtr::strtok(NULL, TOKENS, file, buffer);
             found = true;
         }
     }
@@ -334,10 +336,12 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         new_node->type = ADD;
     else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub") || !strcmp(subcircuit_name, "$sub"))
         new_node->type = MINUS;
-    else if (!strcmp(subcircuit_name, "$dff"))
+    else if (!strcmp(subcircuit_name, "$dff")) // [TODO] check the sensitivity in yosys blif(--param)
         new_node->type = FF_NODE;
     else if (!strcmp(subcircuit_name, "$mux") || !strcmp(subcircuit_name_prefix, "$mux"))
         new_node->type = MULTI_BIT_MUX_2;
+    else if (!strcmp(subcircuit_name, "$logic_not") || !strcmp(subcircuit_name_prefix, "$logic_not"))
+        new_node->type = LOGICAL_NOT;
     else {
         new_node->type = MEMORY;
     }
@@ -407,11 +411,6 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         // Index the net by name.
         output_nets_hash->add(name, new_net);
     }
-
-    // Create a fake ast node.
-    new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
-    new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-    new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
 
     /*add this node to blif_netlist as an internal node */
     blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
@@ -1843,8 +1842,10 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (ADD): //fallthrough
         case (MINUS): //fallthrough
         case (FF_NODE): //fallthrough
+        case (LOGICAL_NOT): //fallthrough
         case (MULTI_BIT_MUX_2): {
-            model = create_multiple_inputs_one_output_port_model(name, ports);
+            // create a model with single output port
+            model = create_model(name, ports, 1);
             break;
         }
         default: {
@@ -1857,17 +1858,16 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
 
 /**
  *---------------------------------------------------------------------------------------------
- * (function: create_multiple_inputs_one_output_port_model)
+ * (function: create_model)
  * 
   @brief create a model that has multiple input ports and one output port.
  * port sizes will be specified based on the number of pins in the BLIF file
- * 
  * 
  * @param name representing the name of a hard block
  * @param ports list of a hard block ports
  * -------------------------------------------------------------------------------------------
  */
- hard_block_model* BLIF::Reader::create_multiple_inputs_one_output_port_model(const char* name, hard_block_ports* ports) {
+ hard_block_model* BLIF::Reader::create_model(const char* name, hard_block_ports* ports, int output_idx) {
     int i, j;
     char* pin_name;
     hard_block_model* model = NULL;
@@ -1890,7 +1890,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                 sprintf(pin_name, "%s[%d]", ports->names[i], j);
 
             /* model input ports */
-            if (i < ports->count - 1 ) {
+            if (i < ports->count - output_idx ) {
                 inputs->names = (char**)vtr::realloc(inputs->names, (inputs->count + 1) * sizeof(char*));
 
                 inputs->names[inputs->count] = vtr::strdup(pin_name);

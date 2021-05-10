@@ -51,11 +51,11 @@ void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* n
 
 static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
-static void transform_to_one_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static void resolve_instance_node(nnode_t* node);
-static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
-static void make_selector_as_the_first_port(nnode_t* node);
+static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+// static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
+static void make_selector_as_first_port(nnode_t* node);
+static void resolve_logical_not(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 /**
  *-------------------------------------------------------------------------
@@ -193,29 +193,27 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              * split the dff node read from yosys blif to
              * FF nodes with input/output width one 
              */
-            transform_to_one_bit_dff_nodes(node, traverse_number, netlist);
-            break;
-        }
-        case INSTANCE: {
-            /*
-             * INSTANCE nodes represent the module/funtion or task instantiation.
-             * As a result, they are only showing the connection of an instantiated item.
-             * Here we connect the drivers of instantiated instance to the input signals.
-            */
-            resolve_instance_node(node);
+            transform_to_single_bit_dff_nodes(node, traverse_number, netlist);
             break;
         }
         case MUX_2:
         case MULTI_PORT_MUX: 
         case MULTI_BIT_MUX_2: {
             /* need to reorder the input pins, so that the selector signal comes at the first place */
-            make_selector_as_the_first_port(node);
+            make_selector_as_first_port(node);
             /* 
              * split the mux node into mux node with 
              * input/output width one 
              */
-            transform_to_one_bit_mux_nodes(node, traverse_number, netlist);
+            transform_to_single_bit_mux_nodes(node, traverse_number, netlist);
             
+            break;
+        }
+        case LOGICAL_NOT: {
+            /*
+             * resolving logical_not node
+            */
+            resolve_logical_not(node, traverse_number, netlist);
             break;
         }
         case GND_NODE:
@@ -230,7 +228,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case LOGICAL_NAND:
         case LOGICAL_XOR:
         case LOGICAL_XNOR:
-        case LOGICAL_NOT:
         case LOGICAL_EQUAL: {
             /* some are already resolved for this phase */
             break;
@@ -280,8 +277,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
  * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------------------------*/
 static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node);
-    oassert(netlist);
+    oassert(node->traverse_visited == traverse_mark_number);
 
     if (node->traverse_visited == traverse_mark_number)
         return;
@@ -351,7 +347,7 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
  */
 
 /**
- * (function: transform_to_one_bit_dff_nodes)
+ * (function: transform_to_single_bit_dff_nodes)
  * 
  * @brief split the dff node read from yosys blif to
  * FF nodes with input/output width one
@@ -360,7 +356,8 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-static void transform_to_one_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_output_pins + 1 == node->num_input_pins);
 
     int i;
@@ -417,7 +414,7 @@ static void transform_to_one_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mar
 }
 
 /**
- * (function: transform_to_one_bit_mux_nodes)
+ * (function: transform_to_single_bit_mux_nodes)
  * 
  * @brief split the mux node read from yosys blif to
  * the same type nodes with input/output width one
@@ -426,7 +423,9 @@ static void transform_to_one_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mar
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    
     int i, j;
     /* to check all mux inputs have the same width(except [0] which is selector) */
     for (i = 2; i < node->num_input_port_sizes; i++) {
@@ -503,7 +502,7 @@ static void transform_to_one_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mar
  * 
  * @param node pointing to the netlist node 
  */
-static void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
+/* static void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
     int i, j, k;
     int acc_port_sizes = 0;
     for (i = 0; i < node->num_input_port_sizes; i++) {
@@ -549,28 +548,17 @@ static void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
         }
         acc_port_sizes += node->input_port_sizes[i];
     }
-}
-
-static void resolve_instance_node(nnode_t* node) {
-    /* to the input pin drivers' name based on the input pin mapping */
-    remap_input_pins_drivers_based_on_mapping(node);
-    /*
-     * changes its type to buffer, 
-     * since the signals are already connected, 
-     * we do not need to keep instance node for final output 
-     */
-    node->type = BUF_NODE;
-}
+} */
 
 /**
- * (function: make_selector_as_the_first_port)
+ * (function: make_selector_as_first_port)
  * 
  * @brief reorder the input signals of the mux in a way 
  * that the selector would come as the first signal
  * 
  * @param node pointing to a mux node 
  */
-void make_selector_as_the_first_port(nnode_t* node) {
+static void make_selector_as_first_port(nnode_t* node) {
     long num_input_pins = node->num_input_pins;
     npin_t** input_pins = (npin_t**)vtr::malloc(num_input_pins*sizeof(npin_t*)); // the input pins
     
@@ -605,4 +593,38 @@ void make_selector_as_the_first_port(nnode_t* node) {
     
     node->input_pins = input_pins;
     node->input_port_sizes = input_port_sizes;
+}
+
+/**
+ * (function: resolve_logical_not)
+ * 
+ * @brief resolving the logical_not node by 
+ * connecting the ouput pins[1..n] to GND
+ * 
+ * @param node pointing to a mux node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_logical_not(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 1);
+    oassert(node->num_output_port_sizes == 1);
+    
+    int i, j;
+    for (i = 1; i < node->num_output_pins; i++) {
+        npin_t* output_pin = node->output_pins[i];
+        nnet_t* output_net = output_pin->net;
+        
+        // mke GND the driver of all other output pins
+        for (j = 0; j < output_net->num_fanout_pins; j++) {
+            npin_t* fanout_pin = output_net->fanout_pins[j];
+            add_fanout_pin_to_net(netlist->zero_net, fanout_pin);
+        }
+        
+        free_npin(output_pin);
+        free_nnet(output_net);
+    }
+
+    node->num_output_pins = 1;
+    node->output_port_sizes[0] = 1;
 }

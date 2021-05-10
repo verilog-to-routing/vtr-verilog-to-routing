@@ -33,13 +33,7 @@ GenericReader::GenericReader(): GenericIO() {
     this->blif_reader = NULL;
 }
 
-GenericReader::~GenericReader() {
-    if (this->verilog_reader)
-        delete this->verilog_reader;
-    
-    if (this->blif_reader)
-        delete this->blif_reader;
-}
+GenericReader::~GenericReader() = default;
 
 inline void* GenericReader::__read() {
     void* netlist = NULL;
@@ -75,10 +69,20 @@ inline void* GenericReader::__read() {
 
 inline void* GenericReader::_read_verilog() {
     this->verilog_reader = new VerilogReader();
-    return static_cast<void*>(this->verilog_reader->__read());
+    void* to_return = static_cast<void*>(this->verilog_reader->__read());
+
+    if (this->verilog_reader)
+        delete this->verilog_reader;
+    
+    return to_return;
 }
 
 inline void* GenericReader::_read_blif() {
     this->blif_reader = new BLIF::Reader();
-    return static_cast<void*>(this->blif_reader->__read());
+    void* to_return = static_cast<void*>(this->blif_reader->__read());
+
+    if (this->blif_reader)
+        delete this->blif_reader;
+
+    return to_return;
 }

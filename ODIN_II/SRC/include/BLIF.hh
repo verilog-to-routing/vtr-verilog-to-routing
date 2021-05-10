@@ -436,7 +436,7 @@ class BLIF {
                 hard_block_model* create_hard_block_model(const char* name, operation_list type, hard_block_ports* ports);
                 /**
                  *---------------------------------------------------------------------------------------------
-                 * (function: create_multiple_inputs_one_output_port_model)
+                 * (function: create_model)
                  * 
                  @brief create a model that has multiple input ports and one output port.
                  * port sizes will be specified based on the number of pins in the BLIF file
@@ -446,7 +446,7 @@ class BLIF {
                  * @param ports list of a hard block ports
                  * -------------------------------------------------------------------------------------------
                  */
-                hard_block_model* create_multiple_inputs_one_output_port_model(const char* name, hard_block_ports* ports);
+                hard_block_model* create_model(const char* name, hard_block_ports* ports, int output_idx);
         };
 
         class Writer : public GenericWriter {
