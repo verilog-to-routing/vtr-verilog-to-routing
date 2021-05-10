@@ -999,11 +999,8 @@ void free_netlist(netlist_t* to_free) {
     sc_free_string_cache(to_free->out_pins_sc);
     sc_free_string_cache(to_free->nodes_sc);
 
-    vtr::free(to_free->identifier);
-    vtr::free(to_free->top_input_nodes);
-    vtr::free(to_free->top_output_nodes);
-    vtr::free(to_free->ff_nodes);
-    vtr::free(to_free->internal_nodes);
+    if (to_free->identifier)
+        vtr::free(to_free->identifier);
 }
 
 /*---------------------------------------------------------------------------------------------

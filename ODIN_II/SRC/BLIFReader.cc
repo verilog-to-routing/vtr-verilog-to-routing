@@ -84,7 +84,9 @@ BLIF::Reader::Reader() {
     output_nets_hash = new Hashtable();
 }
 
-BLIF::Reader::~Reader() = default;
+BLIF::Reader::~Reader() {
+    delete output_nets_hash;
+}
 
 
 void* BLIF::Reader::__read() {
@@ -124,10 +126,9 @@ void* BLIF::Reader::__read() {
     fclose(file);
 
     printf("Elaborating the netlist created from the input BLIF file to make it compatible with ODIN_II partial mapping\n");
-    verilog_netlist = static_cast<netlist_t*>(blif_netlist);
-    blif_elaborate_top(verilog_netlist);
+    blif_elaborate_top(blif_netlist);
 
-    return static_cast<void*>(verilog_netlist);
+    return static_cast<void*>(blif_netlist);
 }
 
 
@@ -530,7 +531,7 @@ void BLIF::Reader::create_internal_node_and_driver() {
         /*add name information and a net(driver) for the output */
 
         npin_t* new_pin = allocate_npin();
-        new_pin->name = new_node->name;
+        new_pin->name = vtr::strdup(new_node->name);
         new_pin->type = OUTPUT;
 
         add_output_pin_to_node(new_node, new_pin, 0);
@@ -538,7 +539,7 @@ void BLIF::Reader::create_internal_node_and_driver() {
         nnet_t* out_net = (nnet_t*)output_nets_hash->get(names[input_count - 1]);
         if (out_net == nullptr) {
             out_net = allocate_nnet();
-            out_net->name = new_node->name;
+            out_net->name = vtr::strdup(new_node->name);
             output_nets_hash->add(new_node->name, out_net);
         }
         add_driver_pin_to_net(out_net, new_pin);
@@ -570,7 +571,7 @@ void BLIF::Reader::build_top_input_node(const char* name_str) {
     new_node->type = INPUT_NODE;
 
     /* add the name of the input variable */
-    new_node->name = temp_string;
+    new_node->name = vtr::strdup(temp_string);
 
     /* allocate the pins needed */
     allocate_more_output_pins(new_node, 1);
@@ -599,6 +600,7 @@ void BLIF::Reader::build_top_input_node(const char* name_str) {
     //output_nets_sc->data[sc_spot] = new_net;
 
     output_nets_hash->add(temp_string, new_net);
+    vtr::free(temp_string);
 } 
 
 /**
@@ -650,7 +652,7 @@ void BLIF::Reader::rb_create_top_output_nodes() {
         new_node->type = OUTPUT_NODE;
 
         /* add the name of the output variable */
-        new_node->name = temp_string;
+        new_node->name = vtr::strdup(temp_string);
 
         /* allocate the input pin needed */
         allocate_more_input_pins(new_node, 1);
@@ -658,7 +660,7 @@ void BLIF::Reader::rb_create_top_output_nodes() {
 
         /* Create the pin connection for the net */
         npin_t* new_pin = allocate_npin();
-        new_pin->name = temp_string;
+        new_pin->name = vtr::strdup(temp_string);
         /* hookup the pin, net, and node */
         add_input_pin_to_node(new_node, new_pin, 0);
 
@@ -666,6 +668,7 @@ void BLIF::Reader::rb_create_top_output_nodes() {
          * add_node_to_netlist() function can also be used */
         blif_netlist->top_output_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_output_nodes, sizeof(nnode_t*) * (blif_netlist->num_top_output_nodes + 1));
         blif_netlist->top_output_nodes[blif_netlist->num_top_output_nodes++] = new_node;
+        vtr::free(temp_string);
     }
 }
 

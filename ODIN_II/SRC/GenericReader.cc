@@ -69,7 +69,7 @@ inline void* GenericReader::__read() {
 
 inline void* GenericReader::_read_verilog() {
     this->verilog_reader = new VerilogReader();
-    void* to_return = static_cast<void*>(this->verilog_reader->__read());
+    void* to_return = this->verilog_reader->__read();
 
     if (this->verilog_reader)
         delete this->verilog_reader;
@@ -79,7 +79,7 @@ inline void* GenericReader::_read_verilog() {
 
 inline void* GenericReader::_read_blif() {
     this->blif_reader = new BLIF::Reader();
-    void* to_return = static_cast<void*>(this->blif_reader->__read());
+    void* to_return = this->blif_reader->__read();
 
     if (this->blif_reader)
         delete this->blif_reader;
