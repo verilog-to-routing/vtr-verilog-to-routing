@@ -30,8 +30,8 @@ If you want to read a text file describing the entire routing resource graph, ca
 
 Placer and Router Debugger
 ==========================
-
-.. image:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/debuggerWindow.png
+ 
+.. image:: https://www.verilogtorouting.org/img/debuggerWindow.png
     :align: center
 
 Overview
@@ -62,8 +62,8 @@ Upon reaching a breakpoint, the program will stop, notify the user which breakpo
 Available Variables
 ~~~~~~~~~~~~~~~~~~~
 
-.. image:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/advancedWindow.png
-    :align: center
+.. image:: https://verilogtorouting.org/img/advancedWindow.png
+    :align: center 
 
 You can also find the variables’ list in the Advanced Settings Window, on the left.
 
