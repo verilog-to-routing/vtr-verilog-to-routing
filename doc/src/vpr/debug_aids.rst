@@ -62,8 +62,8 @@ Upon reaching a breakpoint, the program will stop, notify the user which breakpo
 Available Variables
 ~~~~~~~~~~~~~~~~~~~
 
-.. image:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/advancedWindow.png
-    :align: center
+.. image:: https://verilogtorouting.org/img/advancedWindow.png
+    :align: center 
 
 You can also find the variables’ list in the Advanced Settings Window, on the left.
 
