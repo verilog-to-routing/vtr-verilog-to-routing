@@ -1,5 +1,7 @@
-The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks
-are distributed seperately from VTR due to their large size.
+The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks are distributed seperately from VTR due to their large size.
+
+The Titan repo is located under /home/kmurray/trees/titan on the U of T EECG network. Memebers of Vaughn Betz's research lab have read/write privileges. 
+
 
 To integrate them into VTR run:
 
