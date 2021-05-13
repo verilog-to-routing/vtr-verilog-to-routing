@@ -959,7 +959,7 @@ void init_draw_coords(float width_val) {
     float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width();
     float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
 
-    initial_world = ezgl::rectangle({800, 800}, {800, 800});
+    initial_world = ezgl::rectangle({1000, 1000}, {1000, 1000});
    // initial_world = ezgl::rectangle({-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height}, {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN) * draw_height});
 #else
     (void)width_val;
