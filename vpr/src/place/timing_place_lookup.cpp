@@ -351,13 +351,13 @@ static float route_connection_delay(
         VTR_ASSERT(driver_ptc != OPEN);
 
         int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
-
         VTR_ASSERT(source_rr_node != OPEN);
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
-
+        
             int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+            //printf("sink:%d", sink_rr_node);
 
             VTR_ASSERT(sink_rr_node != OPEN);
 
