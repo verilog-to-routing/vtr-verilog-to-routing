@@ -5,14 +5,26 @@ if { $argc != 2 } {
 	yosys -import
 	
 	# Read Yosys baseline library first.
-    #read_verilog -lib -specify +/xilinx/cells_sim.v
-    #read_verilog -lib +/xilinx/cells_xtra.v
+    read_verilog -lib -specify +/xilinx/cells_sim.v;
+    read_verilog -lib +/xilinx/cells_xtra.v
 
 	read_verilog ~/Desktop/yosys+odin/[lindex $argv 0]/[lindex $argv 1].v; 
+	hierarchy -check -top top_module
 
+	autoname;
+	#expose -dff;
 	procs; 
-
-	#opt;
+	
+	opt;
+    
+    fsm;
+    
+    opt;
+    
+	check;
+	
+	flatten;
+	
 #-param
 	write_blif -top top_module -impltf ~/Desktop/yosys+odin/[lindex $argv 0]/yosys_[lindex $argv 1].blif;
 }
