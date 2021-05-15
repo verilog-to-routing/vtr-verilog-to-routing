@@ -6,10 +6,8 @@
 /* Stores the information of the move for a block that is       *
  * moved during placement                                       *
  * block_num: the index of the moved block                      *
- * xold: the x_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 *
- * yold: the y_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 */
+ * old_loc: the location the block is moved from                *
+ * new_loc: the location the block is moved to                  */
 struct t_pl_moved_block {
     ClusterBlockId block_num;
     t_pl_loc old_loc;
@@ -26,7 +24,7 @@ struct t_pl_moved_block {
  *                   swapping two blocks.                       *
  * moved blocks: a list of moved blocks data structure with     *
  *               information on the move.                       *
- *               [0...num_moved_blocks-1]                       *
+ *               [0...max_blocks-1]                       *
  * affected_pins: pins affected by this move (used to           *
  *                incrementally invalidate parts of the timing  *
  *                graph.                                        */
