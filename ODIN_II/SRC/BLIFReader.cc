@@ -1836,6 +1836,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (ADD): //fallthrough
         case (MINUS): //fallthrough
         case (FF_NODE): //fallthrough
+        case (LOGICAL_OR): //fallthrough
         case (LOGICAL_NOT): //fallthrough
         case (MULTI_BIT_MUX_2): {
             // create a model with single output port

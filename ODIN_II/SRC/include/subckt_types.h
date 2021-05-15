@@ -234,7 +234,7 @@ typemap yosys_subckt_str({
     {"$pos"             , operation_list_END},  // (A, Y)
     {"$pow"             , operation_list_END},  // (A, B, Y)
     {"$reduce_and"      , operation_list_END},  // (A, Y)
-    {"$reduce_bool"     , operation_list_END},  // (A, Y)
+    {"$reduce_bool"     , LOGICAL_OR        },  // (A, Y)
     {"$reduce_or"       , operation_list_END},  // (A, Y)
     {"$reduce_xnor"     , operation_list_END},  // (A, Y)
     {"$reduce_xor"      , operation_list_END},  // (A, Y)

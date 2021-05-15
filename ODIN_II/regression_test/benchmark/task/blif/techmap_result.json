@@ -119,18 +119,28 @@
         "test_name": "blif/reduce_bool/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "reduce_bool.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_bool' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 9,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 7,
+        "Average Path": 5,
+        "Estimated LUTs": 9,
+        "Total Node": 9
     },
     "blif/reduce_bool/no_arch": {
         "test_name": "blif/reduce_bool/no_arch",
         "input_blif": "reduce_bool.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_bool' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 9,
+        "Longest Path": 7,
+        "Average Path": 5,
+        "Estimated LUTs": 9,
+        "Total Node": 9
     },
     "blif/reg/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "blif/reg/k6_frac_N10_frac_chain_mem32K_40nm",
