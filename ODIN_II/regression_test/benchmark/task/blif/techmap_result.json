@@ -32,6 +32,140 @@
         "Estimated LUTs": 11,
         "Total Node": 11
     },
+    "blif/hierarchy/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "blif/hierarchy/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "hierarchy.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 14.4,
+        "techmap_time(ms)": 2.4,
+        "Pi": 3,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 4,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 3,
+        "Total Node": 7
+    },
+    "blif/hierarchy/no_arch": {
+        "test_name": "blif/hierarchy/no_arch",
+        "input_blif": "hierarchy.blif",
+        "max_rss(MiB)": 10.9,
+        "exec_time(ms)": 2.7,
+        "techmap_time(ms)": 2.3,
+        "Pi": 3,
+        "Po": 3,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 8
+    },
+    "blif/mult/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "blif/mult/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "mult.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$mul' with matching ports was not found."
+        ]
+    },
+    "blif/mult/no_arch": {
+        "test_name": "blif/mult/no_arch",
+        "input_blif": "mult.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$mul' with matching ports was not found."
+        ]
+    },
+    "blif/mux/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "blif/mux/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "mux.blif",
+        "max_rss(MiB)": 11.9,
+        "exec_time(ms)": 13.7,
+        "techmap_time(ms)": 2.1,
+        "Pi": 1,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
+    },
+    "blif/mux/no_arch": {
+        "test_name": "blif/mux/no_arch",
+        "input_blif": "mux.blif",
+        "max_rss(MiB)": 11,
+        "exec_time(ms)": 2.6,
+        "techmap_time(ms)": 2.2,
+        "Pi": 1,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
+    },
+    "blif/reduce_bool/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "blif/reduce_bool/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "reduce_bool.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_bool' with matching ports was not found."
+        ]
+    },
+    "blif/reduce_bool/no_arch": {
+        "test_name": "blif/reduce_bool/no_arch",
+        "input_blif": "reduce_bool.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_bool' with matching ports was not found."
+        ]
+    },
+    "blif/reg/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "blif/reg/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "reg.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$not' with matching ports was not found."
+        ]
+    },
+    "blif/reg/no_arch": {
+        "test_name": "blif/reg/no_arch",
+        "input_blif": "reg.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$not' with matching ports was not found."
+        ]
+    },
+    "blif/sub/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "blif/sub/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "sub.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sub' with matching ports was not found."
+        ]
+    },
+    "blif/sub/no_arch": {
+        "test_name": "blif/sub/no_arch",
+        "input_blif": "sub.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sub' with matching ports was not found."
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

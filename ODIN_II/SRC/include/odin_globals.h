@@ -53,4 +53,7 @@ extern netlist_t* read_blif_netlist;
  */
 extern HardSoftLogicMixer* mixer;
 
+extern typemap odin_subckt_str;
+extern typemap yosys_subckt_str;
+
 #endif

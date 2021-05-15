@@ -262,6 +262,7 @@ enum operation_list {
     SIGNED,   // $signed
     operation_list_END
 };
+typedef std::unordered_map<std::string, operation_list> typemap;
 
 enum ids {
     NO_ID,

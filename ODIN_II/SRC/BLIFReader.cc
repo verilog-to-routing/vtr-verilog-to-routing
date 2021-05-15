@@ -28,6 +28,7 @@
 #include "odin_ii.h"
 #include "odin_util.h"
 #include "odin_types.h"
+#include "subckt_types.h"
 #include "odin_globals.h"
 
 #include "ast_util.h"
@@ -329,20 +330,16 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     // Determine the type of hard block.
     char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
     subcircuit_name_prefix[5] = '\0';
-    if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_") || !strcmp(subcircuit_name, "$mul"))
-        new_node->type = MULTIPLY;
-    else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder") || !strcmp(subcircuit_name, "$add"))
-        new_node->type = ADD;
-    else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub") || !strcmp(subcircuit_name, "$sub"))
-        new_node->type = MINUS;
-    else if (!strcmp(subcircuit_name, "$dff")) // [TODO] check the sensitivity in yosys blif(--param)
-        new_node->type = FF_NODE;
-    else if (!strcmp(subcircuit_name, "$mux") || !strcmp(subcircuit_name_prefix, "$mux"))
-        new_node->type = MULTI_BIT_MUX_2;
-    else if (!strcmp(subcircuit_name, "$logic_not") || !strcmp(subcircuit_name_prefix, "$logic_not"))
-        new_node->type = LOGICAL_NOT;
-    else {
-        new_node->type = MEMORY;
+
+    if (configuration.coarsen) {
+        new_node->type = yosys_subckt_str[subcircuit_name];
+    } else {
+        if (odin_subckt_str[subcircuit_name] != NO_OP)
+            new_node->type = odin_subckt_str[subcircuit_name];
+        else if (odin_subckt_str[subcircuit_name_prefix] != NO_OP)
+            new_node->type = odin_subckt_str[subcircuit_name_prefix];
+        else
+            new_node->type = MEMORY;
     }
     vtr::free(subcircuit_name_prefix);
     // Look up the model in the models cache.
@@ -409,6 +406,13 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
 
         // Index the net by name.
         output_nets_hash->add(name, new_net);
+    }
+
+    if (!configuration.coarsen) {
+        // Create a fake ast node.
+        new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
+        new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
+        new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
     }
 
     /*add this node to blif_netlist as an internal node */
