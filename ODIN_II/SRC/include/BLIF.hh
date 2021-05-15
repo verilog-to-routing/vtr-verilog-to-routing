@@ -436,6 +436,26 @@ class BLIF {
                  * -------------------------------------------------------------------------------------------
                  */
                 hard_block_model* create_model(const char* name, hard_block_ports* ports, int output_idx);
+                /**
+                 *---------------------------------------------------------------------------------------------
+                 * (function: check_hard_block_clk_sensitivity)
+                 * 
+                 * @brief specify whether a type needs clock sensitivity or not
+                 * 
+                 * @param subckt_name hard block name
+                 * -------------------------------------------------------------------------------------------
+                 */
+                edge_type_e hard_block_clk_sensitivity(const char* subckt_name);
+                /**
+                 *---------------------------------------------------------------------------------------------
+                 * (function: need_sensitivity)
+                 * 
+                 * @brief specify whether a type needs clock sensitivity or not
+                 * 
+                 * @param type node type
+                 * -------------------------------------------------------------------------------------------
+                 */
+                bool need_sensitivity(operation_list type);
         };
 
         class Writer : public GenericWriter {

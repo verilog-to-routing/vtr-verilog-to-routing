@@ -327,6 +327,9 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     odin_sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
     new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);
 
+    // init the edge sensitivity of hard block
+    new_node->edge_type = hard_block_clk_sensitivity(subcircuit_name);
+
     // Determine the type of hard block.
     char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
     subcircuit_name_prefix[5] = '\0';
@@ -1819,6 +1822,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  * @brief create a hard block model based on the given hard block port
  * 
  * @param name representing the name of a hard block
+ * @param type node type
  * @param ports list of a hard block ports
  * -------------------------------------------------------------------------------------------
  */
@@ -1903,3 +1907,80 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
 
     return model;
 }
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: hard_block_clk_sensitivity)
+ * 
+ * @brief specify whether a type needs clock sensitivity or not
+ * 
+ * @param subckt_name hard block name 
+ * -------------------------------------------------------------------------------------------
+ */
+ edge_type_e BLIF::Reader::hard_block_clk_sensitivity(const char* subckt_name) {
+
+     edge_type_e return_edge = UNDEFINED_SENSITIVITY;
+
+    // Store the current position in the file.
+    fpos_t pos;
+    int last_line = my_location.line;
+    fgetpos(file, &pos);
+
+    char* ptr;
+    char buffer[READ_BLIF_BUFFER];
+
+    if (!need_sensitivity(yosys_subckt_str[subckt_name])) {
+                return_edge = ASYNCHRONOUS_SENSITIVITY;
+    } else {
+        while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
+            my_location.line += 1;
+            ptr = vtr::strtok(buffer, TOKENS, file, buffer);
+            
+            if (!strcmp(ptr, ".param")) {
+                while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
+                    if (!strcmp(ptr, "CLK_POLARITY")) {
+                        char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
+
+                        if (!strcmp(sensitivity, "1"))
+                            return_edge = RISING_EDGE_SENSITIVITY;
+                        else if (!strcmp(sensitivity, "0"))
+                            return_edge = FALLING_EDGE_SENSITIVITY;
+
+                        break;
+                    }
+                }
+                break;
+                
+            }
+        }
+    }
+
+    // Restore the original position in the file.
+    my_location.line = last_line;
+    fsetpos(file, &pos);     
+
+    return return_edge;
+ }
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: need_sensitivity)
+ * 
+ * @brief specify whether a type needs clock sensitivity or not
+ * 
+ * @param type node type
+ * -------------------------------------------------------------------------------------------
+ */
+ bool BLIF::Reader::need_sensitivity(operation_list type) {
+     bool return_value = false;
+     switch (type) {
+         case (FF_NODE): {
+             return_value = true;
+             break;
+         }
+         default:
+            break;
+     }
+
+    return return_value;
+ }

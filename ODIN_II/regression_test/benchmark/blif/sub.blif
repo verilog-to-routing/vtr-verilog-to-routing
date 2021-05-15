@@ -4,6 +4,11 @@
 .inputs x_top[0] x_top[1] y_top[0] y_top[1]
 .outputs q_top[0] q_top[1]
 .subckt $sub A[0]=x_top[0] A[1]=x_top[1] B[0]=y_top[0] B[1]=y_top[1] Y[0]=y_top_$sub_B_Y[0] Y[1]=y_top_$sub_B_Y[1]
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000010
 .names y_top_$sub_B_Y[0] q_top[0]
 1 1
 .names y_top_$sub_B_Y[1] q_top[1]

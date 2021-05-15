@@ -3,8 +3,12 @@
 .model top_module
 .inputs rst[0] rst[1]
 .outputs q_top[0] q_top[1]
-.subckt $mux A[0]=q_temp[0] A[1]=q_temp[1] B[0]=$false B[1]=$false S=rst_$reduce_bool_A_Y Y[0]=q_temp_$mux_A_Y[0] Y[1]=q_temp_$mux_A_Y[1]
+.subckt $mux A[0]=$false A[1]=$true B[0]=$false B[1]=$false S=rst_$reduce_bool_A_Y Y[0]=q_temp_$mux_A_Y[0] Y[1]=q_temp_$mux_A_Y[1]
+.param WIDTH 00000000000000000000000000000010
 .subckt $reduce_bool A[0]=rst[0] A[1]=rst[1] Y=rst_$reduce_bool_A_Y
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
 .names $false q_temp[0]
 1 1
 .names $true q_temp[1]

@@ -409,12 +409,13 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
         ff_node->type = FF_NODE;
         ff_node->traverse_visited = traverse_mark_number;
         /* [TODO]: clock sensitivity is not specified in the yosys blif file */
-        ff_node->edge_type = ASYNCHRONOUS_SENSITIVITY;
+        ff_node->edge_type = node->edge_type;
 
         /* Name the flipflop based on the name of its output pin */
-        const char* ff_base_name = node_name_based_on_op(ff_node);
-        ff_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(ff_base_name) + 2));
-        odin_sprintf(ff_node->name, "%s_%s", node->output_pins[i]->name, ff_base_name);
+        // const char* ff_base_name = node_name_based_on_op(ff_node);
+        // ff_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(ff_base_name) + 2));
+        // odin_sprintf(ff_node->name, "%s_%s", node->output_pins[i]->name, ff_base_name);
+        ff_node->name = node_name(ff_node, NULL);
         //[todo] check the num of ports
         add_input_port_information(ff_node, 2);
         allocate_more_input_pins(ff_node, 2);

@@ -4,6 +4,7 @@
 .inputs rst
 .outputs q_top[0] q_top[1]
 .subckt $mux A[0]=$false A[1]=$true B[0]=$false B[1]=$false S=rst Y[0]=rst_$mux_S_Y[0] Y[1]=rst_$mux_S_Y[1]
+.param WIDTH 00000000000000000000000000000010
 .names $false q_temp[0]
 1 1
 .names $true q_temp[1]
