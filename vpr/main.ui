@@ -229,8 +229,28 @@
                 <property name="width">1</property>
                 <property name="height">1</property>
               </packing>
-            </child>
-            <child>
+           </child>
+	   <!--new code added for manual move starts here-->
+	   <child>
+	      <object class="GtkCheckButton" id="manualMove">
+		<property name="label" translatable="yes">Manual Move</property> 		<property name="visible">True</property>
+		<property name="can focus">True</property>
+                <property name="receives default">False</property>
+	        <property name="xalign">0</property>
+		<property name="active">False</property>
+	        <property name="draw_indicator">True</property>
+              </object>
+	      <packing>
+		<property name="left_attach">0</property>
+		<property name="top_attach">3</property>
+		<property name="width">1</property>
+		<property name="height">1</property>
+              </packing>
+           </child>
+
+
+
+	    <child>
               <object class="GtkCheckButton" id="clipRoutingUtil">
                 <property name="label" translatable="yes">Clip Routing Util</property>
                 <property name="visible">True</property>
@@ -254,7 +274,7 @@
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
-        </child>
+  	</child>
         <child>
           <placeholder/>
         </child>
