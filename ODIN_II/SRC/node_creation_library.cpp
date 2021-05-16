@@ -224,11 +224,9 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
     return logic_node;
 }
 
-const char* edge_type_blif_str(nnode_t* node) {
-    if (node->type != FF_NODE)
-        return NULL;
+const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc) {
 
-    switch (node->edge_type) {
+    switch (edge_type) {
         case FALLING_EDGE_SENSITIVITY:
             return "fe";
         case RISING_EDGE_SENSITIVITY:
@@ -240,8 +238,8 @@ const char* edge_type_blif_str(nnode_t* node) {
         case ASYNCHRONOUS_SENSITIVITY:
             return "as";
         default:
-            error_message(NETLIST, node->loc,
-                          "undefined sensitivity kind for flip flop %s", edge_type_e_STR[node->edge_type]);
+            error_message(NETLIST, loc,
+                          "undefined sensitivity kind for flip flop %s", edge_type_e_STR[edge_type]);
 
             return NULL;
     }

@@ -55,7 +55,8 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
 static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
 static void make_selector_as_first_port(nnode_t* node);
-static void resolve_logical_not(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_logical_not_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 /**
  *-------------------------------------------------------------------------
@@ -211,7 +212,11 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             /*
              * resolving logical_not node
             */
-            resolve_logical_not(node, traverse_number, netlist);
+            resolve_logical_not_node(node, traverse_number, netlist);
+            break;
+        }
+        case DFFSR: {
+            resolve_dffsr_node(node, traverse_number, netlist);
             break;
         }
         case GND_NODE:
@@ -220,6 +225,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case INPUT_NODE:
         case OUTPUT_NODE: 
         case BUF_NODE:
+        case BITWISE_NOT:
         case LOGICAL_OR:
         case LOGICAL_AND:
         case LOGICAL_NOR:
@@ -232,7 +238,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case MUX_2:
         case MULTI_PORT_MUX: 
-        case BITWISE_NOT:
         case BITWISE_AND:
         case BITWISE_OR:
         case BITWISE_NAND:
@@ -408,13 +413,8 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
 
         ff_node->type = FF_NODE;
         ff_node->traverse_visited = traverse_mark_number;
-        /* [TODO]: clock sensitivity is not specified in the yosys blif file */
-        ff_node->edge_type = node->edge_type;
+        ff_node->clk_edge_type = node->clk_edge_type;
 
-        /* Name the flipflop based on the name of its output pin */
-        // const char* ff_base_name = node_name_based_on_op(ff_node);
-        // ff_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(ff_base_name) + 2));
-        // odin_sprintf(ff_node->name, "%s_%s", node->output_pins[i]->name, ff_base_name);
         ff_node->name = node_name(ff_node, NULL);
         //[todo] check the num of ports
         add_input_port_information(ff_node, 2);
@@ -635,16 +635,16 @@ static void make_selector_as_first_port(nnode_t* node) {
 }
 
 /**
- * (function: resolve_logical_not)
+ * (function: resolve_logical_not_node)
  * 
  * @brief resolving the logical_not node by 
  * connecting the ouput pins[1..n] to GND
  * 
- * @param node pointing to a mux node 
+ * @param node pointing to a logical not node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-static void resolve_logical_not(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static void resolve_logical_not_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_input_port_sizes == 1);
     oassert(node->num_output_port_sizes == 1);
@@ -666,4 +666,172 @@ static void resolve_logical_not(nnode_t* node, uintptr_t traverse_mark_number, n
 
     node->num_output_pins = 1;
     node->output_port_sizes[0] = 1;
+}
+
+/**
+ * (function: resolve_dffsr_node)
+ * 
+ * @brief resolving the dffsr node by connecting 
+ * the ouput pins[1..n] to GND/VCC/D based on 
+ * the clr/set edge 
+ * 
+ * @param node pointing to a dffsr node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 4);
+    oassert(node->num_output_port_sizes == 1);
+
+    /**
+     * CLK: input port 0
+     * CLR: input port 1
+     * D:   input port 2
+     * SET: input port 3
+    */
+    int width     = node->num_output_pins;
+    int CLK_width = node->input_port_sizes[0];
+    int CLR_width = node->input_port_sizes[1];
+    int D_width   = node->input_port_sizes[2];
+
+    nnode_t** mux_set = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
+    nnode_t** mux_clr = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
+
+    int i;
+    for (i = 0; i < width; i++) {
+        /* create FF node for D */
+        nnode_t* ff_node = allocate_nnode(node->loc);
+
+        ff_node->type = FF_NODE;
+        ff_node->traverse_visited = traverse_mark_number;
+        ff_node->clk_edge_type = node->clk_edge_type;
+
+        ff_node->name = node_name(ff_node, NULL);
+        //[todo] check the num of ports
+        add_input_port_information(ff_node, 2);
+        allocate_more_input_pins(ff_node, 2);
+
+        add_output_port_information(ff_node, 1);
+        allocate_more_output_pins(ff_node, 1);
+
+        /**
+         * remap the CLK pin from the dffsr node to the ff node
+         * since we do not need it in dff node anymore 
+         **/
+        if (i == width - 1) {
+            /**
+             * remap the CLK pin from the dffsr node to the new  
+             * ff node since we do not need it in dffsr node anymore 
+             **/
+            remap_pin_to_new_node(node->input_pins[0], ff_node, 1);
+        } else {
+            /* add a copy of CLK pin from the dffsr node to the new ff node */
+            add_input_pin_to_node(ff_node, copy_input_npin(node->input_pins[0]), 1);
+        }
+
+
+        /**
+         * remap D[i] from the dffsr node to the ff node 
+         * since we do not need it in dff node anymore 
+         **/
+        remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + i], ff_node, 0);
+
+        // create D ff_node output pin
+        npin_t* ff_new_pin1 = allocate_npin();
+        npin_t* ff_new_pin2 = allocate_npin();
+        nnet_t* ff_new_net = allocate_nnet();
+        ff_new_net->name = make_full_ref_name(NULL, NULL, NULL, ff_node->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(ff_node, ff_new_pin1, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(ff_new_net, ff_new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(ff_new_net, ff_new_pin2);
+
+
+        netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
+        netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
+        netlist->num_ff_nodes++;
+
+        /* MUX SET */
+        mux_set[i] = make_2port_gate(MUX_2, 2, 2, 1, node, traverse_mark_number);
+        
+        // connect related pin of second_input to related multiplexer as a selector
+        nnode_t* select_set = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+        // SET[i] === mux_set selector[i]
+        remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + D_width + i], select_set, 0);
+        
+        // make a not of selector
+        nnode_t* not_select_set = make_not_gate(select_set, traverse_mark_number);
+        connect_nodes(select_set, 0, not_select_set, 0);
+
+        // connect mux_set selector based on the SET polarity
+        if (node->set_edge_type == RISING_EDGE_SENSITIVITY) {
+            connect_nodes(select_set, 0, mux_set[i], 1);
+            connect_nodes(not_select_set, 0, mux_set[i], 0);
+        } else if (node->set_edge_type == FALLING_EDGE_SENSITIVITY) {
+            connect_nodes(select_set, 0, mux_set[i], 0);
+            connect_nodes(not_select_set, 0, mux_set[i], 1);
+        }
+
+        // connect VCC to the mux_set[i]
+        add_input_pin_to_node(mux_set[i],
+                                get_one_pin(netlist),
+                                2);
+        // remap D_FF_NODE[i] to the mux_set[i]
+        add_input_pin_to_node(mux_set[i],
+                                ff_new_pin2,
+                                3);
+
+
+        // specify mux_set[i] output pin
+        npin_t* new_pin1 = allocate_npin();
+        npin_t* new_pin2 = allocate_npin();
+        nnet_t* new_net = allocate_nnet();
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, mux_set[i]->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(mux_set[i], new_pin1, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, new_pin2);
+
+        
+        /* MUX CLR */
+        mux_clr[i] = make_2port_gate(MUX_2, 2, 2, 1, node, traverse_mark_number);
+        
+        // connect related pin of second_input to related multiplexer as a selector
+        nnode_t* select_clr = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+        // CLR[i] === mux_clr selector[i]
+        remap_pin_to_new_node(node->input_pins[CLK_width + i], select_clr, 0);
+        
+        // make a not of selector
+        nnode_t* not_select_clr = make_not_gate(select_clr, traverse_mark_number);
+        connect_nodes(select_clr, 0, not_select_clr, 0);
+
+        // connect mux_clr selector based on the CLR polarity
+        if (node->clr_edge_type == RISING_EDGE_SENSITIVITY) {
+            connect_nodes(select_clr, 0, mux_clr[i], 1);
+            connect_nodes(not_select_clr, 0, mux_clr[i], 0);
+        } else if (node->clr_edge_type == FALLING_EDGE_SENSITIVITY) {
+            connect_nodes(select_clr, 0, mux_clr[i], 0);
+            connect_nodes(not_select_clr, 0, mux_clr[i], 1);
+        }
+
+        // connect GND to the mux_clr[i]
+        add_input_pin_to_node(mux_clr[i],
+                                get_zero_pin(netlist),
+                                2);
+        // connect mux_set[i] output pin to the mux_clr[i]
+        add_input_pin_to_node(mux_clr[i],
+                                new_pin2,
+                                3);
+
+        // remap node's output pin to mux_set
+        remap_pin_to_new_node(node->output_pins[i], mux_clr[i], 0);
+
+    }
+    
+    free_nnode(node);
 }

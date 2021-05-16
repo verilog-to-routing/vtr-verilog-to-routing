@@ -433,19 +433,22 @@ class BLIF {
                  * 
                  * @param name representing the name of a hard block
                  * @param ports list of a hard block ports
+                 * @param output_idx_START showing the beginning idx of output ports
+                 * @param output_idx_END showing the end idx of output ports
                  * -------------------------------------------------------------------------------------------
                  */
-                hard_block_model* create_model(const char* name, hard_block_ports* ports, int output_idx);
+                hard_block_model* create_model(const char* name, hard_block_ports* ports, int output_idx_START, int output_idx_END);
                 /**
                  *---------------------------------------------------------------------------------------------
-                 * (function: check_hard_block_clk_sensitivity)
+                 * (function: hard_block_sensitivities)
                  * 
                  * @brief specify whether a type needs clock sensitivity or not
                  * 
                  * @param subckt_name hard block name
+                 * @param new_node pointer to the netlist node
                  * -------------------------------------------------------------------------------------------
                  */
-                edge_type_e hard_block_clk_sensitivity(const char* subckt_name);
+                void hard_block_sensitivities(const char* subckt_name, nnode_t* new_node);
                 /**
                  *---------------------------------------------------------------------------------------------
                  * (function: need_sensitivity)

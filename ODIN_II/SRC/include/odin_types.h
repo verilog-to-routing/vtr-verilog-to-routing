@@ -208,7 +208,6 @@ enum init_value_e {
 enum operation_list {
     NO_OP,
     MULTI_PORT_MUX,  // port 1 = control, port 2+ = mux options
-    MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
     FF_NODE,
     BUF_NODE,
     INPUT_NODE,
@@ -260,6 +259,10 @@ enum operation_list {
     CLOG2,    // $clog2
     UNSIGNED, // $unsigned
     SIGNED,   // $signed
+                            // [START] operations to cover yosys subckt
+    MULTI_BIT_MUX_2,        // like MUX_2 but with n-bit input/output
+    DFFSR,                  // data, clear and set to output port
+                            // [END] operations to cover yosys subckt
     operation_list_END
 };
 typedef std::unordered_map<std::string, operation_list> typemap;
@@ -500,7 +503,9 @@ struct nnode_t {
     int ratio;                  //clock ratio for clock nodes
     init_value_e initial_value; // initial net value
     bool internal_clk_warn = false;
-    edge_type_e edge_type; //
+    edge_type_e clk_edge_type; //
+    edge_type_e clr_edge_type; //
+    edge_type_e set_edge_type; //
     bool covered = false;
 
     // For mixing soft and hard logic optimizations

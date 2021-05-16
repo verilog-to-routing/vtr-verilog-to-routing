@@ -24,6 +24,6 @@ char* hard_node_name(nnode_t* node, char* instance_name_prefix, char* hb_name, c
 nnode_t* make_mult_block(nnode_t* node, short mark);
 
 edge_type_e edge_type_blif_enum(std::string edge_kind_str, loc_t loc);
-const char* edge_type_blif_str(nnode_t* node);
+const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc);
 
 #endif

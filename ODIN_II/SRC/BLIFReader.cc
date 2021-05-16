@@ -328,7 +328,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);
 
     // init the edge sensitivity of hard block
-    new_node->edge_type = hard_block_clk_sensitivity(subcircuit_name);
+    hard_block_sensitivities(subcircuit_name, new_node);
 
     // Determine the type of hard block.
     char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
@@ -1275,7 +1275,7 @@ void BLIF::Reader::create_latch_node_and_driver() {
     nnode_t* new_node = allocate_nnode(my_location);
     new_node->related_ast_node = NULL;
     new_node->type = FF_NODE;
-    new_node->edge_type = edge_type_blif_enum(names[2], my_location);
+    new_node->clk_edge_type = edge_type_blif_enum(names[2], my_location);
 
     new_node->initial_value = (init_value_e)atoi(names[4]);
 
@@ -1838,9 +1838,15 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (FF_NODE): //fallthrough
         case (LOGICAL_OR): //fallthrough
         case (LOGICAL_NOT): //fallthrough
+        case (BITWISE_NOT): //fallthrough
         case (MULTI_BIT_MUX_2): {
-            // create a model with single output port
-            model = create_model(name, ports, 1);
+            // create a model with single output port, being read as the last port
+            model = create_model(name, ports, ports->count-1, ports->count);
+            break;
+        }
+        case (DFFSR): {
+            // create a model with single output port, being read as the one behind last port
+            model = create_model(name, ports, ports->count-2, ports->count-1);
             break;
         }
         default: {
@@ -1860,9 +1866,11 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  * 
  * @param name representing the name of a hard block
  * @param ports list of a hard block ports
+ * @param output_idx_START showing the beginning idx of output ports
+ * @param output_idx_END showing the end idx of output ports (outputs exluding the END idx)
  * -------------------------------------------------------------------------------------------
  */
- hard_block_model* BLIF::Reader::create_model(const char* name, hard_block_ports* ports, int output_idx) {
+ hard_block_model* BLIF::Reader::create_model(const char* name, hard_block_ports* ports, int output_idx_START, int output_idx_END) {
     int i, j;
     char* pin_name;
     hard_block_model* model = NULL;
@@ -1885,7 +1893,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                 sprintf(pin_name, "%s[%d]", ports->names[i], j);
 
             /* model input ports */
-            if (i < ports->count - output_idx ) {
+            if (i < output_idx_START || i >= output_idx_END ) {
                 inputs->names = (char**)vtr::realloc(inputs->names, (inputs->count + 1) * sizeof(char*));
 
                 inputs->names[inputs->count] = vtr::strdup(pin_name);
@@ -1911,17 +1919,15 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
 
 /**
  *---------------------------------------------------------------------------------------------
- * (function: hard_block_clk_sensitivity)
+ * (function: hard_block_sensitivities)
  * 
  * @brief specify whether a type needs clock sensitivity or not
  * 
  * @param subckt_name hard block name 
+ * @param new_node pointer to the netlist node
  * -------------------------------------------------------------------------------------------
  */
- edge_type_e BLIF::Reader::hard_block_clk_sensitivity(const char* subckt_name) {
-
-     edge_type_e return_edge = UNDEFINED_SENSITIVITY;
-
+ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* new_node) {
     // Store the current position in the file.
     fpos_t pos;
     int last_line = my_location.line;
@@ -1930,28 +1936,40 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
     char* ptr;
     char buffer[READ_BLIF_BUFFER];
 
-    if (!need_sensitivity(yosys_subckt_str[subckt_name])) {
-                return_edge = ASYNCHRONOUS_SENSITIVITY;
-    } else {
+    if (need_sensitivity(yosys_subckt_str[subckt_name])) {
         while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             ptr = vtr::strtok(buffer, TOKENS, file, buffer);
             
             if (!strcmp(ptr, ".param")) {
-                while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
-                    if (!strcmp(ptr, "CLK_POLARITY")) {
-                        char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
+                ptr = vtr::strtok(NULL, TOKENS, file, buffer);
 
-                        if (!strcmp(sensitivity, "1"))
-                            return_edge = RISING_EDGE_SENSITIVITY;
-                        else if (!strcmp(sensitivity, "0"))
-                            return_edge = FALLING_EDGE_SENSITIVITY;
+                if (!strcmp(ptr, "CLK_POLARITY")) {
+                    char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
 
-                        break;
-                    }
+                    if (!strcmp(sensitivity, "1"))
+                        new_node->clk_edge_type = RISING_EDGE_SENSITIVITY;
+                    else if (!strcmp(sensitivity, "0"))
+                        new_node->clk_edge_type = FALLING_EDGE_SENSITIVITY;
+
+                } else if (!strcmp(ptr, "CLR_POLARITY")) {
+                    char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
+
+                    if (!strcmp(sensitivity, "1"))
+                        new_node->clr_edge_type = RISING_EDGE_SENSITIVITY;
+                    else if (!strcmp(sensitivity, "0"))
+                        new_node->clr_edge_type = FALLING_EDGE_SENSITIVITY;
+
+                } else if (!strcmp(ptr, "SET_POLARITY")) {
+                    char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
+
+                    if (!strcmp(sensitivity, "1"))
+                        new_node->set_edge_type = RISING_EDGE_SENSITIVITY;
+                    else if (!strcmp(sensitivity, "0"))
+                        new_node->set_edge_type = FALLING_EDGE_SENSITIVITY;
                 }
+            } else if (!strcmp(ptr, ".end")) {
                 break;
-                
             }
         }
     }
@@ -1959,8 +1977,6 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
     // Restore the original position in the file.
     my_location.line = last_line;
     fsetpos(file, &pos);     
-
-    return return_edge;
  }
 
 /**
@@ -1975,7 +1991,8 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  bool BLIF::Reader::need_sensitivity(operation_list type) {
      bool return_value = false;
      switch (type) {
-         case (FF_NODE): {
+         case (FF_NODE): //fallthrough
+         case (DFFSR): {
              return_value = true;
              break;
          }

@@ -81,7 +81,9 @@ nnode_t* allocate_nnode(loc_t loc) {
     new_node->num_undriven_pins = 0;
 
     new_node->ratio = 1;
-    new_node->edge_type = UNDEFINED_SENSITIVITY;
+    new_node->clk_edge_type = UNDEFINED_SENSITIVITY;
+    new_node->clr_edge_type = UNDEFINED_SENSITIVITY;
+    new_node->set_edge_type = UNDEFINED_SENSITIVITY;
 
     new_node->initial_value = init_value_e::undefined;
 

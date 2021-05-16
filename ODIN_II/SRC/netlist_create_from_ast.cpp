@@ -3242,7 +3242,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             ff_node->related_ast_node = always_node;
 
             ff_node->type = FF_NODE;
-            ff_node->edge_type = potential_clocks->pins[local_clock_idx]->sensitivity;
+            ff_node->clk_edge_type = potential_clocks->pins[local_clock_idx]->sensitivity;
             /* create the unique name for this gate */
             //ff_node->name = node_name(ff_node, instance_name_prefix);
             /* Name the flipflop based on the name of its output pin */
