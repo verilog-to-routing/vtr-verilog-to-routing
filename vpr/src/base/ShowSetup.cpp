@@ -604,6 +604,31 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown timing_report_detail\n");
     }
+
+    const auto opts = {
+        std::make_tuple(&AnalysisOpts.post_synth_netlist_unconn_input_handling, "post_synth_netlist_unconn_input_handling"),
+        std::make_tuple(&AnalysisOpts.post_synth_netlist_unconn_output_handling, "post_synth_netlist_unconn_output_handling"),
+    };
+    for (const auto& opt : opts) {
+        auto value = *std::get<0>(opt);
+        VTR_LOG("AnalysisOpts.%s: ", std::get<1>(opt));
+        switch (value) {
+            case e_post_synth_netlist_unconn_handling::UNCONNECTED:
+                VTR_LOG("UNCONNECTED\n");
+                break;
+            case e_post_synth_netlist_unconn_handling::NETS:
+                VTR_LOG("NETS\n");
+                break;
+            case e_post_synth_netlist_unconn_handling::GND:
+                VTR_LOG("GND\n");
+                break;
+            case e_post_synth_netlist_unconn_handling::VCC:
+                VTR_LOG("VCC\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown post_synth_netlist_unconn_handling\n");
+        }
+    }
     VTR_LOG("\n");
 }
 
