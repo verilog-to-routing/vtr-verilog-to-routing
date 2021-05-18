@@ -72,7 +72,7 @@ The overall approach is similar, but we call out the differences below.
 
 8. Create a Pull Request (PR) to request your changes be merged into VTR.
 
-    * Navitage to your branch on GitHub
+    * Navigate to your branch on GitHub
 
         a. **External Developers**
 
@@ -92,7 +92,7 @@ The overall approach is similar, but we call out the differences below.
 
 ## Commit Messages
 
-Commit messagaes are an important part of understanding the code base and it's history.
+Commit messages are an important part of understanding the code base and it's history.
 It is therefore *extremely* important to provide the following information in the commit message:
 
 * What is being changed?
