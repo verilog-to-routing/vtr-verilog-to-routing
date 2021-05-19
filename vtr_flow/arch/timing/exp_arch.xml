@@ -140,7 +140,7 @@
   <!-- ODIN II specific config ends -->
   <!-- Physical descriptions begin -->
   <layout>
-    <auto_layout aspect_ratio="1.0">
+    <fixed_layout name="Chaos" width="40" height="80">
       <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
       <perimeter type="io" priority="100"/>
       <corners type="EMPTY" priority="101"/>
@@ -152,7 +152,7 @@
       <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
       <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
       <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
-    </auto_layout>
+    </fixed_layout>
   </layout>
   <device>
     <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
@@ -1117,25 +1117,6 @@
     <mux_transistor_size mux_transistor_size="3"/>
     <FF_size FF_size="4"/>
     <LUT_transistor_size LUT_transistor_size="4"/>
-    <directlist>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="1" y_offset="0" z_offset="-2"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    <direct name="experimental" from_pin="clb.out" to_pin="clb.in" x_offset="5" y_offset="0" z_offset="3"/>
-    </directlist>
   </power>
   <clocks>
     <clock buffer_size="auto" C_wire="2.5e-10"/>
