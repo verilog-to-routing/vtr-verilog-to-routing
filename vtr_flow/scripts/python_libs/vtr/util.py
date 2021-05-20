@@ -217,7 +217,7 @@ def check_cmd(command):
 
 
 def pretty_print_table(file, border=False):
-    """ Convert file to a pretty, easily read table """
+    """Convert file to a pretty, easily read table"""
     table = PrettyTable()
     table.border = border
     reader = None

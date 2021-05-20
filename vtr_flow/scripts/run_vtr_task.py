@@ -47,7 +47,7 @@ from vtr.error import VtrError, InspectError, CommandError
 
 
 def vtr_command_argparser(prog=None):
-    """ Argument parse for run_vtr_task """
+    """Argument parse for run_vtr_task"""
 
     description = textwrap.dedent(
         """
@@ -205,7 +205,7 @@ def vtr_command_argparser(prog=None):
 
 
 def vtr_command_main(arg_list, prog=None):
-    """ Run the vtr tasks given and the tasks in the lists given """
+    """Run the vtr tasks given and the tasks in the lists given"""
     # Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
 
@@ -350,7 +350,7 @@ def run_parallel(args, queued_jobs, run_dirs):
 
 
 def create_run_scripts(args, jobs, run_dirs):
-    """ Create the bash script files for each job run """
+    """Create the bash script files for each job run"""
     run_script_files = []
     for job in jobs:
         run_script_files += [create_run_script(args, job, job.work_dir(run_dirs[job.task_name()]))]
@@ -358,7 +358,7 @@ def create_run_scripts(args, jobs, run_dirs):
 
 
 def create_run_script(args, job, work_dir):
-    """ Create the bash run script for a particular job """
+    """Create the bash run script for a particular job"""
 
     runtime_estimate = ret_expected_runtime(job, work_dir)
     memory_estimate = ret_expected_memory(job, work_dir)
@@ -368,7 +368,7 @@ def create_run_script(args, job, work_dir):
     if memory_estimate < 0:
         memory_estimate = 0
 
-    separator = ' '
+    separator = " "
     command_options_list = job.run_command()
     command_options = separator.join(command_options_list)
 
@@ -394,12 +394,12 @@ def create_run_script(args, job, work_dir):
                 end="",
             )
 
-    os.system('chmod +x ' + str(run_script_file))
+    os.system("chmod +x " + str(run_script_file))
     return str(run_script_file)
 
 
 def ret_expected_runtime(job, work_dir):
-    """ Returns the expected run-time (in seconds) of the specified run, or -1 if unkown """
+    """Returns the expected run-time (in seconds) of the specified run, or -1 if unkown"""
     seconds = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
@@ -415,7 +415,7 @@ def ret_expected_runtime(job, work_dir):
 
 
 def ret_expected_memory(job, work_dir):
-    """ Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown """
+    """Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown"""
     memory_kib = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
@@ -431,7 +431,7 @@ def ret_expected_memory(job, work_dir):
 
 
 def format_human_readable_time(seconds):
-    """ format the number of seconds given as a human readable value """
+    """format the number of seconds given as a human readable value"""
     if seconds < 60:
         return "%.0f seconds" % seconds
     if seconds < 60 * 60:
@@ -442,7 +442,7 @@ def format_human_readable_time(seconds):
 
 
 def format_human_readable_memory(num_bytes):
-    """ format the number of bytes given as a human readable value """
+    """format the number of bytes given as a human readable value"""
     if num_bytes < 1024 ** 3:
         return "%.2f MiB" % (num_bytes / (1024 ** 2))
     return "%.2f GiB" % (num_bytes / (1024 ** 3))
