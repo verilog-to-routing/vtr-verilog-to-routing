@@ -368,13 +368,8 @@ def create_run_script(args, job, work_dir):
     if memory_estimate < 0:
         memory_estimate = 0
 
-    separator = ' '
+    separator = " "
     command_options_list = job.run_command()
-    '''
-    index = command_options_list.index('-name')
-    del command_options_list[index]
-    del command_options_list[index]
-    '''
     command_options = separator.join(command_options_list)
 
     human_readable_runtime_est = format_human_readable_time(runtime_estimate)
@@ -399,7 +394,7 @@ def create_run_script(args, job, work_dir):
                 end="",
             )
 
-    os.system('chmod +x ' + str(run_script_file))
+    os.system("chmod +x " + str(run_script_file))
     return str(run_script_file)
 
 
@@ -413,7 +408,6 @@ def ret_expected_runtime(job, work_dir):
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
     if metrics == None:
         metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
-        #print(metrics)
 
     if "vtr_flow_elapsed_time" in metrics:
         seconds = float(metrics["vtr_flow_elapsed_time"])
