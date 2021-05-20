@@ -225,6 +225,7 @@ def vtr_command_main(arg_list, prog=None):
 
         config_files = [find_task_config_file(task_name) for task_name in task_names]
         configs = []
+        longest_name = 0  # longest task name for use in creating prettier output
         common_task_prefix = None  # common task prefix to shorten task names
         for config_file in config_files:
             config = load_task_config(config_file)
@@ -240,7 +241,10 @@ def vtr_command_main(arg_list, prog=None):
                 longest_name = len(config.task_name)
         if args.short_task_names:
             configs = shorten_task_names(configs, common_task_prefix)
-        num_failed = run_tasks(args, configs)
+        longest_arch_circuit = find_longest_task_description(
+            configs
+        )  # find longest task description for use in creating prettier output
+        num_failed = run_tasks(args, configs, longest_name, longest_arch_circuit)
 
     except CommandError as exception:
         print("Error: {msg}".format(msg=exception.msg))
@@ -261,6 +265,8 @@ def vtr_command_main(arg_list, prog=None):
 def run_tasks(
     args,
     configs,
+    longest_name,
+    longest_arch_circuit,
 ):
     """
     Runs the specified set of tasks (configs)
