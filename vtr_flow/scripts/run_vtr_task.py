@@ -274,7 +274,7 @@ def run_tasks(
     start = datetime.now()
     num_failed = 0
 
-    jobs = create_jobs(args, configs, longest_name, longest_arch_circuit)
+    jobs = create_jobs(args, configs)
 
     run_dirs = {}
     for config in configs:

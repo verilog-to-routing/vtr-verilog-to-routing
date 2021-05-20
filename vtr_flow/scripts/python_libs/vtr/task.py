@@ -293,7 +293,7 @@ def find_longest_task_description(configs):
 
 
 # pylint: disable=too-many-branches
-def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run=False):
+def create_jobs(args, configs, after_run=False):
     """
     Create the jobs to be executed depending on the configs.
     """
@@ -409,8 +409,6 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
                             qor_parse_command,
                             work_dir,
                             run_dir,
-                            longest_name,
-                            longest_arch_circuit,
                             golden_results,
                         )
                     )
@@ -428,8 +426,6 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
                         qor_parse_command,
                         work_dir,
                         run_dir,
-                        longest_name,
-                        longest_arch_circuit,
                         golden_results,
                     )
                 )
@@ -449,8 +445,6 @@ def create_job(
     qor_parse_command,
     work_dir,
     run_dir,
-    longest_name,
-    longest_arch_circuit,
     golden_results,
 ):
     """
