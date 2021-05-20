@@ -462,18 +462,7 @@ def create_job(
     # determine spacing for nice output
     num_spaces_before = int((longest_name - len(config.task_name))) + 8
     num_spaces_after = int((longest_arch_circuit - len(work_dir + "/{}".format(param_string))))
-    cmd += [
-        "-name",
-        "{}:{}{}/{}{}".format(
-            config.task_name,
-            " " * num_spaces_before,
-            work_dir,
-            param_string,
-            " " * num_spaces_after,
-        ),
-    ]
-
-    cmd += ["-temp_dir", run_dir + "/{}".format(param_string)]
+    
     expected_min_w = ret_expected_min_w(circuit, arch, golden_results, param)
     expected_min_w = (
         int(expected_min_w * args.minw_hint_factor)
@@ -514,6 +503,7 @@ def create_job(
         ]
         current_qor_parse_command.insert(0, run_dir + "/{}".format(load_script_param(param)))
     current_cmd = cmd.copy()
+    current_cmd += ["-temp_dir", run_dir + "/{}".format(param_string)]
     if param_string != "common":
         current_cmd += param.split(" ")
     return Job(

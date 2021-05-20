@@ -7,6 +7,7 @@ allowing the user to run one or more VTR tasks. """
 from pathlib import Path
 from pathlib import PurePath
 import sys
+import os
 import argparse
 import textwrap
 import subprocess
@@ -367,6 +368,15 @@ def create_run_script(args, job, work_dir):
     if memory_estimate < 0:
         memory_estimate = 0
 
+    separator = ' '
+    command_options_list = job.run_command()
+    '''
+    index = command_options_list.index('-name')
+    del command_options_list[index]
+    del command_options_list[index]
+    '''
+    command_options = separator.join(command_options_list)
+
     human_readable_runtime_est = format_human_readable_time(runtime_estimate)
     human_readable_memory_est = format_human_readable_memory(memory_estimate)
     Path(work_dir).mkdir(parents=True)
@@ -382,12 +392,14 @@ def create_run_script(args, job, work_dir):
                     estimated_memory=memory_estimate,
                     human_readable_time=human_readable_runtime_est,
                     human_readable_memory=human_readable_memory_est,
-                    script=args.script,
-                    command=job.run_command(),
+                    script=str(paths.run_vtr_flow_path),
+                    command=command_options,
                 ),
                 file=out_file,
                 end="",
             )
+
+    os.system('chmod +x ' + str(run_script_file))
     return str(run_script_file)
 
 
@@ -397,7 +409,12 @@ def ret_expected_runtime(job, work_dir):
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
     )
+
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
+    if metrics == None:
+        metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
+        #print(metrics)
+
     if "vtr_flow_elapsed_time" in metrics:
         seconds = float(metrics["vtr_flow_elapsed_time"])
     return seconds
@@ -410,6 +427,9 @@ def ret_expected_memory(job, work_dir):
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
     )
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
+    if metrics == None:
+        metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
+
     for metric in ["max_odin_mem", "max_abc_mem", "max_ace_mem", "max_vpr_mem"]:
         if metric in metrics and int(metrics[metric]) > memory_kib:
             memory_kib = int(metrics[metric])
