@@ -4,6 +4,7 @@
 #include <cassert>
 #include <string>
 #include <set>
+#include <limits>
 
 #include "argparse.hpp"
 #include "argparse_util.hpp"
