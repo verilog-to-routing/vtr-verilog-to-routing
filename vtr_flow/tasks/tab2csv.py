@@ -1,3 +1,4 @@
+"""docstring"""
 import argparse
 
 parser = argparse.ArgumentParser(description="Process tab file.")
@@ -6,10 +7,7 @@ parser.add_argument(
     "-o", "--overwrite", action="store_true", help="overwrites the old file"
 )
 parser.add_argument(
-    "-n",
-    "--name",
-    action="store",
-    help='designate a new name for the file (default: parse_results.csv) Will automatically be appended with ".csv" do not include this in your name',
+    "-n", "--name", action="store", help="designate a new name for the file"
 )
 parser.add_argument(
     "-v", "--verbose", help="print logging messages", action="store_true"
@@ -19,15 +17,15 @@ args = parser.parse_args()
 
 # handle the nameing of the new file
 if args.name is not None:
-    newFile = str(args.name + ".csv")
+    new_file = str(args.name + ".csv")
 else:
-    newFile = "parse_results.csv"
+    new_file = "parse_results.csv"
 
 # Handle overwriting the file in case one exists
 if args.overwrite:
-    CSV = open(newFile, "w")
+    CSV = open(new_file, "w")
 else:
-    CSV = open(newFile, "x")
+    CSV = open(new_file, "x")
 
 
 if args.verbose:
