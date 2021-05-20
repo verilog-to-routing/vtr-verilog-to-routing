@@ -462,7 +462,7 @@ def create_job(
     # determine spacing for nice output
     num_spaces_before = int((longest_name - len(config.task_name))) + 8
     num_spaces_after = int((longest_arch_circuit - len(work_dir + "/{}".format(param_string))))
-
+    
     expected_min_w = ret_expected_min_w(circuit, arch, golden_results, param)
     expected_min_w = (
         int(expected_min_w * args.minw_hint_factor)
