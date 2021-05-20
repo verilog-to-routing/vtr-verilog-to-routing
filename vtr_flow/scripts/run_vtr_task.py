@@ -311,7 +311,7 @@ def run_tasks(
     elif args.system == "scripts":
         for _, value in run_dirs.items():
             Path(value).mkdir(parents=True)
-        run_scripts = create_run_scripts(args, jobs, run_dirs)
+        run_scripts = create_run_scripts(jobs, run_dirs)
         for script in run_scripts:
             print(script)
     else:
@@ -349,15 +349,15 @@ def run_parallel(args, queued_jobs, run_dirs):
     return num_failed
 
 
-def create_run_scripts(args, jobs, run_dirs):
+def create_run_scripts(jobs, run_dirs):
     """ Create the bash script files for each job run """
     run_script_files = []
     for job in jobs:
-        run_script_files += [create_run_script(args, job, job.work_dir(run_dirs[job.task_name()]))]
+        run_script_files += [create_run_script(job, job.work_dir(run_dirs[job.task_name()]))]
     return run_script_files
 
 
-def create_run_script(args, job, work_dir):
+def create_run_script(job, work_dir):
     """ Create the bash run script for a particular job """
 
     runtime_estimate = ret_expected_runtime(job, work_dir)
@@ -406,7 +406,7 @@ def ret_expected_runtime(job, work_dir):
     )
 
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
-    if metrics == None:
+    if metrics is None:
         metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
 
     if "vtr_flow_elapsed_time" in metrics:
@@ -421,7 +421,7 @@ def ret_expected_memory(job, work_dir):
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
     )
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
-    if metrics == None:
+    if metrics is None:
         metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
 
     for metric in ["max_odin_mem", "max_abc_mem", "max_ace_mem", "max_vpr_mem"]:
