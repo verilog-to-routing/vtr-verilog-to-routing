@@ -4,8 +4,9 @@
 #include "vpr_types.h"
 
 /******************************************************************** 
- * A data structure storing the fast look-up for the nodes
- * in a routing resource graph
+ * A data structure built to find the id of an routing resource node 
+ * (rr_node) given information about its physical position and type.
+ * The data structure is mostly needed during rr_graph building
  *
  * The data structure allows users to 
  * - Update the look-up with new nodes
@@ -28,23 +29,29 @@ class RRSpatialLookup {
 
     /* -- Accessors -- */
   public:
-    /* Returns the index of the specified routing resource node.  (x,y) are
-     * the location within the FPGA, rr_type specifies the type of resource,
-     * and ptc gives the number of this resource.  ptc is the class number,
-     * pin number or track number, depending on what type of resource this
-     * is.  All ptcs start at 0 and go up to pins_per_clb-1 or the equivalent.
-     * There are class_inf size SOURCEs + SINKs, type->num_pins IPINs + OPINs,
-     * and max_chan_width CHANX and CHANY (each).
+    /* Returns the index of the specified routing resource node.  
+     * - (x, y) are the grid location within the FPGA
+     * - rr_type specifies the type of resource,
+     * - ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
+     *   All ptcs start at 0 and are positive.
+     *   Depending on what type of resource this is, ptc can be 
+     *     - the class number of a common SINK/SOURCE node of grid, 
+     *       starting at 0 and go up to class_inf size - 1 of SOURCEs + SINKs in a grid
+     *     - pin number of an input/output pin of a grid. They would normally start at 0
+     *       and go to the number of pins on a block at that (x, y) location
+     *     - track number of a routing wire in a channel. They would normally go from 0
+     *       to channel_width - 1 at that (x,y)
      *
      * Note that for segments (CHANX and CHANY) of length > 1, the segment is
      * given an rr_index based on the (x,y) location at which it starts (i.e.
      * lowest (x,y) location at which this segment exists).
-     * This routine also performs error checking to make sure the node in
-     * question exists.
      *
      * The 'side' argument only applies to IPIN/OPIN types, and specifies which
      * side of the grid tile the node should be located on. The value is ignored
      * for non-IPIN/OPIN types
+     *
+     * This routine also performs error checking to make sure the node in
+     * question exists.
      */
     RRNodeId find_node(int x,
                        int y,
@@ -55,18 +62,19 @@ class RRSpatialLookup {
     /* -- Mutators -- */
   public:
     /* Register a node in the fast look-up 
-     * - You must have a node id
-     *   1. a valid one is to register a node in the lookup
-     *   2. an invalid id means the removal of a node from the lookup
+     * - You must have a valid node id to register the node in the lookup
      * - (x, y) are the coordinate of the node to be indexable in the fast look-up
      * - type is the type of a node
      * - ptc is a feature number of a node, which can be
-     *   1. pin index in a tile when type is OPIN/IPIN
-     *   2. track index in a routing channel when type is CHANX/CHANY
+     *   - the class number of a common SINK/SOURCE node of grid, 
+     *   - pin index in a tile when type is OPIN/IPIN
+     *   - track index in a routing channel when type is CHANX/CHANY
      * - side is the side of node on the tile, applicable to OPIN/IPIN 
      *
-     * Note that the add node here will not create a node in the node list
-     * You MUST add the node in the t_rr_node_storage so that the node is valid  
+     * An invalid id will be returned if the node does not exist
+     *
+     * Note that a node added with this call will not create a node in the rr_graph_storage node list
+     * You MUST add the node in the rr_graph_storage so that the node is valid  
      *
      * TODO: Consider to try to return a reference to *this so that we can do chain calls
      *   - .add_node(...)
@@ -80,6 +88,8 @@ class RRSpatialLookup {
                   t_rr_type type,
                   int ptc,
                   e_side side);
+
+    /* TODO: Add an API remove_node() to unregister a node from the look-up */
 
     /* -- Internal data storage -- */
   private:
