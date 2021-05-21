@@ -10,13 +10,27 @@ RRNodeId RRSpatialLookup::find_node(int x,
                                     t_rr_type type,
                                     int ptc,
                                     e_side side) const {
-    /* Find actual side to be used */
+    /* Find actual side to be used
+     * - For the node which are input/outputs of a grid, there must be a specific side for them.
+     *   Because they should have a specific pin location on the perimeter of a grid.
+     * - For other types of nodes, there is no need to define a side. However, a default value
+     *   is needed when store the node in the fast look-up data structure.
+     *   Here we just arbitrary use the first side of the SIDE vector as the default value.
+     *   We may consider to use NUM_SIDES as the default value but it will cause an increase
+     *   in the dimension of the fast look-up data structure.
+     *   Please note that in the add_node function, we should keep the SAME convention!
+     */
     e_side node_side = side;
     if (type == IPIN || type == OPIN) {
         VTR_ASSERT_MSG(side != NUM_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_SIDES)");
     } else {
-        VTR_ASSERT(type != IPIN && type != OPIN);
+        VTR_ASSERT_SAFE(type != IPIN && type != OPIN);
         node_side = SIDES[0];
+    }
+
+    /* Pre-check: the x, y, side and ptc should be non negative numbers! Otherwise, return an invalid id */
+    if ((0 > x) || (0 > y) || (NUM_SIDES == node_side) || (0 > ptc)) {
+        return RRNodeId::INVALID();
     }
 
     /* Currently need to swap x and y for CHANX because of chan, seg convention 
@@ -66,6 +80,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                t_rr_type type,
                                int ptc,
                                e_side side) {
+    VTR_ASSERT(node);
     VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
 
     /* Expand the fast look-up if the new node is out-of-range
