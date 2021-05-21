@@ -1,5 +1,6 @@
 #include "critical_uniform_move_generator.h"
 #include "globals.h"
+#include "place_constraints.h"
 
 e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -33,5 +34,12 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
         return e_create_move::ABORT;
     }
 
-    return ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+
+    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
+
+    return create_move;
 }

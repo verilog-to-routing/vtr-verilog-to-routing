@@ -8,7 +8,7 @@ To fix issues or add a new feature submit a PR or WIP PR following the provided 
 **Important** Before creating a Pull Request (PR), if it is a bug you have happened upon and intend to fix make sure you create an issue beforehand.
 
 Pull requests are intended to correct bugs and improve Odin's performance.
-To create a pull request, clone the vtr-verilog-rooting repository and branch from the master.
+To create a pull request, clone the [vtr-verilog-to-routing repository](https://github.com/verilog-to-routing/vtr-verilog-to-routing) and branch from the master.
 Make changes to the branch that improve Odin II and correct the bug.
 **Important** In addition to correcting the bug, it is required that test cases (benchmarks) are created that reproduce the issue and are included in the regression tests.
 An example of a good test case could be the benchmark found in the "Issue" being addressed.
@@ -21,9 +21,9 @@ Add a description of the changes made and reference the "issue" that it corrects
 **Important** Before creating a WIP PR, if it is a bug you have happened upon and intend to fix make sure you create an issue beforehand.
 
 A "work in progress" PR is a pull request that isn't complete or ready to be merged.
-It is intended to demonstrate that an Issue is being addressed and indicates to other developpers that they don't need to fix it.
-Creating a WIP PR is similar to a regular PR with a few adjustements.
-First, clone the [vtr-verilog-rooting repository](https://github.com/verilog-to-routing/vtr-verilog-to-routing) and branch from the master.
+It is intended to demonstrate that an Issue is being addressed and indicates to other developers that they don't need to fix it.
+Creating a WIP PR is similar to a regular PR with a few adjustments.
+First, clone the [vtr-verilog-to-routing repository](https://github.com/verilog-to-routing/vtr-verilog-to-routing) and branch from the master.
 Make changes to that branch.
 Then, create a pull request with that branch and **include WIP in the title.**
 This will automatically indicate that this PR is not ready to be merged.
