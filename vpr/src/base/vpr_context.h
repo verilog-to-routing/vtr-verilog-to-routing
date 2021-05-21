@@ -165,6 +165,9 @@ struct DeviceContext : public Context {
 
     /* TODO: remove this interface from device_context once the code refactoring is completed
      * because it should be part of the rr_graph view
+     * TODO: Currently, we use reference pointers to ensure that the rr_spatial_lookup is always
+     * synchronized with the rr_node_indices but this causes a lot of confusion for developers
+     * The temporary fix should be patched as soon as possible.
      */
     RRSpatialLookup rr_spatial_lookup{rr_node_indices};
 

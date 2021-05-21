@@ -42,6 +42,8 @@ class RRSpatialLookup {
      *     - track number of a routing wire in a channel. They would normally go from 0
      *       to channel_width - 1 at that (x,y)
      *
+     * An invalid id will be returned if the node does not exist
+     *
      * Note that for segments (CHANX and CHANY) of length > 1, the segment is
      * given an rr_index based on the (x,y) location at which it starts (i.e.
      * lowest (x,y) location at which this segment exists).
@@ -70,8 +72,6 @@ class RRSpatialLookup {
      *   - pin index in a tile when type is OPIN/IPIN
      *   - track index in a routing channel when type is CHANX/CHANY
      * - side is the side of node on the tile, applicable to OPIN/IPIN 
-     *
-     * An invalid id will be returned if the node does not exist
      *
      * Note that a node added with this call will not create a node in the rr_graph_storage node list
      * You MUST add the node in the rr_graph_storage so that the node is valid  

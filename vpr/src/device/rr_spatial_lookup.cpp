@@ -80,7 +80,6 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                t_rr_type type,
                                int ptc,
                                e_side side) {
-    VTR_ASSERT(node);
     VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
 
     /* Expand the fast look-up if the new node is out-of-range
