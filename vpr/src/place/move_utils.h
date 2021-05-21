@@ -43,6 +43,7 @@ struct t_edge_cost {
     float criticality; //the timing criticality of the net terminal that caused this edge
 };
 
+
 /**
  * @brief Stores the bounding box of a net in terms of the minimum and
  *        maximum coordinates of the blocks forming the net, clipped to
