@@ -505,8 +505,6 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     if (packer_opts.doPacking == STAGE_SKIP) {
         //pass
-        //Load cluster_constraints data structure here since skipping pack stage
-        load_cluster_constraints();
     } else {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
