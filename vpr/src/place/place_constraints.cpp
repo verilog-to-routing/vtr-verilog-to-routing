@@ -151,17 +151,17 @@ void load_cluster_constraints() {
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-    	std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
-		PartitionRegion empty_pr;
-		floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
+        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
+        PartitionRegion empty_pr;
+        floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
-		//if there are any constrainted atoms in the cluster,
-		//we update the cluster's PartitionRegion
-		for (unsigned int i = 0; i < atoms.size(); i++) {
-			PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atoms[i]);
+        //if there are any constrainted atoms in the cluster,
+        //we update the cluster's PartitionRegion
+        for (unsigned int i = 0; i < atoms.size(); i++) {
+            PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atoms[i]);
 
-			if (partid != PartitionId::INVALID()) {
-				PartitionRegion pr = floorplanning_ctx.constraints.get_partition_pr(partid);
+            if (partid != PartitionId::INVALID()) {
+                PartitionRegion pr = floorplanning_ctx.constraints.get_partition_pr(partid);
                 if (floorplanning_ctx.cluster_constraints[cluster_id].empty()) {
                     floorplanning_ctx.cluster_constraints[cluster_id] = pr;
                 } else {
@@ -172,8 +172,7 @@ void load_cluster_constraints() {
                         floorplanning_ctx.cluster_constraints[cluster_id] = intersect_pr;
                     }
                 }
-			}
-		}
-
+            }
+        }
     }
 }
