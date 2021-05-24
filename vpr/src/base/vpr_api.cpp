@@ -498,14 +498,13 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     auto& packer_opts = vpr_setup.PackerOpts;
-    auto& filename_opts = vpr_setup.FileNameOpts;
 
     bool status = true;
 
     if (packer_opts.doPacking == STAGE_SKIP) {
         //pass
         //Load cluster_constraints data structure here since skipping pack stage
-        check_cluster_constraints_init(filename_opts.read_vpr_constraints_file);
+        load_cluster_constraints();
     } else {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
@@ -522,7 +521,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Load a previous packing from the .net file
             vpr_load_packing(vpr_setup, arch);
             //Load cluster_constraints data structure here since loading pack file
-            check_cluster_constraints_init(filename_opts.read_vpr_constraints_file);
+            load_cluster_constraints();
         }
 
         /* Sanity check the resulting netlist */

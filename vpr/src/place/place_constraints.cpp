@@ -142,23 +142,6 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
     return floorplanning_good;
 }
 
-void check_cluster_constraints_init(std::string constraints_file) {
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    if (floorplanning_ctx.cluster_constraints.size() == 0 && constraints_file.empty()) {
-        floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
-
-        //Assign an empty PartitionRegion to each cluster block
-        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            PartitionRegion empty_pr;
-            floorplanning_ctx.cluster_constraints[blk_id] = empty_pr;
-        }
-    } else if (floorplanning_ctx.cluster_constraints.size() == 0 && !constraints_file.empty()) {
-        load_cluster_constraints();
-    }
-}
-
 void load_cluster_constraints() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& cluster_ctx = g_vpr_ctx.clustering();

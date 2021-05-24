@@ -41,10 +41,6 @@ PartitionRegion constrained_macro_locs(t_pl_macro pl_macro);
  * If no constraints file is specified, every cluster is assigned
  * an empty PartitionRegion. If a constraints file is specified, cluster_constraints is loaded according to
  * the floorplan constraints specified in the file.
- */
-void check_cluster_constraints_init(std::string constraints_file);
-
-/*
  * Load cluster_constraints according to the floorplan constraints specified in
  * the constraints XML file.
  */
