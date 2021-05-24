@@ -204,10 +204,10 @@
     <!--- VB & JL: using ITRS metal stack data, 96 nm half pitch wires, which are intermediate metal width/space.  
 			     With the 96 nm half pitch, such wires would take 60 um of height, vs. a 90 nm high (approximated as square) Stratix IV tile so this seems
 			     reasonable. Using a tile length of 90 nm, corresponding to the length of a Stratix IV tile if it were square. -->
-    <segment freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+    <segment freq="1.000000" length="8" type="unidir" Rmetal="101" Cmetal="22.5e-15">
       <mux name="0"/>
-      <sb type="pattern">1 1 1 1 1</sb>
-      <cb type="pattern">1 1 1 1</cb>
+      <sb type="pattern">1 1 1 1 1 1 1 1 1</sb>
+      <cb type="pattern">1 1 1 1 1 1 1 1</cb>
     </segment>
   </segmentlist>
   <complexblocklist>
