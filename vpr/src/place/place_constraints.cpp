@@ -11,6 +11,9 @@
 #include "globals.h"
 #include "place_constraints.h"
 
+/// @brief sentinel value for indicating that a subtile has not been specified
+constexpr int NO_SUBTILE = -1;
+
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
     int error = 0;
@@ -114,6 +117,10 @@ PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro) {
 }
 
 /*returns true if location is compatible with floorplanning constraints, false if not*/
+/*
+ * Even if the block passed in is from a macro, it will work because of the constraints
+ * propagation that was done during initial placement.
+ */
 bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 

@@ -1726,13 +1726,13 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
                                                                  PartitionRegion& temp_cluster_pr,
                                                                  bool& cluster_pr_needs_update) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
+    //VprConstraints ctx_constraints = floorplanning_ctx.constraints;
 
     /*check if the atom can go in the cluster by checking if the atom and cluster have intersecting PartitionRegions*/
 
     //get partition that atom belongs to
     PartitionId partid;
-    partid = ctx_constraints.get_atom_partition(blk_id);
+    partid = floorplanning_ctx.constraints.get_atom_partition(blk_id);
 
     PartitionRegion atom_pr;
     PartitionRegion cluster_pr;
@@ -1748,7 +1748,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
         return BLK_PASSED;
     } else {
         //get pr of that partition
-        atom_pr = ctx_constraints.get_partition_pr(partid);
+        atom_pr = floorplanning_ctx.constraints.get_partition_pr(partid);
 
         //intersect it with the pr of the current cluster
         cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
@@ -1780,6 +1780,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
             return BLK_PASSED;
         }
     }
+
 }
 
 /* Revert trial atom block iblock and free up memory space accordingly

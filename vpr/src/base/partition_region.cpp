@@ -34,12 +34,13 @@ PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2) {
      */
     PartitionRegion pr;
     Region intersect_region;
-    bool regions_intersect;
+    //bool regions_intersect;
     for (unsigned int i = 0; i < pr1.partition_region.size(); i++) {
         for (unsigned int j = 0; j < pr2.partition_region.size(); j++) {
-            regions_intersect = do_regions_intersect(pr1.partition_region[i], pr2.partition_region[j]);
-            if (regions_intersect) {
-                intersect_region = intersection(pr1.partition_region[i], pr2.partition_region[j]);
+            //regions_intersect = do_regions_intersect(pr1.partition_region[i], pr2.partition_region[j]);
+        	intersect_region = intersection(pr1.partition_region[i], pr2.partition_region[j]);
+            if (!intersect_region.empty()) {
+                //intersect_region = intersection(pr1.partition_region[i], pr2.partition_region[j]);
                 pr.partition_region.push_back(intersect_region);
             }
         }
