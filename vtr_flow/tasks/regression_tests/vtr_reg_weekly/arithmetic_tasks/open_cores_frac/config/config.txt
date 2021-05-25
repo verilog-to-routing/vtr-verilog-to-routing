@@ -10,11 +10,12 @@ circuits_dir=benchmarks/arithmetic/generated_circuits/opencores/verilog/
 archs_dir=arch/timing/fraclut_carrychain
 
 # Add circuits to list to sweep
+#This circuit does not go through abc. 
+#circuit_list_add=rc4.v 
 
 circuit_list_add=Md5Core.v
-circuit_list_add=rc4.v
 circuit_list_add=cordic.v
-circuit_list_add=pipelined_fft_64.v
+#circuit_list_add=pipelined_fft_64.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_2ripple_N8_22nm.xml
