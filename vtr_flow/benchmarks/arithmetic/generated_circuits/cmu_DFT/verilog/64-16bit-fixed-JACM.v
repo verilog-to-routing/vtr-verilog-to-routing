@@ -992,7 +992,7 @@ endmodule
 
 
 
-module memMod(in, out, inAddr, outAddr, writeSel, clk);
+/*module memMod(in, out, inAddr, outAddr, writeSel, clk);
 
    parameter depth=1024, width=16, logDepth=10;
 
@@ -1012,7 +1012,7 @@ module memMod(in, out, inAddr, outAddr, writeSel, clk);
       if (writeSel)
         mem[inAddr] <= in;
    end
-endmodule
+endmodule */
 
 
 
