@@ -142,8 +142,11 @@ circuit_list_add=mult_128.v
 
 # Add architectures to list to sweep
 arch_list_add=fixed_k6_N8_gate_boost_0.2V_22nm.xml
+
+#Lookahead architectures fail in vpr at the packing stage after removing unused inputs.  
 #arch_list_add=fixed_k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
 #arch_list_add=fixed_k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
+
 arch_list_add=fixed_k6_N8_ripple_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=fixed_k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=fixed_k6_frac_2ripple_N8_22nm.xml

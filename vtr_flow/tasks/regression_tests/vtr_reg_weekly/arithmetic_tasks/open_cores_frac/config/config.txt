@@ -10,11 +10,10 @@ circuits_dir=benchmarks/arithmetic/generated_circuits/opencores/verilog/
 archs_dir=arch/timing/fraclut_carrychain
 
 # Add circuits to list to sweep
-#This circuit does not go through abc. 
-#circuit_list_add=rc4.v 
 
 circuit_list_add=Md5Core.v
 circuit_list_add=cordic.v
+#This circuit has an Odin issue with using "assign" with contcatnation of negative of a constant.
 #circuit_list_add=pipelined_fft_64.v
 
 # Add architectures to list to sweep
