@@ -325,13 +325,13 @@ int main(int argc, char const *argv[]) {
 		string level_output_wires = make_output_wire_name(level);
 		string level_input_wires = make_output_wire_name(level-1);		
 
-		cout << "	// ************************* LEVEL "<<level<<" ************************* \\\\\n";
+		cout << "	// ************************* LEVEL "<<level<<" ************************* \\\n";
 
 		// MULTIPLIERS (only present on L1)
 		if (level == 1) {
 			string L1_mult_wires = "L1_mult_wires";
 
-			cout << "	// **************** Multipliers **************** \\\\\n";
+			cout << "	// **************** Multipliers **************** \\\n";
 
 			twodim::decl("wire [dw-1:0]", L1_mult_wires, NUM_INPUTS_TO_LEVEL);
 
@@ -355,7 +355,7 @@ int main(int argc, char const *argv[]) {
 			cout
 			<<	"	// ("<<NUM_INPUTS_TO_LEVEL<<" Multipliers)\n"
 			<<	"\n"
-			<<	"	// **************** Adders **************** \\\\\n";
+			<<	"	// **************** Adders **************** \\\n";
 		}
 
 		twodim::decl("wire [dw-1:0]", level_output_wires, FULL_LEVEL_WIDTH);
@@ -375,7 +375,7 @@ int main(int argc, char const *argv[]) {
 
 		// Byes for the extra inputs 
 		if (NUM_EXTRA_IN_LEVEL > 0) {
-			cout << "	// ********* Byes ******** \\\\\n";
+			cout << "	// ********* Byes ******** \\\n";
 			size_t offset = -1;
 			if (level == 0) {
 				offset = LEVEL_WIDTH_WO_EXTRAS; // in L0 the bye is the center one
