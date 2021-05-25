@@ -1,7 +1,9 @@
 ##############################################
 # Configuration file for running experiments
 ##############################################
-script_params=-use_odin_simulation -use_new_latches_restoration_script -starting_stage abc
+
+#-use_new_latches_restoration_script was removed. 
+script_params=-use_odin_simulation -starting_stage abc
 
 # Path to directory of circuits to use
 circuits_dir=benchmarks/blif/multiclock

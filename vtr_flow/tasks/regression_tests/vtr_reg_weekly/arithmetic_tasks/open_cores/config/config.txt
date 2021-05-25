@@ -11,15 +11,17 @@ archs_dir=arch/COFFE_22nm
 
 # Add circuits to list to sweep
 
+#This circuit does not go through abc. 
+#circuit_list_add=rc4.v 
+
 circuit_list_add=Md5Core.v
-circuit_list_add=rc4.v
 circuit_list_add=cordic.v
-circuit_list_add=pipelined_fft_64.v
+#circuit_list_add=pipelined_fft_64.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_N8_gate_boost_0.2V_22nm.xml
-arch_list_add=k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
-arch_list_add=k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
+#arch_list_add=k6_N8_lookahead_chain_gate_boost_0.2V_22nm.xml
+#arch_list_add=k6_N8_lookahead_unbalanced_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=k6_N8_ripple_chain_gate_boost_0.2V_22nm.xml
 arch_list_add=k6_N8_unbalanced_ripple_chain_gate_boost_0.2V_22nm.xml
 
