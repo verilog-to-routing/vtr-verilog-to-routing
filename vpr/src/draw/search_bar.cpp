@@ -183,7 +183,7 @@ void auto_zoom_rr_node(int rr_node_id) {
     ezgl::rectangle rr_node;
 
     // find the location of the node
-    switch (device_ctx.rr_nodes[rr_node_id].type()) {
+    switch (device_ctx.rr_graph.node_type(RRNodeId(rr_node_id))) {
         case IPIN:
         case OPIN: {
             int i = device_ctx.rr_nodes[rr_node_id].xlow();

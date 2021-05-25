@@ -292,10 +292,10 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
 
     int inode = hptr->index;
 
-    //if (device_ctx.rr_nodes[inode].type() != SINK) {
+    //if (device_ctx.rr_graph.node_type(RRNodeId(inode)) != SINK) {
     //VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
     //"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
-    //"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
+    //"Got type = %d.",  SINK, device_ctx.rr_graph.node_type(RRNodeId(inode)));
     //}
 
     sink_rt_node = alloc_rt_node();
@@ -348,7 +348,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
 
         rr_node_to_rt_node[inode] = rt_node;
 
-        if (device_ctx.rr_nodes[inode].type() == IPIN) {
+        if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == IPIN) {
             rt_node->re_expand = false;
         } else {
             rt_node->re_expand = true;
@@ -406,7 +406,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 rt_node->inode = rr_node;
                 rt_node->net_pin_index = OPEN;
 
-                if (device_ctx.rr_nodes[rr_node].type() == IPIN) {
+                if (device_ctx.rr_graph.node_type(RRNodeId(rr_node)) == IPIN) {
                     rt_node->re_expand = false;
                 } else {
                     rt_node->re_expand = true;
@@ -801,7 +801,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         // In some cases, the same sink node is put into the tree multiple times in a single route.
         // So it is possible to hit the same node index multiple times during traceback. Create a
         // separate rt_node for each sink with the same node index.
-        if (itr == rr_node_to_rt.end() || device_ctx.rr_nodes[inode].type() == SINK) {
+        if (itr == rr_node_to_rt.end() || device_ctx.rr_graph.node_type(RRNodeId(inode)) == SINK) {
             //Create
 
             //Initialize route tree node
@@ -814,7 +814,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             node->C_downstream = std::numeric_limits<float>::quiet_NaN();
             node->Tdel = std::numeric_limits<float>::quiet_NaN();
 
-            auto node_type = device_ctx.rr_nodes[inode].type();
+            auto node_type = device_ctx.rr_graph.node_type(RRNodeId(inode));
             if (node_type == IPIN || node_type == SINK)
                 node->re_expand = false;
             else
@@ -1258,7 +1258,7 @@ static void print_node(const t_rt_node* rt_node) {
     auto& device_ctx = g_vpr_ctx.device();
 
     int inode = rt_node->inode;
-    t_rr_type node_type = device_ctx.rr_nodes[inode].type();
+    t_rr_type node_type = device_ctx.rr_graph.node_type(RRNodeId(inode));
     VTR_LOG("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
             rt_node->re_expand, rr_node_typename[node_type], inode);
 }

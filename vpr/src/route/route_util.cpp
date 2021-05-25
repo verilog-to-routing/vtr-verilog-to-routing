@@ -17,7 +17,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
         while (tptr != nullptr) {
             int inode = tptr->index;
 
-            if (device_ctx.rr_nodes[inode].type() == rr_type) {
+            if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == rr_type) {
                 rr_nodes.insert(inode);
             }
             tptr = tptr->next;

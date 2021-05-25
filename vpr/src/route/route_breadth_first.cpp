@@ -345,7 +345,7 @@ static void breadth_first_expand_trace_segment(BinaryHeap& heap, t_trace* start_
                              inode, 0., NO_PREVIOUS, RREdgeId::INVALID(),
                              OPEN, OPEN);
 
-            if (device_ctx.rr_nodes[inode].type() == IPIN)
+            if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == IPIN)
                 last_ipin_node = inode;
 
             tptr = next_ptr;
@@ -430,8 +430,8 @@ static float evaluate_node_cost(const float prev_path_cost, const float bend_cos
     float tot_cost = prev_path_cost + get_rr_cong_cost(to_node, pres_fac);
 
     if (bend_cost != 0.) {
-        t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
-        t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
+        t_rr_type from_type = device_ctx.rr_graph.node_type(RRNodeId(from_node));
+        t_rr_type to_type = device_ctx.rr_graph.node_type(RRNodeId(to_node));
         if ((from_type == CHANX && to_type == CHANY)
             || (from_type == CHANY && to_type == CHANX))
             tot_cost += bend_cost;

@@ -260,7 +260,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
                 // Add additional features to edges that go to CLB.I[11:0] pins
                 // to correlate them with features of CLB input mux later.
-                auto sink_type = device_ctx.rr_nodes[sink_inode].type();
+                auto sink_type = device_ctx.rr_graph.node_type(RRNodeId(sink_inode));
                 if (sink_type == IPIN) {            
                     auto pin_feature = get_pin_feature(sink_inode);
                     value = value + "\n" + pin_feature;

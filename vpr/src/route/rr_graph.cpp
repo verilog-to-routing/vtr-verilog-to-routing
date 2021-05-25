@@ -711,11 +711,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         // clock_modeling::DEDICATED_NETWORK will append some rr nodes after
         // the regular graph.
         for (int i = 0; i < num_rr_nodes; i++) {
-            if (device_ctx.rr_nodes[i].type() == CHANX) {
+            if (device_ctx.rr_graph.node_type(RRNodeId(i)) == CHANX) {
                 int ylow = device_ctx.rr_nodes[i].ylow();
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
             }
-            if (device_ctx.rr_nodes[i].type() == CHANY) {
+            if (device_ctx.rr_graph.node_type(RRNodeId(i)) == CHANY) {
                 int xlow = device_ctx.rr_nodes[i].xlow();
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.y_list[xlow]);
             }

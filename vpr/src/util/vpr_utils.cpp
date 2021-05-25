@@ -1864,7 +1864,7 @@ void print_switch_usage() {
  * map<int, int> total_wire_count;
  * auto& device_ctx = g_vpr_ctx.device();
  * for (int inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
- * if (device_ctx.rr_nodes[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
+ * if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_node[inode].type() == CHANY) {
  * //int length = abs(device_ctx.rr_nodes[inode].get_xhigh() + rr_node[inode].get_yhigh()
  * //             - device_ctx.rr_nodes[inode].get_xlow() - rr_node[inode].get_ylow());
  * int length = device_ctx.rr_nodes[inode].get_length();

@@ -194,7 +194,7 @@ void get_serial_num() {
 
             serial_num -= device_ctx.rr_nodes[inode].ptc_num() * (size_t(net_id) + 1) * 10;
 
-            serial_num -= device_ctx.rr_nodes[inode].type() * (size_t(net_id) + 1) * 100;
+            serial_num -= device_ctx.rr_graph.node_type(RRNodeId(inode)) * (size_t(net_id) + 1) * 100;
             serial_num %= 2000000000; /* Prevent overflow */
             tptr = tptr->next;
         }
@@ -529,7 +529,7 @@ static t_trace_branch traceback_branch(int node, int target_net_pin_index, std::
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    auto rr_type = device_ctx.rr_nodes[node].type();
+    auto rr_type = device_ctx.rr_graph.node_type(RRNodeId(node));
     if (rr_type != SINK) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in traceback_branch: Expected type = SINK (%d).\n");
@@ -1224,7 +1224,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                 while (tptr != nullptr) {
                     int inode = tptr->index;
-                    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+                    t_rr_type rr_type = device_ctx.rr_graph.node_type(RRNodeId(inode));
                     int ilow = device_ctx.rr_nodes[inode].xlow();
                     int jlow = device_ctx.rr_nodes[inode].ylow();
 
@@ -1415,7 +1415,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             for (iconn = 0; iconn < num_edges; iconn++) {
                 to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
 
-                VTR_ASSERT(device_ctx.rr_nodes[to_node].type() == OPIN);
+                VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(to_node)) == OPIN);
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
@@ -1430,7 +1430,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 heap_head_ptr = heap->get_heap_head();
                 inode = heap_head_ptr->index;
 
-                VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
+                VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(inode)) == OPIN);
 
                 adjust_one_rr_occ_and_acc_cost(inode, 1, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
@@ -1480,7 +1480,7 @@ void print_traceback(ClusterNetId net_id) {
     t_trace* head = route_ctx.trace[net_id].head;
     while (head) {
         int inode{head->index};
-        if (device_ctx.rr_nodes[inode].type() == SINK)
+        if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == SINK)
             VTR_LOG("%d(sink)(%d)->", inode, route_ctx.rr_node_route_inf[inode].occ());
         else
             VTR_LOG("%d(%d)->", inode, route_ctx.rr_node_route_inf[inode].occ());
@@ -1495,7 +1495,7 @@ void print_traceback(const t_trace* trace) {
     const t_trace* prev = nullptr;
     while (trace) {
         int inode = trace->index;
-        VTR_LOG("%d (%s)", inode, rr_node_typename[device_ctx.rr_nodes[inode].type()]);
+        VTR_LOG("%d (%s)", inode, rr_node_typename[device_ctx.rr_graph.node_type(RRNodeId(inode))]);
 
         if (trace->iswitch == OPEN) {
             VTR_LOG(" !"); //End of branch

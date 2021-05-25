@@ -135,7 +135,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
                 connected_to_route[inode] = true; /* Mark as in path. */
 
-                if (device_ctx.rr_nodes[inode].type() == SINK) {
+                if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == SINK) {
                     check_sink(inode, net_pin_index, net_id, pin_done.get());
                     num_sinks += 1;
                 }
@@ -182,7 +182,7 @@ static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
+    VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(inode)) == SINK);
 
     if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -202,7 +202,7 @@ static void check_source(int inode, ClusterNetId net_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+    t_rr_type rr_type = device_ctx.rr_graph.node_type(RRNodeId(inode));
     if (rr_type != SOURCE) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
@@ -244,7 +244,7 @@ static void check_switch(t_trace* tptr, int num_switch) {
     inode = tptr->index;
     switch_type = tptr->iswitch;
 
-    if (device_ctx.rr_nodes[inode].type() != SINK) {
+    if (device_ctx.rr_graph.node_type(RRNodeId(inode)) != SINK) {
         if (switch_type >= num_switch) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_switch: rr_node %d left via switch type %d.\n"
@@ -320,13 +320,13 @@ static bool check_adjacent(int from_node, int to_node) {
 
     num_adj = 0;
 
-    from_type = device_ctx.rr_nodes[from_node].type();
+    from_type = device_ctx.rr_graph.node_type(RRNodeId(from_node));
     from_xlow = device_ctx.rr_nodes[from_node].xlow();
     from_ylow = device_ctx.rr_nodes[from_node].ylow();
     from_xhigh = device_ctx.rr_nodes[from_node].xhigh();
     from_yhigh = device_ctx.rr_nodes[from_node].yhigh();
     from_ptc = device_ctx.rr_nodes[from_node].ptc_num();
-    to_type = device_ctx.rr_nodes[to_node].type();
+    to_type = device_ctx.rr_graph.node_type(RRNodeId(to_node));
     to_xlow = device_ctx.rr_nodes[to_node].xlow();
     to_ylow = device_ctx.rr_nodes[to_node].ylow();
     to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
@@ -570,7 +570,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
                 /* Now check that node is an OPIN of the right type. */
 
-                rr_type = device_ctx.rr_nodes[inode].type();
+                rr_type = device_ctx.rr_graph.node_type(RRNodeId(inode));
                 if (rr_type != OPIN) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s)\n"
