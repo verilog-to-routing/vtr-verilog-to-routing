@@ -1,31 +1,26 @@
-if { $argc != 2 } {
-    puts "The synth.tcl script requires a foldername filename to be inputed.\nFor example, synth.tcl reg reg.\nPlease try again."
-} else {
+yosys -import
 	
-	yosys -import
-	
-	# Read Yosys baseline library first.
-    read_verilog -lib -specify +/xilinx/cells_sim.v;
-    read_verilog -lib +/xilinx/cells_xtra.v
+# Read Yosys baseline library first.
+read_verilog -lib -specify +/xilinx/cells_sim.v;
+read_verilog -lib +/xilinx/cells_xtra.v
 
-	read_verilog ~/Desktop/yosys+odin/[lindex $argv 0]/[lindex $argv 1].v; 
-	hierarchy -check -top top_module
+read_verilog $env(FILE_PATH); 
+hierarchy -check -auto-top
 
-	autoname;
-	#expose -dff;
-	procs; 
-	
-	opt;
-    
-    fsm;
-    
-    opt;
-    
-	check;
-	
-	flatten;
-	
-#-param
-	write_blif -top top_module -impltf ~/Desktop/yosys+odin/[lindex $argv 0]/yosys_[lindex $argv 1].blif;
-}
-## ~/Desktop/yosys+odin/reg/synth.tcl
+autoname;
+#expose -dff;
+procs; 
+
+opt;
+
+fsm;
+
+opt;
+
+check;
+
+flatten;
+
+write_blif -top top_module -param -impltf $env(OUTPUT_BLIF_PATH)/$env(BLIF_NAME);
+
+exit;
