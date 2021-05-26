@@ -350,25 +350,25 @@ static float route_connection_delay(
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
 
-        int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
 
-        VTR_ASSERT(source_rr_node != OPEN);
+        VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
 
-            int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc);
 
-            VTR_ASSERT(sink_rr_node != OPEN);
+            VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
-            if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
+            if (!measure_directconnect && directconnect_exists(size_t(source_rr_node), size_t(sink_rr_node))) {
                 //Skip if we shouldn't measure direct connects and a direct connect exists
                 continue;
             }
 
             {
                 successfully_routed = route_profiler.calculate_delay(
-                    source_rr_node, sink_rr_node,
+                    size_t(source_rr_node), size_t(sink_rr_node),
                     router_opts,
                     &net_delay_value);
             }
@@ -444,10 +444,10 @@ static void generic_compute_matrix_dijkstra_expansion(
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid[source_x][source_y].type);
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
 
-        VTR_ASSERT(source_rr_node != OPEN);
-        auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts);
+        VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
+        auto delays = calculate_all_path_delays_from_rr_node(size_t(source_rr_node), router_opts);
 
         bool path_to_all_sinks = true;
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
@@ -479,16 +479,16 @@ static void generic_compute_matrix_dijkstra_expansion(
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
 
-                        int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc);
 
-                        VTR_ASSERT(sink_rr_node != OPEN);
+                        VTR_ASSERT(sink_rr_node != RRNodeId::INVALID());
 
-                        if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
+                        if (!measure_directconnect && directconnect_exists(size_t(source_rr_node), size_t(sink_rr_node))) {
                             //Skip if we shouldn't measure direct connects and a direct connect exists
                             continue;
                         }
 
-                        if (std::isnan(delays[sink_rr_node])) {
+                        if (std::isnan(delays[size_t(sink_rr_node)])) {
                             // This sink was not found
                             continue;
                         }
@@ -502,7 +502,7 @@ static void generic_compute_matrix_dijkstra_expansion(
 #endif
                         found_matrix[delta_x][delta_y] = true;
 
-                        add_delay_to_matrix(&matrix, delta_x, delta_y, delays[sink_rr_node]);
+                        add_delay_to_matrix(&matrix, delta_x, delta_y, delays[size_t(sink_rr_node)]);
 
                         found_a_sink = true;
                         break;
@@ -979,8 +979,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool from_pin_found = false;
             if (direct->from_side != NUM_SIDES) {
-                int from_pin_rr = get_rr_node_index(device_ctx.rr_node_indices, from_x, from_y, OPIN, from_pin, direct->from_side);
-                from_pin_found = (from_pin_rr != OPEN);
+                RRNodeId from_pin_rr = device_ctx.rr_graph.node_lookup().find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
+                from_pin_found = (from_pin_rr != RRNodeId::INVALID());
             } else {
                 std::vector<int>& from_pin_rrs = *scratch;
                 get_rr_node_indices(device_ctx.rr_node_indices, from_x, from_y, OPIN, from_pin, &from_pin_rrs);
@@ -997,8 +997,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool to_pin_found = false;
             if (direct->to_side != NUM_SIDES) {
-                int to_pin_rr = get_rr_node_index(device_ctx.rr_node_indices, to_x, to_y, IPIN, to_pin, direct->to_side);
-                to_pin_found = (to_pin_rr != OPEN);
+                RRNodeId to_pin_rr = device_ctx.rr_graph.node_lookup().find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
+                to_pin_found = (to_pin_rr != RRNodeId::INVALID());
             } else {
                 std::vector<int>& to_pin_rrs = *scratch;
                 get_rr_node_indices(device_ctx.rr_node_indices, to_x, to_y, IPIN, to_pin, &to_pin_rrs);

@@ -98,10 +98,8 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
             bool member_loc_good = macro_pr.is_loc_in_part_reg(member_pos);
             if (!member_loc_good) {
                 macro_can_be_placed = false;
-                VTR_LOG("Block member %zu did not pass the macro constraints check with location x: %d y: %d subtile %d\n", pl_macro.members[imember].blk_index, member_pos.x, member_pos.y, member_pos.sub_tile);
                 break;
             }
-            VTR_LOG("Block member %zu passed the macro constraints check with location x: %d y: %d subtile %d\n", pl_macro.members[imember].blk_index, member_pos.x, member_pos.y, member_pos.sub_tile);
         }
 
         // Check whether the location could accept block of this type
@@ -304,7 +302,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
             // Make sure that the position is EMPTY_BLOCK before placing the block down
             VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
 
-            bool floorplan_good = cluster_floorplanning_check(blk_id, to);
+            bool floorplan_good = cluster_floorplanning_legal(blk_id, to);
 
             if (floorplan_good) {
                 place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk_id;

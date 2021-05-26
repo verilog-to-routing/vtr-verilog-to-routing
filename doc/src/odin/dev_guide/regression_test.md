@@ -5,30 +5,30 @@ Each regression test targets a specific function of Odin II.
 There are two main components of a regression test; benchmarks and a configuration file.
 The benchmarks are comprised of verilog files, input vector files and output vector files.
 The configuration file calls upon each benchmark and synthesizes them with different architectures.
-The current regression tests of Odin II can be found in regression_test/benchmarks.
+The current regression tests of Odin II can be found in regression_test/benchmark.
 
 ## Benchmarks
 
 Benchmarks are used to test the functionality of Odin II and ensure that it runs properly.
-Benchmarks of Odin II can be found in regression_test/benchmarks/verilog/any_folder.
+Benchmarks of Odin II can be found in regression_test/benchmark/verilog/any_folder.
 Each benchmark is comprised of a verilog file, an input vector file, and an output vector file.
 They are called upon during regression tests and synthesized with different architectures to be compared against the expected results.
-These tests are usefull for developers to test the functionality of Odin II after implementing changes.
+These tests are useful for developers to test the functionality of Odin II after implementing changes.
 The command `make test` runs through all these tests, comparing the results to previously generated results, and should be run through when first installing.
 
 ### Unit Benchmarks
 
-Unit Benchmarks are the simplest of benchmarks. They are meant to isolate different functions of Odin II.
+Unit benchmarks are the simplest of benchmarks. They are meant to isolate different functions of Odin II.
 The goal is that if it does not function properly, the error can be traced back to the function being tested.
 This cannot always be achieved as different functions depend on others to work properly.
-It is ideal that these benchmarks test bit size capacity, errorenous cases, as well as standards set by the IEEE Standard for Verilog® Hardware Description Language - 2005.
+It is ideal that these benchmarks test bit size capacity, erroneous cases, as well as standards set by the IEEE Standard for Verilog® Hardware Description Language - 2005.
 
 ### Micro Benchmarks
 
-Micro benchmark's are precise, like unit benchmarks, however are more syntactic.
+Micro benchmarks are precise, like unit benchmarks, however are more syntactic.
 They are meant to isolate the behaviour of different functions.
 They trace the behaviour of functions to ensure they adhere to the IEEE Standard for Verilog® Hardware Description Language - 2005.
-Like micro benchmarks, they should check errorenous cases and behavioural standards et by the IEEE Standard for Verilog® Hardware Description Language - 2005.
+Like unit benchmarks, they should check erroneous cases and behavioural standards set by the IEEE Standard for Verilog® Hardware Description Language - 2005.
 
 ### Macro Benchmarks
 
@@ -38,10 +38,10 @@ These tests are designed to test things like syntax and more complicated standar
 
 ### External Benchmarks
 
-External Benchmarks are benchmarks created by outside users to the project.
+External benchmarks are benchmarks created by outside users to the project.
 It is possible to pull an outside directory and build them on the fly thus creating a benchmark for Odin II.
 
-## Creating Regression tests
+## Creating Regression Tests
 
 ### New Regression Test Checklist
 
@@ -50,7 +50,7 @@ It is possible to pull an outside directory and build them on the fly thus creat
 * Create a folder in the task directory for the configuration file [here](#creating-a-task)
 * Generate the results [here](#regenerating-results)
 * Add the task to a suite (large suite if generating the results takes longer than 3 minutes, otherwise put in light suite) [here](#creating-a-suite)
-* Update the documentation by providing a summary in Regression Test Summary section and updating the Directory tree [here](#regression-test-summaries)
+* Update the documentation by providing a summary in Regression Test Summary section and updating the Directory Tree [here](#regression-test-summaries)
 
 ### New Benchmarks added to Regression Test Checklist
 
@@ -61,14 +61,14 @@ It is possible to pull an outside directory and build them on the fly thus creat
 
 * verilog file
 * input vector file
-* expected ouptut vector file
+* expected output vector file
 * configuration file (conditional)
 * architecture file (optional)
 
 ### Creating Benchmarks
 
 If only a few benchmarks are needed for a PR, simply add the benchmarks to the appropriate set of regression tests.
-[The Regression Test Summary](#regression-test-summaries) summarizes the target of each regression test which may be helpful.
+The [Regression Test Summary](#regression-test-summaries) summarizes the target of each regression test which may be helpful.
 
 The standard of naming the benchmarks are as follows:
 
@@ -76,7 +76,7 @@ The standard of naming the benchmarks are as follows:
 * input vector file: meaningful_title_input
 * output vector file: meaningful_title_output
 
-If the tests needed do not fit in an already existing set of regression tests or need certain architecture(s), create a seperate folder in the verilog directory and label appropriately.
+If the tests needed do not fit in an already existing set of regression tests or need certain architecture(s), create a separate folder in the verilog directory and label appropriately.
 Store the benchmarks in that folder.
 Add the architecture (if it isn't one that already exists) to ../vtr_flow/arch.
 
@@ -147,12 +147,12 @@ Regression Parameters:
 * `--concat_circuit_list`    concatenate the circuit list and pass it straight through to odin
 * `--generate_bench`         generate input and output vectors from scratch
 * `--disable_simulation`     disable the simulation for this task
-* `--disable_parallel_jobs`  disable running circuit/task pairs in parralel
-* `--randomize`             performs a dry run randomly to check the validity of the task and flow                        |
-* `--regenerate_expectation`regenerates expectation and overrides thee expected value only if there's a mismatch          |
-* `--generate_expectation`   generate the expectation and overrides the expectation file                                  |
+* `--disable_parallel_jobs`  disable running circuit/task pairs in parallel
+* `--randomize`             perform a dry run randomly to check the validity of the task and flow                        |
+* `--regenerate_expectation`regenerate expectation and override the expected value only if there's a mismatch          |
+* `--generate_expectation`   generate the expectation and override the expectation file                                  |
 
-### Creating a task
+### Creating a Task
 
 The following diagram illustrates the structure of regression tests.
 Each regression test needs a corresponding folder in the task directory containing the configuration file.
@@ -179,7 +179,7 @@ The task diplay name and the verilog file group should share the same title.
 
 There are times where multiple configuration files are needed in a regression test due to different commands wanted or architectures.
 The task cmd_line_args is an example of this.
-If that is the case, each configuration file will still need its own folder, however these folder's should be placed in a parent folder.
+If that is the case, each configuration file will still need its own folder, however these folders should be placed in a parent folder.
 
 ```bash
 └── ODIN_II
@@ -205,7 +205,7 @@ If that is the case, each configuration file will still need its own folder, how
 
 Suites are used to call multiple tasks at once. This is handy for regenerating results for multiple tasks.
 In the diagram below you can see the structure of the suite.
-The suite contains a configuration file that calls upon the different tasks **named task_list.conf**.  
+The suite contains a configuration file that calls upon the different tasks named **task_list.conf**.
 
 ```bash
 └── ODIN_II
@@ -266,7 +266,7 @@ then: where N is the number of processors in the computer, and the path followin
 
 > **NOTE**
 >
-> **DO NOT** run the `make sanitize` if regenerating the large test. It is probable that the computer will not have a enough ram to do so and it will take a long time. Instead run `make build`
+> **DO NOT** run the `make sanitize` if regenerating the large test. It is probable that the computer will not have enough ram to do so and it will take a long time. Instead run `make build`
 
 For more on regenerating results, refer to the [Verify Script](./verify_script.md) section.
 
@@ -299,19 +299,19 @@ This regression test targets cases that require a lot of ram and time.
 
 ### micro
 
-The micro regression tests targets hards blocks and pieces that can be easily instantiated in architectures.
+The micro regression test targets hards blocks and pieces that can be easily instantiated in architectures.
 
 ### mixing_optimization
 
-The mixing optimization regression tests targets mixing implementations for operations implementable in hard blocks and their soft logic counterparts that can be can be easily instantiated in architectures. The tests support extensive command line coverage, as well as provide infrastructure to enable the optimization from an .xml configuration file, require for using the optimization as a part of VTR synthesis flow.
+The mixing optimization regression test targets mixing implementations for operations implementable in hard blocks and their soft logic counterparts that can be can be easily instantiated in architectures. The tests support extensive command line coverage, as well as provide infrastructure to enable the optimization from an .xml configuration file, require for using the optimization as a part of VTR synthesis flow.
 
 ### operators
 
-This regression test targets the functionality of different opertators. It checks bit size capacity and behaviour.  
+This regression test targets the functionality of different operators. It checks bit size capacity and behaviour.
 
 ### syntax
 
-The syntax regression tests targets syntactic behaviour. It checks that functions work cohesively together and adhere to the verilog standard.
+The syntax regression test targets syntactic behaviour. It checks that functions work cohesively together and adhere to the verilog standard.
 
 ### keywords
 
