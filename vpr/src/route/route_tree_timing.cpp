@@ -264,7 +264,7 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
         auto& device_ctx = g_vpr_ctx.device();
-        if (device_ctx.rr_nodes[node->inode].type() == SINK) {
+        if (device_ctx.rr_graph.node_type(RRNodeId(node->inode)) == SINK) {
             VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode]->inode == node->inode);
         } else {
             VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
@@ -954,7 +954,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
         nodes.insert(trace->index);
 
         //Sanity check that number of sinks match expected
-        if (device_ctx.rr_nodes[trace->index].type() == SINK) {
+        if (device_ctx.rr_graph.node_type(RRNodeId(trace->index)) == SINK) {
             num_trace_sinks += 1;
         }
     }
@@ -1037,7 +1037,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         }
     }
 
-    if (device_ctx.rr_nodes[node->inode].type() == SINK) {
+    if (device_ctx.rr_graph.node_type(RRNodeId(node->inode)) == SINK) {
         if (!force_prune) {
             //Valid path to sink
 
@@ -1173,7 +1173,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vect
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    VTR_ASSERT_MSG(device_ctx.rr_nodes[rt_root->inode].type() == SOURCE, "Root of route tree must be SOURCE");
+    VTR_ASSERT_MSG(device_ctx.rr_graph.node_type(RRNodeId(rt_root->inode)) == SOURCE, "Root of route tree must be SOURCE");
 
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(),
                    "Route tree root/SOURCE should never be congested");

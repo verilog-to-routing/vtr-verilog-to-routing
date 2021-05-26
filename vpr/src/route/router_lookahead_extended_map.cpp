@@ -393,7 +393,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
         }
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
-        if (device_ctx.rr_nodes[size_t(node)].type() == IPIN) {
+        if (device_ctx.rr_graph.node_type(node) == IPIN) {
             // the last cost should be the highest
             max_cost = current.cost();
 
