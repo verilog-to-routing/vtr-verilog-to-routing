@@ -2918,8 +2918,9 @@ static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_
     //candidate would be picked (i.e. to minimize the drawn edge length).
     //
     //This function attempts to pick the 'best/closest' of the candidates.
+    auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_ASSERT(rr_nodes[from_rr].type() == OPIN);
+    VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(from_rr)) == OPIN);
 
     float best_dist = std::numeric_limits<float>::infinity();
     int best_rr = OPEN;
@@ -2931,7 +2932,7 @@ static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_
         }
 
         for (int to_rr : candidate_rr_nodes) {
-            VTR_ASSERT(rr_nodes[to_rr].type() == IPIN);
+            VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(to_rr)) == IPIN);
             float to_dist = std::abs(rr_nodes[from_rr].xlow() - rr_nodes[to_rr].xlow())
                             + std::abs(rr_nodes[from_rr].ylow() - rr_nodes[to_rr].ylow());
 

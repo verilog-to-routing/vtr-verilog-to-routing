@@ -971,7 +971,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
                  * use the pair data structure to keep the maximum*/
                 if (device_ctx.rr_graph.node_type(node.id()) == CHANX || device_ctx.rr_graph.node_type(node.id()) == CHANY) {
-                    if ((*rr_nodes_)[sink_node].type() == IPIN) {
+                    if (device_ctx.rr_graph.node_type(RRNodeId(sink_node)) == IPIN) {
                         count_for_wire_to_ipin_switches[switch_id]++;
                         if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
                             most_frequent_switch.first = switch_id;

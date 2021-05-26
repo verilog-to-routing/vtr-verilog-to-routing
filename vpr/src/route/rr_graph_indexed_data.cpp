@@ -342,7 +342,7 @@ static void load_rr_indexed_data_T_values() {
      * data.
      */
     for (size_t inode = 0; inode < rr_nodes.size(); inode++) {
-        t_rr_type rr_type = rr_nodes[inode].type();
+        t_rr_type rr_type = device_ctx.rr_graph.node_type(RRNodeId(inode));
 
         if (rr_type != CHANX && rr_type != CHANY) {
             continue;
