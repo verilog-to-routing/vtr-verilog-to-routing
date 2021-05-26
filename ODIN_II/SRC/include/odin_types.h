@@ -207,7 +207,7 @@ enum init_value_e {
 
 enum operation_list {
     NO_OP,
-    MULTI_PORT_MUX,  // port 1 = control, port 2+ = mux options
+    MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
     FF_NODE,
     BUF_NODE,
     INPUT_NODE,
@@ -255,14 +255,14 @@ enum operation_list {
     MEMORY,
     PAD_NODE,
     HARD_IP,
-    GENERIC,  /*added for the unknown node type */
-    CLOG2,    // $clog2
-    UNSIGNED, // $unsigned
-    SIGNED,   // $signed
-                            // [START] operations to cover yosys subckt
-    MULTI_BIT_MUX_2,        // like MUX_2 but with n-bit input/output
-    DFFSR,                  // data, clear and set to output port
-                            // [END] operations to cover yosys subckt
+    GENERIC,         /*added for the unknown node type */
+    CLOG2,           // $clog2
+    UNSIGNED,        // $unsigned
+    SIGNED,          // $signed
+                     // [START] operations to cover yosys subckt
+    MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
+    DFFSR,           // data, clear and set to output port
+                     // [END] operations to cover yosys subckt
     operation_list_END
 };
 typedef std::unordered_map<std::string, operation_list> typemap;

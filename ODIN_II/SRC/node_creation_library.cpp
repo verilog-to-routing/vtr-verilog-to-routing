@@ -225,7 +225,6 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
 }
 
 const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc) {
-
     switch (edge_type) {
         case FALLING_EDGE_SENSITIVITY:
             return "fe";

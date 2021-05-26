@@ -83,8 +83,7 @@ HardSoftLogicMixer* mixer;
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
-static void  cleanup_odin();
-
+static void cleanup_odin();
 
 static ODIN_ERROR_CODE synthesize() {
     double elaboration_time = wall_time();
@@ -716,8 +715,8 @@ static void set_physical_lut_size() {
 /**
  * (function: cleanup odin)
  * to destruct global variables
-*/
-static void  cleanup_odin() {
+ */
+static void cleanup_odin() {
     if (one_string)
         vtr::free(one_string);
     if (zero_string)
