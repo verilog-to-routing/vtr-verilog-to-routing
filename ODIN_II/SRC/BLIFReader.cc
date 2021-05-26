@@ -1753,25 +1753,34 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         char* first_part = NULL;
         char* second_part = NULL;
         const char* pos = strchr(name_str, '[');
+        while (pos) {
+           const char* pre_pos = pos;
+            pos = strchr(pos+1, '[');
+            if (!pos) {
+                pos = pre_pos;
+                break;
+            }
+        }
+
         if (pos) {
             name = (char*)vtr::malloc((pos - name_str + 1) * sizeof(char));
             memcpy(name, name_str, pos - name_str);
             name[pos - name_str] = '\0';
-        }
 
-        const char* pos2 = strchr(name_str, ']');
-        if (pos2) {
-            index = (char*)vtr::malloc((pos2 - (pos + 1) + 1) * sizeof(char));
-            memcpy(index, pos + 1, pos2 - (pos + 1));
-            index[pos2 - (pos + 1)] = '\0';
+            const char* pos2 = strchr(pos, ']');
+            if (pos2) {
+                index = (char*)vtr::malloc((pos2 - (pos + 1) + 1) * sizeof(char));
+                memcpy(index, pos + 1, pos2 - (pos + 1));
+                index[pos2 - (pos + 1)] = '\0';
 
-            const char* end = strchr(name_str, '\0');
-            if (end) {
-                second_part = (char*)vtr::malloc((end - (pos2 + 1) + 1) * sizeof(char));
-                memcpy(second_part, pos2 + 1, end - (pos2 + 1));
-                second_part[end - (pos2 + 1)] = '\0';
-            } else {
-                error_message(PARSE_BLIF, my_location, "Invalid pin name (%s)\n", name_str);
+                const char* end = strchr(pos, '\0');
+                if (end) {
+                    second_part = (char*)vtr::malloc((end - (pos2 + 1) + 1) * sizeof(char));
+                    memcpy(second_part, pos2 + 1, end - (pos2 + 1));
+                    second_part[end - (pos2 + 1)] = '\0';
+                } else {
+                    error_message(PARSE_BLIF, my_location, "Invalid pin name (%s)\n", name_str);
+                }
             }
         }
 
