@@ -301,27 +301,6 @@
     <direct name="exp" from_pin="clb.O[2:0]" to_pin="clb.I[2:0]" x_offset="-1" y_offset="-1" z_offset="0"/>
   </directlist>
 
-  <switchblocklist>
-    <switchblock name="my_switchblock" type="unidir">
-      <switchblock_location type="EVERYWHERE"/>
-      <switchfuncs>
-        <func type="lr" formula="W+t-1"/>
-        <func type="lt" formula="W-t+1"/>
-        <func type="lb" formula="W+t"/>
-        <func type="rt" formula="W+t-2"/>
-        <func type="br" formula="t"/>
-        <func type="bt" formula="W+t-2"/>
-        <func type="rl" formula="W-t+1"/>
-        <func type="tl" formula="W+-2t"/>
-        <func type="bl" formula="W-t+1"/>
-        <func type="tr" formula="W-t+2"/>
-        <func type="rb" formula="W+t-2"/>
-        <func type="tb" formula="t"/>
-      </switchfuncs>
-      
-    </switchblock>
-  </switchblocklist>
-
   <complexblocklist>
     <!-- Define I/O pads begin -->
     <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
