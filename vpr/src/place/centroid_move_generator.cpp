@@ -2,6 +2,7 @@
 #include "vpr_types.h"
 #include "globals.h"
 #include "directed_moves_util.h"
+#include "place_constraints.h"
 
 e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     /* Pick a random block to be swapped with another random block.   */
@@ -35,5 +36,12 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
         return e_create_move::ABORT;
     }
 
-    return ::create_move(blocks_affected, b_from, to);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+
+    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
+
+    return create_move;
 }

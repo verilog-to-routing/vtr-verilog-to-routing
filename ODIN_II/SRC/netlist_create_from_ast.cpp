@@ -196,16 +196,32 @@ void create_netlist(ast_t* ast) {
     }
 }
 
-/*---------------------------------------------------------------------------------------------
+/**
+ *---------------------------------------------------------------------------------------------
  * (function: look_for_clocks)
+ * 
+ * @brief going through all FF nodes looking for the clock signals.
+ * If they are not clock type, they should alter to one. Since BUF
+ * nodes be removed in the partial mapping, the driver of the BUF
+ * nodes should be considered as a clock node. 
+ * 
+ * @param netlist pointer to the current netlist file
  *-------------------------------------------------------------------------------------------*/
 void look_for_clocks(netlist_t* netlist) {
     int i;
 
     for (i = 0; i < netlist->num_ff_nodes; i++) {
+        /* at this step, clock nodes must have been driving by one driver */
         oassert(netlist->ff_nodes[i]->input_pins[1]->net->num_driver_pins == 1);
-        if (netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type != CLOCK_NODE) {
-            netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node->type = CLOCK_NODE;
+        /* node: clock driver node */
+        nnode_t* node = netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node;
+
+        /* as far as a clock driver node is a BUF node, going through its drivers till finding a non-BUF node */
+        while (node->type == BUF_NODE)
+            node = node->input_pins[0]->net->driver_pins[0]->node;
+
+        if (node->type != CLOCK_NODE) {
+            node->type = CLOCK_NODE;
         }
     }
 }
@@ -2729,7 +2745,7 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_output_pin)
- * 	Create OUTPUT pin creates a pin representing this naming isntance, adds it to the input
+ * 	Create OUTPUT pin creates a pin representing this naming instance, adds it to the input
  * 	nets list (if not already there) and adds the pin to the list.
  * 	Note: only for output drivers...
  *-------------------------------------------------------------------------------------------*/
@@ -5402,12 +5418,25 @@ signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, 
     return return_list;
 }
 
+/**
+ * --------------------------------------------------------------------------
+ * (function: reorder_connections_from_name)
+ * 
+ * @brief reorder the instantiated instance ports based on 
+ * the order of the main item(module, function or task)
+ * 
+ * @param instance_node_list including the list of the main item ports
+ * @param instantiated_instance_list including the list of the instantiated instance ports
+ * @param ids the type of the main item or instance (module, function or task)
+ *--------------------------------------------------------------------------*/
 void reorder_connections_from_name(ast_node_t* instance_node_list, ast_node_t* instantiated_instance_list, ids type) {
     int i, j;
     bool has_matched;
-    int* arr_index = new int[instantiated_instance_list->num_children];
     int start_index = type == FUNCTION ? 1 : 0;
+    int* arr_index = (int*)vtr::malloc(instantiated_instance_list->num_children * sizeof(int));
+    memset(arr_index, -1, (instantiated_instance_list->num_children) * sizeof(int));
 
+    // find the mismatch and store the right index for each item in arr_index
     for (i = start_index; i < instantiated_instance_list->num_children; i++) {
         has_matched = false;
         arr_index[i] = -1;
@@ -5429,17 +5458,27 @@ void reorder_connections_from_name(ast_node_t* instance_node_list, ast_node_t* i
         }
     }
 
+    // keep the reordered instantiated instance port in an array to swap them later
+    ast_node_t** swapping_children = (ast_node_t**)vtr::calloc(instantiated_instance_list->num_children, sizeof(ast_node_t*));
     for (i = start_index; i < instantiated_instance_list->num_children; i++) {
         if (arr_index[i] != -1) {
-            ast_node_t* temp = instantiated_instance_list->children[arr_index[i]];
-            instantiated_instance_list->children[arr_index[i]] = instantiated_instance_list->children[i];
-            instantiated_instance_list->children[i] = temp;
-            arr_index[arr_index[i]] = -1;
+            swapping_children[arr_index[i]] = instantiated_instance_list->children[i];
         }
     }
 
-    delete[] arr_index;
+    // make instantiated instance ports ordered by swapping them using reordered indexes
+    for (i = start_index; i < instantiated_instance_list->num_children; i++) {
+        instantiated_instance_list->children[i] = (swapping_children[i]) ? swapping_children[i]
+                                                                         : instantiated_instance_list->children[i];
+        swapping_children[i] = NULL;
+    }
+
+    // free the allocated memory
+    if (swapping_children)
+        vtr::free(swapping_children);
+    vtr::free(arr_index);
 }
+
 /*--------------------------------------------------------------------------
  * Resolves top module parameters and defparams defined by it's own parameters as those parameters cannot be overriden
  * Technically the top module parameters can be overriden by defparams in a seperate module however that cannot be supported until

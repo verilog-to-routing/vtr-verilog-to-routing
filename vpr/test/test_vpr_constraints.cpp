@@ -36,6 +36,7 @@ TEST_CASE("Region", "[vpr]") {
     is_def_empty = def_rect.empty();
     REQUIRE(is_def_empty == true);
     REQUIRE(def_rect.xmin() == -1);
+    REQUIRE(def_region.get_sub_tile() == -1);
 }
 
 //Test PartitionRegion class accessors and mutators

@@ -72,7 +72,7 @@ The overall approach is similar, but we call out the differences below.
 
 8. Create a Pull Request (PR) to request your changes be merged into VTR.
 
-    * Navitage to your branch on GitHub
+    * Navigate to your branch on GitHub
 
         a. **External Developers**
 
@@ -92,7 +92,7 @@ The overall approach is similar, but we call out the differences below.
 
 ## Commit Messages
 
-Commit messagaes are an important part of understanding the code base and it's history.
+Commit messages are an important part of understanding the code base and it's history.
 It is therefore *extremely* important to provide the following information in the commit message:
 
 * What is being changed?
@@ -285,14 +285,14 @@ $ ./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 
 Odin has its own set of tests to verify the correctness of its synthesis results:
 
-* `odin_reg_micro`: ~2 minutes serial
-* `odin_reg_full`: ~6 minutes serial
+* `odin_reg_basic`: ~2 minutes serial
+* `odin_reg_strong`: ~6 minutes serial
 
 These can be run with:
 ```shell
 #From the VTR root directory
-$ ./run_reg_test.py odin_reg_micro
-$ ./run_reg_test.py odin_reg_full
+$ ./run_reg_test.py odin_reg_basic
+$ ./run_reg_test.py odin_reg_strong
 ```
 and should be used when making changes to Odin.
 
