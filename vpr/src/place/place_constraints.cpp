@@ -142,3 +142,37 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
 
     return floorplanning_good;
 }
+
+void load_cluster_constraints() {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    ClusterAtomsLookup atoms_lookup;
+
+    floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
+
+    for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
+        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
+        PartitionRegion empty_pr;
+        floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
+
+        //if there are any constrainted atoms in the cluster,
+        //we update the cluster's PartitionRegion
+        for (unsigned int i = 0; i < atoms.size(); i++) {
+            PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atoms[i]);
+
+            if (partid != PartitionId::INVALID()) {
+                PartitionRegion pr = floorplanning_ctx.constraints.get_partition_pr(partid);
+                if (floorplanning_ctx.cluster_constraints[cluster_id].empty()) {
+                    floorplanning_ctx.cluster_constraints[cluster_id] = pr;
+                } else {
+                    PartitionRegion intersect_pr = intersection(pr, floorplanning_ctx.cluster_constraints[cluster_id]);
+                    if (intersect_pr.empty()) {
+                        VTR_LOG_ERROR("Cluster block %zu has atoms with incompatible floorplan constraints.\n", size_t(cluster_id));
+                    } else {
+                        floorplanning_ctx.cluster_constraints[cluster_id] = intersect_pr;
+                    }
+                }
+            }
+        }
+    }
+}
