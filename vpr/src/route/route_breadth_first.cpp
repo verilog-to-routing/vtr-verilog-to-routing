@@ -303,7 +303,7 @@ static void breadth_first_expand_trace_segment(BinaryHeap& heap, t_trace* start_
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     tptr = start_ptr;
-    if (tptr != nullptr && device_ctx.rr_nodes[tptr->index].type() == SINK) {
+    if (tptr != nullptr && device_ctx.rr_graph.node_type(RRNodeId(tptr->index)) == SINK) {
         /* During logical equivalence case, only use one opin */
         tptr = tptr->next;
     }

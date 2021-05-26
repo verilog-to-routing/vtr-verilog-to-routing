@@ -1158,7 +1158,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
-                VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
+                VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(rt_node_of_sink[ipin]->parent_node->parent_node->inode)) == OPIN);
             }
         }
     }
@@ -1519,7 +1519,7 @@ void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* rt_node)
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
-        if (device_ctx.rr_nodes[child_node->inode].type() == SINK) {
+        if (device_ctx.rr_graph.node_type(RRNodeId(child_node->inode)) == SINK) {
             VTR_LOGV_DEBUG(f_router_debug,
                            "Removing sink %d from route tree\n", child_node->inode);
             rt_node->u.child_list = nullptr;

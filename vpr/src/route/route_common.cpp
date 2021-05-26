@@ -1133,7 +1133,7 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
 
     int driver_rr = route_ctx.net_rr_terminals[net_id][0];
     const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
-    VTR_ASSERT(source_node.type() == SOURCE);
+    VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(driver_rr)) == SOURCE);
 
     VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
     VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
@@ -1147,7 +1147,7 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
         int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
         const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
-        VTR_ASSERT(sink_node.type() == SINK);
+        VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(sink_rr)) == SINK);
 
         VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
         VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());

@@ -54,7 +54,7 @@ float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target
 std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_rr_type rr_type = device_ctx.rr_nodes.node_type(node);
+    t_rr_type rr_type = device_ctx.rr_graph.node_type(node);
 
     if (rr_type == CHANX || rr_type == CHANY) {
         int num_segs_ortho_dir = 0;
@@ -122,7 +122,7 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
     inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
     ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
     ortho_inv_length = device_ctx.rr_indexed_data[ortho_cost_index].inv_length;
-    rr_type = device_ctx.rr_nodes.node_type(inode);
+    rr_type = device_ctx.rr_graph.node_type(inode);
 
     if (rr_type == CHANX) {
         ylow = device_ctx.rr_nodes.node_ylow(inode);

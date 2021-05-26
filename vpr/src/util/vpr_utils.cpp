@@ -195,11 +195,11 @@ std::string rr_node_arch_name(int inode) {
     const t_rr_node& rr_node = device_ctx.rr_nodes[inode];
 
     std::string rr_node_arch_name;
-    if (rr_node.type() == OPIN || rr_node.type() == IPIN) {
+    if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == OPIN || device_ctx.rr_graph.node_type(RRNodeId(inode)) == IPIN) {
         //Pin names
         auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_node.ptc_num());
-    } else if (rr_node.type() == SOURCE || rr_node.type() == SINK) {
+    } else if (device_ctx.rr_graph.node_type(RRNodeId(inode)) == SOURCE || device_ctx.rr_graph.node_type(RRNodeId(inode)) == SINK) {
         //Set of pins associated with SOURCE/SINK
         auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
         auto pin_names = block_type_class_index_to_pin_names(type, rr_node.ptc_num());
@@ -213,7 +213,7 @@ std::string rr_node_arch_name(int inode) {
             rr_node_arch_name += pin_names[0];
         }
     } else {
-        VTR_ASSERT(rr_node.type() == CHANX || rr_node.type() == CHANY);
+        VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(inode)) == CHANX || device_ctx.rr_graph.node_type(RRNodeId(inode)) == CHANY);
         //Wire segment name
         auto cost_index = rr_node.cost_index();
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;

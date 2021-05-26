@@ -86,7 +86,7 @@ void report_overused_nodes() {
         os << "Capacity = " << device_ctx.rr_nodes.node_capacity(node_id) << "\n\n";
 
         /* Report selective info based on the rr node type */
-        auto node_type = device_ctx.rr_nodes.node_type(node_id);
+        auto node_type = device_ctx.rr_graph.node_type(node_id);
         os << "Node type = " << device_ctx.rr_nodes.node_type_string(node_id) << '\n';
 
         switch (node_type) {
@@ -256,7 +256,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     const auto& route_ctx = g_vpr_ctx.routing();
 
     //Determines if direction or side is available for printing
-    auto node_type = device_ctx.rr_nodes.node_type(node_id);
+    auto node_type = device_ctx.rr_graph.node_type(node_id);
 
     //Overuse #
     VTR_LOG("%6d", overuse_index);

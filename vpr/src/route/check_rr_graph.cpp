@@ -205,7 +205,7 @@ void check_rr_graph(const t_graph_type graph_type,
     bool is_fringe_warning_sent = false;
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        t_rr_type rr_type = device_ctx.rr_nodes.node_type(RRNodeId(inode));
+        t_rr_type rr_type = device_ctx.rr_graph.node_type(RRNodeId(inode));
 
         if (rr_type != SOURCE) {
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(inode)) {
@@ -583,7 +583,8 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
     /* TODO: this function should be reworked later to adapt RRGraphView interface 
      *       once xlow(), ylow(), side() APIs are implemented
      */
-    VTR_ASSERT(node.type() == IPIN || node.type() == OPIN);
+    auto& device_ctx = g_vpr_ctx.device();
+    VTR_ASSERT(device_ctx.rr_graph.node_type(node.id()) == IPIN || device_ctx.rr_graph.node_type(node.id()) == OPIN);
 
     if ((node.xlow() == 0 && !node.is_node_on_specific_side(RIGHT))                          //left device edge connects only along block's right side
         || (node.ylow() == int(grid.height() - 1) && !node.is_node_on_specific_side(BOTTOM)) //top device edge connects only along block's bottom side

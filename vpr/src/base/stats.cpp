@@ -303,7 +303,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
             if (tptr == nullptr)
                 break;
 
-            curr_type = device_ctx.rr_nodes[tptr->index].type();
+            curr_type = device_ctx.rr_graph.node_type(RRNodeId(tptr->index));
         }
 
         else if (curr_type == CHANX || curr_type == CHANY) {

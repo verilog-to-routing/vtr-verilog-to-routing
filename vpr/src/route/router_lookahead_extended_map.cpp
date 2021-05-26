@@ -143,7 +143,7 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
-    e_rr_type to_type = rr_graph.node_type(to_node);
+    e_rr_type to_type = device_ctx.rr_graph.node_type(to_node);
     VTR_ASSERT(to_type == SINK || to_type == IPIN);
 
     auto to_tile_type = device_ctx.grid[rr_graph.node_xlow(to_node)][rr_graph.node_ylow(to_node)].type;
@@ -187,7 +187,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     dx = to_x - from_x;
     dy = to_y - from_y;
 
-    e_rr_type from_type = rr_graph.node_type(from_node);
+    e_rr_type from_type = device_ctx.rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
         return this->get_src_opin_cost(from_node, dx, dy, params);
     } else if (from_type == IPIN) {
@@ -573,7 +573,7 @@ float ExtendedMapLookahead::get_expected_cost(
     float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_rr_type rr_type = device_ctx.rr_nodes.node_type(current_node);
+    t_rr_type rr_type = device_ctx.rr_graph.node_type(current_node);
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;

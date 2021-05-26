@@ -827,7 +827,7 @@ bool StubFinder::RecurseTree(t_rt_node* rt_root) {
 
     if (rt_root->u.child_list == nullptr) {
         //If a leaf of the route tree is not a SINK, then it is a stub
-        if (device_ctx.rr_nodes[rt_root->inode].type() != SINK) {
+        if (device_ctx.rr_graph.node_type(RRNodeId(rt_root->inode)) != SINK) {
             return true; //It is the current root of this stub
         } else {
             return false;
