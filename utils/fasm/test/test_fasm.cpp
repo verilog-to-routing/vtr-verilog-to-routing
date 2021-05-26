@@ -169,7 +169,22 @@ TEST_CASE("match_lut_init", "[fasm]") {
     CHECK(match_lut_init("16'b0000000011111111", "16'b0000111100001111"));
 }
 
-std::string get_pin_feature (size_t inode) {
+/*
+The following function returns a string describing a block pin given an IPIN/
+OPIN rr node index. This is needed to correlate rr nodes with port names as
+defined in the architecture and used for checking if genfasm correctlty honors
+equivalent port pins rotation.
+
+The output pin description format is:
+"PIN_<xlow>_<ylow>_<sub_tile_type>_<sub_tile_port>_<port_pin_index>"
+
+Pin decriptions returned by this functions are injected as FASM features to the
+edges of a rr graph that are immediately connected with pins from "outside"
+(not to from/to a SOURCE or SINK). Then, after genfasm is run they are identified,
+and decoded to get all the pin information. This allows to get information
+which block pins are used from the "FASM perspective".
+*/
+static std::string get_pin_feature (size_t inode) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // Get tile physical tile and the pin number
@@ -178,7 +193,8 @@ std::string get_pin_feature (size_t inode) {
     auto physical_tile = device_ctx.grid[ilow][jlow].type;
     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
 
-    // Get the sub tile (type, not instance)
+    // Get the sub tile (type, not instance) and index of its pin that matches
+    // the node index.
     const t_sub_tile* sub_tile_type = nullptr;
     int sub_tile_pin = -1;
 
@@ -200,14 +216,13 @@ std::string get_pin_feature (size_t inode) {
     REQUIRE(sub_tile_type != nullptr);
     REQUIRE(sub_tile_pin  != -1);
 
-    // Find the sub tile port and pin index
+    // Find the sub tile port and pin index for the sub-tile type pin index.
     for (const auto& port : sub_tile_type->ports) {
         int pin_lo = port.absolute_first_pin_index;
         int pin_hi = pin_lo + port.num_pins;
 
         if (sub_tile_pin >= pin_lo && sub_tile_pin < pin_hi) {
             int port_pin = sub_tile_pin - pin_lo;
-            fprintf(stderr, "    %zu %s %d\n", inode, port.name, port_pin);
             return vtr::string_fmt("PIN_%d_%d_%s_%s_%d", ilow, jlow, sub_tile_type->name, port.name, port_pin);
         }
     }
@@ -331,7 +346,6 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         if (line.find(".names") != std::string::npos) {
             REQUIRE(lut_def.length() > 0);
             lut_defs.push_back(lut_def);
-            //fprintf(stderr, "'%s'\n", lut_def.c_str());
             lut_def = "";
             continue;
         }
@@ -568,7 +582,6 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         // Decompose the xbar feature - extract only the necessary information
         // such as block location and pin index.
         std::smatch m;
-        fprintf(stderr, "%s\n", xbar_feature.c_str());
         auto res = std::regex_match(xbar_feature, m, std::regex(
             ".*_X([0-9]+)Y([0-9]+)\\.IN([0-9])_XBAR_I([0-9]+)$"));
         REQUIRE(res == true);

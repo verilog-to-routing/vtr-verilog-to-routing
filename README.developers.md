@@ -285,14 +285,14 @@ $ ./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 
 Odin has its own set of tests to verify the correctness of its synthesis results:
 
-* `odin_reg_micro`: ~2 minutes serial
-* `odin_reg_full`: ~6 minutes serial
+* `odin_reg_basic`: ~2 minutes serial
+* `odin_reg_strong`: ~6 minutes serial
 
 These can be run with:
 ```shell
 #From the VTR root directory
-$ ./run_reg_test.py odin_reg_micro
-$ ./run_reg_test.py odin_reg_full
+$ ./run_reg_test.py odin_reg_basic
+$ ./run_reg_test.py odin_reg_strong
 ```
 and should be used when making changes to Odin.
 

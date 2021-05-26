@@ -199,7 +199,7 @@ jobs:
         ./.github/travis/setup.sh
 
   ODINII:
-    name: 'ODIN-II Micro Tests'
+    name: 'ODIN-II Basic Tests'
     runs-on: ubuntu-18.04
     steps:
 
@@ -219,7 +219,7 @@ jobs:
         source .github/travis/common.sh
         ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./run_reg_test.py odin_reg_micro -show_failures -j2
+        ./run_reg_test.py odin_reg_basic -show_failures -j2
         ./.github/travis/setup.sh
 
 
