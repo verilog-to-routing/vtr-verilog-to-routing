@@ -47,7 +47,7 @@ make sanitize
 ```
 
 A synthesis_result.json and a simulation_result.json will be generated in the task's folder.
-The simulation results for each benchmark are only generated if they syntehsize correctly (no exit error), thus if none of the benchmarks synthesize there will be no simulation_result.json generated.
+The simulation results for each benchmark are only generated if they synthesize correctly (no exit error), thus if none of the benchmarks synthesize there will be no simulation_result.json generated.
 
 ### Regenerating Results for a Changed Test
 

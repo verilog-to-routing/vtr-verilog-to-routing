@@ -1813,8 +1813,11 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
 
                     vtr::free(max_size);
 
-                    /* cast to unsigned if necessary */
-                    if (node_is_constant(node->children[1])) {
+                    /* 
+                     * cast to unsigned if necessary
+                     * Concatenate results are unsigned, regardless of the operands. IEEE.1364-2005 pp.65
+                     */
+                    if (node->children[0]->type != CONCATENATE && node_is_constant(node->children[1])) {
                         char* id = NULL;
                         if (node->children[0]->type == IDENTIFIERS) {
                             id = node->children[0]->types.identifier;
