@@ -205,7 +205,7 @@ void check_rr_graph(const t_graph_type graph_type,
     bool is_fringe_warning_sent = false;
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+        t_rr_type rr_type = device_ctx.rr_nodes.node_type(RRNodeId(inode));
 
         if (rr_type != SOURCE) {
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(inode)) {
@@ -224,16 +224,17 @@ void check_rr_graph(const t_graph_type graph_type,
                 }
 
                 const auto& node = device_ctx.rr_nodes[inode];
+                const auto& rr_graph = device_ctx.rr_graph;
 
                 bool is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
                                   || (device_ctx.rr_nodes[inode].ylow() == 1)
                                   || (device_ctx.rr_nodes[inode].xhigh() == int(grid.width()) - 2)
                                   || (device_ctx.rr_nodes[inode].yhigh() == int(grid.height()) - 2));
-                bool is_wire = (device_ctx.rr_nodes[inode].type() == CHANX
-                                || device_ctx.rr_nodes[inode].type() == CHANY);
+                bool is_wire = (rr_graph.node_type(RRNodeId(inode)) == CHANX
+                                || rr_graph.node_type(RRNodeId(inode)) == CHANY);
 
                 if (!is_chain && !is_fringe && !is_wire) {
-                    if (node.type() == IPIN || node.type() == OPIN) {
+                    if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
                         if (has_adjacent_channel(node, device_ctx.grid)) {
                             auto block_type = device_ctx.grid[node.xlow()][node.ylow()].type;
                             std::string pin_name = block_type_pin_index_to_name(block_type, node.pin_num());
@@ -579,6 +580,9 @@ static void check_unbuffered_edges(int from_node) {
 }
 
 static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) {
+    /* TODO: this function should be reworked later to adapt RRGraphView interface 
+     *       once xlow(), ylow(), side() APIs are implemented
+     */
     VTR_ASSERT(node.type() == IPIN || node.type() == OPIN);
 
     if ((node.xlow() == 0 && !node.is_node_on_specific_side(RIGHT))                          //left device edge connects only along block's right side
