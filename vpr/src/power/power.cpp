@@ -781,6 +781,7 @@ static void power_usage_routing(t_power_usage* power_usage,
     auto& power_ctx = g_vpr_ctx.power();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     power_zero_usage(power_usage);
@@ -825,7 +826,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                     auto next_node = device_ctx.rr_nodes[node.edge_sink_node(edge_idx)];
                     t_rr_node_power* next_node_power = &rr_node_power[node.edge_sink_node(edge_idx)];
 
-                    switch (device_ctx.rr_graph.node_type(RRNodeId(node.edge_sink_node(edge_idx)))) {
+                    switch (rr_graph.node_type(RRNodeId(node.edge_sink_node(edge_idx)))) {
                         case CHANX:
                         case CHANY:
                         case IPIN:
@@ -864,7 +865,7 @@ static void power_usage_routing(t_power_usage* power_usage,
         //float C_per_seg_split;
         int wire_length;
 
-        switch (device_ctx.rr_graph.node_type(RRNodeId(rr_node_idx))) {
+        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case SOURCE:
             case SINK:
             case OPIN:
@@ -902,9 +903,9 @@ static void power_usage_routing(t_power_usage* power_usage,
                 VTR_ASSERT(node_power->in_prob);
 
                 wire_length = 0;
-                if (device_ctx.rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANX) {
+                if (rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANX) {
                     wire_length = node.xhigh() - node.xlow() + 1;
-                } else if (device_ctx.rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANY) {
+                } else if (rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANY) {
                     wire_length = node.yhigh() - node.ylow() + 1;
                 }
                 int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
@@ -1177,6 +1178,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     int max_seg_to_seg_fanout;
     auto& power_ctx = g_vpr_ctx.mutable_power();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1207,7 +1209,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
         auto node = device_ctx.rr_nodes[rr_node_idx];
         t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
 
-        switch (device_ctx.rr_graph.node_type(RRNodeId(rr_node_idx))) {
+        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case IPIN:
                 max_IPIN_fanin = std::max(max_IPIN_fanin,
                                           static_cast<int>(node.fan_in()));
@@ -1271,7 +1273,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
         auto node = device_ctx.rr_nodes[rr_node_idx];
 
-        switch (device_ctx.rr_graph.node_type(RRNodeId(rr_node_idx))) {
+        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case CHANX:
             case CHANY:
                 if (node.num_edges() > max_seg_fanout) {
@@ -1353,6 +1355,7 @@ bool power_uninit() {
     int log_idx;
     int msg_idx;
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& power_ctx = g_vpr_ctx.power();
     bool error = false;
 
@@ -1360,7 +1363,7 @@ bool power_uninit() {
         auto node = device_ctx.rr_nodes[rr_node_idx];
         t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
 
-        switch (device_ctx.rr_graph.node_type(RRNodeId(rr_node_idx))) {
+        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case CHANX:
             case CHANY:
             case IPIN:

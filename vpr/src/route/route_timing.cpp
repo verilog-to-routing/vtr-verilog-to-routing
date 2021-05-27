@@ -991,6 +991,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
      * case the rr_graph is disconnected and you can give up.                   */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
@@ -1158,7 +1159,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
-                VTR_ASSERT(device_ctx.rr_graph.node_type(RRNodeId(rt_node_of_sink[ipin]->parent_node->parent_node->inode)) == OPIN);
+                VTR_ASSERT(rr_graph.node_type(RRNodeId(rt_node_of_sink[ipin]->parent_node->parent_node->inode)) == OPIN);
             }
         }
     }
@@ -1513,13 +1514,14 @@ void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* rt_node)
      * leading to the sink as unexpandable.
      */
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     t_rt_node* child_node;
     t_linked_rt_edge* linked_rt_edge;
     linked_rt_edge = rt_node->u.child_list;
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
-        if (device_ctx.rr_graph.node_type(RRNodeId(child_node->inode)) == SINK) {
+        if (rr_graph.node_type(RRNodeId(child_node->inode)) == SINK) {
             VTR_LOGV_DEBUG(f_router_debug,
                            "Removing sink %d from route tree\n", child_node->inode);
             rt_node->u.child_list = nullptr;
@@ -1661,10 +1663,11 @@ static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) 
 
 static size_t calculate_wirelength_available() {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     size_t available_wirelength = 0;
     for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
-        if (device_ctx.rr_graph.node_type(RRNodeId(i)) == CHANX || device_ctx.rr_graph.node_type(RRNodeId(i)) == CHANY) {
+        if (rr_graph.node_type(RRNodeId(i)) == CHANX || rr_graph.node_type(RRNodeId(i)) == CHANY) {
             size_t length_x = device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow();
             size_t length_y = device_ctx.rr_nodes[i].yhigh() - device_ctx.rr_nodes[i].ylow();
 
