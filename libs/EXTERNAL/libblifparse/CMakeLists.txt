@@ -57,7 +57,7 @@ if (USES_IPO)
         CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
         if(CXX_COMPILER_SUPPORTS_${flag})
             #Flag supported, so enable it
-            set_target_properties(blifparse_test PROPERTIES LINK_FLAGS ${flag})
+            set_property(TARGET blifparse_test APPEND PROPERTY LINK_FLAGS ${flag})
         endif()
     endforeach()
 endif()
