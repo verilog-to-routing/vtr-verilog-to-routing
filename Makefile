@@ -17,7 +17,7 @@
 #    release		#Build with compiler optimization
 #    debug			#Build with debug info and no compiler optimization
 #    strict			#Build VPR with warnings treated as errors
-BUILD_TYPE ?= release
+BUILD_TYPE ?= debug
 
 #Convert to lower case for consistency
 BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
@@ -105,7 +105,7 @@ endif #BUILD_TYPE
 	#Final build
 	#
 	@echo "Building target(s): $(MAKECMDGOALS)"
-	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+	@+$(MAKE) -C  $(BUILD_DIR) $(MAKECMDGOALS) CXXFLAGS="-g"
 endif #clean
 endif #distclean
 

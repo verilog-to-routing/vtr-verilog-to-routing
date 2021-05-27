@@ -26,7 +26,7 @@
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
 void write_rr_graph(const char* file_name) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-
+    VTR_LOG("#ESR write_rr_graph\n");
     RrGraphSerializer reader(
         /*graph_type=*/t_graph_type(),
         /*base_cost_type=*/e_base_cost_type(),

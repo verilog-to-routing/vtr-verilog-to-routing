@@ -6,6 +6,7 @@
  *      Author: khalid88
  */
 #include "move_transactions.h"
+#include "clustered_netlist_utils.h"
 
 #ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
 #    define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
@@ -50,5 +51,16 @@ inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     }
     return true;
 }
+
+/*
+ * Load cluster_constraints if the pack stage of VPR is skipped. The cluster_constraints
+ * data structure is normally loaded during packing, so this routine is called when the packing stage is not performed.
+ * If no constraints file is specified, every cluster is assigned
+ * an empty PartitionRegion. If a constraints file is specified, cluster_constraints is loaded according to
+ * the floorplan constraints specified in the file.
+ * Load cluster_constraints according to the floorplan constraints specified in
+ * the constraints XML file.
+ */
+void load_cluster_constraints();
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

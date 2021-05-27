@@ -322,6 +322,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
      */
     bool routing_is_successful = false;
     WirelengthInfo wirelength_info;
+    //ESR API Access (get total number of nodes)
     OveruseInfo overuse_info(device_ctx.rr_nodes.size());
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
@@ -545,6 +546,26 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 best_clb_opins_used_locally = router_ctx.clb_opins_used_locally;
 
                 routing_is_successful = true;
+                
+                // ESR print out path for a given net
+                for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+                    auto current_node = best_routing[net_id].head;
+                    std::cout << "-------\n";
+                    while (current_node != nullptr){
+                        auto current_type = device_ctx.rr_nodes[current_node->index].type_string();
+                        auto xlow = device_ctx.rr_nodes[current_node->index].xlow();
+                        auto xhigh = device_ctx.rr_nodes[current_node->index].xhigh();
+                        auto ylow = device_ctx.rr_nodes[current_node->index].ylow();
+                        auto yhigh = device_ctx.rr_nodes[current_node->index].yhigh();
+                        if ((xlow == xhigh) && (ylow == yhigh)){
+                            printf("Node: %d %s (%d,%d) \n", current_node->index, current_type, xlow, ylow);
+                        }
+                        else{
+                            printf("Node: %d %s (%d,%d) to (%d,%d) \n", current_node->index, current_type, xlow,ylow,xhigh,yhigh);
+                        }
+                        current_node = current_node->next;
+                    }
+                }
 
                 //Update best metrics
                 if (timing_info) {
@@ -786,7 +807,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             VTR_LOG("Critical path: %g ns\n", 1e9 * best_routing_metrics.critical_path.delay());
         }
 
-        VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
+        VTR_LOG("#ESR timing Successfully routed after %d routing iterations.\n", itry);
     } else {
         VTR_LOG("Routing failed.\n");
 
@@ -1163,7 +1184,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
             }
         }
     }
-
+    //ESR API Access (get capacity of node)
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
@@ -1609,6 +1630,7 @@ static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if
     for (;;) {
         int inode = tptr->index;
         int occ = route_ctx.rr_node_route_inf[inode].occ();
+        //ESR API Access (get capacity of node)
         int capacity = device_ctx.rr_nodes[inode].capacity();
 
         if (occ > capacity) {
@@ -1666,6 +1688,8 @@ static size_t calculate_wirelength_available() {
     const auto& rr_graph = device_ctx.rr_graph;
 
     size_t available_wirelength = 0;
+    //ESR API Access (Get total number of nodes, type, and width/height of nodes, and available wirelength)
+    // But really what's happening is that this for loop iterates over every node and determines the available wirelength
     for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
         if (rr_graph.node_type(RRNodeId(i)) == CHANX || rr_graph.node_type(RRNodeId(i)) == CHANY) {
             size_t length_x = device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow();
@@ -1943,6 +1967,7 @@ static t_bb calc_current_bb(const t_trace* head) {
     bb.ymax = 0;
 
     for (const t_trace* elem = head; elem != nullptr; elem = elem->next) {
+        //ESR API Access (Direct access a node)
         const t_rr_node& node = device_ctx.rr_nodes[elem->index];
         //The router interprets RR nodes which cross the boundary as being
         //'within' of the BB. Only those which are *strictly* out side the

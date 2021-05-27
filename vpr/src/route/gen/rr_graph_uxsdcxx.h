@@ -186,6 +186,7 @@ inline void load_rr_graph_xml(T& out, Context& context, const char* filename, st
 /* Write function for the root element. */
 template<class T, typename Context>
 inline void write_rr_graph_xml(T& in, Context& context, std::ostream& os) {
+    VTR_LOG("#ESR write_rr_graph_xml\n");
     in.start_write();
     os << "<rr_graph";
     if ((bool)in.get_rr_graph_tool_comment(context))

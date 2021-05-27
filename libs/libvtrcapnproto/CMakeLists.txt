@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 if(NOT MSCV)
     # These flags generate noisy but non-bug warnings when using lib kj,
     # supress them.
@@ -28,7 +30,7 @@ capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     ${CAPNP_DEFS}
     )
 
-install(FILES ${CAPNP_DEFS} DESTINATION capnp)
+install(FILES ${CAPNP_DEFS} DESTINATION ${CMAKE_INSTALL_DATADIR}/vtr)
 
 add_library(libvtrcapnproto STATIC
             ${CAPNP_SRCS}
