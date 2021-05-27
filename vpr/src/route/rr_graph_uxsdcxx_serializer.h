@@ -1479,8 +1479,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         correct_string += get_arch_file_name();
         if (correct_string != tool_comment) {
             VTR_LOG("\n");
-            VTR_LOG_WARN("This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n",
-                         get_arch_file_name(), tool_comment);
+            VTR_LOG_WARN("This RR graph file is %s while your input architecture file is %s, compatibility issues may arise\n",
+                         tool_comment, get_arch_file_name());
             VTR_LOG("\n");
         }
     }
@@ -1489,8 +1489,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_rr_graph_tool_version(const char* tool_version, void*& /*ctx*/) final {
         if (strcmp(tool_version, vtr::VERSION) != 0) {
             VTR_LOG("\n");
-            VTR_LOG_WARN("This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
-                         vtr::VERSION, tool_version);
+            VTR_LOG_WARN("This architecture version is for VPR %s while your current VPR version is %s, compatibility issues may arise\n",
+                         tool_version, vtr::VERSION);
             VTR_LOG("\n");
         }
     }
