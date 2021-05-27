@@ -53,10 +53,14 @@ class RRGraphView {
      */
   public:
     /* Get the type of a routing resource node */
-    t_rr_type node_type(RRNodeId node) const;
+    inline t_rr_type node_type(RRNodeId node) const {
+      return node_storage_.node_type(node);
+    }
 
     /* Return the fast look-up data structure for queries from client functions */
-    const RRSpatialLookup& node_lookup() const;
+    const RRSpatialLookup& node_lookup() const {
+      return node_lookup_;
+    }
 
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */

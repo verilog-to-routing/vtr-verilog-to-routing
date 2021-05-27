@@ -225,7 +225,6 @@ void check_rr_graph(const t_graph_type graph_type,
                 }
 
                 const auto& node = device_ctx.rr_nodes[inode];
-                const auto& rr_graph = device_ctx.rr_graph;
 
                 bool is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
                                   || (device_ctx.rr_nodes[inode].ylow() == 1)

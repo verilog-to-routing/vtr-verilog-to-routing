@@ -233,7 +233,6 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the variable on the next line is unneeded
-    auto& rr_graph = device_ctx.rr_nodes;
 
     t_rr_type rr_type = temp_rr_graph.node_type(current_node);
 
@@ -969,7 +968,6 @@ static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int*
 static void adjust_rr_position(const RRNodeId rr, int& x, int& y) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the rr_graph below is unneeded
-    auto& rr_graph = device_ctx.rr_nodes;
 
     e_rr_type rr_type = temp_rr_graph.node_type(rr);
 
