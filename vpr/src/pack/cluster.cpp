@@ -1726,7 +1726,6 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
                                                                  PartitionRegion& temp_cluster_pr,
                                                                  bool& cluster_pr_needs_update) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    //VprConstraints ctx_constraints = floorplanning_ctx.constraints;
 
     /*check if the atom can go in the cluster by checking if the atom and cluster have intersecting PartitionRegions*/
 
@@ -1780,7 +1779,6 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
             return BLK_PASSED;
         }
     }
-
 }
 
 /* Revert trial atom block iblock and free up memory space accordingly
@@ -2229,8 +2227,6 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-
-    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
 
     /*Cluster's PartitionRegion is empty initially, meaning it has no floorplanning constraints*/
     PartitionRegion empty_pr;

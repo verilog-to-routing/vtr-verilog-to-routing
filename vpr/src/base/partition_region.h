@@ -46,7 +46,7 @@ class PartitionRegion {
      *   @param pr1     One of the PartitionRegions to be intersected
      *   @param pr2     One of the PartitionRegions to be intersected
      */
-    friend PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2);
+    friend PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
   private:
     std::vector<Region> partition_region; ///< union of rectangular regions that a partition can be placed in
