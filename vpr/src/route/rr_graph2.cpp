@@ -35,8 +35,9 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  t_rr_node_indices& indices,
                                  int* index);
 
-static void load_block_rr_indices(const DeviceGrid& grid,
+static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   t_rr_node_indices& indices,
+                                  const DeviceGrid& grid,
                                   int* index);
 
 static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
@@ -970,8 +971,12 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
-static void load_block_rr_indices(const DeviceGrid& grid,
+/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
+ * TODO: these building functions should only talk to a RRGraphBuilder object
+ */
+static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   t_rr_node_indices& indices,
+                                  const DeviceGrid& grid,
                                   int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (size_t x = 0; x < grid.width(); x++) {
@@ -982,15 +987,15 @@ static void load_block_rr_indices(const DeviceGrid& grid,
 
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
-                for (const auto& class_inf : type->class_inf) {
-                    auto class_type = class_inf.type;
+                for (size_t iclass = 0; iclass < type->class_inf.size(); ++iclass) {
+                    auto class_type = type->class_inf[iclass].type;
                     if (class_type == DRIVER) {
-                        indices[SOURCE][x][y][0].push_back(*index);
-                        indices[SINK][x][y][0].push_back(OPEN);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, iclass, SIDES[0]);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x, y, SINK, iclass, SIDES[0]);
                     } else {
                         VTR_ASSERT(class_type == RECEIVER);
-                        indices[SINK][x][y][0].push_back(*index);
-                        indices[SOURCE][x][y][0].push_back(OPEN);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, iclass, SIDES[0]);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x, y, SOURCE, iclass, SIDES[0]);
                     }
                     ++(*index);
                 }
@@ -1134,16 +1139,25 @@ static void load_block_rr_indices(const DeviceGrid& grid,
     }
 }
 
-t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
-                                                 const DeviceGrid& grid,
-                                                 int* index,
-                                                 const t_chan_details& chan_details_x,
-                                                 const t_chan_details& chan_details_y) {
+/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
+ * TODO: these building functions should only talk to a RRGraphBuilder object
+ *       The biggest and fatal issue is 
+ *       - the rr_graph2.h is included in the rr_graph_storage.h,
+ *         which is included in the rr_graph_builder.h
+ *         If we include rr_graph_builder.h in rr_graph2.h, this creates a loop
+ *         for C++ compiler to identify data structures, which cannot be solved!!!
+ *         This will block us when putting the RRGraphBuilder object as an input arguement 
+ *         of this function
+ */
+void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
+                                    const int max_chan_width,
+                                    const DeviceGrid& grid,
+                                    int* index,
+                                    const t_chan_details& chan_details_x,
+                                    const t_chan_details& chan_details_y) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
-
-    t_rr_node_indices indices;
 
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
@@ -1155,15 +1169,13 @@ t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(grid, indices, index);
+    load_block_rr_indices(g_vpr_ctx.mutable_device().rr_graph_builder, indices, grid, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
                          CHANX, chan_details_x, indices, index);
     load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
                          CHANY, chan_details_y, indices, index);
-
-    return indices;
 }
 
 bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes) {

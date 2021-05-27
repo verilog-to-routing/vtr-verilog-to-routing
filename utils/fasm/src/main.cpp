@@ -22,6 +22,8 @@ using namespace std;
 
 #include "fasm.h"
 
+#include "post_routing_pb_pin_fixup.h"
+
 /*
  * Exit codes to signal success/failure to scripts
  * calling vpr
@@ -78,6 +80,17 @@ int main(int argc, const char **argv) {
 
         bool flow_succeeded = false;
         flow_succeeded = vpr_flow(vpr_setup, Arch);
+
+        /* Sync netlist to the actual routing (necessary if there are block
+           ports with equivalent pins) */
+        if (flow_succeeded) {
+            sync_netlists_to_routing(g_vpr_ctx.device(),
+                                     g_vpr_ctx.mutable_atom(),
+                                     g_vpr_ctx.mutable_clustering(),
+                                     g_vpr_ctx.placement(),
+                                     g_vpr_ctx.routing(),
+                                     vpr_setup.PackerOpts.pack_verbosity > 2);
+        }
 
         /* Actually write output FASM file. */
         flow_succeeded = write_fasm();

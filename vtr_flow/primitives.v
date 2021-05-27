@@ -125,7 +125,7 @@
 //K-input Look-Up Table
 module LUT_K #(
     //The Look-up Table size (number of inputs)
-    parameter K, 
+    parameter K = 1, 
 
     //The lut mask.  
     //Left-most (MSB) bit corresponds to all inputs logic one. 
