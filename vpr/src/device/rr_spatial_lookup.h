@@ -90,7 +90,7 @@ class RRSpatialLookup {
                   int ptc,
                   e_side side);
 
-     /* Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+    /* Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
      * a destination coordinate.
      * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
      * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 

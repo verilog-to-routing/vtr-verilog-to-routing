@@ -946,7 +946,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                 int node_x = chan;
                 int node_y = start;
                 if (CHANX == type) {
-                   std::swap(node_x, node_y);
+                    std::swap(node_x, node_y);
                 }
 
                 /* If the start of the wire doesn't have a inode,
