@@ -13,8 +13,7 @@ archs_dir=arch/timing/fraclut_carrychain
 
 circuit_list_add=Md5Core.v
 circuit_list_add=cordic.v
-#Odin fails to synthesize this circuit. The issue appears to be with using the "assign"  statement along with contcatnation of the negative of a constant with another constant. e.g: assign A={B,-C} 
-#circuit_list_add=pipelined_fft_64.v
+circuit_list_add=pipelined_fft_64.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_2ripple_N8_22nm.xml
