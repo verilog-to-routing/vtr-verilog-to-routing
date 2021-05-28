@@ -728,7 +728,7 @@ class VNumber {
     VNumber(VNumber other, size_t length) {
         this->sign = other.sign;
         this->bitstring = other.bitstring.resize(other.get_padding_bit(), length);
-        // TODO this->defined_size = true?????;
+        this->defined_size = other.defined_size;
     }
 
     VNumber(const std::string& verilog_string) {
