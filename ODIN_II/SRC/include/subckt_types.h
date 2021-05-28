@@ -229,7 +229,7 @@ typemap yosys_subckt_str({
                              {"$nex", operation_list_END},            // (A, B, Y)
                              {"$not", BITWISE_NOT},                   // (A, Y)
                              {"$or", operation_list_END},             // (A, B, Y)
-                             {"$pmux", operation_list_END},           // (A, B, S, Y)
+                             {"$pmux", PMUX},           // (A, B, S, Y)
                              {"$pos", operation_list_END},            // (A, Y)
                              {"$pow", operation_list_END},            // (A, B, Y)
                              {"$reduce_and", operation_list_END},     // (A, Y)

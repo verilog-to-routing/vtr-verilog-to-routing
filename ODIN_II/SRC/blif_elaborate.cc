@@ -57,6 +57,8 @@ static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_
 static void make_selector_as_first_port(nnode_t* node);
 static void resolve_logical_not_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static signal_list_t* constant_shift (signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
 
 /**
  *-------------------------------------------------------------------------
@@ -216,7 +218,19 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case DFFSR: {
+            /*
+             * resolving dff node with set and reset
+            */
             resolve_dffsr_node(node, traverse_number, netlist);
+            break;
+        }
+        case PMUX: {
+            /* need to reorder the input pins, so that the selector signal comes at the first place */
+            make_selector_as_first_port(node);
+            /*
+             * resolving pmux node which is using one-hot selector
+            */
+            resolve_pmux_node(node, traverse_number, netlist);
             break;
         }
         case GND_NODE:
@@ -834,4 +848,407 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
     vtr::free(mux_set);
     vtr::free(mux_clr);
     free_nnode(node);
+}
+
+/**
+ * (function: resolve_pmux_node)
+ * 
+ * @brief resolving the pmux node including many input
+ * multiplexing using a one-hot select signal
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /**
+     * input_pin[0]:  S (S_WIDTH)
+     * input_pin[1]:  A (WIDTH)
+     * input_pin[2]:  B (WIDTH*S_WIDTH)
+     * output_pin[0]: Y (WIDTH)
+    */
+    int width = node->num_output_pins;
+    int selector_width = node->input_port_sizes[0];
+
+    int i, j;
+    nnode_t** level_muxes = (nnode_t**)vtr::calloc(selector_width, sizeof(nnode_t*));
+    signal_list_t** level_muxes_out_signals = (signal_list_t**)vtr::calloc(selector_width, sizeof(signal_list_t*));
+
+    nnode_t** ternary_muxes = (nnode_t**)vtr::calloc(selector_width - 1, sizeof(nnode_t*));
+    signal_list_t** ternary_muxes_out_signals = (signal_list_t**)vtr::calloc(selector_width - 1, sizeof(signal_list_t*));
+
+    nnode_t** active_bit_muxes = (nnode_t**)vtr::calloc(selector_width - 1, sizeof(nnode_t*));
+    signal_list_t* active_bit_muxes_out_signals = (signal_list_t*)vtr::calloc(selector_width - 1, sizeof(signal_list_t));
+
+    /* Keeping signal B pins for future usage */
+    signal_list_t* signal_B = init_signal_list();
+    /* S_WIDTH + A_WIDTH */
+    int offset = selector_width + width;
+    for (j = 0; j < node->input_port_sizes[2]; j++) {
+        add_pin_to_signal_list(signal_B, node->input_pins[offset + j]);
+    }
+
+    for (i = 0; i < selector_width; i++) {
+        /**
+         * <pmux internal>
+         * 
+         *              S[0]
+         *               |                 S[1] 
+         *             |\|                  |                                S[2]
+         *             | \                |\|                                 |
+         *      A ---  |0:|               | \                               |\|
+         *             |  | ------------->|0:|                              | \
+         *      B ---  |1:|               |  | ---------------------------->|0:|
+         * [width-1:0] | /          ----->|1:|                              |  | -->       ...
+         *             |/           |     | /                     --------->|1:|
+         *       (level_mux_0)      |     |/                      |         | /
+         *                          |(level_mux_1)                |         |/
+         *                          |                             |    (level_mux_1)       
+         *              S[0]        |                             |   
+         *               |          |                 S[1]        |   
+         *             |\|          |                  |          |  
+         *             | \          |                |\|          |   
+         *       0 --->|0:|         |                | \          |   
+         *             |  |---------0--------------->|0:|         |                                      
+         *       1 --->|1:|   |     |                |  |---------0---->         ...                                      
+         *             | /    |     |          1 --->|1:|   |     |                                              
+         *             |/     |     |                | /    |     |                                                                 
+         *        (active_bit |     |                |/     |     |                                          
+         *          _mux_0)   |     |           (active_bit |     |                             
+         *                    |     |              _mux_1)  |     |                                
+         *                    |     |                       |     |                                                                                                
+         *                  |\|     |                       |     |                                                                                                                           
+         *                  | \     |                       |     |                                                                                                               
+         *     B >> 2^1 --->|0:|    |                     |\|     |                                                                   
+         *                  |  |-----                     | \     |                                                                   
+         *      'hxxx   --->|1:|             B >> 2^2 --->|0:|    |                                                                       
+         *                  | /                           |  |-----                                                                   
+         *                  |/                'hxxx   --->|1:|                                                                        
+         *            (ternay_mux_0)                      | /                                     
+         *                                                |/                                          
+         *                                          (ternay_mux_1)        
+         * 
+        */
+        /**
+         * (Level_muxes)
+         * S: 1 bit
+         * 0: width 
+         * 1: width 
+         * Out: width 
+        */
+        level_muxes[i] = make_3port_gate(MULTI_BIT_MUX_2, 1, width, width, width, node, traverse_mark_number);
+        level_muxes_out_signals[i] = (signal_list_t*)vtr::calloc(width, sizeof(signal_list_t));
+
+        // Remapping the selector bit to level_mux
+        remap_pin_to_new_node(node->input_pins[i],
+                              level_muxes[i],
+                              0);
+
+        /* Assigning multiplexing inputs 0: and 1: */
+        if (i == 0) {
+            /* For the first stage the inputs are (0: A, 1: B >> 2^i) */
+            for (j = 0; j < width; j++) {
+                /* 0: A */
+                // offset +1 is for the selector pin assgined above
+                remap_pin_to_new_node(node->input_pins[j + selector_width],
+                                      level_muxes[i],
+                                      j + 1);
+
+                /* 1: B */
+                // will be assinged at the end of this function to handle mem leaks
+
+                 /* Specifying the level_muxes outputs */
+                // Connect output pin to related input pin
+                npin_t* new_pin1 = allocate_npin();
+                npin_t* new_pin2 = allocate_npin();
+                nnet_t* new_net = allocate_nnet();
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, level_muxes[i]->name, j);
+                /* hook the output pin into the node */
+                add_output_pin_to_node(level_muxes[i], new_pin1, j);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
+
+                // Storing the output pins of the current mux stage as the input of the next one
+                add_pin_to_signal_list(level_muxes_out_signals[i], new_pin2);
+            }
+
+        } else {
+            /*****************************************************************************************/
+            /********************************** ACTIVE_BIT_MUXES *************************************/
+            /*****************************************************************************************/
+            /**
+             * Creating the active_bit multiplexer which will
+             * be connected as selector to ternary muxes 
+             * (Active_bit_muxes)
+             * S: 1 bit
+             * 0: 1 bit
+             * 1: 1 bit
+             * Out: 1 bit
+            */
+            int active_idx = i - 1;
+            active_bit_muxes[active_idx] = make_3port_gate(MULTI_BIT_MUX_2, 1, 1, 1, 1, node, traverse_mark_number);
+
+            // Remapping the selector bit to new multiplexer
+            add_input_pin_to_node(active_bit_muxes[active_idx],
+                                  copy_input_npin(level_muxes[i - 1]->input_pins[0]),
+                                  0);
+
+            if (active_idx == 0) {
+                /* active_bit_mux[0] ->0: is 0 */
+                add_input_pin_to_node(active_bit_muxes[active_idx],
+                                      get_zero_pin(netlist),
+                                      1);
+            } else {
+                /* active_bit_mux[1...] ->0: is connected to the previous active_bit_mux */
+                add_input_pin_to_node(active_bit_muxes[active_idx],
+                                      active_bit_muxes_out_signals->pins[active_idx - 1],
+                                      1);
+            }
+            /* active_bit_mux[1...] ->1: is always 1 */
+            add_input_pin_to_node(active_bit_muxes[active_idx],
+                                  get_one_pin(netlist),
+                                  2);
+
+            // Connect output pin to related input pin
+            npin_t* new_pin1 = allocate_npin();
+            npin_t* new_pin2 = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            new_net->name = make_full_ref_name(NULL, NULL, NULL, active_bit_muxes[active_idx]->name, 0);
+            /* hook the output pin into the node */
+            add_output_pin_to_node(active_bit_muxes[active_idx], new_pin1, 0);
+            /* hook up new pin 1 into the new net */
+            add_driver_pin_to_net(new_net, new_pin1);
+            /* hook up the new pin 2 to this new net */
+            add_fanout_pin_to_net(new_net, new_pin2);
+
+            // Storing the output pins of the current mux stage as the input of the next one
+            add_pin_to_signal_list(active_bit_muxes_out_signals, new_pin2);
+
+            /*****************************************************************************************/
+            /************************************* TERNARY_MUXES *************************************/
+            /*****************************************************************************************/
+
+            /**
+             * Creating the ternary multiplexer which will
+             * be connected to 1: port of level_muxes for i >= 1
+             * (ternary_muxes)
+             * S: 1 bit
+             * 0: width
+             * 1: width
+             * Out: width
+            */
+            int ternary_idx = i - 1;
+            ternary_muxes[ternary_idx] = make_3port_gate(MULTI_BIT_MUX_2, 1, width, width, width, node, traverse_mark_number);
+            ternary_muxes_out_signals[ternary_idx] = (signal_list_t*)vtr::calloc(width, sizeof(signal_list_t));
+
+            // Remapping the selector bit to new multiplexer
+            add_input_pin_to_node(ternary_muxes[ternary_idx],
+                                  copy_input_npin(active_bit_muxes_out_signals->pins[ternary_idx]),
+                                  0);
+
+            /* Creating signals B >> 2^i */
+            signal_list_t* signal_B_to_shift = init_signal_list();
+
+            for (j = 0; j < signal_B->count; j++) {
+                // choosing between node and level_muxes[0] is because we remap the B signal in i = 0
+                add_pin_to_signal_list(signal_B_to_shift, copy_input_npin(signal_B->pins[j]));
+            }
+            signal_list_t* shifted_B = constant_shift(signal_B_to_shift, i, SR, width, netlist);
+
+            /* Connecting multiplexing inputs of ternary_muxes, 0: B>>2^i, 1:'hxxx */
+            for (j = 0; j < width; j++) {
+                /* 0: B >> 2^i */
+                add_input_pin_to_node(ternary_muxes[ternary_idx],
+                                      shifted_B->pins[j],
+                                      j + 1);
+
+                /* 1: 'hxxxx' */
+                add_input_pin_to_node(ternary_muxes[ternary_idx],
+                                      get_pad_pin(netlist),
+                                      j + width + 1);
+            
+                /* Specifying the ternary_muxes outputs */
+                // Connect output pin to related input pin
+                new_pin1 = allocate_npin();
+                new_pin2 = allocate_npin();
+                new_net = allocate_nnet();
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, ternary_muxes[ternary_idx]->name, j);
+                /* hook the output pin into the node */
+                add_output_pin_to_node(ternary_muxes[ternary_idx], new_pin1, j);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
+
+                // Storing the output pins of the current mux stage as the input of the next one
+                add_pin_to_signal_list(ternary_muxes_out_signals[ternary_idx], new_pin2);
+            }
+
+            free_signal_list(shifted_B);
+
+            /*****************************************************************************************/
+            /************************************** LEVEL_MUXES **************************************/
+            /*****************************************************************************************/
+
+            for (j = 0; j < width; j++) {
+                /* 0: previous level_mux outputs */
+                add_input_pin_to_node(level_muxes[i],
+                                      level_muxes_out_signals[i - 1]->pins[j],
+                                      j + 1);
+
+                /* 1: related ternary_mux */
+                add_input_pin_to_node(level_muxes[i],
+                                      ternary_muxes_out_signals[i - 1]->pins[j],
+                                      j + width + 1);
+
+                /* Specifying the level_muxes outputs */
+                // Connect output pin to related input pin
+                if (i != selector_width - 1) {
+                    new_pin1 = allocate_npin();
+                    new_pin2 = allocate_npin();
+                    new_net = allocate_nnet();
+                    new_net->name = make_full_ref_name(NULL, NULL, NULL, level_muxes[i]->name, j);
+                    /* hook the output pin into the node */
+                    add_output_pin_to_node(level_muxes[i], new_pin1, j);
+                    /* hook up new pin 1 into the new net */
+                    add_driver_pin_to_net(new_net, new_pin1);
+                    /* hook up the new pin 2 to this new net */
+                    add_fanout_pin_to_net(new_net, new_pin2);
+
+                    // Storing the output pins of the current mux stage as the input of the next one
+                    add_pin_to_signal_list(level_muxes_out_signals[i], new_pin2);
+
+                } else {
+                    remap_pin_to_new_node(node->output_pins[j], level_muxes[i], j);
+                }
+            }
+
+        }
+    }
+
+    /* Remapping singal B to the first level_mux */
+    for (j = 0; j < signal_B->count; j++) {
+        /* 1: B */
+        if (j < width) {
+            remap_pin_to_new_node(signal_B->pins[j],
+                                level_muxes[0],
+                                j + width + 1);
+        } else {
+            remove_fanout_pins_from_net(signal_B->pins[j]->net,
+                                        signal_B->pins[j],
+                                        signal_B->pins[j]->pin_net_idx);
+
+            if (signal_B->pins[j]->mapping)
+                vtr::free(signal_B->pins[j]->mapping);
+        }
+    }
+
+    // CLEAN_UP
+    for (i = 0; i < selector_width; i++) {
+        free_signal_list(level_muxes_out_signals[i]);
+
+        if (i < selector_width-1) {
+            free_signal_list(ternary_muxes_out_signals[i]);
+        }
+    }
+    free_signal_list(signal_B);
+    free_signal_list(active_bit_muxes_out_signals);
+
+    free_nnode(node);
+    vtr::free(level_muxes);
+    vtr::free(ternary_muxes);
+    vtr::free(active_bit_muxes);
+
+    vtr::free(level_muxes_out_signals);
+    vtr::free(ternary_muxes_out_signals);
+}
+
+/**
+ * (function: constant_shift)
+ * 
+ * @brief performing constant shift operation on given signal_list
+ * 
+ * @param input_signals input to be shifted 
+ * @param shift_size vonstant shift size
+ * @param shift_type shift type: SL, SR, ASL or ASR
+ * @param assignment_size width of the output
+ * @param netlist pointer to the current netlist file
+ */
+static signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist) {
+    signal_list_t* return_list = init_signal_list();
+
+    /* record the size of the shift */
+    int input_width = input_signals->count;
+    int output_width = assignment_size;
+    // int pad_bit = input_width - 1;
+
+    int i;
+    switch (shift_type) {
+        case SL:
+        case ASL: {
+            /* connect ZERO to outputs that don't have inputs connected */
+            for (i = 0; i < shift_size; i++) {
+                if (i < output_width) {
+                    // connect 0 to lower outputs
+                    npin_t* zero_pin = allocate_npin();
+                    add_fanout_pin_to_net(netlist->zero_net, zero_pin);
+
+                    add_pin_to_signal_list(return_list, zero_pin);
+                    zero_pin->node = NULL;
+                }
+            }
+
+            /* connect inputs to outputs */
+            for (i = 0; i < output_width - shift_size; i++) {
+                if (i < input_width) {
+                    // connect higher output pin to lower input pin
+                    add_pin_to_signal_list(return_list, input_signals->pins[i]);
+                    input_signals->pins[i]->node = NULL;
+                } else {
+                    npin_t* extension_pin = get_zero_pin(netlist);
+
+                    add_pin_to_signal_list(return_list, extension_pin);
+                    extension_pin->node = NULL;
+                }
+            }
+            break;
+        }
+        case SR: //fallthrough
+        case ASR: {
+            for (i = shift_size; i < input_width; i++) {
+                // connect higher output pin to lower input pin
+                if (i - shift_size < output_width) {
+                    add_pin_to_signal_list(return_list, input_signals->pins[i]);
+                    input_signals->pins[i]->node = NULL;
+                }
+            }
+
+            /* Extend pad_bit to outputs that don't have inputs connected */
+            for (i = output_width - 1; i >= input_width - shift_size; i--) {
+                npin_t* extension_pin = NULL;
+                // [TODO]: Extra potential feature, check for signedness
+                // if (op->children[0]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
+                //     extension_pin = copy_input_npin(input_signals->pins[pad_bit]);
+                // } else {
+                extension_pin = get_zero_pin(netlist);
+                // }
+
+                add_pin_to_signal_list(return_list, extension_pin);
+                extension_pin->node = NULL;
+            }
+            break;
+        }
+        default:
+            error_message(NETLIST, unknown_location, "%s", "Internal error, operation is not supported by Odin!\n");
+            break;
+    }
+
+    //CLEAN UP
+    free_signal_list(input_signals);
+
+    return return_list;
 }

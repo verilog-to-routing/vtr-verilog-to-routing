@@ -1844,6 +1844,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
     
     switch (type) {
         case (ADD): //fallthrough
+        case (PMUX): //fallthrough
         case (MINUS): //fallthrough
         case (FF_NODE): //fallthrough
         case (LOGICAL_OR): //fallthrough

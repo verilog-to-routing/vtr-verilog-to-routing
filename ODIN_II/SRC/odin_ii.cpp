@@ -252,13 +252,13 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         print_input_files_info();
 
         if (configuration.input_file_type == file_type_e::_VERILOG || configuration.coarsen) {
-            try {
+            // try {
                 error_code = synthesize();
                 printf("Odin_II synthesis has finished with code: %d\n", error_code);
-            } catch (vtr::VtrError& vtr_error) {
-                printf("Odin Failed to parse Verilog / load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
-                exit(ERROR_PARSE_BLIF);
-            }
+            // } catch (vtr::VtrError& vtr_error) {
+            //     printf("Odin Failed to parse Verilog / load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
+            //     exit(ERROR_PARSE_BLIF);
+            // }
         }
 
         printf("\n");
