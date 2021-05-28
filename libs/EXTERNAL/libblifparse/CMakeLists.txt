@@ -69,4 +69,4 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
              COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test/test_parser.sh ${CMAKE_CURRENT_SOURCE_DIR}/test/*/*.blif ${CMAKE_CURRENT_SOURCE_DIR}/test/*/*.eblif)
 endif()
 
-install(TARGETS libblifparse blifparse_test DESTINATION bin)
+install(TARGETS libblifparse DESTINATION bin)
