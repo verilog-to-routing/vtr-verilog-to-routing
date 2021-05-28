@@ -300,7 +300,7 @@ def run_tasks(
         if args.calc_geomean:
             summarize_qor(configs)
             calc_geomean(args, configs)
-    # This option generates a shell script (vtr_flow.sh) for each architecture, circuit, script_params 
+    # This option generates a shell script (vtr_flow.sh) for each architecture, circuit, script_params
     # The generated can be used to be submitted on a large cluster
     elif args.system == "scripts":
         for _, value in run_dirs.items():
