@@ -32,7 +32,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const int num_chans,
                                  const t_rr_type type,
                                  const t_chan_details& chan_details,
-                                 t_rr_node_indices& indices,
+                                 RRGraphBuilder& rr_graph_builder,
                                  int* index);
 
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
@@ -927,19 +927,8 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const int num_chans,
                                  const t_rr_type type,
                                  const t_chan_details& chan_details,
-                                 t_rr_node_indices& indices,
+                                 RRGraphBuilder& rr_graph_builder,
                                  int* index) {
-    VTR_ASSERT(indices[type].dim_size(0) == size_t(num_chans));
-    VTR_ASSERT(indices[type].dim_size(1) == size_t(chan_len));
-    VTR_ASSERT(indices[type].dim_size(2) == NUM_SIDES);
-    for (int chan = 0; chan < num_chans - 1; ++chan) {
-        for (int seg = 1; seg < chan_len - 1; ++seg) {
-            /* Alloc the track inode lookup list */
-            //Since channels have no side, we just use the first side
-            indices[type][chan][seg][0].resize(max_chan_width, OPEN);
-        }
-    }
-
     for (int chan = 0; chan < num_chans - 1; ++chan) {
         for (int seg = 1; seg < chan_len - 1; ++seg) {
             /* Assign an inode to the starts of tracks */
@@ -947,24 +936,31 @@ static void load_chan_rr_indices(const int max_chan_width,
             int y = (type == CHANX ? chan : seg);
             const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
-            for (unsigned track = 0; track < indices[type][chan][seg][0].size(); ++track) {
+            for (int track = 0; track < max_chan_width; ++track) {
                 if (seg_details[track].length() <= 0)
                     continue;
 
                 int start = get_seg_start(seg_details, track, chan, seg);
 
+                /* TODO: Now we still use the (y, x) convention here for CHANX. Should rework later */
+                int node_x = chan;
+                int node_y = start;
+                if (CHANX == type) { 
+                   std::swap(node_x, node_y); 
+                }
+
                 /* If the start of the wire doesn't have a inode,
                  * assign one to it. */
-                int inode = indices[type][chan][start][0][track];
-                if (OPEN == inode) {
-                    inode = *index;
+                RRNodeId inode = rr_graph_builder.node_lookup().find_node(node_x, node_y, type, track, SIDES[0]);
+                if (!inode) {
+                    inode = RRNodeId(*index);
                     ++(*index);
 
-                    indices[type][chan][start][0][track] = inode;
+                    rr_graph_builder.node_lookup().add_node(inode, chan, start, type, track, SIDES[0]);
                 }
 
                 /* Assign inode of start of wire to current position */
-                indices[type][chan][seg][0][track] = inode;
+                rr_graph_builder.node_lookup().add_node(inode, chan, seg, type, track, SIDES[0]);
             }
         }
     }
@@ -1149,9 +1145,9 @@ void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
-                         CHANX, chan_details_x, indices, index);
+                         CHANX, chan_details_x, g_vpr_ctx.mutable_device().rr_graph_builder, index);
     load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
-                         CHANY, chan_details_y, indices, index);
+                         CHANY, chan_details_y, g_vpr_ctx.mutable_device().rr_graph_builder, index);
 }
 
 bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes) {
