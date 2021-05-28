@@ -1068,18 +1068,18 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                     auto class_type = type->class_inf[iclass].type;
 
                                     if (class_type == DRIVER) {
-                                        indices[OPIN][x_tile][y_tile][side].push_back(*index);
-                                        indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
+                                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, ipin, side);
+                                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x_tile, y_tile, IPIN, ipin, side);
                                         assigned_to_rr_node = true;
                                     } else {
                                         VTR_ASSERT(class_type == RECEIVER);
-                                        indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
-                                        indices[IPIN][x_tile][y_tile][side].push_back(*index);
+                                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x_tile, y_tile, OPIN, ipin, side);
+                                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, IPIN, ipin, side);
                                         assigned_to_rr_node = true;
                                     }
                                 } else {
-                                    indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
-                                    indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
+                                    rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x_tile, y_tile, OPIN, ipin, side);
+                                    rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x_tile, y_tile, IPIN, ipin, side);
                                 }
                             }
                         }
