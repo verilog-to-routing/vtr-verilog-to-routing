@@ -21,6 +21,8 @@ check;
 
 flatten;
 
-write_blif -top top_module -param -impltf $env(OUTPUT_BLIF_PATH)/$env(BLIF_NAME);
+autoname;
+
+write_blif -param -impltf $env(OUTPUT_BLIF_PATH)/$env(BLIF_NAME);
 
 exit;
