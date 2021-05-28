@@ -1,4 +1,4 @@
- module paj_raygentop_hierarchy_no_mem (rgwant_addr, rgwant_data, rgread_ready, rgaddr_ready, rgdata_ready, rgwant_read, rgdatain, rgdataout, rgaddrin, rgCont, rgStat, rgCfgData, rgwant_CfgData, rgCfgData_ready, tm3_sram_data_in, tm3_sram_data_out, tm3_sram_addr, tm3_sram_we, tm3_sram_oe, tm3_sram_adsp, tm3_clk_v0, fbdata, fbdatavalid, fbnextscanline, raygroup01, raygroupvalid01, busy01, raygroup10, raygroupvalid10, busy10, globalreset, rgData, rgAddr, rgWE, rgAddrValid, rgDone, rgResultData, rgResultReady, rgResultSource);
+ module paj_raygentop_hierarchy_no_mem (rgwant_addr, rgwant_data, rgread_ready, rgaddr_ready, rgdata_ready, rgwant_read, rgdatain, rgdataout, rgaddrin, rgCont, rgStat, rgCfgData, rgwant_CfgData, rgCfgData_ready, tm3_sram_data_in, tm3_sram_data_out, tm3_sram_addr, tm3_sram_we, tm3_sram_oe, tm3_sram_adsp, clk, fbdata, fbdatavalid, fbnextscanline, raygroup01, raygroupvalid01, busy01, raygroup10, raygroupvalid10, busy10, globalreset, rgData, rgAddr, rgWE, rgAddrValid, rgDone, rgResultData, rgResultReady, rgResultSource);
 
     output rgwant_addr; 
     wire rgwant_addr;
@@ -35,7 +35,7 @@
     wire[1:0] tm3_sram_oe;
     output tm3_sram_adsp; 
     wire tm3_sram_adsp;
-    input tm3_clk_v0; 
+    input clk; 
 
     output[63:0] fbdata; 
     wire[63:0] fbdata;
@@ -158,9 +158,9 @@
 
     assign rgwant_CfgData = wantcfg ;
 
-    onlyonecycle onlyeonecycleinst (rgCont[0], go, globalreset, tm3_clk_v0); 
+    onlyonecycle onlyeonecycleinst (rgCont[0], go, globalreset, clk); 
 
-    always @(posedge tm3_clk_v0)
+    always @(posedge clk)
     begin
        if (globalreset == 1'b1)
        begin
@@ -174,18 +174,18 @@
     end 
     assign fbpage = ~page ;
 
-    matmult matmultinst(sramdatal[47:32], sramdatal[31:16], sramdatal[15:0], m11, m12, m13, m21, m22, m23, m31, m32, m33, dir[47:32], dir[31:16], dir[15:0], tm3_clk_v0); 
+    matmult matmultinst(sramdatal[47:32], sramdatal[31:16], sramdatal[15:0], m11, m12, m13, m21, m22, m23, m31, m32, m33, dir[47:32], dir[31:16], dir[15:0], clk); 
 
-    delay1x3 dir01delay(dirReady, dirReadyl, tm3_clk_v0); 
-    rgconfigmemory ConfigMemoryInst (rgCfgData[31:28], rgCfgData[27:0], rgCfgData_ready, wantcfg, origx, origy, origz, m11, m12, m13, m21, m22, m23, m31, m32, m33, bkcolour, texinfo, globalreset, tm3_clk_v0); 
+    delay1x3 dir01delay(dirReady, dirReadyl, clk); 
+    rgconfigmemory ConfigMemoryInst (rgCfgData[31:28], rgCfgData[27:0], rgCfgData_ready, wantcfg, origx, origy, origz, m11, m12, m13, m21, m22, m23, m31, m32, m33, bkcolour, texinfo, globalreset, clk); 
 
-    rgsramcontroller sramcont (rgwant_addr, rgaddr_ready, rgaddrin, rgwant_data, rgdata_ready, rgdatain, rgwant_read, rgread_ready, rgdataout, dirReady, wantDir, sramdatal, address, wantwriteback, writebackack, writebackdata, writebackaddr, fbdata, fbnextscanline, fbdatavalid, fbpage, shadedata, triID, wantshadedata, shadedataready, texeladdr, texel, wanttexel, texelready, tm3_sram_data_in, tm3_sram_data_out, tm3_sram_addr, tm3_sram_we, tm3_sram_oe, tm3_sram_adsp, globalreset, tm3_clk_v0);
-    raysend raysendinst (as01, ack01, addr01, dir01, origx, origy, origz, rgData, rgAddr, rgWE, rgAddrValid, rgDone, globalreset, tm3_clk_v0, statepeek2); 
+    rgsramcontroller sramcont (rgwant_addr, rgaddr_ready, rgaddrin, rgwant_data, rgdata_ready, rgdatain, rgwant_read, rgread_ready, rgdataout, dirReady, wantDir, sramdatal, address, wantwriteback, writebackack, writebackdata, writebackaddr, fbdata, fbnextscanline, fbdatavalid, fbpage, shadedata, triID, wantshadedata, shadedataready, texeladdr, texel, wanttexel, texelready, tm3_sram_data_in, tm3_sram_data_out, tm3_sram_addr, tm3_sram_we, tm3_sram_oe, tm3_sram_adsp, globalreset, clk);
+    raysend raysendinst (as01, ack01, addr01, dir01, origx, origy, origz, rgData, rgAddr, rgWE, rgAddrValid, rgDone, globalreset, clk, statepeek2); 
 
-    raygencont  raygencontinst(go, rgCont[15:1], rgStat[31], cyclecounter, nextaddr01, nas01, nas10, page, dirReadyl, wantDir, dir, address, as01, addr01, ack01, dir01, raygroup01, raygroupvalid01, busy01, raygroup10, raygroupvalid10, busy10, globalreset, tm3_clk_v0, statepeekct); 
-    resultrecieve resultrecieveinst (valid01, valid10, id01a, id01b, id01c, id10a, id10b, id10c, hit01a, hit01b, hit01c, hit10a, hit10b, hit10c, u01a, u01b, u01c, v01a, v01b, v01c, u10a, u10b, u10c, v10a, v10b, v10c, rgResultData, rgResultReady, rgResultSource, globalreset, tm3_clk_v0); 
+    raygencont  raygencontinst(go, rgCont[15:1], rgStat[31], cyclecounter, nextaddr01, nas01, nas10, page, dirReadyl, wantDir, dir, address, as01, addr01, ack01, dir01, raygroup01, raygroupvalid01, busy01, raygroup10, raygroupvalid10, busy10, globalreset, clk, statepeekct); 
+    resultrecieve resultrecieveinst (valid01, valid10, id01a, id01b, id01c, id10a, id10b, id10c, hit01a, hit01b, hit01c, hit10a, hit10b, hit10c, u01a, u01b, u01c, v01a, v01b, v01c, u10a, u10b, u10c, v10a, v10b, v10c, rgResultData, rgResultReady, rgResultSource, globalreset, clk); 
     assign debugglobalreset = globalreset | go ;
-    resultwriter resultwriteinst (valid01, valid10, id01a, id01b, id01c, id10a, id10b, id10c, hit01a, hit01b, hit01c, hit10a, hit10b, hit10c, u01a, u01b, u01c, v01a, v01b, v01c, u10a, u10b, u10c, v10a, v10b, v10c, nextaddr01, nas01, nas10, bkcolour, shadedata, triID, wantshadedata, shadedataready, texinfo, texaddr, texeladdr, texel, wanttexel, texelready, writebackdata, writebackaddr, wantwriteback, writebackack, debugglobalreset, tm3_clk_v0);
+    resultwriter resultwriteinst (valid01, valid10, id01a, id01b, id01c, id10a, id10b, id10c, hit01a, hit01b, hit01c, hit10a, hit10b, hit10c, u01a, u01b, u01c, v01a, v01b, v01c, u10a, u10b, u10c, v10a, v10b, v10c, nextaddr01, nas01, nas10, bkcolour, shadedata, triID, wantshadedata, shadedataready, texinfo, texaddr, texeladdr, texel, wanttexel, texelready, writebackdata, writebackaddr, wantwriteback, writebackack, debugglobalreset, clk);
     assign rgStat[30:0] = cyclecounter ;
  endmodule
 
