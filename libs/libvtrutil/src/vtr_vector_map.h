@@ -29,7 +29,8 @@ namespace vtr {
  * If you need a fully featured std::map like container without the above differences see
  * vtr::linear_map.
  * 
- * If you do not need std::map-like features see vtr::vector.
+ * If you do not need std::map-like features see vtr::vector. Note that vtr::vector_map is very similar 
+ * to vtr::vector. Unless there is a specific reason that vtr::vector_map is needed, it is better to use vtr::vector.
  * 
  * Note that it is possible to use vector_map with sparse/non-contiguous keys, but this is typically
  * memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
@@ -39,6 +40,7 @@ namespace vtr {
  * when a given index/key before it is accessed. The exception to this are the find(), insert() and
  * update() methods which handle non-existing keys gracefully.
  */
+
 template<typename K, typename V, typename Sentinel = DefaultSentinel<V>>
 class vector_map {
   public: //Public types
