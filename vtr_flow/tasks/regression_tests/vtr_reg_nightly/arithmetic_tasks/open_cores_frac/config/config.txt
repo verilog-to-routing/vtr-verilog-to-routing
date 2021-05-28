@@ -13,7 +13,8 @@ archs_dir=arch/timing/fraclut_carrychain
 
 circuit_list_add=Md5Core.v
 circuit_list_add=cordic.v
-circuit_list_add=pipelined_fft_64.v
+#Odin issue, Issue#1738
+#circuit_list_add=pipelined_fft_64.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_2ripple_N8_22nm.xml
