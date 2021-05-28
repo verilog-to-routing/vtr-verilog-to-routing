@@ -1954,29 +1954,24 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             
             if (!strcmp(ptr, ".param")) {
                 ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                int sensitivity = atoi(vtr::strtok(NULL, TOKENS, file, buffer));
 
                 if (!strcmp(ptr, "CLK_POLARITY")) {
-                    char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
-
-                    if (!strcmp(sensitivity, "1"))
+                    if (sensitivity == 1)
                         new_node->clk_edge_type = RISING_EDGE_SENSITIVITY;
-                    else if (!strcmp(sensitivity, "0"))
+                    else if (sensitivity == 0)
                         new_node->clk_edge_type = FALLING_EDGE_SENSITIVITY;
 
                 } else if (!strcmp(ptr, "CLR_POLARITY")) {
-                    char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
-
-                    if (!strcmp(sensitivity, "1"))
+                    if (sensitivity == 1)
                         new_node->clr_edge_type = RISING_EDGE_SENSITIVITY;
-                    else if (!strcmp(sensitivity, "0"))
+                    else if (sensitivity == 0)
                         new_node->clr_edge_type = FALLING_EDGE_SENSITIVITY;
 
                 } else if (!strcmp(ptr, "SET_POLARITY")) {
-                    char* sensitivity = vtr::strtok(NULL, TOKENS, file, buffer);
-
-                    if (!strcmp(sensitivity, "1"))
+                    if (sensitivity == 1)
                         new_node->set_edge_type = RISING_EDGE_SENSITIVITY;
-                    else if (!strcmp(sensitivity, "0"))
+                    else if (sensitivity == 0)
                         new_node->set_edge_type = FALLING_EDGE_SENSITIVITY;
                 }
             } else if (!strcmp(ptr, ".end")) {
