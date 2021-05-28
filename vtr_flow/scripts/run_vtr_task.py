@@ -123,7 +123,7 @@ def vtr_command_argparser(prog=None):
         "-system",
         choices=["local", "scripts"],
         default="local",
-        help="What system to run the tasks on.",
+        help="What system to run the tasks on. (local) runs the task locally, (scripts) only generates a shell script for each (arch,circuit,params) triple",
     )
 
     parser.add_argument(
@@ -225,7 +225,6 @@ def vtr_command_main(arg_list, prog=None):
 
         config_files = [find_task_config_file(task_name) for task_name in task_names]
         configs = []
-        longest_name = 0  # longest task name for use in creating prettier output
         common_task_prefix = None  # common task prefix to shorten task names
         for config_file in config_files:
             config = load_task_config(config_file)
@@ -237,14 +236,9 @@ def vtr_command_main(arg_list, prog=None):
                     None, common_task_prefix, config.task_name
                 ).find_longest_match(0, len(common_task_prefix), 0, len(config.task_name))
                 common_task_prefix = common_task_prefix[match.a : match.a + match.size]
-            if len(config.task_name) > longest_name:
-                longest_name = len(config.task_name)
         if args.short_task_names:
             configs = shorten_task_names(configs, common_task_prefix)
-        longest_arch_circuit = find_longest_task_description(
-            configs
-        )  # find longest task description for use in creating prettier output
-        num_failed = run_tasks(args, configs, longest_name, longest_arch_circuit)
+        num_failed = run_tasks(args, configs)
 
     except CommandError as exception:
         print("Error: {msg}".format(msg=exception.msg))
@@ -265,8 +259,6 @@ def vtr_command_main(arg_list, prog=None):
 def run_tasks(
     args,
     configs,
-    longest_name,
-    longest_arch_circuit,
 ):
     """
     Runs the specified set of tasks (configs)
@@ -274,7 +266,7 @@ def run_tasks(
     start = datetime.now()
     num_failed = 0
 
-    jobs = create_jobs(args, configs, longest_name, longest_arch_circuit)
+    jobs = create_jobs(args, configs)
 
     run_dirs = {}
     for config in configs:
@@ -308,6 +300,8 @@ def run_tasks(
         if args.calc_geomean:
             summarize_qor(configs)
             calc_geomean(args, configs)
+    # This option generates a shell script (vtr_flow.sh) for each architecture, circuit, script_params 
+    # The generated can be used to be submitted on a large cluster
     elif args.system == "scripts":
         for _, value in run_dirs.items():
             Path(value).mkdir(parents=True)
