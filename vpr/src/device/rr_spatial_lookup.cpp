@@ -80,6 +80,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                t_rr_type type,
                                int ptc,
                                e_side side) {
+    VTR_ASSERT(node); /* Must have a valid node id to be added */
     VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
 
     /* Expand the fast look-up if the new node is out-of-range
@@ -99,7 +100,8 @@ void RRSpatialLookup::add_node(RRNodeId node,
     }
 
     if (size_t(ptc) >= rr_node_indices_[type][x][y][side].size()) {
-        rr_node_indices_[type][x][y][side].resize(ptc + 1);
+        /* Deposit invalid ids to newly allocated elements while original elements are untouched */
+        rr_node_indices_[type][x][y][side].resize(ptc + 1, int(size_t(RRNodeId::INVALID())));
     }
 
     /* Resize on demand finished; Register the node */
