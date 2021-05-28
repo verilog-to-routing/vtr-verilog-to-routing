@@ -189,6 +189,15 @@ function find_in_bench() {
 	fi
 }
 
+# generate blif files of verilog files in benchmark/blif/_VERILOGS
+function generate_blifs() {
+    
+    find ${REGRESSION_DIR}/benchmark/blif/ -name "*.blif" -delete
+    echo "Generating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS"
+    "${THIS_DIR}/run_yosys.sh"
+}
+    
+
 ################################################
 # Init Directories and cleanup
 function init_temp() {
