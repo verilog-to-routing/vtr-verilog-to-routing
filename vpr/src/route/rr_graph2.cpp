@@ -36,7 +36,6 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  int* index);
 
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
-                                  t_rr_node_indices& indices,
                                   const DeviceGrid& grid,
                                   int* index);
 
@@ -975,7 +974,6 @@ static void load_chan_rr_indices(const int max_chan_width,
  * TODO: these building functions should only talk to a RRGraphBuilder object
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
-                                  t_rr_node_indices& indices,
                                   const DeviceGrid& grid,
                                   int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
@@ -1147,7 +1145,7 @@ void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(g_vpr_ctx.mutable_device().rr_graph_builder, indices, grid, index);
+    load_block_rr_indices(g_vpr_ctx.mutable_device().rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
