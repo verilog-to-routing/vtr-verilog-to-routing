@@ -331,7 +331,8 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     hard_block_sensitivities(subcircuit_name, new_node);
 
     // Determine the type of hard block.
-    char* subcircuit_name_prefix = vtr::strdup(subcircuit_name);
+    char subcircuit_name_prefix [6];
+    memcpy(subcircuit_name_prefix, subcircuit_name, 5);
     subcircuit_name_prefix[5] = '\0';
 
     if (configuration.coarsen) {
@@ -344,7 +345,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         else
             new_node->type = MEMORY;
     }
-    vtr::free(subcircuit_name_prefix);
+    
     // Look up the model in the models cache.
     hard_block_model* model = NULL;
     if ((subcircuit_name != NULL) && (!(model = get_hard_block_model(subcircuit_name, ports, models)))) {
