@@ -6,7 +6,7 @@
 
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
-#include "rr_graph2.h"
+#include "rr_edge.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
 #include "vpr_utils.h"

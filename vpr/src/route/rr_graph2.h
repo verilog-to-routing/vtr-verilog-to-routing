@@ -5,6 +5,7 @@
 #include "build_switchblocks.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_util.h"
+#include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
 
@@ -15,27 +16,6 @@ enum e_seg_details_type {
     SEG_DETAILS_Y
 };
 
-struct t_rr_edge_info {
-    t_rr_edge_info(int from, int to, short type) noexcept
-        : from_node(from)
-        , to_node(to)
-        , switch_type(type) {}
-
-    int from_node = OPEN;
-    int to_node = OPEN;
-    short switch_type = OPEN;
-
-    friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
-        return std::tie(lhs.from_node, lhs.to_node, lhs.switch_type) < std::tie(rhs.from_node, rhs.to_node, rhs.switch_type);
-    }
-
-    friend bool operator==(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
-        return std::tie(lhs.from_node, lhs.to_node, lhs.switch_type) == std::tie(rhs.from_node, rhs.to_node, rhs.switch_type);
-    }
-};
-
-typedef std::vector<t_rr_edge_info> t_rr_edge_info_set;
-
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
 struct t_opin_connections_scratchpad {
@@ -44,7 +24,7 @@ struct t_opin_connections_scratchpad {
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
+void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const int max_chan_width,
                                     const DeviceGrid& grid,
                                     int* index,
