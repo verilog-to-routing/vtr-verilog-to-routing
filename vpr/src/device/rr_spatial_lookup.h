@@ -1,6 +1,7 @@
 #ifndef RR_SPATIAL_LOOKUP_H
 #define RR_SPATIAL_LOOKUP_H
 
+#include "vtr_geometry.h"
 #include "vpr_types.h"
 
 /******************************************************************** 
@@ -89,7 +90,29 @@ class RRSpatialLookup {
                   int ptc,
                   e_side side);
 
-    /* TODO: Add an API remove_node() to unregister a node from the look-up */
+    /* Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+     * a destination coordinate.
+     * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
+     * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 
+     * SOURCE and SINK nodes are indexable in any location inside the boundry.
+     *
+     * Note: currently this function only accept SOURCE/SINK nodes. May unlock for other depending on needs
+     */
+    void mirror_nodes(const vtr::Point<int>& src_coord,
+                      const vtr::Point<int>& des_coord,
+                      t_rr_type type,
+                      e_side side);
+
+    /* -- Internal mutators -- */
+  private:
+    /* Resize three dimensions of the lookup under a given type of node
+     * This is an internal function called to expand the matrix when x, y or side 
+     * when one or more of them beyond current capacity 
+     */
+    void resize_nodes(int x,
+                      int y,
+                      t_rr_type type,
+                      e_side side);
 
     /* -- Internal data storage -- */
   private:

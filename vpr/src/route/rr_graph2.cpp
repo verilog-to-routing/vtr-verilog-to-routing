@@ -1104,8 +1104,14 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 int root_x = x - width_offset;
                 int root_y = y - height_offset;
 
-                indices[SOURCE][x][y][0] = indices[SOURCE][root_x][root_y][0];
-                indices[SINK][x][y][0] = indices[SINK][root_x][root_y][0];
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SOURCE,
+                                                            SIDES[0]);
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SINK,
+                                                            SIDES[0]);
             }
         }
     }

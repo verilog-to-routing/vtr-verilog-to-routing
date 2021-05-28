@@ -91,13 +91,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
     VTR_ASSERT(0 <= x);
     VTR_ASSERT(0 <= y);
 
-    if ((x >= int(rr_node_indices_[type].dim_size(0)))
-        || (y >= int(rr_node_indices_[type].dim_size(1)))
-        || (size_t(side) >= rr_node_indices_[type].dim_size(2))) {
-        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0), size_t(x) + 1),
-                                       std::max(rr_node_indices_[type].dim_size(1), size_t(y) + 1),
-                                       std::max(rr_node_indices_[type].dim_size(2), size_t(side) + 1)});
-    }
+    resize_nodes(x, y, type, side);
 
     if (size_t(ptc) >= rr_node_indices_[type][x][y][side].size()) {
         /* Deposit invalid ids to newly allocated elements while original elements are untouched */
@@ -106,4 +100,26 @@ void RRSpatialLookup::add_node(RRNodeId node,
 
     /* Resize on demand finished; Register the node */
     rr_node_indices_[type][x][y][side][ptc] = int(size_t(node));
+}
+
+void RRSpatialLookup::mirror_nodes(const vtr::Point<int>& src_coord,
+                                   const vtr::Point<int>& des_coord,
+                                   t_rr_type type,
+                                   e_side side) {
+    VTR_ASSERT(SOURCE == type || SINK == type);
+    resize_nodes(des_coord.x(), des_coord.y(), type, side);
+    rr_node_indices_[type][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][src_coord.x()][src_coord.y()][side]; 
+}
+
+void RRSpatialLookup::resize_nodes(int x,
+                                   int y,
+                                   t_rr_type type,
+                                   e_side side) {
+    if ((x >= int(rr_node_indices_[type].dim_size(0)))
+        || (y >= int(rr_node_indices_[type].dim_size(1)))
+        || (size_t(side) >= rr_node_indices_[type].dim_size(2))) {
+        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0), size_t(x) + 1),
+                                       std::max(rr_node_indices_[type].dim_size(1), size_t(y) + 1),
+                                       std::max(rr_node_indices_[type].dim_size(2), size_t(side) + 1)});
+    }
 }
