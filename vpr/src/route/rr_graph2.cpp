@@ -1121,7 +1121,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
  *         This will block us when putting the RRGraphBuilder object as an input arguement 
  *         of this function
  */
-void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
+void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const int max_chan_width,
                                     const DeviceGrid& grid,
                                     int* index,
@@ -1134,20 +1134,20 @@ void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            indices[rr_type].resize({grid.height(), grid.width(), NUM_SIDES});
+            rr_graph_builder.node_lookup().resize_nodes(grid.height(), grid.width(), rr_type, NUM_SIDES);
         } else {
-            indices[rr_type].resize({grid.width(), grid.height(), NUM_SIDES});
+            rr_graph_builder.node_lookup().resize_nodes(grid.width(), grid.height(), rr_type, NUM_SIDES);
         }
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(g_vpr_ctx.mutable_device().rr_graph_builder, grid, index);
+    load_block_rr_indices(rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
-                         CHANX, chan_details_x, g_vpr_ctx.mutable_device().rr_graph_builder, index);
+                         CHANX, chan_details_x, rr_graph_builder, index);
     load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
-                         CHANY, chan_details_y, g_vpr_ctx.mutable_device().rr_graph_builder, index);
+                         CHANY, chan_details_y, rr_graph_builder, index);
 }
 
 bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes) {

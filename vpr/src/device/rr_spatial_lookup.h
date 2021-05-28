@@ -103,11 +103,14 @@ class RRSpatialLookup {
                       t_rr_type type,
                       e_side side);
 
-    /* -- Internal mutators -- */
-  private:
-    /* Resize three dimensions of the lookup under a given type of node
-     * This is an internal function called to expand the matrix when x, y or side 
+    /* Resize three dimensions of the lookup under a given type of node to be memory efficient
+     * This function is called to expand the matrix when x, y or side 
      * when one or more of them beyond current capacity 
+     *
+     * Strongly recommend to use when the sizes of dimensions are deterministic
+     *
+     * TODO: should have a reserve function but vtd::ndmatrix does not have such API
+     *       as a result, resize can be an internal one while reserve function is a public mutator
      */
     void resize_nodes(int x,
                       int y,
