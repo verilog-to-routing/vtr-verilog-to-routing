@@ -10,7 +10,7 @@ circuits_dir=benchmarks/arithmetic/generated_circuits/cmu_DFT/verilog
 archs_dir=arch/timing/fraclut_carrychain
 
 # Add circuits to list to sweep
-
+#Issue 1369 (circuit does not go through odin) 
 circuit_list_add=64-16bit-fixed-JACM.v
 
 # Add architectures to list to sweep
