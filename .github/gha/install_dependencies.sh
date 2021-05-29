@@ -50,5 +50,6 @@ sudo apt install -y \
   g++-11 \
   gcc-11 \
   clang-6.0 \
-  clang-8
+  clang-7 \
+  clang-10
 #  libtbb-dev
