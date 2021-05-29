@@ -232,8 +232,10 @@ jobs:
         - { name: 'GCC 5 (Ubuntu Xenial - 16.04)',    eval: 'CC=gcc-5 && CXX=g++-5',           build: 'release_strict' }
         - { name: 'GCC 6 (Debian Stretch)',           eval: 'CC=gcc-6 && CXX=g++-6',           build: 'release_strict' }
         - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           build: ''               }
-        - { name: 'GCC 9 (Latest Release)',           eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
-        - { name: 'GCC 8 (Ubuntu Latest)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
+        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
+        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
+        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         build: ''               }
+        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         build: ''               }
         - { name: 'Clang 6 (Debian + Ubuntu common)', eval: 'CC=clang-6.0 && CXX=clang++-6.0', build: ''               }
         - { name: 'Clang 8 (Latest Release)',         eval: 'CC=clang-8 && CXX=clang++-8',     build: ''               }
     name: 'B: ${{ matrix.name }}'
