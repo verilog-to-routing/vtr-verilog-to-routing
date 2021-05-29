@@ -261,6 +261,7 @@ enum operation_list {
     SIGNED,          // $signed
                      // [START] operations to cover yosys subckt
     MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
+    EQUIV,           // TO check whether both inputs are the same
     PMUX,            // Multiplexer with many inputs using one-hot select signal
     DFFSR,           // data, clear and set to output port
                      // [END] operations to cover yosys subckt

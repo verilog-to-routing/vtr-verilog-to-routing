@@ -197,7 +197,7 @@ typemap yosys_subckt_str({
                              {"$divfloor", operation_list_END},       // (A, B, Y)
                              {"$dlatch", operation_list_END},         // (EN, D, Q)
                              {"$dlatchsr", operation_list_END},       // (EN, SET, CLR, D, Q)
-                             {"$eq", operation_list_END},             // (A, B, Y)
+                             {"$eq", EQUIV},                          // (A, B, Y)
                              {"$equiv", operation_list_END},          // (A, B, Y)
                              {"$eqx", operation_list_END},            // (A, B, Y)
                              {"$fa", operation_list_END},             // (A, B, C, X, Y)
