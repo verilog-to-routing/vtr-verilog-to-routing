@@ -192,9 +192,12 @@ function find_in_bench() {
 # generate blif files of verilog files in benchmark/blif/_VERILOGS
 function generate_blifs() {
     
-    find ${REGRESSION_DIR}/benchmark/blif/ -name "*.blif" -delete
-    echo "Generating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS"
-    "${THIS_DIR}/run_yosys.sh"
+    TASK="$1"
+    TASK_NAME=$(basename "${TASK}")
+
+    find ${REGRESSION_DIR}/benchmark/blif/${TASK_NAME} -name "*.blif" -delete
+    echo "Generating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
+    "${THIS_DIR}/run_yosys.sh -t ${TASK}"
 }
     
 
@@ -1596,7 +1599,8 @@ function run_suite() {
 
 	for (( i = 0; i < ${#task_list[@]}; i++ ));
 	do
-		run_task "${task_list[$i]}"
+        generate_blifs "${task_list[$i]}"
+        run_task "${task_list[$i]}"
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
 	done
 
