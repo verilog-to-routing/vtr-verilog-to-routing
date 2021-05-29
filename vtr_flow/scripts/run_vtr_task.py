@@ -122,9 +122,9 @@ def vtr_command_argparser(prog=None):
         "-system",
         choices=["local", "scripts"],
         default="local",
-        help="What system to run the tasks on:
-             (local) runs the flow invocations on the local machine, 
-             (scripts) Prints out all the generated script files (instead of calling them to run all the flow invocations).",
+        help="""What system to run the tasks on:
+             (local) runs the flow invocations on the local machine,
+             (scripts) Prints out all the generated script files (instead of calling them to run all the flow invocations).""",
     )
 
     parser.add_argument(
