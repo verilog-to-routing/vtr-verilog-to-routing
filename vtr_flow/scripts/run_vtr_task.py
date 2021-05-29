@@ -360,7 +360,7 @@ def create_run_script(job, work_dir):
     memory_estimate = ret_expected_memory(job, work_dir)
 
     runtime_estimate = max(runtime_estimate, 0)
-    memory_estimate = max(memory_estimate,0)
+    memory_estimate = max(memory_estimate, 0)
 
     separator = " "
     command_options_list = job.run_command()
