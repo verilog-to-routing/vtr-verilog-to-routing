@@ -195,9 +195,10 @@ function generate_blifs() {
     TASK="$1"
     TASK_NAME=$(basename "${TASK}")
 
+    echo "====>${TASK_NAME}"
     find ${REGRESSION_DIR}/benchmark/blif/${TASK_NAME} -name "*.blif" -delete
     echo "Generating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
-    "${THIS_DIR}/run_yosys.sh -t ${TASK}"
+    ${THIS_DIR}/run_yosys.sh -t "${TASK}"
 }
     
 
