@@ -632,12 +632,12 @@
         "Pi": 6,
         "Po": 8,
         "logic element": 16,
-        "Adder": 5,
+        "Adder": 6,
         "generic logic size": 4,
-        "Longest Path": 10,
+        "Longest Path": 11,
         "Average Path": 4,
         "Estimated LUTs": 16,
-        "Total Node": 21
+        "Total Node": 22
     },
     "syntax/mix_expression_in_module_port_nested/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/mix_expression_in_module_port_nested/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -653,12 +653,12 @@
         "Pi": 4,
         "Po": 8,
         "logic element": 11,
-        "Adder": 5,
+        "Adder": 6,
         "generic logic size": 4,
-        "Longest Path": 10,
+        "Longest Path": 11,
         "Average Path": 4,
         "Estimated LUTs": 11,
-        "Total Node": 16
+        "Total Node": 17
     },
     "syntax/and_primitive/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/and_primitive/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -777,6 +777,29 @@
         "Average Path": 3,
         "Estimated LUTs": 2,
         "Total Node": 2
+    },
+    "syntax/expression_in_chain_modules/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/expression_in_chain_modules/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "expression_in_chain_modules_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 11.2,
+        "exec_time(ms)": 29.8,
+        "simulation_time(ms)": 15.2,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 8,
+        "Po": 16,
+        "logic element": 16,
+        "latch": 20,
+        "Adder": 17,
+        "generic logic size": 4,
+        "Longest Path": 12,
+        "Average Path": 5,
+        "Estimated LUTs": 16,
+        "Total Node": 54
     },
     "DEFAULT": {
         "test_name": "n/a",

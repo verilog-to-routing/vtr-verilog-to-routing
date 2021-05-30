@@ -774,7 +774,7 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
         }
     }
 
-    for (i = offset; i < count - 1; i++) {
+    for (i = offset; configuration.coarsen && i < count - 1; i++) {
         for (j = 0; j < node[i]->num_output_pins - 1; j++) {
             char* new_output_pin_name = (char*)vtr::malloc((strlen(node[i]->name) + 20) * sizeof(char)); /* 6 chars for pin idx */
             odin_sprintf(new_output_pin_name, "%s[1]", node[i]->name);
@@ -920,7 +920,7 @@ void traverse_list(operation_list oper, t_linked_vptr* place) {
 /*---------------------------------------------------------------------------
  * (function: match_node)
  *-------------------------------------------------------------------------*/
-void match_node(t_linked_vptr* place, operation_list oper) {
+void match_node(t_linked_vptr* place, operation_list oper) { 
     int flag = 0;
     int mark = 0;
     nnode_t* node = NULL;
@@ -968,7 +968,8 @@ int match_ports(nnode_t* node, nnode_t* next_node, operation_list oper) {
     char* component_o[2] = {0};
     ast_node = node->related_ast_node;
     ast_node_next = next_node->related_ast_node;
-    if (ast_node->types.operation.op == oper) {
+    /* in case of coarsen blifs, there is no related ast node, so we skip this part */
+    if (ast_node && ast_node->types.operation.op == oper) {
         traverse_operation_node(ast_node, component_s, oper, &sign);
         if (sign != 1) {
             traverse_operation_node(ast_node_next, component_o, oper, &sign);

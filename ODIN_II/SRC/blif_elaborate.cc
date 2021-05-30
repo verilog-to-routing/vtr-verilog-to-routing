@@ -314,7 +314,7 @@ static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number,
                     int i;
                     int in_port1_size = node->input_port_sizes[0];
                     int in_port2_size = node->input_port_sizes[1];
-                    int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size : in_port2_size;
+                    int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
 
                     new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
                                                out_port_size,
@@ -356,7 +356,7 @@ static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number,
                      * if number of output pins is greater than the max of input pins, 
                      * here we connect the exceeded pins to the GND 
                     */
-                    for (i = out_port_size + 1; i < node->num_output_pins; i++) {
+                    for (i = out_port_size; i < node->num_output_pins; i++) {
                         /* creating a buf node */
                         nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
                         /* adding the GND input pin to the buf node */
