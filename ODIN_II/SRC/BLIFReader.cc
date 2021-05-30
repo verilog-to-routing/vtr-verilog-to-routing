@@ -1793,8 +1793,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             else 
                 first_part = make_full_ref_name(NULL, NULL, NULL, name, idx);
                 
-            std::strcat(first_part, second_part);
-            return_string = vtr::strdup(first_part);
+            return_string = vtr::strdup((std::string(first_part)+std::string(second_part)).c_str());
         } else {
             if (!strcmp(name_str, "$true")) {
                 return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
