@@ -60,6 +60,7 @@ _GENERATE_CONFIG="off"
 _FORCE_SIM="off"
 _DRY_RUN="off"
 _RANDOM_DRY_RUN="off"
+_REGENERATE_BLIF="off"
 _REGENERATE_EXPECTATION="off"
 _GENERATE_EXPECTATION="off"
 _CONTINUE="off"
@@ -123,6 +124,7 @@ printf "Called program with $INPUT
 		--override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
 		--dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow 
 		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
+		--regenerate_blifs              $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/blif/_VERILOGS
 		--regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
 		--generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
 		--continue						$(_prt_cur_arg ${_CONTINUE}) continue running test in the same directory as the last run
@@ -394,7 +396,11 @@ function parse_args() {
 					_RANDOM_DRY_RUN="on"
 					echo "random dry run"
 
-				;;--regenerate_expectation)
+				;;--regenerate_blif)
+					_REGENERATE_BLIF="on"
+					echo "regenerating blifs of benchmark/blif/_VERILOGS"
+				
+                ;;--regenerate_expectation)
 					_REGENERATE_EXPECTATION="on"
 					echo "regenerating expected values for changes outside the defined ranges"
 
@@ -1600,7 +1606,9 @@ function run_suite() {
 
 	for (( i = 0; i < ${#task_list[@]}; i++ ));
 	do
-        generate_blifs "${task_list[$i]}"
+        if [ _${_REGENERATE_BLIF} == "_on" ]; then
+            generate_blifs "${task_list[$i]}"
+        fi
         run_task "${task_list[$i]}"
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
 	done

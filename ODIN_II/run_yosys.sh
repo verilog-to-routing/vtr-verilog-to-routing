@@ -42,9 +42,9 @@ function print_test_stat() {
     START_TIME="$2"
 
     if [ _${STAT} == "_E" ]; then
-        echo "[${RED}EXISTED${NC}] .................................... ${BLIF_NAME}"
+        echo "[${RED}EXISTED${NC}] . . . . . . . . . . . . . . . . . ${BLIF_NAME}"
     elif [ _${STAT} == "_C" ]; then
-        echo "[${GREEN}CREATED${NC}] .................................... ${BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
+        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . ${BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
     fi
 }
 
