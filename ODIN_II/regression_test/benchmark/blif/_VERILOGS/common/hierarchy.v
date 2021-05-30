@@ -1,4 +1,4 @@
-module top_module (
+module hierarchy (
 	input   [2:0] a,
 	output  [2:0] w
 );

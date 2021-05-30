@@ -1845,6 +1845,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (ADD): //fallthrough
         case (PMUX): //fallthrough
         case (MINUS): //fallthrough
+        case (DFFE): //fallthrough
         case (FF_NODE): //fallthrough
         case (BITWISE_OR): //fallthrough
         case (BITWISE_NOT): //fallthrough
@@ -1977,6 +1978,12 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                         new_node->set_edge_type = RISING_EDGE_SENSITIVITY;
                     else if (sensitivity == 0)
                         new_node->set_edge_type = FALLING_EDGE_SENSITIVITY;
+
+                } else if (!strcmp(ptr, "EN_POLARITY")) {
+                    if (sensitivity == 1)
+                        new_node->enable_polarity = ACTIVE_HIGH_SENSITIVITY;
+                    else if (sensitivity == 0)
+                        new_node->enable_polarity = ACTIVE_LOW_SENSITIVITY;
                 }
             } else if (!strcmp(ptr, ".end")) {
                 break;
@@ -2002,6 +2009,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
      bool return_value = false;
      switch (type) {
          case (FF_NODE): //fallthrough
+         case (DFFE): //fallthrough
          case (DFFSR): {
              return_value = true;
              break;

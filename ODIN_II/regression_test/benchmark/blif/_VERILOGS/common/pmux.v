@@ -1,4 +1,4 @@
-module top_module (in_a, in_b, in_s, out_y);
+module pmux (in_a, in_b, in_s, out_y);
     
     parameter WIDTH = 10;
     parameter S_WIDTH = 20;

@@ -801,6 +801,125 @@
         "Estimated LUTs": 16,
         "Total Node": 54
     },
+    "syntax/bm_dag6_mod_log/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_dag6_mod_log/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "bm_dag6_mod_log_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 24.2,
+        "simulation_time(ms)": 8.5,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 25,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 6,
+        "Estimated LUTs": 25,
+        "Total Node": 25
+    },
+    "syntax/bm_dag6_mod_log/no_arch": {
+        "test_name": "syntax/bm_dag6_mod_log/no_arch",
+        "generated_blif": "bm_dag6_mod_log_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 9.9,
+        "simulation_time(ms)": 8.2,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 25,
+        "Longest Path": 8,
+        "Average Path": 6,
+        "Estimated LUTs": 25,
+        "Total Node": 25
+    },
+    "syntax/bm_dag7_mod_log/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_dag7_mod_log/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "bm_dag7_mod_log_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 17.1,
+        "simulation_time(ms)": 3.9,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 6,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 6,
+        "Total Node": 6
+    },
+    "syntax/bm_dag7_mod_log/no_arch": {
+        "test_name": "syntax/bm_dag7_mod_log/no_arch",
+        "generated_blif": "bm_dag7_mod_log_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 5.3,
+        "simulation_time(ms)": 3.8,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 6,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 6,
+        "Total Node": 6
+    },
+    "syntax/bm_DL_4_bit_updown_counter/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_DL_4_bit_updown_counter/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "bm_DL_4_bit_updown_counter_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 11.3,
+        "exec_time(ms)": 22.1,
+        "simulation_time(ms)": 8.1,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 26,
+        "latch": 4,
+        "Adder": 3,
+        "generic logic size": 4,
+        "Longest Path": 13,
+        "Average Path": 6,
+        "Estimated LUTs": 26,
+        "Total Node": 34
+    },
+    "syntax/bm_DL_4_bit_updown_counter/no_arch": {
+        "test_name": "syntax/bm_DL_4_bit_updown_counter/no_arch",
+        "generated_blif": "bm_DL_4_bit_updown_counter_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 9.3,
+        "simulation_time(ms)": 7.4,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 29,
+        "latch": 4,
+        "Longest Path": 18,
+        "Average Path": 6,
+        "Estimated LUTs": 29,
+        "Total Node": 34
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

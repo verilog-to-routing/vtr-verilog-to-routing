@@ -920,7 +920,7 @@ void traverse_list(operation_list oper, t_linked_vptr* place) {
 /*---------------------------------------------------------------------------
  * (function: match_node)
  *-------------------------------------------------------------------------*/
-void match_node(t_linked_vptr* place, operation_list oper) { 
+void match_node(t_linked_vptr* place, operation_list oper) {
     int flag = 0;
     int mark = 0;
     nnode_t* node = NULL;

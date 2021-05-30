@@ -262,6 +262,7 @@ enum operation_list {
                      // [START] operations to cover yosys subckt
     MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
     PMUX,            // Multiplexer with many inputs using one-hot select signal
+    DFFE,            // data, enable to output port
     DFFSR,           // data, clear and set to output port
                      // [END] operations to cover yosys subckt
     operation_list_END
@@ -504,9 +505,10 @@ struct nnode_t {
     int ratio;                  //clock ratio for clock nodes
     init_value_e initial_value; // initial net value
     bool internal_clk_warn = false;
-    edge_type_e clk_edge_type; //
-    edge_type_e clr_edge_type; //
-    edge_type_e set_edge_type; //
+    edge_type_e clk_edge_type;   //
+    edge_type_e clr_edge_type;   //
+    edge_type_e set_edge_type;   //
+    edge_type_e enable_polarity; //
     bool covered = false;
 
     // For mixing soft and hard logic optimizations

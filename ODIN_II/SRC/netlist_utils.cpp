@@ -84,6 +84,7 @@ nnode_t* allocate_nnode(loc_t loc) {
     new_node->clk_edge_type = UNDEFINED_SENSITIVITY;
     new_node->clr_edge_type = UNDEFINED_SENSITIVITY;
     new_node->set_edge_type = UNDEFINED_SENSITIVITY;
+    new_node->enable_polarity = UNDEFINED_SENSITIVITY;
 
     new_node->initial_value = init_value_e::undefined;
 

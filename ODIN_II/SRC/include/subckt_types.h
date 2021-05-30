@@ -190,7 +190,7 @@ typemap yosys_subckt_str({
                              {"$concat", operation_list_END},         // (A, B, Y)
                              {"$cover", operation_list_END},          // (A, EN)
                              {"$dff", FF_NODE},                       // (CLK, D, Q)
-                             {"$dffe", operation_list_END},           // (CLK, EN, D, Q)
+                             {"$dffe", DFFE},                         // (CLK, EN, D, Q)
                              {"$dffsr", DFFSR},                       // (CLK, SET, CLR, D, Q)
                              {"$dffsre", operation_list_END},         // (CLK, SET, CLR, EN, D, Q)
                              {"$div", operation_list_END},            // (A, B, Y)
