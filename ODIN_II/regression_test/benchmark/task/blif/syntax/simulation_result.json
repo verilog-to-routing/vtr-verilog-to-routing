@@ -660,6 +660,124 @@
         "Estimated LUTs": 11,
         "Total Node": 16
     },
+    "syntax/and_primitive/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/and_primitive/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "and_primitive_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 14.2,
+        "simulation_time(ms)": 1.5,
+        "test_coverage(%)": 100,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 2,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "syntax/and_primitive/no_arch": {
+        "test_name": "syntax/and_primitive/no_arch",
+        "generated_blif": "and_primitive_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 2.9,
+        "simulation_time(ms)": 1.5,
+        "test_coverage(%)": 100,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "syntax/bm_dag5_mod/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_dag5_mod/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "bm_dag5_mod_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 21.1,
+        "simulation_time(ms)": 8.1,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 21,
+        "latch": 13,
+        "generic logic size": 4,
+        "Longest Path": 10,
+        "Average Path": 5,
+        "Estimated LUTs": 21,
+        "Total Node": 35
+    },
+    "syntax/bm_dag5_mod/no_arch": {
+        "test_name": "syntax/bm_dag5_mod/no_arch",
+        "generated_blif": "bm_dag5_mod_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 9.8,
+        "simulation_time(ms)": 8,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 21,
+        "latch": 13,
+        "Longest Path": 10,
+        "Average Path": 5,
+        "Estimated LUTs": 21,
+        "Total Node": 35
+    },
+    "syntax/vector_buf/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/vector_buf/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "vector_buf_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 14.3,
+        "simulation_time(ms)": 1.5,
+        "test_coverage(%)": 100,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 2,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "syntax/vector_buf/no_arch": {
+        "test_name": "syntax/vector_buf/no_arch",
+        "generated_blif": "vector_buf_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 3,
+        "simulation_time(ms)": 1.5,
+        "test_coverage(%)": 100,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

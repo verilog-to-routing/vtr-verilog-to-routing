@@ -55,7 +55,7 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
 static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
 static void make_selector_as_first_port(nnode_t* node);
-static void resolve_logical_not_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static signal_list_t* constant_shift (signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
@@ -169,6 +169,20 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
  *--------------------------------------------------------------------*/
 void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlist) {
     switch (node->type) {
+        case LOGICAL_OR:
+        case LOGICAL_AND:
+        case LOGICAL_NOT:
+        case LOGICAL_NOR:
+        case LOGICAL_NAND:
+        case LOGICAL_XOR:
+        case LOGICAL_XNOR:
+        case LOGICAL_EQUAL: {
+            /** 
+             * to make sure they have only one output pin for partial mapping phase 
+             */
+            resolve_logical_node(node, traverse_number, netlist);
+            break;
+        }
         case ADD: {
             /* 
              * check for missing ports such as carry-in/out in case of 
@@ -200,7 +214,10 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case MULTI_BIT_MUX_2: {
-            /* need to reorder the input pins, so that the selector signal comes at the first place */
+            /**
+             * need to reorder the input pins, so that the 
+             * selector signal comes at the first place
+             */
             make_selector_as_first_port(node);
             /* 
              * split the mux node into mux node with 
@@ -208,13 +225,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              */
             transform_to_single_bit_mux_nodes(node, traverse_number, netlist);
             
-            break;
-        }
-        case LOGICAL_NOT: {
-            /*
-             * resolving logical_not node
-            */
-            resolve_logical_not_node(node, traverse_number, netlist);
             break;
         }
         case DFFSR: {
@@ -225,7 +235,10 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case PMUX: {
-            /* need to reorder the input pins, so that the selector signal comes at the first place */
+            /**
+             * need to reorder the input pins, so that the 
+             * selector signal comes at the first place
+             */
             make_selector_as_first_port(node);
             /*
              * resolving pmux node which is using one-hot selector
@@ -245,14 +258,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case BITWISE_NAND:
         case BITWISE_NOR:
         case BITWISE_XNOR:
-        case BITWISE_XOR:
-        case LOGICAL_OR:
-        case LOGICAL_AND:
-        case LOGICAL_NOR:
-        case LOGICAL_NAND:
-        case LOGICAL_XOR:
-        case LOGICAL_XNOR:
-        case LOGICAL_EQUAL: {
+        case BITWISE_XOR: {
             /* some are already resolved for this phase */
             break;
         }
@@ -664,18 +670,17 @@ static void make_selector_as_first_port(nnode_t* node) {
 }
 
 /**
- * (function: resolve_logical_not_node)
+ * (function: resolve_logical_node)
  * 
- * @brief resolving the logical_not node by 
+ * @brief resolving the logical nodes by 
  * connecting the ouput pins[1..n] to GND
  * 
  * @param node pointing to a logical not node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-static void resolve_logical_not_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
-    oassert(node->num_input_port_sizes == 1);
     oassert(node->num_output_port_sizes == 1);
     
     int i, j;
