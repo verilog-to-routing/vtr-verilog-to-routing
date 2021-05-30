@@ -8,7 +8,8 @@ on:
   - cron: '0 0 * * 0' # weekly
 
 env:
-  MATRIX_EVAL: "CC=gcc-6 && CXX=g++-6"
+  # default compiler for all non-compatibility tests
+  MATRIX_EVAL: "CC=gcc-11 && CXX=g++-11"
 
 jobs:
 
@@ -27,7 +28,6 @@ jobs:
 
     - name: Test
       env:
-        MATRIX_EVAL: "CC=gcc-6 && CXX=g++-6"
         BUILD_TYPE: release
       run: |
         source .github/travis/common.sh
@@ -78,7 +78,6 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
       run: |
         source .github/travis/common.sh
         ./.github/travis/setup.sh
@@ -104,7 +103,6 @@ jobs:
         #In order to get compilation warnings produced per source file, we must do a non-IPO build
         #We also turn warnings into errors for this target by doing a strict compile
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
       run: |
         source .github/travis/common.sh
         ./.github/travis/setup.sh
@@ -157,7 +155,6 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
       run: |
         source .github/travis/common.sh
         ./.github/travis/setup.sh
@@ -187,7 +184,6 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
@@ -213,7 +209,6 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
-        MATRIX_EVAL: 'CC=gcc-5 && CXX=g++-5'
         BUILD_TYPE: debug
       run: |
         source .github/travis/common.sh
@@ -285,7 +280,6 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
-        MATRIX_EVAL: 'CC=gcc-6 && CXX=g++-6'
         _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
         _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
       run: |
