@@ -40,17 +40,15 @@
         "test_name": "syntax/8_bit_for_pass_through_module/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "8_bit_for_pass_through_module.blif",
+        "exit": 134,
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 12.5,
-        "techmap_time(ms)": 0.7,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4
+        "techmap_time(ms)": 0.7
     },
     "syntax/8_bit_for_pass_through_module/no_arch": {
         "test_name": "syntax/8_bit_for_pass_through_module/no_arch",
         "input_blif": "8_bit_for_pass_through_module.blif",
+        "exit": 134,
         "max_rss(MiB)": 7.3,
         "exec_time(ms)": 0.9,
         "techmap_time(ms)": 0.6

@@ -49,7 +49,7 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
 
 void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* netlist);
 
-static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
 static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
@@ -175,7 +175,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              * dealing with generated netlist from Yosys blif file.
              */
             if (hard_adders)
-                check_block_ports(node, traverse_number, netlist);
+                node = check_block_ports(node, traverse_number, netlist);
 
             add_list = insert_in_vptr_list(add_list, node);
             break;
@@ -186,7 +186,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              * dealing with generated netlist from Yosys blif file.
              */
             if (hard_adders)
-                check_block_ports(node, traverse_number, netlist);
+                node = check_block_ports(node, traverse_number, netlist);
 
             sub_list = insert_in_vptr_list(sub_list, node);
             break;
@@ -295,59 +295,72 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------------------------*/
-static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
 
-    if (node->traverse_visited == traverse_mark_number)
-        return;
+    nnode_t* new_node = NULL;
 
     if (configuration.coarsen) {
         switch (node->type) {
             case ADD:
             case MINUS: {
                 if (node->num_input_port_sizes == 2) {
-
                     int i;
-                    nnode_t* new_node = allocate_nnode(node->loc);
+                    int in_port1_size = node->input_port_sizes[0];
+                    int in_port2_size = node->input_port_sizes[1];
+                    int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size : in_port2_size;
 
-                    new_node->type = node->type;
-                    new_node->name = vtr::strdup(node->name);
-                    new_node->traverse_visited = node->traverse_visited;
+                    new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
+                                               out_port_size,
+                                               node, traverse_mark_number);
 
-                    int port1_size = node->input_port_sizes[0];
-                    int port2_size = node->input_port_sizes[1];
-
-                    add_input_port_information(new_node, port1_size);
-                    allocate_more_input_pins(new_node, port1_size);
-
-                    for (i = 0; i < port1_size; i++) {
-                        remap_pin_to_new_node(node->input_pins[i], new_node, i);
+                    for (i = 0; i < in_port1_size; i++) {
+                        remap_pin_to_new_node(node->input_pins[i],
+                                              new_node,
+                                              i);
                     }
-                    
-                    add_input_port_information(new_node, port2_size);
-                    allocate_more_input_pins(new_node, port2_size);
 
-                    for (i = 0; i < port2_size; i++) {
-                        remap_pin_to_new_node(node->input_pins[i + port1_size], new_node, i + port1_size);
+                    for (i = 0; i < in_port2_size; i++) {
+                        remap_pin_to_new_node(node->input_pins[i + in_port1_size],
+                                              new_node,
+                                              i + in_port1_size);
                     }
-                    
-
-                    add_input_port_information(new_node, 1);
-                    allocate_more_input_pins(new_node, 1);
-
-                    npin_t* cin_pin = get_pad_pin(netlist);
-                    cin_pin->name = make_full_ref_name(NULL, NULL, new_node->name, "cin", 0);
-                    cin_pin->type = INPUT;
-                    cin_pin->mapping = vtr::strdup("cin");
-
-                    add_input_pin_to_node(new_node, cin_pin, new_node->num_input_pins - 1);
 
                     // moving the output pins to the new node
-                    add_output_port_information(new_node, node->num_output_pins);
-                    allocate_more_output_pins(new_node, node->num_output_pins);
+                    for (i = 0; i < out_port_size; i++) {
+                        if (i < node->num_output_pins) {
+                            remap_pin_to_new_node(node->output_pins[i],
+                                                  new_node,
+                                                  i);
+                        } else {
+                            npin_t* new_pin1 = allocate_npin();
+                            npin_t* new_pin2 = allocate_npin();
+                            nnet_t* new_net = allocate_nnet();
+                            new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
+                            /* hook the output pin into the node */
+                            add_output_pin_to_node(new_node, new_pin1, i);
+                            /* hook up new pin 1 into the new net */
+                            add_driver_pin_to_net(new_net, new_pin1);
+                            /* hook up the new pin 2 to this new net */
+                            add_fanout_pin_to_net(new_net, new_pin2);
+                        }
+                    }
 
-                    for (i = 0; i < port2_size; i++) {
-                        remap_pin_to_new_node(node->output_pins[i], new_node, i);
+                    /**
+                     * if number of output pins is greater than the max of input pins, 
+                     * here we connect the exceeded pins to the GND 
+                    */
+                    for (i = out_port_size + 1; i < node->num_output_pins; i++) {
+                        /* creating a buf node */
+                        nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+                        /* adding the GND input pin to the buf node */
+                        add_input_pin_to_node(buf_node,
+                                              get_zero_pin(netlist),
+                                              0);
+                        /* remapping the outpin to buf node */
+                        remap_pin_to_new_node(node->output_pins[i],
+                                              buf_node,
+                                              0);
                     }
                 }
 
@@ -361,6 +374,8 @@ static void check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, net
             }
         }
     }
+
+    return new_node;
 }
 
 /**

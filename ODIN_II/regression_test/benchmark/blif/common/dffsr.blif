@@ -3,15 +3,15 @@
 .model top_module
 .inputs clk rst a[0] a[1] b[0] b[1]
 .outputs w[0] w[1]
-.subckt $not A[0]=b[0] A[1]=b[1] Y[0]=$auto$proc_dff.cc:152:gen_dffsr$1349[0] Y[1]=$auto$proc_dff.cc:152:gen_dffsr$1349[1]
+.subckt $not A[0]=b[0] A[1]=b[1] Y[0]=b_$not_A_Y[0] Y[1]=b_$not_A_Y[1]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000010
-.subckt $mux A[0]=$false A[1]=$false B[0]=b[0] B[1]=b[1] S=rst Y[0]=$auto$proc_dff.cc:153:gen_dffsr$1350[0] Y[1]=$auto$proc_dff.cc:153:gen_dffsr$1350[1]
+.subckt $mux A[0]=$false A[1]=$false B[0]=b_$not_A_Y[0] B[1]=b_$not_A_Y[1] S=rst Y[0]=w_$dffsr_Q_CLR[0] Y[1]=w_$dffsr_Q_CLR[1]
 .param WIDTH 00000000000000000000000000000010
-.subckt $mux A[0]=$false A[1]=$false B[0]=$auto$proc_dff.cc:152:gen_dffsr$1349[0] B[1]=$auto$proc_dff.cc:152:gen_dffsr$1349[1] S=rst Y[0]=$auto$proc_dff.cc:154:gen_dffsr$1351[0] Y[1]=$auto$proc_dff.cc:154:gen_dffsr$1351[1]
+.subckt $mux A[0]=$false A[1]=$false B[0]=b[0] B[1]=b[1] S=rst Y[0]=w_$dffsr_Q_SET[0] Y[1]=w_$dffsr_Q_SET[1]
 .param WIDTH 00000000000000000000000000000010
-.subckt $dffsr CLK=clk CLR[0]=$auto$proc_dff.cc:154:gen_dffsr$1351[0] CLR[1]=$auto$proc_dff.cc:154:gen_dffsr$1351[1] D[0]=a[0] D[1]=a[1] Q[0]=w[0] Q[1]=w[1] SET[0]=$auto$proc_dff.cc:153:gen_dffsr$1350[0] SET[1]=$auto$proc_dff.cc:153:gen_dffsr$1350[1]
+.subckt $dffsr CLK=clk CLR[0]=w_$dffsr_Q_CLR[0] CLR[1]=w_$dffsr_Q_CLR[1] D[0]=a[0] D[1]=a[1] Q[0]=w[0] Q[1]=w[1] SET[0]=w_$dffsr_Q_SET[0] SET[1]=w_$dffsr_Q_SET[1]
 .param CLK_POLARITY 1
 .param CLR_POLARITY 1
 .param SET_POLARITY 1

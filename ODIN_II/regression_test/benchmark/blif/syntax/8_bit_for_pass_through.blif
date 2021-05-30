@@ -3,34 +3,34 @@
 .model top_module
 .inputs a[0] a[1] a[2] a[3] a[4] a[5] a[6] a[7] clk rst
 .outputs c[0] c[1] c[2] c[3] c[4] c[5] c[6] c[7]
-.subckt $dff CLK=clk D[0]=$0\c[7:0][0] D[1]=$0\c[7:0][1] D[2]=$0\c[7:0][2] D[3]=$0\c[7:0][3] D[4]=$0\c[7:0][4] D[5]=$0\c[7:0][5] D[6]=$0\c[7:0][6] D[7]=$0\c[7:0][7] Q[0]=c[0] Q[1]=c[1] Q[2]=c[2] Q[3]=c[3] Q[4]=c[4] Q[5]=c[5] Q[6]=c[6] Q[7]=c[7]
+.subckt $pmux A=$undef B[0]=$false B[1]=a[0] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[0]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $pmux A=$undef B[0]=$false B[1]=a[1] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[1]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $pmux A=$undef B[0]=$false B[1]=a[2] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[2]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $pmux A=$undef B[0]=$false B[1]=a[3] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[3]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $pmux A=$undef B[0]=$false B[1]=a[4] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[4]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $pmux A=$undef B[0]=$false B[1]=a[5] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[5]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $pmux A=$undef B[0]=$false B[1]=a[6] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[6]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $pmux A=$undef B[0]=$false B[1]=a[7] S[0]=rst S[1]=rst_$not_A_Y Y=c_$dff_Q_D[7]
+.param S_WIDTH 00000000000000000000000000000010
+.param WIDTH 00000000000000000000000000000001
+.subckt $dff CLK=clk D[0]=c_$dff_Q_D[0] D[1]=c_$dff_Q_D[1] D[2]=c_$dff_Q_D[2] D[3]=c_$dff_Q_D[3] D[4]=c_$dff_Q_D[4] D[5]=c_$dff_Q_D[5] D[6]=c_$dff_Q_D[6] D[7]=c_$dff_Q_D[7] Q[0]=c[0] Q[1]=c[1] Q[2]=c[2] Q[3]=c[3] Q[4]=c[4] Q[5]=c[5] Q[6]=c[6] Q[7]=c[7]
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000001000
-.subckt $pmux A=$undef B[0]=$false B[1]=a[7] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][7]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[6] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][6]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[5] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][5]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[4] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][4]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[3] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][3]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[2] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][2]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[1] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][1]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[0] S[0]=rst S[1]=$procmux$1209_CMP Y=$0\c[7:0][0]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $not A=rst Y=$procmux$1209_CMP
+.subckt $not A=rst Y=rst_$not_A_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001

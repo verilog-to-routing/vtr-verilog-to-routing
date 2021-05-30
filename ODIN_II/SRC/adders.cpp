@@ -815,7 +815,7 @@ void iterate_adders(netlist_t* netlist) {
     // start of the adder chain to feed the first cin with gnd
     const int offset = (configuration.adder_cin_global) ? 0 : 1;
 
-    /* Can only perform the optimisation if hard adders exist! */
+    /* Can only perform the optimization if hard adders exist! */
     if (hard_adders == NULL)
         return;
     //In hard block adder, the summand and addend are same size.
