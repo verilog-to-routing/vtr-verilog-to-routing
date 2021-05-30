@@ -182,7 +182,7 @@ typemap yosys_subckt_str({
                              {"$allconst", operation_list_END},       // (Y)
                              {"$allseq", operation_list_END},         // (Y)
                              {"$alu", operation_list_END},            // (A, B, CI, BI, X, Y, CO)
-                             {"$and", BITWISE_AND},            // (A, B, Y)
+                             {"$and", BITWISE_AND},                   // (A, B, Y)
                              {"$anyconst", operation_list_END},       // (Y)
                              {"$anyseq", operation_list_END},         // (Y)
                              {"$assert", operation_list_END},         // (A, EN)
@@ -197,7 +197,7 @@ typemap yosys_subckt_str({
                              {"$divfloor", operation_list_END},       // (A, B, Y)
                              {"$dlatch", operation_list_END},         // (EN, D, Q)
                              {"$dlatchsr", operation_list_END},       // (EN, SET, CLR, D, Q)
-                             {"$eq", LOGICAL_EQUAL},                          // (A, B, Y)
+                             {"$eq", LOGICAL_EQUAL},                  // (A, B, Y)
                              {"$equiv", operation_list_END},          // (A, B, Y)
                              {"$eqx", operation_list_END},            // (A, B, Y)
                              {"$fa", operation_list_END},             // (A, B, C, X, Y)
@@ -254,8 +254,8 @@ typemap yosys_subckt_str({
                              {"$sshr", operation_list_END},           // (A, B, Y)
                              {"$sub", MINUS},                         // (A, B, Y)
                              {"$tribuf", operation_list_END},         // (A, EN, Y)
-                             {"$xnor", LOGICAL_XNOR},           // (A, B, Y)
-                             {"$xor", LOGICAL_XOR}             // (A, B, Y)
+                             {"$xnor", LOGICAL_XNOR},                 // (A, B, Y)
+                             {"$xor", LOGICAL_XOR}                    // (A, B, Y)
                          },
                          NUM_OF_YOSYS_CELL_TYPES);
 
