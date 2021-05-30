@@ -8,8 +8,9 @@ ODIN_DIR="${VTR_DIR}/ODIN_II"
 REGRESSION_DIR="${THIS_DIR}/regression_test"
 
 # COLORS
-RED=$'\033[31;1m'
+BLUE=$'\033[0;33m'
 GREEN=$'\033[0;32m'
+RED=$'\033[31;1m'
 NC=$'\033[0m' # No Color
 
 # defaults
@@ -42,9 +43,11 @@ function print_test_stat() {
     START_TIME="$2"
 
     if [ _${STAT} == "_E" ]; then
-        echo "[${RED}EXISTED${NC}] . . . . . . . . . . . . . . . . . ${BLIF_NAME}"
+        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . ${BLIF_NAME}"
     elif [ _${STAT} == "_C" ]; then
         echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . ${BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
+    elif [ _${STAT} == "_F" ]; then
+        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}${BLIF_NAME}"
     fi
 }
 
@@ -60,7 +63,11 @@ function run_yosys() {
 
     ${_YOSYS_EXEC} -c ${TCL_FILE} > /dev/null 2>&1
 
-    print_test_stat "C" "${START}"
+    if [ -f "${OUTPUT_BLIF_PATH}/${BLIF_NAME}"  ]; then
+        print_test_stat "C" "${START}"
+    else
+        print_test_stat "F" "${START}"
+    fi
 }
 
 #to print help of the current script
