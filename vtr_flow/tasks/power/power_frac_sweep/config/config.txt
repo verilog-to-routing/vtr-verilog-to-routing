@@ -59,4 +59,4 @@ arch_list_add=k6_N10_I40_Fi8_L4_frac1_ff2_45nm.xml
 parse_file=vpr_power.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_power.txt
