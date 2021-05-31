@@ -215,7 +215,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             transform_to_single_bit_dff_nodes(node, traverse_number, netlist);
             break;
         }
-        case MULTI_BIT_MUX_2: {
+        case MULTI_PORT_BIT_MUX: {
             /**
              * need to reorder the input pins, so that the 
              * selector signal comes at the first place
@@ -745,7 +745,6 @@ static void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, net
     int i;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
-    int EN_width = node->input_port_sizes[2]; // == 1
 
     signal_list_t* reset_value = create_constant_value(node->attributes->reset_value, D_width, netlist);
 
@@ -894,7 +893,6 @@ static void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, net
     int i;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
-    int EN_width = node->input_port_sizes[2]; // == 1
 
     /*****************************************************************************************/
     /**************************************** EN_CHECK ***************************************/
@@ -1273,7 +1271,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
          * 1: width 
          * Out: width 
         */
-        level_muxes[i] = make_3port_gate(MULTI_BIT_MUX_2, 1, width, width, width, node, traverse_mark_number);
+        level_muxes[i] = make_3port_gate(MULTI_PORT_BIT_MUX/* MULTI_BIT_MUX_2 */, 1, width, width, width, node, traverse_mark_number);
         level_muxes_out_signals[i] = (signal_list_t*)vtr::calloc(width, sizeof(signal_list_t));
 
         // Remapping the selector bit to level_mux
@@ -1325,7 +1323,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
              * Out: 1 bit
             */
             int active_idx = i - 1;
-            active_bit_muxes[active_idx] = make_3port_gate(MULTI_BIT_MUX_2, 1, 1, 1, 1, node, traverse_mark_number);
+            active_bit_muxes[active_idx] = make_3port_gate(MULTI_PORT_BIT_MUX/* MULTI_BIT_MUX_2 */, 1, 1, 1, 1, node, traverse_mark_number);
 
             // Remapping the selector bit to new multiplexer
             add_input_pin_to_node(active_bit_muxes[active_idx],
@@ -1377,7 +1375,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
              * Out: width
             */
             int ternary_idx = i - 1;
-            ternary_muxes[ternary_idx] = make_3port_gate(MULTI_BIT_MUX_2, 1, width, width, width, node, traverse_mark_number);
+            ternary_muxes[ternary_idx] = make_3port_gate(MULTI_PORT_BIT_MUX/* MULTI_BIT_MUX_2 */, 1, width, width, width, node, traverse_mark_number);
             ternary_muxes_out_signals[ternary_idx] = (signal_list_t*)vtr::calloc(width, sizeof(signal_list_t));
 
             // Remapping the selector bit to new multiplexer

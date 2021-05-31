@@ -89,15 +89,20 @@ const char* operation_list_STR[][2] = {
     {"MEMORY", "MEM"},
     {"PAD_NODE", "PAD"},
     {"HARD_IP", "HARD"},
-    {"GENERIC", "GEN"},           /*added for the unknown node type */
-    {"CLOG2", "CL2"},             // $clog2
-    {"UNSIGNED", "UNSG"},         // $unsigned
-    {"SIGNED", "SG"},             // $signed
-                                  // [START] operations to cover yosys subckt
-    {"MULTI_BIT_MUX_2", "nbMUX"}, // like MUX_2 but with n-bit input/output
-    {"DFFSR", "nDFFSR"},          // data, clear and set to output port
-                                  // [END] operations to cover yosys subckt
-    {"ERROR OOB", "OOB"}          // should not reach this
+    {"GENERIC", "GEN"},   /*added for the unknown node type */
+    {"CLOG2", "CL2"},     // $clog2
+    {"UNSIGNED", "UNSG"}, // $unsigned
+    {"SIGNED", "SG"},     // $signed
+                          // [START] operations to cover yosys subckt
+    // {"MULTI_BIT_MUX_2", "nbMUX"}, // like MUX_2 but with n-bit input/output
+    {"MULTI_PORT_BIT_MUX", "npbMUX"}, // n-bit input/output in multi port mux
+    {"PMUX", "nPMUX"},          // Multiplexer with many inputs using one-hot select signal
+    {"SDFF", "nSDFF"},          // data, S to reset value and output port
+    {"DFFE", "nDFFE"},          // data, enable to output port
+    {"DFFSR", "nDFFSR"},          // data, enable to output port
+
+                                      // [END] operations to cover yosys subckt
+    {"ERROR OOB", "OOB"}              // should not reach this
 };
 
 const char* ids_STR[] = {
