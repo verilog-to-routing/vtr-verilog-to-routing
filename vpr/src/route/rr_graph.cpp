@@ -332,6 +332,7 @@ void create_rr_graph(const t_graph_type graph_type,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          router_opts.read_rr_edge_metadata,
                          router_opts.do_check_rr_graph);
+
             reorder_rr_graph_nodes(router_opts);
         }
     } else {
@@ -572,8 +573,10 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* Alloc node lookups, count nodes, alloc rr nodes */
     int num_rr_nodes = 0;
 
-    device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
-                                                                &num_rr_nodes, chan_details_x, chan_details_y);
+    alloc_and_load_rr_node_indices(device_ctx.rr_node_indices,
+                                   max_chan_width, grid,
+                                   &num_rr_nodes, chan_details_x, chan_details_y);
+
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
         expected_node_count += ClockRRGraphBuilder::estimate_additional_nodes(grid);
