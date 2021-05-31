@@ -18,7 +18,7 @@ from vtr import load_config_lines
 
 
 class ParsePattern:
-    """ Pattern for parsing log files """
+    """Pattern for parsing log files"""
 
     def __init__(self, name, filename, regex_str, default_value=None):
         self._name = name
@@ -27,44 +27,44 @@ class ParsePattern:
         self._default_value = default_value
 
     def name(self):
-        """ Return name of what is being parsed for """
+        """Return name of what is being parsed for"""
         return self._name
 
     def filename(self):
-        """ Log filename to parse """
+        """Log filename to parse"""
         return self._filename
 
     def regex(self):
-        """ Regex expression to use for parsing """
+        """Regex expression to use for parsing"""
         return self._regex
 
     def default_value(self):
-        """ Return the default parse value """
+        """Return the default parse value"""
         return self._default_value
 
 
 class PassRequirement(abc.ABC):
-    """ Used to check if a parsed value passes an expression """
+    """Used to check if a parsed value passes an expression"""
 
     def __init__(self, metric):
         self._metric = metric
         self._type = type
 
     def metric(self):
-        """ Return pass matric """
+        """Return pass matric"""
         return self._metric
 
     @abc.abstractmethod
     def type(self):
-        """ Return the type of requirement checking """
+        """Return the type of requirement checking"""
 
     @abc.abstractmethod
     def check_passed(self, golden_value, check_value, check_string="golden value"):
-        """ Return whether the check passed """
+        """Return whether the check passed"""
 
 
 class EqualPassRequirement(PassRequirement):
-    """ Used to check if parsed value is equal to golden value """
+    """Used to check if parsed value is equal to golden value"""
 
     def type(self):
         return "Equal"
@@ -82,7 +82,7 @@ class EqualPassRequirement(PassRequirement):
 
 
 class RangePassRequirement(PassRequirement):
-    """ Used to check if parsed value is within a range """
+    """Used to check if parsed value is within a range"""
 
     def __init__(self, metric, min_value=None, max_value=None):
         super().__init__(metric)
@@ -97,15 +97,15 @@ class RangePassRequirement(PassRequirement):
         return "Range"
 
     def min_value(self):
-        """ Get min value of golden range """
+        """Get min value of golden range"""
         return self._min_value
 
     def max_value(self):
-        """ Get max value of golden range """
+        """Get max value of golden range"""
         return self._max_value
 
     def check_passed(self, golden_value, check_value, check_string="golden value"):
-        """ Check if parsed value is within a range or equal to golden value """
+        """Check if parsed value is within a range or equal to golden value"""
 
         if golden_value is None or check_value is None:
             if golden_value is None and check_value is None:
@@ -165,7 +165,7 @@ class RangePassRequirement(PassRequirement):
 
 
 class RangeAbsPassRequirement(PassRequirement):
-    """ Check if value is in some relative ratio range, or below some absolute value """
+    """Check if value is in some relative ratio range, or below some absolute value"""
 
     def __init__(self, metric, min_value=None, max_value=None, abs_threshold=None):
         super().__init__(metric)
@@ -178,19 +178,19 @@ class RangeAbsPassRequirement(PassRequirement):
         self._abs_threshold = abs_threshold
 
     def type(self):
-        """ Return requirement type """
+        """Return requirement type"""
         return "Range"
 
     def min_value(self):
-        """ Return min value of ratio range """
+        """Return min value of ratio range"""
         return self._min_value
 
     def max_value(self):
-        """ Return max value of ratio range """
+        """Return max value of ratio range"""
         return self._max_value
 
     def abs_threshold(self):
-        """ Get absolute threshold """
+        """Get absolute threshold"""
         return self._abs_threshold
 
     def check_passed(self, golden_value, check_value, check_string="golden value"):
@@ -267,7 +267,7 @@ class RangeAbsPassRequirement(PassRequirement):
 
 
 class ParseResults:
-    """ This class contains all parse results and metrics """
+    """This class contains all parse results and metrics"""
 
     PRIMARY_KEYS = ("architecture", "circuit", "script_params")
 
@@ -275,19 +275,19 @@ class ParseResults:
         self._metrics = OrderedDict()
 
     def add_result(self, arch, circuit, parse_result, script_param=None):
-        """ Add new parse result for given arch/circuit pair """
+        """Add new parse result for given arch/circuit pair"""
         script_param = load_script_param(script_param)
         self._metrics[(arch, circuit, script_param)] = parse_result
 
     def metrics(self, arch, circuit, script_param=None):
-        """ Return individual metric based on the architechure, circuit and script"""
+        """Return individual metric based on the architechure, circuit and script"""
         script_param = load_script_param(script_param)
         if (arch, circuit, script_param) in self._metrics:
             return self._metrics[(arch, circuit, script_param)]
         return None
 
     def all_metrics(self):
-        """ Return all metric results """
+        """Return all metric results"""
         return self._metrics
 
 
