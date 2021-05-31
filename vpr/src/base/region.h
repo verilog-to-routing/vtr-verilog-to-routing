@@ -13,6 +13,9 @@
  *
  */
 
+/// @brief sentinel value for indicating that a subtile has not been specified
+constexpr int NO_SUBTILE = -1;
+
 class Region {
   public:
     /**

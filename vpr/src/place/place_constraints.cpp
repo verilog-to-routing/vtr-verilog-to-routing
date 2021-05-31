@@ -11,9 +11,6 @@
 #include "globals.h"
 #include "place_constraints.h"
 
-/// @brief sentinel value for indicating that a subtile has not been specified
-constexpr int NO_SUBTILE = -1;
-
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
     int error = 0;
