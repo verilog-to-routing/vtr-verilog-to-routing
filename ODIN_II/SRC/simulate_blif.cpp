@@ -1417,7 +1417,7 @@ static void compute_flipflop_node(nnode_t* node, int cycle) {
     npin_t* Q = node->output_pins[0];
     npin_t* clock_pin = node->input_pins[1];
     npin_t* output_pin = node->output_pins[0];
-    bool trigger = ff_trigger(node->clk_edge_type, clock_pin, cycle);
+    bool trigger = ff_trigger(node->attributes->clk_edge_type, clock_pin, cycle);
 
     BitSpace::bit_value_t new_value = compute_ff(trigger, D, Q, cycle);
     update_pin_value(output_pin, new_value, cycle);

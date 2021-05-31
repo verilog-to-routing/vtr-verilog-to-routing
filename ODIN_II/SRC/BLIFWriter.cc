@@ -607,7 +607,7 @@ void BLIF::Writer::define_ff(nnode_t* node, FILE* out) {
     oassert(node->num_input_pins == 2);
 
     // grab the edge sensitivity of the flip flop
-    const char* clk_edge_type_str = edge_type_blif_str(node->clk_edge_type, node->loc);
+    const char* clk_edge_type_str = edge_type_blif_str(node->attributes->clk_edge_type, node->loc);
 
     std::string input;
     std::string output;

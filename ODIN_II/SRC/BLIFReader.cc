@@ -1276,7 +1276,7 @@ void BLIF::Reader::create_latch_node_and_driver() {
     nnode_t* new_node = allocate_nnode(my_location);
     new_node->related_ast_node = NULL;
     new_node->type = FF_NODE;
-    new_node->clk_edge_type = edge_type_blif_enum(names[2], my_location);
+    new_node->attributes->clk_edge_type = edge_type_blif_enum(names[2], my_location);
 
     new_node->initial_value = (init_value_e)atoi(names[4]);
 
@@ -1860,6 +1860,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             model = create_model(name, ports, ports->count-1, ports->count);
             break;
         }
+        case (SDFF): //fallthrough
         case (DFFSR): {
             // create a model with single output port, being read as the one behind last port
             model = create_model(name, ports, ports->count-2, ports->count-1);
@@ -1951,6 +1952,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
 
     char* ptr;
     char buffer[READ_BLIF_BUFFER];
+    attr_t* attributes = new_node->attributes;
 
     if (need_sensitivity(yosys_subckt_str[subckt_name])) {
         while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
@@ -1959,31 +1961,41 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             
             if (!strcmp(ptr, ".param")) {
                 ptr = vtr::strtok(NULL, TOKENS, file, buffer);
-                int sensitivity = atoi(vtr::strtok(NULL, TOKENS, file, buffer));
+                if (!strcmp(ptr, "SRST_VALUE")) {
+                    attributes->reset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                } else {
+                    int sensitivity = atoi(vtr::strtok(NULL, TOKENS, file, buffer));
+                    if (!strcmp(ptr, "CLK_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->clk_edge_type = RISING_EDGE_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->clk_edge_type = FALLING_EDGE_SENSITIVITY;
 
-                if (!strcmp(ptr, "CLK_POLARITY")) {
-                    if (sensitivity == 1)
-                        new_node->clk_edge_type = RISING_EDGE_SENSITIVITY;
-                    else if (sensitivity == 0)
-                        new_node->clk_edge_type = FALLING_EDGE_SENSITIVITY;
+                    } else if (!strcmp(ptr, "CLR_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->clr_edge_type = RISING_EDGE_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->clr_edge_type = FALLING_EDGE_SENSITIVITY;
 
-                } else if (!strcmp(ptr, "CLR_POLARITY")) {
-                    if (sensitivity == 1)
-                        new_node->clr_edge_type = RISING_EDGE_SENSITIVITY;
-                    else if (sensitivity == 0)
-                        new_node->clr_edge_type = FALLING_EDGE_SENSITIVITY;
+                    } else if (!strcmp(ptr, "SET_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->set_edge_type = RISING_EDGE_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->set_edge_type = FALLING_EDGE_SENSITIVITY;
 
-                } else if (!strcmp(ptr, "SET_POLARITY")) {
-                    if (sensitivity == 1)
-                        new_node->set_edge_type = RISING_EDGE_SENSITIVITY;
-                    else if (sensitivity == 0)
-                        new_node->set_edge_type = FALLING_EDGE_SENSITIVITY;
-
-                } else if (!strcmp(ptr, "EN_POLARITY")) {
-                    if (sensitivity == 1)
-                        new_node->enable_polarity = ACTIVE_HIGH_SENSITIVITY;
-                    else if (sensitivity == 0)
-                        new_node->enable_polarity = ACTIVE_LOW_SENSITIVITY;
+                    } else if (!strcmp(ptr, "EN_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->enable_polarity = ACTIVE_HIGH_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->enable_polarity = ACTIVE_LOW_SENSITIVITY;
+                    
+                    } else if (!strcmp(ptr, "SRST_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->reset_polarity = ACTIVE_HIGH_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->reset_polarity = ACTIVE_LOW_SENSITIVITY;
+                    
+                    }
                 }
             } else if (!strcmp(ptr, ".end")) {
                 break;
@@ -2010,6 +2022,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
      switch (type) {
          case (FF_NODE): //fallthrough
          case (DFFE): //fallthrough
+         case (SDFF): //fallthrough
          case (DFFSR): {
              return_value = true;
              break;

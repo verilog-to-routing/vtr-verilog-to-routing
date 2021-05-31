@@ -237,7 +237,7 @@ typemap yosys_subckt_str({
                              {"$reduce_or", operation_list_END},      // (A, Y)
                              {"$reduce_xnor", operation_list_END},    // (A, Y)
                              {"$reduce_xor", operation_list_END},     // (A, Y)
-                             {"$sdff", operation_list_END},           // (CLK, SRST, D, Q)
+                             {"$sdff", SDFF},                         // (CLK, SRST, D, Q)
                              {"$sdffce", operation_list_END},         // (CLK, SRST, EN, D, Q)
                              {"$sdffe", operation_list_END},          // (CLK, SRST, EN, D, Q)
                              {"$shift", operation_list_END},          // (A, B, Y)

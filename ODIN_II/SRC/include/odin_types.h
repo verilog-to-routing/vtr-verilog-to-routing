@@ -67,6 +67,9 @@
 
 #define SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE 30
 
+/* the width of Odin's base value */
+#define ODIN_BITSET_BASE_VALUE 32
+
 /* unique numbers for using void *data entries in some of the datastructures */
 #define RESET -1
 #define LEVELIZE 12
@@ -262,6 +265,7 @@ enum operation_list {
                      // [START] operations to cover yosys subckt
     MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
     PMUX,            // Multiplexer with many inputs using one-hot select signal
+    SDFF,            // data, S to reset value and output port
     DFFE,            // data, enable to output port
     DFFSR,           // data, clear and set to output port
                      // [END] operations to cover yosys subckt
@@ -454,6 +458,20 @@ struct chain_information_t {
     int num_bits;
 };
 
+//-----------------------------------------------------------------------------------------------------
+
+/* DEFINTIONS netlist node attributes*/
+struct attr_t {
+    edge_type_e clk_edge_type;   //
+    edge_type_e clr_edge_type;   //
+    edge_type_e set_edge_type;   //
+    edge_type_e enable_polarity; //
+    edge_type_e reset_polarity;  //
+
+    char* reset_value;
+
+};
+
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
 struct nnode_t {
@@ -505,10 +523,9 @@ struct nnode_t {
     int ratio;                  //clock ratio for clock nodes
     init_value_e initial_value; // initial net value
     bool internal_clk_warn = false;
-    edge_type_e clk_edge_type;   //
-    edge_type_e clr_edge_type;   //
-    edge_type_e set_edge_type;   //
-    edge_type_e enable_polarity; //
+    
+    attr_t* attributes;
+
     bool covered = false;
 
     // For mixing soft and hard logic optimizations

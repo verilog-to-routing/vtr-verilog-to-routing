@@ -81,10 +81,8 @@ nnode_t* allocate_nnode(loc_t loc) {
     new_node->num_undriven_pins = 0;
 
     new_node->ratio = 1;
-    new_node->clk_edge_type = UNDEFINED_SENSITIVITY;
-    new_node->clr_edge_type = UNDEFINED_SENSITIVITY;
-    new_node->set_edge_type = UNDEFINED_SENSITIVITY;
-    new_node->enable_polarity = UNDEFINED_SENSITIVITY;
+
+    new_node->attributes = init_attribute();
 
     new_node->initial_value = init_value_e::undefined;
 
@@ -665,6 +663,25 @@ void connect_nodes(nnode_t* out_node, int out_idx, nnode_t* in_node, int in_idx)
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: init_attribute_structure)
+ * 	Initializes the netlist node attributes including edge sensitivies and reset value
+ *-------------------------------------------------------------------------------------------*/
+attr_t* init_attribute() {
+    attr_t* attribute;
+    attribute = (attr_t*)vtr::malloc(sizeof(attr_t));
+
+    attribute->clk_edge_type = UNDEFINED_SENSITIVITY;
+    attribute->clr_edge_type = UNDEFINED_SENSITIVITY;
+    attribute->set_edge_type = UNDEFINED_SENSITIVITY;
+    attribute->reset_polarity = UNDEFINED_SENSITIVITY;
+    attribute->enable_polarity = UNDEFINED_SENSITIVITY;
+
+    attribute->reset_value = NULL;
+
+    return attribute;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: init_signal_list_structure)
  * 	Initializes the list structure which describes inputs and outputs of elements
  * 	as they coneect to other elements in the graph.
@@ -677,6 +694,28 @@ signal_list_t* init_signal_list() {
     list->pins = NULL;
     list->is_memory = false;
     list->is_adder = false;
+
+    return list;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: create_constant_value)
+ * 	create the signal_list of the given constant value
+ *-------------------------------------------------------------------------------------------*/
+signal_list_t* create_constant_value(const char* value, const size_t width, netlist_t* netlist) {
+    signal_list_t* list = init_signal_list();
+
+    oassert(strlen(value) <= width);
+
+    int i;
+    /* create vcc/gnd signal pins */
+    for (i = width; i > 0; i--) {
+        if (value[i - 1] == '1') {
+            add_pin_to_signal_list(list, get_one_pin(netlist));
+        } else {
+            add_pin_to_signal_list(list, get_zero_pin(netlist));
+        }
+    }
 
     return list;
 }
