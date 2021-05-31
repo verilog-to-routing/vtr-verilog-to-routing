@@ -9,6 +9,10 @@ std::vector<Region> PartitionRegion::get_partition_region() {
     return partition_region;
 }
 
+void PartitionRegion::set_partition_region(std::vector<Region> pr) {
+    partition_region = pr;
+}
+
 bool PartitionRegion::empty() {
     return partition_region.size() == 0;
 }
@@ -44,6 +48,20 @@ PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionR
     }
 
     return pr;
+}
+
+void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr) {
+    Region intersect_region;
+    std::vector<Region> int_regions;
+    for (unsigned int i = 0; i < cluster_pr.partition_region.size(); i++) {
+        for (unsigned int j = 0; j < new_pr.partition_region.size(); j++) {
+            intersect_region = intersection(cluster_pr.partition_region[i], new_pr.partition_region[j]);
+            if (!intersect_region.empty()) {
+                int_regions.push_back(intersect_region);
+            }
+        }
+    }
+    cluster_pr.set_partition_region(int_regions);
 }
 
 void print_partition_region(FILE* fp, PartitionRegion pr) {
