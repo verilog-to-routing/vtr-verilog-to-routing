@@ -22,7 +22,7 @@ BASIC_VERBOSITY = 1
 
 
 def vtr_command_argparser(prog=None):
-    """ Parses the arguments of run_reg_test """
+    """Parses the arguments of run_reg_test"""
 
     description = textwrap.dedent(
         """
@@ -205,7 +205,7 @@ def vtr_command_main(arg_list, prog=None):
 
 
 def display_qor(reg_test):
-    """ Display the qor tests script files to be run outside of this script """
+    """Display the qor tests script files to be run outside of this script"""
     test_dir = paths.regression_tests_path / reg_test
     if not (test_dir / "qor_geomean.txt").is_file():
         print("QoR results do not exist ({}/qor_geomean.txt)".format(str(test_dir)))
@@ -250,7 +250,7 @@ def display_qor(reg_test):
 
 
 def run_odin_test(args, test_name):
-    """ Run ODIN II test with given test name """
+    """Run ODIN II test with given test name"""
     odin_reg_script = [
         str(paths.odin_verify_path),
         "--clean",
@@ -294,7 +294,7 @@ def run_odin_test(args, test_name):
 
 
 def collect_task_list(reg_test):
-    """ create a list of task files """
+    """create a list of task files"""
     task_list_filepath = paths.tasks_path / "regression_tests" / reg_test / "task_list.txt"
     if not task_list_filepath.is_file():
         raise IOError("Test does not exist: {}".format(reg_test))
@@ -316,7 +316,7 @@ def run_tasks(args, task_lists):
 
 
 def parse_single_test(task_lists, check=True, calculate=True, create=False):
-    """ parse the test results """
+    """parse the test results"""
     vtr_task_cmd = ["-l"] + [task_lists]
     if check:
         vtr_task_cmd += ["-check_golden"]
@@ -330,7 +330,7 @@ def parse_single_test(task_lists, check=True, calculate=True, create=False):
 
 
 def print_header(heading, divider="=", print_first_line=True):
-    """ Print heading formated in the center of two lines """
+    """Print heading formated in the center of two lines"""
     if print_first_line:
         print(divider * len(heading) * 2)
     print(" " * int((len(heading) / 2)), end="")

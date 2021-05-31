@@ -61,9 +61,9 @@ if (USES_IPO)
         CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
         if(CXX_COMPILER_SUPPORTS_${flag})
             #Flag supported, so enable it
-            set_target_properties(sdcparse_test PROPERTIES LINK_FLAGS ${flag})
+            set_property(TARGET sdcparse_test APPEND PROPERTY LINK_FLAGS ${flag})
         endif()
     endforeach()
 endif()
 
-install(TARGETS libsdcparse sdcparse_test DESTINATION bin)
+install(TARGETS libsdcparse DESTINATION bin)

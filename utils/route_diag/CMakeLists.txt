@@ -11,6 +11,6 @@ target_link_libraries(route_diag
 #Supress IPO link warnings if IPO is enabled
 get_target_property(TEST_ROUTE_DIAG_USES_IPO route_diag INTERPROCEDURAL_OPTIMIZATION)
 if (TEST_ROUTE_DIAG_USES_IPO)
-    set_target_properties(route_diag PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+    set_property(TARGET route_diag APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
