@@ -223,7 +223,7 @@ typemap yosys_subckt_str({
                              {"$mod", operation_list_END},            // (A, B, Y)
                              {"$modfloor", operation_list_END},       // (A, B, Y)
                              {"$mul", MULTIPLY},                      // (A, B, Y)
-                             {"$mux", MULTI_PORT_BIT_MUX},            // (A, B, S, Y)
+                             {"$mux", MULTIPORT_nBIT_MUX},            // (A, B, S, Y)
                              {"$ne", operation_list_END},             // (A, B, Y)
                              {"$neg", operation_list_END},            // (A, Y)
                              {"$nex", operation_list_END},            // (A, B, Y)

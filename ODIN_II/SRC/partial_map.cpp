@@ -216,7 +216,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case MULTI_PORT_MUX:
             instantiate_multi_port_mux(node, traverse_number, netlist);
             break;
-        case MULTI_PORT_BIT_MUX:
+        case MULTIPORT_nBIT_MUX:
             instantiate_multi_port_single_bit_mux(node, traverse_number, netlist);
             break;
         case MULTIPLY: {
@@ -404,10 +404,18 @@ static nnode_t** transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t trav
 }
 
 
-/*---------------------------------------------------------------------------------------------
- * (function: instantiate_multi_port_mux )
- * 	Makes the multiport n bits multiplexer into a series of 2-Mux-decoded
- *-------------------------------------------------------------------------------------------*/
+/**
+ * (function: instantiate_multi_port_single_bit_mux)
+ * 
+ * @brief Makes the multiport n bits multiplexer into
+ * a series of 2-Mux-decoded
+ * 
+ * [NOTE]: Selector should be the first port
+ * 
+ * @param node pointing to the mux node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
 void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t* netlist) {
     int i, j;
 
