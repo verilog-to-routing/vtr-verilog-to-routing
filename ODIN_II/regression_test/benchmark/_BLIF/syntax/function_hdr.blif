@@ -16,79 +16,79 @@
 .param WIDTH 00000000000000000000000000100000
 .names clk clk_out
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.rst
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.rst
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[0]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[0]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[1]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[1]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[2]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[2]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[3]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[3]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[4]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[4]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[5]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[5]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[6]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[6]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[7]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[7]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[8]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[8]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[9]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[9]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[10]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[10]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[11]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[11]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[12]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[12]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[13]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[13]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[14]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[14]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[15]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[15]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[16]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[16]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[17]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[17]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[18]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[18]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[19]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[19]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[20]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[20]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[21]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[21]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[22]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[22]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[23]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[23]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[24]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[24]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[25]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[25]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[26]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[26]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[27]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[27]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[28]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[28]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[29]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[29]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[30]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[30]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.test_int[31]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.test_int[31]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.x[0]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.x[0]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.x[1]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.x[1]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.y[0]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.y[0]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_hdr.v:24$1205.y[1]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_hdr.v:24$1205.y[1]
 1 1
 .names output_int[0] out[0]
 1 1

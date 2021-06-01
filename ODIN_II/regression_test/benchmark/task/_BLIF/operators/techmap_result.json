@@ -1,0 +1,3269 @@
+{
+    "operators/binary_and/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_and/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_and.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.8,
+        "techmap_time(ms)": 2.4,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/binary_and/no_arch": {
+        "test_name": "operators/binary_and/no_arch",
+        "input_blif": "binary_and.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 2.9,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/binary_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_equal/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_equal.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$eqx' with matching ports was not found."
+        ]
+    },
+    "operators/binary_equal/no_arch": {
+        "test_name": "operators/binary_equal/no_arch",
+        "input_blif": "binary_equal.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$eqx' with matching ports was not found."
+        ]
+    },
+    "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_and.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$logic_and' with matching ports was not found."
+        ]
+    },
+    "operators/binary_logical_and/no_arch": {
+        "test_name": "operators/binary_logical_and/no_arch",
+        "input_blif": "binary_logical_and.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$logic_and' with matching ports was not found."
+        ]
+    },
+    "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_equal.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 13.8,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_logical_equal/no_arch": {
+        "test_name": "operators/binary_logical_equal/no_arch",
+        "input_blif": "binary_logical_equal.blif",
+        "max_rss(MiB)": 11.9,
+        "exec_time(ms)": 2.9,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_greater_equal_than.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 14,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/binary_logical_greater_equal_than/no_arch": {
+        "test_name": "operators/binary_logical_greater_equal_than/no_arch",
+        "input_blif": "binary_logical_greater_equal_than.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3.5,
+        "techmap_time(ms)": 2.9,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/binary_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_greater_than.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.4,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_logical_greater_than/no_arch": {
+        "test_name": "operators/binary_logical_greater_than/no_arch",
+        "input_blif": "binary_logical_greater_than.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 2.9,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_less_equal_than.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 13.9,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/binary_logical_less_equal_than/no_arch": {
+        "test_name": "operators/binary_logical_less_equal_than/no_arch",
+        "input_blif": "binary_logical_less_equal_than.blif",
+        "max_rss(MiB)": 11.9,
+        "exec_time(ms)": 3.2,
+        "techmap_time(ms)": 2.6,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/binary_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_less_than.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 13.9,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_logical_less_than/no_arch": {
+        "test_name": "operators/binary_logical_less_than/no_arch",
+        "input_blif": "binary_logical_less_than.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 2.9,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_not_equal.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$ne' with matching ports was not found."
+        ]
+    },
+    "operators/binary_logical_not_equal/no_arch": {
+        "test_name": "operators/binary_logical_not_equal/no_arch",
+        "input_blif": "binary_logical_not_equal.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$ne' with matching ports was not found."
+        ]
+    },
+    "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_logical_or.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 13.9,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
+    },
+    "operators/binary_logical_or/no_arch": {
+        "test_name": "operators/binary_logical_or/no_arch",
+        "input_blif": "binary_logical_or.blif",
+        "max_rss(MiB)": 11.9,
+        "exec_time(ms)": 3.1,
+        "techmap_time(ms)": 2.6,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
+    },
+    "operators/binary_nand/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_nand/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_nand.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.1,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_nand/no_arch": {
+        "test_name": "operators/binary_nand/no_arch",
+        "input_blif": "binary_nand.blif",
+        "max_rss(MiB)": 11.9,
+        "exec_time(ms)": 3.1,
+        "techmap_time(ms)": 2.7,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_nor/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_nor/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_nor.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14,
+        "techmap_time(ms)": 2.4,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_nor/no_arch": {
+        "test_name": "operators/binary_nor/no_arch",
+        "input_blif": "binary_nor.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3,
+        "techmap_time(ms)": 2.6,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
+    },
+    "operators/binary_not_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_not_equal.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$nex' with matching ports was not found."
+        ]
+    },
+    "operators/binary_not_equal/no_arch": {
+        "test_name": "operators/binary_not_equal/no_arch",
+        "input_blif": "binary_not_equal.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$nex' with matching ports was not found."
+        ]
+    },
+    "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_or.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 13.8,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/binary_or/no_arch": {
+        "test_name": "operators/binary_or/no_arch",
+        "input_blif": "binary_or.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 2.9,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/binary_xnor/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_xnor/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_xnor.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 15.1,
+        "techmap_time(ms)": 2.4,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
+    },
+    "operators/binary_xnor/no_arch": {
+        "test_name": "operators/binary_xnor/no_arch",
+        "input_blif": "binary_xnor.blif",
+        "max_rss(MiB)": 11.9,
+        "exec_time(ms)": 3.1,
+        "techmap_time(ms)": 2.6,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
+    },
+    "operators/binary_xor/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/binary_xor/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binary_xor.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 13.9,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
+    },
+    "operators/binary_xor/no_arch": {
+        "test_name": "operators/binary_xor/no_arch",
+        "input_blif": "binary_xor.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3.2,
+        "techmap_time(ms)": 2.6,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
+    },
+    "operators/clog2/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/clog2/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "clog2.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 15.5,
+        "techmap_time(ms)": 3.8,
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/clog2/no_arch": {
+        "test_name": "operators/clog2/no_arch",
+        "input_blif": "clog2.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 4.5,
+        "techmap_time(ms)": 4,
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/concat/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/concat/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "concat.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 20.4,
+        "techmap_time(ms)": 6.8,
+        "Pi": 24,
+        "Po": 72,
+        "logic element": 170,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 176,
+        "Total Node": 170
+    },
+    "operators/concat/no_arch": {
+        "test_name": "operators/concat/no_arch",
+        "input_blif": "concat.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 8.7,
+        "techmap_time(ms)": 7,
+        "Pi": 24,
+        "Po": 72,
+        "logic element": 170,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 170,
+        "Total Node": 170
+    },
+    "operators/eightbit_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/eightbit_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "eightbit_arithmetic_power.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
+        ]
+    },
+    "operators/eightbit_arithmetic_power/no_arch": {
+        "test_name": "operators/eightbit_arithmetic_power/no_arch",
+        "input_blif": "eightbit_arithmetic_power.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
+        ]
+    },
+    "operators/minuscolon_6_bit/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/minuscolon_6_bit/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "minuscolon_6_bit.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 14.2,
+        "techmap_time(ms)": 2.5,
+        "Pi": 12,
+        "Po": 6,
+        "logic element": 12,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
+    },
+    "operators/minuscolon_6_bit/no_arch": {
+        "test_name": "operators/minuscolon_6_bit/no_arch",
+        "input_blif": "minuscolon_6_bit.blif",
+        "max_rss(MiB)": 10.9,
+        "exec_time(ms)": 2.8,
+        "techmap_time(ms)": 2.3,
+        "Pi": 12,
+        "Po": 6,
+        "logic element": 12,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
+    },
+    "operators/pluscolon_6_bit/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/pluscolon_6_bit/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "pluscolon_6_bit.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.2,
+        "techmap_time(ms)": 2.5,
+        "Pi": 12,
+        "Po": 6,
+        "logic element": 12,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
+    },
+    "operators/pluscolon_6_bit/no_arch": {
+        "test_name": "operators/pluscolon_6_bit/no_arch",
+        "input_blif": "pluscolon_6_bit.blif",
+        "max_rss(MiB)": 10.9,
+        "exec_time(ms)": 2.8,
+        "techmap_time(ms)": 2.3,
+        "Pi": 12,
+        "Po": 6,
+        "logic element": 12,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
+    },
+    "operators/pluscolon_8_bit/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/pluscolon_8_bit/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "pluscolon_8_bit.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.5,
+        "techmap_time(ms)": 2.8,
+        "Pi": 14,
+        "Po": 8,
+        "logic element": 16,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 16,
+        "Total Node": 16
+    },
+    "operators/pluscolon_8_bit/no_arch": {
+        "test_name": "operators/pluscolon_8_bit/no_arch",
+        "input_blif": "pluscolon_8_bit.blif",
+        "max_rss(MiB)": 10.9,
+        "exec_time(ms)": 3.3,
+        "techmap_time(ms)": 2.8,
+        "Pi": 14,
+        "Po": 8,
+        "logic element": 16,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 16,
+        "Total Node": 16
+    },
+    "operators/signed_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_16bits_asl_int_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 14.3,
+        "techmap_time(ms)": 1.7,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_16bits_asl_int_wide/no_arch": {
+        "test_name": "operators/signed_16bits_asl_int_wide/no_arch",
+        "input_blif": "signed_16bits_asl_int_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 2.5,
+        "techmap_time(ms)": 1.7,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_16bits_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_16bits_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_16bits_asr_int_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 13.7,
+        "techmap_time(ms)": 1.8,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_16bits_asr_int_wide/no_arch": {
+        "test_name": "operators/signed_16bits_asr_int_wide/no_arch",
+        "input_blif": "signed_16bits_asr_int_wide.blif",
+        "max_rss(MiB)": 8,
+        "exec_time(ms)": 2.5,
+        "techmap_time(ms)": 1.7,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_16bits_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_16bits_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_16bits_sl_int_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 13.6,
+        "techmap_time(ms)": 1.8,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_16bits_sl_int_wide/no_arch": {
+        "test_name": "operators/signed_16bits_sl_int_wide/no_arch",
+        "input_blif": "signed_16bits_sl_int_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 2.5,
+        "techmap_time(ms)": 1.8,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_16bits_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_16bits_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_16bits_sr_int_wide.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 13.7,
+        "techmap_time(ms)": 1.8,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_16bits_sr_int_wide/no_arch": {
+        "test_name": "operators/signed_16bits_sr_int_wide/no_arch",
+        "input_blif": "signed_16bits_sr_int_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 2.5,
+        "techmap_time(ms)": 1.8,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/signed_1bit_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_asl_indexed.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 12.8,
+        "techmap_time(ms)": 1.2,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_asl_indexed/no_arch": {
+        "test_name": "operators/signed_1bit_asl_indexed/no_arch",
+        "input_blif": "signed_1bit_asl_indexed.blif",
+        "max_rss(MiB)": 8.3,
+        "exec_time(ms)": 1.4,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_asl_wire.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.5,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_1bit_asl_wire/no_arch": {
+        "test_name": "operators/signed_1bit_asl_wire/no_arch",
+        "input_blif": "signed_1bit_asl_wire.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.2,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_1bit_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_asr_indexed.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_asr_indexed/no_arch": {
+        "test_name": "operators/signed_1bit_asr_indexed/no_arch",
+        "input_blif": "signed_1bit_asr_indexed.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.6,
+        "techmap_time(ms)": 1.2,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_asr_wire.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 12.4,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_1bit_asr_wire/no_arch": {
+        "test_name": "operators/signed_1bit_asr_wire/no_arch",
+        "input_blif": "signed_1bit_asr_wire.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_1bit_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_sl_indexed.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_sl_indexed/no_arch": {
+        "test_name": "operators/signed_1bit_sl_indexed/no_arch",
+        "input_blif": "signed_1bit_sl_indexed.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_sl_wire.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.4,
+        "techmap_time(ms)": 1.1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_1bit_sl_wire/no_arch": {
+        "test_name": "operators/signed_1bit_sl_wire/no_arch",
+        "input_blif": "signed_1bit_sl_wire.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.2,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_1bit_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_sr_indexed.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_sr_indexed/no_arch": {
+        "test_name": "operators/signed_1bit_sr_indexed/no_arch",
+        "input_blif": "signed_1bit_sr_indexed.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/signed_1bit_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_1bit_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_1bit_sr_wire.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.4,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_1bit_sr_wire/no_arch": {
+        "test_name": "operators/signed_1bit_sr_wire/no_arch",
+        "input_blif": "signed_1bit_sr_wire.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.2,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/signed_2bits_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_2bits_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_2bits_asl_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_2bits_asl_wide/no_arch": {
+        "test_name": "operators/signed_2bits_asl_wide/no_arch",
+        "input_blif": "signed_2bits_asl_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.5,
+        "techmap_time(ms)": 1.2,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_2bits_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_2bits_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_2bits_asr_wide.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 12.9,
+        "techmap_time(ms)": 1.2,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_2bits_asr_wide/no_arch": {
+        "test_name": "operators/signed_2bits_asr_wide/no_arch",
+        "input_blif": "signed_2bits_asr_wide.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_2bits_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_2bits_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_2bits_sl_wide.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 12.5,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_2bits_sl_wide/no_arch": {
+        "test_name": "operators/signed_2bits_sl_wide/no_arch",
+        "input_blif": "signed_2bits_sl_wide.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.4,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_2bits_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_2bits_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_2bits_sr_wide.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 12.5,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_2bits_sr_wide/no_arch": {
+        "test_name": "operators/signed_2bits_sr_wide/no_arch",
+        "input_blif": "signed_2bits_sr_wide.blif",
+        "max_rss(MiB)": 8,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/signed_64bits_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_64bits_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_64bits_asl_ultra_wide.blif",
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 14.6,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_64bits_asl_ultra_wide/no_arch": {
+        "test_name": "operators/signed_64bits_asl_ultra_wide/no_arch",
+        "input_blif": "signed_64bits_asl_ultra_wide.blif",
+        "max_rss(MiB)": 8.4,
+        "exec_time(ms)": 3.4,
+        "techmap_time(ms)": 2.3,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_64bits_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_64bits_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_64bits_asr_ultra_wide.blif",
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 15.9,
+        "techmap_time(ms)": 3.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_64bits_asr_ultra_wide/no_arch": {
+        "test_name": "operators/signed_64bits_asr_ultra_wide/no_arch",
+        "input_blif": "signed_64bits_asr_ultra_wide.blif",
+        "max_rss(MiB)": 8.3,
+        "exec_time(ms)": 3.6,
+        "techmap_time(ms)": 2.5,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_64bits_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_64bits_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_64bits_sl_ultra_wide.blif",
+        "max_rss(MiB)": 9.8,
+        "exec_time(ms)": 14.5,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_64bits_sl_ultra_wide/no_arch": {
+        "test_name": "operators/signed_64bits_sl_ultra_wide/no_arch",
+        "input_blif": "signed_64bits_sl_ultra_wide.blif",
+        "max_rss(MiB)": 8.4,
+        "exec_time(ms)": 3.4,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_64bits_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_64bits_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_64bits_sr_ultra_wide.blif",
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 14.4,
+        "techmap_time(ms)": 2.3,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_64bits_sr_ultra_wide/no_arch": {
+        "test_name": "operators/signed_64bits_sr_ultra_wide/no_arch",
+        "input_blif": "signed_64bits_sr_ultra_wide.blif",
+        "max_rss(MiB)": 8.4,
+        "exec_time(ms)": 3.4,
+        "techmap_time(ms)": 2.3,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/signed_to_unsigned/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_to_unsigned/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_to_unsigned.blif",
+        "max_rss(MiB)": 9.7,
+        "exec_time(ms)": 15.4,
+        "techmap_time(ms)": 2.8,
+        "Po": 128,
+        "logic element": 128,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 128,
+        "Total Node": 128
+    },
+    "operators/signed_to_unsigned/no_arch": {
+        "test_name": "operators/signed_to_unsigned/no_arch",
+        "input_blif": "signed_to_unsigned.blif",
+        "max_rss(MiB)": 8.9,
+        "exec_time(ms)": 4.2,
+        "techmap_time(ms)": 2.8,
+        "Po": 128,
+        "logic element": 128,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 128,
+        "Total Node": 128
+    },
+    "operators/signed_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_indexed/no_arch": {
+        "test_name": "operators/signed_variable_asl_indexed/no_arch",
+        "input_blif": "signed_variable_asl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_int_wide/no_arch": {
+        "test_name": "operators/signed_variable_asl_int_wide/no_arch",
+        "input_blif": "signed_variable_asl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_ultra_wide/no_arch": {
+        "test_name": "operators/signed_variable_asl_ultra_wide/no_arch",
+        "input_blif": "signed_variable_asl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_wide/no_arch": {
+        "test_name": "operators/signed_variable_asl_wide/no_arch",
+        "input_blif": "signed_variable_asl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asl_wire/no_arch": {
+        "test_name": "operators/signed_variable_asl_wire/no_arch",
+        "input_blif": "signed_variable_asl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_indexed/no_arch": {
+        "test_name": "operators/signed_variable_asr_indexed/no_arch",
+        "input_blif": "signed_variable_asr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_int_wide/no_arch": {
+        "test_name": "operators/signed_variable_asr_int_wide/no_arch",
+        "input_blif": "signed_variable_asr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_ultra_wide/no_arch": {
+        "test_name": "operators/signed_variable_asr_ultra_wide/no_arch",
+        "input_blif": "signed_variable_asr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_wide/no_arch": {
+        "test_name": "operators/signed_variable_asr_wide/no_arch",
+        "input_blif": "signed_variable_asr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_asr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_asr_wire/no_arch": {
+        "test_name": "operators/signed_variable_asr_wire/no_arch",
+        "input_blif": "signed_variable_asr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_indexed/no_arch": {
+        "test_name": "operators/signed_variable_sl_indexed/no_arch",
+        "input_blif": "signed_variable_sl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_int_wide/no_arch": {
+        "test_name": "operators/signed_variable_sl_int_wide/no_arch",
+        "input_blif": "signed_variable_sl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_ultra_wide/no_arch": {
+        "test_name": "operators/signed_variable_sl_ultra_wide/no_arch",
+        "input_blif": "signed_variable_sl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_wide/no_arch": {
+        "test_name": "operators/signed_variable_sl_wide/no_arch",
+        "input_blif": "signed_variable_sl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sl_wire/no_arch": {
+        "test_name": "operators/signed_variable_sl_wire/no_arch",
+        "input_blif": "signed_variable_sl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_indexed/no_arch": {
+        "test_name": "operators/signed_variable_sr_indexed/no_arch",
+        "input_blif": "signed_variable_sr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_int_wide/no_arch": {
+        "test_name": "operators/signed_variable_sr_int_wide/no_arch",
+        "input_blif": "signed_variable_sr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_ultra_wide/no_arch": {
+        "test_name": "operators/signed_variable_sr_ultra_wide/no_arch",
+        "input_blif": "signed_variable_sr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_wide/no_arch": {
+        "test_name": "operators/signed_variable_sr_wide/no_arch",
+        "input_blif": "signed_variable_sr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "signed_variable_sr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/signed_variable_sr_wire/no_arch": {
+        "test_name": "operators/signed_variable_sr_wire/no_arch",
+        "input_blif": "signed_variable_sr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/specifyBlock/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/specifyBlock/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "specifyBlock.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 13.7,
+        "techmap_time(ms)": 2.1,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
+    "operators/specifyBlock/no_arch": {
+        "test_name": "operators/specifyBlock/no_arch",
+        "input_blif": "specifyBlock.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 2.8,
+        "techmap_time(ms)": 2.5,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
+    "operators/specparam/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/specparam/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "specparam.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 13.6,
+        "techmap_time(ms)": 2.1,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/specparam/no_arch": {
+        "test_name": "operators/specparam/no_arch",
+        "input_blif": "specparam.blif",
+        "max_rss(MiB)": 11,
+        "exec_time(ms)": 2.2,
+        "techmap_time(ms)": 1.9,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/string_test_concat/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/string_test_concat/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "string_test_concat.blif",
+        "max_rss(MiB)": 10.1,
+        "exec_time(ms)": 16.9,
+        "techmap_time(ms)": 3.3,
+        "Po": 241,
+        "logic element": 241,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 241,
+        "Total Node": 241
+    },
+    "operators/string_test_concat/no_arch": {
+        "test_name": "operators/string_test_concat/no_arch",
+        "input_blif": "string_test_concat.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 6.9,
+        "techmap_time(ms)": 3.2,
+        "Po": 241,
+        "logic element": 241,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 241,
+        "Total Node": 241
+    },
+    "operators/string_test_concat_replicate/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/string_test_concat_replicate/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "string_test_concat_replicate.blif",
+        "max_rss(MiB)": 10.3,
+        "exec_time(ms)": 16.7,
+        "techmap_time(ms)": 3.2,
+        "Po": 241,
+        "logic element": 241,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 241,
+        "Total Node": 241
+    },
+    "operators/string_test_concat_replicate/no_arch": {
+        "test_name": "operators/string_test_concat_replicate/no_arch",
+        "input_blif": "string_test_concat_replicate.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 5.6,
+        "techmap_time(ms)": 3.2,
+        "Po": 241,
+        "logic element": 241,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 241,
+        "Total Node": 241
+    },
+    "operators/string_test/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/string_test/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "string_test.blif",
+        "max_rss(MiB)": 10,
+        "exec_time(ms)": 16.9,
+        "techmap_time(ms)": 3.4,
+        "Po": 241,
+        "logic element": 241,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 241,
+        "Total Node": 241
+    },
+    "operators/string_test/no_arch": {
+        "test_name": "operators/string_test/no_arch",
+        "input_blif": "string_test.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 5.9,
+        "techmap_time(ms)": 3.6,
+        "Po": 241,
+        "logic element": 241,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 241,
+        "Total Node": 241
+    },
+    "operators/twobits_arithmetic_div/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_div/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_arithmetic_div.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$div' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_arithmetic_div/no_arch": {
+        "test_name": "operators/twobits_arithmetic_div/no_arch",
+        "input_blif": "twobits_arithmetic_div.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$div' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_arithmetic_minus.blif",
+        "exit": 139
+    },
+    "operators/twobits_arithmetic_minus/no_arch": {
+        "test_name": "operators/twobits_arithmetic_minus/no_arch",
+        "input_blif": "twobits_arithmetic_minus.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 3.5,
+        "techmap_time(ms)": 2.9,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 4,
+        "logic element": 17,
+        "latch": 3,
+        "Longest Path": 9,
+        "Average Path": 5,
+        "Estimated LUTs": 17,
+        "Total Node": 21
+    },
+    "operators/twobits_arithmetic_mod/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_mod/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_arithmetic_mod.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$mod' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_arithmetic_mod/no_arch": {
+        "test_name": "operators/twobits_arithmetic_mod/no_arch",
+        "input_blif": "twobits_arithmetic_mod.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$mod' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_arithmetic_multiply.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.3,
+        "techmap_time(ms)": 2.6,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 5,
+        "logic element": 12,
+        "latch": 4,
+        "Adder": 0,
+        "Multiplier": 1,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 12,
+        "Total Node": 18
+    },
+    "operators/twobits_arithmetic_multiply/no_arch": {
+        "test_name": "operators/twobits_arithmetic_multiply/no_arch",
+        "input_blif": "twobits_arithmetic_multiply.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3.3,
+        "techmap_time(ms)": 2.7,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 5,
+        "logic element": 21,
+        "latch": 4,
+        "Longest Path": 9,
+        "Average Path": 5,
+        "Estimated LUTs": 21,
+        "Total Node": 26
+    },
+    "operators/twobits_arithmetic_plus/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_plus/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_arithmetic_plus.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.4,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 4,
+        "logic element": 10,
+        "latch": 3,
+        "Adder": 4,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 9,
+        "Average Path": 5,
+        "Estimated LUTs": 10,
+        "Total Node": 18
+    },
+    "operators/twobits_arithmetic_plus/no_arch": {
+        "test_name": "operators/twobits_arithmetic_plus/no_arch",
+        "input_blif": "twobits_arithmetic_plus.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3.2,
+        "techmap_time(ms)": 2.7,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 4,
+        "logic element": 15,
+        "latch": 3,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 15,
+        "Total Node": 19
+    },
+    "operators/twobits_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_arithmetic_power.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_arithmetic_power/no_arch": {
+        "test_name": "operators/twobits_arithmetic_power/no_arch",
+        "input_blif": "twobits_arithmetic_power.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_arithmetic_uminus.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$neg' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_arithmetic_uminus/no_arch": {
+        "test_name": "operators/twobits_arithmetic_uminus/no_arch",
+        "input_blif": "twobits_arithmetic_uminus.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$neg' with matching ports was not found."
+        ]
+    },
+    "operators/twobits_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_logical_greater_equal_than.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 13.8,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 15,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 10,
+        "Average Path": 4,
+        "Estimated LUTs": 15,
+        "Total Node": 17
+    },
+    "operators/twobits_logical_greater_equal_than/no_arch": {
+        "test_name": "operators/twobits_logical_greater_equal_than/no_arch",
+        "input_blif": "twobits_logical_greater_equal_than.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 15,
+        "latch": 1,
+        "Longest Path": 10,
+        "Average Path": 4,
+        "Estimated LUTs": 15,
+        "Total Node": 17
+    },
+    "operators/twobits_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_logical_greater_than.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 14.1,
+        "techmap_time(ms)": 2.4,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/twobits_logical_greater_than/no_arch": {
+        "test_name": "operators/twobits_logical_greater_than/no_arch",
+        "input_blif": "twobits_logical_greater_than.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 3,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/twobits_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_logical_less_equal_than.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 14.1,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 15,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 10,
+        "Average Path": 4,
+        "Estimated LUTs": 15,
+        "Total Node": 17
+    },
+    "operators/twobits_logical_less_equal_than/no_arch": {
+        "test_name": "operators/twobits_logical_less_equal_than/no_arch",
+        "input_blif": "twobits_logical_less_equal_than.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 15,
+        "latch": 1,
+        "Longest Path": 10,
+        "Average Path": 4,
+        "Estimated LUTs": 15,
+        "Total Node": 17
+    },
+    "operators/twobits_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "twobits_logical_less_than.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 13.9,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/twobits_logical_less_than/no_arch": {
+        "test_name": "operators/twobits_logical_less_than/no_arch",
+        "input_blif": "twobits_logical_less_than.blif",
+        "max_rss(MiB)": 12,
+        "exec_time(ms)": 3,
+        "techmap_time(ms)": 2.5,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 2,
+        "logic element": 11,
+        "latch": 1,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 13
+    },
+    "operators/unary_bitwise_bufnode/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unary_bitwise_bufnode/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unary_bitwise_bufnode.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 12.4,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unary_bitwise_bufnode/no_arch": {
+        "test_name": "operators/unary_bitwise_bufnode/no_arch",
+        "input_blif": "unary_bitwise_bufnode.blif",
+        "max_rss(MiB)": 8.3,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unary_bitwise_not/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unary_bitwise_not/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unary_bitwise_not.blif",
+        "max_rss(MiB)": 12.1,
+        "exec_time(ms)": 13.7,
+        "techmap_time(ms)": 2.2,
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/unary_bitwise_not/no_arch": {
+        "test_name": "operators/unary_bitwise_not/no_arch",
+        "input_blif": "unary_bitwise_not.blif",
+        "max_rss(MiB)": 11.3,
+        "exec_time(ms)": 2.7,
+        "techmap_time(ms)": 2.3,
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 9
+    },
+    "operators/unsigned_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_16bits_asl_int_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 14.3,
+        "techmap_time(ms)": 1.9,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_16bits_asl_int_wide/no_arch": {
+        "test_name": "operators/unsigned_16bits_asl_int_wide/no_arch",
+        "input_blif": "unsigned_16bits_asl_int_wide.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 2.8,
+        "techmap_time(ms)": 2,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_16bits_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_16bits_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_16bits_asr_int_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 14,
+        "techmap_time(ms)": 2,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_16bits_asr_int_wide/no_arch": {
+        "test_name": "operators/unsigned_16bits_asr_int_wide/no_arch",
+        "input_blif": "unsigned_16bits_asr_int_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 2.5,
+        "techmap_time(ms)": 1.8,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_16bits_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_16bits_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_16bits_sl_int_wide.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 14,
+        "techmap_time(ms)": 2.1,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_16bits_sl_int_wide/no_arch": {
+        "test_name": "operators/unsigned_16bits_sl_int_wide/no_arch",
+        "input_blif": "unsigned_16bits_sl_int_wide.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 2.6,
+        "techmap_time(ms)": 1.9,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_16bits_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_16bits_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_16bits_sr_int_wide.blif",
+        "max_rss(MiB)": 9.5,
+        "exec_time(ms)": 14,
+        "techmap_time(ms)": 2.1,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_16bits_sr_int_wide/no_arch": {
+        "test_name": "operators/unsigned_16bits_sr_int_wide/no_arch",
+        "input_blif": "unsigned_16bits_sr_int_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 2.5,
+        "techmap_time(ms)": 1.7,
+        "Pi": 16,
+        "Po": 32,
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
+    },
+    "operators/unsigned_1bit_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_asl_indexed.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.5,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_asl_indexed/no_arch": {
+        "test_name": "operators/unsigned_1bit_asl_indexed/no_arch",
+        "input_blif": "unsigned_1bit_asl_indexed.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.4,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_asl_wire.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_1bit_asl_wire/no_arch": {
+        "test_name": "operators/unsigned_1bit_asl_wire/no_arch",
+        "input_blif": "unsigned_1bit_asl_wire.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_1bit_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_asr_indexed.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 12.9,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_asr_indexed/no_arch": {
+        "test_name": "operators/unsigned_1bit_asr_indexed/no_arch",
+        "input_blif": "unsigned_1bit_asr_indexed.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.5,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_asr_wire.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.4,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_1bit_asr_wire/no_arch": {
+        "test_name": "operators/unsigned_1bit_asr_wire/no_arch",
+        "input_blif": "unsigned_1bit_asr_wire.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_1bit_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_sl_indexed.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 12.8,
+        "techmap_time(ms)": 1,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_sl_indexed/no_arch": {
+        "test_name": "operators/unsigned_1bit_sl_indexed/no_arch",
+        "input_blif": "unsigned_1bit_sl_indexed.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_sl_wire.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 13,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_1bit_sl_wire/no_arch": {
+        "test_name": "operators/unsigned_1bit_sl_wire/no_arch",
+        "input_blif": "unsigned_1bit_sl_wire.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_1bit_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_sr_indexed.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_sr_indexed/no_arch": {
+        "test_name": "operators/unsigned_1bit_sr_indexed/no_arch",
+        "input_blif": "unsigned_1bit_sr_indexed.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.4,
+        "techmap_time(ms)": 1.1,
+        "Po": 2,
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "operators/unsigned_1bit_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_1bit_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_1bit_sr_wire.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 12.3,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_1bit_sr_wire/no_arch": {
+        "test_name": "operators/unsigned_1bit_sr_wire/no_arch",
+        "input_blif": "unsigned_1bit_sr_wire.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "operators/unsigned_2bits_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_2bits_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_2bits_asl_wide.blif",
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 12.5,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_2bits_asl_wide/no_arch": {
+        "test_name": "operators/unsigned_2bits_asl_wide/no_arch",
+        "input_blif": "unsigned_2bits_asl_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.4,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_2bits_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_2bits_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_2bits_asr_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_2bits_asr_wide/no_arch": {
+        "test_name": "operators/unsigned_2bits_asr_wide/no_arch",
+        "input_blif": "unsigned_2bits_asr_wide.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.3,
+        "techmap_time(ms)": 1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_2bits_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_2bits_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_2bits_sl_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_2bits_sl_wide/no_arch": {
+        "test_name": "operators/unsigned_2bits_sl_wide/no_arch",
+        "input_blif": "unsigned_2bits_sl_wide.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 1.4,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_2bits_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_2bits_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_2bits_sr_wide.blif",
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 12.6,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_2bits_sr_wide/no_arch": {
+        "test_name": "operators/unsigned_2bits_sr_wide/no_arch",
+        "input_blif": "unsigned_2bits_sr_wide.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.4,
+        "techmap_time(ms)": 1.1,
+        "Pi": 1,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "operators/unsigned_64bits_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_64bits_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_64bits_asl_ultra_wide.blif",
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 14.6,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_64bits_asl_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_64bits_asl_ultra_wide/no_arch",
+        "input_blif": "unsigned_64bits_asl_ultra_wide.blif",
+        "max_rss(MiB)": 8.4,
+        "exec_time(ms)": 3.5,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_64bits_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_64bits_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_64bits_asr_ultra_wide.blif",
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 14.6,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_64bits_asr_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_64bits_asr_ultra_wide/no_arch",
+        "input_blif": "unsigned_64bits_asr_ultra_wide.blif",
+        "max_rss(MiB)": 8.4,
+        "exec_time(ms)": 3.3,
+        "techmap_time(ms)": 2.3,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_64bits_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_64bits_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_64bits_sl_ultra_wide.blif",
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 14.8,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_64bits_sl_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_64bits_sl_ultra_wide/no_arch",
+        "input_blif": "unsigned_64bits_sl_ultra_wide.blif",
+        "max_rss(MiB)": 8.3,
+        "exec_time(ms)": 3.4,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_64bits_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_64bits_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_64bits_sr_ultra_wide.blif",
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 15,
+        "techmap_time(ms)": 2.4,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_64bits_sr_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_64bits_sr_ultra_wide/no_arch",
+        "input_blif": "unsigned_64bits_sr_ultra_wide.blif",
+        "max_rss(MiB)": 8.4,
+        "exec_time(ms)": 3.4,
+        "techmap_time(ms)": 2.3,
+        "Pi": 1,
+        "Po": 65,
+        "logic element": 65,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 65,
+        "Total Node": 65
+    },
+    "operators/unsigned_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_indexed/no_arch": {
+        "test_name": "operators/unsigned_variable_asl_indexed/no_arch",
+        "input_blif": "unsigned_variable_asl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_int_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_asl_int_wide/no_arch",
+        "input_blif": "unsigned_variable_asl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_asl_ultra_wide/no_arch",
+        "input_blif": "unsigned_variable_asl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_asl_wide/no_arch",
+        "input_blif": "unsigned_variable_asl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asl_wire/no_arch": {
+        "test_name": "operators/unsigned_variable_asl_wire/no_arch",
+        "input_blif": "unsigned_variable_asl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_indexed/no_arch": {
+        "test_name": "operators/unsigned_variable_asr_indexed/no_arch",
+        "input_blif": "unsigned_variable_asr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_int_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_asr_int_wide/no_arch",
+        "input_blif": "unsigned_variable_asr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_asr_ultra_wide/no_arch",
+        "input_blif": "unsigned_variable_asr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_asr_wide/no_arch",
+        "input_blif": "unsigned_variable_asr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_asr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_asr_wire/no_arch": {
+        "test_name": "operators/unsigned_variable_asr_wire/no_arch",
+        "input_blif": "unsigned_variable_asr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_indexed/no_arch": {
+        "test_name": "operators/unsigned_variable_sl_indexed/no_arch",
+        "input_blif": "unsigned_variable_sl_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_int_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_sl_int_wide/no_arch",
+        "input_blif": "unsigned_variable_sl_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_sl_ultra_wide/no_arch",
+        "input_blif": "unsigned_variable_sl_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_sl_wide/no_arch",
+        "input_blif": "unsigned_variable_sl_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sl_wire/no_arch": {
+        "test_name": "operators/unsigned_variable_sl_wire/no_arch",
+        "input_blif": "unsigned_variable_sl_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_indexed/no_arch": {
+        "test_name": "operators/unsigned_variable_sr_indexed/no_arch",
+        "input_blif": "unsigned_variable_sr_indexed.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_int_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_sr_int_wide/no_arch",
+        "input_blif": "unsigned_variable_sr_int_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_ultra_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_sr_ultra_wide/no_arch",
+        "input_blif": "unsigned_variable_sr_ultra_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_wide/no_arch": {
+        "test_name": "operators/unsigned_variable_sr_wide/no_arch",
+        "input_blif": "unsigned_variable_sr_wide.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "unsigned_variable_sr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "operators/unsigned_variable_sr_wire/no_arch": {
+        "test_name": "operators/unsigned_variable_sr_wire/no_arch",
+        "input_blif": "unsigned_variable_sr_wire.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "input_blif": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

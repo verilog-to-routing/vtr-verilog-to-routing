@@ -11,8 +11,8 @@
 .param Y_WIDTH 00000000000000000000000000000001
 .names b_$xor_B_Y c
 1 1
-.names $undef xor_them$func$regression_test/benchmark/verilog/syntax/function_syntax.v:22$1206.x
+.names $undef xor_them$func$regression_test/benchmark/_VERILOG/syntax/function_syntax.v:22$1206.x
 1 1
-.names $undef xor_them$func$regression_test/benchmark/verilog/syntax/function_syntax.v:22$1206.y
+.names $undef xor_them$func$regression_test/benchmark/_VERILOG/syntax/function_syntax.v:22$1206.y
 1 1
 .end

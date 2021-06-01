@@ -5,20 +5,20 @@
 .outputs out[0] out[1] out[2] clk_out
 .names clk clk_out
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.rst
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.rst
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.x[0]
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.x[0]
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.x[1]
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.x[1]
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.y[0]
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.y[0]
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.y[1]
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.y[1]
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.z[0]
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.z[0]
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.z[1]
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.z[1]
 1 1
-.names $undef my_task$func$regression_test/benchmark/verilog/syntax/instantiated_by_name_task_valid.v:0$1205.z[2]
+.names $undef my_task$func$regression_test/benchmark/_VERILOG/syntax/instantiated_by_name_task_valid.v:0$1205.z[2]
 1 1
 .end

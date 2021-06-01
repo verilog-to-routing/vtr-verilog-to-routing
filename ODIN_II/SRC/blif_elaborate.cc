@@ -271,6 +271,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_pmux_node(node, traverse_number, netlist);
             break;
         }
+        case MULTIPLY:
         case GND_NODE:
         case VCC_NODE:
         case PAD_NODE:
@@ -298,7 +299,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case ASL:
         case SR:
         case ASR:
-        case MULTIPLY:
         case MEMORY:
         case HARD_IP:
         case ADDER_FUNC:

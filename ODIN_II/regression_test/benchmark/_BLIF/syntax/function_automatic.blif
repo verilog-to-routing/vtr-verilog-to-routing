@@ -16,14 +16,14 @@
 .param WIDTH 00000000000000000000000000000011
 .names clk clk_out
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_automatic.v:21$1205.rst
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_automatic.v:21$1205.rst
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_automatic.v:21$1205.x[0]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_automatic.v:21$1205.x[0]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_automatic.v:21$1205.x[1]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_automatic.v:21$1205.x[1]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_automatic.v:21$1205.y[0]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_automatic.v:21$1205.y[0]
 1 1
-.names $undef func_out$func$regression_test/benchmark/verilog/syntax/function_automatic.v:21$1205.y[1]
+.names $undef func_out$func$regression_test/benchmark/_VERILOG/syntax/function_automatic.v:21$1205.y[1]
 1 1
 .end

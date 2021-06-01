@@ -66,6 +66,7 @@ _GENERATE_EXPECTATION="off"
 _CONTINUE="off"
 _REPORT="on"
 _STATUS_ONLY="off"
+_RUN_YOSYS_ARGS=""
 
 ##############################################
 # Exit Functions
@@ -124,7 +125,7 @@ printf "Called program with $INPUT
 		--override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
 		--dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow 
 		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
-		--regenerate_blifs              $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/blif/_VERILOGS
+		--regenerate_blifs              $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/_BLIF
 		--regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
 		--generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
 		--continue						$(_prt_cur_arg ${_CONTINUE}) continue running test in the same directory as the last run
@@ -195,12 +196,8 @@ function find_in_bench() {
 function generate_blifs() {
     
     TASK="$1"
-    TASK_NAME=$(basename "${TASK}")
-
-    echo "====>${TASK_NAME}"
-    find ${REGRESSION_DIR}/benchmark/blif/${TASK_NAME} -name "*.blif" -delete
     echo "Generating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
-    ${THIS_DIR}/run_yosys.sh -t "${TASK}"
+    ${THIS_DIR}/run_yosys.sh  ${_RUN_YOSYS_ARGS} -t "${TASK}"
 }
     
 
@@ -398,7 +395,8 @@ function parse_args() {
 
 				;;--regenerate_blif)
 					_REGENERATE_BLIF="on"
-					echo "regenerating blifs of benchmark/blif/_VERILOGS"
+                    _RUN_YOSYS_ARGS+="--regenerate_blif"
+					echo "regenerating blifs of benchmark/_BLIF"
 				
                 ;;--regenerate_expectation)
 					_REGENERATE_EXPECTATION="on"

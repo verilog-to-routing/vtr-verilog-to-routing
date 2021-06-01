@@ -7,6 +7,25 @@ VTR_DIR=$(readlink -f "${THIS_DIR}/..")
 ODIN_DIR="${VTR_DIR}/ODIN_II"
 REGRESSION_DIR="${THIS_DIR}/regression_test"
 
+##############################################
+# grab the input args
+INPUT="$*"
+
+# disable stdin
+exec 0<&-
+
+BENCHMARK_DIR="${REGRESSION_DIR}/benchmark"
+
+VTR_REG_DIR="${VTR_DIR}/vtr_flow/tasks/regression_tests"
+
+SUITE_DIR="${BENCHMARK_DIR}/suite"
+
+TASK_DIR="${BENCHMARK_DIR}/task"
+
+RTL_REG_PREFIX="rtl_reg"
+
+
+
 # COLORS
 BLUE=$'\033[0;33m'
 GREEN=$'\033[0;32m'
@@ -16,6 +35,8 @@ NC=$'\033[0m' # No Color
 # defaults
 _YOSYS_EXEC="/usr/local/bin/yosys"
 _TEST_INPUT_LIST=()
+_REGENERATE_BLIF="off"
+_CLEAN="off"
 
 ###############################################
 # Time Helper Functions
@@ -43,17 +64,17 @@ function print_test_stat() {
     START_TIME="$2"
 
     if [ _${STAT} == "_E" ]; then
-        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . ${BLIF_NAME}"
+        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . _VERILOG/${TASK_NAME}/${TCL_BLIF_NAME}"
     elif [ _${STAT} == "_C" ]; then
-        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . ${BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
+        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . _VERILOG/${TASK_NAME}/${TCL_BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
     elif [ _${STAT} == "_F" ]; then
-        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}${BLIF_NAME}"
+        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}_VERILOG/${TASK_NAME}/${TCL_BLIF_NAME}"
     fi
 }
 
 #initialization
 function init() {
-    export BLIF_PATH="${REGRESSION_DIR}/benchmark/blif"
+    export BLIF_PATH="${REGRESSION_DIR}/benchmark/_BLIF"
 }
 
 # run yosys
@@ -61,69 +82,81 @@ function run_yosys() {
     TCL_FILE="$1"
     START=$(get_current_time)
 
-    LOG_FILE="${THIS_DIR}/${BLIF_NAME}.log"
+    LOG_FILE="${OUTPUT_BLIF_PATH}/failures/${TCL_BLIF_NAME%.*}.log"
 
     ${_YOSYS_EXEC} -c ${TCL_FILE} > ${LOG_FILE} 2>&1 #/dev/null 2>&1
 
-    if [ -f "${OUTPUT_BLIF_PATH}/${BLIF_NAME}"  ]; then
+    if [ -f "${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}"  ]; then
         print_test_stat "C" "${START}"
         rm ${LOG_FILE}
     else
         print_test_stat "F" "${START}"
-        mkdir -p "${OUTPUT_BLIF_PATH}/failures"
-        mv ${LOG_FILE} "${OUTPUT_BLIF_PATH}/failures"
-
     fi
+}
+
+# Help Print helper
+function _prt_cur_arg() {
+	arg="[ $1 ]"
+	line="\t\t"
+	printf "%s%s" "${arg}" "${line:${#arg}}"
 }
 
 #to print help of the current script
 function help() {
     printf "Called program with $INPUT
         Usage: 
-            $0 [ OPTIONS / FLAGS ] [ SUBTEST_LIST ... ]
+            $0 [ OPTIONS ] [ TEST / SUBTEST_LIST ... ]
 
         SUBTEST_LIST
-            should be a list of the form < task_name/test_file_name/architecture_file_name >
+            should be a path to a single test or list of the form < task_name >
             passing this in will limit a task to a subset of test
-            current: $(_prt_cur_arg ${_SUBTEST_LIST[*]})
-
-        FLAGS
-            -g|--generate_bench             $(_prt_cur_arg ${_GENERATE_BENCH}) Generate input and output vector for test
-            -o|--generate_output            $(_prt_cur_arg ${_GENERATE_OUTPUT}) Generate output vector for test given its input vector
-            -b|--build_config               $(_prt_cur_arg ${_GENERATE_CONFIG}) Generate a config file for a given directory
-            -c|--clean                      $(_prt_cur_arg off ) Clean temporary directory
-            -f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
-            --override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
-            --dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow 
-            --randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
-            --regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
-            --generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
-            --continue						$(_prt_cur_arg ${_CONTINUE}) continue running test in the same directory as the last run
-            --no_report						printing report is: $(_prt_cur_arg ${_REPORT})
-            --status_only					$(_prt_cur_arg ${_STATUS_ONLY}) print the report and exit
-        OPTIONS
+        
+    FLAGS
+		    --regenerate_blif               $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/_BLIF
+	
+    OPTIONS
             -h|--help                       $(_prt_cur_arg off) print this
-            -j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
-            -d|--output_dir < /abs/path >   $(_prt_cur_arg ${_RUN_DIR_OVERRIDE}) Change the run directory output
-            -C|--config <path/to/config>	$(_prt_cur_arg ${_EXTRA_CONFIG}) Add a config file to append to the config for the tests
-            -t|--test < test name >         $(_prt_cur_arg ${_TEST_INPUT_LIST[*]}) Test name is either a absolute or relative path to 
-                                                                a directory containing a task.conf, task_list.conf 
-                                                                (see CONFIG FILE HELP) or one of the following predefined test
+            -t|--test < test name >         A path to a single test file
+            -T|--task                       Test name is either a absolute or relative path to 
+                                            a directory containing a task.ycfg, task_list.conf 
 
-        AVAILABLE_TEST:
+        AVAILABLE_TASK:
     "
 
-    # printf "\n\t\t%s\n" "${RELAPATH_SUITE_DIR}/"
-    # for bm in "${SUITE_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
+    printf "\n\t\t%s\n" "${RELAPATH_SUITE_DIR}/"
+    for bm in "${SUITE_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
 
-    # printf "\n\t\t%s\n" "${RELAPATH_TASK_DIR}/"
-    # for bm in "${TASK_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
+    printf "\n\t\t%s\n" "${RELAPATH_TASK_DIR}/"
+    for bm in "${TASK_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
 
-    # printf "\n\t\t%s\n" "${VTR_REG_PREFIX}"
-    # for bm in "${VTR_REG_DIR}/${VTR_REG_PREFIX}"*; do printf "\t\t\t%s\n" "$(basename "${bm}" | sed "s+${VTR_REG_PREFIX}++g")"; done
+    printf "\n\t\t%s\n" "${VTR_REG_PREFIX}"
+    for bm in "${VTR_REG_DIR}/${VTR_REG_PREFIX}"*; do printf "\t\t\t%s\n" "$(basename "${bm}" | sed "s+${VTR_REG_PREFIX}++g")"; done
 
-    # printf "\n\t\t%s\n" "${RTL_REG_PREFIX}"
+    printf "\n\t\t%s\n" "${RTL_REG_PREFIX}"
 
+}
+
+# to check whether failure path exist or not
+# if yes clean the failure path from previous logs
+function check() {
+    FILE_PATH="$1"
+    FILE_NAME="$2"
+
+    if [ ! -d "${FILE_PATH}" ]; then
+            mkdir -p ${FILE_PATH}
+    else    
+        if [ "_${_REGENERATE_BLIF}" == "_on" ]; then
+            find "${FILE_PATH}" -name "${FILE_NAME}.blif" -delete
+        fi
+    fi
+
+    FAILURE_PATH="${FILE_PATH}/failures"
+
+    if [ ! -d "${FAILURE_PATH}" ]; then
+        mkdir -p ${FAILURE_PATH}
+    else    
+        find "${FAILURE_PATH}" -name "${FILE_NAME}.log" -delete
+    fi
 }
 
 # to parse shell arguments
@@ -159,99 +192,14 @@ function parse_args() {
 					_TEST_INPUT_LIST+=( "$2" )
 					shift
 
-			# 	;;-d|--output_dir)
+            ;;--regenerate_blif)
+					_REGENERATE_BLIF="on"
+					echo "regenerating blifs of benchmark/_BLIF"
+            
+            ;;--clean)
+					_CLEAN="on"
+					echo "deleting all blif file in the specified task"
 
-			# 		if [ "_$2" == "_" ]
-			# 		then 
-			# 			echo "empty argument for $1"
-			# 			_exit_with_code "-1"
-			# 		fi
-					
-			# 		_RUN_DIR_OVERRIDE=$2
-
-			# 		if [ ! -d "${_RUN_DIR_OVERRIDE}" ]
-			# 		then
-			# 			echo "Directory ${_RUN_DIR_OVERRIDE} does not exist"
-			# 			_exit_with_code "-1"
-			# 		fi
-
-			# 		shift
-
-			# 	;;-C|--config)
-
-			# 		if [ "_$2" == "_" ]
-			# 		then 
-			# 			echo "empty argument for $1"
-			# 			_exit_with_code "-1"
-			# 		fi
-					
-			# 		_EXTRA_CONFIG=$2
-			# 		echo "Reading extra config directive from ${_EXTRA_CONFIG}"
-
-			# 		shift
-
-			# ## number
-			# 	;;-j|--nb_of_process)
-			# 		_NUMBER_OF_PROCESS=$(_flag_is_number "$1" "$2")
-			# 		echo "Using [$2] processors for this benchmarking suite"
-			# 		shift
-
-			# # Boolean flags
-			# 	;;-g|--generate_bench)		
-			# 		_GENERATE_BENCH="on"
-			# 		echo "generating output vector for test given predefined input"
-
-			# 	;;-o|--generate_output)		
-			# 		_GENERATE_OUTPUT="on"
-			# 		echo "generating input and output vector for test"
-
-			# 	;;-b|--build_config)		
-			# 		_GENERATE_CONFIG="on"
-			# 		echo "generating a config file for test directory"
-
-			# 	;;-c|--clean)				
-			# 		echo "Cleaning temporary run in directory"
-			# 		cleanup_temp
-
-			# 	;;-f|--force_simulate)   
-			# 		_FORCE_SIM="on"
-			# 		echo "Forcing Simulation"   
-
-			# 	;;--override)
-			# 		_OVERRIDE_CONFIG="on"
-			# 		echo "Forcing override of config"    
-
-			# 	;;--dry_run)
-			# 		_DRY_RUN="on"
-			# 		echo "Performing a dry run"
-
-			# 	;;--randomize)
-			# 		_RANDOM_DRY_RUN="on"
-			# 		echo "random dry run"
-
-			# 	;;--regenerate_expectation)
-			# 		_REGENERATE_EXPECTATION="on"
-			# 		echo "regenerating expected values for changes outside the defined ranges"
-
-			# 	;;--generate_expectation)
-			# 		_GENERATE_EXPECTATION="on"
-			# 		echo "generating new expected values"
-
-			# 	;;--no_report)
-			# 		_REPORT="off"
-			# 		echo "don't generate the report at the end"
-
-			# 	;;--continue)
-			# 		_CONTINUE="on"
-			# 		echo "run this test in the same directory as the previous test"
-
-			# 	;;--status_only)
-			# 		_STATUS_ONLY="on"
-			# 		_CONTINUE="on"
-			# 		echo "print the previous test report"
-
-			# 	;;*) 
-			# 		PARSE_SUBTEST="on"
 			esac
 
 			# keep the subtest in case we caught the end of options and flags
@@ -260,33 +208,109 @@ function parse_args() {
 	done
 }
 
+function format_line() {
+	echo "$@" \
+		| cut -d '#' -f 1	`# trim the # signs` \
+		| sed 's/\s+/ /g'	`# trim duplicate whitespace` \
+		| sed 's/\s*$//g'	`# trim the tail end whitespace` \
+		| sed 's/^\s*//g'	`# trim the front white space`
+}
+
+function populate_arg_from_file() {
+
+	_circuits_dir=""
+	_circuit_list_add=()
+
+	if [ "_$1" == "_" ] || [ ! -f "$1" ]
+	then
+		echo "Config file $1 does not exist"
+	else
+		OLD_IFS=${IFS}
+		while IFS="" read -r current_line || [ -n "${current_line}" ]
+		do
+			formatted_line=$(format_line "${current_line}")
+
+			_key="$(echo "${formatted_line}" | cut -d '=' -f1 )"
+			_value="$(echo "${formatted_line}" | cut -d '=' -f2 )"
+
+			if [ "_${_key}" != "_" ] && [ "_${_value}" == "_" ] 
+			then
+				echo "Specifying empty value for ${_key}, skipping assignment"
+			elif [ "_${_key}" == "_" ] && [ "_${_value}" != "_" ] 
+			then
+				echo "Specifying empty key for value: ${_value}, skipping assignment"
+			elif [ "_${_key}" != "_" ] && [ "_${_value}" != "_" ] 
+			then
+				case _${_key} in
+
+					_circuits_dir)
+						if [ ! -d "${_value}" ]
+						then
+							_value=${THIS_DIR}/${_value}
+						fi
+						_circuits_dir="${_value}"
+
+					;;_circuit_list_add)
+						# glob the value
+						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
+
+					;;_)
+						echo "skip" > /dev/null
+
+					;;*)
+						echo "Unsupported value: ${_key} ${_value}, skipping"
+
+				esac
+			fi
+		done < "$1"
+		IFS=${OLD_IFS}
+	fi
+
+	
+	for circuit_list_item in "${_circuit_list_add[@]}"
+	do
+		if [ ! -f "${circuit_list_item}" ]
+		then
+			echo "file ${circuit_list_item} not found, skipping"
+		else
+			_circuit_list+=( "${circuit_list_item}" )
+		fi
+	done
+
+	if [ "_${#_circuit_list[*]}" == "_" ]
+	then
+		echo "Passed a config file with no circuit to test"
+		_exit_with_code "-1"
+	fi
+}
+
 function run_task() {
     directory="$1"
-    DIR_NAME=$(basename "${directory}")
 
-    RELATIVE_PATH="${directory/regression_test\/benchmark\/task\/blif}"
-    VERILOGS_PATH="${BLIF_PATH}/_VERILOGS/${RELATIVE_PATH}/*.v"
-    export OUTPUT_BLIF_PATH="${BLIF_PATH}/${DIR_NAME}"
-
-    mkdir -p ${OUTPUT_BLIF_PATH}
-
-    FAILURE_PATH="${OUTPUT_BLIF_PATH}/failures"
-
-    if [ -f ${FAILURE_PATH} ]; then
-        find  -name "*.log" -delete
-    else    
-        mkdir -p ${FAILURE_PATH}
+    if [ "_${_CLEAN}" == "_on" ]; then
+        find "${ODIN_DIR}/${directory/task\/}" -name "*.blif" -delete
     fi
-    
-    for file_path in ${VERILOGS_PATH}
-    do
-        FILE="$(basename ${file_path})"
-        FILE_NAME="${FILE%.*}"
 
-        export FILE_PATH="${file_path}"
-        export BLIF_NAME="${FILE_NAME}.blif"
+    populate_arg_from_file "${directory}/task.ycfg"
+   
+    for circuit in "${_circuit_list[@]}"
+	do
+        CIRCUIT_DIR=$(dirname "${circuit}")
+        CIRCUIT_FILE=$(basename "${circuit}")
 
-        if [ -f "${OUTPUT_BLIF_PATH}/${BLIF_NAME}" ]; then
+        export TASK_NAME=$(basename "${CIRCUIT_DIR}")
+        export OUTPUT_BLIF_PATH="${BLIF_PATH}/${TASK_NAME}"
+
+        # run yosys for the current circuit
+        CIRCUIT_NAME="${CIRCUIT_FILE%.*}"
+
+        # to check the required path and files
+        check "${OUTPUT_BLIF_PATH}" "${CIRCUIT_NAME}"
+
+        export TCL_CIRCUIT="${circuit}"
+        export TCL_BLIF_NAME="${CIRCUIT_NAME}.blif"
+
+        if [ -f "${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}" ]; then
             print_test_stat "E"
             continue
         fi
@@ -294,6 +318,7 @@ function run_task() {
         run_yosys "${ODIN_DIR}/synth.tcl"
 
     done
+
 }
 
 task_list=()
@@ -324,7 +349,7 @@ function run_suite() {
                     mapfile -t test_list <"${possible_test}/task_list.conf"
                     current_test_list+=( "${test_list[@]}" )
                     _TEST_INPUT_LIST+=( "${test_list[@]}" )
-                elif [ -f "${possible_test}/task.conf" ]
+                elif [ -f "${possible_test}/task.ycfg" ]
                 then
                     task_list+=( "${possible_test}" )
                 else
@@ -346,7 +371,7 @@ function run_suite() {
 
 	if [ "_${TEST_COUNT}" == "_0" ];
 	then
-		echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.conf, see --help"
+		echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.ycfg, see --help"
 		_exit_with_code "-1"
 	fi
 }

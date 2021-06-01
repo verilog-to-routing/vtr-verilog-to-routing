@@ -1,6 +1,6 @@
 `define WIDTH 32
 
-module cmd_module (size,addr_key,sign_ext,result,en,clk,wren1,wren2,d1,d2);
+module cmd_module (addr,size,addr_key,sign_ext,result,en,clk,wren1,wren2,d1,d2);
 
 input[7:0] addr;
 input[1:0] size ;
