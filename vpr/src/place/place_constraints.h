@@ -37,6 +37,8 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
  */
 PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro);
 
+void constraints_propagation();
+
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
 

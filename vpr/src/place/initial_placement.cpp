@@ -82,20 +82,17 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
     // Every macro can be placed until proven otherwise
     int macro_can_be_placed = true;
 
+    //Check whether head macro is in appropriate floorplan region
+    //return true if macro_can_be_placed = yes, false if no
     bool macro_constrained = is_macro_constrained(pl_macro);
-    PartitionRegion macro_pr;
-
-    if (macro_constrained) {
-        macro_pr = constrained_macro_locs(pl_macro);
-    }
 
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
-        //if the macro is constrained, check if the member position is within the PartitionRegion for the macro
-        if (macro_constrained) {
-            bool member_loc_good = macro_pr.is_loc_in_part_reg(member_pos);
+        //if the macro is constrained, check if the head position is within the PartitionRegion for the macro
+        if (macro_constrained && imember == 0) {
+            bool member_loc_good = cluster_floorplanning_legal(pl_macro.members[imember].blk_index, member_pos);
             if (!member_loc_good) {
                 macro_can_be_placed = false;
                 break;
@@ -416,6 +413,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     //Sort blocks
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
+
+    //Perform constraints_propagation
+    constraints_propagation();
 
     // Loading legal placement locations
     zero_initialize_grid_blocks();

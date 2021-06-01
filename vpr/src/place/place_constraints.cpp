@@ -113,6 +113,23 @@ PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro) {
     return macro_pr;
 }
 
+void constraints_propagation() {
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+
+    for (auto pl_macro : place_ctx.pl_macros) {
+        if (is_macro_constrained(pl_macro)) {
+            //Update the PartitionRegions of all the clusters in the macro
+            PartitionRegion macro_pr = constrained_macro_locs(pl_macro);
+
+            for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
+                ClusterBlockId blk_id = pl_macro.members[imember].blk_index;
+                floorplanning_ctx.cluster_constraints[blk_id] = macro_pr;
+            }
+        }
+    }
+}
+
 /*returns true if location is compatible with floorplanning constraints, false if not*/
 bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
