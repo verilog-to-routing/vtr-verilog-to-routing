@@ -25,9 +25,7 @@
 #include "pugixml.hpp"
 
 #include "vpr_constraints_uxsdcxx_interface.h"
-
-//sentinel value for indicating that a subtile has not been specified
-constexpr int NO_SUBTILE = -1;
+#include "region.h"
 
 /* All uxsdcxx functions and structs live in this namespace. */
 namespace uxsd {
