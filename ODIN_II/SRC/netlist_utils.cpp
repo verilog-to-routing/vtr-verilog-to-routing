@@ -122,6 +122,8 @@ nnode_t* free_nnode(nnode_t* to_free) {
         vtr::free(to_free->output_port_sizes);
         vtr::free(to_free->undriven_pins);
 
+        free_attribute(to_free->attributes);
+
         if (to_free->name) {
             vtr::free(to_free->name);
             to_free->name = NULL;
@@ -854,6 +856,17 @@ void free_signal_list(signal_list_t* list) {
         list->count = 0;
     }
     vtr::free(list);
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: clean_attribute_structure)
+ *-------------------------------------------------------------------------------------------*/
+void free_attribute(attr_t* attribute) {
+    if (attribute) {
+        vtr::free(attribute->reset_value);
+    }
+
+    vtr::free(attribute);
 }
 
 /*---------------------------------------------------------------------------

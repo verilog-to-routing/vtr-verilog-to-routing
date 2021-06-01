@@ -43,6 +43,8 @@ void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net);
 void remap_pin_to_new_node(npin_t* pin, nnode_t* new_node, int pin_idx);
 
 attr_t* init_attribute();
+void free_attribute(attr_t* attribute);
+
 signal_list_t* init_signal_list();
 signal_list_t* create_constant_value(const char* value, const size_t width, netlist_t* netlist);
 void add_pin_to_signal_list(signal_list_t* list, npin_t* pin);
