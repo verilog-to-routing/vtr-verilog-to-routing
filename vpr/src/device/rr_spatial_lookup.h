@@ -127,9 +127,8 @@ class RRSpatialLookup {
                       e_side side);
 
     /**
-     * Resize three dimensions of the lookup under a given type of node to be memory efficient
-     * This function is called to expand the matrix when x, y or side 
-     * when one or more of them beyond current capacity 
+     * Resize the given 3 dimensions (x, y, side) of the RRSpatialLookup data structure for the given type
+     * This function will keep any existing data
      *
      * Strongly recommend to use when the sizes of dimensions are deterministic
      *
