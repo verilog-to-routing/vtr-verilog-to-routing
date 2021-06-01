@@ -6,6 +6,7 @@
  *      Author: khalid88
  */
 #include "move_transactions.h"
+#include "region.h"
 #include "clustered_netlist_utils.h"
 
 #ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
