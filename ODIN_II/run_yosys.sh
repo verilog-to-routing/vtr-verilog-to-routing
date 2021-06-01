@@ -61,12 +61,18 @@ function run_yosys() {
     TCL_FILE="$1"
     START=$(get_current_time)
 
-    ${_YOSYS_EXEC} -c ${TCL_FILE} > /dev/null 2>&1
+    LOG_FILE="${THIS_DIR}/${BLIF_NAME}.log"
+
+    ${_YOSYS_EXEC} -c ${TCL_FILE} > ${LOG_FILE} 2>&1 #/dev/null 2>&1
 
     if [ -f "${OUTPUT_BLIF_PATH}/${BLIF_NAME}"  ]; then
         print_test_stat "C" "${START}"
+        rm ${LOG_FILE}
     else
         print_test_stat "F" "${START}"
+        mkdir -p "${OUTPUT_BLIF_PATH}/failures"
+        mv ${LOG_FILE} "${OUTPUT_BLIF_PATH}/failures"
+
     fi
 }
 
@@ -263,6 +269,14 @@ function run_task() {
     export OUTPUT_BLIF_PATH="${BLIF_PATH}/${DIR_NAME}"
 
     mkdir -p ${OUTPUT_BLIF_PATH}
+
+    FAILURE_PATH="${OUTPUT_BLIF_PATH}/failures"
+
+    if [ -f ${FAILURE_PATH} ]; then
+        find  -name "*.log" -delete
+    else    
+        mkdir -p ${FAILURE_PATH}
+    fi
     
     for file_path in ${VERILOGS_PATH}
     do
@@ -325,7 +339,7 @@ function run_suite() {
 	for (( i = 0; i < ${#task_list[@]}; i++ ));
 	do
         echo ""
-        echo "===== $(basename ${task_list[$i]}) ====="
+        echo "Task: $(basename ${task_list[$i]})"
         run_task "${task_list[$i]}"
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
 	done
