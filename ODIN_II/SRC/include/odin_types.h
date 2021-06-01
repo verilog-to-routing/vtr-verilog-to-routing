@@ -258,18 +258,20 @@ enum operation_list {
     MEMORY,
     PAD_NODE,
     HARD_IP,
-    GENERIC,         /*added for the unknown node type */
-    CLOG2,           // $clog2
-    UNSIGNED,        // $unsigned
-    SIGNED,          // $signed
-                     // [START] operations to cover yosys subckt
-    MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
+    GENERIC,            /*added for the unknown node type */
+    CLOG2,              // $clog2
+    UNSIGNED,           // $unsigned
+    SIGNED,             // $signed
+                        // [START] operations to cover yosys subckt
+    MULTI_BIT_MUX_2,    // like MUX_2 but with n-bit input/output
     MULTIPORT_nBIT_MUX, // n-bit input/output in multiple ports
-    PMUX,            // Multiplexer with many inputs using one-hot select signal
-    SDFF,            // data, S to reset value and output port
-    DFFE,            // data, enable to output port
-    DFFSR,           // data, clear and set to output port
-                     // [END] operations to cover yosys subckt
+    PMUX,               // Multiplexer with many inputs using one-hot select signal
+    SDFF,               // data, S to reset value and output port
+    DFFE,               // data, enable to output port
+    ADFFE,              // data, asynchronous reset value and enable to output port
+    SDFFE,              // data, synchronous reset value and enable to output port
+    DFFSR,              // data, clear and set to output port
+                        // [END] operations to cover yosys subckt
     operation_list_END
 };
 typedef std::unordered_map<std::string, operation_list> typemap;
@@ -467,10 +469,11 @@ struct attr_t {
     edge_type_e clr_edge_type;   //
     edge_type_e set_edge_type;   //
     edge_type_e enable_polarity; //
-    edge_type_e reset_polarity;  //
+    edge_type_e areset_polarity; // asynchronous reset polarity
+    edge_type_e sreset_polarity; // synchronous reset polarity
 
-    char* reset_value;
-
+    char* areset_value; // asynchronous reset value
+    char* sreset_value; // synchronous reset value
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
@@ -524,7 +527,7 @@ struct nnode_t {
     int ratio;                  //clock ratio for clock nodes
     init_value_e initial_value; // initial net value
     bool internal_clk_warn = false;
-    
+
     attr_t* attributes;
 
     bool covered = false;

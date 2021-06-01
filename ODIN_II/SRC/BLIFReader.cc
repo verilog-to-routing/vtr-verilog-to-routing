@@ -1846,6 +1846,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (PMUX): //fallthrough
         case (MINUS): //fallthrough
         case (DFFE): //fallthrough
+        case (ADFFE): //fallthrough
         case (FF_NODE): //fallthrough
         case (BITWISE_OR): //fallthrough
         case (BITWISE_NOT): //fallthrough
@@ -1861,6 +1862,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             break;
         }
         case (SDFF): //fallthrough
+        case (SDFFE): //fallthrough
         case (DFFSR): {
             // create a model with single output port, being read as the one behind last port
             model = create_model(name, ports, ports->count-2, ports->count-1);
@@ -1962,7 +1964,9 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             if (!strcmp(ptr, ".param")) {
                 ptr = vtr::strtok(NULL, TOKENS, file, buffer);
                 if (!strcmp(ptr, "SRST_VALUE")) {
-                    attributes->reset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                    attributes->sreset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                } else if (!strcmp(ptr, "ARST_VALUE")) {
+                    attributes->areset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
                 } else {
                     int sensitivity = atoi(vtr::strtok(NULL, TOKENS, file, buffer));
                     if (!strcmp(ptr, "CLK_POLARITY")) {
@@ -1989,11 +1993,17 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                         else if (sensitivity == 0)
                             attributes->enable_polarity = ACTIVE_LOW_SENSITIVITY;
                     
+                    } else if (!strcmp(ptr, "ARST_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->areset_polarity = ACTIVE_HIGH_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->areset_polarity = ACTIVE_LOW_SENSITIVITY;
+
                     } else if (!strcmp(ptr, "SRST_POLARITY")) {
                         if (sensitivity == 1)
-                            attributes->reset_polarity = ACTIVE_HIGH_SENSITIVITY;
+                            attributes->sreset_polarity = ACTIVE_HIGH_SENSITIVITY;
                         else if (sensitivity == 0)
-                            attributes->reset_polarity = ACTIVE_LOW_SENSITIVITY;
+                            attributes->sreset_polarity = ACTIVE_LOW_SENSITIVITY;
                     
                     }
                 }
@@ -2023,6 +2033,8 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
          case (FF_NODE): //fallthrough
          case (DFFE): //fallthrough
          case (SDFF): //fallthrough
+         case (ADFFE): //fallthrough
+         case (SDFFE): //fallthrough
          case (DFFSR): {
              return_value = true;
              break;

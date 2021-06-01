@@ -329,13 +329,13 @@ void instantiate_multi_port_mux(nnode_t* node, short mark, netlist_t* /*netlist*
  */
 static nnode_t** transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
     oassert(node->traverse_visited == traverse_mark_number);
-    
+
     int i, j;
     /* to check all mux inputs have the same width(except [0] which is selector) */
     for (i = 2; i < node->num_input_port_sizes; i++) {
         oassert(node->input_port_sizes[i] == node->input_port_sizes[1]);
     }
-    
+
     int selector_width = node->input_port_sizes[0];
     int num_input_ports = node->num_input_port_sizes;
     int num_mux_nodes = node->num_output_pins;
@@ -373,7 +373,7 @@ static nnode_t** transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t trav
             for (j = 0; j < selector_width; j++) {
                 remap_pin_to_new_node(node->input_pins[j], mux_node[i], j);
             }
-                
+
         } else {
             /* add a copy of SEL pins from the mux node to the splitted mux nodes */
             for (j = 0; j < selector_width; j++) {
@@ -403,7 +403,6 @@ static nnode_t** transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t trav
     return mux_node;
 }
 
-
 /**
  * (function: instantiate_multi_port_single_bit_mux)
  * 
@@ -426,7 +425,6 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
     nnode_t* single_bit_mux = single_bit_muxes[cnt];
     /* iterating over single bit muxes that has multiple (>2) port to turn them into 2-mux */
     while (single_bit_mux != NULL) {
-
         /**
          **************************** <SINLGE BIT MUX> ***************************
          * 
@@ -499,7 +497,7 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
          *    
          *               ...              ...              ...               
          *  
-        */
+         */
 
         /* keeping the information of each single bit mux */
         int num_expressions = single_bit_mux->num_input_port_sizes - 1;
@@ -530,7 +528,7 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
                  *      3: in2              in2 --'--> |  |           
                  *                                     | /             
                  *                                     |/                  
-                */
+                 */
                 muxes[i][j] = make_2port_gate(MUX_2, 2, 2, 1, single_bit_mux, mark);
                 // connect related pin of second_input to related multiplexer as a selector
                 nnode_t* select = make_1port_gate(BUF_NODE, 1, 1, single_bit_mux, mark);
@@ -549,22 +547,22 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
                 /* connecting the single bit mux input pins into decoded 2-Muxes */
                 if (i == 0) {
                     remap_pin_to_new_node(single_bit_mux->input_pins[port_offset + j],
-                                        muxes[i][j],
-                                        2);
+                                          muxes[i][j],
+                                          2);
 
                     remap_pin_to_new_node(single_bit_mux->input_pins[port_offset + j + (num_expressions / 2)],
-                                        muxes[i][j],
-                                        3);
-                } 
+                                          muxes[i][j],
+                                          3);
+                }
                 /* connecting the outputs of internal 2-muxes to next level 2-muxes as input */
                 else {
                     add_input_pin_to_node(muxes[i][j],
-                                        output_signals[i - 1]->pins[j],
-                                        2);
+                                          output_signals[i - 1]->pins[j],
+                                          2);
 
                     add_input_pin_to_node(muxes[i][j],
-                                        output_signals[i - 1]->pins[j + num_of_muxes],
-                                        3);
+                                          output_signals[i - 1]->pins[j + num_of_muxes],
+                                          3);
                 }
 
                 // Connect output pin to related input pin

@@ -675,10 +675,12 @@ attr_t* init_attribute() {
     attribute->clk_edge_type = UNDEFINED_SENSITIVITY;
     attribute->clr_edge_type = UNDEFINED_SENSITIVITY;
     attribute->set_edge_type = UNDEFINED_SENSITIVITY;
-    attribute->reset_polarity = UNDEFINED_SENSITIVITY;
+    attribute->areset_polarity = UNDEFINED_SENSITIVITY;
+    attribute->sreset_polarity = UNDEFINED_SENSITIVITY;
     attribute->enable_polarity = UNDEFINED_SENSITIVITY;
 
-    attribute->reset_value = NULL;
+    attribute->areset_value = NULL;
+    attribute->sreset_value = NULL;
 
     return attribute;
 }
@@ -706,8 +708,6 @@ signal_list_t* init_signal_list() {
  *-------------------------------------------------------------------------------------------*/
 signal_list_t* create_constant_value(const char* value, const size_t width, netlist_t* netlist) {
     signal_list_t* list = init_signal_list();
-
-    oassert(strlen(value) <= width);
 
     int i;
     /* create vcc/gnd signal pins */
@@ -863,7 +863,8 @@ void free_signal_list(signal_list_t* list) {
  *-------------------------------------------------------------------------------------------*/
 void free_attribute(attr_t* attribute) {
     if (attribute) {
-        vtr::free(attribute->reset_value);
+        vtr::free(attribute->areset_value);
+        vtr::free(attribute->sreset_value);
     }
 
     vtr::free(attribute);
