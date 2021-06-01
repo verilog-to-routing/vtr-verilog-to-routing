@@ -99,8 +99,27 @@ class RRSpatialLookup {
      * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 
      * SOURCE and SINK nodes are indexable in any location inside the boundry.
      *
+     * An example of usage: 
+     * 
+     *   // Create a empty lookup
+     *   RRSpatialLookup rr_lookup;
+     *   // Adding other nodes ...
+     *   // Copy the nodes whose types are SOURCE at (1, 1) to (1, 2)
+     *   rr_lookup.mirror_nodes(vtr::Point<int>(1, 1),
+     *                          vtr::Point<int>(1, 2),
+     *                          SOURCE,
+     *                          TOP);
+     *
      * Note: currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
      * depending on needs
+     *
+     * TODO: Consider to make a high-level API to duplicate the nodes for large blocks. 
+     * Then this API can become a private one
+     * For example, 
+     *   expand_nodes(source_coordinate, bounding_box_coordinate, type, side);
+     * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y) 
+     * corner when dealing with large blocks. But this may require the data structure to be dependent 
+     * on DeviceGrid information (it needs to identify if a grid has height > 1 as well as width > 1)
      */
     void mirror_nodes(const vtr::Point<int>& src_coord,
                       const vtr::Point<int>& des_coord,
