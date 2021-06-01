@@ -1,8 +1,5 @@
 #include "region.h"
 
-/// @brief sentinel value for indicating that a subtile has not been specified
-constexpr int NO_SUBTILE = -1;
-
 Region::Region() {
     sub_tile = NO_SUBTILE;
 
@@ -14,7 +11,7 @@ Region::Region() {
     region_bounds.set_ymax(-1);
 }
 
-vtr::Rect<int> Region::get_region_rect() {
+vtr::Rect<int> Region::get_region_rect() const {
     return region_bounds;
 }
 
@@ -25,7 +22,7 @@ void Region::set_region_rect(int _xmin, int _ymin, int _xmax, int _ymax) {
     region_bounds.set_ymax(_ymax);
 }
 
-int Region::get_sub_tile() {
+int Region::get_sub_tile() const {
     return sub_tile;
 }
 
@@ -82,7 +79,7 @@ bool do_regions_intersect(Region r1, Region r2) {
     return intersect;
 }
 
-Region intersection(Region r1, Region r2) {
+Region intersection(const Region& r1, const Region& r2) {
     Region intersect;
 
     /**
