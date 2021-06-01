@@ -52,7 +52,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* n
 static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
 static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
 static void make_selector_as_first_port(nnode_t* node);
 static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
@@ -225,7 +224,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              * split the mux node into mux node with 
              * input/output width one 
              */
-            transform_to_single_bit_mux_nodes(node, traverse_number, netlist);
+            // transform_to_single_bit_mux_nodes(node, traverse_number, netlist);
             
             break;
         }
@@ -495,87 +494,6 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
         netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
         netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
         netlist->num_ff_nodes++;
-    }
-
-    free_nnode(node);
-}
-
-/**
- * (function: transform_to_single_bit_mux_nodes)
- * 
- * @brief split the mux node read from yosys blif to
- * the same type nodes with input/output width one
- * 
- * @param node pointing to the mux node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static void transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
-    oassert(node->traverse_visited == traverse_mark_number);
-    
-    int i, j;
-    /* to check all mux inputs have the same width(except [0] which is selector) */
-    for (i = 2; i < node->num_input_port_sizes; i++) {
-        oassert(node->input_port_sizes[i] == node->input_port_sizes[1]);
-    }
-    
-    int selector_width = node->input_port_sizes[0];
-    int num_input_ports = node->num_input_port_sizes;
-    int num_mux_nodes = node->num_output_pins;
-
-    /**
-     * input_port[0] -> SEL
-     * input_pin[SEL_WIDTH..n] -> MUX inputs
-     * output_pin[0..n-1] -> MUX outputs
-     */
-    for (i = 0; i < num_mux_nodes; i++) {
-        nnode_t* mux_node = allocate_nnode(node->loc);
-
-        mux_node->type = node->type;
-        mux_node->traverse_visited = traverse_mark_number;
-
-        /* Name the mux based on the name of its output pin */
-        // const char* mux_base_name = node_name_based_on_op(mux_node);
-        // mux_node->name = (char*)vtr::malloc(sizeof(char) * (strlen(node->output_pins[i]->name) + strlen(mux_base_name) + 2));
-        // odin_sprintf(mux_node->name, "%s_%s", node->output_pins[i]->name, mux_base_name);
-        mux_node->name = node_name(mux_node, NULL);
-
-        add_input_port_information(mux_node, selector_width);
-        allocate_more_input_pins(mux_node, selector_width);
-
-        add_output_port_information(mux_node, 1);
-        allocate_more_output_pins(mux_node, 1);
-
-        if (i == num_mux_nodes - 1) {
-            /**
-             * remap the SEL pins from the mux node 
-             * to the last splitted mux node  
-             */
-            for (j = 0; j < selector_width; j++) {
-                remap_pin_to_new_node(node->input_pins[j], mux_node, j);
-            }
-                
-        } else {
-            /* add a copy of SEL pins from the mux node to the splitted mux nodes */
-            for (j = 0; j < selector_width; j++) {
-                add_input_pin_to_node(mux_node, copy_input_npin(node->input_pins[j]), j);
-            }
-        }
-
-        /**
-         * remap the input_pin[i+1]/output_pin[i] from the mux node to the 
-         * last splitted ff node since we do not need it in dff node anymore 
-         **/
-        int acc_port_sizes = selector_width;
-        for (j = 1; j < num_input_ports; j++) {
-            add_input_port_information(mux_node, 1);
-            allocate_more_input_pins(mux_node, 1);
-
-            remap_pin_to_new_node(node->input_pins[i + acc_port_sizes], mux_node, selector_width + j - 1);
-            acc_port_sizes += node->input_port_sizes[j];
-        }
-
-        remap_pin_to_new_node(node->output_pins[i], mux_node, 0);
     }
 
     free_nnode(node);

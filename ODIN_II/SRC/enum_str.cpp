@@ -94,7 +94,7 @@ const char* operation_list_STR[][2] = {
     {"UNSIGNED", "UNSG"}, // $unsigned
     {"SIGNED", "SG"},     // $signed
                           // [START] operations to cover yosys subckt
-    // {"MULTI_BIT_MUX_2", "nbMUX"}, // like MUX_2 but with n-bit input/output
+    {"MULTI_BIT_MUX_2", "nbMUX"}, // like MUX_2 but with n-bit input/output
     {"MULTI_PORT_BIT_MUX", "npbMUX"}, // n-bit input/output in multi port mux
     {"PMUX", "nPMUX"},          // Multiplexer with many inputs using one-hot select signal
     {"SDFF", "nSDFF"},          // data, S to reset value and output port

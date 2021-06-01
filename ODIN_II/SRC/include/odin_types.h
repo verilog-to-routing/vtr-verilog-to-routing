@@ -263,7 +263,7 @@ enum operation_list {
     UNSIGNED,        // $unsigned
     SIGNED,          // $signed
                      // [START] operations to cover yosys subckt
-    // MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
+    MULTI_BIT_MUX_2, // like MUX_2 but with n-bit input/output
     MULTI_PORT_BIT_MUX, // n-bit input/output in multiple ports
     PMUX,            // Multiplexer with many inputs using one-hot select signal
     SDFF,            // data, S to reset value and output port
