@@ -1860,9 +1860,11 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (BITWISE_AND): //fallthrough
         case (LOGICAL_OR): //fallthrough
         case (LOGICAL_XOR): //fallthrough
+        case (LOGICAL_AND): //fallthrough
         case (LOGICAL_NOT): //fallthrough
         case (LOGICAL_XNOR): //fallthrough
         case (LOGICAL_EQUAL): //fallthrough
+        case (NOT_EQUAL): //fallthrough
         case (MULTIPORT_nBIT_MUX): {
             // create a model with single output port, being read as the last port
             model = create_model(name, ports, ports->count-1, ports->count);

@@ -181,7 +181,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case LOGICAL_NAND:
         case LOGICAL_XOR:
         case LOGICAL_XNOR:
-        case LOGICAL_EQUAL: {
+        case LOGICAL_EQUAL: 
+        case NOT_EQUAL: {
             /** 
              * to make sure they have only one output pin for partial mapping phase 
              */
@@ -311,7 +312,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case MUX_2:
         case MULTI_PORT_MUX: 
-        case NOT_EQUAL:
         case SL:
         case ASL:
         case SR:
