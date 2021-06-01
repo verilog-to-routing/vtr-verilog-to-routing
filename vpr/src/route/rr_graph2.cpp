@@ -937,6 +937,7 @@ static void load_chan_rr_indices(const int max_chan_width,
             const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
             for (int track = 0; track < max_chan_width; ++track) {
+                /* TODO: May let the length() == 0 case go through, to model muxes */
                 if (seg_details[track].length() <= 0)
                     continue;
 
