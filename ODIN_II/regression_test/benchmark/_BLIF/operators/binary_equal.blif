@@ -3,7 +3,7 @@
 .model simple_op
 .inputs clk reset a[0] a[1]
 .outputs out clk_out
-.subckt $eqx A=a[0] B=a[1] Y=a_$eqx_B_Y
+.subckt $nex A=a[0] B=a[1] Y=a_$eqx_B_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
