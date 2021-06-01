@@ -30,7 +30,8 @@ class RRSpatialLookup {
 
     /* -- Accessors -- */
   public:
-    /* Returns the index of the specified routing resource node.  
+    /**
+     * Returns the index of the specified routing resource node.  
      * - (x, y) are the grid location within the FPGA
      * - rr_type specifies the type of resource,
      * - ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
@@ -64,7 +65,8 @@ class RRSpatialLookup {
 
     /* -- Mutators -- */
   public:
-    /* Register a node in the fast look-up 
+    /**
+     * Register a node in the fast look-up 
      * - You must have a valid node id to register the node in the lookup
      * - (x, y) are the coordinate of the node to be indexable in the fast look-up
      * - type is the type of a node
@@ -90,20 +92,23 @@ class RRSpatialLookup {
                   int ptc,
                   e_side side);
 
-    /* Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+    /**
+     * Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
      * a destination coordinate.
      * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
      * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 
      * SOURCE and SINK nodes are indexable in any location inside the boundry.
      *
-     * Note: currently this function only accept SOURCE/SINK nodes. May unlock for other depending on needs
+     * Note: currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
+     * depending on needs
      */
     void mirror_nodes(const vtr::Point<int>& src_coord,
                       const vtr::Point<int>& des_coord,
                       t_rr_type type,
                       e_side side);
 
-    /* Resize three dimensions of the lookup under a given type of node to be memory efficient
+    /**
+     * Resize three dimensions of the lookup under a given type of node to be memory efficient
      * This function is called to expand the matrix when x, y or side 
      * when one or more of them beyond current capacity 
      *
