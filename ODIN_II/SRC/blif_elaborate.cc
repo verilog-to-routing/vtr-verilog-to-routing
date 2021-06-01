@@ -276,6 +276,10 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case PAD_NODE:
         case INPUT_NODE:
         case OUTPUT_NODE: 
+        case GTE:
+        case LTE:
+        case GT:
+        case LT:
         case BUF_NODE:
         case BITWISE_NOT:
         case BITWISE_AND:
@@ -290,10 +294,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case MUX_2:
         case MULTI_PORT_MUX: 
         case NOT_EQUAL:
-        case GTE:
-        case LTE:
-        case GT:
-        case LT:
         case SL:
         case ASL:
         case SR:

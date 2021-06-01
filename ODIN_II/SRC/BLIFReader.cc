@@ -1842,6 +1842,10 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
     hard_block_model* model = NULL;
     
     switch (type) {
+        case (LT): //fallthrough
+        case (GT): //fallthrough
+        case (LTE): //fallthrough
+        case (GTE): //fallthrough
         case (ADD): //fallthrough
         case (PMUX): //fallthrough
         case (MINUS): //fallthrough
