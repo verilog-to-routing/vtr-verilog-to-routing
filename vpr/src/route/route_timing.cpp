@@ -546,24 +546,6 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
                 routing_is_successful = true;
 
-                for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-                    auto current_node = best_routing[net_id].head;
-                    std::cout << "-------\n";
-                    while (current_node != nullptr) {
-                        auto current_type = device_ctx.rr_nodes[current_node->index].type_string();
-                        auto xlow = device_ctx.rr_nodes[current_node->index].xlow();
-                        auto xhigh = device_ctx.rr_nodes[current_node->index].xhigh();
-                        auto ylow = device_ctx.rr_nodes[current_node->index].ylow();
-                        auto yhigh = device_ctx.rr_nodes[current_node->index].yhigh();
-                        if ((xlow == xhigh) && (ylow == yhigh)) {
-                            printf("Node: %d %s (%d,%d) \n", current_node->index, current_type, xlow, ylow);
-                        } else {
-                            printf("Node: %d %s (%d,%d) to (%d,%d) \n", current_node->index, current_type, xlow, ylow, xhigh, yhigh);
-                        }
-                        current_node = current_node->next;
-                    }
-                }
-
                 //Update best metrics
                 if (timing_info) {
                     timing_driven_check_net_delays(net_delay);
@@ -804,7 +786,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             VTR_LOG("Critical path: %g ns\n", 1e9 * best_routing_metrics.critical_path.delay());
         }
 
-        VTR_LOG("timing Successfully routed after %d routing iterations.\n", itry);
+        VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
     } else {
         VTR_LOG("Routing failed.\n");
 

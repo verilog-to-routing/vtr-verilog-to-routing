@@ -586,8 +586,7 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
     /* TODO: this function should be reworked later to adapt RRGraphView interface 
      *       once xlow(), ylow(), side() APIs are implemented
      */
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     VTR_ASSERT(rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN);
 
     if ((node.xlow() == 0 && !node.is_node_on_specific_side(RIGHT))                          //left device edge connects only along block's right side

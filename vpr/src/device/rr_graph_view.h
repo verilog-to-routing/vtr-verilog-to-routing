@@ -52,7 +52,7 @@ class RRGraphView {
      * kind of accessors
      */
   public:
-    /* Get the type of a routing resource node */
+    /* Get the type of a routing resource node. This function is inlined for runtime optimization. */
     inline t_rr_type node_type(RRNodeId node) const {
         return node_storage_.node_type(node);
     }
