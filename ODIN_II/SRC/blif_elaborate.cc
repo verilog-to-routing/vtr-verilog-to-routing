@@ -629,6 +629,7 @@ static void resolve_neg_node(nnode_t* node, uintptr_t traverse_mark_number, netl
 
     /* creating the subtraction node */
     nnode_t* subtraction = make_2port_gate(MINUS, width, width, width, node, traverse_mark_number);
+    /* add the subtractio node to sub_list for future iteration */
     sub_list = insert_in_vptr_list(sub_list, subtraction);
 
     int i;
@@ -641,7 +642,6 @@ static void resolve_neg_node(nnode_t* node, uintptr_t traverse_mark_number, netl
         remap_pin_to_new_node(node->input_pins[i],
                               subtraction,
                               i + width);
-        
         /* remapping the neg output pins to the subtraction output pins*/
         remap_pin_to_new_node(node->output_pins[i],
                               subtraction,

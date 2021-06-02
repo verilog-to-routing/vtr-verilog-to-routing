@@ -39,6 +39,9 @@
 
 using vtr::t_linked_vptr;
 
+    nnode_t** not_node;
+
+
 t_linked_vptr* sub_list = NULL;
 t_linked_vptr* sub_chain_list = NULL;
 int subchaintotal = 0;
@@ -235,7 +238,6 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
             if (sizea > 1) {
                 for (i = 1; i < aa; i++) {
                     ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
-                    ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - 1]->mapping;
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
@@ -245,7 +247,6 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
         } else {
             for (i = 0; i < aa; i++) {
                 ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
-                ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - 1]->mapping;
                 ptr->input_pins[i]->node = ptr;
                 ptr->input_pins[i]->pin_node_idx = i;
             }
@@ -259,7 +260,6 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
                 if (sizea > 1) {
                     for (i = 1; i < sizea; i++) {
                         ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
-                        ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - 1]->mapping;
                         ptr->input_pins[i]->node = ptr;
                         ptr->input_pins[i]->pin_node_idx = i;
                     }
@@ -267,7 +267,6 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
             } else {
                 for (i = 0; i < current_sizea; i++) {
                     ptr->input_pins[i] = node->input_pins[i];
-                    ptr->input_pins[i]->mapping = node->input_pins[i]->mapping;
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
@@ -275,14 +274,14 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
         } else {
             if (flag == 0) {
                 for (i = 0; i < sizea; i++) {
-                    ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - offset]->mapping;
+                    ptr->input_pins[i] = node->input_pins[i + index * sizea - offset];
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
             } else {
                 num = node->input_port_sizes[0];
                 for (i = 0; i < current_sizea; i++) {
-                    ptr->input_pins[i]->mapping = node->input_pins[i + num - current_sizea]->mapping;
+                    ptr->input_pins[i] = node->input_pins[i + num - current_sizea];
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
@@ -330,7 +329,6 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
 
 void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t* netlist) {
     nnode_t** node;
-    nnode_t** not_node;
     int i, j;
     int num;
     int max_num = 0;
@@ -350,6 +348,12 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
         oassert(nodeo->input_port_sizes[0] == b);
     }
 
+    
+    /* free noeo input pins mapping since there is no need in the future and cause mem laeak */
+    for (i = 0; i < nodeo->num_input_pins; i++) {
+        vtr::free(nodeo->input_pins[i]->mapping);
+    }
+    
     node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (count));
     not_node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (b));
 
@@ -587,28 +591,30 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
         nodeo->input_pins[i] = NULL;
     }    
     for (i = 0; i < nodeo->num_output_pins; i++) {
-        if (nodeo->output_pins[i] && nodeo->output_pins[i]->node) {
+        npin_t* output_pin = nodeo->output_pins[i];
+
+        if (output_pin && output_pin->node) {
+            
             /* for now we just pass the signals directly through */
             npin_t* zero_pin = get_zero_pin(netlist);
             int idx_2_buffer = zero_pin->pin_net_idx;
 
             // Dont eliminate the buffer if there are multiple drivers or the AST included it
-            if (nodeo->output_pins[i]->net->num_driver_pins <= 1) {
+            if (output_pin->net->num_driver_pins <= 1) {
                 /* join all fanouts of the output net with the input pins net */
-                join_nets(zero_pin->net, nodeo->output_pins[i]->net);
+                join_nets(zero_pin->net, output_pin->net);
 
                 /* erase the pointer to this buffer */
                 zero_pin->net->fanout_pins[idx_2_buffer] = NULL;
             }
 
-            free_npin(zero_pin);
-            zero_pin = NULL;
+            free_nnet(output_pin->net);
 
-            free_nnet(nodeo->output_pins[i]->net);
-            free_npin(nodeo->output_pins[i]);
+            free_npin(zero_pin);
+            free_npin(output_pin);
+
             nodeo->output_pins[i] = NULL;
         }
-
     }   
     free_nnode(nodeo);
 >>>>>>> [Bug]: Fixing mem leaks related to subtraction circuit change

@@ -4449,6 +4449,49 @@
         "Estimated LUTs": 4,
         "Total Node": 4
     },
+    "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "twobits_arithmetic_uminus_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 11.2,
+        "exec_time(ms)": 19.3,
+        "simulation_time(ms)": 5.7,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 4,
+        "logic element": 12,
+        "latch": 3,
+        "Adder": 4,
+        "generic logic size": 4,
+        "Longest Path": 9,
+        "Average Path": 5,
+        "Estimated LUTs": 12,
+        "Total Node": 20
+    },
+    "operators/twobits_arithmetic_uminus/no_arch": {
+        "test_name": "operators/twobits_arithmetic_uminus/no_arch",
+        "generated_blif": "twobits_arithmetic_uminus_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 6.8,
+        "simulation_time(ms)": 5.1,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 4,
+        "logic element": 17,
+        "latch": 3,
+        "Longest Path": 9,
+        "Average Path": 5,
+        "Estimated LUTs": 17,
+        "Total Node": 21
+    },
     "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
@@ -4456,8 +4499,8 @@
         "warnings": [
             "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
         ],
-        "max_rss(MiB)": 11.3,
-        "exec_time(ms)": 19.2,
+        "max_rss(MiB)": 11.2,
+        "exec_time(ms)": 19.4,
         "simulation_time(ms)": 5.7,
         "test_coverage(%)": 100,
         "Latch Drivers": 1,

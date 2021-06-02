@@ -435,27 +435,6 @@
         "Estimated LUTs": 7,
         "Total Node": 10
     },
-    "common/sub/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "common/sub/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "generated_blif": "sub_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
-        "max_rss(MiB)": 11.2,
-        "exec_time(ms)": 17.2,
-        "simulation_time(ms)": 3.5,
-        "test_coverage(%)": 100,
-        "Pi": 4,
-        "Po": 2,
-        "logic element": 4,
-        "Adder": 3,
-        "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 7
-    },
     "common/sub/no_arch": {
         "test_name": "common/sub/no_arch",
         "generated_blif": "sub_generated.blif",
@@ -748,6 +727,27 @@
         "Average Path": 5,
         "Estimated LUTs": 13,
         "Total Node": 13
+    },
+    "common/sub/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/sub/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "sub_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 11.2,
+        "exec_time(ms)": 17.5,
+        "simulation_time(ms)": 3.5,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 4,
+        "Adder": 3,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 7
     },
     "DEFAULT": {
         "test_name": "n/a",
