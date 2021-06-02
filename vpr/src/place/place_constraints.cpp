@@ -180,3 +180,36 @@ void load_cluster_constraints() {
         }
     }
 }
+
+void mark_fixed_blocks() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    	PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
+    	std::vector<Region> part_region = pr.get_partition_region();
+    	if (part_region.size() == 1) {
+    		int subtile = part_region[0].get_sub_tile();
+    		vtr::Rect<int> rect = part_region[0].get_region_rect();
+
+    		if (part_region[0].locked()) {
+    			//Set the location of the block
+                place_ctx.block_locs[blk_id].loc.x = rect.xmin();
+                place_ctx.block_locs[blk_id].loc.y = rect.ymin();
+                place_ctx.block_locs[blk_id].loc.sub_tile = subtile;
+
+                //Mark the grid location of the block
+                place_ctx.grid_blocks[rect.xmin()][rect.ymin()].blocks[subtile] = blk_id;
+
+                //Set as fixed
+                place_ctx.block_locs[blk_id].is_fixed = true;
+
+                //Mark grid location usage
+                place_ctx.grid_blocks[rect.xmin()][rect.ymin()].usage++;
+
+                std::string block_name = cluster_ctx.clb_nlist.block_name(blk_id);
+    		}
+    	}
+    }
+}

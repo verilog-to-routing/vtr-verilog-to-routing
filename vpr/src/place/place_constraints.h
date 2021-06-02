@@ -64,4 +64,10 @@ inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
  */
 void load_cluster_constraints();
 
+/*
+ * Marks blocks with a region with xlow = xhigh, ylow = yhigh, and subtile specified as fixed
+ * Marking them as fixed indicates that they cannot be moved during simulated annealing
+ */
+void mark_fixed_blocks();
+
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

@@ -466,6 +466,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         read_constraints(constraints_file);
     }
 
+    /*Mark fixed blocks*/
+    mark_fixed_blocks();
+
     initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
 
     // All the macros are placed, update the legal_pos[][] array and free_locations[] array
