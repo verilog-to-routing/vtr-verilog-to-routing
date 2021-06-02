@@ -67,7 +67,7 @@ while (tptr != nullptr) {
 
         else if (curr_type == CHANX || curr_type == CHANY) {
             segments++;
-            length += 1 + device_ctx.rr_nodes[inode].xhigh() - device_ctx.rr_nodes[inode].xlow() // <----------------------------- Use of xlow()
+            length += 1 + device_ctx.rr_nodes[inode].xhigh() - device_ctx.rr_nodes[inode].xlow() // <-- Use of xlow()
                       + device_ctx.rr_nodes[inode].yhigh() - device_ctx.rr_nodes[inode].ylow();
 
             if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
