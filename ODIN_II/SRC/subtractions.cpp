@@ -576,7 +576,38 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
     //}
 
     /* Freeing the old node! */
+<<<<<<< HEAD
     cleanup_sub_old_node(nodeo, netlist);
+=======
+    for (i = 0; i < nodeo->num_input_pins; i++) {
+        nodeo->input_pins[i] = NULL;
+    }    
+    for (i = 0; i < nodeo->num_output_pins; i++) {
+        if (nodeo->output_pins[i] && nodeo->output_pins[i]->node) {
+            /* for now we just pass the signals directly through */
+            npin_t* zero_pin = get_zero_pin(netlist);
+            int idx_2_buffer = zero_pin->pin_net_idx;
+
+            // Dont eliminate the buffer if there are multiple drivers or the AST included it
+            if (nodeo->output_pins[i]->net->num_driver_pins <= 1) {
+                /* join all fanouts of the output net with the input pins net */
+                join_nets(zero_pin->net, nodeo->output_pins[i]->net);
+
+                /* erase the pointer to this buffer */
+                zero_pin->net->fanout_pins[idx_2_buffer] = NULL;
+            }
+
+            free_npin(zero_pin);
+            zero_pin = NULL;
+
+            free_nnet(nodeo->output_pins[i]->net);
+            free_npin(nodeo->output_pins[i]);
+            nodeo->output_pins[i] = NULL;
+        }
+
+    }   
+    free_nnode(nodeo);
+>>>>>>> [Bug]: Fixing mem leaks related to subtraction circuit change
 
     vtr::free(node);
     vtr::free(not_node);
