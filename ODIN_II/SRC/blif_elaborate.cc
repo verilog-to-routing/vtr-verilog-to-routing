@@ -53,6 +53,7 @@ static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number,
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
 static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
+static void resolve_neg_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void make_selector_as_first_port(nnode_t* node);
 static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
@@ -218,6 +219,14 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              * FF nodes with input/output width one 
              */
             transform_to_single_bit_dff_nodes(node, traverse_number, netlist);
+            break;
+        }
+        case NEG: {
+            /**
+             * resolving neg node by make a minus node with
+             * 0 as the first operand
+             */
+            resolve_neg_node(node, traverse_number, netlist);
             break;
         }
         case MULTIPORT_nBIT_MUX: {
@@ -590,6 +599,58 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
         acc_port_sizes += node->input_port_sizes[i];
     }
 } */
+
+/**
+ * (function: resolve_neg_node)
+ * 
+ * @brief resolving neg node by make a minus node with
+ * 0 as the first operand
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_neg_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 1);
+    oassert(node->num_output_port_sizes == 1);
+
+    /* the width of input and output should be the same */
+    oassert(node->input_port_sizes[0] == node->output_port_sizes[0]);
+
+    /**
+     * (neg ports)
+     * INPUTS
+     *  A: (width_a)
+     * OUTPUT
+     *  Y: width_y
+    */
+    int width = node->input_port_sizes[0];
+
+    /* creating the subtraction node */
+    nnode_t* subtraction = make_2port_gate(MINUS, width, width, width, node, traverse_mark_number);
+    sub_list = insert_in_vptr_list(sub_list, subtraction);
+
+    int i;
+    for (i = 0; i < width; i++) {
+        /* connection gnd pins as the first operand of the subtraction */
+        add_input_pin_to_node(subtraction,
+                              get_zero_pin(netlist),
+                              i);
+        /* remapping the neg input as the seconf operand of the subtraction */
+        remap_pin_to_new_node(node->input_pins[i],
+                              subtraction,
+                              i + width);
+        
+        /* remapping the neg output pins to the subtraction output pins*/
+        remap_pin_to_new_node(node->output_pins[i],
+                              subtraction,
+                              i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+}
 
 /**
  * (function: make_selector_as_first_port)

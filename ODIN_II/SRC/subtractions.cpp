@@ -235,6 +235,7 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
             if (sizea > 1) {
                 for (i = 1; i < aa; i++) {
                     ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
+                    ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - 1]->mapping;
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
@@ -244,6 +245,7 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
         } else {
             for (i = 0; i < aa; i++) {
                 ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
+                ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - 1]->mapping;
                 ptr->input_pins[i]->node = ptr;
                 ptr->input_pins[i]->pin_node_idx = i;
             }
@@ -257,6 +259,7 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
                 if (sizea > 1) {
                     for (i = 1; i < sizea; i++) {
                         ptr->input_pins[i] = node->input_pins[i + index * sizea - 1];
+                        ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - 1]->mapping;
                         ptr->input_pins[i]->node = ptr;
                         ptr->input_pins[i]->pin_node_idx = i;
                     }
@@ -264,6 +267,7 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
             } else {
                 for (i = 0; i < current_sizea; i++) {
                     ptr->input_pins[i] = node->input_pins[i];
+                    ptr->input_pins[i]->mapping = node->input_pins[i]->mapping;
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
@@ -271,14 +275,14 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
         } else {
             if (flag == 0) {
                 for (i = 0; i < sizea; i++) {
-                    ptr->input_pins[i] = node->input_pins[i + index * sizea - offset];
+                    ptr->input_pins[i]->mapping = node->input_pins[i + index * sizea - offset]->mapping;
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
             } else {
                 num = node->input_port_sizes[0];
                 for (i = 0; i < current_sizea; i++) {
-                    ptr->input_pins[i] = node->input_pins[i + num - current_sizea];
+                    ptr->input_pins[i]->mapping = node->input_pins[i + num - current_sizea]->mapping;
                     ptr->input_pins[i]->node = ptr;
                     ptr->input_pins[i]->pin_node_idx = i;
                 }
