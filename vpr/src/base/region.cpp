@@ -35,8 +35,7 @@ bool Region::locked() {
 }
 
 bool Region::empty() {
-    return region_bounds.xmax() < region_bounds.xmin() || region_bounds.ymax() < region_bounds.ymin() ||
-    	   (region_bounds.xmin() == -1 && region_bounds.ymin() == -1 && region_bounds.xmax() == -1 && region_bounds.ymax() == -1);
+    return region_bounds.xmax() < region_bounds.xmin() || region_bounds.ymax() < region_bounds.ymin() || (region_bounds.xmin() == -1 && region_bounds.ymin() == -1 && region_bounds.xmax() == -1 && region_bounds.ymax() == -1);
 }
 
 bool Region::is_loc_in_reg(t_pl_loc loc) {
