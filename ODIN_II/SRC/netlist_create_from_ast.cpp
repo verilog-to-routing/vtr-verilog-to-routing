@@ -3715,7 +3715,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
         if (op->children[1]->type != NUMBERS) {
             /* to keep the record of first input signedness */
             operation_node->attributes->port_a_signed = op->children[0]->types.variable.signedness;
-            
+
             for (int k = 0; k < list_size; k++) {
                 /* allocate the pins needed */
                 allocate_more_input_pins(operation_node, input_port_width);

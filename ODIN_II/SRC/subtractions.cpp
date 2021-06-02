@@ -39,8 +39,7 @@
 
 using vtr::t_linked_vptr;
 
-    nnode_t** not_node;
-
+nnode_t** not_node;
 
 t_linked_vptr* sub_list = NULL;
 t_linked_vptr* sub_chain_list = NULL;
@@ -348,12 +347,11 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
         oassert(nodeo->input_port_sizes[0] == b);
     }
 
-    
     /* free noeo input pins mapping since there is no need in the future and cause mem laeak */
     for (i = 0; i < nodeo->num_input_pins; i++) {
         vtr::free(nodeo->input_pins[i]->mapping);
     }
-    
+
     node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (count));
     not_node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (b));
 
@@ -589,12 +587,11 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
 =======
     for (i = 0; i < nodeo->num_input_pins; i++) {
         nodeo->input_pins[i] = NULL;
-    }    
+    }
     for (i = 0; i < nodeo->num_output_pins; i++) {
         npin_t* output_pin = nodeo->output_pins[i];
 
         if (output_pin && output_pin->node) {
-            
             /* for now we just pass the signals directly through */
             npin_t* zero_pin = get_zero_pin(netlist);
             int idx_2_buffer = zero_pin->pin_net_idx;
@@ -615,7 +612,7 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
 
             nodeo->output_pins[i] = NULL;
         }
-    }   
+    }
     free_nnode(nodeo);
 >>>>>>> [Bug]: Fixing mem leaks related to subtraction circuit change
 

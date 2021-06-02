@@ -49,11 +49,13 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
 
 void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* netlist);
 
-static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static nnode_t* resolve_add_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
 static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
 static void resolve_neg_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void make_selector_as_first_port(nnode_t* node);
 static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
@@ -176,6 +178,17 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
  *--------------------------------------------------------------------*/
 void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlist) {
     switch (node->type) {
+        case SL:
+        case SR:
+        case ASL:
+        case ASR: {
+            /**
+             * resolving the shift nodes by making
+             * the input port sizes the same
+            */
+            resolve_shift_node(node, traverse_number, netlist);
+            break;
+        }
         case LOGICAL_OR:
         case LOGICAL_AND:
         case LOGICAL_NOT:
@@ -191,26 +204,68 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_logical_node(node, traverse_number, netlist);
             break;
         }
+        case CASE_EQUAL: {
+            /**
+             * resolving case equal node using xor and and gates
+            */
+            resolve_case_equal_node(node, traverse_number, netlist);
+            break;
+        }
+        case CASE_NOT_EQUAL: {
+            /**
+             * resolving case not equal node by putting not gate 
+             * after case equal output node
+            */
+            resolve_case_not_equal_node(node, traverse_number, netlist);
+            break;
+        }
         case ADD: {
             /** 
              * check for missing ports such as carry-in/out in case of 
              * dealing with generated netlist from Yosys blif file.
              */
             if (hard_adders)
-                node = check_block_ports(node, traverse_number, netlist);
+                node = resolve_add_node(node, traverse_number, netlist);
 
             add_list = insert_in_vptr_list(add_list, node);
             break;
         }
+        case NEG: {
+            /**
+             * resolving neg (-A) node by making a minus node with
+             * 0 as the first operand
+             */
+            resolve_neg_node(node, traverse_number, netlist);
+            break;
+        }
         case MINUS: {
             /** 
-             * check for missing ports such as carry-in/out in case of 
-             * dealing with generated netlist from Yosys blif file.
+             * Adding to sub_list for future checking on hard blocks
              */
-            if (hard_adders)
-                node = check_block_ports(node, traverse_number, netlist);
 
             sub_list = insert_in_vptr_list(sub_list, node);
+            break;
+        }
+        case MULTIPLY: {
+            /** 
+             * Adding to mult_list for future checking on hard blocks
+             */
+
+            mult_list = insert_in_vptr_list(mult_list, node);
+            break;
+        }
+        case MODULO: {
+            /**
+             * resolving the modulo node by
+             */
+            resolve_modulo_node(node, traverse_number, netlist);
+            break;
+        }
+        case DIVIDE: {
+            /**
+             * resolving the divide node by
+             */
+            resolve_divide_node(node, traverse_number, netlist);
             break;
         }
         case FF_NODE: {
@@ -219,22 +274,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              * FF nodes with input/output width one 
              */
             transform_to_single_bit_dff_nodes(node, traverse_number, netlist);
-            break;
-        }
-        case NEG: {
-            /**
-             * resolving neg node by make a minus node with
-             * 0 as the first operand
-             */
-            resolve_neg_node(node, traverse_number, netlist);
-            break;
-        }
-        case MULTIPORT_nBIT_MUX: {
-            /**
-             * need to reorder the input pins, so that the 
-             * selector signal comes at the first place
-             */
-            make_selector_as_first_port(node);            
             break;
         }
         case SDFF: {
@@ -284,33 +323,14 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_pmux_node(node, traverse_number, netlist);
             break;
         }
-        case CASE_EQUAL: {
+        case MULTIPORT_nBIT_MUX: {
             /**
-             * resolving case equal node using xor and and gates
-            */
-            resolve_case_equal_node(node, traverse_number, netlist);
+             * need to reorder the input pins, so that the 
+             * selector signal comes at the first place
+             */
+            make_selector_as_first_port(node);            
             break;
         }
-        case CASE_NOT_EQUAL: {
-            /**
-             * resolving case not equal node by putting not gate 
-             * after case equal output node
-            */
-            resolve_case_not_equal_node(node, traverse_number, netlist);
-            break;
-        }
-        case SL:
-        case SR:
-        case ASL:
-        case ASR: {
-            /**
-             * resolving the shift nodes by making
-             * the input port sizes the same
-            */
-            resolve_shift_node(node, traverse_number, netlist);
-            break;
-        }
-        case MULTIPLY:
         case GND_NODE:
         case VCC_NODE:
         case PAD_NODE:
@@ -338,9 +358,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case ADDER_FUNC:
         case CARRY_FUNC:
         case CLOCK_NODE:
-        case DIVIDE:
         case GENERIC:
-        case MODULO:
         default:
             error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;
@@ -349,7 +367,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
 
 /**
  *-------------------------------------------------------------------------------------------
- * (function: check_block_ports )
+ * (function: resolve_add_node )
  * 
  * @brief check for missing ports such as carry-in/out in case of 
  * dealing with generated netlist from other blif files such Yosys.
@@ -358,88 +376,73 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------------------------*/
-static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static nnode_t* resolve_add_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
 
     nnode_t* new_node = NULL;
 
-    if (configuration.coarsen) {
-        switch (node->type) {
-            case ADD: {
-                if (node->num_input_port_sizes == 2) {
-                    int i;
-                    int in_port1_size = node->input_port_sizes[0];
-                    int in_port2_size = node->input_port_sizes[1];
-                    int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
+    if (node->num_input_port_sizes == 2) {
+        int i;
+        int in_port1_size = node->input_port_sizes[0];
+        int in_port2_size = node->input_port_sizes[1];
+        int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
 
-                    new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
-                                               out_port_size,
-                                               node, traverse_mark_number);
+        new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
+                                    out_port_size,
+                                    node, traverse_mark_number);
 
-                    for (i = 0; i < in_port1_size; i++) {
-                        remap_pin_to_new_node(node->input_pins[i],
-                                              new_node,
-                                              i);
-                    }
+        for (i = 0; i < in_port1_size; i++) {
+            remap_pin_to_new_node(node->input_pins[i],
+                                    new_node,
+                                    i);
+        }
 
-                    for (i = 0; i < in_port2_size; i++) {
-                        remap_pin_to_new_node(node->input_pins[i + in_port1_size],
-                                              new_node,
-                                              i + in_port1_size);
-                    }
+        for (i = 0; i < in_port2_size; i++) {
+            remap_pin_to_new_node(node->input_pins[i + in_port1_size],
+                                    new_node,
+                                    i + in_port1_size);
+        }
 
-                    // moving the output pins to the new node
-                    for (i = 0; i < out_port_size; i++) {
-                        if (i < node->num_output_pins) {
-                            remap_pin_to_new_node(node->output_pins[i],
-                                                  new_node,
-                                                  i);
-                        } else {
-                            npin_t* new_pin1 = allocate_npin();
-                            npin_t* new_pin2 = allocate_npin();
-                            nnet_t* new_net = allocate_nnet();
-                            new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
-                            /* hook the output pin into the node */
-                            add_output_pin_to_node(new_node, new_pin1, i);
-                            /* hook up new pin 1 into the new net */
-                            add_driver_pin_to_net(new_net, new_pin1);
-                            /* hook up the new pin 2 to this new net */
-                            add_fanout_pin_to_net(new_net, new_pin2);
-                        }
-                    }
-
-                    /**
-                     * if number of output pins is greater than the max of input pins, 
-                     * here we connect the exceeded pins to the GND 
-                    */
-                    for (i = out_port_size; i < node->num_output_pins; i++) {
-                        /* creating a buf node */
-                        nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
-                        /* adding the GND input pin to the buf node */
-                        add_input_pin_to_node(buf_node,
-                                              get_zero_pin(netlist),
-                                              0);
-                        /* remapping the outpin to buf node */
-                        remap_pin_to_new_node(node->output_pins[i],
-                                              buf_node,
-                                              0);
-                    }
-                }
-
-                free_nnode(node);
-                break;
-            }
-            case MINUS: //fallthrough
-            case MULTIPLY: {
-                new_node = node;
-                break;
-            }
-            default: {
-                error_message(BLIF_ELBORATION, node->loc,
-                              "This should not happen for node(%s) since the check block port function only should have called for add, sub or mult", node->name);
+        // moving the output pins to the new node
+        for (i = 0; i < out_port_size; i++) {
+            if (i < node->num_output_pins) {
+                remap_pin_to_new_node(node->output_pins[i],
+                                        new_node,
+                                        i);
+            } else {
+                npin_t* new_pin1 = allocate_npin();
+                npin_t* new_pin2 = allocate_npin();
+                nnet_t* new_net = allocate_nnet();
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
+                /* hook the output pin into the node */
+                add_output_pin_to_node(new_node, new_pin1, i);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
             }
         }
+
+        /**
+         * if number of output pins is greater than the max of input pins, 
+         * here we connect the exceeded pins to the GND 
+        */
+        for (i = out_port_size; i < node->num_output_pins; i++) {
+            /* creating a buf node */
+            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+            /* adding the GND input pin to the buf node */
+            add_input_pin_to_node(buf_node,
+                                    get_zero_pin(netlist),
+                                    0);
+            /* remapping the outpin to buf node */
+            remap_pin_to_new_node(node->output_pins[i],
+                                    buf_node,
+                                    0);
+        }
     }
+
+    // CLEAN UP
+    free_nnode(node);
 
     return new_node;
 }
@@ -650,6 +653,34 @@ static void resolve_neg_node(nnode_t* node, uintptr_t traverse_mark_number, netl
 
     // CLEAN UP
     free_nnode(node);
+}
+
+/**
+ * (function: resolve_modulo_node)
+ * 
+ * @brief resolving module node by 
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    
+}
+
+/**
+ * (function: resolve_divide_node)
+ * 
+ * @brief resolving divide node by 
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    
 }
 
 /**
