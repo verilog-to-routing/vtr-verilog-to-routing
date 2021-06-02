@@ -1846,6 +1846,10 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (GT): //fallthrough
         case (LTE): //fallthrough
         case (GTE): //fallthrough
+        case (SL): //fallthrough
+        case (SR): //fallthrough
+        case (ASL): //fallthrough
+        case (ASR): //fallthrough
         case (ADD): //fallthrough
         case (PMUX): //fallthrough
         case (MINUS): //fallthrough
@@ -1965,7 +1969,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
     char buffer[READ_BLIF_BUFFER];
     attr_t* attributes = new_node->attributes;
 
-    if (need_sensitivity(yosys_subckt_str[subckt_name])) {
+    if (need_params(yosys_subckt_str[subckt_name])) {
         while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             ptr = vtr::strtok(buffer, TOKENS, file, buffer);
@@ -1978,7 +1982,19 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                     attributes->areset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
                 } else {
                     int sensitivity = atoi(vtr::strtok(NULL, TOKENS, file, buffer));
-                    if (!strcmp(ptr, "CLK_POLARITY")) {
+                    if (!strcmp(ptr, "A_SIGNED")) {
+                        if (sensitivity == 1)
+                            attributes->port_a_signed = SIGNED;
+                        else if (sensitivity == 0)
+                            attributes->port_a_signed = UNSIGNED;
+
+                    } else if (!strcmp(ptr, "B_SIGNED")) {
+                        if (sensitivity == 1)
+                            attributes->port_b_signed = SIGNED;
+                        else if (sensitivity == 0)
+                            attributes->port_b_signed = UNSIGNED;
+
+                    } else if (!strcmp(ptr, "CLK_POLARITY")) {
                         if (sensitivity == 1)
                             attributes->clk_edge_type = RISING_EDGE_SENSITIVITY;
                         else if (sensitivity == 0)
@@ -2029,16 +2045,20 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
 
 /**
  *---------------------------------------------------------------------------------------------
- * (function: need_sensitivity)
+ * (function: need_params)
  * 
  * @brief specify whether a type needs clock sensitivity or not
  * 
  * @param type node type
  * -------------------------------------------------------------------------------------------
  */
- bool BLIF::Reader::need_sensitivity(operation_list type) {
+ bool BLIF::Reader::need_params(operation_list type) {
      bool return_value = false;
      switch (type) {
+         case (SL): //fallthrough
+         case (SR): //fallthrough
+         case (ASL): //fallthrough
+         case (ASR): //fallthrough
          case (FF_NODE): //fallthrough
          case (DFFE): //fallthrough
          case (SDFF): //fallthrough

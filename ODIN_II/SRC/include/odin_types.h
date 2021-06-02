@@ -474,6 +474,9 @@ struct attr_t {
 
     char* areset_value; // asynchronous reset value
     char* sreset_value; // synchronous reset value
+
+    operation_list port_a_signed;
+    operation_list port_b_signed;
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version

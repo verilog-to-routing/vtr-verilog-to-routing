@@ -682,6 +682,9 @@ attr_t* init_attribute() {
     attribute->areset_value = NULL;
     attribute->sreset_value = NULL;
 
+    attribute->port_a_signed = UNSIGNED;
+    attribute->port_b_signed = UNSIGNED;
+
     return attribute;
 }
 

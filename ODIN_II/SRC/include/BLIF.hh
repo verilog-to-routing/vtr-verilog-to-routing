@@ -451,14 +451,14 @@ class BLIF {
                 void hard_block_sensitivities(const char* subckt_name, nnode_t* new_node);
                 /**
                  *---------------------------------------------------------------------------------------------
-                 * (function: need_sensitivity)
+                 * (function: need_params)
                  * 
                  * @brief specify whether a type needs clock sensitivity or not
                  * 
                  * @param type node type
                  * -------------------------------------------------------------------------------------------
                  */
-                bool need_sensitivity(operation_list type);
+                bool need_params(operation_list type);
         };
 
         class Writer : public GenericWriter {

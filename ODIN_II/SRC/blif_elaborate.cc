@@ -64,6 +64,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
 static signal_list_t* constant_shift (signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
 static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 /**
  *-------------------------------------------------------------------------
@@ -289,6 +290,17 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_case_not_equal_node(node, traverse_number, netlist);
             break;
         }
+        case SL:
+        case SR:
+        case ASL:
+        case ASR: {
+            /**
+             * resolving the shift nodes by making
+             * the input port sizes the same
+            */
+            resolve_shift_node(node, traverse_number, netlist);
+            break;
+        }
         case MULTIPLY:
         case GND_NODE:
         case VCC_NODE:
@@ -312,10 +324,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case MUX_2:
         case MULTI_PORT_MUX: 
-        case SL:
-        case ASL:
-        case SR:
-        case ASR:
         case MEMORY:
         case HARD_IP:
         case ADDER_FUNC:
@@ -2195,4 +2203,100 @@ static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_ma
     add_fanout_pin_to_net(new_net_not, new_pin2_not);
 
     return (not_node);
+}
+
+/**
+ * (function: resolve_case_not_equal_node)
+ * 
+ * @brief resolving the shift nodes by making
+ * the input port sizes the same
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /**
+     * (SHIFT ports)
+     * INPUTS
+     *  A: (width_a)
+     *  B: (width_b)
+     * OUTPUT
+     *  Y: width_y
+    */
+    int port_a_size = node->input_port_sizes[0];
+    int port_b_size = node->input_port_sizes[1];
+    int port_y_size = node->output_port_sizes[0];
+
+    /* no change is needed */
+    if (port_a_size == port_b_size)
+        return;
+
+    /* new port size */
+    int max_size = std::max(port_a_size, port_b_size);
+
+    /* creating the new node */
+    nnode_t* new_shift_node = make_2port_gate(node->type, max_size, max_size, port_y_size, node, traverse_mark_number);
+
+    int i;
+    npin_t* extension_pin = NULL;
+    
+    for (i = 0; i < max_size; i++) {
+        /* port a needs to be extended */
+        if (port_a_size < max_size) {
+            /* remapping the a pins + adding extension pin */
+            if (i < port_a_size) {
+                /* need to remap existing pin */
+                remap_pin_to_new_node(node->input_pins[i],
+                                        new_shift_node,
+                                        i);
+            } else {
+                /* need to add extension pin */
+                extension_pin = (node->attributes->port_a_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_a_size - 1]) : get_zero_pin(netlist);
+                add_input_pin_to_node(new_shift_node,
+                                        extension_pin,
+                                        i);
+            }
+
+            /* remapping the b pins untouched */
+            remap_pin_to_new_node(node->input_pins[i + max_size],
+                                    new_shift_node,
+                                    i + max_size);
+            
+
+        } 
+        /* port b needs to be extended */
+        else if (port_b_size < max_size) {
+            /* remapping the a pins untouched */
+            remap_pin_to_new_node(node->input_pins[i],
+                                    new_shift_node,
+                                    i);
+
+            /* remapping the b pins + adding extension pin */
+            if (i < port_b_size) {
+                /* need to remap existing pin */
+                remap_pin_to_new_node(node->input_pins[i + max_size],
+                                        new_shift_node,
+                                        i + max_size);
+            } else {
+                /* need to add extension pin */
+                extension_pin = (node->attributes->port_b_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_b_size - 1 + max_size]) : get_zero_pin(netlist);
+                add_input_pin_to_node(new_shift_node,
+                                        extension_pin,
+                                        i + max_size);
+            }
+        }
+    }
+
+    /* Connecting output pins */
+    for (i = 0; i < port_y_size; i++) {
+        remap_pin_to_new_node(node->output_pins[i],
+                            new_shift_node,
+                            i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
 }

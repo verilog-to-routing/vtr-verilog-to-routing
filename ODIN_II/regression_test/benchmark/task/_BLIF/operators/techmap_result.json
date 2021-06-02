@@ -40,35 +40,63 @@
         "test_name": "operators/binary_equal/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "binary_equal.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$eqx' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 12,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 14
     },
     "operators/binary_equal/no_arch": {
         "test_name": "operators/binary_equal/no_arch",
         "input_blif": "binary_equal.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$eqx' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 12,
+        "latch": 1,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 14
     },
     "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "binary_logical_and.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$logic_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
     },
     "operators/binary_logical_and/no_arch": {
         "test_name": "operators/binary_logical_and/no_arch",
         "input_blif": "binary_logical_and.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$logic_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 9,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 9,
+        "Total Node": 11
     },
     "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -259,18 +287,32 @@
         "test_name": "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "binary_logical_not_equal.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$ne' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
     },
     "operators/binary_logical_not_equal/no_arch": {
         "test_name": "operators/binary_logical_not_equal/no_arch",
         "input_blif": "binary_logical_not_equal.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$ne' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "latch": 1,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 10
     },
     "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -387,18 +429,32 @@
         "test_name": "operators/binary_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "binary_not_equal.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$nex' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 12,
+        "latch": 1,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 14
     },
     "operators/binary_not_equal/no_arch": {
         "test_name": "operators/binary_not_equal/no_arch",
         "input_blif": "binary_not_equal.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$nex' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 12,
+        "latch": 1,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 14
     },
     "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1378,341 +1434,573 @@
         "test_name": "operators/signed_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_asl_indexed/no_arch": {
         "test_name": "operators/signed_variable_asl_indexed/no_arch",
         "input_blif": "signed_variable_asl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_asl_int_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_int_wide/no_arch",
         "input_blif": "signed_variable_asl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_asl_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_ultra_wide/no_arch",
         "input_blif": "signed_variable_asl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_asl_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_wide/no_arch",
         "input_blif": "signed_variable_asl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asl_wire/no_arch": {
         "test_name": "operators/signed_variable_asl_wire/no_arch",
         "input_blif": "signed_variable_asl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_asr_indexed/no_arch": {
         "test_name": "operators/signed_variable_asr_indexed/no_arch",
         "input_blif": "signed_variable_asr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_asr_int_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_int_wide/no_arch",
         "input_blif": "signed_variable_asr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_asr_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_ultra_wide/no_arch",
         "input_blif": "signed_variable_asr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_asr_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_wide/no_arch",
         "input_blif": "signed_variable_asr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_asr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_wire/no_arch": {
         "test_name": "operators/signed_variable_asr_wire/no_arch",
         "input_blif": "signed_variable_asr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_sl_indexed/no_arch": {
         "test_name": "operators/signed_variable_sl_indexed/no_arch",
         "input_blif": "signed_variable_sl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_sl_int_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_int_wide/no_arch",
         "input_blif": "signed_variable_sl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_sl_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_ultra_wide/no_arch",
         "input_blif": "signed_variable_sl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_sl_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_wide/no_arch",
         "input_blif": "signed_variable_sl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sl_wire/no_arch": {
         "test_name": "operators/signed_variable_sl_wire/no_arch",
         "input_blif": "signed_variable_sl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_sr_indexed/no_arch": {
         "test_name": "operators/signed_variable_sr_indexed/no_arch",
         "input_blif": "signed_variable_sr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/signed_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_sr_int_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_int_wide/no_arch",
         "input_blif": "signed_variable_sr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_sr_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_ultra_wide/no_arch",
         "input_blif": "signed_variable_sr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_sr_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_wide/no_arch",
         "input_blif": "signed_variable_sr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "signed_variable_sr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sr_wire/no_arch": {
         "test_name": "operators/signed_variable_sr_wire/no_arch",
         "input_blif": "signed_variable_sr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/specifyBlock/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/specifyBlock/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2903,341 +3191,573 @@
         "test_name": "operators/unsigned_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_asl_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_asl_indexed/no_arch",
         "input_blif": "unsigned_variable_asl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_asl_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_int_wide/no_arch",
         "input_blif": "unsigned_variable_asl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_asl_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/no_arch",
         "input_blif": "unsigned_variable_asl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_asl_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_wide/no_arch",
         "input_blif": "unsigned_variable_asl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asl_wire/no_arch": {
         "test_name": "operators/unsigned_variable_asl_wire/no_arch",
         "input_blif": "unsigned_variable_asl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_asr_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_asr_indexed/no_arch",
         "input_blif": "unsigned_variable_asr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_asr_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_int_wide/no_arch",
         "input_blif": "unsigned_variable_asr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_asr_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/no_arch",
         "input_blif": "unsigned_variable_asr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_asr_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_wide/no_arch",
         "input_blif": "unsigned_variable_asr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_asr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asr_wire/no_arch": {
         "test_name": "operators/unsigned_variable_asr_wire/no_arch",
         "input_blif": "unsigned_variable_asr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sshr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_sl_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_sl_indexed/no_arch",
         "input_blif": "unsigned_variable_sl_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_sl_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_int_wide/no_arch",
         "input_blif": "unsigned_variable_sl_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_sl_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/no_arch",
         "input_blif": "unsigned_variable_sl_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_sl_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_wide/no_arch",
         "input_blif": "unsigned_variable_sl_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sl_wire/no_arch": {
         "test_name": "operators/unsigned_variable_sl_wire/no_arch",
         "input_blif": "unsigned_variable_sl_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shl' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_sr_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_sr_indexed/no_arch",
         "input_blif": "unsigned_variable_sr_indexed.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 8,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 8,
+        "Total Node": 8
     },
     "operators/unsigned_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_sr_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_int_wide/no_arch",
         "input_blif": "unsigned_variable_sr_int_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 37,
+        "Po": 32,
+        "logic element": 3104,
+        "Longest Path": 37,
+        "Average Path": 5,
+        "Estimated LUTs": 3104,
+        "Total Node": 3104
     },
     "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_sr_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/no_arch",
         "input_blif": "unsigned_variable_sr_ultra_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "warnings": [
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
+            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
+        ],
+        "Pi": 72,
+        "Po": 65,
+        "logic element": 12740,
+        "Longest Path": 70,
+        "Average Path": 6,
+        "Estimated LUTs": 12740,
+        "Total Node": 12740
     },
     "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_sr_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_wide/no_arch",
         "input_blif": "unsigned_variable_sr_wide.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 5,
+        "Po": 3,
+        "logic element": 30,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 30,
+        "Total Node": 30
     },
     "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "unsigned_variable_sr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sr_wire/no_arch": {
         "test_name": "operators/unsigned_variable_sr_wire/no_arch",
         "input_blif": "unsigned_variable_sr_wire.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$shr' with matching ports was not found."
-        ]
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "DEFAULT": {
         "test_name": "n/a",

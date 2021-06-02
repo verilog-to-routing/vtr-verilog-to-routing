@@ -1206,8 +1206,6 @@ void instantiate_shift(nnode_t* node, operation_list type, short mark, netlist_t
      *   selector = SHIFT second_input[i]
      */
 
-    oassert(node->related_ast_node->children[1]->type != NUMBERS);
-
     nnode_t*** muxes;
     signal_list_t* input_pins = init_signal_list();
     signal_list_t* output_pins;
@@ -1265,7 +1263,7 @@ void instantiate_shift(nnode_t* node, operation_list type, short mark, netlist_t
             // connect the sign bit of the previous output as extension bits
             int pad_bit = input_port_width - 1;
             for (int j = 0; j < shift_size; j++) {
-                if (node->related_ast_node->children[0]->types.variable.signedness == SIGNED && type == ASR) {
+                if (node->attributes->port_a_signed == SIGNED && type == ASR) {
                     add_input_pin_to_node(muxes[i][j + input_port_width - shift_size],
                                           copy_input_npin(input_pins->pins[pad_bit]),
                                           3);
