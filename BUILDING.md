@@ -11,8 +11,8 @@ CMake provides a portable cross-platform build systems with many useful features
 VTR requires a C++-14 compliant compiler.
 The following compilers are tested with VTR:
 
-* GCC/G++: 5, 6, 7, 8, 9
-* Clang/Clang++: 3.8, 6
+* GCC/G++: 5, 6, 7, 8, 9, 10, 11
+* Clang/Clang++: 6, 7, 10
 
 Other compilers may work but are untested (your milage may vary).
 

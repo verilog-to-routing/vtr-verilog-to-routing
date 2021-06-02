@@ -69,8 +69,13 @@ RUN apt-get install -y \
     gcc-8 \
     g++-9 \
     gcc-9 \
+    g++-10 \
+    gcc-10 \
+    g++-11 \
+    gcc-11 \
     clang-6.0 \
-    clang-8
+    clang-7 \
+    clang-10
 
 # install CMake
 WORKDIR /tmp
