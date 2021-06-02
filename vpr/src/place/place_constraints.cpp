@@ -54,7 +54,7 @@ bool is_macro_constrained(const t_pl_macro& pl_macro) {
 }
 
 /*Returns PartitionRegion of where the head of the macro could go*/
-PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro) {
+PartitionRegion update_macro_pr(const t_pl_macro& pl_macro) {
     PartitionRegion macro_pr;
     bool is_member_constrained = false;
     int num_constrained_members = 0;
@@ -90,7 +90,7 @@ PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro) {
 
                 modified_reg.set_region_rect(modified_min_pl_loc.x, modified_min_pl_loc.y, modified_max_pl_loc.x, modified_max_pl_loc.y);
                 //check that subtile is not an invalid value before changing, otherwise it just stays -1
-                if (block_regions[i].get_sub_tile() != -1) {
+                if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
                     modified_reg.set_sub_tile(modified_min_pl_loc.sub_tile);
                 }
 
@@ -119,13 +119,15 @@ void constraints_propagation() {
 
     for (auto pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
-            //Update the PartitionRegions of all the clusters in the macro
-            PartitionRegion macro_pr = constrained_macro_locs(pl_macro);
+            /*
+             * Update the PartitionRegion for the head of the macro
+             * based on the constraints of all blocks contained in the macro
+             */
+            PartitionRegion macro_head_pr = update_macro_pr(pl_macro);
 
-            for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-                ClusterBlockId blk_id = pl_macro.members[imember].blk_index;
-                floorplanning_ctx.cluster_constraints[blk_id] = macro_pr;
-            }
+            //Get block id of head macro member and update its PartitionRegion
+            ClusterBlockId blk_id = pl_macro.members[0].blk_index;
+            floorplanning_ctx.cluster_constraints[blk_id] = macro_head_pr;
         }
     }
 }

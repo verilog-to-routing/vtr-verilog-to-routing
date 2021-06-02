@@ -36,7 +36,7 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
 /*
  * Returns region of valid locations for the head of the macro based on floorplan constraints
  */
-PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro);
+PartitionRegion update_macro_pr(const t_pl_macro& pl_macro);
 
 void constraints_propagation();
 
