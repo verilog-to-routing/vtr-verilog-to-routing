@@ -356,8 +356,7 @@ static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number,
 
     if (configuration.coarsen) {
         switch (node->type) {
-            case ADD:
-            case MINUS: {
+            case ADD: {
                 if (node->num_input_port_sizes == 2) {
                     int i;
                     int in_port1_size = node->input_port_sizes[0];
@@ -421,7 +420,11 @@ static nnode_t* check_block_ports(nnode_t* node, uintptr_t traverse_mark_number,
                 free_nnode(node);
                 break;
             }
-            case MULTIPLY:
+            case MINUS: //fallthrough
+            case MULTIPLY: {
+                new_node = node;
+                break;
+            }
             default: {
                 error_message(BLIF_ELBORATION, node->loc,
                               "This should not happen for node(%s) since the check block port function only should have called for add, sub or mult", node->name);
