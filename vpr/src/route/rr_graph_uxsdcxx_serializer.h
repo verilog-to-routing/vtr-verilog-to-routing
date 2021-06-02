@@ -1973,8 +1973,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     // Output for loads, and constant data for writes.
     int* wire_to_rr_ipin_switch_;
     t_chan_width* chan_width_;
-    RRGraphView* rr_graph_;
     t_rr_graph_storage* rr_nodes_;
+    RRGraphView* rr_graph_;
     std::vector<t_rr_switch_inf>* rr_switch_inf_;
     std::vector<t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
