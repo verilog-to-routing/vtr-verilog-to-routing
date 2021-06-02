@@ -34,10 +34,18 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc);
 bool is_macro_constrained(const t_pl_macro& pl_macro);
 
 /*
- * Returns region of valid locations for the head of the macro based on floorplan constraints
+ * Returns PartitionRegion for the head of the macro based on the floorplan constraints
+ * of all blocks in the macro.
  */
 PartitionRegion update_macro_pr(const t_pl_macro& pl_macro);
 
+/*
+ * Updates the floorplan constraints information for all constrained macros.
+ * The head member of each constrained macro is assigned a new PartitionRegion
+ * that is calculated based on the constraints of all the blocks in the macro.
+ * This is done at the start of initial placement to ease floorplan legality checking
+ * while placing macros during initial placement.
+ */
 void constraints_propagation();
 
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
