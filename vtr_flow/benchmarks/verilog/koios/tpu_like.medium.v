@@ -1,3 +1,7 @@
+//////////////////////////////////////////////////////////////////////////////
+// Author: Aman Arora
+//////////////////////////////////////////////////////////////////////////////
+
 `timescale 1ns / 1ps
 
 ///////////////////////////////////
@@ -58,6 +62,7 @@
 //      Logic area (used): 1.72408e+08 MWTAs
 //      Resource usage: 5033 LBs, 26 RAMs, 1072 Multipliers
 //      Runtime (on Intel Xeon E5-2430 2.5GHz with single thread): 12500 sec
+// 3. 22nm architectures generated from COFFE. Example: arch/COFFE_22nm/k6n10LB_mem20K_complexDSP_customSB_22nm*
 
 //////////////////////////////////////
 // Parameters
@@ -287,26 +292,6 @@
 /////////////////////////////////////
 // Matrix multiplication unit
 ////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 2020-09-27 21:12:45.762386
-// Design Name: 
-// Module Name: matmul_32x32_systolic
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 
 module matmul_32x32_systolic(
  clk,
@@ -14174,24 +14159,15 @@ wire [2*`DWIDTH-1:0] mul_out_temp;
 reg [2*`DWIDTH-1:0] mul_out_temp_reg;
 
 always @(posedge clk) begin
-  if (reset) begin
-    a_flopped <= 0;
-    b_flopped <= 0;
-  end else begin
     a_flopped <= a;
     b_flopped <= b;
-  end
 end
 
 //assign mul_out = a * b;
 qmult mult_u1(.i_multiplicand(a_flopped), .i_multiplier(b_flopped), .o_result(mul_out_temp));
 
 always @(posedge clk) begin
-  if (reset) begin
-    mul_out_temp_reg <= 0;
-  end else begin
     mul_out_temp_reg <= mul_out_temp;
-  end
 end
 
 //we just truncate the higher bits of the product
@@ -14199,11 +14175,7 @@ end
 qadd add_u1(.a(out_temp), .b(mul_out_temp_reg), .c(add_out));
 
 always @(posedge clk) begin
-  if (reset) begin
-    out_temp <= 0;
-  end else begin
     out_temp <= add_out;
-  end
 end
 
 //down cast the result
@@ -14638,7 +14610,7 @@ input clk;
 
 `ifdef SIMULATION
 
-reg [7:0] ram[((1<<`AWIDTH)-1):0];
+reg [`DWIDTH-1:0] ram[((1<<`AWIDTH)-1):0];
 reg [31:0] i;
 
 always @(posedge clk)  
