@@ -1,4 +1,4 @@
-## Uses of xlow, xhigh, ylow, yhigh
+# Uses of xlow, xhigh, ylow, yhigh
 
 | Function | Use Scenario | One Usage (Location) | Count |
 | --       | --           | --       | -- |
@@ -14,19 +14,20 @@
 | xlow | Count cblocks | rr_graph_area.cpp:229 | 3 |
 | xlow | Return the segment number (distance along the channel) of the connection box from from_rr_type (CHANX or CHANY) to to_node (IPIN) | rr_graph_util.cpp:21 | 1 |
 | xlow | Check direction going from one node to another| rr_graph_util.cpp:45 | 1 |
-| xlow | Write Coordinates | VprTimingGraphResolver.cpp:345 | 1 |
+| xlow | Write Coordinates | VprTimingGraphResolver.cpp:345 | 1 |  
+  
 <br><br><br>
 
-## Retrieve Physical Tile from device_ctx.grid
-```cpp
-static std::string get_pin_feature (size_t inode) {
-    auto& device_ctx = g_vpr_ctx.device();
+# Some snippets of code
 
+## Retrieve Physical Tile from device_ctx.grid (`test_fasm.cpp:193`)
+```cpp
     // Get tile physical tile and the pin number
-    int ilow = device_ctx.rr_nodes[inode].xlow(); // <----------------------------- Use of xlow()
+    int ilow = device_ctx.rr_nodes[inode].xlow(); // Use of xlow()
     int jlow = device_ctx.rr_nodes[inode].ylow();
-    auto physical_tile = device_ctx.grid[ilow][jlow].type;
+    auto physical_tile = device_ctx.grid[ilow][jlow].type; // Accessing Physical Tile
     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+
 
     // Get the sub tile (type, not instance) and index of its pin that matches
     // the node index.
@@ -51,35 +52,10 @@ static std::string get_pin_feature (size_t inode) {
 
 <br><br><br>  
 
-## Obtain length of wire
+## Obtain length of wire (`stats.cpp:313`)
 ```cpp
-while (tptr != nullptr) {
-        inode = tptr->index;
-        curr_type = device_ctx.rr_nodes[inode].type();
-
-        if (curr_type == SINK) { /* Starting a new segment */
-            tptr = tptr->next;   /* Link to existing path - don't add to len. */
-            if (tptr == nullptr)
-                break;
-
-            curr_type = device_ctx.rr_nodes[tptr->index].type();
-        }
-
         else if (curr_type == CHANX || curr_type == CHANY) {
             segments++;
-            length += 1 + device_ctx.rr_nodes[inode].xhigh() - device_ctx.rr_nodes[inode].xlow() // <-- Use of xlow()
+            length += 1 + device_ctx.rr_nodes[inode].xhigh() - device_ctx.rr_nodes[inode].xlow()
                       + device_ctx.rr_nodes[inode].yhigh() - device_ctx.rr_nodes[inode].ylow();
-
-            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
-                bends++;
-        }
-
-        prev_type = curr_type;
-        tptr = tptr->next;
-    }
-
-    *bends_ptr = bends;
-    *len_ptr = length;
-    *segments_ptr = segments;
-}
 ```
