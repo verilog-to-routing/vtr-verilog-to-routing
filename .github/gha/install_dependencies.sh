@@ -35,10 +35,6 @@ sudo apt install -y \
   zip \
   qt5-default \
   clang-format-7 \
-  g++-5 \
-  gcc-5 \
-  g++-6 \
-  gcc-6 \
   g++-7 \
   gcc-7 \
   g++-8 \
