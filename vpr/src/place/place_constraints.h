@@ -37,7 +37,7 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
  * Returns PartitionRegion for the head of the macro based on the floorplan constraints
  * of all blocks in the macro.
  */
-PartitionRegion update_macro_pr(const t_pl_macro& pl_macro);
+PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro);
 
 /*
  * Updates the floorplan constraints information for all constrained macros.

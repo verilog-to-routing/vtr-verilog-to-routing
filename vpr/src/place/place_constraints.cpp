@@ -54,8 +54,8 @@ bool is_macro_constrained(const t_pl_macro& pl_macro) {
 }
 
 /*Returns PartitionRegion of where the head of the macro could go*/
-PartitionRegion update_macro_pr(const t_pl_macro& pl_macro) {
-    PartitionRegion macro_pr;
+PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
+    PartitionRegion macro_head_pr;
     bool is_member_constrained = false;
     int num_constrained_members = 0;
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -98,19 +98,19 @@ PartitionRegion update_macro_pr(const t_pl_macro& pl_macro) {
             }
 
             if (num_constrained_members == 1) {
-                macro_pr = modified_pr;
+                macro_head_pr = modified_pr;
             } else {
-                macro_pr = intersection(macro_pr, modified_pr);
+                macro_head_pr = intersection(macro_head_pr, modified_pr);
             }
         }
     }
 
     //if the intersection is empty, no way to place macro members together, give an error
-    if (macro_pr.empty()) {
+    if (macro_head_pr.empty()) {
         VPR_ERROR(VPR_ERROR_PLACE, " \n Feasible floorplanning constraints could not be calculated for the placement macro.\n");
     }
 
-    return macro_pr;
+    return macro_head_pr;
 }
 
 void constraints_propagation() {
@@ -123,7 +123,7 @@ void constraints_propagation() {
              * Update the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro
              */
-            PartitionRegion macro_head_pr = update_macro_pr(pl_macro);
+            PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro);
 
             //Get block id of head macro member and update its PartitionRegion
             ClusterBlockId blk_id = pl_macro.members[0].blk_index;
