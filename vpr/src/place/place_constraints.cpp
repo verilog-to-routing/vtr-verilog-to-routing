@@ -82,11 +82,11 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
 
                 t_pl_loc min_pl_loc(reg_rect.xmin(), reg_rect.ymin(), block_regions[i].get_sub_tile());
 
-                t_pl_loc modified_min_pl_loc = min_pl_loc + offset;
+                t_pl_loc modified_min_pl_loc = min_pl_loc - offset;
 
                 t_pl_loc max_pl_loc(reg_rect.xmax(), reg_rect.ymax(), block_regions[i].get_sub_tile());
 
-                t_pl_loc modified_max_pl_loc = max_pl_loc + offset;
+                t_pl_loc modified_max_pl_loc = max_pl_loc - offset;
 
                 modified_reg.set_region_rect(modified_min_pl_loc.x, modified_min_pl_loc.y, modified_max_pl_loc.x, modified_max_pl_loc.y);
                 //check that subtile is not an invalid value before changing, otherwise it just stays -1
@@ -113,6 +113,35 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
     return macro_head_pr;
 }
 
+PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset) {
+    std::vector<Region> block_regions = head_pr.get_partition_region();
+    PartitionRegion macro_pr;
+
+    for (unsigned int i = 0; i < block_regions.size(); i++) {
+        Region modified_reg;
+
+        vtr::Rect<int> reg_rect = block_regions[i].get_region_rect();
+
+        t_pl_loc min_pl_loc(reg_rect.xmin(), reg_rect.ymin(), block_regions[i].get_sub_tile());
+
+        t_pl_loc macro_min_pl_loc = min_pl_loc + offset;
+
+        t_pl_loc max_pl_loc(reg_rect.xmax(), reg_rect.ymax(), block_regions[i].get_sub_tile());
+
+        t_pl_loc macro_max_pl_loc = max_pl_loc + offset;
+
+        modified_reg.set_region_rect(macro_min_pl_loc.x, macro_min_pl_loc.y, macro_max_pl_loc.x, macro_max_pl_loc.y);
+        //check that subtile is not an invalid value before changing, otherwise it just stays -1
+        if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
+            modified_reg.set_sub_tile(macro_min_pl_loc.sub_tile);
+        }
+
+        macro_pr.add_to_part_region(modified_reg);
+    }
+
+    return macro_pr;
+}
+
 void constraints_propagation() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
@@ -125,9 +154,19 @@ void constraints_propagation() {
              */
             PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro);
 
-            //Get block id of head macro member and update its PartitionRegion
-            ClusterBlockId blk_id = pl_macro.members[0].blk_index;
-            floorplanning_ctx.cluster_constraints[blk_id] = macro_head_pr;
+            //Update PartitionRegions of all members of the macro
+            for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
+                ClusterBlockId iblk = pl_macro.members[imember].blk_index;
+                auto offset = pl_macro.members[imember].offset;
+
+                //Update head PR
+                if (imember == 0) {
+                    floorplanning_ctx.cluster_constraints[iblk] = macro_head_pr;
+                } else { //Update macro member PR
+                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset);
+                    floorplanning_ctx.cluster_constraints[iblk] = macro_pr;
+                }
+            }
         }
     }
 }

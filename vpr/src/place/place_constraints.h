@@ -40,6 +40,11 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
 PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro);
 
 /*
+ * Update macro member PR
+ */
+PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset);
+
+/*
  * Updates the floorplan constraints information for all constrained macros.
  * The head member of each constrained macro is assigned a new PartitionRegion
  * that is calculated based on the constraints of all the blocks in the macro.
