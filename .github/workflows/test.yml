@@ -31,9 +31,7 @@ jobs:
         BUILD_TYPE: release
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh
 
 
   Format:
@@ -58,9 +56,7 @@ jobs:
     - name: Test
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./dev/${{ matrix.script }}
-        ./.github/travis/setup.sh
 
 
   UniTests:
@@ -80,10 +76,8 @@ jobs:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         ./.github/travis/unittest.sh
-        ./.github/travis/setup.sh
 
 
   Warnings:
@@ -105,9 +99,7 @@ jobs:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh
 
 
   Regression:
@@ -157,10 +149,8 @@ jobs:
         CMAKE_PARAMS: ${{ matrix.params }}
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
-        ./.github/travis/setup.sh
 
 
   Sanitized:
@@ -188,11 +178,9 @@ jobs:
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
-        ./.github/travis/setup.sh
 
   ODINII:
     name: 'ODIN-II Basic Tests'
@@ -212,10 +200,8 @@ jobs:
         BUILD_TYPE: debug
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
-        ./.github/travis/setup.sh
 
 
   Compatibility:
@@ -249,9 +235,7 @@ jobs:
         BUILD_TYPE: ${{ matrix.build }}
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh
 
 
   Coverity:
@@ -282,6 +266,4 @@ jobs:
         _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh
