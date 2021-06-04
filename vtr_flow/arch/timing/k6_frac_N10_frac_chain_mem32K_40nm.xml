@@ -322,7 +322,7 @@
         </pb_type>
         <interconnect>
           <direct name="inpad" input="inpad.inpad" output="io.inpad">
-            <delay_constant max="4.243e-11" min="3.92e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+            "
           </direct>
         </interconnect>
       </mode>
@@ -401,8 +401,8 @@
                         261e-12
                         263e-12
                         398e-12
-							The minimum delay/maximum delay ratio is 0.7395 in QII on Stratix IV. Hence, the minimum delay
-						is 0.7295 * the average of the maximum numbers
+							          The minimum delay/maximum delay ratio is 0.7395 in QII on Stratix IV. Hence, the minimum delay
+						                is 0.7295 * the average of the maximum numbers
                         -->
                     <delay_matrix type="max" in_port="lut5.in" out_port="lut5.out">
                         235e-12

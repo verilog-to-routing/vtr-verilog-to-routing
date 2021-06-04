@@ -38,3 +38,5 @@ with open(args.filename) as TAB:
         for i in range(len(stuff) - 1):
             CSV.write(stuff[i] + ",")
         CSV.write("\n")
+
+CSV.close()
