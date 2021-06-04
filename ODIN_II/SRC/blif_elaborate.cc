@@ -230,14 +230,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             add_list = insert_in_vptr_list(add_list, node);
             break;
         }
-        case NEG: {
-            /**
-             * resolving neg (-A) node by making a minus node with
-             * 0 as the first operand
-             */
-            resolve_neg_node(node, traverse_number, netlist);
-            break;
-        }
         case MINUS: {
             /** 
              * Adding to sub_list for future checking on hard blocks
@@ -544,114 +536,6 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
         netlist->num_ff_nodes++;
     }
 
-    free_nnode(node);
-}
-
-/**
- * (function: remap_input_pins_drivers_based_on_mapping)
- * 
- * @brief make the complete name of a pin using mapping record and node name. 
- * Finding its net, the function would connect the input pin as its driver pin  
- * 
- * @param node pointing to the netlist node 
- */
-/* static void remap_input_pins_drivers_based_on_mapping (nnode_t* node) {
-    int i, j, k;
-    int acc_port_sizes = 0;
-    for (i = 0; i < node->num_input_port_sizes; i++) {
-        for (j = 0; j < node->input_port_sizes[i]; j++) {
-            npin_t* input_pin = node->input_pins[j + acc_port_sizes];
-            npin_t* input_pin_driver_pin = input_pin->net->driver_pins[0];
-            char* net_name = make_full_ref_name(node->name, NULL, NULL, input_pin->mapping, j);
-
-            nnet_t* output_net = (nnet_t*)output_nets_hash->get(net_name);
-
-            if (!output_net)
-                error_message(BLIF_ELBORATION, my_location, "Error: Could not hook up the pin %s: not available.", input_pin->name);
-
-
-            output_net->driver_pins[0]->net = NULL;
-            free_nnode(output_net->driver_pins[0]->node); //[TODO] free related node
-
-            output_net->num_driver_pins = 0;
-            add_driver_pin_to_net(output_net, input_pin_driver_pin);
-            vtr::free(net_name);
-        }
-        acc_port_sizes += node->input_port_sizes[i];
-    }
-
-    acc_port_sizes = 0;
-    for (i = 0; i < node->num_output_port_sizes; i++) {
-        for (j = 0; j < node->output_port_sizes[i]; j++) {
-            npin_t* output_pin = node->output_pins[j + acc_port_sizes];
-            nnet_t* node_output_net = output_pin->net;
-            char* net_name = make_full_ref_name(node->name, NULL, NULL, output_pin->mapping, j);
-
-            // find the new driver and its net
-            nnet_t* mapped_output_net = (nnet_t*)output_nets_hash->get(net_name);
-
-            if (!mapped_output_net)
-                error_message(BLIF_ELBORATION, my_location, "Error: Could not hook up the pin %s: not available.", node_output_net->name);
-            
-            remove_fanout_pins_from_net(mapped_output_net, mapped_output_net->fanout_pins[0], 0);
-            for (k = 0; k < node_output_net->num_fanout_pins; k++) {
-                add_fanout_pin_to_net(mapped_output_net, node_output_net->fanout_pins[k]);
-            }
-            vtr::free(net_name);
-        }
-        acc_port_sizes += node->input_port_sizes[i];
-    }
-} */
-
-/**
- * (function: resolve_neg_node)
- * 
- * @brief resolving neg node by make a minus node with
- * 0 as the first operand
- * 
- * @param node pointing to a logical not node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static void resolve_neg_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-    oassert(node->num_input_port_sizes == 1);
-    oassert(node->num_output_port_sizes == 1);
-
-    /* the width of input and output should be the same */
-    oassert(node->input_port_sizes[0] == node->output_port_sizes[0]);
-
-    /**
-     * (neg ports)
-     * INPUTS
-     *  A: (width_a)
-     * OUTPUT
-     *  Y: width_y
-    */
-    int width = node->input_port_sizes[0];
-
-    /* creating the subtraction node */
-    nnode_t* subtraction = make_2port_gate(MINUS, width, width, width, node, traverse_mark_number);
-    /* add the subtractio node to sub_list for future iteration */
-    sub_list = insert_in_vptr_list(sub_list, subtraction);
-
-    int i;
-    for (i = 0; i < width; i++) {
-        /* connection gnd pins as the first operand of the subtraction */
-        add_input_pin_to_node(subtraction,
-                              get_zero_pin(netlist),
-                              i);
-        /* remapping the neg input as the seconf operand of the subtraction */
-        remap_pin_to_new_node(node->input_pins[i],
-                              subtraction,
-                              i + width);
-        /* remapping the neg output pins to the subtraction output pins*/
-        remap_pin_to_new_node(node->output_pins[i],
-                              subtraction,
-                              i);
-    }
-
-    // CLEAN UP
     free_nnode(node);
 }
 
@@ -1985,92 +1869,6 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
 }
 
 /**
- * (function: constant_shift)
- * 
- * @brief performing constant shift operation on given signal_list
- * 
- * @param input_signals input to be shifted 
- * @param shift_size vonstant shift size
- * @param shift_type shift type: SL, SR, ASL or ASR
- * @param assignment_size width of the output
- * @param netlist pointer to the current netlist file
- */
-static signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist) {
-    signal_list_t* return_list = init_signal_list();
-
-    /* record the size of the shift */
-    int input_width = input_signals->count;
-    int output_width = assignment_size;
-    // int pad_bit = input_width - 1;
-
-    int i;
-    switch (shift_type) {
-        case SL:
-        case ASL: {
-            /* connect ZERO to outputs that don't have inputs connected */
-            for (i = 0; i < shift_size; i++) {
-                if (i < output_width) {
-                    // connect 0 to lower outputs
-                    npin_t* zero_pin = allocate_npin();
-                    add_fanout_pin_to_net(netlist->zero_net, zero_pin);
-
-                    add_pin_to_signal_list(return_list, zero_pin);
-                    zero_pin->node = NULL;
-                }
-            }
-
-            /* connect inputs to outputs */
-            for (i = 0; i < output_width - shift_size; i++) {
-                if (i < input_width) {
-                    // connect higher output pin to lower input pin
-                    add_pin_to_signal_list(return_list, input_signals->pins[i]);
-                    input_signals->pins[i]->node = NULL;
-                } else {
-                    npin_t* extension_pin = get_zero_pin(netlist);
-
-                    add_pin_to_signal_list(return_list, extension_pin);
-                    extension_pin->node = NULL;
-                }
-            }
-            break;
-        }
-        case SR: //fallthrough
-        case ASR: {
-            for (i = shift_size; i < input_width; i++) {
-                // connect higher output pin to lower input pin
-                if (i - shift_size < output_width) {
-                    add_pin_to_signal_list(return_list, input_signals->pins[i]);
-                    input_signals->pins[i]->node = NULL;
-                }
-            }
-
-            /* Extend pad_bit to outputs that don't have inputs connected */
-            for (i = output_width - 1; i >= input_width - shift_size; i--) {
-                npin_t* extension_pin = NULL;
-                // [TODO]: Extra potential feature, check for signedness
-                // if (op->children[0]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
-                //     extension_pin = copy_input_npin(input_signals->pins[pad_bit]);
-                // } else {
-                extension_pin = get_zero_pin(netlist);
-                // }
-
-                add_pin_to_signal_list(return_list, extension_pin);
-                extension_pin->node = NULL;
-            }
-            break;
-        }
-        default:
-            error_message(NETLIST, unknown_location, "%s", "Internal error, operation is not supported by Odin!\n");
-            break;
-    }
-
-    //CLEAN UP
-    free_signal_list(input_signals);
-
-    return return_list;
-}
-
-/**
  * (function: resolve_case_equal_node)
  * 
  * @brief resolving the CASE EQUAL node using XNOR 
@@ -2394,4 +2192,121 @@ static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, ne
 
     // CLEAN UP
     free_nnode(node);
+}
+
+/*******************************************************************************************************
+ ********************************************** [UTILS] ************************************************
+ *******************************************************************************************************/
+/**
+ * (function: constant_shift)
+ * 
+ * @brief performing constant shift operation on given signal_list
+ * 
+ * @param input_signals input to be shifted 
+ * @param shift_size vonstant shift size
+ * @param shift_type shift type: SL, SR, ASL or ASR
+ * @param assignment_size width of the output
+ * @param netlist pointer to the current netlist file
+ */
+static signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist) {
+    signal_list_t* return_list = init_signal_list();
+
+    /* record the size of the shift */
+    int input_width = input_signals->count;
+    int output_width = assignment_size;
+    // int pad_bit = input_width - 1;
+
+    int i;
+    switch (shift_type) {
+        case SL:
+        case ASL: {
+            /* connect ZERO to outputs that don't have inputs connected */
+            for (i = 0; i < shift_size; i++) {
+                if (i < output_width) {
+                    // connect 0 to lower outputs
+                    npin_t* zero_pin = allocate_npin();
+                    add_fanout_pin_to_net(netlist->zero_net, zero_pin);
+
+                    add_pin_to_signal_list(return_list, zero_pin);
+                    zero_pin->node = NULL;
+                }
+            }
+
+            /* connect inputs to outputs */
+            for (i = 0; i < output_width - shift_size; i++) {
+                if (i < input_width) {
+                    // connect higher output pin to lower input pin
+                    add_pin_to_signal_list(return_list, input_signals->pins[i]);
+                    input_signals->pins[i]->node = NULL;
+                } else {
+                    npin_t* extension_pin = get_zero_pin(netlist);
+
+                    add_pin_to_signal_list(return_list, extension_pin);
+                    extension_pin->node = NULL;
+                }
+            }
+            break;
+        }
+        case SR: //fallthrough
+        case ASR: {
+            for (i = shift_size; i < input_width; i++) {
+                // connect higher output pin to lower input pin
+                if (i - shift_size < output_width) {
+                    add_pin_to_signal_list(return_list, input_signals->pins[i]);
+                    input_signals->pins[i]->node = NULL;
+                }
+            }
+
+            /* Extend pad_bit to outputs that don't have inputs connected */
+            for (i = output_width - 1; i >= input_width - shift_size; i--) {
+                npin_t* extension_pin = NULL;
+                // [TODO]: Extra potential feature, check for signedness
+                // if (op->children[0]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
+                //     extension_pin = copy_input_npin(input_signals->pins[pad_bit]);
+                // } else {
+                extension_pin = get_zero_pin(netlist);
+                // }
+
+                add_pin_to_signal_list(return_list, extension_pin);
+                extension_pin->node = NULL;
+            }
+            break;
+        }
+        default:
+            error_message(NETLIST, unknown_location, "%s", "Internal error, operation is not supported by Odin!\n");
+            break;
+    }
+
+    //CLEAN UP
+    free_signal_list(input_signals);
+
+    return return_list;
+}
+
+/**
+ * (function: division)
+ * 
+ * @brief creating division node (A / B)
+ * 
+ * @note this should perfom before partial mapping since
+ * some nodes like minus are not still resolved yet
+ * 
+ * @param netlist pointer to the current netlist file
+ */
+static void division (netlist_t* netlist) {
+    
+}
+
+/**
+ * (function: division_by_constant)
+ * 
+ * @brief performing division by constant (A / 3)
+ * 
+ * @note this should perfom before partial mapping since
+ * some nodes like minus are not still resolved yet
+ * 
+ * @param netlist pointer to the current netlist file
+ */
+static void division_by_constant (netlist_t* netlist) {
+    
 }
