@@ -843,3 +843,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
     }
     return legal;
 }
+
+std::string e_move_result_to_string(e_move_result move_outcome) {
+	std::string move_result_to_string[] = {"Rejected", "Accepted", "Aborted"};
+	return move_result_to_string[move_outcome];
+}

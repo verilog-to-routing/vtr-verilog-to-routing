@@ -39,6 +39,7 @@
 #include "move_utils.h"
 #include "read_place.h"
 #include "place_constraints.h"
+#include "manual_moves.h"
 
 #include "static_move_generator.h"
 #include "simpleRL_move_generator.h"
@@ -256,6 +257,7 @@ static void reset_move_nets(int num_nets_affected);
 static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
                               MoveGenerator& move_generator,
+			      ManualMoveGenerator& manual_move_generator, 
                               SetupTimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
@@ -289,6 +291,7 @@ static float starting_t(const t_annealing_state* state,
                         PlacerSetupSlacks* setup_slacks,
                         SetupTimingInfo* timing_info,
                         MoveGenerator& move_generator,
+			ManualMoveGenerator& manual_move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
@@ -367,6 +370,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  PlacerCriticalities* criticalities,
                                  PlacerSetupSlacks* setup_slacks,
                                  MoveGenerator& move_generator,
+				 ManualMoveGenerator& manual_move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
@@ -448,6 +452,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<MoveGenerator> move_generator;
     std::unique_ptr<MoveGenerator> move_generator2;
+    std::unique_ptr<ManualMoveGenerator> manual_move_generator;
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
 
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
@@ -678,6 +683,7 @@ void try_place(const t_placer_opts& placer_opts,
                          placer_setup_slacks.get(),
                          timing_info.get(),
                          *move_generator,
+			 *manual_move_generator,
                          pin_timing_invalidator.get(),
                          blocks_affected,
                          placer_opts,
@@ -753,6 +759,7 @@ void try_place(const t_placer_opts& placer_opts,
                                  placer_criticalities.get(),
                                  placer_setup_slacks.get(),
                                  *current_move_generator,
+				 *manual_move_generator,
                                  blocks_affected,
                                  timing_info.get(),
                                  placer_opts.place_algorithm,
@@ -820,6 +827,7 @@ void try_place(const t_placer_opts& placer_opts,
                              placer_criticalities.get(),
                              placer_setup_slacks.get(),
                              *current_move_generator,
+			     *manual_move_generator,
                              blocks_affected,
                              timing_info.get(),
                              placer_opts.place_quench_algorithm,
@@ -993,6 +1001,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  PlacerCriticalities* criticalities,
                                  PlacerSetupSlacks* setup_slacks,
                                  MoveGenerator& move_generator,
+				 ManualMoveGenerator& manual_move_generator, 
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
@@ -1011,6 +1020,7 @@ static void placement_inner_loop(const t_annealing_state* state,
         e_move_result swap_result = try_swap(state,
                                              costs,
                                              move_generator,
+					     manual_move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
                                              blocks_affected,
@@ -1144,6 +1154,7 @@ static float starting_t(const t_annealing_state* state,
                         PlacerSetupSlacks* setup_slacks,
                         SetupTimingInfo* timing_info,
                         MoveGenerator& move_generator,
+						ManualMoveGenerator& manual_move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
@@ -1168,6 +1179,7 @@ static float starting_t(const t_annealing_state* state,
         e_move_result swap_result = try_swap(state,
                                              costs,
                                              move_generator,
+											 manual_move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
                                              blocks_affected,
@@ -1260,6 +1272,7 @@ static void reset_move_nets(int num_nets_affected) {
 static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_costs* costs,
                               MoveGenerator& move_generator,
+							  ManualMoveGenerator& manual_move_generator,
                               SetupTimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
@@ -1275,6 +1288,8 @@ static e_move_result try_swap(const t_annealing_state* state,
      * rlim is the range limiter.                                        *
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
+
+    std::cout << "In the try swap function" << std::endl;
 
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
@@ -1295,7 +1310,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     double delta_c = 0;        //Change in cost due to this swap.
     double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
     double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
-
+ 
     /* Allow some fraction of moves to not be restricted by rlim, */
     /* in the hopes of better escaping local minima.              */
     float rlim;
@@ -1305,15 +1320,35 @@ static e_move_result try_swap(const t_annealing_state* state,
         rlim = state->rlim;
     }
 
+#ifndef NO_GRAPHICS
+
+    bool manual_move_flag = false;
+    manual_move_flag = get_manual_move_flag();
+    ManualMovesGlobals* manual_move_global = get_manual_moves_global();
+    
+    if(manual_move_flag) {
+	    draw_manual_moves_window("");
+	    update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+    }
+
+#endif /* NO_GRAPHICS */
+
+    e_create_move create_move_outcome;
+
+    if(manual_move_flag) {
+    	create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+    }
+    else {
     //Generate a new move (perturbation) used to explore the space of possible placements
-    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+    	create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+    }
 
     ++move_type_stat.num_moves[(int)move_type];
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
     e_move_result move_outcome = ABORTED;
 
-    if (create_move_outcome == e_create_move::ABORT) {
+    if (create_move_outcome == e_create_move::ABORT || (manual_move_flag && !manual_move_global->manual_move_info.valid_input)) {
         LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
                                std::numeric_limits<float>::quiet_NaN(),
                                std::numeric_limits<float>::quiet_NaN(),
@@ -1397,6 +1432,33 @@ static e_move_result try_swap(const t_annealing_state* state,
 
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, state->t);
+
+        if(manual_move_flag && manual_move_global->manual_move_info.valid_input) {
+
+        	std::cout << "Manual move is valid" << std::endl;
+        	manual_move_global->manual_move_info.delta_cost = delta_c;
+        	manual_move_global->manual_move_info.delta_timing = timing_delta_c;
+        	manual_move_global->manual_move_info.delta_bounding_box = bb_delta_c;
+        	manual_move_global->manual_move_info.placer_move_outcome = move_outcome;
+
+        	cost_summary();
+        	update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+
+        	std::cout << "After cost window summary" << std::endl;
+        	move_outcome = manual_move_global->manual_move_info.user_move_outcome;
+        	std::cout << "Move outcome after summary window: " << manual_move_global->manual_move_info.user_move_outcome << std::endl;
+        	std::cout << "Move outcome after assigned: " << move_outcome << std::endl;
+
+        	/*//Highlighting the block in the new position.
+        	ClusterBlockId clb_index = ClusterBlockId(manual_move_global->manual_move_info.blockID);
+        	//Unselects all blocks first
+        	deselect_all();
+        	//Highlight block in the new position requested by user
+        	auto& cluster_ctx = g_vpr_ctx.clustering();
+        	draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);*/
+
+
+        }
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1490,7 +1552,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
-    stop_placement_and_check_breakpoints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+     stop_placement_and_check_breakpoints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 #    endif
 #endif
 
@@ -2903,3 +2965,21 @@ static void calculate_reward_and_process_outcome(const t_placer_opts& placer_opt
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven());
 }
+
+void manual_move_info_from_user_and_open_window(ManualMovesInfo* manual_move_info) {
+	draw_manual_moves_window("");
+	update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+}
+
+void update_manual_move_cost_and_open_window(ManualMovesInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double delta_bb, double delta_t) {
+	manual_move_info->delta_cost = delta_c;
+	manual_move_info->delta_bounding_box = delta_bb;
+	manual_move_info->delta_timing = delta_t;
+	manual_move_info->placer_move_outcome = move_outcome;
+	cost_summary();
+	update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+	move_outcome = manual_move_info->user_move_outcome;
+	
+	//Have to add user placement outcome after if move is accepted
+}
+

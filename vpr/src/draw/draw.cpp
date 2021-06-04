@@ -47,6 +47,7 @@
 #include "physical_types.h"
 #include "route_common.h"
 #include "breakpoint.h"
+#include "manual_moves.h"
 
 #include "move_utils.h"
 
@@ -163,8 +164,6 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
 static void manual_moves_callback(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/, ezgl::application* app);
 static void run_graphics_commands(std::string commands);
 
-bool get_manual_move_flag();
-
 /************************** File Scope Variables ****************************/
 
 //The arrow head position for turning/straight-thru connections in a switch box
@@ -209,6 +208,7 @@ ezgl::application::settings settings("/ezgl/main.ui",
                                      setup_default_ezgl_callbacks);
 ezgl::application application(settings);
 
+//bool mm_window = false;
 bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0, 0);
@@ -4063,9 +4063,16 @@ static void highlight_blocks(double x, double y) {
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
         sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
     }  
-	
-    application.update_message(msg);
 
+    //If manual moves is activated, then user can select block from the grid.
+    ManualMovesGlobals* manual_move_global = get_manual_moves_global();
+    if(get_manual_move_flag()) {
+	   	    if(!manual_move_global->mm_window_is_open) {
+		draw_manual_moves_window(std::to_string(size_t(clb_index)));
+	    }
+    }
+    
+    application.update_message(msg);
     application.refresh_drawing();
 
 }
@@ -4118,17 +4125,17 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
 
     // Connect Manual Moves checkbox
-    GObject* manual_moves = app->get_object("manualMove");
-    g_signal_connect(manual_moves, "toggled", G_CALLBACK(manual_moves_callback), app);
+    //GObject* manual_moves = app->get_object("manualMove");
+    //g_signal_connect(manual_moves, "toggled", G_CALLBACK(manual_moves_callback), app);
 }
 
 //Toggle function for manual moves
-static void manual_moves_callback(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/, ezgl::application* app) {
-   if(gtk_toggle_button_get_active((GtkToggleButton*)widget)) {
+//static void manual_moves_callback(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/, ezgl::application* app) {
+  /* if(gtk_toggle_button_get_active((GtkToggleButton*)widget)) {
       	//std::cout << "Checkbox was pressed" << std::endl;  
-	draw_manual_moves_window(app);
+	//draw_manual_moves_window("");
     }
-}
+}*/
 
 // Callback function for Block Outline checkbox
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
@@ -4190,7 +4197,7 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
     application.refresh_drawing();
 }
 
-bool get_manual_move_flag() {
+bool get_manual_move_flag() {	
 	GObject* manual_moves = application.get_object("manualMove");
 	return gtk_toggle_button_get_active((GtkToggleButton*)manual_moves);
 }
