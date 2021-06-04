@@ -1,6 +1,8 @@
 FROM gitpod/workspace-full:latest
 
+# get the permission
 USER root
+
 # Install util tools.
 RUN apt-get update \
  && apt-get install -y \
@@ -31,6 +33,11 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+# set out workspace
+ENV VTR_ROOT=/workspace/vtr-verilog-to-routing
+WORKDIR ${VTR_ROOT}
+
+CMD [ "/bin/bash" ]
 
 # Give back control
 USER root
