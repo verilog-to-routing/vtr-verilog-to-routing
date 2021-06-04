@@ -135,7 +135,7 @@ target_link_libraries(vpr libvpr)
 #Supress IPO link warnings if IPO is enabled
 get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
 if (VPR_USES_IPO)
-    set_target_properties(vpr PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+    set_property(TARGET vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
 
@@ -190,6 +190,8 @@ if (VTR_ENABLE_STRICT_COMPILE)
     set(VPR_STRICT_COMPILE_FLAGS_TO_CHECK
         #GCC-like
         "-Werror"
+        # due to the pointer hackery in timing_driven_route_structs and BinaryHeap.heap_
+        "-Wno-error=free-nonheap-object"
         )
 
     foreach(flag ${VPR_STRICT_COMPILE_FLAGS_TO_CHECK})
@@ -263,7 +265,7 @@ target_link_libraries(test_vpr
 #Supress IPO link warnings if IPO is enabled
 get_target_property(TEST_VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
 if (TEST_VPR_USES_IPO)
-    set_target_properties(test_vpr PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+    set_property(TARGET test_vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
 add_test(NAME test_vpr

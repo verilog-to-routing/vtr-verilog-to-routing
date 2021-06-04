@@ -7,6 +7,7 @@ allowing the user to run one or more VTR tasks. """
 from pathlib import Path
 from pathlib import PurePath
 import sys
+import os
 import argparse
 import textwrap
 import subprocess
@@ -32,7 +33,6 @@ from vtr import (
     parse_tasks,
     find_task_dir,
     shorten_task_names,
-    find_longest_task_description,
     check_golden_results_for_tasks,
     create_golden_results_for_tasks,
     create_jobs,
@@ -46,7 +46,7 @@ from vtr.error import VtrError, InspectError, CommandError
 
 
 def vtr_command_argparser(prog=None):
-    """ Argument parse for run_vtr_task """
+    """Argument parse for run_vtr_task"""
 
     description = textwrap.dedent(
         """
@@ -122,7 +122,10 @@ def vtr_command_argparser(prog=None):
         "-system",
         choices=["local", "scripts"],
         default="local",
-        help="What system to run the tasks on.",
+        help="""What system to run the tasks on:
+             (local) runs the flow invocations on the local machine,
+             (scripts) Prints out all the generated script files 
+             (instead of calling them to run all the flow invocations).""",
     )
 
     parser.add_argument(
@@ -204,7 +207,7 @@ def vtr_command_argparser(prog=None):
 
 
 def vtr_command_main(arg_list, prog=None):
-    """ Run the vtr tasks given and the tasks in the lists given """
+    """Run the vtr tasks given and the tasks in the lists given"""
     # Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
 
@@ -224,7 +227,6 @@ def vtr_command_main(arg_list, prog=None):
 
         config_files = [find_task_config_file(task_name) for task_name in task_names]
         configs = []
-        longest_name = 0  # longest task name for use in creating prettier output
         common_task_prefix = None  # common task prefix to shorten task names
         for config_file in config_files:
             config = load_task_config(config_file)
@@ -236,14 +238,9 @@ def vtr_command_main(arg_list, prog=None):
                     None, common_task_prefix, config.task_name
                 ).find_longest_match(0, len(common_task_prefix), 0, len(config.task_name))
                 common_task_prefix = common_task_prefix[match.a : match.a + match.size]
-            if len(config.task_name) > longest_name:
-                longest_name = len(config.task_name)
         if args.short_task_names:
             configs = shorten_task_names(configs, common_task_prefix)
-        longest_arch_circuit = find_longest_task_description(
-            configs
-        )  # find longest task description for use in creating prettier output
-        num_failed = run_tasks(args, configs, longest_name, longest_arch_circuit)
+        num_failed = run_tasks(args, configs)
 
     except CommandError as exception:
         print("Error: {msg}".format(msg=exception.msg))
@@ -264,8 +261,6 @@ def vtr_command_main(arg_list, prog=None):
 def run_tasks(
     args,
     configs,
-    longest_name,
-    longest_arch_circuit,
 ):
     """
     Runs the specified set of tasks (configs)
@@ -273,7 +268,7 @@ def run_tasks(
     start = datetime.now()
     num_failed = 0
 
-    jobs = create_jobs(args, configs, longest_name, longest_arch_circuit)
+    jobs = create_jobs(args, configs)
 
     run_dirs = {}
     for config in configs:
@@ -307,10 +302,13 @@ def run_tasks(
         if args.calc_geomean:
             summarize_qor(configs)
             calc_geomean(args, configs)
+    # This option generates a shell script (vtr_flow.sh) for each architecture,
+    # circuit, script_params
+    # The generated can be used to be submitted on a large cluster
     elif args.system == "scripts":
         for _, value in run_dirs.items():
             Path(value).mkdir(parents=True)
-        run_scripts = create_run_scripts(args, jobs, run_dirs)
+        run_scripts = create_run_scripts(jobs, run_dirs)
         for script in run_scripts:
             print(script)
     else:
@@ -348,24 +346,26 @@ def run_parallel(args, queued_jobs, run_dirs):
     return num_failed
 
 
-def create_run_scripts(args, jobs, run_dirs):
-    """ Create the bash script files for each job run """
+def create_run_scripts(jobs, run_dirs):
+    """Create the bash script files for each job run"""
     run_script_files = []
     for job in jobs:
-        run_script_files += [create_run_script(args, job, job.work_dir(run_dirs[job.task_name()]))]
+        run_script_files += [create_run_script(job, job.work_dir(run_dirs[job.task_name()]))]
     return run_script_files
 
 
-def create_run_script(args, job, work_dir):
-    """ Create the bash run script for a particular job """
+def create_run_script(job, work_dir):
+    """Create the bash run script for a particular job"""
 
     runtime_estimate = ret_expected_runtime(job, work_dir)
     memory_estimate = ret_expected_memory(job, work_dir)
-    if runtime_estimate < 0:
-        runtime_estimate = 0
 
-    if memory_estimate < 0:
-        memory_estimate = 0
+    runtime_estimate = max(runtime_estimate, 0)
+    memory_estimate = max(memory_estimate, 0)
+
+    separator = " "
+    command_options_list = job.run_command()
+    command_options = separator.join(command_options_list)
 
     human_readable_runtime_est = format_human_readable_time(runtime_estimate)
     human_readable_memory_est = format_human_readable_memory(memory_estimate)
@@ -382,34 +382,43 @@ def create_run_script(args, job, work_dir):
                     estimated_memory=memory_estimate,
                     human_readable_time=human_readable_runtime_est,
                     human_readable_memory=human_readable_memory_est,
-                    script=args.script,
-                    command=job.run_command(),
+                    script=str(paths.run_vtr_flow_path),
+                    command=command_options,
                 ),
                 file=out_file,
                 end="",
             )
+
+    os.system("chmod +x " + str(run_script_file))
     return str(run_script_file)
 
 
 def ret_expected_runtime(job, work_dir):
-    """ Returns the expected run-time (in seconds) of the specified run, or -1 if unkown """
+    """Returns the expected run-time (in seconds) of the specified run, or -1 if unkown"""
     seconds = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
     )
+
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
+    if metrics is None:
+        metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
+
     if "vtr_flow_elapsed_time" in metrics:
         seconds = float(metrics["vtr_flow_elapsed_time"])
     return seconds
 
 
 def ret_expected_memory(job, work_dir):
-    """ Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown """
+    """Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown"""
     memory_kib = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
     )
     metrics = golden_results.metrics(job.arch(), job.circuit(), job.script_params())
+    if metrics is None:
+        metrics = golden_results.metrics(job.arch(), job.circuit(), "common")
+
     for metric in ["max_odin_mem", "max_abc_mem", "max_ace_mem", "max_vpr_mem"]:
         if metric in metrics and int(metrics[metric]) > memory_kib:
             memory_kib = int(metrics[metric])
@@ -417,7 +426,7 @@ def ret_expected_memory(job, work_dir):
 
 
 def format_human_readable_time(seconds):
-    """ format the number of seconds given as a human readable value """
+    """format the number of seconds given as a human readable value"""
     if seconds < 60:
         return "%.0f seconds" % seconds
     if seconds < 60 * 60:
@@ -428,7 +437,7 @@ def format_human_readable_time(seconds):
 
 
 def format_human_readable_memory(num_bytes):
-    """ format the number of bytes given as a human readable value """
+    """format the number of bytes given as a human readable value"""
     if num_bytes < 1024 ** 3:
         return "%.2f MiB" % (num_bytes / (1024 ** 2))
     return "%.2f GiB" % (num_bytes / (1024 ** 3))

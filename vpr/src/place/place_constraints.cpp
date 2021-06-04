@@ -18,8 +18,8 @@ int check_placement_floorplanning() {
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto& loc = place_ctx.block_locs[blk_id].loc;
-        if (!cluster_floorplanning_check(blk_id, loc)) {
+        auto loc = place_ctx.block_locs[blk_id].loc;
+        if (!cluster_floorplanning_legal(blk_id, loc)) {
             error++;
             VTR_LOG_ERROR("Block %zu is not in correct floorplanning region.\n", size_t(blk_id));
         }
@@ -36,7 +36,7 @@ bool is_cluster_constrained(ClusterBlockId blk_id) {
     return (!pr.empty());
 }
 
-bool is_macro_constrained(t_pl_macro pl_macro) {
+bool is_macro_constrained(const t_pl_macro& pl_macro) {
     bool is_macro_constrained = false;
     bool is_member_constrained = false;
 
@@ -54,7 +54,7 @@ bool is_macro_constrained(t_pl_macro pl_macro) {
 }
 
 /*Returns PartitionRegion of where the head of the macro could go*/
-PartitionRegion constrained_macro_locs(t_pl_macro pl_macro) {
+PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro) {
     PartitionRegion macro_pr;
     bool is_member_constrained = false;
     int num_constrained_members = 0;
@@ -114,7 +114,11 @@ PartitionRegion constrained_macro_locs(t_pl_macro pl_macro) {
 }
 
 /*returns true if location is compatible with floorplanning constraints, false if not*/
-bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
+/*
+ * Even if the block passed in is from a macro, it will work because of the constraints
+ * propagation that was done during initial placement.
+ */
+bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     bool floorplanning_good = false;
@@ -125,8 +129,7 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
         //not constrained so will not have floorplanning issues
         floorplanning_good = true;
     } else {
-        PartitionRegion pr;
-        pr = floorplanning_ctx.cluster_constraints[blk_id];
+        PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
         bool in_pr = pr.is_loc_in_part_reg(loc);
 
         //if location is in partitionregion, floorplanning is respected
@@ -134,10 +137,46 @@ bool cluster_floorplanning_check(ClusterBlockId blk_id, t_pl_loc loc) {
         if (in_pr) {
             floorplanning_good = true;
         } else {
+#ifdef VERBOSE
             VTR_LOG("Block %zu did not pass cluster_floorplanning_check \n", size_t(blk_id));
             VTR_LOG("Loc is x: %d, y: %d, subtile: %d \n", loc.x, loc.y, loc.sub_tile);
+#endif
         }
     }
 
     return floorplanning_good;
+}
+
+void load_cluster_constraints() {
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    ClusterAtomsLookup atoms_lookup;
+
+    floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
+
+    for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
+        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
+        PartitionRegion empty_pr;
+        floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
+
+        //if there are any constrainted atoms in the cluster,
+        //we update the cluster's PartitionRegion
+        for (unsigned int i = 0; i < atoms.size(); i++) {
+            PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atoms[i]);
+
+            if (partid != PartitionId::INVALID()) {
+                PartitionRegion pr = floorplanning_ctx.constraints.get_partition_pr(partid);
+                if (floorplanning_ctx.cluster_constraints[cluster_id].empty()) {
+                    floorplanning_ctx.cluster_constraints[cluster_id] = pr;
+                } else {
+                    PartitionRegion intersect_pr = intersection(pr, floorplanning_ctx.cluster_constraints[cluster_id]);
+                    if (intersect_pr.empty()) {
+                        VTR_LOG_ERROR("Cluster block %zu has atoms with incompatible floorplan constraints.\n", size_t(cluster_id));
+                    } else {
+                        floorplanning_ctx.cluster_constraints[cluster_id] = intersect_pr;
+                    }
+                }
+            }
+        }
+    }
 }

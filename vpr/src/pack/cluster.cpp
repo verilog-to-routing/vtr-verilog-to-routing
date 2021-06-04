@@ -1726,17 +1726,15 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
                                                                  PartitionRegion& temp_cluster_pr,
                                                                  bool& cluster_pr_needs_update) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
 
     /*check if the atom can go in the cluster by checking if the atom and cluster have intersecting PartitionRegions*/
 
     //get partition that atom belongs to
     PartitionId partid;
-    partid = ctx_constraints.get_atom_partition(blk_id);
+    partid = floorplanning_ctx.constraints.get_atom_partition(blk_id);
 
     PartitionRegion atom_pr;
     PartitionRegion cluster_pr;
-    PartitionRegion intersect_pr;
 
     //if the atom does not belong to a partition, it can be put in the cluster
     //regardless of what the cluster's PartitionRegion is because it has no constraints
@@ -1748,7 +1746,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
         return BLK_PASSED;
     } else {
         //get pr of that partition
-        atom_pr = ctx_constraints.get_partition_pr(partid);
+        atom_pr = floorplanning_ctx.constraints.get_partition_pr(partid);
 
         //intersect it with the pr of the current cluster
         cluster_pr = floorplanning_ctx.cluster_constraints[clb_index];
@@ -1761,10 +1759,12 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
             }
             return BLK_PASSED;
         } else {
-            intersect_pr = intersection(cluster_pr, atom_pr);
+            //update cluster_pr with the intersection of the cluster's PartitionRegion
+            //and the atom's PartitionRegion
+            update_cluster_part_reg(cluster_pr, atom_pr);
         }
 
-        if (intersect_pr.empty() == true) {
+        if (cluster_pr.empty() == true) {
             if (verbosity > 3) {
                 VTR_LOG("\t\t\t Intersect: Atom block %d failed floorplanning check for cluster %d \n", blk_id, clb_index);
             }
@@ -1772,7 +1772,7 @@ static enum e_block_pack_status atom_cluster_floorplanning_check(const AtomBlock
             return BLK_FAILED_FLOORPLANNING;
         } else {
             //update the cluster's PartitionRegion with the intersecting PartitionRegion
-            temp_cluster_pr = intersect_pr;
+            temp_cluster_pr = cluster_pr;
             cluster_pr_needs_update = true;
             if (verbosity > 3) {
                 VTR_LOG("\t\t\t Intersect: Atom block %d passed cluster %d, cluster PR was updated with intersection result \n", blk_id, clb_index);
@@ -2228,8 +2228,6 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-
-    VprConstraints ctx_constraints = floorplanning_ctx.constraints;
 
     /*Cluster's PartitionRegion is empty initially, meaning it has no floorplanning constraints*/
     PartitionRegion empty_pr;
