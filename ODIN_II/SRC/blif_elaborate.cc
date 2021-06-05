@@ -33,6 +33,7 @@
 #include "netlist_utils.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
+#include "simulate_blif.h"
 
 #include "blif_elaborate.hh"
 #include "multipliers.h"
@@ -49,24 +50,35 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
 
 void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* netlist);
 
+static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
-static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
 static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void make_selector_as_first_port(nnode_t* node);
+static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+
+/*******************************************************************************************************
+ ********************************************** [UTILS] ************************************************
+ *******************************************************************************************************/
+static void look_for_clocks(netlist_t* netlist);
 static signal_list_t* constant_shift (signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
-static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist);
+static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals, netlist_t* netlist);
+static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void make_division_by_constant_node (netlist_t* netlist);
+static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signal_list_t* output_signal_list);
+static signal_list_t* CR_output_signal_init ();
 
 /**
  *-------------------------------------------------------------------------
@@ -123,6 +135,9 @@ void depth_first_traversal_to_blif_elaborate(short marker_value, netlist_t* netl
     depth_first_traverse_blif_elaborate(netlist->gnd_node, marker_value, netlist);
     depth_first_traverse_blif_elaborate(netlist->vcc_node, marker_value, netlist);
     depth_first_traverse_blif_elaborate(netlist->pad_node, marker_value, netlist);
+
+    /* look for clock nodes */
+    look_for_clocks(netlist);
 }
 
 /**
@@ -243,9 +258,9 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             /** 
              * Adding to mult_list for future checking on hard blocks
              */
-            if (hard_adders)
+            if (hard_multipliers)
                 node = resolve_arithmetic_node(node, traverse_number, netlist);
-                
+
             mult_list = insert_in_vptr_list(mult_list, node);
             break;
         }
@@ -265,10 +280,9 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case FF_NODE: {
             /**
-             * split the dff node read from yosys blif to
-             * FF nodes with input/output width one 
+             * resolving the dff node
              */
-            transform_to_single_bit_dff_nodes(node, traverse_number, netlist);
+            resolve_dff_node(node, traverse_number, netlist);
             break;
         }
         case SDFF: {
@@ -361,6 +375,102 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
 }
 
 /**
+ * (function: resolve_case_not_equal_node)
+ * 
+ * @brief resolving the shift nodes by making
+ * the input port sizes the same
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /**
+     * (SHIFT ports)
+     * INPUTS
+     *  A: (width_a)
+     *  B: (width_b)
+     * OUTPUT
+     *  Y: width_y
+    */
+    int port_a_size = node->input_port_sizes[0];
+    int port_b_size = node->input_port_sizes[1];
+    int port_y_size = node->output_port_sizes[0];
+
+    /* no change is needed */
+    if (port_a_size == port_b_size)
+        return;
+
+    /* new port size */
+    int max_size = std::max(port_a_size, port_b_size);
+
+    /* creating the new node */
+    nnode_t* new_shift_node = make_2port_gate(node->type, max_size, max_size, port_y_size, node, traverse_mark_number);
+
+    int i;
+    npin_t* extension_pin = NULL;
+    
+    for (i = 0; i < max_size; i++) {
+        /* port a needs to be extended */
+        if (port_a_size < max_size) {
+            /* remapping the a pins + adding extension pin */
+            if (i < port_a_size) {
+                /* need to remap existing pin */
+                remap_pin_to_new_node(node->input_pins[i],
+                                        new_shift_node,
+                                        i);
+            } else {
+                /* need to add extension pin */
+                extension_pin = (node->attributes->port_a_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_a_size - 1]) : get_zero_pin(netlist);
+                add_input_pin_to_node(new_shift_node,
+                                        extension_pin,
+                                        i);
+            }
+
+            /* remapping the b pins untouched */
+            remap_pin_to_new_node(node->input_pins[i + max_size],
+                                    new_shift_node,
+                                    i + max_size);
+            
+
+        } 
+        /* port b needs to be extended */
+        else if (port_b_size < max_size) {
+            /* remapping the a pins untouched */
+            remap_pin_to_new_node(node->input_pins[i],
+                                    new_shift_node,
+                                    i);
+
+            /* remapping the b pins + adding extension pin */
+            if (i < port_b_size) {
+                /* need to remap existing pin */
+                remap_pin_to_new_node(node->input_pins[i + max_size],
+                                        new_shift_node,
+                                        i + max_size);
+            } else {
+                /* need to add extension pin */
+                extension_pin = (node->attributes->port_b_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_b_size - 1 + max_size]) : get_zero_pin(netlist);
+                add_input_pin_to_node(new_shift_node,
+                                        extension_pin,
+                                        i + max_size);
+            }
+        }
+    }
+
+    /* Connecting output pins */
+    for (i = 0; i < port_y_size; i++) {
+        remap_pin_to_new_node(node->output_pins[i],
+                            new_shift_node,
+                            i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+}
+
+/**
  *-------------------------------------------------------------------------------------------
  * (function: resolve_arithmetic_node )
  * 
@@ -447,10 +557,13 @@ static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_n
             else if (num_input_port == 1) {
                 new_node = node;
             }
-        }
-        case MULTIPLY:
-            /* no need to do anything here for multipy */
             break;
+        }
+        case MULTIPLY: {
+            /* no need to do anything here for multipy */
+            new_node = node;
+            break;
+        }
         default: {
             error_message(BLIF_ELBORATION, node->loc,
                               "The node(%s) type is not among Odin's arithmetic types [ADD, MINUS and MULTIPLY]\n", node->name);
@@ -499,69 +612,6 @@ static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_n
  */
 
 /**
- * (function: transform_to_single_bit_dff_nodes)
- * 
- * @brief split the dff node read from yosys blif to
- * FF nodes with input/output width one
- * 
- * @param node pointing to the dff node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-    oassert(node->num_output_pins + 1 == node->num_input_pins);
-
-    int i;
-    int num_ff_nodes = node->num_output_pins;
-
-    /**
-     * input_pin[0] -> CLK
-     * input_pin[1..n] -> D
-     * output_pin[0..n-1] -> Q
-     */
-    for (i = 0; i < num_ff_nodes; i++) {
-        nnode_t* ff_node = allocate_nnode(node->loc);
-
-        ff_node->type = FF_NODE;
-        ff_node->traverse_visited = traverse_mark_number;
-        ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
-
-        ff_node->name = node_name(ff_node, NULL);
-        //[todo] check the num of ports
-        add_input_port_information(ff_node, 2);
-        allocate_more_input_pins(ff_node, 2);
-
-        add_output_port_information(ff_node, 1);
-        allocate_more_output_pins(ff_node, 1);
-
-        if (i == num_ff_nodes - 1) {
-            /**
-             * remap the CLK pin from the dff node to the last splitted 
-             * ff node since we do not need it in dff node anymore 
-             **/
-            remap_pin_to_new_node(node->input_pins[0], ff_node, 1);
-        } else {
-            /* add a copy of CLK pin from the dff node to the splitted ff node */
-            add_input_pin_to_node(ff_node, copy_input_npin(node->input_pins[0]), 1);
-        }
-
-        /**
-         * remap the input_pin[i+1]/output_pin[i] from the dff node to the 
-         * last splitted ff node since we do not need it in dff node anymore 
-         **/
-        remap_pin_to_new_node(node->input_pins[i + 1], ff_node, 0);
-        remap_pin_to_new_node(node->output_pins[i], ff_node, 0);
-
-        netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
-        netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
-        netlist->num_ff_nodes++;
-    }
-
-    free_nnode(node);
-}
-
-/**
  * (function: resolve_modulo_node)
  * 
  * @brief resolving module node by 
@@ -572,13 +622,24 @@ static void transform_to_single_bit_dff_nodes(nnode_t* node, uintptr_t traverse_
  */
 static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
-    
+
+    /*  */
+
+
+
+
+
+
+
+
+
+    resolve_divide_node(node, traverse_mark_number, netlist);
 }
 
 /**
  * (function: resolve_divide_node)
  * 
- * @brief resolving divide node by 
+ * @brief resolving divide node
  * 
  * @param node pointing to a logical not node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -587,6 +648,42 @@ static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, n
 static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
     
+    /**
+     * Div Ports:
+     * IN1: Dividend (m bits) 
+     * IN2: Divisor  (n bits) 
+     * OUT: Quotient (k bits)
+    */
+    int divisor_width   = node->input_port_sizes[1];
+
+    /** 
+     * checking the division restrictions 
+     * 
+     * 1. m == 2*n - 1
+     * 2. divisor MSB == 1 (left)
+     * 3. n == k
+    */    
+    /**
+     * modify div input signals to provide compatibility 
+     * with the first and third restrictions.
+     * [0]: Modified Dividend
+     * [1]: Modified Divisor
+     */
+    signal_list_t** modified_input_signals = modify_div_signal_sizes(node, netlist);
+    /* keep the record of the extesnsion size for divisor for future transformation */
+    int new_divisor_width = modified_input_signals[1]->count; // modified_input_signals[1] == new divisor signals
+    
+    /* validate new sizes */
+    oassert(divisor_width == new_divisor_width);
+
+    /* implementation of the divison circuitry using cellular architecture */
+    signal_list_t** div_output_lists = implement_division(node, modified_input_signals, netlist);
+
+    /* remap the div output pin to calculated nodes */
+    connect_div_output_pins(node, div_output_lists, traverse_mark_number, netlist);
+
+    // CLEAN UP
+    free_nnode(node);
 }
 
 /**
@@ -668,6 +765,288 @@ static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, 
 
     node->num_output_pins = 1;
     node->output_port_sizes[0] = 1;
+}
+
+/**
+ * (function: resolve_case_equal_node)
+ * 
+ * @brief resolving the CASE EQUAL node using XNOR 
+ * for each pin and finally AND all XNOR outputs
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    nnode_t* output_node = NULL;
+    /**
+         * <CASE EQUAL internal nodes>
+         * 
+         *               
+         *   A[0] ---  \\‾‾``                          
+         *              ||   ``                         
+         *              ||   ''O -----------------------------------------   VCC               
+         *              ||   ,,                                          |   |       
+         *   B[0] ---  //__,,                                           _|___|_                   
+         *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
+         *                                                              \ ⏝⏝ /    
+         *   A[1] ---  \\‾‾``                                              | 
+         *              ||   ``                                            | 
+         *              ||   ''O -----------------------------   __________|         
+         *              ||   ,,                              |   |                              
+         *   B[1] ---  //__,,                               _|___|_                           
+         *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
+         *                                                  \ ⏝⏝ /                                       
+         *   A[2] ---  \\‾‾``                                  |                     
+         *              ||   ``                                |                     
+         *              ||   ''O -----------------   __________|                     
+         *              ||   ,,                  |   |                                
+         *   B[2] ---  //__,,                   _|___|_                                       
+         *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
+         *                                      \ ⏝⏝ /   
+         *       ...                               |   (output_node)       
+         *                                         |         
+         *       ...                          ...                 
+         *                                 |                 
+         *                                 |                 
+         *                                                  
+         *                               OUTPUT              
+        */
+
+    /**
+     * (CASE_EQUAL ports)
+     * INPUTS
+     *  A: (width)
+     *  B: (width)
+     * OUTPUT
+     *  Y: 1 bit (0=not equal & 1=equal)
+    */
+    int i;
+    int width = node->input_port_sizes[0];
+    nnode_t** xnor_nodes = (nnode_t**)vtr::calloc(width, sizeof(nnode_t*));
+    nnode_t** and_nodes = (nnode_t**)vtr::calloc(width, sizeof(nnode_t*));
+    signal_list_t* xnor_outputs = init_signal_list();
+    signal_list_t* and_outputs = init_signal_list();
+
+    for (i = 0; i < width; i++) {
+        /*****************************************************************************************/
+        /************************************** XNOR_NODES ***************************************/
+        /*****************************************************************************************/
+        /* creating the XNOR node */
+        xnor_nodes[i] = make_2port_gate(LOGICAL_XNOR, 1, 1, 1, node, traverse_mark_number);
+
+        /* Connecting inputs of XNOR node */
+        remap_pin_to_new_node(node->input_pins[i],
+                              xnor_nodes[i],
+                              0);
+        remap_pin_to_new_node(node->input_pins[i + width],
+                              xnor_nodes[i],
+                              1);
+
+        /* Connecting output of XNOR node */
+        npin_t* new_pin1 = allocate_npin();
+        npin_t* new_pin2 = allocate_npin();
+        nnet_t* new_net = allocate_nnet();
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, xnor_nodes[i]->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(xnor_nodes[i], new_pin1, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, new_pin2);
+
+        // Storing the output pins of the current mux stage as the input of the next one
+        add_pin_to_signal_list(xnor_outputs, new_pin2);
+
+        /*****************************************************************************************/
+        /*************************************** AND_NODES ***************************************/
+        /*****************************************************************************************/
+        /* creating the AND node */
+        and_nodes[i] = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, traverse_mark_number);
+
+        /* Connecting inputs of AND node */
+        add_input_pin_to_node(and_nodes[i],
+                              xnor_outputs->pins[i],
+                              0);
+
+        if (i == 0) {
+            add_input_pin_to_node(and_nodes[i],
+                                  get_one_pin(netlist),
+                                  1);
+        } else {
+            add_input_pin_to_node(and_nodes[i],
+                                  and_outputs->pins[i - 1],
+                                  1);
+        }
+
+        /* Connecting output of AND node */
+        if (i != width - 1) {
+            new_pin1 = allocate_npin();
+            new_pin2 = allocate_npin();
+            new_net = allocate_nnet();
+            new_net->name = make_full_ref_name(NULL, NULL, NULL, and_nodes[i]->name, 0);
+            /* hook the output pin into the node */
+            add_output_pin_to_node(and_nodes[i], new_pin1, 0);
+            /* hook up new pin 1 into the new net */
+            add_driver_pin_to_net(new_net, new_pin1);
+            /* hook up the new pin 2 to this new net */
+            add_fanout_pin_to_net(new_net, new_pin2);
+
+            // Storing the output pins of the current mux stage as the input of the next one
+            add_pin_to_signal_list(and_outputs, new_pin2);
+        } else {
+            remap_pin_to_new_node(node->output_pins[0],
+                                  and_nodes[i],
+                                  0);
+
+            output_node = and_nodes[i];
+        }
+    }
+
+    // CLEAN UP
+    vtr::free(xnor_nodes);
+    vtr::free(and_nodes);
+
+    free_signal_list(xnor_outputs);
+    free_signal_list(and_outputs);
+    
+    free_nnode(node);
+
+    return (output_node);
+}
+
+/**
+ * (function: resolve_case_not_equal_node)
+ * 
+ * @brief resolving the CASE NOT EQUAL node using 
+ * NOT gate after case equal output node
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /**
+         * <CASE NOT EQUAL internal nodes>
+         * 
+         *               
+         *   A[0] ---  \\‾‾``                          
+         *              ||   ``                         
+         *              ||   ''O -----------------------------------------   VCC               
+         *              ||   ,,                                          |   |       
+         *   B[0] ---  //__,,                                           _|___|_                   
+         *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
+         *                                                              \ ⏝⏝ /    
+         *   A[1] ---  \\‾‾``                                              | 
+         *              ||   ``                                            | 
+         *              ||   ''O -----------------------------   __________|         
+         *              ||   ,,                              |   |                              
+         *   B[1] ---  //__,,                               _|___|_                           
+         *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
+         *                                                  \ ⏝⏝ /                                       
+         *   A[2] ---  \\‾‾``                                  |                     
+         *              ||   ``                                |                     
+         *              ||   ''O -----------------   __________|                     
+         *              ||   ,,                  |   |                                
+         *   B[2] ---  //__,,                   _|___|_                                       
+         *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
+         *                                      \ ⏝⏝ /   
+         *       ...                               |         
+         *                                         |         
+         *       ...                          ...                 
+         *                                 |                 
+         *       ...                       |                 
+         *                               _____ 
+         *                               \   /
+         *                                \ /   (output_node) 
+         *                                 |
+         *                                 |                
+         *               
+         *                               OUTPUT              
+        */
+
+    /**
+     * (CASE_NOT EQUAL ports)
+     * INPUTS
+     *  A: (width)
+     *  B: (width)
+     * OUTPUT
+     *  Y: 1 bit (0=not equal & 1=equal)
+    */
+    nnode_t* case_equal = resolve_case_equal_node(node, traverse_mark_number, netlist);
+
+    nnode_t* not_node = make_not_gate(case_equal, traverse_mark_number);
+    connect_nodes(case_equal, 0, not_node, 0);
+
+    // specify not gate output pin
+    npin_t* new_pin1_not = allocate_npin();
+    npin_t* new_pin2_not = allocate_npin();
+    nnet_t* new_net_not = allocate_nnet();
+    new_net_not->name = make_full_ref_name(NULL, NULL, NULL, not_node->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(not_node, new_pin1_not, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(new_net_not, new_pin1_not);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(new_net_not, new_pin2_not);
+
+    return (not_node);
+}
+
+/**
+ * (function: transform_to_single_bit_dff_nodes)
+ * 
+ * @brief split the dff node read from yosys blif to
+ * FF nodes with input/output width one
+ * 
+ * @param node pointing to the dff node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_output_pins + 1 == node->num_input_pins);
+
+    /**
+     * need to reformat the order of pins and the number of ports
+     * since odin ff_node has only one port which the last pin is clk
+    */
+    int i;   
+    int width = node->num_output_pins;
+    nnode_t* ff_node = make_1port_gate(FF_NODE, width+1, width, node, traverse_mark_number);
+    ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+    /* remap the last bit of the clk pin to the last input pin since the resit does not work at all */
+    int clk_width = node->input_port_sizes[0];
+    remap_pin_to_new_node(node->input_pins[0], ff_node, width);
+
+    /* remapping the D inputs to [1..n] */
+    for (i = 0; i < width; i++) {
+        remap_pin_to_new_node(node->input_pins[clk_width + i], ff_node, i);
+    }
+    
+    /* hook the output pins into the new ff_node */
+    for (i = 0; i < width; i++) {
+        remap_pin_to_new_node(node->output_pins[i], ff_node, i);
+    }  
+
+    /** if it is multibit we will leave it for partial mapping phase,
+     * otherwise we need to add single bit ff node to the ff_node 
+     * list of the current netlist 
+    */
+   /* single bit dff, [0]: clk, [1]: D */
+   if (node->num_input_pins == 2) {
+        /* adding the new generated node to the ff node list of the enetlist */
+        netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
+        netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
+        netlist->num_ff_nodes++;
+   }
+
+    // CLEAN UP
+    free_nnode(node); 
 }
 
 /**
@@ -1614,45 +1993,45 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
     }
 
     for (i = 0; i < selector_width; i++) {
-        /**
-         * <pmux internal>
-         * 
-         *              S[0]
-         *               |                 S[1] 
-         *             |\|                  |                                S[2]
-         *             | \                |\|                                 |
-         *      A ---  |0:|               | \                               |\|
-         *             |  | ------------->|0:|                              | \
-         *      B ---  |1:|               |  | ---------------------------->|0:|
-         * [width-1:0] | /          ----->|1:|                              |  | -->       ...
-         *             |/           |     | /                     --------->|1:|
-         *       (level_mux_0)      |     |/                      |         | /
-         *                          |(level_mux_1)                |         |/
-         *                          |                             |    (level_mux_1)       
-         *              S[0]        |                             |   
-         *               |          |                 S[1]        |   
-         *             |\|          |                  |          |  
-         *             | \          |                |\|          |   
-         *       0 --->|0:|         |                | \          |   
-         *             |  |---------0--------------->|0:|         |                                      
-         *       1 --->|1:|   |     |                |  |---------0---->         ...                                      
-         *             | /    |     |          1 --->|1:|   |     |                                              
-         *             |/     |     |                | /    |     |                                                                 
-         *        (active_bit |     |                |/     |     |                                          
-         *          _mux_0)   |     |           (active_bit |     |                             
-         *                    |     |              _mux_1)  |     |                                
-         *                    |     |                       |     |                                                                                                
-         *                  |\|     |                       |     |                                                                                                                           
-         *                  | \     |                       |     |                                                                                                               
-         *     B >> 2^1 --->|0:|    |                     |\|     |                                                                   
-         *                  |  |-----                     | \     |                                                                   
-         *      'hxxx   --->|1:|             B >> 2^2 --->|0:|    |                                                                       
-         *                  | /                           |  |-----                                                                   
-         *                  |/                'hxxx   --->|1:|                                                                        
-         *            (ternay_mux_0)                      | /                                     
-         *                                                |/                                          
-         *                                          (ternay_mux_1)        
-         * 
+        /**                                                                                                                                                                                         
+         *          <pmux internal>                                                                          *
+         *                                                                                                   *
+         *                       S[0]                                                                        *
+         *                        |                 S[1]                                                     *
+         *                      |\|                  |                                S[2]                   *
+         *                      | \                |\|                                 |                     *
+         *               A ---  |0:|               | \                               |\|                     *
+         *                      |  | ------------->|0:|                              | \                     *
+         *               B ---  |1:|               |  | ---------------------------->|0:|                    *
+         *          [width-1:0] | /          ----->|1:|                              |  | -->       ...      *
+         *                      |/           |     | /                     --------->|1:|                    *
+         *                (level_mux_0)      |     |/                      |         | /                     *
+         *                                   |(level_mux_1)                |         |/                      *
+         *                                   |                             |    (level_mux_1)                *
+         *                       S[0]        |                             |                                 *
+         *                        |          |                 S[1]        |                                 *
+         *                      |\|          |                  |          |                                 *
+         *                      | \          |                |\|          |                                 *
+         *                0 --->|0:|         |                | \          |                                 *
+         *                      |  |---------0--------------->|0:|         |                                 *
+         *                1 --->|1:|   |     |                |  |---------0---->         ...                *
+         *                      | /    |     |          1 --->|1:|   |     |                                 *
+         *                      |/     |     |                | /    |     |                                 *
+         *                 (active_bit |     |                |/     |     |                                 *
+         *                   _mux_0)   |     |           (active_bit |     |                                 *
+         *                             |     |              _mux_1)  |     |                                 *
+         *                             |     |                       |     |                                 *
+         *                           |\|     |                       |     |                                 *
+         *                           | \     |                       |     |                                 *
+         *              B >> 2^1 --->|0:|    |                     |\|     |                                 *
+         *                           |  |-----                     | \     |                                 *
+         *               'hxxx   --->|1:|             B >> 2^2 --->|0:|    |                                 *
+         *                           | /                           |  |-----                                 *
+         *                           |/                'hxxx   --->|1:|                                      *
+         *                     (ternay_mux_0)                      | /                                       *
+         *                                                         |/                                        *
+         *                                                   (ternay_mux_1)                                  *
+         *                                                                                                       
         */
         /**
          * (Level_muxes)
@@ -1890,335 +2269,45 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
     vtr::free(ternary_muxes_out_signals);
 }
 
-/**
- * (function: resolve_case_equal_node)
- * 
- * @brief resolving the CASE EQUAL node using XNOR 
- * for each pin and finally AND all XNOR outputs
- * 
- * @param node pointing to a logical not node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    nnode_t* output_node = NULL;
-    /**
-         * <CASE EQUAL internal nodes>
-         * 
-         *               
-         *   A[0] ---  \\‾‾``                          
-         *              ||   ``                         
-         *              ||   ''O -----------------------------------------   VCC               
-         *              ||   ,,                                          |   |       
-         *   B[0] ---  //__,,                                           _|___|_                   
-         *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
-         *                                                              \ ⏝⏝ /    
-         *   A[1] ---  \\‾‾``                                              | 
-         *              ||   ``                                            | 
-         *              ||   ''O -----------------------------   __________|         
-         *              ||   ,,                              |   |                              
-         *   B[1] ---  //__,,                               _|___|_                           
-         *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
-         *                                                  \ ⏝⏝ /                                       
-         *   A[2] ---  \\‾‾``                                  |                     
-         *              ||   ``                                |                     
-         *              ||   ''O -----------------   __________|                     
-         *              ||   ,,                  |   |                                
-         *   B[2] ---  //__,,                   _|___|_                                       
-         *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
-         *                                      \ ⏝⏝ /   
-         *       ...                               |   (output_node)       
-         *                                         |         
-         *       ...                          ...                 
-         *                                 |                 
-         *                                 |                 
-         *                                                  
-         *                               OUTPUT              
-        */
-
-    /**
-     * (CASE_EQUAL ports)
-     * INPUTS
-     *  A: (width)
-     *  B: (width)
-     * OUTPUT
-     *  Y: 1 bit (0=not equal & 1=equal)
-    */
-    int i;
-    int width = node->input_port_sizes[0];
-    nnode_t** xnor_nodes = (nnode_t**)vtr::calloc(width, sizeof(nnode_t*));
-    nnode_t** and_nodes = (nnode_t**)vtr::calloc(width, sizeof(nnode_t*));
-    signal_list_t* xnor_outputs = init_signal_list();
-    signal_list_t* and_outputs = init_signal_list();
-
-    for (i = 0; i < width; i++) {
-        /*****************************************************************************************/
-        /************************************** XNOR_NODES ***************************************/
-        /*****************************************************************************************/
-        /* creating the XNOR node */
-        xnor_nodes[i] = make_2port_gate(LOGICAL_XNOR, 1, 1, 1, node, traverse_mark_number);
-
-        /* Connecting inputs of XNOR node */
-        remap_pin_to_new_node(node->input_pins[i],
-                              xnor_nodes[i],
-                              0);
-        remap_pin_to_new_node(node->input_pins[i + width],
-                              xnor_nodes[i],
-                              1);
-
-        /* Connecting output of XNOR node */
-        npin_t* new_pin1 = allocate_npin();
-        npin_t* new_pin2 = allocate_npin();
-        nnet_t* new_net = allocate_nnet();
-        new_net->name = make_full_ref_name(NULL, NULL, NULL, xnor_nodes[i]->name, 0);
-        /* hook the output pin into the node */
-        add_output_pin_to_node(xnor_nodes[i], new_pin1, 0);
-        /* hook up new pin 1 into the new net */
-        add_driver_pin_to_net(new_net, new_pin1);
-        /* hook up the new pin 2 to this new net */
-        add_fanout_pin_to_net(new_net, new_pin2);
-
-        // Storing the output pins of the current mux stage as the input of the next one
-        add_pin_to_signal_list(xnor_outputs, new_pin2);
-
-        /*****************************************************************************************/
-        /*************************************** AND_NODES ***************************************/
-        /*****************************************************************************************/
-        /* creating the AND node */
-        and_nodes[i] = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, traverse_mark_number);
-
-        /* Connecting inputs of AND node */
-        add_input_pin_to_node(and_nodes[i],
-                              xnor_outputs->pins[i],
-                              0);
-
-        if (i == 0) {
-            add_input_pin_to_node(and_nodes[i],
-                                  get_one_pin(netlist),
-                                  1);
-        } else {
-            add_input_pin_to_node(and_nodes[i],
-                                  and_outputs->pins[i - 1],
-                                  1);
-        }
-
-        /* Connecting output of AND node */
-        if (i != width - 1) {
-            new_pin1 = allocate_npin();
-            new_pin2 = allocate_npin();
-            new_net = allocate_nnet();
-            new_net->name = make_full_ref_name(NULL, NULL, NULL, and_nodes[i]->name, 0);
-            /* hook the output pin into the node */
-            add_output_pin_to_node(and_nodes[i], new_pin1, 0);
-            /* hook up new pin 1 into the new net */
-            add_driver_pin_to_net(new_net, new_pin1);
-            /* hook up the new pin 2 to this new net */
-            add_fanout_pin_to_net(new_net, new_pin2);
-
-            // Storing the output pins of the current mux stage as the input of the next one
-            add_pin_to_signal_list(and_outputs, new_pin2);
-        } else {
-            remap_pin_to_new_node(node->output_pins[0],
-                                  and_nodes[i],
-                                  0);
-
-            output_node = and_nodes[i];
-        }
-    }
-
-    // CLEAN UP
-    vtr::free(xnor_nodes);
-    vtr::free(and_nodes);
-
-    free_signal_list(xnor_outputs);
-    free_signal_list(and_outputs);
-    
-    free_nnode(node);
-
-    return (output_node);
-}
-
-/**
- * (function: resolve_case_not_equal_node)
- * 
- * @brief resolving the CASE NOT EQUAL node using 
- * NOT gate after case equal output node
- * 
- * @param node pointing to a logical not node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    /**
-         * <CASE NOT EQUAL internal nodes>
-         * 
-         *               
-         *   A[0] ---  \\‾‾``                          
-         *              ||   ``                         
-         *              ||   ''O -----------------------------------------   VCC               
-         *              ||   ,,                                          |   |       
-         *   B[0] ---  //__,,                                           _|___|_                   
-         *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
-         *                                                              \ ⏝⏝ /    
-         *   A[1] ---  \\‾‾``                                              | 
-         *              ||   ``                                            | 
-         *              ||   ''O -----------------------------   __________|         
-         *              ||   ,,                              |   |                              
-         *   B[1] ---  //__,,                               _|___|_                           
-         *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
-         *                                                  \ ⏝⏝ /                                       
-         *   A[2] ---  \\‾‾``                                  |                     
-         *              ||   ``                                |                     
-         *              ||   ''O -----------------   __________|                     
-         *              ||   ,,                  |   |                                
-         *   B[2] ---  //__,,                   _|___|_                                       
-         *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
-         *                                      \ ⏝⏝ /   
-         *       ...                               |         
-         *                                         |         
-         *       ...                          ...                 
-         *                                 |                 
-         *       ...                       |                 
-         *                               _____ 
-         *                               \   /
-         *                                \ /   (output_node) 
-         *                                 |
-         *                                 |                
-         *               
-         *                               OUTPUT              
-        */
-
-    /**
-     * (CASE_NOT EQUAL ports)
-     * INPUTS
-     *  A: (width)
-     *  B: (width)
-     * OUTPUT
-     *  Y: 1 bit (0=not equal & 1=equal)
-    */
-    nnode_t* case_equal = resolve_case_equal_node(node, traverse_mark_number, netlist);
-
-    nnode_t* not_node = make_not_gate(case_equal, traverse_mark_number);
-    connect_nodes(case_equal, 0, not_node, 0);
-
-    // specify not gate output pin
-    npin_t* new_pin1_not = allocate_npin();
-    npin_t* new_pin2_not = allocate_npin();
-    nnet_t* new_net_not = allocate_nnet();
-    new_net_not->name = make_full_ref_name(NULL, NULL, NULL, not_node->name, 0);
-    /* hook the output pin into the node */
-    add_output_pin_to_node(not_node, new_pin1_not, 0);
-    /* hook up new pin 1 into the new net */
-    add_driver_pin_to_net(new_net_not, new_pin1_not);
-    /* hook up the new pin 2 to this new net */
-    add_fanout_pin_to_net(new_net_not, new_pin2_not);
-
-    return (not_node);
-}
-
-/**
- * (function: resolve_case_not_equal_node)
- * 
- * @brief resolving the shift nodes by making
- * the input port sizes the same
- * 
- * @param node pointing to a logical not node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    /**
-     * (SHIFT ports)
-     * INPUTS
-     *  A: (width_a)
-     *  B: (width_b)
-     * OUTPUT
-     *  Y: width_y
-    */
-    int port_a_size = node->input_port_sizes[0];
-    int port_b_size = node->input_port_sizes[1];
-    int port_y_size = node->output_port_sizes[0];
-
-    /* no change is needed */
-    if (port_a_size == port_b_size)
-        return;
-
-    /* new port size */
-    int max_size = std::max(port_a_size, port_b_size);
-
-    /* creating the new node */
-    nnode_t* new_shift_node = make_2port_gate(node->type, max_size, max_size, port_y_size, node, traverse_mark_number);
-
-    int i;
-    npin_t* extension_pin = NULL;
-    
-    for (i = 0; i < max_size; i++) {
-        /* port a needs to be extended */
-        if (port_a_size < max_size) {
-            /* remapping the a pins + adding extension pin */
-            if (i < port_a_size) {
-                /* need to remap existing pin */
-                remap_pin_to_new_node(node->input_pins[i],
-                                        new_shift_node,
-                                        i);
-            } else {
-                /* need to add extension pin */
-                extension_pin = (node->attributes->port_a_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_a_size - 1]) : get_zero_pin(netlist);
-                add_input_pin_to_node(new_shift_node,
-                                        extension_pin,
-                                        i);
-            }
-
-            /* remapping the b pins untouched */
-            remap_pin_to_new_node(node->input_pins[i + max_size],
-                                    new_shift_node,
-                                    i + max_size);
-            
-
-        } 
-        /* port b needs to be extended */
-        else if (port_b_size < max_size) {
-            /* remapping the a pins untouched */
-            remap_pin_to_new_node(node->input_pins[i],
-                                    new_shift_node,
-                                    i);
-
-            /* remapping the b pins + adding extension pin */
-            if (i < port_b_size) {
-                /* need to remap existing pin */
-                remap_pin_to_new_node(node->input_pins[i + max_size],
-                                        new_shift_node,
-                                        i + max_size);
-            } else {
-                /* need to add extension pin */
-                extension_pin = (node->attributes->port_b_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_b_size - 1 + max_size]) : get_zero_pin(netlist);
-                add_input_pin_to_node(new_shift_node,
-                                        extension_pin,
-                                        i + max_size);
-            }
-        }
-    }
-
-    /* Connecting output pins */
-    for (i = 0; i < port_y_size; i++) {
-        remap_pin_to_new_node(node->output_pins[i],
-                            new_shift_node,
-                            i);
-    }
-
-    // CLEAN UP
-    free_nnode(node);
-}
-
 /*******************************************************************************************************
  ********************************************** [UTILS] ************************************************
  *******************************************************************************************************/
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: look_for_clocks)
+ * 
+ * @brief going through all FF nodes looking for the clock signals.
+ * If they are not clock type, they should alter to one. Since BUF
+ * nodes be removed in the partial mapping, the driver of the BUF
+ * nodes should be considered as a clock node. 
+ * 
+ * @param netlist pointer to the current netlist file
+ *-------------------------------------------------------------------------------------------*/
+static void look_for_clocks(netlist_t* netlist) {
+    int i;
+    /* looking for the global sim clock among top netlist inputsto change its type if needed */
+    for (i = 0; i < netlist->num_top_input_nodes; i++) {
+        nnode_t* input_node = netlist->top_input_nodes[i];
+        if (!strcmp(input_node->name, DEFAULT_CLOCK_NAME))
+            input_node->type = CLOCK_NODE;
+    }
+
+    for (i = 0; i < netlist->num_ff_nodes; i++) {
+        /* at this step, clock nodes must have been driving by one driver */
+        oassert(netlist->ff_nodes[i]->input_pins[1]->net->num_driver_pins == 1);
+        /* node: clock driver node */
+        nnode_t* node = netlist->ff_nodes[i]->input_pins[1]->net->driver_pins[0]->node;
+
+        /* as far as a clock driver node is a BUF node, going through its drivers till finding a non-BUF node */
+        while (node->type == BUF_NODE)
+            node = node->input_pins[0]->net->driver_pins[0]->node;
+
+        if (node->type != CLOCK_NODE) {
+            node->type = CLOCK_NODE;
+        }
+    }
+}
+
 /**
  * (function: constant_shift)
  * 
@@ -2306,29 +2395,553 @@ static signal_list_t* constant_shift(signal_list_t* input_signals, const int shi
 }
 
 /**
- * (function: division)
+ * (function: modify_div_signal_sizes)
+ * 
+ * @brief adjusting the div node signal sizes to make it 
+ * compatible with the first division restrictions,
+ * i.e. m = 2*n-1
+ * 
+ * @param node pointer to the div node
+ * @param netlist pointer to the current netlist file
+ * 
+ * @return modified signal lists [0]: dividend [1]: divisor
+ */
+static signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist) {
+    int i;
+
+    int dividend_width = node->input_port_sizes[0];
+    int divisor_width  = node->input_port_sizes[1];
+
+    /* new widths which will be adjusted in the following */
+    int new_dividend_width = dividend_width;
+    /* m = 2*n -1 */
+    if (dividend_width < 2 * divisor_width - 1) {
+        /* need for padding dividend with GND */
+        while (new_dividend_width < 2 * divisor_width - 1)
+            new_dividend_width++;
+    }
+
+    signal_list_t* dividend_signal_list = init_signal_list();
+    signal_list_t* divisor_signal_list = init_signal_list();
+
+    /* Dividend will be padded from the MSB (left side) */
+    /* hook dividend pins into corresponding signal list */
+    for (i = 0; i < new_dividend_width; i++) {
+        if (i < dividend_width) {
+            add_pin_to_signal_list(dividend_signal_list, node->input_pins[i]);
+        } else {
+            add_pin_to_signal_list(dividend_signal_list, get_zero_pin(netlist));
+        }
+    }
+    /* Dividend will be padded by adding zero as LSB (right side) */
+    /* hook divisor pins into new node (literally, shift left if needed) */
+    for (i = 0; i < divisor_width; i++) {
+        add_pin_to_signal_list(divisor_signal_list, node->input_pins[dividend_width + i]);
+    }
+
+    /* creating the return list of signal lists */
+    signal_list_t** return_sig_list = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
+    return_sig_list[0] = dividend_signal_list;
+    return_sig_list[1] = divisor_signal_list;
+
+    return (return_sig_list);
+}
+
+/**
+ * (function: implement_division)
  * 
  * @brief creating division node (A / B)
  * 
  * @note this should perfom before partial mapping since
- * some nodes like minus are not still resolved yet
+ * some nodes like minus are not resolved yet
  * 
+ * @param node pointer to the div node
+ * @param input_signals modified input signals of the div node
  * @param netlist pointer to the current netlist file
+ * 
+ * @return two signal lists -> [0]: quotient pins [1]: remainder pins
  */
-static void division (netlist_t* netlist) {
+static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals, netlist_t* netlist) {
+    /* to be returned signal lists */
+    signal_list_t* quotient_signal_list = init_signal_list();
+    signal_list_t* remainder_signal_list = init_signal_list();
+
+    /**
+     * (Modified DIV ports)
+     * 
+     * IN1: Dividend (m = 2n-1 bits)
+     * IN2: Divisor (n bits)
+     * OUT1: Quotient (n bits)
+     * OUT2: Remainder (n bits)
+    */
+
+    int i, j;
+    signal_list_t* dividend_sig_list = input_signals[0];
+    signal_list_t* divisor_sig_list = input_signals[1];
+
+    int dividend_size  = dividend_sig_list->count;
+    int divisor_size   = divisor_sig_list->count;
+    int quotient_size  = divisor_size;
+    int remainder_size = divisor_size;
+
+    /* checking the division circuit restrictions */
+    oassert(dividend_size == 2 * divisor_size - 1);
+
+    /* CR nodes array for cellular architecture (need divisor_size row) */
+    signal_list_t*** CR_outputs = (signal_list_t***)vtr::calloc(divisor_size, sizeof(signal_list_t**));
+
+    /* creating CR nodes for each row to do the partial division */
+    int offset = divisor_size;
     
+    /* creating the network */
+    for (i = 0; i < divisor_size; i++) {
+        /**
+         * <DIV internal circuit>                                                                                                                                *
+         *        D[m-1] d[n-1]          D[m-n-1] d[n-2]           D[m-n] d[0]                                                             *
+         *           |    |                |    |                   |    |                                                                 *
+         *           |    |                |    |                   |    |                                                                 *
+         *     b    _v____v_   b_     b   _v____v_    b_      b    _v____v_    b_                                                          *
+         *  <------|   CR   |<-----------|   CR   |<----    ------|   CR   |<--                                                            *
+         * |       |[0][n-1]|            |[0][n-2]|     ....      | [0][0] |                                                               *
+         * |__|\___|  i  j  |            |  i  j  |     ....      |  i  j  |                                                               *
+         *    |/   |________|----------->|________|-----    ----->|________|-- c_0                                                         *
+         *      _c     |        c    _c      |       c     _c         |                                                                    *
+         *             |                     |                        |                                                                    *
+         *             |    __________       |  d[n-1]                |  d[1]      D[m-n+1] d[0]                                           *
+         *             |    |        |       |    |                   |    |             |    |                                            *
+         *             |    |        |       |    |                   |    |             |    |                                            *
+         *       b    _v____v_       |  b   _v____v_   b_       b    _v____v_    b_ b   _v____v_    b_                                     *
+         *    <------|   CR   |<--   ------|   CR   |<---    -------|   CR   |<--------|   CR   |<-------                                  *
+         *   |       | [1][n] |  |         |[1][n-1]|    ....       | [1][1] |         | [1][0] |                                          *
+         *   |__|\___|  i  j  |  gnd       |  i  j  |    ....       |  i  j  |         |  i  j  |                                          *
+         *      |/   |________|----------->|________|----  | ------>|________|-------->|________|--> c[1]                                  *
+         *        _c               c       _c  |      c    |   _c       |_______ c   _c       |                                            *
+         *                                     |           |___                 |             |                                            *
+         *                                     |    __________ |_____   d[n-1]  |             |  d[1]      D[m-n+1] d[0]                   *
+         *                                     |    |        |       |    |     |__           |    |             |    |                    *
+         *                                     |    |        |       |    |       |           |    |             |    |                    *
+         *                               b    _v____v_       |  b   _v____v_   b_ |     b    _v____v_    b_ b   _v____v_    b_             *
+         *                            <------|   CR   |<--   ------|   CR   |<--- |  -------|   CR   |<--------|   CR   |<-------          *
+         *                           |       | [2][n] |  |         |[2][n-1]|    ....       | [2][1] |         | [1][0] |                  *
+         *                           |__|\___|  i  j  |  gnd       |  i  j  |    ....       |  i  j  |         |  i  j  |                  *
+         *                              |/   |________|----------->|________|----    ------>|________|-------->|________|--> c[2]          *
+         *                                _c               c    _c            c             _c          c   _c                             *
+         *                                                                                                                                 *
+         *                                      ....                  ....                     ....                ....                    *
+         *                                      ....                  ....                     ....                ....                    *
+         *                                      ....                  ....                     ....                ....                    *
+        */
+
+        /* In the first row, the divisor is not shifting, so we need one less CR node */
+        int num_CR_per_row = (i == 0) ? (divisor_size) : (divisor_size + 1);
+        CR_outputs[i] = (signal_list_t**)vtr::calloc(num_CR_per_row, sizeof(signal_list_t*));
+
+        for (j = 0; j < num_CR_per_row; j++) {
+            /* allocating each CR output pins */
+            CR_outputs[i][j] = CR_output_signal_init();
+        }
+
+        for (j = 0; j < num_CR_per_row; j++) {
+            /** 
+             * <CR inputs>
+             * [0] = IN1 (D) [m - offset + j]
+             * [1] = IN2 (d) [j]
+             * [2] = b_      [previous CR borrow out]
+             * [3] = _c      [next CR quotiont]
+             */
+            int dividend_idx = dividend_size - offset + j;
+            int divisor_idx = (i == 0) ? (j) : (j == num_CR_per_row - 1) ? (-1) : (j);
+
+            /* setting up containers for CR outptu pins */
+            npin_t* b = CR_outputs[i][j]->pins[0];
+            npin_t* p = CR_outputs[i][j]->pins[1];
+            npin_t* c = CR_outputs[i][j]->pins[2];
+
+            /* specifying the CR input pins */
+            signal_list_t* CR_node_input_signals = init_signal_list();
+            /* containers for input pins to clarify the code */
+            npin_t* x  = NULL; /* CR_node_input_signals->pins[0] */
+            npin_t* y  = NULL; /* CR_node_input_signals->pins[1] */
+            npin_t* b_ = NULL; /* CR_node_input_signals->pins[2] */
+            npin_t* _c = NULL; /* CR_node_input_signals->pins[3] */
+
+            /* allocating input pins for the first row in different since they should connect to Dividend */
+            /***** x *****/
+            if (i == 0 || j == 0) {
+                x = dividend_sig_list->pins[dividend_idx];
+            } else {
+                /* partial product of the previous row corresponding CR */
+                x = CR_outputs[i - 1][j - 1]->pins[1];
+            }
+            add_pin_to_signal_list(CR_node_input_signals, x);
+            /***** y *****/
+            if (i != 0 && j == num_CR_per_row - 1) {
+                /* borrow output of the previous CR */
+                y = CR_outputs[i][j - 1]->pins[0];
+            } else {
+                if (i == divisor_size - 1)
+                    y = divisor_sig_list->pins[divisor_idx];
+                else
+                    y = copy_input_npin(divisor_sig_list->pins[divisor_idx]);
+            }
+            add_pin_to_signal_list(CR_node_input_signals, y);
+            /***** b_ *****/
+            if (j == 0) {
+                b_ = get_zero_pin(netlist);
+            } else {
+                if (i != 0 && j == num_CR_per_row - 1)
+                    b_ = get_zero_pin(netlist);
+                else
+                    /* borrow output of the previous CR */
+                    b_ = CR_outputs[i][j - 1]->pins[0];
+            }
+            add_pin_to_signal_list(CR_node_input_signals, b_);
+            /***** _c *****/
+            /* making not gate with input b to drive c for the last CR node in each row */
+            if (j == num_CR_per_row - 1) {
+                /* creating a not gate to connect last borrow to the last c_ */
+                nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
+                /* hook the last borrow pin to the not gate */
+                add_input_pin_to_node(not_node, b, 0);
+
+                /* connecting the not_node output pin */
+                npin_t* new_pin1 = allocate_npin();
+                npin_t* new_pin2 = allocate_npin();
+                nnet_t* new_net = allocate_nnet();
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, not_node->name, 0);
+                /* hook the output pin into the node */
+                add_output_pin_to_node(not_node, new_pin1, 0);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
+
+                /* hook the not node output to the last CR node _c input*/
+                _c = new_pin2;
+            } else {
+                _c = CR_outputs[i][j + 1]->pins[2];
+            }
+            add_pin_to_signal_list(CR_node_input_signals, _c);
+
+            /**
+             *  Making the CR node located at row i and col j
+            */
+            make_CR_node(node, CR_node_input_signals, CR_outputs[i][j]);
+
+            /*********************************************************/
+            /* adding the network outputs to the return signal lists */
+            /*********************************************************/
+            /* Quotient */
+            if (j == 0) {
+                /* adding to output signal list for returning */
+                add_pin_to_signal_list(quotient_signal_list, c);                
+            }
+            /* Remanider */
+            if (i == divisor_size - 1 && j != num_CR_per_row - 1) {
+                /* adding to output signal list for returning */
+                add_pin_to_signal_list(remainder_signal_list, p);
+            }
+        }
+
+        /**
+         * increasing the offset by 1 in each iteration to 
+         * connect all dividend pins to the first row CR 
+         * nodes and all first CR nodes in other rows 
+        */
+        offset++;
+    }
+
+    /* validate the size of output signal lists */
+    oassert(quotient_size == quotient_signal_list->count);
+    oassert(remainder_size == remainder_signal_list->count);
+
+    /* retrun signal lists -> [0]: quotient pins [1]: remainder pins */
+    signal_list_t** return_sig_list = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
+    return_sig_list[0] = quotient_signal_list;
+    return_sig_list[1] = remainder_signal_list;
+    
+    return (return_sig_list);
 }
 
 /**
- * (function: division_by_constant)
+ * (function: connect_div_output_pins)
+ * 
+ * @brief remapping the main div output pins to 
+ * the calculated quotient and remainder node
+ * 
+ * @param node pointer to the div node
+ * @param output_signals calculated output signals of the div node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ */
+static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(output_signals);
+    
+    int i;
+    int divisor_width  = node->input_port_sizes[1];
+    int quotient_width = node->output_port_sizes[0];
+
+    /* quotient and remainder signal lists returned by implement_division function */
+    signal_list_t* quotient_signal_list = output_signals[0];
+    signal_list_t* remainder_signal_list = output_signals[1];
+
+    int new_quotient_width   = quotient_signal_list->count;
+    int new_remainder_width  = remainder_signal_list->count;
+    
+    /* validate new sizes */
+    oassert(new_quotient_width == divisor_width);
+    oassert(new_quotient_width == new_remainder_width);
+
+    if (quotient_width >= new_quotient_width) {       
+        for (i = 0; i < quotient_width; i++) {
+            npin_t* quotient_pin = quotient_signal_list->pins[i];
+            /* creating a buf node to cionnect the calculated quotient to the main div node outputs */
+            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+
+            if (i < new_quotient_width) {    /* connect the calculatd quotient pin as buf node driver */
+                add_input_pin_to_node(buf_node, quotient_pin, 0);
+                /* remap the main div output pin to the buf node output pin */
+                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+            } else {
+                /* connect the calculatd quotient pin as buf node driver */
+                add_input_pin_to_node(buf_node, get_zero_pin(netlist), 0);
+                /* remap the main div output pin to the buf node output pin */
+                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+            }
+        }
+        
+        
+    } else {
+        for (i = 0; i < new_quotient_width; i++) {
+            npin_t* quotient_pin = quotient_signal_list->pins[i];
+            /* creating a buf node to cionnect the calculated quotient to the main div node outputs */
+            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+
+            if (i < quotient_width) {
+                add_input_pin_to_node(buf_node, quotient_pin, 0);
+                /* remap the main div output pin to the buf node output pin */
+                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+            } else {
+                /* dump the calculated pin since it is extra */
+                remove_fanout_pins_from_net(quotient_pin->net,
+                                            quotient_pin,
+                                            quotient_pin->pin_net_idx);
+            }
+        }
+    }
+
+
+    /* dunp remainders */
+    for (i = 0; i < new_remainder_width; i++) {
+        npin_t* remainder_pin = remainder_signal_list->pins[i];
+        remove_fanout_pins_from_net(remainder_pin->net,
+                                    remainder_pin,
+                                    remainder_pin->pin_net_idx);
+    }
+}
+
+/**
+ * (function: make_division_by_constant_node)
  * 
  * @brief performing division by constant (A / 3)
  * 
  * @note this should perfom before partial mapping since
- * some nodes like minus are not still resolved yet
+ * some nodes like minus are not resolved yet
  * 
+ * @param node pointer to the div node
  * @param netlist pointer to the current netlist file
  */
-static void division_by_constant (netlist_t* netlist) {
+static void make_division_by_constant_node (netlist_t* /* netlist */) {
+    return;
+}
+
+/**
+ * (function: make_CR_node)
+ * 
+ * @brief creating a single bit CR cell required 
+ * by the division cellular network
+ * 
+ * @param node the unresolved div node
+ * @param input_signal_list the list including the CR input pins
+ *        [0] = x 
+ *        [1] = y 
+ *        [2] = b_
+ *        [3] = _c
+ * 
+ * @param output_signal_list [0] = b
+ *                           [1] = p
+ *                           [2] = c 
+ */
+static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signal_list_t* output_signal_list) {
+    /* CR  node has fixed four inputs */
+    oassert(input_signal_list->count == 4);
+
+    /**
+     * <CR interior design>                                                                                  *
+     * <all wires are 1 bit wide>                                                                            *
+     *                                                                                                       *
+     *                                                      x      y                                         *
+     *                                         _____________|      |                                         *
+     *                                        |             |      |                                         *
+     *                                        |           __v______v__                                       *
+     *                                        |          |    FULL    |                                      *
+     *                                        |   b  <---| SUBTRACTOR |<--- b_                               *
+     *                                        |          |____________|                                      *
+     *                                        |                 |                                            *
+     *                                        |             ____|                                            *
+     *                                        |            |                                                 *
+     *                                        |            |                                                 *
+     *                                        |            |                                                 *
+     *                                     ___v____________v____                                             *
+     *                                     \  0:           1:  /                                             *
+     *                              _c ---> \       MUX       / ---> c                                       *
+     *                                       \_______________/                                               *
+     *                                               |                                                       *
+     *                                               |                                                       *
+     *                                               v                                                       *
+     *                                               p                                                       *
+     *                                                                                                       *
+     */
+
+    /* CR input pins */
+    npin_t* x  = input_signal_list->pins[0];
+    npin_t* y  = input_signal_list->pins[1];
+    npin_t* b_ = input_signal_list->pins[2];
+    npin_t* _c = input_signal_list->pins[3];
+
+    /* CR input pins */
+    npin_t* b = output_signal_list->pins[0]->net->driver_pins[0];
+    npin_t* p = output_signal_list->pins[1]->net->driver_pins[0];
+    npin_t* c = output_signal_list->pins[2]->net->driver_pins[0];
     
+    /*********************************************************************************************************
+     ********************************************* FULL SUBTRACTOR *******************************************
+     *********************************************************************************************************/
+    /* creating the full subtractor node */
+    nnode_t* fs_node = make_3port_gate(MINUS, 1, 1, 1, 1, node, node->traverse_visited);
+    /* allocating one more output port indicating the borrow out */
+    add_output_port_information(fs_node, 1);
+    allocate_more_output_pins(fs_node, 1);
+
+    /* connecting the input pins */
+    if (b_->node)
+        remap_pin_to_new_node(b_, fs_node, 0);
+    else
+        add_input_pin_to_node(fs_node, b_, 0);
+
+    if (x->node)
+        remap_pin_to_new_node(x, fs_node, 1);
+    else
+        add_input_pin_to_node(fs_node, x, 1);
+
+    if (y->node)
+        remap_pin_to_new_node(y, fs_node, 2);
+    else
+        add_input_pin_to_node(fs_node, y, 2);
+
+    /** 
+     * connecting output pins 
+     * [0]: b
+     * [1]: fs_out
+    */
+    /* b is already created so we only need to hook it up to the node */
+    add_output_pin_to_node(fs_node, b, 0);
+    b->net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 0);
+
+    /* need to create the fs_output_pin as an internal pin */
+    npin_t* new_pin1 = allocate_npin();
+    npin_t* fs_output_pin = allocate_npin();
+    nnet_t* new_net  = allocate_nnet();
+    new_net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 1);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(fs_node, new_pin1, 1);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(new_net, new_pin1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(new_net, fs_output_pin);    
+    
+
+    /*********************************************************************************************************
+     ************************************************** MUX **************************************************
+     *********************************************************************************************************/
+    /* creating the multiplexer node */
+    nnode_t* mux_node = make_3port_gate(MULTIPORT_nBIT_MUX, 1, 1, 1, 1, node, node->traverse_visited);
+    /* hook the selector c_ into the mux node */
+    if (_c->node)
+        remap_pin_to_new_node(_c, mux_node, 0);
+    else
+        add_input_pin_to_node(mux_node, _c, 0);
+    /* hook the mux input pins */
+    add_input_pin_to_node(mux_node, copy_input_npin(x), 1);
+    add_input_pin_to_node(mux_node, fs_output_pin, 2);
+
+    /**
+     * connecting mux output pin
+     * [0]: p 
+    */
+    /* p is already created so we only need to hook it up to the node */
+    add_output_pin_to_node(mux_node, p, 0);
+    p->net->name = make_full_ref_name(NULL, NULL, NULL, mux_node->name, 0);
+
+    /*********************************************************************************************************
+     *********************************************** BUF NODE ************************************************
+     *********************************************************************************************************/
+    /* creating a buf node for c */
+    nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, node->traverse_visited);
+    /* hook a copy of c_ into the buf node */
+    add_input_pin_to_node(buf_node, copy_input_npin(mux_node->input_pins[0]), 0);
+
+    /**
+     * connecting the output pin
+     * [0]: c
+     */
+    /* p is already created so we only need to hook it up to the node */
+    add_output_pin_to_node(buf_node, c, 0);
+    c->net->name = make_full_ref_name(NULL, NULL, NULL, buf_node->name, 0);
+}
+
+/**
+ * (function: CR_output_signal_init)
+ * 
+ * @brief initialize the output signals of each CR node
+ * 
+ * @return output signals
+ *         [0] = b
+ *         [1] = p
+ *         [2] = c 
+ */
+static signal_list_t* CR_output_signal_init () {
+    /* signal list to be returned */
+    signal_list_t* return_sig_list = init_signal_list();
+
+    npin_t* b     = allocate_npin();
+    npin_t* b_out = allocate_npin();
+    nnet_t* b_net = allocate_nnet();
+    /* hook up c into the c net */
+    add_driver_pin_to_net(b_net, b);
+    /* hook up the c_out to this c_net */
+    add_fanout_pin_to_net(b_net, b_out);
+    /* storing in the CR output signal for CR creation function */
+    add_pin_to_signal_list(return_sig_list, b_out);
+
+    npin_t* p     = allocate_npin();
+    npin_t* p_out = allocate_npin();
+    nnet_t* p_net = allocate_nnet();
+    /* hook up p into the p net */
+    add_driver_pin_to_net(p_net, p);
+    /* hook up the p_out to this p_net */
+    add_fanout_pin_to_net(p_net, p_out);
+    /* storing in the CR output signal for CR creation function */
+    add_pin_to_signal_list(return_sig_list, p_out);
+    
+    npin_t* c     = allocate_npin();
+    npin_t* c_out = allocate_npin();
+    nnet_t* c_net = allocate_nnet();
+    /* hook up c into the c net */
+    add_driver_pin_to_net(c_net, c);
+    /* hook up the c_out to this c_net */
+    add_fanout_pin_to_net(c_net, c_out);
+    /* storing in the CR output signal for CR creation function */
+    add_pin_to_signal_list(return_sig_list, c_out);
+
+    return (return_sig_list);   
 }

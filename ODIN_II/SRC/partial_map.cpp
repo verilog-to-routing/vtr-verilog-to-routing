@@ -49,6 +49,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist);
 
 void instantiate_not_logic(nnode_t* node, short mark, netlist_t* netlist);
 bool eliminate_buffer(nnode_t* node, short, netlist_t*);
+void shrink_register(nnode_t* node, short, netlist_t*);
 void instantiate_bitwise_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
 void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
 void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
@@ -133,6 +134,12 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             break;
         case BUF_NODE:
             eliminate_buffer(node, traverse_number, netlist);
+            break;
+        case FF_NODE:
+            /* shrinking registers to 1 bit reg to make the mappable */
+            if (node->num_input_pins > 2) {
+                shrink_register(node, traverse_number, netlist);
+            }
             break;
         case BITWISE_AND:
         case BITWISE_OR:
@@ -254,7 +261,6 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case OUTPUT_NODE:
         case GND_NODE:
         case VCC_NODE:
-        case FF_NODE:
         case PAD_NODE:
             /* some nodes already in the form that is mapable */
             break;
@@ -426,77 +432,74 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
     /* iterating over single bit muxes that has multiple (>2) port to turn them into 2-mux */
     while (single_bit_mux != NULL) {
         /**
-         **************************** <SINLGE BIT MUX> ***************************
-         * 
-         *                      SEL                
-         *                       |               
-         *                       / log(n) bits              
-         *                     |\|                     
-         *              1 bit  | \                     
-         *          in1 --'--> |1 \                     
-         *          in2 --'--> |1  |                     
-         *          in3 --'--> |1  |                    
-         *          in4 --'--> |1  |                    
-         *          in5 --'--> |1  |     1 bit          
-         *          in6 --'--> |1  | ------'------>                    
-         *          in7 --'--> |1  |                    
-         *          in8 --'--> |1  |                    
-         *          in9 --'--> |1  |                    
-         *               ...   |.. |                    
-         *          inN  ...   |n  |                    
-         *                     | /                      
-         *                     |/                       
-         * 
-         * 
-         **************************** <2-MUX-decoded> ****************************
-         * 
-         *                S[0]                                                                    
-         *               |\|                                                                      
-         *               | \                                                                      
-         *        1 ---  |0:|                                                                     
-         *               |  | --                                                          
-         *  (n/2)+1 ---  |1:|               S[0]                                                       
-         *               | /               |\|                                                         
-         *               |/                | \                                                         
-         *                            ---  |0:|                                                        
-         *                                 |  | --                                                      
-         *                S[0]        ---  |1:|                                                        
-         *               |\|               | /                                                         
-         *               | \               |/                                                          
-         *        2 ---  |0:|                                                             
-         *               |  | --                                                          
-         *  (n/2)+2 ---  |1:|                                S[0]                                          
-         *               | /                                |\|                                            
-         *               |/                                 | \                                            
-         *                                             ---  |0:|                                           
-         *                                                  |  | --                                                                                                                              
-         *                S[0]                         ---  |1:|                                           
-         *               |\|                                | /                                            
-         *               | \                                |/                                             
-         *        3 ---  |0:|                                                             
-         *               |  | --                                                          
-         *  (n/2)+3 ---  |1:|              S[0]                                                               
-         *               | /              |\|                                                                 
-         *               |/               | \                                                                 
-         *                           ---  |0:|                                                                
-         *                                |  | --                                                              
-         *                S[0]       ---  |1:|                                                                
-         *               |\|              | /                                                                 
-         *               | \              |/                                                                  
-         *        4 ---  |0:|                                                             
-         *               |  | --                                                                  
-         *  (n/2)+4 ---  |1:|                                                                     
-         *               | /                                                                      
-         *               |/                                                                       
-         *   
-         *   
-         *   
-         *               ...              ...              ...               
-         *      
-         *               ...              ...              ...               
-         *    
-         *               ...              ...              ...               
-         *  
+         ***************************************** <SINLGE BIT MUX> **************************************
+         *                                                                                               *
+         *                                       SEL                                                     *
+         *                                        |                                                      *
+         *                                        / log(n) bits                                          *
+         *                                      |\|                                                      *
+         *                               1 bit  | \                                                      *
+         *                           in1 --'--> |1 \                                                     *
+         *                           in2 --'--> |1  |                                                    *
+         *                           in3 --'--> |1  |                                                    *
+         *                           in4 --'--> |1  |                                                    *
+         *                           in5 --'--> |1  |     1 bit                                          *
+         *                           in6 --'--> |1  | ------'------>                                     *
+         *                           in7 --'--> |1  |                                                    *
+         *                           in8 --'--> |1  |                                                    *
+         *                           in9 --'--> |1  |                                                    *
+         *                                ...   |.. |                                                    *
+         *                           inN  ...   |n  |                                                    *
+         *                                      | /                                                      *
+         *                                      |/                                                       *
+         *                                                                                               *
+         *                                                                                               *
+         ********************************************* <2-MUX-decoded> ***********************************
+         *                                                                                               *
+         *                                 S[0]                                                          *
+         *                                |\|                                                            *
+         *                                | \                                                            *
+         *                         1 ---  |0:|                                                           *
+         *                                |  | --                                                        *
+         *                   (n/2)+1 ---  |1:|               S[0]                                        *
+         *                                | /               |\|                                          *
+         *                                |/                | \                                          *
+         *                                             ---  |0:|                                         *
+         *                                                  |  | --                                      *
+         *                                 S[0]        ---  |1:|                                         *
+         *                                |\|               | /                                          *
+         *                                | \               |/                                           *
+         *                         2 ---  |0:|                                                           *
+         *                                |  | --                                                        *
+         *                   (n/2)+2 ---  |1:|                                S[0]                       *
+         *                                | /                                |\|                         *
+         *                                |/                                 | \                         *
+         *                                                              ---  |0:|                        *
+         *                                                                   |  | --                     *
+         *                                 S[0]                         ---  |1:|                        *
+         *                                |\|                                | /                         *
+         *                                | \                                |/                          *
+         *                         3 ---  |0:|                                                           *
+         *                                |  | --                                                        *
+         *                   (n/2)+3 ---  |1:|              S[0]                                         *
+         *                                | /              |\|                                           *
+         *                                |/               | \                                           *
+         *                                            ---  |0:|                                          *
+         *                                                 |  | --                                       *
+         *                                 S[0]       ---  |1:|                                          *
+         *                                |\|              | /                                           *
+         *                                | \              |/                                            *
+         *                         4 ---  |0:|                                                           *
+         *                                |  | --                                                        *
+         *                   (n/2)+4 ---  |1:|                                                           *
+         *                                | /                                                            *
+         *                                |/                                                             *
+         *                                                                                               *
+         *                                ...              ...              ...                          *
+         *                                                                                               *
+         *                                ...              ...              ...                          *
+         *                                                                                               *
+         *                                ...              ...              ...                          *
          */
 
         /* keeping the information of each single bit mux */
@@ -516,18 +519,18 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
 
             /* iterating over each single bit 2-mux to connect inputs */
             for (j = 0; j < num_of_muxes; j++) {
-                /**
-                 * <MUX_2>
-                 *                                    SEL PORT       
-                 *                                       |       
-                 *  Port 1                               / 2 bits (sel, not sel)      
-                 *      0: not select                  |\|                 
-                 *      1: select               1 bit  | \            
-                 *  Port 2                  in1 --'--> |  |  1 bit          
-                 *      2: in1                         |  |---'--->          
-                 *      3: in2              in2 --'--> |  |           
-                 *                                     | /             
-                 *                                     |/                  
+                /**                                                                                      *
+                 * <MUX_2>                                                                               *
+                 *                                              SEL PORT                                 *
+                 *                                                 |                                     *
+                 *  Port 1                                         / 2 bits (sel, not sel)               *
+                 *      0: not select                            |\|                                     *
+                 *      1: select                         1 bit  | \                                     *
+                 *  Port 2                            in1 --'--> |  |  1 bit                             *
+                 *      2: in1                                   |  |---'--->                            *
+                 *      3: in2                        in2 --'--> |  |                                    *
+                 *                                               | /                                     *
+                 *                                               |/                                      *
                  */
                 muxes[i][j] = make_2port_gate(MUX_2, 2, 2, 1, single_bit_mux, mark);
                 // connect related pin of second_input to related multiplexer as a selector
@@ -658,6 +661,60 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
         }
     }
     return buffer_is_removed;
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: shrink_register )
+ *
+ * @brief multibit ff_nodes (registers) need to shrink into 
+ * multiple single bit ff_node 
+ * 
+ * @param node pointer to the register node
+ * @param mark unique traversal mark for partial mapping pass
+ * @param netlist pointer to the current netlist file
+ *-------------------------------------------------------------------------------------------*/
+void shrink_register(nnode_t* node, short mark, netlist_t* netlist) {
+    /* input pins include clk pin. num of inputs == num of outputs */
+    oassert(node->num_input_pins == node->num_output_pins + 1);
+
+    /**
+     * input_pin[0] -> CLK
+     * input_pin[1..n] -> D
+     * output_pin[0..n-1] -> Q
+     */
+
+    int i;
+    int width = node->num_output_pins;
+    /* container for clk pin */
+    npin_t* clk_pin = node->input_pins[width];
+
+    /* staarting from 1 since the first bit is clk */
+    for (i = 0; i < width; i++) {
+        /* creating a single bit ff_node */
+        nnode_t* ff_node = make_1port_gate(FF_NODE, 2, 1, node, mark);
+        ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* hook the clk pin to the new ff_node */
+        if (i != width - 1) {
+            add_input_pin_to_node(ff_node, copy_input_npin(clk_pin), 1);
+        } else {
+            remap_pin_to_new_node(clk_pin, ff_node, 1);
+        }
+
+        /* remapping the bit[i] of the register */
+        remap_pin_to_new_node(node->input_pins[i], ff_node, 0);
+
+        /* remapping the output pin, index is i-1 since we start from 1 */
+        remap_pin_to_new_node(node->output_pins[i], ff_node, 0);
+
+        /* adding the new generated node to the ff node list of the enetlist */
+        netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
+        netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
+        netlist->num_ff_nodes++;
+    }
+
+    // CLEAN UP
+    free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
