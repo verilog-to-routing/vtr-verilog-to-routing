@@ -419,7 +419,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
 
-    //Go through blocks with floorplan constraints to ensure we have the tightest constraint on each one.
+    /* Go through cluster blocks to calculate the tightest placement
+     * floorplan constraint for each constrained block
+     */
     propagate_place_constraints();
 
     // Loading legal placement locations
