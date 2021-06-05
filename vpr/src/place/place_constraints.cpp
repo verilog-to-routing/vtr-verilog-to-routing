@@ -142,7 +142,7 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
     return macro_pr;
 }
 
-void constraints_propagation() {
+void propagate_place_constraints() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 

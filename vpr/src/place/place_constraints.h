@@ -40,7 +40,12 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
 PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro);
 
 /*
- * Update macro member PR
+ * Update the PartitionRegions of non-head members of a macro,
+ * based on the constraint that was calculated for the head region.
+ * The constraint that was calculated for the head region considered all
+ * constrained blocks in the macro, so to calculate the constraint for the rest
+ * of the blocks, it is just the head constraint with the offset of the member
+ * applied.
  */
 PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset);
 
@@ -51,7 +56,7 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
  * This is done at the start of initial placement to ease floorplan legality checking
  * while placing macros during initial placement.
  */
-void constraints_propagation();
+void propagate_place_constraints();
 
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
