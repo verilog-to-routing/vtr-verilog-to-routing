@@ -4,18 +4,20 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/verilog
+circuits_dir=benchmarks/verilog/koios
 
 # Path to directory of architectures to use
 archs_dir=arch/COFFE_22nm
 
 # Add circuits to list to sweep
-circuit_list_add=spree.v
-circuit_list_add=or1200.v
-circuit_list_add=matmul_8x8_fp16.v
+circuit_list_add=eltwise_layer.v
+circuit_list_add=robot_rl.v
+circuit_list_add=softmax.v
+circuit_list_add=reduction_layer.v
+circuit_list_add=spmv.v
 
 # Add architectures to list to sweep
-arch_list_add=agilex_arch.xml
+arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
@@ -27,4 +29,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -crit_path_router_iterations 100
+script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300
