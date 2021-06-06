@@ -693,6 +693,201 @@ void iterate_adders_for_sub(netlist_t* netlist) {
     return;
 }
 
+
+/**
+ *-------------------------------------------------------------------------
+ * (function: instantiate_single_bit_sub3)
+ *
+ * Clean up the memory by deleting the list structure of adders
+ *	during optimization
+ *-----------------------------------------------------------------------*/
+void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netlist_t* netlist) {
+    oassert(node->input_port_sizes[0] == 1);
+    oassert(node->input_port_sizes[1] == 1);
+    oassert(node->output_port_sizes[0] == 1);
+
+    /*                                                                                                         *
+     * <SUB INTERNAL DESIGN>                                                                                   *
+     *                                                                                                         *
+     *      IN1 ----- \\‾‾``                                                                                   *
+     *          |      ||   ``                                                                                 *
+     *          |      ||   '' --------------------------------------------------  \\‾‾``                      *
+     *          |      ||   ,,                |                                     ||   ``                    *
+     *IN2 ------0----  //__,,                 |                                     ||   '' ----- DIFF         *
+     *    |     |   (first_xor)               |                                     ||   ,,                    *
+     *    |     |                             |                       -----------  //__,,                      *
+     *    |     |                             |                       |          (second_xor)                  *
+     *    |     |                             |                       |                                        *
+     *    |     |                             |                       |                                        *
+     *    |     |                             |                       |                                        *
+     *    |     |      BIN -------------------0-----------------------|                                        *
+     *    |     |                             |   |                                                            *
+     *    |     |                             |   |                                                            *
+     *    |     |                             |   |     ___                                                     *
+     *    |     |                             |   |____|   ⎞                                                    *
+     *    |     |                             |        |    ⎞                                                   *
+     *    |     |                             |        |     )----------------                                  *
+     *    |     |                             |__|\____|    ⎠                |            ____                   *
+     *    |     |         ___                    |/    |___⎠                 |-----------⎞    \                  *
+     *    |     |__|\____|   ⎞                     (first_xor_not)                        ⎞    ⎞                 *
+     *    |        |/    |    ⎞                                                            |    )--- BOUT        *
+     *    |     (IN_not) |     )--------------------------------------------------------- ⎠    ⎠                 *
+     *    |______________|    ⎠                                                          ⎠____/                  *
+     *                   |___⎠                                                         (first_or)                *
+     *                 (first_and)                                                                               *
+     *                                                                                                         *
+     */
+
+    /**
+     * SUB ports:
+     * 
+     * IN1:  1 bit input_port[0]
+     * IN2:  1 bit input_port[1]
+     * BIN:  1 bit input_port[2]
+     *  
+     * DIFF:  1 bit output_port[0]
+     * BOUT: 1 bit output_port[1]
+    */
+
+   npin_t* IN1  = node->input_pins[0];
+   npin_t* IN2  = node->input_pins[1];
+   npin_t* BIN  = (node->num_input_port_sizes == 3) ? node->input_pins[2] : NULL;
+ 
+   npin_t* DIFF  = node->output_pins[0];
+   npin_t* BOUT = (node->num_output_port_sizes == 2) ? node->output_pins[1] : NULL;
+
+    /*******************************************************************************
+     ********************************** DIFFERENCE ********************************* 
+     *******************************************************************************/
+    /* creating the first xor */
+    nnode_t* first_xor = make_2port_gate(LOGICAL_XOR, 1, 1, 1, node, traverse_mark_number);
+    /* remapping IN1 as the first input to XOR */
+    remap_pin_to_new_node(IN1, first_xor, 0);
+    /* remapping IN2 as the second input to XOR */
+    remap_pin_to_new_node(IN2, first_xor, 1);
+    /* create the first xor output pin */
+    /* need to create the fs_output_pin as an internal pin */
+    npin_t* first_xor_out1 = allocate_npin();
+    npin_t* first_xor_out2 = allocate_npin();
+    nnet_t* first_xor_net  = allocate_nnet();
+    first_xor_net->name = make_full_ref_name(NULL, NULL, NULL, first_xor->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(first_xor, first_xor_out1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(first_xor_net, first_xor_out1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(first_xor_net, first_xor_out2);  
+
+    /* creating the second xor */
+    nnode_t* second_xor = make_2port_gate(LOGICAL_XOR, 1, 1, 1, node, traverse_mark_number);
+    /* remapping first_xor_out2 as the first input to XOR */
+    add_input_pin_to_node(second_xor, first_xor_out2, 0);
+    /* remapping BIN as the second input to XOR */
+    if (BIN == NULL) {
+        remap_pin_to_new_node(BIN, second_xor, 1);
+    } else {
+        add_input_pin_to_node(second_xor, get_zero_pin(netlist), 1);
+    }
+    /* need to remap the DIFF as second xor output pin */
+    remap_pin_to_new_node(DIFF, second_xor, 0);    
+
+    /*******************************************************************************
+     ************************************* BORROW ********************************** 
+     *******************************************************************************/
+    /* creating not IN1 */
+    nnode_t* IN1_not = make_1port_gate(LOGICAL_NOT, 1, 1, node, traverse_mark_number);
+    /* adding IN1 as the first input */
+    add_input_pin_to_node(IN1_not, IN1, 0);
+    /* create the not and output pin */
+    npin_t* IN1_not_out1 = allocate_npin();
+    npin_t* IN1_not_out2 = allocate_npin();
+    nnet_t* IN1_not_net  = allocate_nnet();
+    IN1_not_net->name = make_full_ref_name(NULL, NULL, NULL, IN1_not->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(IN1_not, IN1_not_out1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(IN1_not_net, IN1_not_out1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(IN1_not_net, IN1_not_out2);
+
+    /* creating the first and */
+    nnode_t* first_and = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, traverse_mark_number);
+    /* remapping IN1 as the first input to XOR */
+    add_input_pin_to_node(first_and, IN1_not_out2, 0);
+    /* remapping IN2 as the second input to XOR */
+    add_input_pin_to_node(first_and, IN2, 1);
+    /* create the first and output pin */
+    npin_t* first_and_out1 = allocate_npin();
+    npin_t* first_and_out2 = allocate_npin();
+    nnet_t* first_and_net  = allocate_nnet();
+    first_and_net->name = make_full_ref_name(NULL, NULL, NULL, first_and->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(first_and, first_and_out1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(first_and_net, first_and_out1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(first_and_net, first_and_out2);  
+
+    /* creating not first_xor */
+    nnode_t* first_xor_not = make_1port_gate(LOGICAL_NOT, 1, 1, node, traverse_mark_number);
+    /* adding first_xor as the first input */
+    add_input_pin_to_node(first_xor_not, first_xor_out2, 0);
+    /* create the not and output pin */
+    npin_t* first_xor_not_out1 = allocate_npin();
+    npin_t* first_xor_not_out2 = allocate_npin();
+    nnet_t* first_xor_not_net  = allocate_nnet();
+    first_xor_not_net->name = make_full_ref_name(NULL, NULL, NULL, first_xor_not->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(first_xor_not, first_xor_not_out1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(first_xor_not_net, first_xor_not_out1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(first_xor_not_net, first_xor_not_out2);
+
+    /* creating the second_and */
+    nnode_t* second_and = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, traverse_mark_number);
+    /* remapping IN1 as the first input to XOR */
+    add_input_pin_to_node(second_and, BIN, 0);
+    /* remapping IN2 as the second input to XOR */
+    add_input_pin_to_node(second_and, first_xor_not_out2, 1);
+    /* create the second_and output pin */
+    npin_t* second_and_out1 = allocate_npin();
+    npin_t* second_and_out2 = allocate_npin();
+    nnet_t* second_and_net  = allocate_nnet();
+    second_and_net->name = make_full_ref_name(NULL, NULL, NULL, second_and->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(second_and, second_and_out1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(second_and_net, second_and_out1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(second_and_net, second_and_out2);
+
+    /* creating the first_or */
+    nnode_t* first_or = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, traverse_mark_number);
+    /* remapping IN1 as the first input to XOR */
+    add_input_pin_to_node(first_or, second_and_out2, 0);
+    /* remapping IN2 as the second input to XOR */
+    add_input_pin_to_node(first_or, first_and_out2, 1);
+    if (BOUT == NULL) {
+        /* create the first_or output pin */
+        npin_t* first_or_out1 = allocate_npin();
+        npin_t* first_or_out2 = allocate_npin();
+        nnet_t* first_or_net  = allocate_nnet();
+        first_or_net->name = make_full_ref_name(NULL, NULL, NULL, first_or->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(first_or, first_or_out1, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(first_or_net, first_or_out1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(first_or_net, first_or_out2);
+    } else {
+        remap_pin_to_new_node(BOUT, first_or, 0);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+}
+
 /*-------------------------------------------------------------------------
  * (function: clean_adders)
  *
