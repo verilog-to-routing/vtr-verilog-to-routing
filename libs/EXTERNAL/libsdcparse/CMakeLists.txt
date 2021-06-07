@@ -66,4 +66,4 @@ if (USES_IPO)
     endforeach()
 endif()
 
-install(TARGETS libsdcparse sdcparse_test DESTINATION bin)
+install(TARGETS libsdcparse DESTINATION bin)
