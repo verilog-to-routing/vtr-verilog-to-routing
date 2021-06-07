@@ -4572,14 +4572,14 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 4,
-        "logic element": 18,
+        "logic element": 24,
         "latch": 3,
         "Adder": 5,
         "generic logic size": 4,
-        "Longest Path": 14,
+        "Longest Path": 17,
         "Average Path": 5,
-        "Estimated LUTs": 18,
-        "Total Node": 27
+        "Estimated LUTs": 24,
+        "Total Node": 33
     },
     "operators/twobits_arithmetic_mod/no_arch": {
         "test_name": "operators/twobits_arithmetic_mod/no_arch",
@@ -4594,12 +4594,12 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 4,
-        "logic element": 50,
+        "logic element": 58,
         "latch": 3,
-        "Longest Path": 24,
+        "Longest Path": 27,
         "Average Path": 5,
-        "Estimated LUTs": 50,
-        "Total Node": 54
+        "Estimated LUTs": 58,
+        "Total Node": 62
     },
     "DEFAULT": {
         "test_name": "n/a",
