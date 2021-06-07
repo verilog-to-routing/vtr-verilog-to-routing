@@ -1,5 +1,0 @@
-regression_tests/vtr_reg_nightly_extended/titan_other
-regression_tests/vtr_reg_nightly_extended/titan_quick_qor
-regression_tests/vtr_reg_nightly_extended/vpr_ispd
-
-
