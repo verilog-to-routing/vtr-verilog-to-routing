@@ -322,7 +322,7 @@
         </pb_type>
         <interconnect>
           <direct name="inpad" input="inpad.inpad" output="io.inpad">
-            "
+            <delay_constant max="4.243e-11" min="3.92e-11" in_port="inpad.inpad" out_port="io.inpad"/>
           </direct>
         </interconnect>
       </mode>
