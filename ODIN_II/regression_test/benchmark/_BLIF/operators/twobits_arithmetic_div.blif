@@ -2,18 +2,18 @@
 
 .model simple_op
 .inputs clk reset a[0] a[1] a[2] a[3] b[0] b[1] b[2] b[3]
-.outputs out[0] out[1] out[2] out[3] out[4] out[5] out[6] clk_out
-.subckt $div A[0]=a[0] A[1]=a[1] A[2]=a[2] A[3]=a[3] B[0]=b[0] B[1]=b[1] B[2]=b[2] B[3]=b[3] Y[0]=b_$div_B_Y[0] Y[1]=b_$div_B_Y[1] Y[2]=b_$div_B_Y[2] Y[3]=b_$div_B_Y[3] Y[4]=b_$div_B_Y[4] Y[5]=b_$div_B_Y[5] Y[6]=b_$div_B_Y[6]
+.outputs out[0] out[1] out[2] out[3] out[4] out[5] out[6] out[7] clk_out
+.subckt $div A[0]=a[0] A[1]=a[1] A[2]=a[2] A[3]=a[3] B[0]=b[0] B[1]=b[1] B[2]=b[2] B[3]=b[3] Y[0]=b_$div_B_Y[0] Y[1]=b_$div_B_Y[1] Y[2]=b_$div_B_Y[2] Y[3]=b_$div_B_Y[3] Y[4]=b_$div_B_Y[4] Y[5]=b_$div_B_Y[5] Y[6]=b_$div_B_Y[6] Y[7]=b_$div_B_Y[7]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000100
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000100
-.param Y_WIDTH 00000000000000000000000000000111
-.subckt $sdff CLK=clk D[0]=b_$div_B_Y[0] D[1]=b_$div_B_Y[1] D[2]=b_$div_B_Y[2] D[3]=b_$div_B_Y[3] D[4]=b_$div_B_Y[4] D[5]=b_$div_B_Y[5] D[6]=b_$div_B_Y[6] Q[0]=out[0] Q[1]=out[1] Q[2]=out[2] Q[3]=out[3] Q[4]=out[4] Q[5]=out[5] Q[6]=out[6] SRST=reset
+.param Y_WIDTH 00000000000000000000000000001000
+.subckt $sdff CLK=clk D[0]=b_$div_B_Y[0] D[1]=b_$div_B_Y[1] D[2]=b_$div_B_Y[2] D[3]=b_$div_B_Y[3] D[4]=b_$div_B_Y[4] D[5]=b_$div_B_Y[5] D[6]=b_$div_B_Y[6] D[7]=b_$div_B_Y[7] Q[0]=out[0] Q[1]=out[1] Q[2]=out[2] Q[3]=out[3] Q[4]=out[4] Q[5]=out[5] Q[6]=out[6] Q[7]=out[7] SRST=reset
 .param CLK_POLARITY 00000000000000000000000000000001
 .param SRST_POLARITY 00000000000000000000000000000001
-.param SRST_VALUE 0000000
-.param WIDTH 00000000000000000000000000000111
+.param SRST_VALUE 00000000
+.param WIDTH 00000000000000000000000000001000
 .names clk clk_out
 1 1
 .end

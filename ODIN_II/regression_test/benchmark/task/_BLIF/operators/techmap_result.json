@@ -2165,18 +2165,32 @@
         "test_name": "operators/twobits_arithmetic_div/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "twobits_arithmetic_div.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$div' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 9,
+        "Po": 9,
+        "logic element": 60,
+        "latch": 8,
+        "Adder": 19,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 34,
+        "Average Path": 5,
+        "Estimated LUTs": 60,
+        "Total Node": 88
     },
     "operators/twobits_arithmetic_div/no_arch": {
         "test_name": "operators/twobits_arithmetic_div/no_arch",
         "input_blif": "twobits_arithmetic_div.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$div' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 9,
+        "Po": 9,
+        "logic element": 186,
+        "latch": 8,
+        "Longest Path": 64,
+        "Average Path": 5,
+        "Estimated LUTs": 186,
+        "Total Node": 195
     },
     "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2216,18 +2230,32 @@
         "test_name": "operators/twobits_arithmetic_mod/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "twobits_arithmetic_mod.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$mod' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 4,
+        "logic element": 18,
+        "latch": 3,
+        "Adder": 5,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 14,
+        "Average Path": 5,
+        "Estimated LUTs": 18,
+        "Total Node": 27
     },
     "operators/twobits_arithmetic_mod/no_arch": {
         "test_name": "operators/twobits_arithmetic_mod/no_arch",
         "input_blif": "twobits_arithmetic_mod.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$mod' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 4,
+        "logic element": 50,
+        "latch": 3,
+        "Longest Path": 24,
+        "Average Path": 5,
+        "Estimated LUTs": 50,
+        "Total Node": 54
     },
     "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",

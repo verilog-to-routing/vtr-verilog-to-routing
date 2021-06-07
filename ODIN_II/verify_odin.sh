@@ -60,6 +60,7 @@ _GENERATE_CONFIG="off"
 _FORCE_SIM="off"
 _DRY_RUN="off"
 _RANDOM_DRY_RUN="off"
+_GENERATE_BLIF="off"
 _REGENERATE_BLIF="off"
 _REGENERATE_EXPECTATION="off"
 _GENERATE_EXPECTATION="off"
@@ -125,6 +126,7 @@ printf "Called program with $INPUT
 		--override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
 		--dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow 
 		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
+		--generate_blifs                $(_prt_cur_arg ${_GENERATE_BLIF}) generate the missing blifs of verilog files located in benchmark/_BLIF
 		--regenerate_blifs              $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/_BLIF
 		--regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
 		--generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
@@ -196,7 +198,12 @@ function find_in_bench() {
 function generate_blifs() {
     
     TASK="$1"
-    echo "Generating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
+    if [ _${_GENERATE_BLIF} = "_on" ]; then
+        echo "Generating missed BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
+    else
+        echo "Regenerating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
+    fi
+
     ${THIS_DIR}/run_yosys.sh  ${_RUN_YOSYS_ARGS} -t "${TASK}"
 }
     
@@ -393,7 +400,12 @@ function parse_args() {
 					_RANDOM_DRY_RUN="on"
 					echo "random dry run"
 
-				;;--regenerate_blif)
+				;;--generate_blif)
+					_REGENERATE_BLIF="on"
+                    _RUN_YOSYS_ARGS+=""
+					echo "generating missed blifs of benchmark/_BLIF"
+				
+                ;;--regenerate_blif)
 					_REGENERATE_BLIF="on"
                     _RUN_YOSYS_ARGS+="--regenerate_blif"
 					echo "regenerating blifs of benchmark/_BLIF"
@@ -1604,7 +1616,7 @@ function run_suite() {
 
 	for (( i = 0; i < ${#task_list[@]}; i++ ));
 	do
-        if [ _${_REGENERATE_BLIF} == "_on" ]; then
+        if [ _${_REGENERATE_BLIF} == "_on" ] || [ _${_GENERATE_BLIF} == "_on" ]; then
             generate_blifs "${task_list[$i]}"
         fi
         run_task "${task_list[$i]}"
