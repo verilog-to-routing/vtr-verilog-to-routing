@@ -1856,6 +1856,9 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (MODULO): //fallthrough
         case (DIVIDE): //fallthrough
         case (MULTIPLY): //fallthrough
+        case (DLATCH): //fallthrough
+        case (ADLATCH): //fallthrough
+        case (ADFF): //fallthrough
         case (DFFE): //fallthrough
         case (ADFFE): //fallthrough
         case (FF_NODE): //fallthrough
@@ -2061,12 +2064,15 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
          case (SR): //fallthrough
          case (ASL): //fallthrough
          case (ASR): //fallthrough
-         case (FF_NODE): //fallthrough
-         case (DFFE): //fallthrough
+         case (DLATCH): //fallthrough
+         case (ADLATCH): //fallthrough
+         case (ADFF): //fallthrough
          case (SDFF): //fallthrough
+         case (DFFE): //fallthrough
          case (ADFFE): //fallthrough
          case (SDFFE): //fallthrough
-         case (DFFSR): {
+         case (DFFSR): //fallthrough
+         case (FF_NODE):  {
              return_value = true;
              break;
          }

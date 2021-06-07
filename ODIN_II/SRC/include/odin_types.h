@@ -266,11 +266,14 @@ enum operation_list {
     MULTI_BIT_MUX_2,    // like MUX_2 but with n-bit input/output
     MULTIPORT_nBIT_MUX, // n-bit input/output in multiple ports
     PMUX,               // Multiplexer with many inputs using one-hot select signal
+    ADFF,               // data, A to areset value and output port
     SDFF,               // data, S to reset value and output port
     DFFE,               // data, enable to output port
     ADFFE,              // data, asynchronous reset value and enable to output port
     SDFFE,              // data, synchronous reset value and enable to output port
     DFFSR,              // data, clear and set to output port
+    DLATCH,             // datato output port based on polarity without clk
+    ADLATCH,             // datato output port based on polarity without clk
                         // [END] operations to cover yosys subckt
     operation_list_END
 };

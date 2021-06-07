@@ -427,13 +427,14 @@ static nnode_t** transform_to_single_bit_mux_nodes(nnode_t* node, uintptr_t trav
 void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t* netlist) {
     int i, j;
 
+    int num_single_muxes = node->num_output_pins;
     /* This split the multiport n bit mux node into multiport 1 bit muxes*/
     nnode_t** single_bit_muxes = transform_to_single_bit_mux_nodes(node, mark, netlist);
 
-    int cnt = 0;
-    nnode_t* single_bit_mux = single_bit_muxes[cnt];
+    int cnt;
     /* iterating over single bit muxes that has multiple (>2) port to turn them into 2-mux */
-    while (single_bit_mux != NULL) {
+    for (cnt = 0; cnt < num_single_muxes; cnt++) {
+        nnode_t* single_bit_mux = single_bit_muxes[cnt];
         /**
          ***************************************** <SINLGE BIT MUX> **************************************
          *                                                                                               *
@@ -606,10 +607,6 @@ void instantiate_multi_port_single_bit_mux(nnode_t* node, short mark, netlist_t*
 
         // to free each single mux node
         free_nnode(single_bit_mux);
-
-        /* counter to iterate over single bit muxes */
-        single_bit_mux = single_bit_muxes[cnt + 1];
-        cnt++;
     }
 
     // CLEAN UP

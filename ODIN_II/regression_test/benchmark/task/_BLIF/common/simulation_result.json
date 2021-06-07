@@ -464,16 +464,16 @@
         "exec_time(ms)": 17.1,
         "simulation_time(ms)": 4.2,
         "test_coverage(%)": 100,
-        "Latch Drivers": 1,
-        "Pi": 4,
+        "Latch Drivers": 2,
+        "Pi": 3,
         "Po": 2,
         "logic element": 12,
-        "latch": 2,
+        "latch": 4,
         "generic logic size": 4,
         "Longest Path": 9,
-        "Average Path": 5,
+        "Average Path": 6,
         "Estimated LUTs": 12,
-        "Total Node": 15
+        "Total Node": 18
     },
     "common/adffe/no_arch": {
         "test_name": "common/adffe/no_arch",
@@ -485,15 +485,15 @@
         "exec_time(ms)": 5.9,
         "simulation_time(ms)": 4.2,
         "test_coverage(%)": 100,
-        "Latch Drivers": 1,
-        "Pi": 4,
+        "Latch Drivers": 2,
+        "Pi": 3,
         "Po": 2,
         "logic element": 12,
-        "latch": 2,
+        "latch": 4,
         "Longest Path": 9,
-        "Average Path": 5,
+        "Average Path": 6,
         "Estimated LUTs": 12,
-        "Total Node": 15
+        "Total Node": 18
     },
     "common/sdffe/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/sdffe/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -865,6 +865,124 @@
         "Average Path": 9,
         "Estimated LUTs": 189,
         "Total Node": 189
+    },
+    "common/adff/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/adff/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "adff_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 16.1,
+        "simulation_time(ms)": 3.2,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 2,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 4,
+        "generic logic size": 4,
+        "Longest Path": 7,
+        "Average Path": 6,
+        "Estimated LUTs": 7,
+        "Total Node": 13
+    },
+    "common/adff/no_arch": {
+        "test_name": "common/adff/no_arch",
+        "generated_blif": "adff_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 4.9,
+        "simulation_time(ms)": 3.2,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 2,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 7,
+        "latch": 4,
+        "Longest Path": 7,
+        "Average Path": 6,
+        "Estimated LUTs": 7,
+        "Total Node": 13
+    },
+    "common/adlatch/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/adlatch/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "adlatch_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 17,
+        "simulation_time(ms)": 3.9,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 12,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 6,
+        "Estimated LUTs": 12,
+        "Total Node": 12
+    },
+    "common/adlatch/no_arch": {
+        "test_name": "common/adlatch/no_arch",
+        "generated_blif": "adlatch_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 5.5,
+        "simulation_time(ms)": 3.9,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 12,
+        "Longest Path": 8,
+        "Average Path": 6,
+        "Estimated LUTs": 12,
+        "Total Node": 12
+    },
+    "common/dlatch/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/dlatch/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "dlatch_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 16,
+        "simulation_time(ms)": 2.7,
+        "test_coverage(%)": 100,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 7,
+        "generic logic size": 4,
+        "Longest Path": 7,
+        "Average Path": 5,
+        "Estimated LUTs": 7,
+        "Total Node": 7
+    },
+    "common/dlatch/no_arch": {
+        "test_name": "common/dlatch/no_arch",
+        "generated_blif": "dlatch_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 4.2,
+        "simulation_time(ms)": 2.7,
+        "test_coverage(%)": 100,
+        "Pi": 3,
+        "Po": 2,
+        "logic element": 7,
+        "Longest Path": 7,
+        "Average Path": 5,
+        "Estimated LUTs": 7,
+        "Total Node": 7
     },
     "DEFAULT": {
         "test_name": "n/a",
