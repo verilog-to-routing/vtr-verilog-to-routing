@@ -282,7 +282,7 @@ $ ./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 ```
 ## Running in a large cluster using SLURM
 For the very large runs, you can submit your runs on a large cluster. A template of submission script to 
-Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
+a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
 ## Odin Functionality Tests
 

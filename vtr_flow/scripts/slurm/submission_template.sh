@@ -14,7 +14,7 @@
 #SBATCH --job-name=vtr_test                             # Job name
 #SBATCH --mail-type=FAIL,END                            # When to send an email
 #SBATCH --mail-user=XXXX@mail.utoronto.ca               # The user's email
-#SBATCH --output=parallel_%j.log                        # Determine the output log file (%j) is the jobid
+#SBATCH --output=parallel_%j.log                        # Determine the output log file; (%j) is the jobid
 #SBATCH --error=error_%j.log                            # Determine the error log file
 #SBATCH --time=10:00:00                                 # The job time limit in hh:mm:ss
 
