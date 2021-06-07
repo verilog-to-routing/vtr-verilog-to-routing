@@ -136,6 +136,16 @@ struct aligned_allocator {
     }
 };
 
+/**
+ * @brief compare two aligned_allocators.
+ *
+ * Since the allocator doesn't have any internal state, all allocators for a given type are the same.
+ */
+template<typename T>
+bool operator==(const aligned_allocator<T>&, const aligned_allocator<T>&) {
+    return true;
+}
+
 } // namespace vtr
 
 #endif

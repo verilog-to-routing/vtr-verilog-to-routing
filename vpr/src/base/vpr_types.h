@@ -889,6 +889,7 @@ class t_place_algorithm {
   public:
     //Constructors
     t_place_algorithm() = default;
+    t_place_algorithm(const t_place_algorithm&) = default;
     t_place_algorithm(e_place_algorithm _algo)
         : algo(_algo) {}
     ~t_place_algorithm() = default;

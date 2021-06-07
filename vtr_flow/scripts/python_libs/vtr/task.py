@@ -293,7 +293,7 @@ def find_longest_task_description(configs):
 
 
 # pylint: disable=too-many-branches
-def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run=False):
+def create_jobs(args, configs, after_run=False):
     """
     Create the jobs to be executed depending on the configs.
     """
@@ -409,8 +409,6 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
                             qor_parse_command,
                             work_dir,
                             run_dir,
-                            longest_name,
-                            longest_arch_circuit,
                             golden_results,
                         )
                     )
@@ -428,8 +426,6 @@ def create_jobs(args, configs, longest_name=0, longest_arch_circuit=0, after_run
                         qor_parse_command,
                         work_dir,
                         run_dir,
-                        longest_name,
-                        longest_arch_circuit,
                         golden_results,
                     )
                 )
@@ -449,8 +445,6 @@ def create_job(
     qor_parse_command,
     work_dir,
     run_dir,
-    longest_name,
-    longest_arch_circuit,
     golden_results,
 ):
     """
@@ -459,21 +453,7 @@ def create_job(
     param_string = "common" + (("_" + param.replace(" ", "_")) if param else "")
     if not param:
         param = "common"
-    # determine spacing for nice output
-    num_spaces_before = int((longest_name - len(config.task_name))) + 8
-    num_spaces_after = int((longest_arch_circuit - len(work_dir + "/{}".format(param_string))))
-    cmd += [
-        "-name",
-        "{}:{}{}/{}{}".format(
-            config.task_name,
-            " " * num_spaces_before,
-            work_dir,
-            param_string,
-            " " * num_spaces_after,
-        ),
-    ]
 
-    cmd += ["-temp_dir", run_dir + "/{}".format(param_string)]
     expected_min_w = ret_expected_min_w(circuit, arch, golden_results, param)
     expected_min_w = (
         int(expected_min_w * args.minw_hint_factor)
@@ -514,6 +494,7 @@ def create_job(
         ]
         current_qor_parse_command.insert(0, run_dir + "/{}".format(load_script_param(param)))
     current_cmd = cmd.copy()
+    current_cmd += ["-temp_dir", run_dir + "/{}".format(param_string)]
     if param_string != "common":
         current_cmd += param.split(" ")
     return Job(

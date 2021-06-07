@@ -32,11 +32,10 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const int num_chans,
                                  const t_rr_type type,
                                  const t_chan_details& chan_details,
-                                 t_rr_node_indices& indices,
+                                 RRGraphBuilder& rr_graph_builder,
                                  int* index);
 
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
-                                  t_rr_node_indices& indices,
                                   const DeviceGrid& grid,
                                   int* index);
 
@@ -928,19 +927,8 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const int num_chans,
                                  const t_rr_type type,
                                  const t_chan_details& chan_details,
-                                 t_rr_node_indices& indices,
+                                 RRGraphBuilder& rr_graph_builder,
                                  int* index) {
-    VTR_ASSERT(indices[type].dim_size(0) == size_t(num_chans));
-    VTR_ASSERT(indices[type].dim_size(1) == size_t(chan_len));
-    VTR_ASSERT(indices[type].dim_size(2) == NUM_SIDES);
-    for (int chan = 0; chan < num_chans - 1; ++chan) {
-        for (int seg = 1; seg < chan_len - 1; ++seg) {
-            /* Alloc the track inode lookup list */
-            //Since channels have no side, we just use the first side
-            indices[type][chan][seg][0].resize(max_chan_width, OPEN);
-        }
-    }
-
     for (int chan = 0; chan < num_chans - 1; ++chan) {
         for (int seg = 1; seg < chan_len - 1; ++seg) {
             /* Assign an inode to the starts of tracks */
@@ -948,24 +936,32 @@ static void load_chan_rr_indices(const int max_chan_width,
             int y = (type == CHANX ? chan : seg);
             const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
-            for (unsigned track = 0; track < indices[type][chan][seg][0].size(); ++track) {
+            for (int track = 0; track < max_chan_width; ++track) {
+                /* TODO: May let the length() == 0 case go through, to model muxes */
                 if (seg_details[track].length() <= 0)
                     continue;
 
                 int start = get_seg_start(seg_details, track, chan, seg);
 
+                /* TODO: Now we still use the (y, x) convention here for CHANX. Should rework later */
+                int node_x = chan;
+                int node_y = start;
+                if (CHANX == type) {
+                    std::swap(node_x, node_y);
+                }
+
                 /* If the start of the wire doesn't have a inode,
                  * assign one to it. */
-                int inode = indices[type][chan][start][0][track];
-                if (OPEN == inode) {
-                    inode = *index;
+                RRNodeId inode = rr_graph_builder.node_lookup().find_node(node_x, node_y, type, track, SIDES[0]);
+                if (!inode) {
+                    inode = RRNodeId(*index);
                     ++(*index);
 
-                    indices[type][chan][start][0][track] = inode;
+                    rr_graph_builder.node_lookup().add_node(inode, chan, start, type, track, SIDES[0]);
                 }
 
                 /* Assign inode of start of wire to current position */
-                indices[type][chan][seg][0][track] = inode;
+                rr_graph_builder.node_lookup().add_node(inode, chan, seg, type, track, SIDES[0]);
             }
         }
     }
@@ -975,7 +971,6 @@ static void load_chan_rr_indices(const int max_chan_width,
  * TODO: these building functions should only talk to a RRGraphBuilder object
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
-                                  t_rr_node_indices& indices,
                                   const DeviceGrid& grid,
                                   int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
@@ -991,16 +986,12 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                     auto class_type = type->class_inf[iclass].type;
                     if (class_type == DRIVER) {
                         rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, iclass, SIDES[0]);
-                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x, y, SINK, iclass, SIDES[0]);
                     } else {
                         VTR_ASSERT(class_type == RECEIVER);
                         rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, iclass, SIDES[0]);
-                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), x, y, SOURCE, iclass, SIDES[0]);
                     }
                     ++(*index);
                 }
-                VTR_ASSERT(indices[SOURCE][x][y][0].size() == type->class_inf.size());
-                VTR_ASSERT(indices[SINK][x][y][0].size() == type->class_inf.size());
 
                 /* Limited sides for grids
                  *   The wanted side depends on the location of the grid.
@@ -1068,18 +1059,13 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                     auto class_type = type->class_inf[iclass].type;
 
                                     if (class_type == DRIVER) {
-                                        indices[OPIN][x_tile][y_tile][side].push_back(*index);
-                                        indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
+                                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, ipin, side);
                                         assigned_to_rr_node = true;
                                     } else {
                                         VTR_ASSERT(class_type == RECEIVER);
-                                        indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
-                                        indices[IPIN][x_tile][y_tile][side].push_back(*index);
+                                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, IPIN, ipin, side);
                                         assigned_to_rr_node = true;
                                     }
-                                } else {
-                                    indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
-                                    indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
                                 }
                             }
                         }
@@ -1099,25 +1085,6 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                         ++(*index);
                     }
                 }
-
-                //Sanity check
-                for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                    int x_tile = x + width_offset;
-                    for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                        int y_tile = y + height_offset;
-                        for (e_side side : SIDES) {
-                            //Note that the fast look-up stores all the indices for the pins on each side
-                            //It has a fixed size (either 0 or the number of pins)
-                            //Case 0 pins: the side is skipped as no pins are located on it
-                            //Case number of pins: there are pins on this side
-                            //and data query can be applied any pin id on this side
-                            VTR_ASSERT((indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
-                                       || (0 == indices[IPIN][x_tile][y_tile][side].size()));
-                            VTR_ASSERT((indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
-                                       || (0 == indices[OPIN][x_tile][y_tile][side].size()));
-                        }
-                    }
-                }
             }
         }
     }
@@ -1132,8 +1099,14 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 int root_x = x - width_offset;
                 int root_y = y - height_offset;
 
-                indices[SOURCE][x][y][0] = indices[SOURCE][root_x][root_y][0];
-                indices[SINK][x][y][0] = indices[SINK][root_x][root_y][0];
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SOURCE,
+                                                            SIDES[0]);
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SINK,
+                                                            SIDES[0]);
             }
         }
     }
@@ -1149,7 +1122,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
  *         This will block us when putting the RRGraphBuilder object as an input arguement 
  *         of this function
  */
-void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
+void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const int max_chan_width,
                                     const DeviceGrid& grid,
                                     int* index,
@@ -1162,20 +1135,20 @@ void alloc_and_load_rr_node_indices(t_rr_node_indices& indices,
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            indices[rr_type].resize({grid.height(), grid.width(), NUM_SIDES});
+            rr_graph_builder.node_lookup().resize_nodes(grid.height(), grid.width(), rr_type, NUM_SIDES);
         } else {
-            indices[rr_type].resize({grid.width(), grid.height(), NUM_SIDES});
+            rr_graph_builder.node_lookup().resize_nodes(grid.width(), grid.height(), rr_type, NUM_SIDES);
         }
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(g_vpr_ctx.mutable_device().rr_graph_builder, indices, grid, index);
+    load_block_rr_indices(rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
-                         CHANX, chan_details_x, indices, index);
+                         CHANX, chan_details_x, rr_graph_builder, index);
     load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
-                         CHANY, chan_details_y, indices, index);
+                         CHANY, chan_details_y, rr_graph_builder, index);
 }
 
 bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes) {
