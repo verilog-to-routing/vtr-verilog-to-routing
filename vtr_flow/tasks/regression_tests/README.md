@@ -73,40 +73,41 @@ Create golden results with:
 <scripts_path>/parse_vtr_task.py -create_golden -l <tasks_path>/regression_tests/vtr_reg_strong/task_list.txt
 ```
 
-## LEVEL THREE  - Nightly VTR Regression - `vtr_reg_nightly`
+## LEVEL THREE  - Nightly VTR Regression - `vtr_reg_nightly_test#`
 
- * To be run by automated build system every night.
+ * To be run by automated build system every night and on every pull request.
+ * To keep the wall-clock time of this suite under ~4 hours using -j8, it is divided into multiple sub-suites, and each of them are submitted as different jobs to different kokoro machines. 
  * Estimated Runtime: ~15-20 hours
 
 DO-IT-ALL COMMAND - This command will execute, parse, and check results.
 ```
-./run_reg_test.py vtr_reg_nightly
+./run_reg_test.py vtr_reg_nightly_test#
 ./run_reg_test.py vtr_reg_valgrind
 ```
 
 To create golden results, use:
 ```
-./run_reg_test.py -create_golden vtr_reg_nightly
+./run_reg_test.py -create_golden vtr_reg_nightly_test#
 ```
 
 Execute with:
 ```
-<scripts_path>/run_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/run_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_nightly_test#/task_list.txt
 ```
 
 Parse results with:
 ```
-<scripts_path>/parse_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/parse_vtr_task.py -l <tasks_path>/regression_tests/vtr_reg_nightly_test#/task_list.txt
 ```
 
 Check results with:
 ```
-<scripts_path>/parse_vtr_task.py -check_golden -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/parse_vtr_task.py -check_golden -l <tasks_path>/regression_tests/vtr_reg_nightly_test#/task_list.txt
 ```
 
 Create golden results with:
 ```
-<scripts_path>/parse_vtr_task.py -create_golden -l <tasks_path>/regression_tests/vtr_reg_nightly/task_list.txt
+<scripts_path>/parse_vtr_task.py -create_golden -l <tasks_path>/regression_tests/vtr_reg_nightly_test#/task_list.txt
 ```
 
 
