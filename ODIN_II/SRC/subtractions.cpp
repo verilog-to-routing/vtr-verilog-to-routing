@@ -702,39 +702,44 @@ void iterate_adders_for_sub(netlist_t* netlist) {
  *	during optimization
  *-----------------------------------------------------------------------*/
 void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netlist_t* netlist) {
+    /* validate input port sizes */
     oassert(node->input_port_sizes[0] == 1);
     oassert(node->input_port_sizes[1] == 1);
+    /* validate output port sizes */
+    oassert(node->num_output_port_sizes == 2);
     oassert(node->output_port_sizes[0] == 1);
+    oassert(node->output_port_sizes[1] == 1);
+
 
     /*                                                                                                         *
      * <SUB INTERNAL DESIGN>                                                                                   *
      *                                                                                                         *
-     *      IN1 ----- \\‾‾``                                                                                   *
-     *          |      ||   ``                                                                                 *
-     *          |      ||   '' --------------------------------------------------  \\‾‾``                      *
-     *          |      ||   ,,                |                                     ||   ``                    *
-     *IN2 ------0----  //__,,                 |                                     ||   '' ----- DIFF         *
-     *    |     |   (first_xor)               |                                     ||   ,,                    *
-     *    |     |                             |                       -----------  //__,,                      *
-     *    |     |                             |                       |          (second_xor)                  *
-     *    |     |                             |                       |                                        *
-     *    |     |                             |                       |                                        *
-     *    |     |                             |                       |                                        *
-     *    |     |      BIN -------------------0-----------------------|                                        *
-     *    |     |                             |   |                                                            *
-     *    |     |                             |   |                                                            *
-     *    |     |                             |   |     ___                                                     *
-     *    |     |                             |   |____|   ⎞                                                    *
-     *    |     |                             |        |    ⎞                                                   *
-     *    |     |                             |        |     )----------------                                  *
-     *    |     |                             |__|\____|    ⎠                |            ____                   *
-     *    |     |         ___                    |/    |___⎠                 |-----------⎞    \                  *
-     *    |     |__|\____|   ⎞                     (first_xor_not)                        ⎞    ⎞                 *
-     *    |        |/    |    ⎞                                                            |    )--- BOUT        *
-     *    |     (IN_not) |     )--------------------------------------------------------- ⎠    ⎠                 *
-     *    |______________|    ⎠                                                          ⎠____/                  *
-     *                   |___⎠                                                         (first_or)                *
-     *                 (first_and)                                                                               *
+     *       IN1 ----- \\‾‾``                                                                                  *
+     *           |      ||   ``                                                                                *
+     *           |      ||   '' --------------------------------------------------  \\‾‾``                     *
+     *           |      ||   ,,                |                                     ||   ``                   *
+     * IN2 ------0----  //__,,                 |                                     ||   '' ----- DIFF        *
+     *     |     |   (first_xor)               |                                     ||   ,,                   *
+     *     |     |                             |                       -----------  //__,,                     *
+     *     |     |                             |                       |          (second_xor)                 *
+     *     |     |                             |                       |                                       *
+     *     |     |                             |                       |                                       *
+     *     |     |                             |                       |                                       *
+     *     |     |      BIN -------------------0-----------------------|                                       *
+     *     |     |                             |   |                                                           *
+     *     |     |                             |   |                                                           *
+     *     |     |                             |   |     ___                                                   *
+     *     |     |                             |   |____|   ⎞                                                  *
+     *     |     |                             |        |    ⎞                                                 *
+     *     |     |                             |        |     )----------------                                *
+     *     |     |                             |__|\____|    ⎠                |            ____                *
+     *     |     |         ___                    |/    |___⎠                 |-----------⎞    \               *
+     *     |     |__|\____|   ⎞                     (first_xor_not)                        ⎞    ⎞              *
+     *     |        |/    |    ⎞                                                            |    )--- BOUT     *
+     *     |     (IN_not) |     )--------------------------------------------------------- ⎠    ⎠              *
+     *     |______________|    ⎠                                                          ⎠____/               *
+     *                    |___⎠                                                         (first_or)             *
+     *                  (first_and)                                                                            *
      *                                                                                                         *
      */
 
@@ -745,7 +750,7 @@ void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netl
      * IN2:  1 bit input_port[1]
      * BIN:  1 bit input_port[2]
      *  
-     * DIFF:  1 bit output_port[0]
+     * DIFF: 1 bit output_port[0]
      * BOUT: 1 bit output_port[1]
     */
 
@@ -753,8 +758,8 @@ void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netl
    npin_t* IN2  = node->input_pins[1];
    npin_t* BIN  = (node->num_input_port_sizes == 3) ? node->input_pins[2] : NULL;
  
-   npin_t* DIFF  = node->output_pins[0];
    npin_t* BOUT = (node->num_output_port_sizes == 2) ? node->output_pins[1] : NULL;
+   npin_t* DIFF  = node->output_pins[0];
 
     /*******************************************************************************
      ********************************** DIFFERENCE ********************************* 
@@ -784,9 +789,9 @@ void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netl
     add_input_pin_to_node(second_xor, first_xor_out2, 0);
     /* remapping BIN as the second input to XOR */
     if (BIN == NULL) {
-        remap_pin_to_new_node(BIN, second_xor, 1);
-    } else {
         add_input_pin_to_node(second_xor, get_zero_pin(netlist), 1);
+    } else {
+        remap_pin_to_new_node(BIN, second_xor, 1);
     }
     /* need to remap the DIFF as second xor output pin */
     remap_pin_to_new_node(DIFF, second_xor, 0);    
@@ -797,7 +802,7 @@ void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netl
     /* creating not IN1 */
     nnode_t* IN1_not = make_1port_gate(LOGICAL_NOT, 1, 1, node, traverse_mark_number);
     /* adding IN1 as the first input */
-    add_input_pin_to_node(IN1_not, IN1, 0);
+    add_input_pin_to_node(IN1_not, copy_input_npin(IN1), 0);
     /* create the not and output pin */
     npin_t* IN1_not_out1 = allocate_npin();
     npin_t* IN1_not_out2 = allocate_npin();
@@ -831,7 +836,7 @@ void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netl
     /* creating not first_xor */
     nnode_t* first_xor_not = make_1port_gate(LOGICAL_NOT, 1, 1, node, traverse_mark_number);
     /* adding first_xor as the first input */
-    add_input_pin_to_node(first_xor_not, first_xor_out2, 0);
+    add_input_pin_to_node(first_xor_not, copy_input_npin(first_xor_out2), 0);
     /* create the not and output pin */
     npin_t* first_xor_not_out1 = allocate_npin();
     npin_t* first_xor_not_out2 = allocate_npin();
@@ -847,7 +852,7 @@ void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netl
     /* creating the second_and */
     nnode_t* second_and = make_2port_gate(LOGICAL_AND, 1, 1, 1, node, traverse_mark_number);
     /* remapping IN1 as the first input to XOR */
-    add_input_pin_to_node(second_and, BIN, 0);
+    add_input_pin_to_node(second_and, copy_input_npin(BIN), 0);
     /* remapping IN2 as the second input to XOR */
     add_input_pin_to_node(second_and, first_xor_not_out2, 1);
     /* create the second_and output pin */

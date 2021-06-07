@@ -2504,7 +2504,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
          *  <------|   CR   |<-----------|   CR   |<----    ------|   CR   |<--                                                            *
          * |       |[0][n-1]|            |[0][n-2]|     ....      | [0][0] |                                                               *
          * |__|\___|  i  j  |            |  i  j  |     ....      |  i  j  |                                                               *
-         *    |/   |________|----------->|________|-----    ----->|________|-- c_0                                                         *
+         *    |/   |________|----------->|________|-----    ----->|________|-- c_2                                                         *
          *      _c     |        c    _c      |       c     _c         |                                                                    *
          *             |                     |                        |                                                                    *
          *             |    __________       |  d[n-1]                |  d[1]      D[m-n+1] d[0]                                           *
@@ -2524,7 +2524,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
          *                            <------|   CR   |<--   ------|   CR   |<--- |  -------|   CR   |<--------|   CR   |<-------          *
          *                           |       | [2][n] |  |         |[2][n-1]|    ....       | [2][1] |         | [1][0] |                  *
          *                           |__|\___|  i  j  |  gnd       |  i  j  |    ....       |  i  j  |         |  i  j  |                  *
-         *                              |/   |________|----------->|________|----    ------>|________|-------->|________|--> c[2]          *
+         *                              |/   |________|----------->|________|----    ------>|________|-------->|________|--> c[0]          *
          *                                _c               c    _c            c             _c          c   _c                             *
          *                                                                                                                                 *
          *                                      ....                  ....                     ....                ....                    *
@@ -2641,6 +2641,9 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
                 /* adding to output signal list for returning */
                 add_pin_to_signal_list(remainder_signal_list, p);
             }
+
+            // CLEAN UP
+            free_signal_list(CR_node_input_signals);
         }
 
         /**
@@ -2654,6 +2657,24 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
     /* validate the size of output signal lists */
     oassert(quotient_size == quotient_signal_list->count);
     oassert(remainder_size == remainder_signal_list->count);
+
+    // CLEAN UP
+    /* input signal list comes from modify div input size function */
+    for (i = 0; i < 2; i++) {
+        free_signal_list(input_signals[i]);
+    }
+    vtr::free(input_signals);
+    /* local variables */    
+    for (i = 0; i < divisor_size; i++) {
+        /* In the first row, the divisor is not shifting, so we need one less CR node */
+        int num_CR_per_row = (i == 0) ? (divisor_size) : (divisor_size + 1);
+        /* free each signal list */
+        for (j = 0; j < num_CR_per_row; j++) {
+            free_signal_list(CR_outputs[i][j]);
+        }
+        vtr::free(CR_outputs[i]);
+    }
+    vtr::free(CR_outputs);
 
     /* retrun signal lists -> [0]: quotient pins [1]: remainder pins */
     signal_list_t** return_sig_list = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
@@ -2700,7 +2721,7 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
             if (i < new_quotient_width) {    /* connect the calculatd quotient pin as buf node driver */
                 add_input_pin_to_node(buf_node, quotient_pin, 0);
                 /* remap the main div output pin to the buf node output pin */
-                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+                remap_pin_to_new_node(node->output_pins[new_quotient_width - i - 1], buf_node, 0);
             } else {
                 /* connect the calculatd quotient pin as buf node driver */
                 add_input_pin_to_node(buf_node, get_zero_pin(netlist), 0);
@@ -2711,20 +2732,25 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
         
         
     } else {
+        /* keep the record of extension size for future usage */
+        int extension_size = new_quotient_width - quotient_width;
+
         for (i = 0; i < new_quotient_width; i++) {
             npin_t* quotient_pin = quotient_signal_list->pins[i];
             /* creating a buf node to cionnect the calculated quotient to the main div node outputs */
             nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
 
-            if (i < quotient_width) {
+            if (i >= extension_size) {
                 add_input_pin_to_node(buf_node, quotient_pin, 0);
                 /* remap the main div output pin to the buf node output pin */
-                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+                remap_pin_to_new_node(node->output_pins[new_quotient_width - i - 1], buf_node, 0);
             } else {
                 /* dump the calculated pin since it is extra */
                 remove_fanout_pins_from_net(quotient_pin->net,
                                             quotient_pin,
                                             quotient_pin->pin_net_idx);
+                /* [TEMPORARY] CLEAN UP*/
+                free_npin(quotient_pin);
             }
         }
     }
@@ -2736,7 +2762,17 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
         remove_fanout_pins_from_net(remainder_pin->net,
                                     remainder_pin,
                                     remainder_pin->pin_net_idx);
+
+        /* [TEMPORARY] CLEAN UP*/
+        free_npin(remainder_pin);
     }
+
+    // CLEAN UP
+    for (i = 0; i < 2; i++) {
+        free_signal_list(output_signals[i]);
+    }
+    vtr::free(output_signals);
+    
 }
 
 /**
@@ -2823,20 +2859,20 @@ static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signa
     allocate_more_output_pins(fs_node, 1);
 
     /* connecting the input pins */
-    if (b_->node)
-        remap_pin_to_new_node(b_, fs_node, 0);
-    else
-        add_input_pin_to_node(fs_node, b_, 0);
-
     if (x->node)
-        remap_pin_to_new_node(x, fs_node, 1);
+        remap_pin_to_new_node(x, fs_node, 0);
     else
-        add_input_pin_to_node(fs_node, x, 1);
+        add_input_pin_to_node(fs_node, x, 0);
 
     if (y->node)
-        remap_pin_to_new_node(y, fs_node, 2);
+        remap_pin_to_new_node(y, fs_node, 1);
     else
-        add_input_pin_to_node(fs_node, y, 2);
+        add_input_pin_to_node(fs_node, y, 1);
+    
+    if (b_->node)
+        remap_pin_to_new_node(b_, fs_node, 2);
+    else
+        add_input_pin_to_node(fs_node, b_, 2);
 
     /** 
      * connecting output pins 
@@ -2844,16 +2880,16 @@ static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signa
      * [1]: fs_out
     */
     /* b is already created so we only need to hook it up to the node */
-    add_output_pin_to_node(fs_node, b, 0);
-    b->net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 0);
+    add_output_pin_to_node(fs_node, b, 1);
+    b->net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 1);
 
     /* need to create the fs_output_pin as an internal pin */
     npin_t* new_pin1 = allocate_npin();
     npin_t* fs_output_pin = allocate_npin();
     nnet_t* new_net  = allocate_nnet();
-    new_net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 1);
+    new_net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 0);
     /* hook the output pin into the node */
-    add_output_pin_to_node(fs_node, new_pin1, 1);
+    add_output_pin_to_node(fs_node, new_pin1, 0);
     /* hook up new pin 1 into the new net */
     add_driver_pin_to_net(new_net, new_pin1);
     /* hook up the new pin 2 to this new net */
