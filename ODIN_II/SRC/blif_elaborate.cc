@@ -255,18 +255,18 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case MULTIPLY: {
             /** 
+             * <postpone multiply techmap to partial ampping phase>
+             * Adding to mult_list for future checking on hard blocks
+             */
+            if (hard_multipliers)
+                node = resolve_arithmetic_node(node, traverse_number, netlist);
+            /** 
              * check for constant multipication that should turn into RTL design here
              */
-            if (!check_constant_multipication(node, traverse_number, netlist)) {
-                /** 
-                 * <postpone multiply techmap to partial ampping phase>
-                 * Adding to mult_list for future checking on hard blocks
-                 */
-                if (hard_multipliers)
-                    node = resolve_arithmetic_node(node, traverse_number, netlist);
+            else
+                check_constant_multipication(node, traverse_number, netlist);
 
-                mult_list = insert_in_vptr_list(mult_list, node);
-            }
+            mult_list = insert_in_vptr_list(mult_list, node);
             break;
         }
         case MODULO: {

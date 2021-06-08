@@ -2555,6 +2555,24 @@
         "Estimated LUTs": 15,
         "Total Node": 23
     },
+    "micro/param_override/no_arch": {
+        "test_name": "micro/param_override/no_arch",
+        "generated_blif": "param_override_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.4,
+        "exec_time(ms)": 40,
+        "simulation_time(ms)": 36.8,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 24,
+        "logic element": 205,
+        "Longest Path": 19,
+        "Average Path": 5,
+        "Estimated LUTs": 205,
+        "Total Node": 205
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

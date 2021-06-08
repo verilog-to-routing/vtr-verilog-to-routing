@@ -921,12 +921,12 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 12,
+        "logic element": 17,
         "generic logic size": 4,
-        "Longest Path": 8,
+        "Longest Path": 10,
         "Average Path": 6,
-        "Estimated LUTs": 12,
-        "Total Node": 12
+        "Estimated LUTs": 17,
+        "Total Node": 17
     },
     "common/adlatch/no_arch": {
         "test_name": "common/adlatch/no_arch",
@@ -940,11 +940,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 12,
-        "Longest Path": 8,
+        "logic element": 17,
+        "Longest Path": 10,
         "Average Path": 6,
-        "Estimated LUTs": 12,
-        "Total Node": 12
+        "Estimated LUTs": 17,
+        "Total Node": 17
     },
     "common/dlatch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/dlatch/k6_frac_N10_frac_chain_mem32K_40nm",

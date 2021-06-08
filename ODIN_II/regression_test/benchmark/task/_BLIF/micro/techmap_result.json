@@ -2202,7 +2202,13 @@
     "micro/param_override/no_arch": {
         "test_name": "micro/param_override/no_arch",
         "input_blif": "param_override.blif",
-        "exit": 139
+        "Pi": 4,
+        "Po": 24,
+        "logic element": 205,
+        "Longest Path": 19,
+        "Average Path": 5,
+        "Estimated LUTs": 205,
+        "Total Node": 205
     },
     "DEFAULT": {
         "test_name": "n/a",
