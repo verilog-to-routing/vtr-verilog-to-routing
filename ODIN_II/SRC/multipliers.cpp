@@ -253,8 +253,6 @@ signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e 
     oassert(node->num_input_port_sizes == 2);
     oassert(node->num_output_port_sizes == 1);
 
-    signal_list_t* return_value = init_signal_list();
-
       /**
      * Multiply ports
      * IN1: (n bits)        input_port[0]
@@ -292,16 +290,7 @@ signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e 
     /* to keep the record of internal outputs for connection purposes */
     signal_list_t** internal_outputs = (signal_list_t**)vtr::calloc(const_operand_width, sizeof(signal_list_t*));
     /* implementing the multipication using shift and add operation */
-    for (i = 0; i < const_operand_width + 1; i++) {
-        /* checking a couple conditions to avoid going more further if there is not needed */
-        if (level_width > node->num_output_pins || i > const_operand_width) {
-            /* initializing the return value */
-            for (j = 0; j < internal_outputs[i - 1]->count; j++) {
-                add_pin_to_signal_list(return_value, internal_outputs[i - 1]->pins[j]);
-            }
-            break;
-        }
-
+    for (i = 0; i < const_operand_width; i++) {
         npin_t* pin = const_operand->pins[i];
         internal_outputs[i] = init_signal_list();
 
@@ -383,6 +372,7 @@ signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e 
                 /**************************************** ADD_NODE ***************************************/
                 /*****************************************************************************************/
                 nnode_t* add_node = make_2port_gate(ADD, level_width, level_width, level_width, node, mark);
+                add_list = insert_in_vptr_list(add_list, add_node);
                 /* connecting add node input pins */
                 for (j = 0; j < level_width; j++) {
                     /* connecting the previous stage internal outputs as the first add inputs */
@@ -421,11 +411,13 @@ signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e 
         level_width++;
     }
 
+    signal_list_t* return_value = internal_outputs[const_operand_width - 1];
+
     // CLEAN UP    
     free_signal_list(const_operand);
     free_signal_list(variable_operand);
 
-    for (i = 0; i < const_operand_width; i++) {
+    for (i = 0; i < const_operand_width - 1; i++) {
         free_signal_list(internal_outputs[i]);
     }
     vtr::free(internal_outputs);
@@ -444,29 +436,59 @@ signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e 
  * @param output_signal_list list of calculated pins
  * @param netlist pointer to the current netlist file
  * -------------------------------------------------------------------------*/
-void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list) {
+void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list, netlist_t* netlist) {
     /* validate the size of output width and num of signals */
     int output_width = node->num_output_pins;
-    oassert(output_width == output_signal_list->count);
 
     int i;
-    /* hook the output signals into the node output */
-    for (i = 0; i < output_signal_list->count; i++) {
-        npin_t* pin = output_signal_list->pins[i];
-        /* join nets of the output pin and the calculated pin */
-        nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, node->traverse_visited);
+    if (output_width < output_signal_list->count) {
+        /* hook the output signals into the node output */
+        for (i = 0; i < output_signal_list->count; i++) {
+            npin_t* pin = output_signal_list->pins[i];
+            /* join nets of the output pin and the calculated pin */
+            if (i < output_width) {
+                nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, node->traverse_visited);
 
-        /* connect the calculatd quotient pin as buf node driver */
-        add_input_pin_to_node(buf_node, pin, 0);
-        /* remap the main div output pin to the buf node output pin */
-        remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+                /* connect the calculatd quotient pin as buf node driver */
+                add_input_pin_to_node(buf_node, pin, 0);
+                /* remap the main div output pin to the buf node output pin */
+                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+            }
+            /* delete extra pins */
+            else {
+                /* detach from the net */
+                remove_fanout_pins_from_net(pin->net, pin, pin->pin_net_idx);
+                /* free pin */
+                free_npin(pin);
+            }
+        }
+    } else {
+        /* hook the output signals into the node output */
+        for (i = 0; i < output_width; i++) {
+            npin_t* output_pin = node->output_pins[i];
+            /* join nets of the output pin and the calculated pin */
+            if (i < output_signal_list->count) {
+                npin_t* pin = output_signal_list->pins[i];
+                
+                nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, node->traverse_visited);
+
+                /* connect the calculatd quotient pin as buf node driver */
+                add_input_pin_to_node(buf_node, pin, 0);
+                /* remap the main div output pin to the buf node output pin */
+                remap_pin_to_new_node(output_pin, buf_node, 0);
+            }
+            /* delete extra pins */
+            else {
+                /* detach from the net */
+                remap_pin_to_new_net(output_pin, netlist->zero_net);
+            }
+        }
     }
 
     // CLEAN UP
     free_signal_list(output_signal_list);
     for (i = 0; i < node->num_input_pins; i++) {
         npin_t* pin = node->input_pins[i];
-
         /* detach from input nets */
         remove_fanout_pins_from_net(pin->net, pin, pin->pin_net_idx);
 

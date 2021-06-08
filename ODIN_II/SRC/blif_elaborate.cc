@@ -519,7 +519,7 @@ static bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_
         signal_list_t* output_signals = implement_constant_multipication(node, is_const, static_cast<short>(traverse_mark_number), netlist);
 
         /* connecting the output pins */
-        connect_constant_mult_outputs(node, output_signals);
+        connect_constant_mult_outputs(node, output_signals, netlist);
     }
 
     return (is_const != mult_port_stat_e::NOT_CONSTANT);
