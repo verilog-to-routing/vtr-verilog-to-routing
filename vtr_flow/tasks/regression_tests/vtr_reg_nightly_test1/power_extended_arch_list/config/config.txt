@@ -36,6 +36,7 @@ arch_list_add=k6_N10_I40_Fi8_L4_frac1_ff2_45nm.xml
 # Parse info and how to parse
 parse_file=vpr_power.txt
 
+# How to parse QoR info
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
