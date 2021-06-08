@@ -696,18 +696,28 @@
         "test_name": "micro/bm_DL_16_1_mux/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bm_DL_16_1_mux.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$dlatch' with matching ports was not found."
-        ]
+        "Pi": 20,
+        "Po": 1,
+        "logic element": 181,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 23,
+        "Average Path": 7,
+        "Estimated LUTs": 181,
+        "Total Node": 181
     },
     "micro/bm_DL_16_1_mux/no_arch": {
         "test_name": "micro/bm_DL_16_1_mux/no_arch",
         "input_blif": "bm_DL_16_1_mux.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$dlatch' with matching ports was not found."
-        ]
+        "Pi": 20,
+        "Po": 1,
+        "logic element": 181,
+        "Longest Path": 23,
+        "Average Path": 7,
+        "Estimated LUTs": 181,
+        "Total Node": 181
     },
     "micro/bm_DL_2_1_mux/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_2_1_mux/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -985,23 +995,55 @@
         "test_name": "micro/bm_DL_BCD_7_segment_without_x/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bm_DL_BCD_7_segment_without_x.blif",
-        "exit": 139
+        "Pi": 4,
+        "Po": 7,
+        "logic element": 429,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 19,
+        "Average Path": 7,
+        "Estimated LUTs": 429,
+        "Total Node": 429
     },
     "micro/bm_DL_BCD_7_segment_without_x/no_arch": {
         "test_name": "micro/bm_DL_BCD_7_segment_without_x/no_arch",
         "input_blif": "bm_DL_BCD_7_segment_without_x.blif",
-        "exit": 139
+        "Pi": 4,
+        "Po": 7,
+        "logic element": 429,
+        "Longest Path": 19,
+        "Average Path": 7,
+        "Estimated LUTs": 429,
+        "Total Node": 429
     },
     "micro/bm_DL_BCD_adder/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_BCD_adder/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bm_DL_BCD_adder.blif",
-        "exit": 139
+        "Pi": 9,
+        "Po": 10,
+        "logic element": 36,
+        "Adder": 18,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 18,
+        "Average Path": 6,
+        "Estimated LUTs": 36,
+        "Total Node": 54
     },
     "micro/bm_DL_BCD_adder/no_arch": {
         "test_name": "micro/bm_DL_BCD_adder/no_arch",
         "input_blif": "bm_DL_BCD_adder.blif",
-        "exit": 139
+        "Pi": 9,
+        "Po": 10,
+        "logic element": 63,
+        "Longest Path": 17,
+        "Average Path": 6,
+        "Estimated LUTs": 63,
+        "Total Node": 63
     },
     "micro/bm_DL_behavioural_full_adder/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_DL_behavioural_full_adder/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1324,18 +1366,32 @@
         "test_name": "micro/bm_functional_test/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bm_functional_test.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$adff' with matching ports was not found."
-        ]
+        "Latch Drivers": 2,
+        "Pi": 16,
+        "Po": 40,
+        "logic element": 1409,
+        "latch": 80,
+        "Adder": 28,
+        "Multiplier": 1,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 42,
+        "Average Path": 6,
+        "Estimated LUTs": 1441,
+        "Total Node": 1520
     },
     "micro/bm_functional_test/no_arch": {
         "test_name": "micro/bm_functional_test/no_arch",
         "input_blif": "bm_functional_test.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$adff' with matching ports was not found."
-        ]
+        "Latch Drivers": 2,
+        "Pi": 16,
+        "Po": 40,
+        "logic element": 1669,
+        "latch": 80,
+        "Longest Path": 65,
+        "Average Path": 6,
+        "Estimated LUTs": 1669,
+        "Total Node": 1751
     },
     "micro/bm_if_collapse/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_if_collapse/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1415,18 +1471,32 @@
         "test_name": "micro/bm_if_reset/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bm_if_reset.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$adff' with matching ports was not found."
-        ]
+        "Latch Drivers": 2,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 15,
+        "latch": 6,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 7,
+        "Average Path": 6,
+        "Estimated LUTs": 15,
+        "Total Node": 23
     },
     "micro/bm_if_reset/no_arch": {
         "test_name": "micro/bm_if_reset/no_arch",
         "input_blif": "bm_if_reset.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$adff' with matching ports was not found."
-        ]
+        "Latch Drivers": 2,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 15,
+        "latch": 6,
+        "Longest Path": 7,
+        "Average Path": 6,
+        "Estimated LUTs": 15,
+        "Total Node": 23
     },
     "micro/bm_lpm_all/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_lpm_all/k6_frac_N10_frac_chain_mem32K_40nm",

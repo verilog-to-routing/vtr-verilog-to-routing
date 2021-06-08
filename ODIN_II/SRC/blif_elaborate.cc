@@ -51,6 +51,7 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
 
 void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* netlist);
 
+static bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 // static void add_dummy_carry_out_to_adder_hard_block(nnode_t* new_node);
@@ -254,12 +255,18 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case MULTIPLY: {
             /** 
-             * Adding to mult_list for future checking on hard blocks
+             * check for constant multipication that should turn into RTL design here
              */
-            if (hard_multipliers)
-                node = resolve_arithmetic_node(node, traverse_number, netlist);
+            if (!check_constant_multipication(node, traverse_number, netlist)) {
+                /** 
+                 * <postpone multiply techmap to partial ampping phase>
+                 * Adding to mult_list for future checking on hard blocks
+                 */
+                if (hard_multipliers)
+                    node = resolve_arithmetic_node(node, traverse_number, netlist);
 
-            mult_list = insert_in_vptr_list(mult_list, node);
+                mult_list = insert_in_vptr_list(mult_list, node);
+            }
             break;
         }
         case MODULO: {
@@ -394,7 +401,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
 }
 
 /**
- * (function: resolve_case_not_equal_node)
+ * (function: resolve_shift_node)
  * 
  * @brief resolving the shift nodes by making
  * the input port sizes the same
@@ -488,6 +495,36 @@ static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, ne
     // CLEAN UP
     free_nnode(node);
 }
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: check_constant_multipication )
+ * 
+ * @brief checking for constant multipication. If one port is constant, t
+ * he multipication node will explode into multiple adders 
+ * 
+ * @param node pointing to the netlist node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+static bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /* to calculate return value */
+    mult_port_stat_e is_const;
+
+    /* checking multipication ports to specify whether it is constant or not */
+    if ((is_const = is_constant_multipication(node, netlist)) != mult_port_stat_e::NOT_CONSTANT) {
+        /* implementation of constant multipication which is actually cascading adders */
+        signal_list_t* output_signals = implement_constant_multipication(node, is_const, static_cast<short>(traverse_mark_number), netlist);
+
+        /* connecting the output pins */
+        connect_constant_mult_outputs(node, output_signals);
+    }
+
+    return (is_const != mult_port_stat_e::NOT_CONSTANT);
+}
+
 
 /**
  *-------------------------------------------------------------------------------------------
