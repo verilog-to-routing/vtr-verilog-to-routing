@@ -35,24 +35,27 @@ bool is_macro_constrained(const t_pl_macro& pl_macro);
 
 /*
  * Returns PartitionRegion for the head of the macro based on the floorplan constraints
- * of all blocks in the macro.
+ * of all blocks in the macro. For example, if there was a macro of length two and each block has
+ * a constraint, this routine will shift and intersect the two constraint regions to calculate
+ * the tightest region constraint for the head macro.
  */
-PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro);
+PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const PartitionRegion& grid_pr);
 
 /*
  * Update the PartitionRegions of non-head members of a macro,
- * based on the constraint that was calculated for the head region.
- * The constraint that was calculated for the head region considered all
- * constrained blocks in the macro, so to calculate the constraint for the rest
- * of the blocks, it is just the head constraint with the offset of the member
- * applied.
+ * based on the constraint that was calculated for the head region, head_pr.
+ * The constraint that was calculated for the head region must have
+ * calculated the tightest constraints for the head member
+ * by shifting and intersecting the constraints on all macro members.
+ * For each macro member, the updated constraint is essentially the head constraint
+ * with the member's offset applied.
  */
-PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset);
+PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr);
 
 /*
  * Updates the floorplan constraints information for all constrained macros.
- * The head member of each constrained macro is assigned a new PartitionRegion
- * that is calculated based on the constraints of all the blocks in the macro.
+ * Updates the constraints to be the tightest constraints possible while adhering
+ * to the floorplan constraints of each macro member.
  * This is done at the start of initial placement to ease floorplan legality checking
  * while placing macros during initial placement.
  */

@@ -436,7 +436,12 @@ TEST_CASE("MacroConstraints", "[vpr]") {
 
     head_pr.add_to_part_region(reg);
 
-    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset);
+    Region grid_reg;
+    grid_reg.set_region_rect(0, 0, 20, 20);
+    PartitionRegion grid_pr;
+    grid_pr.add_to_part_region(grid_reg);
+
+    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset, grid_pr);
 
     std::vector<Region> mac_regions = macro_pr.get_partition_region();
 

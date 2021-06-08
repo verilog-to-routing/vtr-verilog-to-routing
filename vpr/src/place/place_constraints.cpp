@@ -54,7 +54,7 @@ bool is_macro_constrained(const t_pl_macro& pl_macro) {
 }
 
 /*Returns PartitionRegion of where the head of the macro could go*/
-PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
+PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const PartitionRegion& grid_pr) {
     PartitionRegion macro_head_pr;
     bool is_member_constrained = false;
     int num_constrained_members = 0;
@@ -105,6 +105,9 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
         }
     }
 
+    //intersect to ensure the head pr does not go outside of grid dimensions
+    macro_head_pr = intersection(macro_head_pr, grid_pr);
+
     //if the intersection is empty, no way to place macro members together, give an error
     if (macro_head_pr.empty()) {
         VPR_ERROR(VPR_ERROR_PLACE, " \n Feasible floorplanning constraints could not be calculated for the placement macro.\n");
@@ -113,7 +116,7 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
     return macro_head_pr;
 }
 
-PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset) {
+PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr) {
     std::vector<Region> block_regions = head_pr.get_partition_region();
     PartitionRegion macro_pr;
 
@@ -139,12 +142,30 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
         macro_pr.add_to_part_region(modified_reg);
     }
 
+    //intersect to ensure the head pr does not go outside of grid dimensions
+    macro_pr = intersection(macro_pr, grid_pr);
+
+    //if the intersection is empty, no way to place macro members together, give an error
+    if (macro_pr.empty()) {
+        VPR_ERROR(VPR_ERROR_PLACE, " \n Feasible floorplanning constraints could not be calculated for the placement macro.\n");
+    }
+
     return macro_pr;
 }
 
 void propagate_place_constraints() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    //Create a PartitionRegion with grid dimensions
+    //Will be used to check that updated PartitionRegions are within grid bounds
+    int width = device_ctx.grid.width() - 1;
+    int height = device_ctx.grid.height() - 1;
+    Region grid_reg;
+    grid_reg.set_region_rect(0, 0, width, height);
+    PartitionRegion grid_pr;
+    grid_pr.add_to_part_region(grid_reg);
 
     for (auto pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
@@ -152,7 +173,7 @@ void propagate_place_constraints() {
              * Update the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro
              */
-            PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro);
+            PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro, grid_pr);
 
             //Update PartitionRegions of all members of the macro
             for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
@@ -163,7 +184,7 @@ void propagate_place_constraints() {
                 if (imember == 0) {
                     floorplanning_ctx.cluster_constraints[iblk] = macro_head_pr;
                 } else { //Update macro member PR
-                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset);
+                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset, grid_pr);
                     floorplanning_ctx.cluster_constraints[iblk] = macro_pr;
                 }
             }
