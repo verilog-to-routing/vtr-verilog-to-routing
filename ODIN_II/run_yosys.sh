@@ -252,7 +252,7 @@ function populate_arg_from_file() {
 
 					;;_circuit_list_add)
 						# glob the value
-						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
+						_circuit_list_add+=( "${_circuits_dir}"${_value} )					
 
 					;;_)
 						echo "skip" > /dev/null
@@ -295,11 +295,12 @@ function run_task() {
    
     for circuit in "${_circuit_list[@]}"
 	do
-        CIRCUIT_DIR=$(dirname "${circuit}")
+        CIRCUIT_DIR=${circuit/regression_test\/benchmark\/_VERILOG\/}
         CIRCUIT_FILE=$(basename "${circuit}")
 
         export TASK_NAME=$(basename "${CIRCUIT_DIR}")
-        export OUTPUT_BLIF_PATH="${BLIF_PATH}/${TASK_NAME}"
+        export TASK_DIR=$(dirname "${CIRCUIT_DIR}")
+        export OUTPUT_BLIF_PATH="${BLIF_PATH}/${TASK_DIR}"
 
         # run yosys for the current circuit
         CIRCUIT_NAME="${CIRCUIT_FILE%.*}"
@@ -315,7 +316,10 @@ function run_task() {
             continue
         fi
         
+
         run_yosys "${ODIN_DIR}/synth.tcl"
+
+        unset _circuit_list
 
     done
 

@@ -1618,6 +1618,7 @@ function run_suite() {
 	do
         if [ _${_REGENERATE_BLIF} == "_on" ] || [ _${_GENERATE_BLIF} == "_on" ]; then
             generate_blifs "${task_list[$i]}"
+            
         fi
         run_task "${task_list[$i]}"
 		TEST_COUNT=$(( TEST_COUNT + 1 ))

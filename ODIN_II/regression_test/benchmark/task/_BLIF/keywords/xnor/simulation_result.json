@@ -1,0 +1,220 @@
+{
+    "xnor/range_xnor_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "xnor/range_xnor_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "range_xnor_int_wide_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 44,
+        "simulation_time(ms)": 29.5,
+        "test_coverage(%)": 100,
+        "Pi": 64,
+        "Po": 32,
+        "logic element": 67,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 87,
+        "Total Node": 67
+    },
+    "xnor/range_xnor_int_wide/no_arch": {
+        "test_name": "xnor/range_xnor_int_wide/no_arch",
+        "generated_blif": "range_xnor_int_wide_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 29.8,
+        "simulation_time(ms)": 27.6,
+        "test_coverage(%)": 100,
+        "Pi": 64,
+        "Po": 32,
+        "logic element": 67,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 67,
+        "Total Node": 67
+    },
+    "xnor/range_xnor_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "xnor/range_xnor_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "range_xnor_ultra_wide_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 10.7,
+        "exec_time(ms)": 237.5,
+        "simulation_time(ms)": 218,
+        "test_coverage(%)": 100,
+        "Pi": 512,
+        "Po": 256,
+        "logic element": 515,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 683,
+        "Total Node": 515
+    },
+    "xnor/range_xnor_ultra_wide/no_arch": {
+        "test_name": "xnor/range_xnor_ultra_wide/no_arch",
+        "generated_blif": "range_xnor_ultra_wide_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.6,
+        "exec_time(ms)": 224.2,
+        "simulation_time(ms)": 216.3,
+        "test_coverage(%)": 100,
+        "Pi": 512,
+        "Po": 256,
+        "logic element": 515,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 515,
+        "Total Node": 515
+    },
+    "xnor/range_xnor_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "xnor/range_xnor_wide/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "range_xnor_wide_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 16.5,
+        "simulation_time(ms)": 3.8,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 9,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 9,
+        "Total Node": 9
+    },
+    "xnor/range_xnor_wide/no_arch": {
+        "test_name": "xnor/range_xnor_wide/no_arch",
+        "generated_blif": "range_xnor_wide_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 5.3,
+        "simulation_time(ms)": 3.7,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 9,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 9,
+        "Total Node": 9
+    },
+    "xnor/xnor_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "xnor/xnor_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "xnor_indexed_port_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 16.2,
+        "simulation_time(ms)": 3.5,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 10,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 6,
+        "Estimated LUTs": 10,
+        "Total Node": 10
+    },
+    "xnor/xnor_indexed_port/no_arch": {
+        "test_name": "xnor/xnor_indexed_port/no_arch",
+        "generated_blif": "xnor_indexed_port_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 5.1,
+        "simulation_time(ms)": 3.5,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 10,
+        "Longest Path": 6,
+        "Average Path": 6,
+        "Estimated LUTs": 10,
+        "Total Node": 10
+    },
+    "xnor/xnor_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "xnor/xnor_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "xnor_wire_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 15.9,
+        "simulation_time(ms)": 2.1,
+        "test_coverage(%)": 100,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 5,
+        "generic logic size": 4,
+        "Longest Path": 6,
+        "Average Path": 6,
+        "Estimated LUTs": 5,
+        "Total Node": 5
+    },
+    "xnor/xnor_wire/no_arch": {
+        "test_name": "xnor/xnor_wire/no_arch",
+        "generated_blif": "xnor_wire_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8,
+        "exec_time(ms)": 3.5,
+        "simulation_time(ms)": 2.1,
+        "test_coverage(%)": 100,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 5,
+        "Longest Path": 6,
+        "Average Path": 6,
+        "Estimated LUTs": 5,
+        "Total Node": 5
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "generated_blif": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "simulation_time(ms)": -1,
+        "test_coverage(%)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

@@ -1,0 +1,79 @@
+{
+    "module_endmodule/multiple_modules/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "module_endmodule/multiple_modules/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "multiple_modules.blif",
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 13.2,
+        "techmap_time(ms)": 1.4,
+        "Pi": 10,
+        "Po": 10,
+        "logic element": 10,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 10,
+        "Total Node": 10
+    },
+    "module_endmodule/multiple_modules/no_arch": {
+        "test_name": "module_endmodule/multiple_modules/no_arch",
+        "input_blif": "multiple_modules.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 1.9,
+        "techmap_time(ms)": 1.4,
+        "Pi": 10,
+        "Po": 10,
+        "logic element": 10,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 10,
+        "Total Node": 10
+    },
+    "module_endmodule/multiple_topmodules/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "module_endmodule/multiple_topmodules/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "multiple_topmodules.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] Error: Could not hook up the pin simple_op2^out~0: not available."
+        ]
+    },
+    "module_endmodule/multiple_topmodules/no_arch": {
+        "test_name": "module_endmodule/multiple_topmodules/no_arch",
+        "input_blif": "multiple_topmodules.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] Error: Could not hook up the pin simple_op2^out~0: not available."
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "input_blif": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}
