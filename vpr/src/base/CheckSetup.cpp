@@ -60,7 +60,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                             "base_cost_type must be demand_only or demand_only_normailzed_length when timing analysis is disabled.\n");
         }
     }
-    /*
+
     if (DETAILED == RouterOpts.route_type) {
         if ((Chans.chan_x_dist.type != UNIFORM)
             || (Chans.chan_y_dist.type != UNIFORM)
@@ -69,7 +69,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                             "Detailed routing currently only supported on FPGAs with all channels of equal width.\n");
         }
     }
-    */
+
     for (i = 0; i < (int)Segments.size(); ++i) {
         Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
