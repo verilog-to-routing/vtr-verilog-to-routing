@@ -17,6 +17,11 @@ circuit_list_add=attention_layer.v
 circuit_list_add=conv_layer_hls.v
 circuit_list_add=conv_layer.v
 circuit_list_add=gemm_layer.v
+circuit_list_add=eltwise_layer.v
+circuit_list_add=robot_rl.v
+circuit_list_add=reduction_layer.v
+circuit_list_add=spmv.v
+circuit_list_add=softmax.v
 
 # Add architectures to list to sweep
 arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml

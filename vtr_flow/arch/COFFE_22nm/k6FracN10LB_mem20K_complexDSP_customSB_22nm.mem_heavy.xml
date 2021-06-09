@@ -1,6 +1,8 @@
 <!--
-    This is the architecture file for an Agilex-like Architecture, based off
-    the Stratix-10-like Architecture discussed in [1].
+    This is the architecture file for a modern Intel FPGA. The blocks (logic, RAM, DSP)
+    are Agilex-like, but the routing architecture is similar to Stratix IV. It is based
+    off the Stratix-10-like Architecture discussed in [1], the Agilex-like Architecture
+    mentioned in [6] and Stratix-IV-like Architecture mentioned in [5].
 
     The delays and areas of various components in this arch come from COFFE [2]
     runs using a 22nm technology node [3].
@@ -132,22 +134,23 @@
     I/O pads are arranged along the perimeter of the FPGA. No area values provided for the I/Os.
 
     ##############################
-    What makes this architecture Agilex-like?
+    Comments on similarities and differences with Intel FPGA architecture.
     ##############################
+    The main parameters of the logic blocks, DSPs and RAMs are similar to Intel FPGAs. But here are
+    some important points:
     1. The DSP slice supports lower precision modes - int8 (actually 9x9) and 16-bit floating point
-       (IEEE half-precision and bfloat16).
+       (IEEE half-precision and bfloat16). These modes are present in Intel Agilex FPGA DSPs.
     2. DSPs are chained in vertical direction (currently only chainin-chainout are supported; 
-       in the future, scanin-scanout connections will be added as well)
-    3. Instead of having wires of just one length in the entire FPGA, there are wire segments of L=4 
+       in the future, scanin-scanout connections will be added as well). This is a common feature
+       in modern FPGAs.
+    3. There are no registers on the interconnect/routing wires in this architecture. That is a main
+       feature in the Stratix10 and Agilex families of Intel FPGA (it's called HyperFlex by Intel).
+    4. The architecture doesn't have sectors. All blocks are laid out in columns on the entire chip.
+       Most modern Intel FPGAs have sector based layout.
+    5. The IOs are on the perimeter, instead of being arranged in columns. Modern FPGAs arrange I/Os in
+       columns.
+    6. The routing architecture is similar to Stratix IV. There are wire segments of L=4 
        and L=16. And a custom switch pattern (not a standard wilton switch) is used. 
-
-    ##############################
-    What makes this architecture different from Agilex and Stratix10?
-    ##############################
-    1. There are no registers on the interconnect/routing wires in this architecture. That is a main
-       feature in the Stratix10 and Agilex families of Intel FPGA (it's called HyperFlex by Intel)
-    2. The architecture doesn't have sectors. All blocks are laid out in columns on the entire chip.
-    3. The IOs are on the perimter, instead of being arranged in columns.
 
     [1] M. Eldafrawy, A. Boutros, S. Yazdanshenas, and V. Betz, "FPGA Logic Block Architectures for
         Efficient Deep Learning Inference" in ACM TRETS, 2020
@@ -159,6 +162,7 @@
         performance from 180 nm to 7 nm" in Integration, the VLSI Journal (2017)
     [5] K. E. Murray et al., “Timing-Driven Titan: Enabling Large Benchmarks and Exploring the Gap between 
         Academic and Commercial CAD,” TRETS 2015.
+    [6] A. Arora et al., "Tensor Slices to the Rescue: Supercharging ML Acceleration on FPGAs", ISFPGA 2020.
 -->
 
 <architecture>
