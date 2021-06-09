@@ -191,17 +191,10 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
  *--------------------------------------------------------------------*/
 void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlist) {
     switch (node->type) {
-        case SL:
-        case SR:
-        case ASL:
-        case ASR: {
-            /**
-             * resolving the shift nodes by making
-             * the input port sizes the same
-            */
-            resolve_shift_node(node, traverse_number, netlist);
-            break;
-        }
+        case GTE: //fallthrough
+        case LTE: //fallthrough
+        case GT: //fallthrough
+        case LT: //fallthrough
         case LOGICAL_OR:
         case LOGICAL_AND:
         case LOGICAL_NOT:
@@ -215,6 +208,17 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
              * to make sure they have only one output pin for partial mapping phase 
              */
             resolve_logical_node(node, traverse_number, netlist);
+            break;
+        }
+        case SL: //fallthrough
+        case SR: //fallthrough
+        case ASL: //fallthrough
+        case ASR: {
+            /**
+             * resolving the shift nodes by making
+             * the input port sizes the same
+            */
+            resolve_shift_node(node, traverse_number, netlist);
             break;
         }
         case CASE_EQUAL: {
@@ -371,10 +375,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case PAD_NODE:
         case INPUT_NODE:
         case OUTPUT_NODE: 
-        case GTE:
-        case LTE:
-        case GT:
-        case LT:
         case BUF_NODE:
         case BITWISE_NOT:
         case BITWISE_AND:
@@ -398,6 +398,39 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;
     }
+}
+
+/**
+ * (function: resolve_logical_node)
+ * 
+ * @brief resolving the logical nodes by 
+ * connecting the ouput pins[1..n] to GND
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_output_port_sizes == 1);
+    
+    int i, j;
+    for (i = 1; i < node->num_output_pins; i++) {
+        npin_t* output_pin = node->output_pins[i];
+        nnet_t* output_net = output_pin->net;
+        
+        // mke GND the driver of all other output pins
+        for (j = 0; j < output_net->num_fanout_pins; j++) {
+            npin_t* fanout_pin = output_net->fanout_pins[j];
+            add_fanout_pin_to_net(netlist->zero_net, fanout_pin);
+        }
+        
+        free_npin(output_pin);
+        free_nnet(output_net);
+    }
+
+    node->num_output_pins = 1;
+    node->output_port_sizes[0] = 1;
 }
 
 /**
@@ -494,330 +527,6 @@ static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, ne
 
     // CLEAN UP
     free_nnode(node);
-}
-
-/**
- *-------------------------------------------------------------------------------------------
- * (function: check_constant_multipication )
- * 
- * @brief checking for constant multipication. If one port is constant, t
- * he multipication node will explode into multiple adders 
- * 
- * @param node pointing to the netlist node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- *-----------------------------------------------------------------------------------------*/
-static bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    /* to calculate return value */
-    mult_port_stat_e is_const;
-
-    /* checking multipication ports to specify whether it is constant or not */
-    if ((is_const = is_constant_multipication(node, netlist)) != mult_port_stat_e::NOT_CONSTANT) {
-        /* implementation of constant multipication which is actually cascading adders */
-        signal_list_t* output_signals = implement_constant_multipication(node, is_const, static_cast<short>(traverse_mark_number), netlist);
-
-        /* connecting the output pins */
-        connect_constant_mult_outputs(node, output_signals, netlist);
-    }
-
-    return (is_const != mult_port_stat_e::NOT_CONSTANT);
-}
-
-
-/**
- *-------------------------------------------------------------------------------------------
- * (function: resolve_arithmetic_node )
- * 
- * @brief check for missing ports such as carry-in/out in case of 
- * dealing with generated netlist from other blif files such Yosys.
- * 
- * @param node pointing to the netlist node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- *-----------------------------------------------------------------------------------------*/
-static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    nnode_t* new_node = NULL;
-
-    switch (node->type) {
-        case ADD: //fallthorugh
-        case MINUS: {
-            int num_input_port = node->num_input_port_sizes;
-            /* check for operations that has 2 operands */
-            if (num_input_port == 2) {
-                int i;
-                int in_port1_size = node->input_port_sizes[0];
-                int in_port2_size = node->input_port_sizes[1];
-                int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
-
-                new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
-                                            out_port_size,
-                                            node, traverse_mark_number);
-
-                for (i = 0; i < in_port1_size; i++) {
-                    remap_pin_to_new_node(node->input_pins[i],
-                                            new_node,
-                                            i);
-                }
-
-                for (i = 0; i < in_port2_size; i++) {
-                    remap_pin_to_new_node(node->input_pins[i + in_port1_size],
-                                            new_node,
-                                            i + in_port1_size);
-                }
-
-                // moving the output pins to the new node
-                for (i = 0; i < out_port_size; i++) {
-                    if (i < node->num_output_pins) {
-                        remap_pin_to_new_node(node->output_pins[i],
-                                                new_node,
-                                                i);
-                    } else {
-                        npin_t* new_pin1 = allocate_npin();
-                        npin_t* new_pin2 = allocate_npin();
-                        nnet_t* new_net = allocate_nnet();
-                        new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
-                        /* hook the output pin into the node */
-                        add_output_pin_to_node(new_node, new_pin1, i);
-                        /* hook up new pin 1 into the new net */
-                        add_driver_pin_to_net(new_net, new_pin1);
-                        /* hook up the new pin 2 to this new net */
-                        add_fanout_pin_to_net(new_net, new_pin2);
-                    }
-                }
-
-                /**
-                 * if number of output pins is greater than the max of input pins, 
-                 * here we connect the exceeded pins to the GND 
-                */
-                for (i = out_port_size; i < node->num_output_pins; i++) {
-                    /* creating a buf node */
-                    nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
-                    /* adding the GND input pin to the buf node */
-                    add_input_pin_to_node(buf_node,
-                                            get_zero_pin(netlist),
-                                            0);
-                    /* remapping the outpin to buf node */
-                    remap_pin_to_new_node(node->output_pins[i],
-                                            buf_node,
-                                            0);
-                }
-
-                // CLEAN UP
-                free_nnode(node);
-            }
-            /* otherwise there is unary minus, like -A. no need for any change */ 
-            else if (num_input_port == 1) {
-                new_node = node;
-            }
-            break;
-        }
-        case MULTIPLY: {
-            /* no need to do anything here for multipy */
-            new_node = node;
-            break;
-        }
-        default: {
-            error_message(BLIF_ELBORATION, node->loc,
-                              "The node(%s) type is not among Odin's arithmetic types [ADD, MINUS and MULTIPLY]\n", node->name);
-            break;                
-        }    
-    }
-
-    return (new_node);
-}
-
-/**
- * (function: add_dummy_carry_out_to_adder_hard_block)
- * 
- * @brief Adding a dummy carry out output pin to the adder hard block 
- * for the possible future processing of soft adder instatiation
- * 
- * @param node pointing to the netlist node 
- */
-/*
- * static void add_dummy_carry_out_to_adder_hard_block(nnode_t* node) {
- * char* dummy_cout_name = (char*)vtr::malloc(11 * sizeof(char));
- * strcpy(dummy_cout_name, "dummy_cout");
- *
- * npin_t* new_pin = allocate_npin();
- * new_pin->name = vtr::strdup(dummy_cout_name);
- * new_pin->type = OUTPUT;
- *
- * char* mapping = (char*)vtr::malloc(6 * sizeof(char));
- * strcpy(mapping, "cout");
- * new_pin->mapping = vtr::strdup(mapping);
- *
- * //add_output_port_information(new_node, 1);
- * node->output_port_sizes[node->num_output_port_sizes - 1]++;
- * allocate_more_output_pins(node, 1);
- *
- * add_output_pin_to_node(node, new_pin, node->num_output_pins - 1);
- *
- * nnet_t* new_net = allocate_nnet();
- * new_net->name = vtr::strdup(dummy_cout_name);
- *
- * add_driver_pin_to_net(new_net, new_pin);
- *
- * vtr::free(dummy_cout_name);
- * vtr::free(mapping);
- * }
- */
-
-/**
- * (function: resolve_modulo_node)
- * 
- * @brief resolving module node by 
- * 
- * @param node pointing to a logical not node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    /** 
-     * the process of calculating modulo is as the same as division. 
-     * However, the output pins connections would be different. 
-     * As a result, we calculate the division here and afterwards 
-     * the decision about output connection will happen 
-     * in connect_div_output function 
-    */
-    resolve_divide_node(node, traverse_mark_number, netlist);
-}
-
-/**
- * (function: resolve_divide_node)
- * 
- * @brief resolving divide node
- * 
- * @param node pointing to a logical not node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-    
-    /**
-     * Div Ports:
-     * IN1: Dividend (m bits) 
-     * IN2: Divisor  (n bits) 
-     * OUT: Quotient (k bits)
-    */
-    int divisor_width   = node->input_port_sizes[1];
-
-    /** 
-     * checking the division restrictions 
-     * 
-     * 1. m == 2*n - 1
-     * 2. divisor MSB == 1 (left)
-     * 3. n == k
-    */    
-    /**
-     * modify div input signals to provide compatibility 
-     * with the first and third restrictions.
-     * [0]: Modified Dividend
-     * [1]: Modified Divisor
-     */
-    signal_list_t** modified_input_signals = modify_div_signal_sizes(node, netlist);
-    /* keep the record of the extesnsion size for divisor for future transformation */
-    int new_divisor_width = modified_input_signals[1]->count; // modified_input_signals[1] == new divisor signals
-    
-    /* validate new sizes */
-    oassert(divisor_width == new_divisor_width);
-
-    /* implementation of the divison circuitry using cellular architecture */
-    signal_list_t** div_output_lists = implement_division(node, modified_input_signals, netlist);
-
-    /* remap the div output pin to calculated nodes */
-    connect_div_output_pins(node, div_output_lists, traverse_mark_number, netlist);
-
-    // CLEAN UP
-    free_nnode(node);
-}
-
-/**
- * (function: make_selector_as_first_port)
- * 
- * @brief reorder the input signals of the mux in a way 
- * that the selector would come as the first signal
- * 
- * @param node pointing to a mux node 
- */
-static void make_selector_as_first_port(nnode_t* node) {
-    long num_input_pins = node->num_input_pins;
-    npin_t** input_pins = (npin_t**)vtr::malloc(num_input_pins*sizeof(npin_t*)); // the input pins
-    
-    int num_input_port_sizes = node->num_input_port_sizes;
-    int* input_port_sizes = (int*)vtr::malloc(num_input_port_sizes*sizeof(int)); // info about the input ports
-
-    int i, j;
-        int acc_port_sizes = 0;
-    i = num_input_port_sizes-1;
-    while (i > 0) {
-        acc_port_sizes += node->input_port_sizes[i-1];
-        i--;
-    }
-    
-    for (j = 0; j < node->input_port_sizes[num_input_port_sizes-1]; j++) {
-        input_pins[j] = node->input_pins[j + acc_port_sizes];
-        input_pins[j]->pin_node_idx = j;
-    }
-
-    acc_port_sizes = 0;
-    int offset = input_port_sizes[0] = node->input_port_sizes[num_input_port_sizes-1];
-    for (i = 1; i < num_input_port_sizes; i++) {
-        input_port_sizes[i] = node->input_port_sizes[i-1];
-
-        for (j = 0; j < input_port_sizes[i]; j++) {
-            input_pins[offset] = node->input_pins[j + acc_port_sizes];
-            input_pins[offset]->pin_node_idx = offset;
-            offset++;
-        }
-        acc_port_sizes += input_port_sizes[i];
-    }
-
-    vtr::free(node->input_pins);
-    vtr::free(node->input_port_sizes);
-    
-    node->input_pins = input_pins;
-    node->input_port_sizes = input_port_sizes;
-}
-
-/**
- * (function: resolve_logical_node)
- * 
- * @brief resolving the logical nodes by 
- * connecting the ouput pins[1..n] to GND
- * 
- * @param node pointing to a logical not node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-    oassert(node->num_output_port_sizes == 1);
-    
-    int i, j;
-    for (i = 1; i < node->num_output_pins; i++) {
-        npin_t* output_pin = node->output_pins[i];
-        nnet_t* output_net = output_pin->net;
-        
-        // mke GND the driver of all other output pins
-        for (j = 0; j < output_net->num_fanout_pins; j++) {
-            npin_t* fanout_pin = output_net->fanout_pins[j];
-            add_fanout_pin_to_net(netlist->zero_net, fanout_pin);
-        }
-        
-        free_npin(output_pin);
-        free_nnet(output_net);
-    }
-
-    node->num_output_pins = 1;
-    node->output_port_sizes[0] = 1;
 }
 
 /**
@@ -1048,6 +757,248 @@ static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_ma
     add_fanout_pin_to_net(new_net_not, new_pin2_not);
 
     return (not_node);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: resolve_arithmetic_node )
+ * 
+ * @brief check for missing ports such as carry-in/out in case of 
+ * dealing with generated netlist from other blif files such Yosys.
+ * 
+ * @param node pointing to the netlist node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    nnode_t* new_node = NULL;
+
+    switch (node->type) {
+        case ADD: //fallthorugh
+        case MINUS: {
+            int num_input_port = node->num_input_port_sizes;
+            /* check for operations that has 2 operands */
+            if (num_input_port == 2) {
+                int i;
+                int in_port1_size = node->input_port_sizes[0];
+                int in_port2_size = node->input_port_sizes[1];
+                int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
+
+                new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
+                                            out_port_size,
+                                            node, traverse_mark_number);
+
+                for (i = 0; i < in_port1_size; i++) {
+                    remap_pin_to_new_node(node->input_pins[i],
+                                            new_node,
+                                            i);
+                }
+
+                for (i = 0; i < in_port2_size; i++) {
+                    remap_pin_to_new_node(node->input_pins[i + in_port1_size],
+                                            new_node,
+                                            i + in_port1_size);
+                }
+
+                // moving the output pins to the new node
+                for (i = 0; i < out_port_size; i++) {
+                    if (i < node->num_output_pins) {
+                        remap_pin_to_new_node(node->output_pins[i],
+                                                new_node,
+                                                i);
+                    } else {
+                        npin_t* new_pin1 = allocate_npin();
+                        npin_t* new_pin2 = allocate_npin();
+                        nnet_t* new_net = allocate_nnet();
+                        new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
+                        /* hook the output pin into the node */
+                        add_output_pin_to_node(new_node, new_pin1, i);
+                        /* hook up new pin 1 into the new net */
+                        add_driver_pin_to_net(new_net, new_pin1);
+                        /* hook up the new pin 2 to this new net */
+                        add_fanout_pin_to_net(new_net, new_pin2);
+                    }
+                }
+
+                /**
+                 * if number of output pins is greater than the max of input pins, 
+                 * here we connect the exceeded pins to the GND 
+                */
+                for (i = out_port_size; i < node->num_output_pins; i++) {
+                    /* creating a buf node */
+                    nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+                    /* adding the GND input pin to the buf node */
+                    add_input_pin_to_node(buf_node,
+                                            get_zero_pin(netlist),
+                                            0);
+                    /* remapping the outpin to buf node */
+                    remap_pin_to_new_node(node->output_pins[i],
+                                            buf_node,
+                                            0);
+                }
+
+                // CLEAN UP
+                free_nnode(node);
+            }
+            /* otherwise there is unary minus, like -A. no need for any change */ 
+            else if (num_input_port == 1) {
+                new_node = node;
+            }
+            break;
+        }
+        case MULTIPLY: {
+            /* no need to do anything here for multipy */
+            new_node = node;
+            break;
+        }
+        default: {
+            error_message(BLIF_ELBORATION, node->loc,
+                              "The node(%s) type is not among Odin's arithmetic types [ADD, MINUS and MULTIPLY]\n", node->name);
+            break;                
+        }    
+    }
+
+    return (new_node);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: check_constant_multipication )
+ * 
+ * @brief checking for constant multipication. If one port is constant, t
+ * he multipication node will explode into multiple adders 
+ * 
+ * @param node pointing to the netlist node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+static bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /* to calculate return value */
+    mult_port_stat_e is_const;
+
+    /* checking multipication ports to specify whether it is constant or not */
+    if ((is_const = is_constant_multipication(node, netlist)) != mult_port_stat_e::NOT_CONSTANT) {
+        /* implementation of constant multipication which is actually cascading adders */
+        signal_list_t* output_signals = implement_constant_multipication(node, is_const, static_cast<short>(traverse_mark_number), netlist);
+
+        /* connecting the output pins */
+        connect_constant_mult_outputs(node, output_signals, netlist);
+    }
+
+    return (is_const != mult_port_stat_e::NOT_CONSTANT);
+}
+
+/**
+ * (function: add_dummy_carry_out_to_adder_hard_block)
+ * 
+ * @brief Adding a dummy carry out output pin to the adder hard block 
+ * for the possible future processing of soft adder instatiation
+ * 
+ * @param node pointing to the netlist node 
+ */
+/*
+ * static void add_dummy_carry_out_to_adder_hard_block(nnode_t* node) {
+ * char* dummy_cout_name = (char*)vtr::malloc(11 * sizeof(char));
+ * strcpy(dummy_cout_name, "dummy_cout");
+ *
+ * npin_t* new_pin = allocate_npin();
+ * new_pin->name = vtr::strdup(dummy_cout_name);
+ * new_pin->type = OUTPUT;
+ *
+ * char* mapping = (char*)vtr::malloc(6 * sizeof(char));
+ * strcpy(mapping, "cout");
+ * new_pin->mapping = vtr::strdup(mapping);
+ *
+ * //add_output_port_information(new_node, 1);
+ * node->output_port_sizes[node->num_output_port_sizes - 1]++;
+ * allocate_more_output_pins(node, 1);
+ *
+ * add_output_pin_to_node(node, new_pin, node->num_output_pins - 1);
+ *
+ * nnet_t* new_net = allocate_nnet();
+ * new_net->name = vtr::strdup(dummy_cout_name);
+ *
+ * add_driver_pin_to_net(new_net, new_pin);
+ *
+ * vtr::free(dummy_cout_name);
+ * vtr::free(mapping);
+ * }
+ */
+
+/**
+ * (function: resolve_modulo_node)
+ * 
+ * @brief resolving module node by 
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /** 
+     * the process of calculating modulo is as the same as division. 
+     * However, the output pins connections would be different. 
+     * As a result, we calculate the division here and afterwards 
+     * the decision about output connection will happen 
+     * in connect_div_output function 
+    */
+    resolve_divide_node(node, traverse_mark_number, netlist);
+}
+
+/**
+ * (function: resolve_divide_node)
+ * 
+ * @brief resolving divide node
+ * 
+ * @param node pointing to a logical not node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    
+    /**
+     * Div Ports:
+     * IN1: Dividend (m bits) 
+     * IN2: Divisor  (n bits) 
+     * OUT: Quotient (k bits)
+    */
+    int divisor_width   = node->input_port_sizes[1];
+
+    /** 
+     * checking the division restrictions 
+     * 
+     * 1. m == 2*n - 1
+     * 2. divisor MSB == 1 (left)
+     * 3. n == k
+    */    
+    /**
+     * modify div input signals to provide compatibility 
+     * with the first and third restrictions.
+     * [0]: Modified Dividend
+     * [1]: Modified Divisor
+     */
+    signal_list_t** modified_input_signals = modify_div_signal_sizes(node, netlist);
+    /* keep the record of the extesnsion size for divisor for future transformation */
+    int new_divisor_width = modified_input_signals[1]->count; // modified_input_signals[1] == new divisor signals
+    
+    /* validate new sizes */
+    oassert(divisor_width == new_divisor_width);
+
+    /* implementation of the divison circuitry using cellular architecture */
+    signal_list_t** div_output_lists = implement_division(node, modified_input_signals, netlist);
+
+    /* remap the div output pin to calculated nodes */
+    connect_div_output_pins(node, div_output_lists, traverse_mark_number, netlist);
+
+    // CLEAN UP
+    free_nnode(node);
 }
 
 /**
@@ -2541,6 +2492,54 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
     vtr::free(mux_set);
     vtr::free(mux_clr);
     free_nnode(node);
+}
+
+/**
+ * (function: make_selector_as_first_port)
+ * 
+ * @brief reorder the input signals of the mux in a way 
+ * that the selector would come as the first signal
+ * 
+ * @param node pointing to a mux node 
+ */
+static void make_selector_as_first_port(nnode_t* node) {
+    long num_input_pins = node->num_input_pins;
+    npin_t** input_pins = (npin_t**)vtr::malloc(num_input_pins*sizeof(npin_t*)); // the input pins
+    
+    int num_input_port_sizes = node->num_input_port_sizes;
+    int* input_port_sizes = (int*)vtr::malloc(num_input_port_sizes*sizeof(int)); // info about the input ports
+
+    int i, j;
+        int acc_port_sizes = 0;
+    i = num_input_port_sizes-1;
+    while (i > 0) {
+        acc_port_sizes += node->input_port_sizes[i-1];
+        i--;
+    }
+    
+    for (j = 0; j < node->input_port_sizes[num_input_port_sizes-1]; j++) {
+        input_pins[j] = node->input_pins[j + acc_port_sizes];
+        input_pins[j]->pin_node_idx = j;
+    }
+
+    acc_port_sizes = 0;
+    int offset = input_port_sizes[0] = node->input_port_sizes[num_input_port_sizes-1];
+    for (i = 1; i < num_input_port_sizes; i++) {
+        input_port_sizes[i] = node->input_port_sizes[i-1];
+
+        for (j = 0; j < input_port_sizes[i]; j++) {
+            input_pins[offset] = node->input_pins[j + acc_port_sizes];
+            input_pins[offset]->pin_node_idx = offset;
+            offset++;
+        }
+        acc_port_sizes += input_port_sizes[i];
+    }
+
+    vtr::free(node->input_pins);
+    vtr::free(node->input_port_sizes);
+    
+    node->input_pins = input_pins;
+    node->input_port_sizes = input_port_sizes;
 }
 
 /**
