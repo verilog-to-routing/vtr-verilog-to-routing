@@ -252,7 +252,7 @@ function populate_arg_from_file() {
 
 					;;_circuit_list_add)
 						# glob the value
-						_circuit_list_add+=( "${_circuits_dir}"${_value} )					
+						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
 
 					;;_)
 						echo "skip" > /dev/null

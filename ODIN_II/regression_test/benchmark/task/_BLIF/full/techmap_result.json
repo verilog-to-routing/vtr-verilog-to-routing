@@ -1,0 +1,521 @@
+{
+    "full/ansiportlist_2/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/ansiportlist_2/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "ansiportlist_2.blif",
+        "exit": 134
+    },
+    "full/ansiportlist_2/no_arch": {
+        "test_name": "full/ansiportlist_2/no_arch",
+        "input_blif": "ansiportlist_2.blif",
+        "exit": 134
+    },
+    "full/ansiportlist/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/ansiportlist/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "ansiportlist.blif",
+        "exit": 134
+    },
+    "full/ansiportlist/no_arch": {
+        "test_name": "full/ansiportlist/no_arch",
+        "input_blif": "ansiportlist.blif",
+        "exit": 134
+    },
+    "full/binops/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/binops/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "binops.blif",
+        "exit": 134
+    },
+    "full/binops/no_arch": {
+        "test_name": "full/binops/no_arch",
+        "input_blif": "binops.blif",
+        "exit": 134
+    },
+    "full/blob_merge/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/blob_merge/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "blob_merge.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/blob_merge/no_arch": {
+        "test_name": "full/blob_merge/no_arch",
+        "input_blif": "blob_merge.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/bm_base_memory/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/bm_base_memory/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "bm_base_memory.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 13,
+        "techmap_time(ms)": 0.7,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4
+    },
+    "full/bm_base_memory/no_arch": {
+        "test_name": "full/bm_base_memory/no_arch",
+        "input_blif": "bm_base_memory.blif",
+        "max_rss(MiB)": 7.4,
+        "exec_time(ms)": 0.9,
+        "techmap_time(ms)": 0.7
+    },
+    "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "bm_DL_four_bit_adder_continuous_assign_using_vectors.blif",
+        "max_rss(MiB)": 12.2,
+        "exec_time(ms)": 15.8,
+        "techmap_time(ms)": 3.8,
+        "Pi": 9,
+        "Po": 5,
+        "logic element": 49,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 15,
+        "Average Path": 7,
+        "Estimated LUTs": 49,
+        "Total Node": 49
+    },
+    "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/no_arch": {
+        "test_name": "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/no_arch",
+        "input_blif": "bm_DL_four_bit_adder_continuous_assign_using_vectors.blif",
+        "max_rss(MiB)": 11.9,
+        "exec_time(ms)": 4.8,
+        "techmap_time(ms)": 4.1,
+        "Pi": 9,
+        "Po": 5,
+        "logic element": 49,
+        "Longest Path": 15,
+        "Average Path": 7,
+        "Estimated LUTs": 49,
+        "Total Node": 49
+    },
+    "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "bm_sfifo_rtl.blif",
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 12.2,
+        "techmap_time(ms)": 0.7,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4
+    },
+    "full/bm_sfifo_rtl/no_arch": {
+        "test_name": "full/bm_sfifo_rtl/no_arch",
+        "input_blif": "bm_sfifo_rtl.blif",
+        "max_rss(MiB)": 7.2,
+        "exec_time(ms)": 0.9,
+        "techmap_time(ms)": 0.7
+    },
+    "full/cf_cordic_v_18_18_18/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/cf_cordic_v_18_18_18/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "cf_cordic_v_18_18_18.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
+    },
+    "full/cf_cordic_v_18_18_18/no_arch": {
+        "test_name": "full/cf_cordic_v_18_18_18/no_arch",
+        "input_blif": "cf_cordic_v_18_18_18.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
+    },
+    "full/cf_cordic_v_8_8_8/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/cf_cordic_v_8_8_8/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "cf_cordic_v_8_8_8.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
+    },
+    "full/cf_cordic_v_8_8_8/no_arch": {
+        "test_name": "full/cf_cordic_v_8_8_8/no_arch",
+        "input_blif": "cf_cordic_v_8_8_8.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
+    },
+    "full/cf_fft_256_8/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/cf_fft_256_8/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "cf_fft_256_8.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
+    },
+    "full/cf_fft_256_8/no_arch": {
+        "test_name": "full/cf_fft_256_8/no_arch",
+        "input_blif": "cf_fft_256_8.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
+    },
+    "full/cf_fir_24_16_16/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/cf_fir_24_16_16/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "cf_fir_24_16_16.blif",
+        "max_rss(MiB)": 66.1,
+        "exec_time(ms)": 1055.2,
+        "techmap_time(ms)": 930.4,
+        "Latch Drivers": 1,
+        "Pi": 417,
+        "Po": 37,
+        "logic element": 4731,
+        "latch": 2116,
+        "Adder": 838,
+        "Multiplier": 25,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 138,
+        "Average Path": 6,
+        "Estimated LUTs": 4731,
+        "Total Node": 7711
+    },
+    "full/cf_fir_24_16_16/no_arch": {
+        "test_name": "full/cf_fir_24_16_16/no_arch",
+        "input_blif": "cf_fir_24_16_16.blif",
+        "exit": 139
+    },
+    "full/cf_fir_3_8_8/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/cf_fir_3_8_8/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "cf_fir_3_8_8.blif",
+        "max_rss(MiB)": 14.3,
+        "exec_time(ms)": 41.9,
+        "techmap_time(ms)": 22.1,
+        "Latch Drivers": 1,
+        "Pi": 41,
+        "Po": 18,
+        "logic element": 380,
+        "latch": 148,
+        "Adder": 55,
+        "Multiplier": 4,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 47,
+        "Average Path": 6,
+        "Estimated LUTs": 380,
+        "Total Node": 588
+    },
+    "full/cf_fir_3_8_8/no_arch": {
+        "test_name": "full/cf_fir_3_8_8/no_arch",
+        "input_blif": "cf_fir_3_8_8.blif",
+        "exit": 139
+    },
+    "full/CRC33_D264/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/CRC33_D264/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "CRC33_D264.blif",
+        "max_rss(MiB)": 16.2,
+        "exec_time(ms)": 53.3,
+        "techmap_time(ms)": 31.3,
+        "Pi": 297,
+        "Po": 33,
+        "logic element": 1689,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 37,
+        "Average Path": 7,
+        "Estimated LUTs": 1689,
+        "Total Node": 1689
+    },
+    "full/CRC33_D264/no_arch": {
+        "test_name": "full/CRC33_D264/no_arch",
+        "input_blif": "CRC33_D264.blif",
+        "max_rss(MiB)": 15.3,
+        "exec_time(ms)": 43.4,
+        "techmap_time(ms)": 32.8,
+        "Pi": 297,
+        "Po": 33,
+        "logic element": 1689,
+        "Longest Path": 37,
+        "Average Path": 7,
+        "Estimated LUTs": 1689,
+        "Total Node": 1689
+    },
+    "full/diffeq1/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/diffeq1/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "diffeq1.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/diffeq1/no_arch": {
+        "test_name": "full/diffeq1/no_arch",
+        "input_blif": "diffeq1.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/diffeq2/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/diffeq2/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "diffeq2.blif",
+        "max_rss(MiB)": 14.1,
+        "exec_time(ms)": 41.1,
+        "techmap_time(ms)": 17.7,
+        "Latch Drivers": 1,
+        "Pi": 65,
+        "Po": 96,
+        "logic element": 465,
+        "latch": 96,
+        "Adder": 132,
+        "Multiplier": 5,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 123,
+        "Average Path": 5,
+        "Estimated LUTs": 475,
+        "Total Node": 699
+    },
+    "full/diffeq2/no_arch": {
+        "test_name": "full/diffeq2/no_arch",
+        "input_blif": "diffeq2.blif",
+        "exit": 139
+    },
+    "full/fir_scu_rtl_restructured_for_cmm_exp/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/fir_scu_rtl_restructured_for_cmm_exp/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "fir_scu_rtl_restructured_for_cmm_exp.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/fir_scu_rtl_restructured_for_cmm_exp/no_arch": {
+        "test_name": "full/fir_scu_rtl_restructured_for_cmm_exp/no_arch",
+        "input_blif": "fir_scu_rtl_restructured_for_cmm_exp.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/iir1/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/iir1/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "iir1.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/iir1/no_arch": {
+        "test_name": "full/iir1/no_arch",
+        "input_blif": "iir1.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/iir_no_combinational/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/iir_no_combinational/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "iir_no_combinational.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/iir_no_combinational/no_arch": {
+        "test_name": "full/iir_no_combinational/no_arch",
+        "input_blif": "iir_no_combinational.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "matmul.blif",
+        "max_rss(MiB)": 8.2,
+        "exec_time(ms)": 12.1,
+        "techmap_time(ms)": 0.7,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4
+    },
+    "full/matmul/no_arch": {
+        "test_name": "full/matmul/no_arch",
+        "input_blif": "matmul.blif",
+        "max_rss(MiB)": 7.3,
+        "exec_time(ms)": 0.9,
+        "techmap_time(ms)": 0.7
+    },
+    "full/oc54_cpu/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/oc54_cpu/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "oc54_cpu.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/oc54_cpu/no_arch": {
+        "test_name": "full/oc54_cpu/no_arch",
+        "input_blif": "oc54_cpu.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/paj_framebuftop_hierarchy_no_mem_no_combinational/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/paj_framebuftop_hierarchy_no_mem_no_combinational/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "paj_framebuftop_hierarchy_no_mem_no_combinational.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/paj_framebuftop_hierarchy_no_mem_no_combinational/no_arch": {
+        "test_name": "full/paj_framebuftop_hierarchy_no_mem_no_combinational/no_arch",
+        "input_blif": "paj_framebuftop_hierarchy_no_mem_no_combinational.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/sha/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/sha/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "sha.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/sha/no_arch": {
+        "test_name": "full/sha/no_arch",
+        "input_blif": "sha.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "stereovision1.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/stereovision1/no_arch": {
+        "test_name": "full/stereovision1/no_arch",
+        "input_blif": "stereovision1.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "stereovision2.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/stereovision2/no_arch": {
+        "test_name": "full/stereovision2/no_arch",
+        "input_blif": "stereovision2.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
+        ]
+    },
+    "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "stereovision3.blif",
+        "max_rss(MiB)": 22.9,
+        "exec_time(ms)": 112.5,
+        "techmap_time(ms)": 74,
+        "Latch Drivers": 2,
+        "Pi": 9,
+        "Po": 30,
+        "logic element": 3342,
+        "latch": 99,
+        "Adder": 28,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 117,
+        "Average Path": 6,
+        "Estimated LUTs": 3616,
+        "Total Node": 3471
+    },
+    "full/stereovision3/no_arch": {
+        "test_name": "full/stereovision3/no_arch",
+        "input_blif": "stereovision3.blif",
+        "max_rss(MiB)": 21.7,
+        "exec_time(ms)": 98.4,
+        "techmap_time(ms)": 74.5,
+        "Latch Drivers": 2,
+        "Pi": 9,
+        "Po": 30,
+        "logic element": 3389,
+        "latch": 99,
+        "Longest Path": 142,
+        "Average Path": 6,
+        "Estimated LUTs": 3389,
+        "Total Node": 3490
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "input_blif": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "techmap_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}
