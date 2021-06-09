@@ -3,10 +3,10 @@
 Region::Region() {
     sub_tile = NO_SUBTILE;
 
-    //default rect for a region is (-1, -1, -1, -1)
+    //default rect for a region is (999, 999, -1, -1)
     //these values indicate an empty rectangle, they are set as default values to help catch uninitialized use
-    region_bounds.set_xmin(-1);
-    region_bounds.set_ymin(-1);
+    region_bounds.set_xmin(999);
+    region_bounds.set_ymin(999);
     region_bounds.set_xmax(-1);
     region_bounds.set_ymax(-1);
 }
@@ -35,7 +35,7 @@ bool Region::locked() {
 }
 
 bool Region::empty() {
-    return region_bounds.xmax() < region_bounds.xmin() || region_bounds.ymax() < region_bounds.ymin() || (region_bounds.xmin() == -1 && region_bounds.ymin() == -1 && region_bounds.xmax() == -1 && region_bounds.ymax() == -1);
+    return (region_bounds.xmax() < region_bounds.xmin() || region_bounds.ymax() < region_bounds.ymin());
 }
 
 bool Region::is_loc_in_reg(t_pl_loc loc) {

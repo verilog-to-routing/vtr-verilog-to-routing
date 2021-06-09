@@ -28,14 +28,14 @@ TEST_CASE("Region", "[vpr]") {
     REQUIRE(rect.ymax() == 4);
     REQUIRE(r1.get_sub_tile() == 2);
 
-    //checking that default constructor creates an empty rectangle (-1,-1,-1,-1)
+    //checking that default constructor creates an empty rectangle (999, 999,-1,-1)
     Region def_region;
     bool is_def_empty = false;
 
     vtr::Rect<int> def_rect = def_region.get_region_rect();
     is_def_empty = def_rect.empty();
     REQUIRE(is_def_empty == true);
-    REQUIRE(def_rect.xmin() == -1);
+    REQUIRE(def_rect.xmin() == 999);
     REQUIRE(def_region.get_sub_tile() == -1);
 }
 

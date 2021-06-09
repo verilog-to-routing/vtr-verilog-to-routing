@@ -466,7 +466,8 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         read_constraints(constraints_file);
     }
 
-    /*Mark fixed blocks*/
+    /*Mark the blocks that have already been locked to one spot via floorplan constraints
+     * as fixed so they do not get moved during initial placement or during simulated annealing*/
     mark_fixed_blocks();
 
     initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
