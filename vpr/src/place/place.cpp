@@ -2644,8 +2644,8 @@ static int check_block_placement_consistency() {
     for (size_t i = 0; i < device_ctx.grid.width(); i++)
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             if (place_ctx.grid_blocks[i][j].usage > device_ctx.grid[i][j].type->capacity) {
-                VTR_LOG_ERROR("Block at grid location (%zu,%zu) overused. Usage is %d.\n",
-                              i, j, place_ctx.grid_blocks[i][j].usage);
+                VTR_LOG_ERROR("%d blocks were placed at grid location (%zu,%zu), but location capacity is %d.\n",
+                              place_ctx.grid_blocks[i][j].usage, i, j, device_ctx.grid[i][j].type->capacity);
                 error++;
             }
             int usage_check = 0;
@@ -2674,8 +2674,8 @@ static int check_block_placement_consistency() {
                 bdone[bnum]++;
             }
             if (usage_check != place_ctx.grid_blocks[i][j].usage) {
-                VTR_LOG_ERROR("Location (%zu,%zu) usage is %d, but has actual usage %d.\n",
-                              i, j, place_ctx.grid_blocks[i][j].usage, usage_check);
+                VTR_LOG_ERROR("%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
+                              place_ctx.grid_blocks[i][j].usage, i, j, usage_check);
                 error++;
             }
         }
@@ -2683,7 +2683,7 @@ static int check_block_placement_consistency() {
     /* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         if (bdone[blk_id] != 1) {
-            VTR_LOG_ERROR("Block %zu listed %d times in data structures.\n",
+            VTR_LOG_ERROR("Block %zu listed %d times in device context grid.\n",
                           size_t(blk_id), bdone[blk_id]);
             error++;
         }
