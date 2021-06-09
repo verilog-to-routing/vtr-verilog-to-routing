@@ -268,7 +268,7 @@ void read_place_body(std::ifstream& placement_file,
             }
 
             //need to lock down blocks  and mark grid block usage if it is a constraints file
-            //for a place file, grid usage is marked during initial placement instead
+            //for a place file, grid usage is marked elsewhere
             if (!is_place_file) {
                 place_ctx.block_locs[blk_id].is_fixed = true;
                 place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;

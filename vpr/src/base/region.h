@@ -44,8 +44,8 @@ class Region {
     void set_sub_tile(int _sub_tile);
 
     /**
-     * @brief Return whether the region is empty, meaning the rectangle has impossible dimensions
-     * or has the default values (-1, -1, -1, -1), indicating that it is uninitialized.
+     * @brief Return whether the region is empty (i. e. the region bounds rectangle
+     * covers no area)
      */
     bool empty();
 
