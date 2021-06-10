@@ -1,6 +1,10 @@
 image:
   file: .gitpod.Dockerfile
 
+tasks:
+  - init: echo "Starting init" |
+          make BUILD_TYPE=debug
+
 github:
   prebuilds:
     # enable for the master/default branch (defaults to true)
