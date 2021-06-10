@@ -70,4 +70,9 @@ void load_cluster_constraints();
  */
 void mark_fixed_blocks();
 
+/*
+ * Number of tiles covered by a region
+ */
+int num_tiles_covered(const Region& reg, t_logical_block_type_ptr block_type);
+
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */
