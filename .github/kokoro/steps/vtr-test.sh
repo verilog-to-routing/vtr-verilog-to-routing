@@ -72,7 +72,7 @@ find . -type f -regex ".*\.tar\.\(gz\|xz\)" -delete
 find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/ -type f -print0 | xargs -0 -P $(nproc) gzip
 find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test2/ -type f -print0 | xargs -0 -P $(nproc) gzip
 find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3/ -type f -print0 | xargs -0 -P $(nproc) gzip
-
+find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test4/ -type f -print0 | xargs -0 -P $(nproc) gzip
 
 # Make sure working directory doesn't exceed disk space limit!
 echo "Working directory size: $(du -sh)"
