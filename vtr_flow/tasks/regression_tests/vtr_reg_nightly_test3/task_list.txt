@@ -1,0 +1,7 @@
+regression_tests/vtr_reg_nightly_test3/vtr_reg_qor_chain
+regression_tests/vtr_reg_nightly_test3/vtr_reg_qor_chain_depop
+regression_tests/vtr_reg_nightly_test3/vtr_reg_qor_chain_predictor_off
+regression_tests/vtr_reg_nightly_test3/vtr_reg_qor
+regression_tests/vtr_reg_nightly_test3/complex_switch  
+
+
