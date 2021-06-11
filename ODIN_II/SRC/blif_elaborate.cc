@@ -412,25 +412,64 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
  */
 static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes > 0);
     oassert(node->num_output_port_sizes == 1);
-    
-    int i, j;
-    for (i = 1; i < node->num_output_pins; i++) {
-        npin_t* output_pin = node->output_pins[i];
-        nnet_t* output_net = output_pin->net;
-        
-        // mke GND the driver of all other output pins
-        for (j = 0; j < output_net->num_fanout_pins; j++) {
-            npin_t* fanout_pin = output_net->fanout_pins[j];
-            add_fanout_pin_to_net(netlist->zero_net, fanout_pin);
-        }
-        
-        free_npin(output_pin);
-        free_nnet(output_net);
-    }
 
-    node->num_output_pins = 1;
-    node->output_port_sizes[0] = 1;
+    int i, j;
+    /* keep the recors of input widths */
+    int width_a = node->input_port_sizes[0];
+    int width_b = (node->num_input_port_sizes == 2) ? node->input_port_sizes[1] : -1;
+    int max_width = std::max(width_a, width_b);
+    
+    /* making a new node with input port sizes equal to max_width and a single output pin */
+    nnode_t* new_node = (node->num_input_port_sizes == 1)
+                            ? make_1port_gate(node->type, max_width, 1, node, traverse_mark_number)
+                            : make_2port_gate(node->type, max_width, max_width, 1, node, traverse_mark_number);
+
+    for (i = 0; i < max_width; i++) {
+        /* hook the first input into new node */
+        if (i < width_a) {
+            remap_pin_to_new_node(node->input_pins[i], new_node, i);
+        } else {
+            add_input_pin_to_node(new_node, get_zero_pin(netlist), i);
+        }
+        /* hook the second input into new node if exist */
+        if (node->num_input_port_sizes == 2) {
+            if (i < width_b) {
+                remap_pin_to_new_node(node->input_pins[width_a + i], new_node, max_width + i);
+            } else {
+                add_input_pin_to_node(new_node, get_zero_pin(netlist), max_width + i);
+            }
+        }
+    }    
+
+    /* handle output pins */
+    for (i = 0; i < node->num_output_pins; i++) {
+        /* container for the output pin */
+        npin_t* output_pin = node->output_pins[i];
+
+        if (i == 0) {
+            /* remap the first output (will show the logic node result) to the new node */
+            remap_pin_to_new_node(output_pin, new_node, 0);
+        } else {
+            /* detach output pins [1..n] and drive them with GND */
+            nnet_t* output_net = output_pin->net;
+            
+            // make GND the driver the output pins
+            for (j = 0; j < output_net->num_fanout_pins; j++) {
+                npin_t* fanout_pin = output_net->fanout_pins[j];
+                add_fanout_pin_to_net(netlist->zero_net, fanout_pin);
+            }
+            // CLEAN UP per pin
+            if (output_pin->mapping)
+                vtr::free(output_pin->mapping);
+
+            free_nnet(output_net);
+        }
+    }
+    
+    // CLEAN UP
+    free_nnode(node);
 }
 
 /**

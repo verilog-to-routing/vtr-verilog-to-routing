@@ -232,7 +232,7 @@ typemap yosys_subckt_str({
                              {"$pmux", PMUX},                         // (A, B, S, Y)
                              {"$pos", operation_list_END},            // (A, Y)
                              {"$pow", POWER},                         // (A, B, Y)
-                             {"$reduce_and", operation_list_END},     // (A, Y)
+                             {"$reduce_and", BITWISE_AND},            // (A, Y)
                              {"$reduce_bool", LOGICAL_OR},            // (A, Y)
                              {"$reduce_or", LOGICAL_OR},              // (A, Y)
                              {"$reduce_xnor", operation_list_END},    // (A, Y)
