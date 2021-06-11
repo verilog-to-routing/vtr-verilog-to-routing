@@ -1160,11 +1160,13 @@ static void connect_output_pin_to_node(int* width, int current_pin, int output_p
         remap_pin_to_new_node(node->output_pins[current_pin], current_adder, output_pin_id);
     } else {
         npin_t* node_pin_select = node->output_pins[(node->num_input_port_sizes == 2) ? current_pin : (current_pin < width[output_pin_id] - 1) ? current_pin + 1 : 0];
-        if (node_pin_select->type != NO_ID || (node->num_input_port_sizes == 2)) {
-            remap_pin_to_new_node(node_pin_select, current_adder, output_pin_id);
-        } else {
-            current_adder->output_pins[output_pin_id] = allocate_npin();
-            current_adder->output_pins[output_pin_id]->name = append_string("", "%s~dummy_output~%d", current_adder->name, output_pin_id);
+        if (node_pin_select) {
+            if (node_pin_select->type != NO_ID || (node->num_input_port_sizes == 2)) {
+                remap_pin_to_new_node(node_pin_select, current_adder, output_pin_id);
+            } else {
+                current_adder->output_pins[output_pin_id] = allocate_npin();
+                current_adder->output_pins[output_pin_id]->name = append_string("", "%s~dummy_output~%d", current_adder->name, output_pin_id);
+            }
         }
     }
 }

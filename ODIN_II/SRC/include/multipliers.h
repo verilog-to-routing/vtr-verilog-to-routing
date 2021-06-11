@@ -50,7 +50,7 @@ extern void declare_hard_multiplier(nnode_t* node);
 extern void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* netlist);
 extern void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* netlist);
 extern signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e port_status, short mark, netlist_t* netlist);
-extern void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list, netlist_t* netlist);
+extern void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list);
 extern void find_hard_multipliers();
 extern void add_the_blackbox_for_mults(FILE* out);
 extern void define_mult_function(nnode_t* node, FILE* out);
