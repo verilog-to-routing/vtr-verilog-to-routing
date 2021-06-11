@@ -3,19 +3,43 @@
         "test_name": "full/bm_base_memory/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "bm_base_memory_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
         "max_rss(MiB)": 8.3,
         "exec_time(ms)": 13.9,
         "simulation_time(ms)": 0.5,
         "test_coverage(%)": 100,
-        "generic logic size": 4
+        "Latch Drivers": 1,
+        "Pi": 13,
+        "Po": 12,
+        "logic element": 383,
+        "latch": 76,
+        "generic logic size": 4,
+        "Longest Path": 23,
+        "Average Path": 6,
+        "Estimated LUTs": 383,
+        "Total Node": 460
     },
     "full/bm_base_memory/no_arch": {
         "test_name": "full/bm_base_memory/no_arch",
         "generated_blif": "bm_base_memory_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
         "max_rss(MiB)": 7.1,
         "exec_time(ms)": 1.5,
         "simulation_time(ms)": 0.4,
-        "test_coverage(%)": 100
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 13,
+        "Po": 12,
+        "logic element": 383,
+        "latch": 76,
+        "Longest Path": 23,
+        "Average Path": 6,
+        "Estimated LUTs": 383,
+        "Total Node": 460
     },
     "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -54,24 +78,6 @@
         "Average Path": 7,
         "Estimated LUTs": 49,
         "Total Node": 49
-    },
-    "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "generated_blif": "bm_sfifo_rtl_generated.blif",
-        "max_rss(MiB)": 8.1,
-        "exec_time(ms)": 12.6,
-        "simulation_time(ms)": 0.4,
-        "test_coverage(%)": 100,
-        "generic logic size": 4
-    },
-    "full/bm_sfifo_rtl/no_arch": {
-        "test_name": "full/bm_sfifo_rtl/no_arch",
-        "generated_blif": "bm_sfifo_rtl_generated.blif",
-        "max_rss(MiB)": 7.1,
-        "exec_time(ms)": 1.5,
-        "simulation_time(ms)": 0.4,
-        "test_coverage(%)": 100
     },
     "full/cf_fir_24_16_16/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/cf_fir_24_16_16/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -187,19 +193,44 @@
         "test_name": "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "matmul_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 12.7,
         "simulation_time(ms)": 0.4,
         "test_coverage(%)": 100,
-        "generic logic size": 4
+        "Latch Drivers": 1,
+        "Pi": 1,
+        "Po": 7,
+        "logic element": 498,
+        "latch": 15,
+        "Adder": 77,
+        "generic logic size": 4,
+        "Longest Path": 72,
+        "Average Path": 6,
+        "Estimated LUTs": 508,
+        "Total Node": 591
     },
     "full/matmul/no_arch": {
         "test_name": "full/matmul/no_arch",
         "generated_blif": "matmul_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
         "max_rss(MiB)": 7.2,
         "exec_time(ms)": 1.5,
         "simulation_time(ms)": 0.4,
-        "test_coverage(%)": 100
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 1,
+        "Po": 7,
+        "logic element": 637,
+        "latch": 15,
+        "Longest Path": 87,
+        "Average Path": 6,
+        "Estimated LUTs": 637,
+        "Total Node": 653
     },
     "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",

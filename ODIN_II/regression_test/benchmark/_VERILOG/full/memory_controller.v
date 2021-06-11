@@ -30,14 +30,18 @@ module memory_controller
 	
 	wire [`MEMORY_CONTROLLER_DATA_SIZE-1:0] spi_out,dpi_out1,dpi_out2;
 
+	defparam sp_ram.ADDR_WIDTH = `MEMORY_CONTROLLER_ADDR_SIZE;
+	defparam sp_ram.DATA_WIDTH = `MEMORY_CONTROLLER_DATA_SIZE;
 	single_port_ram sp_ram (		
 		.addr (addr1),
 		.data (data1),
 		.we   (we1),	
-		.clk  (clk),	
+		.clock  (clk),	
 		.out  (spi_out)
 	);
 
+	defparam dp_ram.ADDR_WIDTH = `MEMORY_CONTROLLER_ADDR_SIZE;
+	defparam dp_ram.DATA_WIDTH = `MEMORY_CONTROLLER_DATA_SIZE;
 	dual_port_ram dp_ram (
                 .addr1 (addr1),
 		.addr2 (addr2),
@@ -45,7 +49,7 @@ module memory_controller
 		.data2 (data2),
         	.we1 (we1),
 		.we2 (we2),
-	        .clk (clk),
+	        .clock (clk),
         	.out1 (dpi_out1),
 		.out2 (dpi_out2)
         );

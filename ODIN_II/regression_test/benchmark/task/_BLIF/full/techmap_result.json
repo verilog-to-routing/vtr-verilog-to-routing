@@ -118,17 +118,35 @@
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 13,
         "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 13,
+        "Po": 12,
+        "logic element": 383,
+        "latch": 76,
         "Adder": 0,
         "Multiplier": 0,
         "Memory": 0,
-        "generic logic size": 4
+        "generic logic size": 4,
+        "Longest Path": 23,
+        "Average Path": 6,
+        "Estimated LUTs": 383,
+        "Total Node": 460
     },
     "full/bm_base_memory/no_arch": {
         "test_name": "full/bm_base_memory/no_arch",
         "input_blif": "bm_base_memory.blif",
         "max_rss(MiB)": 7.4,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.7
+        "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 13,
+        "Po": 12,
+        "logic element": 383,
+        "latch": 76,
+        "Longest Path": 23,
+        "Average Path": 6,
+        "Estimated LUTs": 383,
+        "Total Node": 460
     },
     "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -167,17 +185,21 @@
         "test_name": "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bm_sfifo_rtl.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] Error: Could not hook up the pin bm_sfifo_rtl^fifo_mem[14]_$mux_A_B~0: not available."
+        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 12.2,
-        "techmap_time(ms)": 0.7,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4
+        "techmap_time(ms)": 0.7
     },
     "full/bm_sfifo_rtl/no_arch": {
         "test_name": "full/bm_sfifo_rtl/no_arch",
         "input_blif": "bm_sfifo_rtl.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] Error: Could not hook up the pin bm_sfifo_rtl^fifo_mem[14]_$mux_A_B~0: not available."
+        ],
         "max_rss(MiB)": 7.2,
         "exec_time(ms)": 0.9,
         "techmap_time(ms)": 0.7
@@ -477,17 +499,35 @@
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 12.1,
         "techmap_time(ms)": 0.7,
-        "Adder": 0,
+        "Latch Drivers": 1,
+        "Pi": 1,
+        "Po": 7,
+        "logic element": 498,
+        "latch": 15,
+        "Adder": 77,
         "Multiplier": 0,
         "Memory": 0,
-        "generic logic size": 4
+        "generic logic size": 4,
+        "Longest Path": 72,
+        "Average Path": 6,
+        "Estimated LUTs": 508,
+        "Total Node": 591
     },
     "full/matmul/no_arch": {
         "test_name": "full/matmul/no_arch",
         "input_blif": "matmul.blif",
         "max_rss(MiB)": 7.3,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.7
+        "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 1,
+        "Po": 7,
+        "logic element": 637,
+        "latch": 15,
+        "Longest Path": 87,
+        "Average Path": 6,
+        "Estimated LUTs": 637,
+        "Total Node": 653
     },
     "full/oc54_cpu/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/oc54_cpu/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -624,6 +664,108 @@
         "Average Path": 6,
         "Estimated LUTs": 3389,
         "Total Node": 3490
+    },
+    "full/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "ch_intrinsics.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'single_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/ch_intrinsics/no_arch": {
+        "test_name": "full/ch_intrinsics/no_arch",
+        "input_blif": "ch_intrinsics.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'single_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "LU8PEEng.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/LU8PEEng/no_arch": {
+        "test_name": "full/LU8PEEng/no_arch",
+        "input_blif": "LU8PEEng.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/mcml/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/mcml/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "mcml.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/mcml/no_arch": {
+        "test_name": "full/mcml/no_arch",
+        "input_blif": "mcml.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "memory_controller.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/memory_controller/no_arch": {
+        "test_name": "full/memory_controller/no_arch",
+        "input_blif": "memory_controller.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "mkPktMerge.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/mkPktMerge/no_arch": {
+        "test_name": "full/mkPktMerge/no_arch",
+        "input_blif": "mkPktMerge.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
+        ]
+    },
+    "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "input_blif": "stereovision0.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
+    },
+    "full/stereovision0/no_arch": {
+        "test_name": "full/stereovision0/no_arch",
+        "input_blif": "stereovision0.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for '$sdffce' with matching ports was not found."
+        ]
     },
     "DEFAULT": {
         "test_name": "n/a",

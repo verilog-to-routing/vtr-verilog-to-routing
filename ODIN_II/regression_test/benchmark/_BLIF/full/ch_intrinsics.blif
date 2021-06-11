@@ -9,7 +9,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 0000
 .param WIDTH 00000000000000000000000000000100
-.subckt $reduce_bool A[0]=exitcond_$ne_A_A A[1]=s_07_$dffe_Q_EN_$reduce_and_Y_A A[2]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_8 A[3]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_7 A[4]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_6 A[5]=tmp_$dffe_Q_EN_$reduce_and_Y_A A[6]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_5 A[7]=var2_$dffe_Q_EN_$reduce_and_Y_A A[8]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_4 A[9]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_3 A[10]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_2 A[11]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_1 A[12]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A A[13]=finish_$dffe_Q_D_$pmux_Y_S A[14]=finish_$dffe_Q_D_$pmux_Y_S_1 Y=cur_state_$sdffe_Q_EN
+.subckt $reduce_bool A[0]=exitcond_$ne_A_A A[1]=s_07_$dffe_Q_EN_$reduce_and_Y_A A[2]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_8 A[3]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_7 A[4]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_6 A[5]=tmp_$dffe_Q_EN_$reduce_and_Y_A A[6]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_5 A[7]=var2_$dffe_Q_EN_$reduce_and_Y_A A[8]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_4 A[9]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_3 A[10]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_2 A[11]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_1 A[12]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A A[13]=finish_$dffe_Q_D_$pmux_Y_S_1 A[14]=finish_$dffe_Q_D_$pmux_Y_S Y=cur_state_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001111
 .param Y_WIDTH 00000000000000000000000000000001
@@ -19,7 +19,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000100
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=exitcond_$mux_S_Y[0] B[5]=exitcond_$mux_S_Y[1] B[6]=exitcond_$mux_S_Y[2] B[7]=exitcond_$mux_S_Y[3] B[8]=$true B[9]=$false B[10]=$true B[11]=$true B[12]=$false B[13]=$false B[14]=$true B[15]=$true B[16]=$true B[17]=$true B[18]=$false B[19]=$true B[20]=$false B[21]=$true B[22]=$false B[23]=$true B[24]=$true B[25]=$false B[26]=$false B[27]=$true B[28]=var2_$mux_S_Y[0] B[29]=var2_$mux_S_Y[1] B[30]=var2_$mux_S_Y[2] B[31]=var2_$mux_S_Y[3] B[32]=$true B[33]=$true B[34]=$true B[35]=$false B[36]=$false B[37]=$true B[38]=$true B[39]=$false B[40]=$true B[41]=$false B[42]=$true B[43]=$false B[44]=$false B[45]=$false B[46]=$true B[47]=$false B[48]=$true B[49]=$true B[50]=$false B[51]=$false B[52]=$false B[53]=$true B[54]=$false B[55]=$false B[56]=start_$mux_S_Y[0] B[57]=start_$mux_S_Y[1] B[58]=start_$mux_S_Y[2] B[59]=start_$mux_S_Y[3] S[0]=finish_$dffe_Q_D_$pmux_Y_S_1 S[1]=exitcond_$ne_A_A S[2]=s_07_$dffe_Q_EN_$reduce_and_Y_A S[3]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_8 S[4]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_7 S[5]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_6 S[6]=tmp_$dffe_Q_EN_$reduce_and_Y_A S[7]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_5 S[8]=var2_$dffe_Q_EN_$reduce_and_Y_A S[9]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_4 S[10]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_3 S[11]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_2 S[12]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_1 S[13]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A S[14]=finish_$dffe_Q_D_$pmux_Y_S Y[0]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[0] Y[1]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[1] Y[2]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[2] Y[3]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[3]
+.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=exitcond_$mux_S_Y[0] B[5]=exitcond_$mux_S_Y[1] B[6]=exitcond_$mux_S_Y[2] B[7]=exitcond_$mux_S_Y[3] B[8]=$true B[9]=$false B[10]=$true B[11]=$true B[12]=$false B[13]=$false B[14]=$true B[15]=$true B[16]=$true B[17]=$true B[18]=$false B[19]=$true B[20]=$false B[21]=$true B[22]=$false B[23]=$true B[24]=$true B[25]=$false B[26]=$false B[27]=$true B[28]=var2_$mux_S_Y[0] B[29]=var2_$mux_S_Y[1] B[30]=var2_$mux_S_Y[2] B[31]=var2_$mux_S_Y[3] B[32]=$true B[33]=$true B[34]=$true B[35]=$false B[36]=$false B[37]=$true B[38]=$true B[39]=$false B[40]=$true B[41]=$false B[42]=$true B[43]=$false B[44]=$false B[45]=$false B[46]=$true B[47]=$false B[48]=$true B[49]=$true B[50]=$false B[51]=$false B[52]=$false B[53]=$true B[54]=$false B[55]=$false B[56]=start_$mux_S_Y[0] B[57]=start_$mux_S_Y[1] B[58]=start_$mux_S_Y[2] B[59]=start_$mux_S_Y[3] S[0]=finish_$dffe_Q_D_$pmux_Y_S S[1]=exitcond_$ne_A_A S[2]=s_07_$dffe_Q_EN_$reduce_and_Y_A S[3]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_8 S[4]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_7 S[5]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_6 S[6]=tmp_$dffe_Q_EN_$reduce_and_Y_A S[7]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_5 S[8]=var2_$dffe_Q_EN_$reduce_and_Y_A S[9]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_4 S[10]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_3 S[11]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_2 S[12]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_1 S[13]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A S[14]=finish_$dffe_Q_D_$pmux_Y_S_1 Y[0]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[0] Y[1]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[1] Y[2]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[2] Y[3]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_$pmux_S_Y[3]
 .param S_WIDTH 00000000000000000000000000001111
 .param WIDTH 00000000000000000000000000000100
 .subckt $eq A[0]=cur_state[0] A[1]=cur_state[1] A[2]=cur_state[2] A[3]=cur_state[3] B[0]=$false B[1]=$true B[2]=$false B[3]=$false Y=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_1
@@ -94,24 +94,24 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$true B[1]=$false S[0]=finish_$dffe_Q_D_$pmux_Y_S_1 S[1]=finish_$dffe_Q_D_$pmux_Y_S Y=finish_$dffe_Q_D
+.subckt $pmux A=$undef B[0]=$true B[1]=$false S[0]=finish_$dffe_Q_D_$pmux_Y_S S[1]=finish_$dffe_Q_D_$pmux_Y_S_1 Y=finish_$dffe_Q_D
 .param S_WIDTH 00000000000000000000000000000010
 .param WIDTH 00000000000000000000000000000001
-.subckt $logic_not A[0]=cur_state[0] A[1]=cur_state[1] A[2]=cur_state[2] A[3]=cur_state[3] Y=finish_$dffe_Q_D_$pmux_Y_S
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000100
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=cur_state[0] A[1]=cur_state[1] A[2]=cur_state[2] A[3]=cur_state[3] B[0]=$false B[1]=$true B[2]=$true B[3]=$true Y=finish_$dffe_Q_D_$pmux_Y_S_1
+.subckt $eq A[0]=cur_state[0] A[1]=cur_state[1] A[2]=cur_state[2] A[3]=cur_state[3] B[0]=$false B[1]=$true B[2]=$true B[3]=$true Y=finish_$dffe_Q_D_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000100
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000100
 .param Y_WIDTH 00000000000000000000000000000001
+.subckt $logic_not A[0]=cur_state[0] A[1]=cur_state[1] A[2]=cur_state[2] A[3]=cur_state[3] Y=finish_$dffe_Q_D_$pmux_Y_S_1
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000100
+.param Y_WIDTH 00000000000000000000000000000001
 .subckt $reduce_and A[0]=reset_$not_A_Y A[1]=finish_$dffe_Q_EN_$reduce_and_Y_A Y=finish_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_bool A[0]=finish_$dffe_Q_D_$pmux_Y_S A[1]=finish_$dffe_Q_D_$pmux_Y_S_1 Y=finish_$dffe_Q_EN_$reduce_and_Y_A
+.subckt $reduce_bool A[0]=finish_$dffe_Q_D_$pmux_Y_S_1 A[1]=finish_$dffe_Q_D_$pmux_Y_S Y=finish_$dffe_Q_EN_$reduce_and_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -131,7 +131,7 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000100000
-.subckt $reduce_and A[0]=reset_$not_A_Y A[1]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_7 Y=indvar_next_$dffe_Q_EN
+.subckt $reduce_and A[0]=cur_state_$sdffe_Q_EN_$reduce_bool_Y_A_7 A[1]=reset_$not_A_Y Y=indvar_next_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -147,706 +147,9 @@
 .subckt $dlatch D[0]=c[0] D[1]=c[1] D[2]=c[2] D[3]=c[3] D[4]=c[4] D[5]=c[5] D[6]=c[6] D[7]=c[7] D[8]=c[8] D[9]=c[9] D[10]=c[10] D[11]=c[11] D[12]=c[12] D[13]=c[13] D[14]=c[14] D[15]=c[15] D[16]=c[16] D[17]=c[17] D[18]=c[18] D[19]=c[19] D[20]=c[20] D[21]=c[21] D[22]=c[22] D[23]=c[23] D[24]=c[24] D[25]=c[25] D[26]=c[26] D[27]=c[27] D[28]=c[28] D[29]=c[29] D[30]=c[30] D[31]=c[31] EN=exitcond_$ne_A_A Q[0]=memory_controller_in[0] Q[1]=memory_controller_in[1] Q[2]=memory_controller_in[2] Q[3]=memory_controller_in[3] Q[4]=memory_controller_in[4] Q[5]=memory_controller_in[5] Q[6]=memory_controller_in[6] Q[7]=memory_controller_in[7] Q[8]=memory_controller_in[8] Q[9]=memory_controller_in[9] Q[10]=memory_controller_in[10] Q[11]=memory_controller_in[11] Q[12]=memory_controller_in[12] Q[13]=memory_controller_in[13] Q[14]=memory_controller_in[14] Q[15]=memory_controller_in[15] Q[16]=memory_controller_in[16] Q[17]=memory_controller_in[17] Q[18]=memory_controller_in[18] Q[19]=memory_controller_in[19] Q[20]=memory_controller_in[20] Q[21]=memory_controller_in[21] Q[22]=memory_controller_in[22] Q[23]=memory_controller_in[23] Q[24]=memory_controller_in[24] Q[25]=memory_controller_in[25] Q[26]=memory_controller_in[26] Q[27]=memory_controller_in[27] Q[28]=memory_controller_in[28] Q[29]=memory_controller_in[29] Q[30]=memory_controller_in[30] Q[31]=memory_controller_in[31]
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000100000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.RAM$rdreg[0]$d[0] D[1]=memtroll._str.RAM$rdreg[0]$d[1] D[2]=memtroll._str.RAM$rdreg[0]$d[2] D[3]=memtroll._str.RAM$rdreg[0]$d[3] D[4]=memtroll._str.RAM$rdreg[0]$d[4] D[5]=memtroll._str.RAM$rdreg[0]$d[5] D[6]=memtroll._str.RAM$rdreg[0]$d[6] D[7]=memtroll._str.RAM$rdreg[0]$d[7] EN=memtroll._str.we Q[0]=memtroll._str.out[0] Q[1]=memtroll._str.out[1] Q[2]=memtroll._str.out[2] Q[3]=memtroll._str.out[3] Q[4]=memtroll._str.out[4] Q[5]=memtroll._str.out[5] Q[6]=memtroll._str.out[6] Q[7]=memtroll._str.out[7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[0] A[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[1] A[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[2] A[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[3] A[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[4] A[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[5] A[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[6] A[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[7] B[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[0] B[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[1] B[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[2] B[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[3] B[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[4] B[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[5] B[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[6] B[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[7] S=memtroll._str.addr[4] Y[0]=memtroll._str.RAM$rdreg[0]$d[0] Y[1]=memtroll._str.RAM$rdreg[0]$d[1] Y[2]=memtroll._str.RAM$rdreg[0]$d[2] Y[3]=memtroll._str.RAM$rdreg[0]$d[3] Y[4]=memtroll._str.RAM$rdreg[0]$d[4] Y[5]=memtroll._str.RAM$rdreg[0]$d[5] Y[6]=memtroll._str.RAM$rdreg[0]$d[6] Y[7]=memtroll._str.RAM$rdreg[0]$d[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[0] A[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[1] A[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[2] A[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[3] A[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[4] A[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[5] A[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[6] A[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[7] B[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[0] B[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[1] B[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[2] B[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[3] B[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[4] B[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[5] B[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[6] B[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[7] S=memtroll._str.addr[3] Y[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[0] Y[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[1] Y[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[2] Y[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[3] Y[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[4] Y[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[5] Y[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[6] Y[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[0] A[1]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[1] A[2]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[2] A[3]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[3] A[4]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[4] A[5]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[5] A[6]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[6] A[7]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[7] B[0]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[0] B[1]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[1] B[2]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[2] B[3]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[3] B[4]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[4] B[5]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[5] B[6]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[6] B[7]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[7] S=memtroll._str.addr[2] Y[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[0] Y[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[1] Y[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[2] Y[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[3] Y[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[4] Y[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[5] Y[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[6] Y[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_A[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[0] A[1]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[1] A[2]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[2] A[3]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[3] A[4]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[4] A[5]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[5] A[6]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[6] A[7]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[7] B[0]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[0] B[1]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[1] B[2]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[2] B[3]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[3] B[4]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[4] B[5]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[5] B[6]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[6] B[7]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[7] S=memtroll._str.addr[2] Y[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[0] Y[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[1] Y[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[2] Y[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[3] Y[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[4] Y[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[5] Y[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[6] Y[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_A_$mux_Y_B[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[0] A[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[1] A[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[2] A[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[3] A[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[4] A[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[5] A[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[6] A[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[7] B[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[0] B[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[1] B[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[2] B[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[3] B[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[4] B[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[5] B[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[6] B[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[7] S=memtroll._str.addr[3] Y[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[0] Y[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[1] Y[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[2] Y[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[3] Y[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[4] Y[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[5] Y[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[6] Y[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[0] A[1]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[1] A[2]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[2] A[3]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[3] A[4]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[4] A[5]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[5] A[6]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[6] A[7]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[7] B[0]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[0] B[1]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[1] B[2]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[2] B[3]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[3] B[4]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[4] B[5]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[5] B[6]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[6] B[7]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[7] S=memtroll._str.addr[2] Y[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[0] Y[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[1] Y[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[2] Y[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[3] Y[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[4] Y[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[5] Y[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[6] Y[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_A[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[0] A[1]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[1] A[2]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[2] A[3]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[3] A[4]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[4] A[5]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[5] A[6]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[6] A[7]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[7] B[0]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[0] B[1]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[1] B[2]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[2] B[3]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[3] B[4]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[4] B[5]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[5] B[6]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[6] B[7]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[7] S=memtroll._str.addr[2] Y[0]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[0] Y[1]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[1] Y[2]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[2] Y[3]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[3] Y[4]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[4] Y[5]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[5] Y[6]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[6] Y[7]=memtroll._str.RAM$rdreg[0]$d_$mux_Y_B_$mux_Y_B[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[0]_$dffe_Q_EN Q[0]=memtroll._str.RAM[0][0] Q[1]=memtroll._str.RAM[0][1] Q[2]=memtroll._str.RAM[0][2] Q[3]=memtroll._str.RAM[0][3] Q[4]=memtroll._str.RAM[0][4] Q[5]=memtroll._str.RAM[0][5] Q[6]=memtroll._str.RAM[0][6] Q[7]=memtroll._str.RAM[0][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[0]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=memtroll._str.we_$mux_S_Y[0] Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=memtroll._str.we_$mux_S_Y[1] Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=memtroll._str.we_$mux_S_Y[2] Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=memtroll._str.we_$mux_S_Y[3] Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=memtroll._str.we_$mux_S_Y[4] Y=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[0][0] A[1]=memtroll._str.RAM[0][1] A[2]=memtroll._str.RAM[0][2] A[3]=memtroll._str.RAM[0][3] A[4]=memtroll._str.RAM[0][4] A[5]=memtroll._str.RAM[0][5] A[6]=memtroll._str.RAM[0][6] A[7]=memtroll._str.RAM[0][7] B[0]=memtroll._str.RAM[1][0] B[1]=memtroll._str.RAM[1][1] B[2]=memtroll._str.RAM[1][2] B[3]=memtroll._str.RAM[1][3] B[4]=memtroll._str.RAM[1][4] B[5]=memtroll._str.RAM[1][5] B[6]=memtroll._str.RAM[1][6] B[7]=memtroll._str.RAM[1][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[0]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[0]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[0]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[0]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[0]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[0]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[0]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[0]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[0]_$mux_A_Y[0] A[1]=memtroll._str.RAM[0]_$mux_A_Y[1] A[2]=memtroll._str.RAM[0]_$mux_A_Y[2] A[3]=memtroll._str.RAM[0]_$mux_A_Y[3] A[4]=memtroll._str.RAM[0]_$mux_A_Y[4] A[5]=memtroll._str.RAM[0]_$mux_A_Y[5] A[6]=memtroll._str.RAM[0]_$mux_A_Y[6] A[7]=memtroll._str.RAM[0]_$mux_A_Y[7] B[0]=memtroll._str.RAM[2]_$mux_A_Y[0] B[1]=memtroll._str.RAM[2]_$mux_A_Y[1] B[2]=memtroll._str.RAM[2]_$mux_A_Y[2] B[3]=memtroll._str.RAM[2]_$mux_A_Y[3] B[4]=memtroll._str.RAM[2]_$mux_A_Y[4] B[5]=memtroll._str.RAM[2]_$mux_A_Y[5] B[6]=memtroll._str.RAM[2]_$mux_A_Y[6] B[7]=memtroll._str.RAM[2]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[0]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[10]_$dffe_Q_EN Q[0]=memtroll._str.RAM[10][0] Q[1]=memtroll._str.RAM[10][1] Q[2]=memtroll._str.RAM[10][2] Q[3]=memtroll._str.RAM[10][3] Q[4]=memtroll._str.RAM[10][4] Q[5]=memtroll._str.RAM[10][5] Q[6]=memtroll._str.RAM[10][6] Q[7]=memtroll._str.RAM[10][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[10]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[10]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[10]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[10][0] A[1]=memtroll._str.RAM[10][1] A[2]=memtroll._str.RAM[10][2] A[3]=memtroll._str.RAM[10][3] A[4]=memtroll._str.RAM[10][4] A[5]=memtroll._str.RAM[10][5] A[6]=memtroll._str.RAM[10][6] A[7]=memtroll._str.RAM[10][7] B[0]=memtroll._str.RAM[11][0] B[1]=memtroll._str.RAM[11][1] B[2]=memtroll._str.RAM[11][2] B[3]=memtroll._str.RAM[11][3] B[4]=memtroll._str.RAM[11][4] B[5]=memtroll._str.RAM[11][5] B[6]=memtroll._str.RAM[11][6] B[7]=memtroll._str.RAM[11][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[10]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[10]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[10]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[10]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[10]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[10]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[10]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[10]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[11]_$dffe_Q_EN Q[0]=memtroll._str.RAM[11][0] Q[1]=memtroll._str.RAM[11][1] Q[2]=memtroll._str.RAM[11][2] Q[3]=memtroll._str.RAM[11][3] Q[4]=memtroll._str.RAM[11][4] Q[5]=memtroll._str.RAM[11][5] Q[6]=memtroll._str.RAM[11][6] Q[7]=memtroll._str.RAM[11][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[11]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[11]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[11]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[12]_$dffe_Q_EN Q[0]=memtroll._str.RAM[12][0] Q[1]=memtroll._str.RAM[12][1] Q[2]=memtroll._str.RAM[12][2] Q[3]=memtroll._str.RAM[12][3] Q[4]=memtroll._str.RAM[12][4] Q[5]=memtroll._str.RAM[12][5] Q[6]=memtroll._str.RAM[12][6] Q[7]=memtroll._str.RAM[12][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[12]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[12]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[12]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[2] B=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[12][0] A[1]=memtroll._str.RAM[12][1] A[2]=memtroll._str.RAM[12][2] A[3]=memtroll._str.RAM[12][3] A[4]=memtroll._str.RAM[12][4] A[5]=memtroll._str.RAM[12][5] A[6]=memtroll._str.RAM[12][6] A[7]=memtroll._str.RAM[12][7] B[0]=memtroll._str.RAM[13][0] B[1]=memtroll._str.RAM[13][1] B[2]=memtroll._str.RAM[13][2] B[3]=memtroll._str.RAM[13][3] B[4]=memtroll._str.RAM[13][4] B[5]=memtroll._str.RAM[13][5] B[6]=memtroll._str.RAM[13][6] B[7]=memtroll._str.RAM[13][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[12]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[12]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[12]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[12]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[12]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[12]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[12]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[12]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[12]_$mux_A_Y[0] A[1]=memtroll._str.RAM[12]_$mux_A_Y[1] A[2]=memtroll._str.RAM[12]_$mux_A_Y[2] A[3]=memtroll._str.RAM[12]_$mux_A_Y[3] A[4]=memtroll._str.RAM[12]_$mux_A_Y[4] A[5]=memtroll._str.RAM[12]_$mux_A_Y[5] A[6]=memtroll._str.RAM[12]_$mux_A_Y[6] A[7]=memtroll._str.RAM[12]_$mux_A_Y[7] B[0]=memtroll._str.RAM[14]_$mux_A_Y[0] B[1]=memtroll._str.RAM[14]_$mux_A_Y[1] B[2]=memtroll._str.RAM[14]_$mux_A_Y[2] B[3]=memtroll._str.RAM[14]_$mux_A_Y[3] B[4]=memtroll._str.RAM[14]_$mux_A_Y[4] B[5]=memtroll._str.RAM[14]_$mux_A_Y[5] B[6]=memtroll._str.RAM[14]_$mux_A_Y[6] B[7]=memtroll._str.RAM[14]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[12]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[13]_$dffe_Q_EN Q[0]=memtroll._str.RAM[13][0] Q[1]=memtroll._str.RAM[13][1] Q[2]=memtroll._str.RAM[13][2] Q[3]=memtroll._str.RAM[13][3] Q[4]=memtroll._str.RAM[13][4] Q[5]=memtroll._str.RAM[13][5] Q[6]=memtroll._str.RAM[13][6] Q[7]=memtroll._str.RAM[13][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[13]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[13]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[13]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[14]_$dffe_Q_EN Q[0]=memtroll._str.RAM[14][0] Q[1]=memtroll._str.RAM[14][1] Q[2]=memtroll._str.RAM[14][2] Q[3]=memtroll._str.RAM[14][3] Q[4]=memtroll._str.RAM[14][4] Q[5]=memtroll._str.RAM[14][5] Q[6]=memtroll._str.RAM[14][6] Q[7]=memtroll._str.RAM[14][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[14]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[14]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[14]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[14][0] A[1]=memtroll._str.RAM[14][1] A[2]=memtroll._str.RAM[14][2] A[3]=memtroll._str.RAM[14][3] A[4]=memtroll._str.RAM[14][4] A[5]=memtroll._str.RAM[14][5] A[6]=memtroll._str.RAM[14][6] A[7]=memtroll._str.RAM[14][7] B[0]=memtroll._str.RAM[15][0] B[1]=memtroll._str.RAM[15][1] B[2]=memtroll._str.RAM[15][2] B[3]=memtroll._str.RAM[15][3] B[4]=memtroll._str.RAM[15][4] B[5]=memtroll._str.RAM[15][5] B[6]=memtroll._str.RAM[15][6] B[7]=memtroll._str.RAM[15][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[14]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[14]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[14]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[14]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[14]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[14]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[14]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[14]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[15]_$dffe_Q_EN Q[0]=memtroll._str.RAM[15][0] Q[1]=memtroll._str.RAM[15][1] Q[2]=memtroll._str.RAM[15][2] Q[3]=memtroll._str.RAM[15][3] Q[4]=memtroll._str.RAM[15][4] Q[5]=memtroll._str.RAM[15][5] Q[6]=memtroll._str.RAM[15][6] Q[7]=memtroll._str.RAM[15][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[15]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[15]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[15]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[16]_$dffe_Q_EN Q[0]=memtroll._str.RAM[16][0] Q[1]=memtroll._str.RAM[16][1] Q[2]=memtroll._str.RAM[16][2] Q[3]=memtroll._str.RAM[16][3] Q[4]=memtroll._str.RAM[16][4] Q[5]=memtroll._str.RAM[16][5] Q[6]=memtroll._str.RAM[16][6] Q[7]=memtroll._str.RAM[16][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[16]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A B=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A B=memtroll._str.we_$mux_S_Y[4] Y=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[16][0] A[1]=memtroll._str.RAM[16][1] A[2]=memtroll._str.RAM[16][2] A[3]=memtroll._str.RAM[16][3] A[4]=memtroll._str.RAM[16][4] A[5]=memtroll._str.RAM[16][5] A[6]=memtroll._str.RAM[16][6] A[7]=memtroll._str.RAM[16][7] B[0]=memtroll._str.RAM[17][0] B[1]=memtroll._str.RAM[17][1] B[2]=memtroll._str.RAM[17][2] B[3]=memtroll._str.RAM[17][3] B[4]=memtroll._str.RAM[17][4] B[5]=memtroll._str.RAM[17][5] B[6]=memtroll._str.RAM[17][6] B[7]=memtroll._str.RAM[17][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[16]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[16]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[16]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[16]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[16]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[16]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[16]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[16]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[16]_$mux_A_Y[0] A[1]=memtroll._str.RAM[16]_$mux_A_Y[1] A[2]=memtroll._str.RAM[16]_$mux_A_Y[2] A[3]=memtroll._str.RAM[16]_$mux_A_Y[3] A[4]=memtroll._str.RAM[16]_$mux_A_Y[4] A[5]=memtroll._str.RAM[16]_$mux_A_Y[5] A[6]=memtroll._str.RAM[16]_$mux_A_Y[6] A[7]=memtroll._str.RAM[16]_$mux_A_Y[7] B[0]=memtroll._str.RAM[18]_$mux_A_Y[0] B[1]=memtroll._str.RAM[18]_$mux_A_Y[1] B[2]=memtroll._str.RAM[18]_$mux_A_Y[2] B[3]=memtroll._str.RAM[18]_$mux_A_Y[3] B[4]=memtroll._str.RAM[18]_$mux_A_Y[4] B[5]=memtroll._str.RAM[18]_$mux_A_Y[5] B[6]=memtroll._str.RAM[18]_$mux_A_Y[6] B[7]=memtroll._str.RAM[18]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[16]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[17]_$dffe_Q_EN Q[0]=memtroll._str.RAM[17][0] Q[1]=memtroll._str.RAM[17][1] Q[2]=memtroll._str.RAM[17][2] Q[3]=memtroll._str.RAM[17][3] Q[4]=memtroll._str.RAM[17][4] Q[5]=memtroll._str.RAM[17][5] Q[6]=memtroll._str.RAM[17][6] Q[7]=memtroll._str.RAM[17][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[17]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[17]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[17]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[18]_$dffe_Q_EN Q[0]=memtroll._str.RAM[18][0] Q[1]=memtroll._str.RAM[18][1] Q[2]=memtroll._str.RAM[18][2] Q[3]=memtroll._str.RAM[18][3] Q[4]=memtroll._str.RAM[18][4] Q[5]=memtroll._str.RAM[18][5] Q[6]=memtroll._str.RAM[18][6] Q[7]=memtroll._str.RAM[18][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[18]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[18]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[18]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[18][0] A[1]=memtroll._str.RAM[18][1] A[2]=memtroll._str.RAM[18][2] A[3]=memtroll._str.RAM[18][3] A[4]=memtroll._str.RAM[18][4] A[5]=memtroll._str.RAM[18][5] A[6]=memtroll._str.RAM[18][6] A[7]=memtroll._str.RAM[18][7] B[0]=memtroll._str.RAM[19][0] B[1]=memtroll._str.RAM[19][1] B[2]=memtroll._str.RAM[19][2] B[3]=memtroll._str.RAM[19][3] B[4]=memtroll._str.RAM[19][4] B[5]=memtroll._str.RAM[19][5] B[6]=memtroll._str.RAM[19][6] B[7]=memtroll._str.RAM[19][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[18]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[18]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[18]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[18]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[18]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[18]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[18]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[18]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[19]_$dffe_Q_EN Q[0]=memtroll._str.RAM[19][0] Q[1]=memtroll._str.RAM[19][1] Q[2]=memtroll._str.RAM[19][2] Q[3]=memtroll._str.RAM[19][3] Q[4]=memtroll._str.RAM[19][4] Q[5]=memtroll._str.RAM[19][5] Q[6]=memtroll._str.RAM[19][6] Q[7]=memtroll._str.RAM[19][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[19]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[19]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[19]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[1]_$dffe_Q_EN Q[0]=memtroll._str.RAM[1][0] Q[1]=memtroll._str.RAM[1][1] Q[2]=memtroll._str.RAM[1][2] Q[3]=memtroll._str.RAM[1][3] Q[4]=memtroll._str.RAM[1][4] Q[5]=memtroll._str.RAM[1][5] Q[6]=memtroll._str.RAM[1][6] Q[7]=memtroll._str.RAM[1][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[1]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[0] B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[20]_$dffe_Q_EN Q[0]=memtroll._str.RAM[20][0] Q[1]=memtroll._str.RAM[20][1] Q[2]=memtroll._str.RAM[20][2] Q[3]=memtroll._str.RAM[20][3] Q[4]=memtroll._str.RAM[20][4] Q[5]=memtroll._str.RAM[20][5] Q[6]=memtroll._str.RAM[20][6] Q[7]=memtroll._str.RAM[20][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[20]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[20]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[20]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[20]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[2] B=memtroll._str.RAM[16]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[20]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[20][0] A[1]=memtroll._str.RAM[20][1] A[2]=memtroll._str.RAM[20][2] A[3]=memtroll._str.RAM[20][3] A[4]=memtroll._str.RAM[20][4] A[5]=memtroll._str.RAM[20][5] A[6]=memtroll._str.RAM[20][6] A[7]=memtroll._str.RAM[20][7] B[0]=memtroll._str.RAM[21][0] B[1]=memtroll._str.RAM[21][1] B[2]=memtroll._str.RAM[21][2] B[3]=memtroll._str.RAM[21][3] B[4]=memtroll._str.RAM[21][4] B[5]=memtroll._str.RAM[21][5] B[6]=memtroll._str.RAM[21][6] B[7]=memtroll._str.RAM[21][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[20]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[20]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[20]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[20]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[20]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[20]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[20]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[20]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[20]_$mux_A_Y[0] A[1]=memtroll._str.RAM[20]_$mux_A_Y[1] A[2]=memtroll._str.RAM[20]_$mux_A_Y[2] A[3]=memtroll._str.RAM[20]_$mux_A_Y[3] A[4]=memtroll._str.RAM[20]_$mux_A_Y[4] A[5]=memtroll._str.RAM[20]_$mux_A_Y[5] A[6]=memtroll._str.RAM[20]_$mux_A_Y[6] A[7]=memtroll._str.RAM[20]_$mux_A_Y[7] B[0]=memtroll._str.RAM[22]_$mux_A_Y[0] B[1]=memtroll._str.RAM[22]_$mux_A_Y[1] B[2]=memtroll._str.RAM[22]_$mux_A_Y[2] B[3]=memtroll._str.RAM[22]_$mux_A_Y[3] B[4]=memtroll._str.RAM[22]_$mux_A_Y[4] B[5]=memtroll._str.RAM[22]_$mux_A_Y[5] B[6]=memtroll._str.RAM[22]_$mux_A_Y[6] B[7]=memtroll._str.RAM[22]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[20]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[21]_$dffe_Q_EN Q[0]=memtroll._str.RAM[21][0] Q[1]=memtroll._str.RAM[21][1] Q[2]=memtroll._str.RAM[21][2] Q[3]=memtroll._str.RAM[21][3] Q[4]=memtroll._str.RAM[21][4] Q[5]=memtroll._str.RAM[21][5] Q[6]=memtroll._str.RAM[21][6] Q[7]=memtroll._str.RAM[21][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[21]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[21]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[20]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[21]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[22]_$dffe_Q_EN Q[0]=memtroll._str.RAM[22][0] Q[1]=memtroll._str.RAM[22][1] Q[2]=memtroll._str.RAM[22][2] Q[3]=memtroll._str.RAM[22][3] Q[4]=memtroll._str.RAM[22][4] Q[5]=memtroll._str.RAM[22][5] Q[6]=memtroll._str.RAM[22][6] Q[7]=memtroll._str.RAM[22][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[22]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[22]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[20]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[22]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[22][0] A[1]=memtroll._str.RAM[22][1] A[2]=memtroll._str.RAM[22][2] A[3]=memtroll._str.RAM[22][3] A[4]=memtroll._str.RAM[22][4] A[5]=memtroll._str.RAM[22][5] A[6]=memtroll._str.RAM[22][6] A[7]=memtroll._str.RAM[22][7] B[0]=memtroll._str.RAM[23][0] B[1]=memtroll._str.RAM[23][1] B[2]=memtroll._str.RAM[23][2] B[3]=memtroll._str.RAM[23][3] B[4]=memtroll._str.RAM[23][4] B[5]=memtroll._str.RAM[23][5] B[6]=memtroll._str.RAM[23][6] B[7]=memtroll._str.RAM[23][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[22]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[22]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[22]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[22]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[22]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[22]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[22]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[22]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[23]_$dffe_Q_EN Q[0]=memtroll._str.RAM[23][0] Q[1]=memtroll._str.RAM[23][1] Q[2]=memtroll._str.RAM[23][2] Q[3]=memtroll._str.RAM[23][3] Q[4]=memtroll._str.RAM[23][4] Q[5]=memtroll._str.RAM[23][5] Q[6]=memtroll._str.RAM[23][6] Q[7]=memtroll._str.RAM[23][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[23]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[23]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[20]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[23]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[24]_$dffe_Q_EN Q[0]=memtroll._str.RAM[24][0] Q[1]=memtroll._str.RAM[24][1] Q[2]=memtroll._str.RAM[24][2] Q[3]=memtroll._str.RAM[24][3] Q[4]=memtroll._str.RAM[24][4] Q[5]=memtroll._str.RAM[24][5] Q[6]=memtroll._str.RAM[24][6] Q[7]=memtroll._str.RAM[24][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[24]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A B=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[3] B=memtroll._str.we_$mux_S_Y[4] Y=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[24][0] A[1]=memtroll._str.RAM[24][1] A[2]=memtroll._str.RAM[24][2] A[3]=memtroll._str.RAM[24][3] A[4]=memtroll._str.RAM[24][4] A[5]=memtroll._str.RAM[24][5] A[6]=memtroll._str.RAM[24][6] A[7]=memtroll._str.RAM[24][7] B[0]=memtroll._str.RAM[25][0] B[1]=memtroll._str.RAM[25][1] B[2]=memtroll._str.RAM[25][2] B[3]=memtroll._str.RAM[25][3] B[4]=memtroll._str.RAM[25][4] B[5]=memtroll._str.RAM[25][5] B[6]=memtroll._str.RAM[25][6] B[7]=memtroll._str.RAM[25][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[24]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[24]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[24]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[24]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[24]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[24]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[24]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[24]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[24]_$mux_A_Y[0] A[1]=memtroll._str.RAM[24]_$mux_A_Y[1] A[2]=memtroll._str.RAM[24]_$mux_A_Y[2] A[3]=memtroll._str.RAM[24]_$mux_A_Y[3] A[4]=memtroll._str.RAM[24]_$mux_A_Y[4] A[5]=memtroll._str.RAM[24]_$mux_A_Y[5] A[6]=memtroll._str.RAM[24]_$mux_A_Y[6] A[7]=memtroll._str.RAM[24]_$mux_A_Y[7] B[0]=memtroll._str.RAM[26]_$mux_A_Y[0] B[1]=memtroll._str.RAM[26]_$mux_A_Y[1] B[2]=memtroll._str.RAM[26]_$mux_A_Y[2] B[3]=memtroll._str.RAM[26]_$mux_A_Y[3] B[4]=memtroll._str.RAM[26]_$mux_A_Y[4] B[5]=memtroll._str.RAM[26]_$mux_A_Y[5] B[6]=memtroll._str.RAM[26]_$mux_A_Y[6] B[7]=memtroll._str.RAM[26]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[24]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[25]_$dffe_Q_EN Q[0]=memtroll._str.RAM[25][0] Q[1]=memtroll._str.RAM[25][1] Q[2]=memtroll._str.RAM[25][2] Q[3]=memtroll._str.RAM[25][3] Q[4]=memtroll._str.RAM[25][4] Q[5]=memtroll._str.RAM[25][5] Q[6]=memtroll._str.RAM[25][6] Q[7]=memtroll._str.RAM[25][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[25]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[25]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[25]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[26]_$dffe_Q_EN Q[0]=memtroll._str.RAM[26][0] Q[1]=memtroll._str.RAM[26][1] Q[2]=memtroll._str.RAM[26][2] Q[3]=memtroll._str.RAM[26][3] Q[4]=memtroll._str.RAM[26][4] Q[5]=memtroll._str.RAM[26][5] Q[6]=memtroll._str.RAM[26][6] Q[7]=memtroll._str.RAM[26][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[26]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[26]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[26]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[26][0] A[1]=memtroll._str.RAM[26][1] A[2]=memtroll._str.RAM[26][2] A[3]=memtroll._str.RAM[26][3] A[4]=memtroll._str.RAM[26][4] A[5]=memtroll._str.RAM[26][5] A[6]=memtroll._str.RAM[26][6] A[7]=memtroll._str.RAM[26][7] B[0]=memtroll._str.RAM[27][0] B[1]=memtroll._str.RAM[27][1] B[2]=memtroll._str.RAM[27][2] B[3]=memtroll._str.RAM[27][3] B[4]=memtroll._str.RAM[27][4] B[5]=memtroll._str.RAM[27][5] B[6]=memtroll._str.RAM[27][6] B[7]=memtroll._str.RAM[27][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[26]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[26]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[26]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[26]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[26]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[26]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[26]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[26]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[27]_$dffe_Q_EN Q[0]=memtroll._str.RAM[27][0] Q[1]=memtroll._str.RAM[27][1] Q[2]=memtroll._str.RAM[27][2] Q[3]=memtroll._str.RAM[27][3] Q[4]=memtroll._str.RAM[27][4] Q[5]=memtroll._str.RAM[27][5] Q[6]=memtroll._str.RAM[27][6] Q[7]=memtroll._str.RAM[27][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[27]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[27]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[27]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[28]_$dffe_Q_EN Q[0]=memtroll._str.RAM[28][0] Q[1]=memtroll._str.RAM[28][1] Q[2]=memtroll._str.RAM[28][2] Q[3]=memtroll._str.RAM[28][3] Q[4]=memtroll._str.RAM[28][4] Q[5]=memtroll._str.RAM[28][5] Q[6]=memtroll._str.RAM[28][6] Q[7]=memtroll._str.RAM[28][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[28]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[28]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[28]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[28]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[2] B=memtroll._str.RAM[24]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[28]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[28][0] A[1]=memtroll._str.RAM[28][1] A[2]=memtroll._str.RAM[28][2] A[3]=memtroll._str.RAM[28][3] A[4]=memtroll._str.RAM[28][4] A[5]=memtroll._str.RAM[28][5] A[6]=memtroll._str.RAM[28][6] A[7]=memtroll._str.RAM[28][7] B[0]=memtroll._str.RAM[29][0] B[1]=memtroll._str.RAM[29][1] B[2]=memtroll._str.RAM[29][2] B[3]=memtroll._str.RAM[29][3] B[4]=memtroll._str.RAM[29][4] B[5]=memtroll._str.RAM[29][5] B[6]=memtroll._str.RAM[29][6] B[7]=memtroll._str.RAM[29][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[28]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[28]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[28]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[28]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[28]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[28]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[28]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[28]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[28]_$mux_A_Y[0] A[1]=memtroll._str.RAM[28]_$mux_A_Y[1] A[2]=memtroll._str.RAM[28]_$mux_A_Y[2] A[3]=memtroll._str.RAM[28]_$mux_A_Y[3] A[4]=memtroll._str.RAM[28]_$mux_A_Y[4] A[5]=memtroll._str.RAM[28]_$mux_A_Y[5] A[6]=memtroll._str.RAM[28]_$mux_A_Y[6] A[7]=memtroll._str.RAM[28]_$mux_A_Y[7] B[0]=memtroll._str.RAM[30]_$mux_A_Y[0] B[1]=memtroll._str.RAM[30]_$mux_A_Y[1] B[2]=memtroll._str.RAM[30]_$mux_A_Y[2] B[3]=memtroll._str.RAM[30]_$mux_A_Y[3] B[4]=memtroll._str.RAM[30]_$mux_A_Y[4] B[5]=memtroll._str.RAM[30]_$mux_A_Y[5] B[6]=memtroll._str.RAM[30]_$mux_A_Y[6] B[7]=memtroll._str.RAM[30]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[28]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[29]_$dffe_Q_EN Q[0]=memtroll._str.RAM[29][0] Q[1]=memtroll._str.RAM[29][1] Q[2]=memtroll._str.RAM[29][2] Q[3]=memtroll._str.RAM[29][3] Q[4]=memtroll._str.RAM[29][4] Q[5]=memtroll._str.RAM[29][5] Q[6]=memtroll._str.RAM[29][6] Q[7]=memtroll._str.RAM[29][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[29]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[29]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[28]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[29]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[2]_$dffe_Q_EN Q[0]=memtroll._str.RAM[2][0] Q[1]=memtroll._str.RAM[2][1] Q[2]=memtroll._str.RAM[2][2] Q[3]=memtroll._str.RAM[2][3] Q[4]=memtroll._str.RAM[2][4] Q[5]=memtroll._str.RAM[2][5] Q[6]=memtroll._str.RAM[2][6] Q[7]=memtroll._str.RAM[2][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[2]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=memtroll._str.we_$mux_S_Y[1] Y=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[2][0] A[1]=memtroll._str.RAM[2][1] A[2]=memtroll._str.RAM[2][2] A[3]=memtroll._str.RAM[2][3] A[4]=memtroll._str.RAM[2][4] A[5]=memtroll._str.RAM[2][5] A[6]=memtroll._str.RAM[2][6] A[7]=memtroll._str.RAM[2][7] B[0]=memtroll._str.RAM[3][0] B[1]=memtroll._str.RAM[3][1] B[2]=memtroll._str.RAM[3][2] B[3]=memtroll._str.RAM[3][3] B[4]=memtroll._str.RAM[3][4] B[5]=memtroll._str.RAM[3][5] B[6]=memtroll._str.RAM[3][6] B[7]=memtroll._str.RAM[3][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[2]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[2]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[2]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[2]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[2]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[2]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[2]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[2]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[30]_$dffe_Q_EN Q[0]=memtroll._str.RAM[30][0] Q[1]=memtroll._str.RAM[30][1] Q[2]=memtroll._str.RAM[30][2] Q[3]=memtroll._str.RAM[30][3] Q[4]=memtroll._str.RAM[30][4] Q[5]=memtroll._str.RAM[30][5] Q[6]=memtroll._str.RAM[30][6] Q[7]=memtroll._str.RAM[30][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[30]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[30]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[28]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[30]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[30][0] A[1]=memtroll._str.RAM[30][1] A[2]=memtroll._str.RAM[30][2] A[3]=memtroll._str.RAM[30][3] A[4]=memtroll._str.RAM[30][4] A[5]=memtroll._str.RAM[30][5] A[6]=memtroll._str.RAM[30][6] A[7]=memtroll._str.RAM[30][7] B[0]=memtroll._str.RAM[31][0] B[1]=memtroll._str.RAM[31][1] B[2]=memtroll._str.RAM[31][2] B[3]=memtroll._str.RAM[31][3] B[4]=memtroll._str.RAM[31][4] B[5]=memtroll._str.RAM[31][5] B[6]=memtroll._str.RAM[31][6] B[7]=memtroll._str.RAM[31][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[30]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[30]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[30]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[30]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[30]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[30]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[30]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[30]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[31]_$dffe_Q_EN Q[0]=memtroll._str.RAM[31][0] Q[1]=memtroll._str.RAM[31][1] Q[2]=memtroll._str.RAM[31][2] Q[3]=memtroll._str.RAM[31][3] Q[4]=memtroll._str.RAM[31][4] Q[5]=memtroll._str.RAM[31][5] Q[6]=memtroll._str.RAM[31][6] Q[7]=memtroll._str.RAM[31][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[31]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[31]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[28]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[31]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[3]_$dffe_Q_EN Q[0]=memtroll._str.RAM[3][0] Q[1]=memtroll._str.RAM[3][1] Q[2]=memtroll._str.RAM[3][2] Q[3]=memtroll._str.RAM[3][3] Q[4]=memtroll._str.RAM[3][4] Q[5]=memtroll._str.RAM[3][5] Q[6]=memtroll._str.RAM[3][6] Q[7]=memtroll._str.RAM[3][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[3]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[0] B=memtroll._str.we_$mux_S_Y[1] Y=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[4]_$dffe_Q_EN Q[0]=memtroll._str.RAM[4][0] Q[1]=memtroll._str.RAM[4][1] Q[2]=memtroll._str.RAM[4][2] Q[3]=memtroll._str.RAM[4][3] Q[4]=memtroll._str.RAM[4][4] Q[5]=memtroll._str.RAM[4][5] Q[6]=memtroll._str.RAM[4][6] Q[7]=memtroll._str.RAM[4][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[4]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[4]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[4]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[2] B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[4][0] A[1]=memtroll._str.RAM[4][1] A[2]=memtroll._str.RAM[4][2] A[3]=memtroll._str.RAM[4][3] A[4]=memtroll._str.RAM[4][4] A[5]=memtroll._str.RAM[4][5] A[6]=memtroll._str.RAM[4][6] A[7]=memtroll._str.RAM[4][7] B[0]=memtroll._str.RAM[5][0] B[1]=memtroll._str.RAM[5][1] B[2]=memtroll._str.RAM[5][2] B[3]=memtroll._str.RAM[5][3] B[4]=memtroll._str.RAM[5][4] B[5]=memtroll._str.RAM[5][5] B[6]=memtroll._str.RAM[5][6] B[7]=memtroll._str.RAM[5][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[4]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[4]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[4]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[4]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[4]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[4]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[4]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[4]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[4]_$mux_A_Y[0] A[1]=memtroll._str.RAM[4]_$mux_A_Y[1] A[2]=memtroll._str.RAM[4]_$mux_A_Y[2] A[3]=memtroll._str.RAM[4]_$mux_A_Y[3] A[4]=memtroll._str.RAM[4]_$mux_A_Y[4] A[5]=memtroll._str.RAM[4]_$mux_A_Y[5] A[6]=memtroll._str.RAM[4]_$mux_A_Y[6] A[7]=memtroll._str.RAM[4]_$mux_A_Y[7] B[0]=memtroll._str.RAM[6]_$mux_A_Y[0] B[1]=memtroll._str.RAM[6]_$mux_A_Y[1] B[2]=memtroll._str.RAM[6]_$mux_A_Y[2] B[3]=memtroll._str.RAM[6]_$mux_A_Y[3] B[4]=memtroll._str.RAM[6]_$mux_A_Y[4] B[5]=memtroll._str.RAM[6]_$mux_A_Y[5] B[6]=memtroll._str.RAM[6]_$mux_A_Y[6] B[7]=memtroll._str.RAM[6]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[4]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[5]_$dffe_Q_EN Q[0]=memtroll._str.RAM[5][0] Q[1]=memtroll._str.RAM[5][1] Q[2]=memtroll._str.RAM[5][2] Q[3]=memtroll._str.RAM[5][3] Q[4]=memtroll._str.RAM[5][4] Q[5]=memtroll._str.RAM[5][5] Q[6]=memtroll._str.RAM[5][6] Q[7]=memtroll._str.RAM[5][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[5]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[5]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[5]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[6]_$dffe_Q_EN Q[0]=memtroll._str.RAM[6][0] Q[1]=memtroll._str.RAM[6][1] Q[2]=memtroll._str.RAM[6][2] Q[3]=memtroll._str.RAM[6][3] Q[4]=memtroll._str.RAM[6][4] Q[5]=memtroll._str.RAM[6][5] Q[6]=memtroll._str.RAM[6][6] Q[7]=memtroll._str.RAM[6][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[6]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[6]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[6]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[6][0] A[1]=memtroll._str.RAM[6][1] A[2]=memtroll._str.RAM[6][2] A[3]=memtroll._str.RAM[6][3] A[4]=memtroll._str.RAM[6][4] A[5]=memtroll._str.RAM[6][5] A[6]=memtroll._str.RAM[6][6] A[7]=memtroll._str.RAM[6][7] B[0]=memtroll._str.RAM[7][0] B[1]=memtroll._str.RAM[7][1] B[2]=memtroll._str.RAM[7][2] B[3]=memtroll._str.RAM[7][3] B[4]=memtroll._str.RAM[7][4] B[5]=memtroll._str.RAM[7][5] B[6]=memtroll._str.RAM[7][6] B[7]=memtroll._str.RAM[7][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[6]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[6]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[6]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[6]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[6]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[6]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[6]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[6]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[7]_$dffe_Q_EN Q[0]=memtroll._str.RAM[7][0] Q[1]=memtroll._str.RAM[7][1] Q[2]=memtroll._str.RAM[7][2] Q[3]=memtroll._str.RAM[7][3] Q[4]=memtroll._str.RAM[7][4] Q[5]=memtroll._str.RAM[7][5] Q[6]=memtroll._str.RAM[7][6] Q[7]=memtroll._str.RAM[7][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[7]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[7]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[7]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[8]_$dffe_Q_EN Q[0]=memtroll._str.RAM[8][0] Q[1]=memtroll._str.RAM[8][1] Q[2]=memtroll._str.RAM[8][2] Q[3]=memtroll._str.RAM[8][3] Q[4]=memtroll._str.RAM[8][4] Q[5]=memtroll._str.RAM[8][5] Q[6]=memtroll._str.RAM[8][6] Q[7]=memtroll._str.RAM[8][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[8]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A B=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.we_$mux_S_Y[3] B=memtroll._str.RAM[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memtroll._str.RAM[8][0] A[1]=memtroll._str.RAM[8][1] A[2]=memtroll._str.RAM[8][2] A[3]=memtroll._str.RAM[8][3] A[4]=memtroll._str.RAM[8][4] A[5]=memtroll._str.RAM[8][5] A[6]=memtroll._str.RAM[8][6] A[7]=memtroll._str.RAM[8][7] B[0]=memtroll._str.RAM[9][0] B[1]=memtroll._str.RAM[9][1] B[2]=memtroll._str.RAM[9][2] B[3]=memtroll._str.RAM[9][3] B[4]=memtroll._str.RAM[9][4] B[5]=memtroll._str.RAM[9][5] B[6]=memtroll._str.RAM[9][6] B[7]=memtroll._str.RAM[9][7] S=memtroll._str.addr[0] Y[0]=memtroll._str.RAM[8]_$mux_A_Y[0] Y[1]=memtroll._str.RAM[8]_$mux_A_Y[1] Y[2]=memtroll._str.RAM[8]_$mux_A_Y[2] Y[3]=memtroll._str.RAM[8]_$mux_A_Y[3] Y[4]=memtroll._str.RAM[8]_$mux_A_Y[4] Y[5]=memtroll._str.RAM[8]_$mux_A_Y[5] Y[6]=memtroll._str.RAM[8]_$mux_A_Y[6] Y[7]=memtroll._str.RAM[8]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=memtroll._str.RAM[8]_$mux_A_Y[0] A[1]=memtroll._str.RAM[8]_$mux_A_Y[1] A[2]=memtroll._str.RAM[8]_$mux_A_Y[2] A[3]=memtroll._str.RAM[8]_$mux_A_Y[3] A[4]=memtroll._str.RAM[8]_$mux_A_Y[4] A[5]=memtroll._str.RAM[8]_$mux_A_Y[5] A[6]=memtroll._str.RAM[8]_$mux_A_Y[6] A[7]=memtroll._str.RAM[8]_$mux_A_Y[7] B[0]=memtroll._str.RAM[10]_$mux_A_Y[0] B[1]=memtroll._str.RAM[10]_$mux_A_Y[1] B[2]=memtroll._str.RAM[10]_$mux_A_Y[2] B[3]=memtroll._str.RAM[10]_$mux_A_Y[3] B[4]=memtroll._str.RAM[10]_$mux_A_Y[4] B[5]=memtroll._str.RAM[10]_$mux_A_Y[5] B[6]=memtroll._str.RAM[10]_$mux_A_Y[6] B[7]=memtroll._str.RAM[10]_$mux_A_Y[7] S=memtroll._str.addr[1] Y[0]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[0] Y[1]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[1] Y[2]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[2] Y[3]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[3] Y[4]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[4] Y[5]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[5] Y[6]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[6] Y[7]=memtroll._str.RAM[8]_$mux_A_Y_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=memtroll._str.clk D[0]=memtroll._str.we_$mux_S_1_Y[0] D[1]=memtroll._str.we_$mux_S_1_Y[1] D[2]=memtroll._str.we_$mux_S_1_Y[2] D[3]=memtroll._str.we_$mux_S_1_Y[3] D[4]=memtroll._str.we_$mux_S_1_Y[4] D[5]=memtroll._str.we_$mux_S_1_Y[5] D[6]=memtroll._str.we_$mux_S_1_Y[6] D[7]=memtroll._str.we_$mux_S_1_Y[7] EN=memtroll._str.RAM[9]_$dffe_Q_EN Q[0]=memtroll._str.RAM[9][0] Q[1]=memtroll._str.RAM[9][1] Q[2]=memtroll._str.RAM[9][2] Q[3]=memtroll._str.RAM[9][3] Q[4]=memtroll._str.RAM[9][4] Q[5]=memtroll._str.RAM[9][5] Q[6]=memtroll._str.RAM[9][6] Q[7]=memtroll._str.RAM[9][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=memtroll._str.RAM[9]_$dffe_Q_EN_$and_Y_A B=memtroll._str.we_$mux_S_2_Y[7] Y=memtroll._str.RAM[9]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memtroll._str.RAM[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memtroll._str.RAM[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memtroll._str.RAM[9]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef A[4]=$undef B[0]=memtroll._str.addr[0] B[1]=memtroll._str.addr[1] B[2]=memtroll._str.addr[2] B[3]=memtroll._str.addr[3] B[4]=memtroll._str.addr[4] S=memtroll._str.we Y[0]=memtroll._str.we_$mux_S_Y[0] Y[1]=memtroll._str.we_$mux_S_Y[1] Y[2]=memtroll._str.we_$mux_S_Y[2] Y[3]=memtroll._str.we_$mux_S_Y[3] Y[4]=memtroll._str.we_$mux_S_Y[4]
-.param WIDTH 00000000000000000000000000000101
-.subckt $mux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef A[4]=$undef A[5]=$undef A[6]=$undef A[7]=$undef B[0]=memtroll._str.data[0] B[1]=memtroll._str.data[1] B[2]=memtroll._str.data[2] B[3]=memtroll._str.data[3] B[4]=memtroll._str.data[4] B[5]=memtroll._str.data[5] B[6]=memtroll._str.data[6] B[7]=memtroll._str.data[7] S=memtroll._str.we Y[0]=memtroll._str.we_$mux_S_1_Y[0] Y[1]=memtroll._str.we_$mux_S_1_Y[1] Y[2]=memtroll._str.we_$mux_S_1_Y[2] Y[3]=memtroll._str.we_$mux_S_1_Y[3] Y[4]=memtroll._str.we_$mux_S_1_Y[4] Y[5]=memtroll._str.we_$mux_S_1_Y[5] Y[6]=memtroll._str.we_$mux_S_1_Y[6] Y[7]=memtroll._str.we_$mux_S_1_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A=$false B=$true S=memtroll._str.we Y=memtroll._str.we_$mux_S_2_Y[7]
-.param WIDTH 00000000000000000000000000000001
+.subckt single_port_ram addr[0]=memtroll.str_address[0] clock=memtroll.clk data[0]=memtroll.str_in[0] out[0]=memtroll.str_out[0] we=memtroll.str_write_enable
+.param ADDR_WIDTH 00000000000000000000000000000101
+.param DATA_WIDTH 00000000000000000000000000001000
 .subckt $reduce_or A[0]=memtroll.memory_controller_address[0] A[1]=memtroll.memory_controller_address[1] A[2]=memtroll.memory_controller_address[2] A[3]=memtroll.memory_controller_address[3] A[4]=memtroll.memory_controller_address[4] A[5]=memtroll.memory_controller_address[5] A[6]=memtroll.memory_controller_address[6] A[7]=memtroll.memory_controller_address[7] A[8]=memtroll.memory_controller_address[8] A[9]=memtroll.memory_controller_address[9] A[10]=memtroll.memory_controller_address[10] A[11]=memtroll.memory_controller_address[11] A[12]=memtroll.memory_controller_address[12] A[13]=memtroll.memory_controller_address[13] A[14]=memtroll.memory_controller_address[14] A[15]=memtroll.memory_controller_address[15] A[16]=memtroll.memory_controller_address[16] A[17]=memtroll.memory_controller_address[17] A[18]=memtroll.memory_controller_address[18] A[19]=memtroll.memory_controller_address[19] A[20]=memtroll.memory_controller_address[20] A[21]=memtroll.memory_controller_address[21] A[22]=memtroll.memory_controller_address[22] A[23]=memtroll.memory_controller_address[23] A[24]=memtroll.memory_controller_address[24] A[25]=memtroll.memory_controller_address[25] A[26]=memtroll.memory_controller_address[26] A[27]=memtroll.memory_controller_address[27] A[28]=memtroll.memory_controller_address[28] A[29]=memtroll.memory_controller_address[29] A[30]=memtroll.memory_controller_address[30] A[31]=memtroll.memory_controller_address[31] Y=memtroll.memory_controller_address_$reduce_or_A_1_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000100000
@@ -888,7 +191,7 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000100000
-.subckt $reduce_and A[0]=reset_$not_A_Y A[1]=finish_$dffe_Q_D_$pmux_Y_S_1 Y=return_val_$dffe_Q_EN
+.subckt $reduce_and A[0]=finish_$dffe_Q_D_$pmux_Y_S A[1]=reset_$not_A_Y Y=return_val_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -896,7 +199,7 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000100000
-.subckt $reduce_and A[0]=reset_$not_A_Y A[1]=s_07_$dffe_Q_EN_$reduce_and_Y_A Y=s_07_$dffe_Q_EN
+.subckt $reduce_and A[0]=s_07_$dffe_Q_EN_$reduce_and_Y_A A[1]=reset_$not_A_Y Y=s_07_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -920,7 +223,7 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000100000
-.subckt $reduce_and A[0]=reset_$not_A_Y A[1]=tmp_$dffe_Q_EN_$reduce_and_Y_A Y=tmp_$dffe_Q_EN
+.subckt $reduce_and A[0]=tmp_$dffe_Q_EN_$reduce_and_Y_A A[1]=reset_$not_A_Y Y=tmp_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -943,7 +246,7 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_and A[0]=reset_$not_A_Y A[1]=var2_$dffe_Q_EN_$reduce_and_Y_A Y=var2_$dffe_Q_EN
+.subckt $reduce_and A[0]=var2_$dffe_Q_EN_$reduce_and_Y_A A[1]=reset_$not_A_Y Y=var2_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1082,66 +385,6 @@
 .names $false memtroll.memory_controller_out[31]
 1 1
 .names memtroll.memory_controller_in_$reduce_or_A_Y_$and_B_Y memtroll.tag
-1 1
-.names memtroll._str.we_$mux_S_2_Y[7] memtroll._str.we_$mux_S_2_Y[0]
-1 1
-.names memtroll._str.we_$mux_S_2_Y[7] memtroll._str.we_$mux_S_2_Y[1]
-1 1
-.names memtroll._str.we_$mux_S_2_Y[7] memtroll._str.we_$mux_S_2_Y[2]
-1 1
-.names memtroll._str.we_$mux_S_2_Y[7] memtroll._str.we_$mux_S_2_Y[3]
-1 1
-.names memtroll._str.we_$mux_S_2_Y[7] memtroll._str.we_$mux_S_2_Y[4]
-1 1
-.names memtroll._str.we_$mux_S_2_Y[7] memtroll._str.we_$mux_S_2_Y[5]
-1 1
-.names memtroll._str.we_$mux_S_2_Y[7] memtroll._str.we_$mux_S_2_Y[6]
-1 1
-.names memtroll.str_address[0] memtroll._str.addr[0]
-1 1
-.names memtroll.str_address[1] memtroll._str.addr[1]
-1 1
-.names memtroll.str_address[2] memtroll._str.addr[2]
-1 1
-.names memtroll.str_address[3] memtroll._str.addr[3]
-1 1
-.names memtroll.str_address[4] memtroll._str.addr[4]
-1 1
-.names memtroll.clk memtroll._str.clk
-1 1
-.names memtroll.str_in[0] memtroll._str.data[0]
-1 1
-.names memtroll.str_in[1] memtroll._str.data[1]
-1 1
-.names memtroll.str_in[2] memtroll._str.data[2]
-1 1
-.names memtroll.str_in[3] memtroll._str.data[3]
-1 1
-.names memtroll.str_in[4] memtroll._str.data[4]
-1 1
-.names memtroll.str_in[5] memtroll._str.data[5]
-1 1
-.names memtroll.str_in[6] memtroll._str.data[6]
-1 1
-.names memtroll.str_in[7] memtroll._str.data[7]
-1 1
-.names memtroll._str.out[0] memtroll.str_out[0]
-1 1
-.names memtroll._str.out[1] memtroll.str_out[1]
-1 1
-.names memtroll._str.out[2] memtroll.str_out[2]
-1 1
-.names memtroll._str.out[3] memtroll.str_out[3]
-1 1
-.names memtroll._str.out[4] memtroll.str_out[4]
-1 1
-.names memtroll._str.out[5] memtroll.str_out[5]
-1 1
-.names memtroll._str.out[6] memtroll.str_out[6]
-1 1
-.names memtroll._str.out[7] memtroll.str_out[7]
-1 1
-.names memtroll.str_write_enable memtroll._str.we
 1 1
 .names clk memtroll.clk
 1 1

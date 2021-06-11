@@ -1,8 +1,7 @@
 yosys -import
 	
-# Read Yosys baseline library first.
-read_verilog -lib -specify +/xilinx/cells_sim.v;
-read_verilog -lib +/xilinx/cells_xtra.v
+# Read VTR baseline library first.
+read_verilog -lib $env(PRIMITIVES); 
 
 read_verilog $env(TCL_CIRCUIT); 
 hierarchy -check -auto-top

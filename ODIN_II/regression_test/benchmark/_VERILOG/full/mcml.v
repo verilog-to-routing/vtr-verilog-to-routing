@@ -1606,8 +1606,10 @@ module dual_port_mem_zz (clk, data, rdaddress, wraddress , wren, q);
 	assign const_zero_data = 32'b00000000000000000000000000000000;
 	assign dont_care_out = 32'b00000000000000000000000000000000;
 
+	defparam dpram1.ADDR_WIDTH = 13;
+	defparam dpram1.DATA_WIDTH = 32;
 	dual_port_ram dpram1(	
-		.clk (clk),
+		.clock (clk),
 		.we1(wren),
 		.we2(const_zero),
 		.data1(data),
@@ -1637,8 +1639,10 @@ module dual_port_mem_yy (clk, data, rdaddress, wraddress , wren, q);
 	assign const_zero_data = 32'b00000000000000000000000000000000;
 	assign dont_care_out = 32'b00000000000000000000000000000000;
 
+	defparam dpram1.ADDR_WIDTH = 13;
+	defparam dpram1.DATA_WIDTH = 32;
 	dual_port_ram dpram1(	
-		.clk (clk),
+		.clock (clk),
 		.we1(wren),
 		.we2(const_zero),
 		.data1(data),
@@ -1669,8 +1673,10 @@ module dual_port_mem_xx (clk, data, rdaddress, wraddress , wren, q);
 	assign const_zero_data = 32'b00000000000000000000000000000000;
 	assign dont_care_out = 32'b00000000000000000000000000000000;
 
+	defparam dpram1.ADDR_WIDTH = 13;
+	defparam dpram1.DATA_WIDTH = 32;
 	dual_port_ram dpram1(	
-		.clk (clk),
+		.clock (clk),
 		.we1(wren),
 		.we2(const_zero),
 		.data1(data),
@@ -1701,8 +1707,10 @@ module dual_port_mem_ww (clk, data, rdaddress, wraddress , wren, q);
 	assign const_zero_data = 32'b00000000000000000000000000000000;
 	assign dont_care_out = 32'b00000000000000000000000000000000;
 
+	defparam dpram1.ADDR_WIDTH = 13;
+	defparam dpram1.DATA_WIDTH = 32;
 	dual_port_ram dpram1(	
-		.clk (clk),
+		.clock (clk),
 		.we1(wren),
 		.we2(const_zero),
 		.data1(data),
@@ -1734,8 +1742,10 @@ module dual (clk, data, rdaddress, wraddress , wren, q);
 	assign const_zero_data = 36'b000000000000000000000000000000000000;
 	assign dont_care_out = 36'b000000000000000000000000000000000000;
 
+	defparam dpram1.ADDR_WIDTH = 16;
+	defparam dpram1.DATA_WIDTH = 36;
 	dual_port_ram dpram1(	
-		.clk (clk),
+		.clock (clk),
 		.we1(wren),
 		.we2(const_zero),
 		.data1(data),
@@ -1765,8 +1775,10 @@ module dual2 (clk, data, rdaddress, wraddress , wren, q);
 	assign const_zero_data = 18'b000000000000000000;
 	assign dont_care_out = 18'b000000000000000000;
 
+	defparam dpram1.ADDR_WIDTH = 16;
+	defparam dpram1.DATA_WIDTH = 18;
 	dual_port_ram dpram1(	
-		.clk (clk),
+		.clock (clk),
 		.we1(wren),
 		.we2(const_zero),
 		.data1(data),
@@ -1796,8 +1808,10 @@ module dual3 (clk, data, rdaddress, wraddress , wren, q);
 	assign const_zero_data = 8'b00000000;
 	assign dont_care_out = 8'b00000000;
 
+	defparam dpram1.ADDR_WIDTH = 16;
+	defparam dpram1.DATA_WIDTH = 8;
 	dual_port_ram dpram1(	
-		.clk (clk),
+		.clock (clk),
 		.we1(wren),
 		.we2(const_zero),
 		.data1(data),
@@ -10264,7 +10278,10 @@ reg [`BIT_WIDTH - 1:0] log_x;
 //Log_mantissa u1(c_shifted_x, clock, mantissa);
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
-single_port_ram sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
+
+defparam sram_replace0.ADDR_WIDTH = `MANTISSA_PRECISION;
+defparam sram_replace0.DATA_WIDTH = 32;
+single_port_ram sram_replace0 (.clock (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
 
 // priority encoder
 //integer i;
@@ -18117,8 +18134,13 @@ output	[31:0]			cosp;
 //Instantiate a single port ram for odin
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
-single_port_ram sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
-single_port_ram cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
+defparam sinp_replace.ADDR_WIDTH = 10;
+defparam sinp_replace.DATA_WIDTH = 32;
+single_port_ram sinp_replace(.clock (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
+
+defparam cosp_replace.ADDR_WIDTH = 10;
+defparam cosp_replace.DATA_WIDTH = 32;
+single_port_ram cosp_replace(.clock (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
 
 			
 endmodule

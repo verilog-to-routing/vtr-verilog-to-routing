@@ -75,6 +75,7 @@ function print_test_stat() {
 #initialization
 function init() {
     export BLIF_PATH="${REGRESSION_DIR}/benchmark/_BLIF"
+    export PRIMITIVES="${VTR_DIR}/vtr_flow/primitives.v"
 }
 
 # run yosys
@@ -388,6 +389,5 @@ function run_suite() {
 init
 
 parse_args "$@"
-
 
 run_suite

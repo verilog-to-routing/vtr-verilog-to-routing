@@ -961,7 +961,7 @@
 .param WIDTH 00000000000000000000000000001010
 .subckt $mux A[0]=cpu_treg.d[0] A[1]=cpu_treg.d[1] A[2]=cpu_treg.d[2] A[3]=cpu_treg.d[3] A[4]=cpu_treg.d[4] A[5]=cpu_treg.d[5] A[6]=cpu_treg.d[6] A[7]=cpu_treg.d[7] A[8]=cpu_treg.d[8] A[9]=cpu_treg.d[9] A[10]=cpu_treg.d[10] A[11]=cpu_treg.d[11] A[12]=cpu_treg.d[12] A[13]=cpu_treg.d[13] A[14]=cpu_treg.d[14] A[15]=cpu_treg.d[15] B[0]=cpu_treg.exp[0] B[1]=cpu_treg.exp[1] B[2]=cpu_treg.exp[2] B[3]=cpu_treg.exp[3] B[4]=cpu_treg.exp[4] B[5]=cpu_treg.exp[5] B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$false B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$false S=cpu_treg.seli Y[0]=cpu_treg.seli_$mux_S_Y[0] Y[1]=cpu_treg.seli_$mux_S_Y[1] Y[2]=cpu_treg.seli_$mux_S_Y[2] Y[3]=cpu_treg.seli_$mux_S_Y[3] Y[4]=cpu_treg.seli_$mux_S_Y[4] Y[5]=cpu_treg.seli_$mux_S_Y[5] Y[6]=cpu_treg.seli_$mux_S_Y[6] Y[7]=cpu_treg.seli_$mux_S_Y[7] Y[8]=cpu_treg.seli_$mux_S_Y[8] Y[9]=cpu_treg.seli_$mux_S_Y[9] Y[10]=cpu_treg.seli_$mux_S_Y[10] Y[11]=cpu_treg.seli_$mux_S_Y[11] Y[12]=cpu_treg.seli_$mux_S_Y[12] Y[13]=cpu_treg.seli_$mux_S_Y[13] Y[14]=cpu_treg.seli_$mux_S_Y[14] Y[15]=cpu_treg.seli_$mux_S_Y[15]
 .param WIDTH 00000000000000000000000000010000
-.subckt $reduce_and A[0]=cpu_treg.ena A[1]=cpu_treg.we Y=cpu_treg.we_$reduce_and_A_Y
+.subckt $reduce_and A[0]=cpu_treg.we A[1]=cpu_treg.ena Y=cpu_treg.we_$reduce_and_A_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001

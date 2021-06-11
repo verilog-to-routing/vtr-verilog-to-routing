@@ -44,8 +44,10 @@ assign we5 =  tm3_sram_we[5];
 assign we6 =  tm3_sram_we[6];
 assign we7 =  tm3_sram_we[7];
 
+defparam sram_replace0.ADDR_WIDTH = 19;
+defparam sram_replace0.DATA_WIDTH = 64;
 single_port_ram sram_replace0 (
-.clk (tm3_clk_v0),
+.clock (tm3_clk_v0),
 .addr (tm3_sram_addr),
 .data (tm3_sram_data_out),
 .we ( we0),

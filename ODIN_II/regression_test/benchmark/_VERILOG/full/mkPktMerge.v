@@ -556,8 +556,10 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 0;
  
+defparam ram1.ADDR_WIDTH = `aw;
+defparam ram1.DATA_WIDTH = `dw;
 dual_port_ram   ram1(
-	.clk(		clk		),
+	.clock(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
 	.we1(		we		),
@@ -956,8 +958,10 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 0;
  
+defparam ram1.ADDR_WIDTH = `aw;
+defparam ram1.DATA_WIDTH = `dw;
 dual_port_ram   ram1(
-	.clk(		clk		),
+	.clock(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
 	.we1(		we		),
@@ -1357,8 +1361,10 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 0;
  
+defparam ram1.ADDR_WIDTH = `aw;
+defparam ram1.DATA_WIDTH = `dw;
 dual_port_ram   ram1(
-	.clk(		clk		),
+	.clock(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
 	.we1(		we		),

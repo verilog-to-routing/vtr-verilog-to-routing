@@ -6,38 +6,6 @@
 `define MEMORY_CONTROLLER_ADDR_SIZE 32
 `define MEMORY_CONTROLLER_DATA_SIZE 32
 
-module single_port_ram(
-			clk,
-			data,
-			we,
-			addr, 
-			out
-			);
-parameter ADDR_WIDTH = 0;
-parameter DATA_WIDTH = 0;
-
-    input 				clk;
-    input	[DATA_WIDTH-1:0] 	data;
-    input 				we;
-    input	[ADDR_WIDTH-1:0] 	addr;
-
-    
-    output	[DATA_WIDTH-1:0] 	out;
-    reg		[DATA_WIDTH-1:0] 	out;
-     
-    reg 	[DATA_WIDTH-1:0] 	RAM[2**ADDR_WIDTH-1:0];
-     
-    always @ (posedge clk) 
-    begin 
-        if (we) 
-	begin
-	RAM[addr] <= data;
-        out <= RAM[addr]; 
-	end
-    end 
-     
-endmodule
-
 module memory_controller
 (
 	clk,
@@ -62,7 +30,7 @@ wire [7:0] str_out;
 defparam _str.ADDR_WIDTH = 5;
 defparam _str.DATA_WIDTH = 8;
 single_port_ram _str (
-	.clk( clk ),
+	.clock( clk ),
 	.addr( str_address ),
 	.we( str_write_enable ),
 	.data( str_in ),

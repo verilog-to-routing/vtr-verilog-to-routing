@@ -40,12 +40,12 @@
 .param SRST_POLARITY 00000000000000000000000000000000
 .param SRST_VALUE 0000000000
 .param WIDTH 00000000000000000000000000001010
-.subckt $dlatch D=iic_start_$dlatch_Q_D EN=iicaddr_$dlatch_Q_EN Q=iic_start
+.subckt $dlatch D=iic_start_$dlatch_Q_D EN=iicdata_$dlatch_Q_EN Q=iic_start
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
 .subckt $mux A=$true B=$false S=iic_start_$dlatch_Q_D_$mux_Y_S Y=iic_start_$dlatch_Q_D
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 A[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 A[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 A[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 A[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 A[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 A[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 A[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 A[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 A[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 A[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 A[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 A[13]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A Y=iic_start_$dlatch_Q_D_$mux_Y_S
+.subckt $reduce_or A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 A[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 A[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 A[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 A[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 A[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 A[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 A[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 A[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 A[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 A[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A A[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 A[13]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 Y=iic_start_$dlatch_Q_D_$mux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001110
 .param Y_WIDTH 00000000000000000000000000000001
@@ -65,7 +65,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$not_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$not_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -81,11 +81,11 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$not_A_Y_$and_B_Y_$and_B_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$not_A_Y_$and_B_Y_$and_B_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[0] A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[1] A[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[2] A[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[3] A[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[4] B[0]=$true B[1]=$true B[2]=$false B[3]=$true B[4]=$true B[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[0] B[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[1] B[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[2] B[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[3] B[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[4] B[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[0] B[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[1] B[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[2] B[13]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[3] B[14]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[4] B[15]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[0] B[16]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[1] B[17]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[2] B[18]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[3] B[19]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[4] B[20]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[0] B[21]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[1] B[22]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[2] B[23]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[3] B[24]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[4] B[25]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[0] B[26]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[1] B[27]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[2] B[28]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[3] B[29]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[4] B[30]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[0] B[31]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[1] B[32]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[2] B[33]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[3] B[34]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[4] B[35]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[0] B[36]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[1] B[37]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[2] B[38]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[3] B[39]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[4] B[40]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[0] B[41]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[1] B[42]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[2] B[43]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[3] B[44]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[4] B[45]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[0] B[46]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[1] B[47]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[2] B[48]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[3] B[49]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[4] B[50]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[0] B[51]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[1] B[52]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[2] B[53]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[3] B[54]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[4] B[55]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[0] B[56]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[1] B[57]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[2] B[58]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[3] B[59]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[4] B[60]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[0] B[61]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[1] B[62]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[2] B[63]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[3] B[64]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[4] B[65]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[0] B[66]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[1] B[67]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[2] B[68]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[3] B[69]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[4] B[70]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[0] B[71]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[1] B[72]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[2] B[73]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[3] B[74]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[4] B[75]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[0] B[76]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[1] B[77]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[2] B[78]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[3] B[79]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[4] B[80]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[0] B[81]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[1] B[82]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[2] B[83]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[3] B[84]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[4] B[85]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[0] B[86]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[1] B[87]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[2] B[88]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[3] B[89]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[4] B[90]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[0] B[91]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[1] B[92]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[2] B[93]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[3] B[94]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[4] B[95]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[0] B[96]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[1] B[97]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[2] B[98]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[3] B[99]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[4] B[100]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[0] B[101]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[1] B[102]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[2] B[103]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[3] B[104]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[4] B[105]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[0] B[106]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[1] B[107]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[2] B[108]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[3] B[109]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[4] B[110]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[0] B[111]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[1] B[112]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[2] B[113]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[3] B[114]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[4] B[115]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[0] B[116]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[1] B[117]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[2] B[118]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[3] B[119]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[4] B[120]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[0] B[121]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[1] B[122]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[2] B[123]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[3] B[124]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[4] B[125]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[0] B[126]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[1] B[127]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[2] B[128]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[3] B[129]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[4] S[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A S[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 S[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_11 S[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 S[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_10 S[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 S[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_9 S[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 S[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_8 S[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 S[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_7 S[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 S[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_6 S[13]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 S[14]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_5 S[15]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 S[16]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_4 S[17]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 S[18]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_3 S[19]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 S[20]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_2 S[21]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 S[22]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_1 S[23]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 S[24]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S S[25]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 Y[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[0] Y[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[1] Y[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[2] Y[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[3] Y[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[4]
+.subckt $pmux A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[0] A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[1] A[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[2] A[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[3] A[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[4] B[0]=$true B[1]=$true B[2]=$false B[3]=$true B[4]=$true B[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[0] B[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[1] B[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[2] B[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[3] B[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_24[4] B[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[0] B[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[1] B[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[2] B[13]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[3] B[14]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_23[4] B[15]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[0] B[16]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[1] B[17]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[2] B[18]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[3] B[19]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_22[4] B[20]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[0] B[21]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[1] B[22]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[2] B[23]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[3] B[24]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_21[4] B[25]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[0] B[26]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[1] B[27]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[2] B[28]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[3] B[29]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_20[4] B[30]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[0] B[31]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[1] B[32]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[2] B[33]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[3] B[34]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_19[4] B[35]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[0] B[36]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[1] B[37]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[2] B[38]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[3] B[39]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_18[4] B[40]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[0] B[41]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[1] B[42]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[2] B[43]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[3] B[44]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_17[4] B[45]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[0] B[46]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[1] B[47]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[2] B[48]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[3] B[49]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_16[4] B[50]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[0] B[51]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[1] B[52]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[2] B[53]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[3] B[54]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_15[4] B[55]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[0] B[56]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[1] B[57]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[2] B[58]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[3] B[59]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_14[4] B[60]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[0] B[61]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[1] B[62]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[2] B[63]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[3] B[64]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_13[4] B[65]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[0] B[66]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[1] B[67]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[2] B[68]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[3] B[69]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_12[4] B[70]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[0] B[71]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[1] B[72]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[2] B[73]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[3] B[74]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_11[4] B[75]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[0] B[76]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[1] B[77]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[2] B[78]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[3] B[79]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_10[4] B[80]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[0] B[81]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[1] B[82]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[2] B[83]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[3] B[84]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_9[4] B[85]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[0] B[86]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[1] B[87]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[2] B[88]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[3] B[89]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_8[4] B[90]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[0] B[91]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[1] B[92]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[2] B[93]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[3] B[94]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_7[4] B[95]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[0] B[96]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[1] B[97]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[2] B[98]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[3] B[99]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_6[4] B[100]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[0] B[101]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[1] B[102]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[2] B[103]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[3] B[104]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_5[4] B[105]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[0] B[106]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[1] B[107]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[2] B[108]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[3] B[109]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_4[4] B[110]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[0] B[111]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[1] B[112]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[2] B[113]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[3] B[114]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_3[4] B[115]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[0] B[116]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[1] B[117]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[2] B[118]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[3] B[119]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_2[4] B[120]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[0] B[121]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[1] B[122]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[2] B[123]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[3] B[124]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B_1[4] B[125]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[0] B[126]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[1] B[127]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[2] B[128]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[3] B[129]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_B[4] S[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A S[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 S[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_11 S[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 S[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_10 S[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 S[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_9 S[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 S[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_8 S[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 S[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_7 S[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 S[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_6 S[13]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 S[14]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_5 S[15]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 S[16]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_4 S[17]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 S[18]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_3 S[19]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 S[20]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_2 S[21]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 S[22]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_1 S[23]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 S[24]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S S[25]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 Y[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[0] Y[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[1] Y[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[2] Y[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[3] Y[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[4]
 .param S_WIDTH 00000000000000000000000000011010
 .param WIDTH 00000000000000000000000000000101
 .subckt $mux A[0]=$false A[1]=$true A[2]=$false A[3]=$false A[4]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false S=iic_stop Y[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[0] Y[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[1] Y[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[2] Y[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[3] Y[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_A[4]
@@ -172,7 +172,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_10_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_10_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -224,7 +224,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_2_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_2_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -250,7 +250,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_3_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_3_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -276,7 +276,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_4_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_4_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -302,7 +302,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_5_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_5_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -328,7 +328,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_6_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_6_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -354,7 +354,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_7_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_7_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -380,7 +380,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_8_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_8_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -406,102 +406,102 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_9_$not_A_Y_$and_A_Y_$and_B_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_9_$not_A_Y_$and_A_Y_$and_B_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$true B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000101
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$true B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000101
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$true B[5]=$false B[6]=$false B[7]=$false B[8]=$true B[9]=$false B[10]=$false B[11]=$false B[12]=$true B[13]=$false B[14]=$false B[15]=$false B[16]=$false B[17]=$false B[18]=$false B[19]=$false B[20]=$true B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$true B[26]=$true B[27]=$true B[28]=$false B[29]=$false B[30]=$false B[31]=$false B[32]=$false B[33]=$false B[34]=$true B[35]=$true B[36]=$false B[37]=$false B[38]=$false B[39]=$false B[40]=$true B[41]=$true B[42]=$false B[43]=$true B[44]=$false B[45]=$false B[46]=$false B[47]=$false B[48]=$false B[49]=$true B[50]=$false B[51]=$true B[52]=$false B[53]=$false B[54]=$false B[55]=$false B[56]=$true B[57]=$false B[58]=$false B[59]=$true B[60]=$false B[61]=$false B[62]=$false B[63]=$false B[64]=$false B[65]=$false B[66]=$false B[67]=$true B[68]=$false B[69]=$false B[70]=$false B[71]=$false B[72]=$true B[73]=$true B[74]=$true B[75]=$false B[76]=$false B[77]=$false B[78]=$false B[79]=$false B[80]=$false B[81]=$true B[82]=$true B[83]=$false B[84]=$false B[85]=$false B[86]=$false B[87]=$false B[88]=$true B[89]=$true B[90]=$false B[91]=$false B[92]=$false B[93]=$false B[94]=$false B[95]=$false B[96]=$false B[97]=$true B[98]=$false B[99]=$false B[100]=$false B[101]=$false B[102]=$false B[103]=$false S[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 S[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 S[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 S[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 S[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 S[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 S[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 S[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 S[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 S[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 S[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 S[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 S[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 Y[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[0] Y[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[1] Y[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[2] Y[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[3] Y[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[4] Y[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[5] Y[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[6] Y[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[7]
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$true B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$true B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$true B[5]=$false B[6]=$false B[7]=$false B[8]=$true B[9]=$false B[10]=$false B[11]=$false B[12]=$true B[13]=$false B[14]=$false B[15]=$false B[16]=$false B[17]=$false B[18]=$false B[19]=$false B[20]=$true B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$true B[26]=$true B[27]=$true B[28]=$false B[29]=$false B[30]=$false B[31]=$false B[32]=$false B[33]=$false B[34]=$true B[35]=$true B[36]=$false B[37]=$false B[38]=$false B[39]=$false B[40]=$true B[41]=$true B[42]=$false B[43]=$true B[44]=$false B[45]=$false B[46]=$false B[47]=$false B[48]=$false B[49]=$true B[50]=$false B[51]=$true B[52]=$false B[53]=$false B[54]=$false B[55]=$false B[56]=$true B[57]=$false B[58]=$false B[59]=$true B[60]=$false B[61]=$false B[62]=$false B[63]=$false B[64]=$false B[65]=$false B[66]=$false B[67]=$true B[68]=$false B[69]=$false B[70]=$false B[71]=$false B[72]=$true B[73]=$true B[74]=$true B[75]=$false B[76]=$false B[77]=$false B[78]=$false B[79]=$false B[80]=$false B[81]=$true B[82]=$true B[83]=$false B[84]=$false B[85]=$false B[86]=$false B[87]=$false B[88]=$true B[89]=$true B[90]=$false B[91]=$false B[92]=$false B[93]=$false B[94]=$false B[95]=$false B[96]=$false B[97]=$true B[98]=$false B[99]=$false B[100]=$false B[101]=$false B[102]=$false B[103]=$false S[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 S[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 S[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 S[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 S[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 S[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 S[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 S[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 S[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 S[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 S[10]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 S[11]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 S[12]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 Y[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[0] Y[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[1] Y[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[2] Y[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[3] Y[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[4] Y[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[5] Y[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[6] Y[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[7]
 .param S_WIDTH 00000000000000000000000000001101
 .param WIDTH 00000000000000000000000000001000
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000101
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$true B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$true B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000101
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$true B[3]=$false B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$true B[3]=$false B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$true B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6_$reduce_or_A_Y
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000010
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$true B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7_$reduce_or_A_Y
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000010
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$true Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000101
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000101
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$true B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$true B[12]=$true B[13]=$false B[14]=$false B[15]=$false B[16]=$true B[17]=$false B[18]=$false B[19]=$false B[20]=$false B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$false B[26]=$false B[27]=$false B[28]=$false B[29]=$false B[30]=$true B[31]=$false B[32]=$true B[33]=$true B[34]=$true B[35]=$false B[36]=$false B[37]=$false B[38]=$true B[39]=$false B[40]=$false B[41]=$false B[42]=$false B[43]=$false B[44]=$false B[45]=$false B[46]=$false B[47]=$true B[48]=$false B[49]=$false B[50]=$false B[51]=$false B[52]=$false B[53]=$true B[54]=$true B[55]=$true B[56]=$true B[57]=$true B[58]=$false B[59]=$true B[60]=$false B[61]=$true B[62]=$true B[63]=$true B[64]=$true B[65]=$true B[66]=$false B[67]=$false B[68]=$false B[69]=$true B[70]=$false B[71]=$false B[72]=$false B[73]=$false B[74]=$false B[75]=$false B[76]=$false B[77]=$false B[78]=$true B[79]=$true S[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13 S[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 S[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6_$reduce_or_A_Y S[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 S[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 S[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7_$reduce_or_A_Y S[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 S[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 S[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 S[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 Y[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[0] Y[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[1] Y[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[2] Y[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[3] Y[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[4] Y[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[5] Y[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[6] Y[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[7]
+.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$true B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$true B[12]=$true B[13]=$false B[14]=$false B[15]=$false B[16]=$true B[17]=$false B[18]=$false B[19]=$false B[20]=$false B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$false B[26]=$false B[27]=$false B[28]=$false B[29]=$false B[30]=$true B[31]=$false B[32]=$true B[33]=$true B[34]=$true B[35]=$false B[36]=$false B[37]=$false B[38]=$true B[39]=$false B[40]=$false B[41]=$false B[42]=$false B[43]=$false B[44]=$false B[45]=$false B[46]=$false B[47]=$true B[48]=$false B[49]=$false B[50]=$false B[51]=$false B[52]=$false B[53]=$true B[54]=$true B[55]=$true B[56]=$true B[57]=$true B[58]=$false B[59]=$true B[60]=$false B[61]=$true B[62]=$true B[63]=$true B[64]=$true B[65]=$true B[66]=$false B[67]=$false B[68]=$false B[69]=$true B[70]=$false B[71]=$false B[72]=$false B[73]=$false B[74]=$false B[75]=$false B[76]=$false B[77]=$false B[78]=$true B[79]=$true S[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 S[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 S[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8_$reduce_or_A_Y S[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11 S[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_10 S[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$reduce_or_A_Y S[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6 S[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5 S[8]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 S[9]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 Y[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[0] Y[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[1] Y[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[2] Y[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[3] Y[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[4] Y[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[5] Y[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[6] Y[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[7]
 .param S_WIDTH 00000000000000000000000000001010
 .param WIDTH 00000000000000000000000000001000
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$true B[3]=$false B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$true B[3]=$false B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_5
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_6
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$false B[2]=$true B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_12 A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_8_$reduce_or_A_Y
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$false B[1]=$true B[2]=$true B[3]=$true B[4]=$false Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9 A[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_7 Y=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$reduce_or_A_Y
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
 .subckt $mux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef A[4]=$undef A[5]=$undef A[6]=$undef B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false S=iic_start Y[0]=iic_start_$mux_S_Y[0] Y[1]=iic_start_$mux_S_Y[1] Y[2]=iic_start_$mux_S_Y[2] Y[3]=iic_start_$mux_S_Y[3] Y[4]=iic_start_$mux_S_Y[4] Y[5]=iic_start_$mux_S_Y[5] Y[6]=iic_start_$mux_S_Y[6]
 .param WIDTH 00000000000000000000000000000111
 .subckt $mux A[0]=iic_state_$add_A_Y[0] A[1]=iic_state_$add_A_Y[1] A[2]=iic_state_$add_A_Y[2] A[3]=iic_state_$add_A_Y[3] A[4]=iic_state_$add_A_Y[4] A[5]=iic_state_$add_A_Y[5] A[6]=iic_state_$add_A_Y[6] B[0]=iic_start_$mux_S_Y[0] B[1]=iic_start_$mux_S_Y[1] B[2]=iic_start_$mux_S_Y[2] B[3]=iic_start_$mux_S_Y[3] B[4]=iic_start_$mux_S_Y[4] B[5]=iic_start_$mux_S_Y[5] B[6]=iic_start_$mux_S_Y[6] S=iic_stop Y[0]=iic_state_$dffe_Q_D[0] Y[1]=iic_state_$dffe_Q_D[1] Y[2]=iic_state_$dffe_Q_D[2] Y[3]=iic_state_$dffe_Q_D[3] Y[4]=iic_state_$dffe_Q_D[4] Y[5]=iic_state_$dffe_Q_D[5] Y[6]=iic_state_$dffe_Q_D[6]
@@ -1009,55 +1009,55 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000111
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[0] D[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[1] D[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[2] D[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[3] D[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[4] D[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[5] D[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[6] D[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_11_$pmux_S_Y[7] EN=iicaddr_$dlatch_Q_EN Q[0]=iicaddr[0] Q[1]=iicaddr[1] Q[2]=iicaddr[2] Q[3]=iicaddr[3] Q[4]=iicaddr[4] Q[5]=iicaddr[5] Q[6]=iicaddr[6] Q[7]=iicaddr[7]
+.subckt $dlatch D[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[0] D[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[1] D[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[2] D[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[3] D[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[4] D[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[5] D[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[6] D[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_13_$pmux_S_Y[7] EN=iicdata_$dlatch_Q_EN Q[0]=iicaddr[0] Q[1]=iicaddr[1] Q[2]=iicaddr[2] Q[3]=iicaddr[3] Q[4]=iicaddr[4] Q[5]=iicaddr[5] Q[6]=iicaddr[6] Q[7]=iicaddr[7]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $and A=iicaddr_$dlatch_Q_EN_$and_Y_A B=iicaddr_$dlatch_Q_EN_$and_Y_B Y=iicaddr_$dlatch_Q_EN
+.subckt $dlatch D[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[0] D[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[1] D[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[2] D[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[3] D[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[4] D[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[5] D[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[6] D[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2_$pmux_S_Y[7] EN=iicdata_$dlatch_Q_EN Q[0]=iicdata[0] Q[1]=iicdata[1] Q[2]=iicdata[2] Q[3]=iicdata[3] Q[4]=iicdata[4] Q[5]=iicdata[5] Q[6]=iicdata[6] Q[7]=iicdata[7]
+.param EN_POLARITY 00000000000000000000000000000000
+.param WIDTH 00000000000000000000000000001000
+.subckt $and A=iicdata_$dlatch_Q_EN_$and_Y_A B=iicdata_$dlatch_Q_EN_$and_Y_B Y=iicdata_$dlatch_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iicaddr_$dlatch_Q_EN_$and_Y_A_$not_Y_A Y=iicaddr_$dlatch_Q_EN_$and_Y_A
+.subckt $not A=iicdata_$dlatch_Q_EN_$and_Y_A_$not_Y_A Y=iicdata_$dlatch_Q_EN_$and_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false Y=iicaddr_$dlatch_Q_EN_$and_Y_A_$not_Y_A
+.subckt $eq A[0]=reg_prog_state[0] A[1]=reg_prog_state[1] A[2]=reg_prog_state[2] A[3]=reg_prog_state[3] A[4]=reg_prog_state[4] B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false Y=iicdata_$dlatch_Q_EN_$and_Y_A_$not_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000101
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_A B=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_B Y=iicaddr_$dlatch_Q_EN_$and_Y_B
+.subckt $and A=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_A B=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_B Y=iicdata_$dlatch_Q_EN_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_1 Y=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_A
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_3 Y=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_$not_A_Y B=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B Y=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A B=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_1_$not_A_Y_$and_A_Y Y=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B
+.subckt $and A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_$not_A_Y B=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B Y=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_2 Y=iicaddr_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A
+.subckt $and A=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A B=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_S_1_$not_A_Y_$and_A_Y Y=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_4 Y=iicdata_$dlatch_Q_EN_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[0] D[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[1] D[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[2] D[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[3] D[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[4] D[5]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[5] D[6]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[6] D[7]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_9_$pmux_S_Y[7] EN=iicaddr_$dlatch_Q_EN Q[0]=iicdata[0] Q[1]=iicdata[1] Q[2]=iicdata[2] Q[3]=iicdata[3] Q[4]=iicdata[4] Q[5]=iicdata[5] Q[6]=iicdata[6] Q[7]=iicdata[7]
-.param EN_POLARITY 00000000000000000000000000000000
-.param WIDTH 00000000000000000000000000001000
-.subckt $dlatch D[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[0] D[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[1] D[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[2] D[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[3] D[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[4] EN=iicaddr_$dlatch_Q_EN Q[0]=reg_prog_nextstate[0] Q[1]=reg_prog_nextstate[1] Q[2]=reg_prog_nextstate[2] Q[3]=reg_prog_nextstate[3] Q[4]=reg_prog_nextstate[4]
+.subckt $dlatch D[0]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[0] D[1]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[1] D[2]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[2] D[3]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[3] D[4]=iic_start_$dlatch_Q_D_$mux_Y_S_$reduce_or_Y_A_$pmux_S_Y[4] EN=iicdata_$dlatch_Q_EN Q[0]=reg_prog_nextstate[0] Q[1]=reg_prog_nextstate[1] Q[2]=reg_prog_nextstate[2] Q[3]=reg_prog_nextstate[3] Q[4]=reg_prog_nextstate[4]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000101
 .subckt $sdff CLK=tm3_clk_v2 D[0]=reg_prog_nextstate[0] D[1]=reg_prog_nextstate[1] D[2]=reg_prog_nextstate[2] D[3]=reg_prog_nextstate[3] D[4]=reg_prog_nextstate[4] Q[0]=reg_prog_state[0] Q[1]=reg_prog_state[1] Q[2]=reg_prog_state[2] Q[3]=reg_prog_state[3] Q[4]=reg_prog_state[4] SRST=temp_reg2_$eq_A_Y_$and_B_Y
