@@ -325,7 +325,7 @@
 			inpad delay:  0.9239
 			outpad delay: 0.9545
 
-	     --> 
+	     -->
       <mode name="inpad">
         <pb_type name="inpad" blif_model=".input" num_pb="1">
           <output name="inpad" num_pins="1"/>
@@ -420,14 +420,14 @@
                         235e-12
                         235e-12
                         235e-12
-                      </delay_matrix>
+                    </delay_matrix>
                     <delay_matrix type="min" in_port="lut5.in" out_port="lut5.out">
                         174e-12
                         174e-12
                         174e-12
                         174e-12
                         174e-12
-                      </delay_matrix>
+                    </delay_matrix>
                   </pb_type>
                   <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                     <input name="D" num_pins="1" port_class="D"/>
@@ -481,13 +481,13 @@
                         195e-12
                         195e-12
                         195e-12
-                      </delay_matrix>
+                    </delay_matrix>
                     <delay_matrix type="min" in_port="lut4.in" out_port="lut4.out">
                         144e-12
                         144e-12
                         144e-12
                         144e-12
-                      </delay_matrix>
+                    </delay_matrix>
                   </pb_type>
                   <!-- The ratio between minimum and maximum delays in StratixIV for data ports to sumout
 							is 0.6809 and cin to sumout is 0.6969-->
@@ -516,10 +516,8 @@
                     <direct name="clock" input="arithmetic.clk" output="ff.clk"/>
                     <direct name="lut_in1" input="arithmetic.in[3:0]" output="lut4[0:0].in[3:0]"/>
                     <direct name="lut_in2" input="arithmetic.in[3:0]" output="lut4[1:1].in[3:0]"/>
-                    <direct name="lut_to_add1" input="lut4[0:0].out" output="adder.a">
-                      </direct>
-                    <direct name="lut_to_add2" input="lut4[1:1].out" output="adder.b">
-                      </direct>
+                    <direct name="lut_to_add1" input="lut4[0:0].out" output="adder.a"></direct>
+                    <direct name="lut_to_add2" input="lut4[1:1].out" output="adder.b"></direct>
                     <direct name="add_to_ff" input="adder.sumout" output="ff.D">
                       <pack_pattern name="chain" in_port="adder.sumout" out_port="ff.D"/>
                     </direct>
@@ -605,7 +603,7 @@
                   261e-12
                   261e-12
                   261e-12
-                </delay_matrix>
+              </delay_matrix>
               <delay_matrix type="min" in_port="lut6.in" out_port="lut6.out">
                   174e-12
                   174e-12
@@ -613,7 +611,7 @@
                   174e-12
                   174e-12
                   174e-12
-                </delay_matrix>
+              </delay_matrix>
             </pb_type>
             <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
               <input name="D" num_pins="1" port_class="D"/>
@@ -660,8 +658,7 @@
           <delay_constant max="95e-12" min="72e-12" in_port="clb.I" out_port="fle[9:0].in"/>
           <delay_constant max="75e-12" min="69e-12" in_port="fle[9:0].out" out_port="fle[9:0].in"/>
         </complete>
-        <complete name="clks" input="clb.clk" output="fle[9:0].clk">
-          </complete>
+        <complete name="clks" input="clb.clk" output="fle[9:0].clk"></complete>
         <!-- This way of specifying direct connection to clb outputs is important because this architecture uses automatic spreading of opins.  
                  By grouping to output pins in this fashion, if a logic block is completely filled by 6-LUTs, 
                  then the outputs those 6-LUTs take get evenly distributed across all four sides of the CLB instead of clumped on two sides (which is what happens with a more

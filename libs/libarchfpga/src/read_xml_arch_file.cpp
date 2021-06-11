@@ -3697,7 +3697,7 @@ static void ProcessSegments(pugi::xml_node Parent,
                             Or at least throw a warning and build in manhattan style
                 */
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                               "Must use correct segment channel adjacency in segment #%d.\n\'horizontal\', \'vertical\', or \'manhattan\'.\n", i);
+                               "Must use correct segment channel adjacency in segment #%d.\n\'horizontal\', \'vertical\', or DEFAULT->\'manhattan\'.\n", i);
             }
         }
         VTR_LOG("Final segment #%d adjacency: [%d] 0-Manhattan 1-Vertical 2-Horizontal\n", i, x_y_exclusivity);

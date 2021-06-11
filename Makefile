@@ -18,7 +18,7 @@
 #    debug			#Build with debug info and no compiler optimization
 #    strict			#Build VPR with warnings treated as errors
 #BUILD_TYPE ?= release #uncomment for standard build, comment out line below
-BUILD_TYPE ?= debug #uncomment for debug, comment out line above
+BUILD_TYPE ?= release #uncomment for debug, comment out line above
 
 #Convert to lower case for consistency
 BUILD_TYPE := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
