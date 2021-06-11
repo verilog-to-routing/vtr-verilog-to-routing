@@ -1446,7 +1446,7 @@
         "generic logic size": 4,
         "Longest Path": 42,
         "Average Path": 4,
-        "Estimated LUTs": 1927,
+        "Estimated LUTs": 1947,
         "Total Node": 2386
     },
     "micro/bm_expr_all_mod/no_arch": {
@@ -2567,11 +2567,31 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 24,
-        "logic element": 205,
-        "Longest Path": 19,
+        "logic element": 655,
+        "Longest Path": 44,
         "Average Path": 5,
-        "Estimated LUTs": 205,
-        "Total Node": 205
+        "Estimated LUTs": 655,
+        "Total Node": 655
+    },
+    "micro/bm_arithmetic_unused_bits/no_arch": {
+        "test_name": "micro/bm_arithmetic_unused_bits/no_arch",
+        "generated_blif": "bm_arithmetic_unused_bits_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 15.3,
+        "exec_time(ms)": 1460.6,
+        "simulation_time(ms)": 1416.8,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 528,
+        "Po": 144,
+        "logic element": 3880,
+        "latch": 144,
+        "Longest Path": 66,
+        "Average Path": 5,
+        "Estimated LUTs": 3880,
+        "Total Node": 4025
     },
     "DEFAULT": {
         "test_name": "n/a",

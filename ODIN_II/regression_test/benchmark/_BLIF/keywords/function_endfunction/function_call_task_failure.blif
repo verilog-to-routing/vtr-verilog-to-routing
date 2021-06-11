@@ -3,53 +3,53 @@
 .model simple_op
 .inputs in[0] in[1] in[2] in[3] in[4] in[5] in[6] in[7]
 .outputs out[0] out[1] out[2] out[3] out[4] out[5] out[6] out[7]
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[0]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[0]
 1 1
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[1]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[1]
 1 1
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[2]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[2]
 1 1
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[3]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[3]
 1 1
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[4]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[4]
 1 1
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[5]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[5]
 1 1
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[6]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[6]
 1 1
-.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:6$1206.in[7]
+.names $undef flip$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:6$1206.in[7]
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1207.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1207.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1207.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1207.out
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1208.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1208.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1208.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1208.out
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1209.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1209.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1209.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1209.out
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1210.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1210.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1210.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1210.out
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1211.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1211.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1211.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1211.out
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1212.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1212.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1212.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1212.out
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1213.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1213.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1213.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1213.out
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1214.in
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1214.in
 1 1
-.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/function_call_task_failure.v:0$1214.out
+.names $undef flip_one$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/function_call_task_failure.v:0$1214.out
 1 1
 .names in[7] out[0]
 1 1

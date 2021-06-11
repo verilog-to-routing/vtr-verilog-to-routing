@@ -3,7 +3,7 @@ module mem (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA);
     parameter MEMID = "";
     parameter signed SIZE = 4;
     parameter signed OFFSET = 0;
-    parameter signed ABITS = 2;
+    parameter signed ABITS = 4;
     parameter signed WIDTH = 8;
     parameter signed INIT = 1'bx;
     

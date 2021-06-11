@@ -978,17 +978,35 @@
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 12.2,
         "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 7,
+        "Po": 3,
+        "logic element": 132,
+        "latch": 24,
         "Adder": 0,
         "Multiplier": 0,
         "Memory": 0,
-        "generic logic size": 4
+        "generic logic size": 4,
+        "Longest Path": 14,
+        "Average Path": 6,
+        "Estimated LUTs": 132,
+        "Total Node": 157
     },
     "syntax/bm_simple_memory/no_arch": {
         "test_name": "syntax/bm_simple_memory/no_arch",
         "input_blif": "bm_simple_memory.blif",
         "max_rss(MiB)": 7.3,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.7
+        "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 7,
+        "Po": 3,
+        "logic element": 132,
+        "latch": 24,
+        "Longest Path": 14,
+        "Average Path": 6,
+        "Estimated LUTs": 132,
+        "Total Node": 157
     },
     "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1068,24 +1086,46 @@
     "syntax/diffeq_f_systemC/no_arch": {
         "test_name": "syntax/diffeq_f_systemC/no_arch",
         "input_blif": "diffeq_f_systemC.blif",
-        "exit": 139
+        "Latch Drivers": 2,
+        "Pi": 64,
+        "Po": 96,
+        "logic element": 11454,
+        "latch": 192,
+        "Longest Path": 2134,
+        "Average Path": 6,
+        "Estimated LUTs": 11454,
+        "Total Node": 11648
     },
     "syntax/diffeq_paj_convert/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/diffeq_paj_convert/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "diffeq_paj_convert.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 161,
+        "Po": 96,
+        "logic element": 1162,
+        "latch": 193,
+        "Adder": 132,
+        "Multiplier": 5,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 130,
+        "Average Path": 6,
+        "Estimated LUTs": 1172,
+        "Total Node": 1493
     },
     "syntax/diffeq_paj_convert/no_arch": {
         "test_name": "syntax/diffeq_paj_convert/no_arch",
         "input_blif": "diffeq_paj_convert.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 161,
+        "Po": 96,
+        "logic element": 12151,
+        "latch": 193,
+        "Longest Path": 2608,
+        "Average Path": 6,
+        "Estimated LUTs": 12151,
+        "Total Node": 12345
     },
     "syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1451,17 +1491,35 @@
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 12.1,
         "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 70,
+        "Po": 32,
+        "logic element": 2558,
+        "latch": 288,
         "Adder": 0,
         "Multiplier": 0,
         "Memory": 0,
-        "generic logic size": 4
+        "generic logic size": 4,
+        "Longest Path": 16,
+        "Average Path": 6,
+        "Estimated LUTs": 2558,
+        "Total Node": 2847
     },
     "syntax/inferred_DPram/no_arch": {
         "test_name": "syntax/inferred_DPram/no_arch",
         "input_blif": "inferred_DPram.blif",
         "max_rss(MiB)": 7.2,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.6
+        "techmap_time(ms)": 0.6,
+        "Latch Drivers": 1,
+        "Pi": 70,
+        "Po": 32,
+        "logic element": 2558,
+        "latch": 288,
+        "Longest Path": 16,
+        "Average Path": 6,
+        "Estimated LUTs": 2558,
+        "Total Node": 2847
     },
     "syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1470,17 +1528,35 @@
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 12.2,
         "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 37,
+        "Po": 160,
+        "logic element": 7304,
+        "latch": 1888,
         "Adder": 0,
         "Multiplier": 0,
         "Memory": 0,
-        "generic logic size": 4
+        "generic logic size": 4,
+        "Longest Path": 18,
+        "Average Path": 5,
+        "Estimated LUTs": 7304,
+        "Total Node": 9193
     },
     "syntax/inferred_ram_w_clog2/no_arch": {
         "test_name": "syntax/inferred_ram_w_clog2/no_arch",
         "input_blif": "inferred_ram_w_clog2.blif",
         "max_rss(MiB)": 7.3,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.7
+        "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 37,
+        "Po": 160,
+        "logic element": 7304,
+        "latch": 1888,
+        "Longest Path": 18,
+        "Average Path": 5,
+        "Estimated LUTs": 7304,
+        "Total Node": 9193
     },
     "syntax/inferred_SPram/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/inferred_SPram/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1648,17 +1724,35 @@
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 12,
         "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 9,
+        "Po": 4,
+        "logic element": 77,
+        "latch": 20,
         "Adder": 0,
         "Multiplier": 0,
         "Memory": 0,
-        "generic logic size": 4
+        "generic logic size": 4,
+        "Longest Path": 14,
+        "Average Path": 6,
+        "Estimated LUTs": 77,
+        "Total Node": 98
     },
     "syntax/multi_edge_reader_writer/no_arch": {
         "test_name": "syntax/multi_edge_reader_writer/no_arch",
         "input_blif": "multi_edge_reader_writer.blif",
         "max_rss(MiB)": 7.2,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.6
+        "techmap_time(ms)": 0.6,
+        "Latch Drivers": 1,
+        "Pi": 9,
+        "Po": 4,
+        "logic element": 77,
+        "latch": 20,
+        "Longest Path": 14,
+        "Average Path": 6,
+        "Estimated LUTs": 77,
+        "Total Node": 98
     },
     "syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1872,35 +1966,63 @@
         "test_name": "syntax/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "rs_decoder_1.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 12,
+        "Po": 7,
+        "logic element": 6657,
+        "latch": 517,
+        "Adder": 31,
+        "Multiplier": 13,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 1090,
+        "Average Path": 7,
+        "Estimated LUTs": 6943,
+        "Total Node": 7219
     },
     "syntax/rs_decoder_1/no_arch": {
         "test_name": "syntax/rs_decoder_1/no_arch",
         "input_blif": "rs_decoder_1.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 12,
+        "Po": 7,
+        "logic element": 7104,
+        "latch": 517,
+        "Longest Path": 1169,
+        "Average Path": 7,
+        "Estimated LUTs": 7104,
+        "Total Node": 7622
     },
     "syntax/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "rs_decoder_2.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 20,
+        "Po": 11,
+        "logic element": 40008,
+        "latch": 616,
+        "Adder": 41,
+        "Multiplier": 9,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 1172,
+        "Average Path": 7,
+        "Estimated LUTs": 41768,
+        "Total Node": 40675
     },
     "syntax/rs_decoder_2/no_arch": {
         "test_name": "syntax/rs_decoder_2/no_arch",
         "input_blif": "rs_decoder_2.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$reduce_and' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 20,
+        "Po": 11,
+        "logic element": 41053,
+        "latch": 616,
+        "Longest Path": 1414,
+        "Average Path": 7,
+        "Estimated LUTs": 41053,
+        "Total Node": 41670
     },
     "syntax/sign_extend_nomem/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/sign_extend_nomem/k6_frac_N10_frac_chain_mem32K_40nm",

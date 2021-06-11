@@ -17,6 +17,10 @@ fsm;
 
 opt;
 
+memory;
+
+opt;
+
 check;
 
 flatten;

@@ -15,11 +15,11 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.names $undef my_and$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/multiple_inputs.v:8$1206.a
+.names $undef my_and$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/multiple_inputs.v:8$1206.a
 1 1
-.names $undef my_and$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/multiple_inputs.v:8$1206.b
+.names $undef my_and$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/multiple_inputs.v:8$1206.b
 1 1
-.names $undef my_and$func$regression_test/benchmark/_VERILOG/keywords/function_endfunction/multiple_inputs.v:8$1206.c
+.names $undef my_and$func$regression_test/benchmark/_VERILOG/keywords//function_endfunction/multiple_inputs.v:8$1206.c
 1 1
 .names in3_$logic_or_B_Y out
 1 1
