@@ -586,6 +586,25 @@ char* get_port_name(char* name) {
     return port_name;
 }
 
+/**
+ * (function: get_node_name)
+ * 
+ * @brief Removing the hard block unique number from its name 
+ * and gets the node name (everything before the ~).
+ *  
+ * @param name the given hard block name
+ * 
+ * @return pure hard block name
+ */
+char* get_hard_block_node_name(char* name) {
+    char* port_name = vtr::strdup(name);
+    // Find out if there is a ~ and remove everything after it.
+    char* tilde = strchr(port_name, '~');
+    if (tilde)
+        *tilde = '\0';
+    return (port_name);
+}
+
 /*
  * Gets the pin number (the number after the ~)
  * from the given name.

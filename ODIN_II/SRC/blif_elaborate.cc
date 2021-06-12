@@ -58,8 +58,6 @@ static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_n
 // static void remap_input_pins_drivers_based_on_mapping (nnode_t* node);
 static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static void make_selector_as_first_port(nnode_t* node);
-static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
@@ -72,6 +70,9 @@ static void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, net
 static void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void make_selector_as_first_port(nnode_t* node);
+static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */);
 
 /*******************************************************************************************************
  ********************************************** [UTILS] ************************************************
@@ -350,6 +351,14 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_dffsr_node(node, traverse_number, netlist);
             break;
         }
+        case MULTIPORT_nBIT_MUX: {
+            /**
+             * need to reorder the input pins, so that the 
+             * selector signal comes at the first place
+             */
+            make_selector_as_first_port(node);            
+            break;
+        }
         case PMUX: {
             /**
              * need to reorder the input pins, so that the 
@@ -362,19 +371,27 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_pmux_node(node, traverse_number, netlist);
             break;
         }
-        case MULTIPORT_nBIT_MUX: {
+        case SPRAM: {
             /**
-             * need to reorder the input pins, so that the 
-             * selector signal comes at the first place
-             */
-            make_selector_as_first_port(node);            
+             * resolving a single port ram by create the related soft logic
+            */
+            resolve_single_port_ram(node, traverse_number, netlist);
             break;
         }
+        case DPRAM: {
+           /**
+             * resolving a single port ram by create the related soft logic
+            */
+
+            break;
+        }
+        case MULTI_BIT_MUX_2:
         case GND_NODE:
         case VCC_NODE:
         case PAD_NODE:
         case INPUT_NODE:
         case OUTPUT_NODE: 
+        case MEMORY:
         case BUF_NODE:
         case BITWISE_NOT:
         case BITWISE_AND:
@@ -388,7 +405,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case MUX_2:
         case MULTI_PORT_MUX: 
-        case MEMORY:
         case HARD_IP:
         case ADDER_FUNC:
         case CARRY_FUNC:
@@ -2899,11 +2915,250 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
     vtr::free(ternary_muxes_out_signals);
 }
 
+/**
+ * (function: create_soft_single_port_ram_block)
+ * 
+ * @brief resolve the spram block by reordering the input signals 
+ * to be compatible with Odin's partial mapping phase
+ * 
+ * @param node pointing to a logical not node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 4);
+    oassert(node->num_output_port_sizes == 1);
+
+    /* check if the node is a valid spram */
+    if (!is_blif_sp_ram(node))
+        error_message(BLIF_ELBORATION, node->loc,
+                      "%s", "SPRAM ports are mismatching with VTR single port ram hard block ports\n");
+
+    /** 
+     * blif single port ram information 
+     * 
+     * ADDR:    input port [0] 
+     * CLOCK:   input port [1] 
+     * DATAIN:  input port [2] 
+     * WE:      input port [3] 
+     * 
+     * DATAOUT: output port [0] 
+     */
+
+
+    int ADDR_width  = node->input_port_sizes[0];  
+    int CLK_width   = node->input_port_sizes[1];  // should be 1
+    int DATA_width  = node->input_port_sizes[2];  
+    int WE_width    = node->input_port_sizes[3];  // should be 1
+
+    /* validate the data width */
+    oassert(DATA_width == node->output_port_sizes[0]);
+
+    int i;
+    /* creating a new node */
+    nnode_t* spram = allocate_nnode(node->loc);
+    spram->type = MEMORY;
+    spram->name = vtr::strdup(node->name);
+    spram->related_ast_node = node->related_ast_node;
+
+    /* INPUTS */
+    /* adding the first input port as address */
+    add_input_port_information(spram, ADDR_width);
+    allocate_more_input_pins(spram, ADDR_width);
+    for (i = 0; i < ADDR_width; i++) {
+        /* hook the addr pin to new node */
+        remap_pin_to_new_node(node->input_pins[i], spram, i);
+    }
+    
+    /* adding the second input port as data */
+    add_input_port_information(spram, DATA_width);
+    allocate_more_input_pins(spram, DATA_width);
+    for (i = 0; i < DATA_width; i++) {
+        /* hook the data in pin to new node */
+        remap_pin_to_new_node(node->input_pins[ADDR_width + CLK_width + i], spram, ADDR_width + i);
+    }
+
+    /* adding the third input port as we */
+    add_input_port_information(spram, WE_width);
+    allocate_more_input_pins(spram, WE_width);
+    /* hook the we pin to new node */
+    remap_pin_to_new_node(node->input_pins[ADDR_width + CLK_width + DATA_width], spram, ADDR_width + DATA_width);
+
+    /* adding the forth input port as clock */
+    add_input_port_information(spram, CLK_width);
+    allocate_more_input_pins(spram, CLK_width);
+    /* hook the clk pin to new node */
+    remap_pin_to_new_node(node->input_pins[ADDR_width], spram, ADDR_width + DATA_width + WE_width);
+
+    /* OUTPUT */
+    /* adding the output port */
+    add_output_port_information(spram, DATA_width);
+    allocate_more_output_pins(spram, DATA_width);
+    for (i = 0; i < DATA_width; i++) {
+        /* hook the data out pin to new node */
+        remap_pin_to_new_node(node->output_pins[i], spram, i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+}
+
+// /**
+//  * (function: resolve_soft_dual_port_ram)
+//  * 
+//  * @brief Creates an architecture independent memory block which will be mapped
+//  * to soft logic during the partial map.
+//  * 
+//  * @param
+//  */
+// signal_list_t* resolve_soft_dual_port_ram(ast_node_t* block, char* instance_name_prefix, sc_hierarchy* local_ref) {
+//     char* identifier = block->identifier_node->types.identifier;
+//     char* instance_name = block->children[0]->identifier_node->types.identifier;
+
+//     if (!is_dp_ram(block))
+//         error_message(NETLIST, block->loc, "%s", "Error in creating soft dual port ram\n");
+
+//     block->type = RAM;
+
+//     // create the node
+//     nnode_t* block_node = allocate_nnode(block->loc);
+//     // store all of the relevant info
+//     block_node->related_ast_node = block;
+//     block_node->type = HARD_IP;
+//     ast_node_t* block_instance = block->children[0];
+//     ast_node_t* block_list = block_instance->children[0];
+//     block_node->name = hard_node_name(block_node,
+//                                       instance_name_prefix,
+//                                       identifier,
+//                                       block_instance->identifier_node->types.identifier);
+
+//     long i;
+//     signal_list_t** in_list = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*) * block_list->num_children);
+//     int out1_size = 0;
+//     int out2_size = 0;
+//     int current_idx = 0;
+//     for (i = 0; i < block_list->num_children; i++) {
+//         in_list[i] = NULL;
+//         ast_node_t* block_connect = block_list->children[i]->identifier_node;
+//         ast_node_t* block_port_connect = block_list->children[i]->children[0];
+
+//         char* ip_name = block_connect->types.identifier;
+
+//         int is_output = !strcmp(ip_name, "out1") || !strcmp(ip_name, "out2");
+
+//         if (!is_output) {
+//             // Create the pins for port if needed
+//             in_list[i] = create_pins(block_port_connect, NULL, instance_name_prefix, local_ref);
+//             int port_size = in_list[i]->count;
+
+//             if (!strcmp(ip_name, "data1"))
+//                 out1_size = port_size;
+//             else if (!strcmp(ip_name, "data2"))
+//                 out2_size = port_size;
+
+//             int j;
+//             for (j = 0; j < port_size; j++)
+//                 in_list[i]->pins[j]->mapping = ip_name;
+
+//             // allocate the pins needed
+//             allocate_more_input_pins(block_node, port_size);
+
+//             // record this port size
+//             add_input_port_information(block_node, port_size);
+
+//             // hookup the input pins
+//             hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, verilog_netlist);
+
+//             // Name any grounded ports in the block mapping
+//             for (j = port_size; j < port_size; j++)
+//                 block_node->input_pins[current_idx + j]->mapping = vtr::strdup(ip_name);
+
+//             current_idx += port_size;
+//         }
+//     }
+
+//     oassert(out1_size == out2_size);
+
+//     int current_out_idx = 0;
+//     signal_list_t* return_list = init_signal_list();
+//     for (i = 0; i < block_list->num_children; i++) {
+//         ast_node_t* block_connect = block_list->children[i]->identifier_node;
+//         char* ip_name = block_connect->types.identifier;
+
+//         int is_out1 = !strcmp(ip_name, "out1");
+//         int is_out2 = !strcmp(ip_name, "out2");
+//         int is_output = is_out1 || is_out2;
+
+//         if (is_output) {
+//             char* alias_name = make_full_ref_name(
+//                 instance_name_prefix,
+//                 identifier,
+//                 instance_name,
+//                 ip_name, -1);
+
+//             int port_size = is_out1 ? out1_size : out2_size;
+
+//             allocate_more_output_pins(block_node, port_size);
+//             add_output_port_information(block_node, port_size);
+
+//             t_memory_port_sizes* ps = (t_memory_port_sizes*)vtr::calloc(1, sizeof(t_memory_port_sizes));
+//             ps->size = port_size;
+//             ps->name = alias_name;
+//             memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
+
+//             // make the implicit output list and hook up the outputs
+//             int j;
+//             for (j = 0; j < port_size; j++) {
+//                 char* pin_name = make_full_ref_name(
+//                     instance_name_prefix,
+//                     identifier,
+//                     instance_name,
+//                     ip_name,
+//                     (port_size > 1) ? j : -1);
+
+//                 npin_t* new_pin1 = allocate_npin();
+//                 new_pin1->mapping = ip_name;
+//                 new_pin1->name = pin_name;
+
+//                 npin_t* new_pin2 = allocate_npin();
+
+//                 nnet_t* new_net = allocate_nnet();
+//                 new_net->name = ip_name;
+
+//                 // hook the output pin into the node
+//                 add_output_pin_to_node(block_node, new_pin1, current_out_idx + j);
+//                 // hook up new pin 1 into the new net
+//                 add_driver_pin_to_net(new_net, new_pin1);
+//                 // hook up the new pin 2 to this new net
+//                 add_fanout_pin_to_net(new_net, new_pin2);
+
+//                 // add the new_pin 2 to the list of outputs
+//                 add_pin_to_signal_list(return_list, new_pin2);
+
+//                 // add the net to the list of inputs
+//                 long sc_spot = sc_add_string(input_nets_sc, pin_name);
+//                 input_nets_sc->data[sc_spot] = (void*)new_net;
+//             }
+//             current_out_idx += j;
+//         }
+//     }
+
+//     for (i = 0; i < block_list->num_children; i++)
+//         free_signal_list(in_list[i]);
+
+//     vtr::free(in_list);
+
+//     block_node->type = MEMORY;
+//     block->net_node = block_node;
+
+//     return return_list;
+// }
+
 /*******************************************************************************************************
  ********************************************** [UTILS] ************************************************
  *******************************************************************************************************/
 /**
- *---------------------------------------------------------------------------------------------
  * (function: look_for_clocks)
  * 
  * @brief going through all FF nodes looking for the clock signals.
@@ -2912,7 +3167,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
  * nodes should be considered as a clock node. 
  * 
  * @param netlist pointer to the current netlist file
- *-------------------------------------------------------------------------------------------*/
+ */
 static void look_for_clocks(netlist_t* netlist) {
     int i;
     /* looking for the global sim clock among top netlist inputsto change its type if needed */

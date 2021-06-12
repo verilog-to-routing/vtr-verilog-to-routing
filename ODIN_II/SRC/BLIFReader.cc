@@ -412,10 +412,13 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         output_nets_hash->add(name, new_net);
     }
 
+    // Create a fake ast node.
     if (!configuration.coarsen) {
-        // Create a fake ast node.
         new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
         new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
+        new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
+    } else if (configuration.coarsen && (new_node->type == SPRAM || new_node->type == DPRAM)) {
+        new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
         new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
     }
 
@@ -1875,15 +1878,21 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (CASE_EQUAL): //fallthrough
         case (CASE_NOT_EQUAL): //fallthrough
         case (MULTIPORT_nBIT_MUX): {
-            // create a model with single output port, being read as the last port
+            // create a model with single output port, being read as the port [n-1] among [0...n-1]
             model = create_model(name, ports, ports->count-1, ports->count);
             break;
         }
+        case (SPRAM): //fallthrough
         case (SDFF): //fallthrough
         case (SDFFE): //fallthrough
         case (DFFSR): {
-            // create a model with single output port, being read as the one behind last port
+            // create a model with single output port, being read as the port [n-2] among [0...n-1]
             model = create_model(name, ports, ports->count-2, ports->count-1);
+            break;
+        }
+        case (DPRAM): {
+            // create a model with two output ports,being read as the port [n-2, n-1] among [0...n-1]
+            model = create_model(name, ports, ports->count-2, ports->count);
             break;
         }
         default: {

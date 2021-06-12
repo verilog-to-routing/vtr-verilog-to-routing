@@ -397,8 +397,8 @@ void split_sp_memory_depth(nnode_t* node, int split_size) {
     }
 
     // Add the clock signals.
-    remap_input_port_to_memory(new_mem_node1, clk, "clk");
-    copy_input_port_to_memory(new_mem_node2, clk, "clk");
+    remap_input_port_to_memory(new_mem_node1, clk, "clock");
+    copy_input_port_to_memory(new_mem_node2, clk, "clock");
     free_signal_list(clk);
 
     // Setup output ports on both nodes.
@@ -548,8 +548,8 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
     }
 
     // Add the clock signals.
-    remap_input_port_to_memory(new_mem_node1, clk, "clk");
-    copy_input_port_to_memory(new_mem_node2, clk, "clk");
+    remap_input_port_to_memory(new_mem_node1, clk, "clock");
+    copy_input_port_to_memory(new_mem_node2, clk, "clock");
     free_signal_list(clk);
 
     // Setup output ports on both nodes.
@@ -1231,6 +1231,104 @@ bool is_dp_ram(nnode_t* node) {
     return !strcmp(node->related_ast_node->identifier_node->types.identifier, DUAL_PORT_RAM_string);
 }
 
+/**
+ * (function: is_blif_sp_ram)
+ * 
+ * @brief to check if the given node is a valid
+ * single port ram based on VTR primitive definition
+ * 
+ * @param node pointing to a spram node 
+ */
+bool is_blif_sp_ram(nnode_t* node) {
+    oassert(node->name);
+    /* return value */
+    bool is_ram;
+    char* hard_clock_identifier = get_hard_block_node_name(node->name);
+
+    /* check the num input/output ports */
+    is_ram = (!strcmp(hard_clock_identifier, SINGLE_PORT_RAM_string))
+             && (node->num_input_port_sizes == 4)
+             && (node->num_output_port_sizes == 1);
+
+    /* check if it is a ram */
+    if (is_ram) {
+        /* port connections were passed by name; verify input port names */
+        for (int i = 0; i < node->num_input_pins && is_ram; i++) {
+            oassert(node->input_pins[i]->mapping);
+            char* port_id = node->input_pins[i]->mapping;
+
+            /* comparision of mapping ports with single_port_ram port names */
+            if ((strcmp(port_id, "we") != 0) && (strcmp(port_id, "clock") != 0) && (strcmp(port_id, "addr") != 0) && (strcmp(port_id, "data") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+        /* port connections were passed by name; verify output port names */
+        for (int i = 0; i < node->num_output_pins && is_ram; i++) {
+            oassert(node->output_pins[i]->mapping);
+            char* port_id = node->output_pins[i]->mapping;
+
+            /* comparision of mapping ports with single_port_ram port names */
+            if ((strcmp(port_id, "out") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+    }
+
+    // CLEAN UP
+    vtr::free(hard_clock_identifier);
+
+    return (is_ram);
+}
+
+/**
+ * (function: is_blif_dp_ram)
+ * 
+ * @brief to check if the given node is a valid
+ * dual port ram based on VTR primitive definition
+ *  
+ * @param node pointing to a dpram node 
+ */
+bool is_blif_dp_ram(nnode_t* node) {
+    oassert(node->name);
+    /* return value */
+    bool is_ram;
+
+    /* check the num input/output ports */
+    is_ram = (!strcmp(get_hard_block_node_name(node->name), DUAL_PORT_RAM_string))
+             && (node->num_input_port_sizes == 7)
+             && (node->num_output_port_sizes == 2);
+
+    /* check if it is a ram */
+    if (is_ram) {
+        /* port connections were passed by name; verify input port names */
+        for (int i = 0; i < node->num_input_pins && is_ram; i++) {
+            oassert(node->input_pins[i]->mapping);
+            char* port_id = node->input_pins[i]->mapping;
+
+            /* comparision of mapping ports with dual_port_ram port names */
+            if ((strcmp(port_id, "clock") != 0) && (strcmp(port_id, "we1") != 0) && (strcmp(port_id, "we2") != 0) && (strcmp(port_id, "addr1") != 0) && (strcmp(port_id, "addr2") != 0) && (strcmp(port_id, "data1") != 0) && (strcmp(port_id, "data2") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+        /* port connections were passed by name; verify output port names */
+        for (int i = 0; i < node->num_output_pins && is_ram; i++) {
+            oassert(node->output_pins[i]->mapping);
+            char* port_id = node->output_pins[i]->mapping;
+
+            /* comparision of mapping ports with dual_port_ram port names */
+            if ((strcmp(port_id, "out1") != 0) && (strcmp(port_id, "out2") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+    }
+
+    return (is_ram);
+}
+
 bool is_ast_sp_ram(ast_node_t* node) {
     bool is_ram;
     ast_node_t* instance = node->children[0];
@@ -1243,7 +1341,7 @@ bool is_ast_sp_ram(ast_node_t* node) {
         for (int i = 0; i < connect_list->num_children && is_ram; i++) {
             char* id = connect_list->children[i]->identifier_node->types.identifier;
 
-            if ((strcmp(id, "we") != 0) && (strcmp(id, "clk") != 0) && (strcmp(id, "addr") != 0) && (strcmp(id, "data") != 0) && (strcmp(id, "out") != 0)) {
+            if ((strcmp(id, "we") != 0) && (strcmp(id, "clock") != 0) && (strcmp(id, "addr") != 0) && (strcmp(id, "data") != 0) && (strcmp(id, "out") != 0)) {
                 is_ram = false;
                 break;
             }
@@ -1265,7 +1363,7 @@ bool is_ast_dp_ram(ast_node_t* node) {
         for (int i = 0; i < connect_list->num_children && is_ram; i++) {
             char* id = connect_list->children[i]->identifier_node->types.identifier;
 
-            if ((strcmp(id, "clk") != 0) && (strcmp(id, "we1") != 0) && (strcmp(id, "we2") != 0) && (strcmp(id, "addr1") != 0) && (strcmp(id, "addr2") != 0) && (strcmp(id, "data1") != 0) && (strcmp(id, "data2") != 0) && (strcmp(id, "out1") != 0) && (strcmp(id, "out2") != 0)) {
+            if ((strcmp(id, "clock") != 0) && (strcmp(id, "we1") != 0) && (strcmp(id, "we2") != 0) && (strcmp(id, "addr1") != 0) && (strcmp(id, "addr2") != 0) && (strcmp(id, "data1") != 0) && (strcmp(id, "data2") != 0) && (strcmp(id, "out1") != 0) && (strcmp(id, "out2") != 0)) {
                 is_ram = false;
                 break;
             }
@@ -1297,7 +1395,7 @@ sp_ram_signals* get_sp_ram_signals(nnode_t* node) {
             add_pin_to_signal_list(signals->data, pin);
         else if (!strcmp(pin->mapping, "we"))
             signals->we = pin;
-        else if (!strcmp(pin->mapping, "clk"))
+        else if (!strcmp(pin->mapping, "clock"))
             signals->clk = pin;
         else
             error_message(NETLIST, ast_node->loc,
@@ -1366,7 +1464,7 @@ dp_ram_signals* get_dp_ram_signals(nnode_t* node) {
             signals->we1 = pin;
         else if (!strcmp(pin->mapping, "we2"))
             signals->we2 = pin;
-        else if (!strcmp(pin->mapping, "clk"))
+        else if (!strcmp(pin->mapping, "clock"))
             signals->clk = pin;
         else
             error_message(NETLIST, ast_node->loc,

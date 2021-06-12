@@ -242,10 +242,10 @@ module single_port_ram #(
     parameter ADDR_WIDTH = 1,
     parameter DATA_WIDTH = 1
 ) (
+    input clock,
     input [ADDR_WIDTH-1:0] addr,
     input [DATA_WIDTH-1:0] data,
     input we,
-    input clock,
     output reg [DATA_WIDTH-1:0] out
 );
 

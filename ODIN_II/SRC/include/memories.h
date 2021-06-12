@@ -83,6 +83,9 @@ void free_dp_ram_signals(dp_ram_signals* signalsvar);
 bool is_sp_ram(nnode_t* node);
 bool is_dp_ram(nnode_t* node);
 
+bool is_blif_sp_ram(nnode_t* node);
+bool is_blif_dp_ram(nnode_t* node);
+
 bool is_ast_sp_ram(ast_node_t* node);
 bool is_ast_dp_ram(ast_node_t* node);
 

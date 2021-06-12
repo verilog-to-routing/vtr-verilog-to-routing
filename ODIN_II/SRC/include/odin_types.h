@@ -273,7 +273,9 @@ enum operation_list {
     SDFFE,              // data, synchronous reset value and enable to output port
     DFFSR,              // data, clear and set to output port
     DLATCH,             // datato output port based on polarity without clk
-    ADLATCH,             // datato output port based on polarity without clk
+    ADLATCH,            // datato output port based on polarity without clk
+    SPRAM,              // representing primitive single port ram
+    DPRAM,              // representing primitive dual port ram
                         // [END] operations to cover yosys subckt
     operation_list_END
 };

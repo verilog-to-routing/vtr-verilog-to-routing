@@ -255,7 +255,16 @@ typemap yosys_subckt_str({
                              {"$sub", MINUS},                         // (A, B, Y)
                              {"$tribuf", operation_list_END},         // (A, EN, Y)
                              {"$xnor", LOGICAL_XNOR},                 // (A, B, Y)
-                             {"$xor", LOGICAL_XOR}                    // (A, B, Y)
+                             {"$xor", LOGICAL_XOR},                   // (A, B, Y)
+                             /*********** VTR Primitive modules START ***********/
+                             {"LUT_K", operation_list_END},             // (in, out)
+                             {"DFF", FF_NODE},                          // (clock, D, Q)
+                             {"fpga_interconnect", operation_list_END}, // (datain, dataout)
+                             {"mux", MULTI_BIT_MUX_2},                  // (select, x, y, z)
+                             {"adder", ADD},                            // (a, b, out)
+                             {"multiply", MULTIPLY},                    // (a, b, cin, cout, sumout)
+                             {"single_port_ram", SPRAM},                // (clock, addr, data, we, out)
+                             {"dual_port_ram", DPRAM}                   // (clock, addr1, addr2, data1, data2, we1, we2, out1, out2)
                          },
                          NUM_OF_YOSYS_CELL_TYPES);
 
