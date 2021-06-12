@@ -73,6 +73,7 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
 static void make_selector_as_first_port(nnode_t* node);
 static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */);
+static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */);
 
 /*******************************************************************************************************
  ********************************************** [UTILS] ************************************************
@@ -382,7 +383,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
            /**
              * resolving a single port ram by create the related soft logic
             */
-
+            resolve_dual_port_ram(node, traverse_number, netlist);
             break;
         }
         case MULTI_BIT_MUX_2:
@@ -2916,7 +2917,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
 }
 
 /**
- * (function: create_soft_single_port_ram_block)
+ * (function: resolve_single_port_ram)
  * 
  * @brief resolve the spram block by reordering the input signals 
  * to be compatible with Odin's partial mapping phase
@@ -2933,7 +2934,7 @@ static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_numbe
     /* check if the node is a valid spram */
     if (!is_blif_sp_ram(node))
         error_message(BLIF_ELBORATION, node->loc,
-                      "%s", "SPRAM ports are mismatching with VTR single port ram hard block ports\n");
+                      "%s", "SPRAM ports mismatch with VTR single_port_ram hard block ports\n");
 
     /** 
      * blif single port ram information 
@@ -3004,156 +3005,139 @@ static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_numbe
     free_nnode(node);
 }
 
-// /**
-//  * (function: resolve_soft_dual_port_ram)
-//  * 
-//  * @brief Creates an architecture independent memory block which will be mapped
-//  * to soft logic during the partial map.
-//  * 
-//  * @param
-//  */
-// signal_list_t* resolve_soft_dual_port_ram(ast_node_t* block, char* instance_name_prefix, sc_hierarchy* local_ref) {
-//     char* identifier = block->identifier_node->types.identifier;
-//     char* instance_name = block->children[0]->identifier_node->types.identifier;
+/**
+ * (function: resolve_dual_port_ram)
+ * 
+ * @brief resolve the dpram block by reordering the input signals 
+ * to be compatible with Odin's partial mapping phase
+ * 
+ * @param node pointing to a logical not node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 7);
+    oassert(node->num_output_port_sizes == 2);
 
-//     if (!is_dp_ram(block))
-//         error_message(NETLIST, block->loc, "%s", "Error in creating soft dual port ram\n");
+    /* check if the node is a valid spram */
+    if (!is_blif_dp_ram(node))
+        error_message(BLIF_ELBORATION, node->loc,
+                      "%s", "DPRAM ports mismatch with VTR dual_port_ram hard block ports\n");
 
-//     block->type = RAM;
+    /** 
+     * blif single port ram information 
+     * 
+     * ADDR1:    input port [0] 
+     * ADDR2:    input port [1] 
+     * CLOCK:    input port [2] 
+     * DATAIN1:  input port [3] 
+     * DATAIN2:  input port [4] 
+     * WE1:      input port [5] 
+     * WE2:      input port [6] 
+     * 
+     * DATAOUT1: output port [0] 
+     * DATAOUT2: output port [1] 
+     */
 
-//     // create the node
-//     nnode_t* block_node = allocate_nnode(block->loc);
-//     // store all of the relevant info
-//     block_node->related_ast_node = block;
-//     block_node->type = HARD_IP;
-//     ast_node_t* block_instance = block->children[0];
-//     ast_node_t* block_list = block_instance->children[0];
-//     block_node->name = hard_node_name(block_node,
-//                                       instance_name_prefix,
-//                                       identifier,
-//                                       block_instance->identifier_node->types.identifier);
+    int ADDR1_width  = node->input_port_sizes[0];  
+    int ADDR2_width  = node->input_port_sizes[1];  
+    int CLK_width    = node->input_port_sizes[2];  // should be 1
+    int DATA1_width  = node->input_port_sizes[3];  
+    int DATA2_width  = node->input_port_sizes[4];  
+    int WE1_width    = node->input_port_sizes[5];  // should be 1
+    int WE2_width    = node->input_port_sizes[6];  // should be 1
 
-//     long i;
-//     signal_list_t** in_list = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*) * block_list->num_children);
-//     int out1_size = 0;
-//     int out2_size = 0;
-//     int current_idx = 0;
-//     for (i = 0; i < block_list->num_children; i++) {
-//         in_list[i] = NULL;
-//         ast_node_t* block_connect = block_list->children[i]->identifier_node;
-//         ast_node_t* block_port_connect = block_list->children[i]->children[0];
+    /* validate the port width */
+    oassert((CLK_width == 1) && (WE1_width == 1) && (WE2_width == 1));
+    oassert(ADDR1_width == ADDR2_width);
+    oassert(DATA1_width == DATA2_width);
+    oassert((DATA1_width == node->output_port_sizes[0]) && (DATA1_width == node->output_port_sizes[1]));
 
-//         char* ip_name = block_connect->types.identifier;
+    int i;
+    /* creating a new node */
+    nnode_t* dpram = allocate_nnode(node->loc);
+    dpram->type = MEMORY;
+    dpram->name = vtr::strdup(node->name);
+    dpram->related_ast_node = node->related_ast_node;
 
-//         int is_output = !strcmp(ip_name, "out1") || !strcmp(ip_name, "out2");
+    /* INPUTS */
+    /* adding the first input port as address1 */
+    add_input_port_information(dpram, ADDR1_width);
+    allocate_more_input_pins(dpram, ADDR1_width);
+    for (i = 0; i < ADDR1_width; i++) {
+        /* hook the addr1 pin to new node */
+        remap_pin_to_new_node(node->input_pins[i], dpram, i);
+    }
+    /* adding the second input port as address2 */
+    add_input_port_information(dpram, ADDR2_width);
+    allocate_more_input_pins(dpram, ADDR2_width);
+    for (i = 0; i < ADDR2_width; i++) {
+        /* hook the addr pin to new node */
+        remap_pin_to_new_node(node->input_pins[ADDR1_width + i], dpram, ADDR1_width + i);
+    }
+    /* adding the third input port as data1 */
+    add_input_port_information(dpram, DATA1_width);
+    allocate_more_input_pins(dpram, DATA1_width);
+    for (i = 0; i < DATA1_width; i++) {
+        /* hook the data in pin to new node */
+        remap_pin_to_new_node(node->input_pins[ADDR1_width + ADDR2_width + CLK_width + i],
+                              dpram,
+                              ADDR1_width + ADDR2_width + i);
+    }
+     /* adding the forth input port as data2 */
+    add_input_port_information(dpram, DATA2_width);
+    allocate_more_input_pins(dpram, DATA2_width);
+    for (i = 0; i < DATA2_width; i++) {
+        /* hook the data in pin to new node */
+        remap_pin_to_new_node(node->input_pins[ADDR1_width + ADDR2_width + CLK_width + DATA1_width + i],
+                              dpram,
+                              ADDR1_width + ADDR2_width + DATA1_width + i);
+    }
+    
+    /* adding the third input port as we1 */
+    add_input_port_information(dpram, WE1_width);
+    allocate_more_input_pins(dpram, WE1_width);
+    /* hook the we pin to new node */
+    remap_pin_to_new_node(node->input_pins[ADDR1_width + ADDR2_width + CLK_width + DATA1_width + DATA2_width],
+                          dpram,
+                          ADDR1_width + ADDR2_width + DATA1_width + DATA2_width);
 
-//         if (!is_output) {
-//             // Create the pins for port if needed
-//             in_list[i] = create_pins(block_port_connect, NULL, instance_name_prefix, local_ref);
-//             int port_size = in_list[i]->count;
+    /* adding the third input port as we2 */
+    add_input_port_information(dpram, WE2_width);
+    allocate_more_input_pins(dpram, WE2_width);
+    /* hook the we pin to new node */
+    remap_pin_to_new_node(node->input_pins[ADDR1_width + ADDR2_width + CLK_width + DATA1_width + DATA2_width + WE1_width],
+                          dpram,
+                          ADDR1_width + ADDR2_width + DATA1_width + DATA2_width + WE1_width);
+    
+    /* adding the forth input port as clock */
+    add_input_port_information(dpram, CLK_width);
+    allocate_more_input_pins(dpram, CLK_width);
+    /* hook the clk pin to new node */
+    remap_pin_to_new_node(node->input_pins[ADDR1_width + ADDR2_width],
+                          dpram,
+                          ADDR1_width + ADDR2_width + DATA1_width + DATA2_width + WE1_width + WE2_width);
 
-//             if (!strcmp(ip_name, "data1"))
-//                 out1_size = port_size;
-//             else if (!strcmp(ip_name, "data2"))
-//                 out2_size = port_size;
+    /* OUTPUT */
+    /* adding the output1 port */
+    add_output_port_information(dpram, DATA1_width);
+    allocate_more_output_pins(dpram, DATA1_width);
+    for (i = 0; i < DATA1_width; i++) {
+        /* hook the data out pin to new node */
+        remap_pin_to_new_node(node->output_pins[i], dpram, i);
+    }
+    /* adding the output2 port */
+    add_output_port_information(dpram, DATA1_width);
+    allocate_more_output_pins(dpram, DATA1_width);
+    for (i = 0; i < DATA1_width; i++) {
+        /* hook the data out pin to new node */
+        remap_pin_to_new_node(node->output_pins[DATA1_width + i], dpram, DATA1_width + i);
+    }
 
-//             int j;
-//             for (j = 0; j < port_size; j++)
-//                 in_list[i]->pins[j]->mapping = ip_name;
-
-//             // allocate the pins needed
-//             allocate_more_input_pins(block_node, port_size);
-
-//             // record this port size
-//             add_input_port_information(block_node, port_size);
-
-//             // hookup the input pins
-//             hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, verilog_netlist);
-
-//             // Name any grounded ports in the block mapping
-//             for (j = port_size; j < port_size; j++)
-//                 block_node->input_pins[current_idx + j]->mapping = vtr::strdup(ip_name);
-
-//             current_idx += port_size;
-//         }
-//     }
-
-//     oassert(out1_size == out2_size);
-
-//     int current_out_idx = 0;
-//     signal_list_t* return_list = init_signal_list();
-//     for (i = 0; i < block_list->num_children; i++) {
-//         ast_node_t* block_connect = block_list->children[i]->identifier_node;
-//         char* ip_name = block_connect->types.identifier;
-
-//         int is_out1 = !strcmp(ip_name, "out1");
-//         int is_out2 = !strcmp(ip_name, "out2");
-//         int is_output = is_out1 || is_out2;
-
-//         if (is_output) {
-//             char* alias_name = make_full_ref_name(
-//                 instance_name_prefix,
-//                 identifier,
-//                 instance_name,
-//                 ip_name, -1);
-
-//             int port_size = is_out1 ? out1_size : out2_size;
-
-//             allocate_more_output_pins(block_node, port_size);
-//             add_output_port_information(block_node, port_size);
-
-//             t_memory_port_sizes* ps = (t_memory_port_sizes*)vtr::calloc(1, sizeof(t_memory_port_sizes));
-//             ps->size = port_size;
-//             ps->name = alias_name;
-//             memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
-
-//             // make the implicit output list and hook up the outputs
-//             int j;
-//             for (j = 0; j < port_size; j++) {
-//                 char* pin_name = make_full_ref_name(
-//                     instance_name_prefix,
-//                     identifier,
-//                     instance_name,
-//                     ip_name,
-//                     (port_size > 1) ? j : -1);
-
-//                 npin_t* new_pin1 = allocate_npin();
-//                 new_pin1->mapping = ip_name;
-//                 new_pin1->name = pin_name;
-
-//                 npin_t* new_pin2 = allocate_npin();
-
-//                 nnet_t* new_net = allocate_nnet();
-//                 new_net->name = ip_name;
-
-//                 // hook the output pin into the node
-//                 add_output_pin_to_node(block_node, new_pin1, current_out_idx + j);
-//                 // hook up new pin 1 into the new net
-//                 add_driver_pin_to_net(new_net, new_pin1);
-//                 // hook up the new pin 2 to this new net
-//                 add_fanout_pin_to_net(new_net, new_pin2);
-
-//                 // add the new_pin 2 to the list of outputs
-//                 add_pin_to_signal_list(return_list, new_pin2);
-
-//                 // add the net to the list of inputs
-//                 long sc_spot = sc_add_string(input_nets_sc, pin_name);
-//                 input_nets_sc->data[sc_spot] = (void*)new_net;
-//             }
-//             current_out_idx += j;
-//         }
-//     }
-
-//     for (i = 0; i < block_list->num_children; i++)
-//         free_signal_list(in_list[i]);
-
-//     vtr::free(in_list);
-
-//     block_node->type = MEMORY;
-//     block->net_node = block_node;
-
-//     return return_list;
-// }
+    // CLEAN UP
+    free_nnode(node);
+}
 
 /*******************************************************************************************************
  ********************************************** [UTILS] ************************************************

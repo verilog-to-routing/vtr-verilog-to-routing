@@ -1294,9 +1294,10 @@ bool is_blif_dp_ram(nnode_t* node) {
     oassert(node->name);
     /* return value */
     bool is_ram;
+    char* hard_clock_identifier = get_hard_block_node_name(node->name);
 
     /* check the num input/output ports */
-    is_ram = (!strcmp(get_hard_block_node_name(node->name), DUAL_PORT_RAM_string))
+    is_ram = (!strcmp(hard_clock_identifier, DUAL_PORT_RAM_string))
              && (node->num_input_port_sizes == 7)
              && (node->num_output_port_sizes == 2);
 
@@ -1325,6 +1326,9 @@ bool is_blif_dp_ram(nnode_t* node) {
             }
         }
     }
+
+    // CLEAN UP
+    vtr::free(hard_clock_identifier);
 
     return (is_ram);
 }

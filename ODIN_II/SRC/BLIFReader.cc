@@ -1891,8 +1891,8 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             break;
         }
         case (DPRAM): {
-            // create a model with two output ports,being read as the port [n-2, n-1] among [0...n-1]
-            model = create_model(name, ports, ports->count-2, ports->count);
+            // create a model with two output ports,being read as the port [n-4, n-3] among [0...n-1]
+            model = create_model(name, ports, ports->count-4, ports->count-2);
             break;
         }
         default: {

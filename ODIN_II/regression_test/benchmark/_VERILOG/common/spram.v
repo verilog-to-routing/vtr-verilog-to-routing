@@ -3,7 +3,7 @@ module spram_instance(
 	value_in,
 	we,
 	clock,
-	value_out,
+	value_out
 );
 
 	parameter WIDTH = 16;	// Bit width
