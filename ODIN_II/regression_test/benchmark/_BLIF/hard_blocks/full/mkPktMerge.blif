@@ -532,7 +532,7 @@
 .param WIDTH 00000000000000000000000000000001
 .subckt $mux A=fi1__EMPTY_N B=fi0__EMPTY_N S=fi0HasPrio Y=fi0__EMPTY_N_$mux_B_Y
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=fi1.fifo_1.rst_$not_A_Y A[1]=fi1.fifo_1.clr Y=fi1.fifo_1.clr_$reduce_or_A_Y
+.subckt $reduce_or A[0]=fi1.fifo_1.clr A[1]=fi1.fifo_1.rst_$not_A_Y Y=fi1.fifo_1.clr_$reduce_or_A_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001

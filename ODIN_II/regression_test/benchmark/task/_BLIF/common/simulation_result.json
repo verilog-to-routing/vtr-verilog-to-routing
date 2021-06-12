@@ -1099,46 +1099,6 @@
         "Estimated LUTs": 5,
         "Total Node": 5
     },
-    "common/dpram/no_arch": {
-        "test_name": "common/dpram/no_arch",
-        "generated_blif": "dpram_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
-        "max_rss(MiB)": 39.1,
-        "exec_time(ms)": 3850.1,
-        "simulation_time(ms)": 3651.1,
-        "test_coverage(%)": 99.8,
-        "Latch Drivers": 1,
-        "Pi": 48,
-        "Po": 32,
-        "logic element": 13648,
-        "latch": 4096,
-        "Longest Path": 11,
-        "Average Path": 6,
-        "Estimated LUTs": 13648,
-        "Total Node": 17745
-    },
-    "common/spram/no_arch": {
-        "test_name": "common/spram/no_arch",
-        "generated_blif": "spram_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
-        "max_rss(MiB)": 29.2,
-        "exec_time(ms)": 2819,
-        "simulation_time(ms)": 2691.2,
-        "test_coverage(%)": 99.9,
-        "Latch Drivers": 1,
-        "Pi": 24,
-        "Po": 16,
-        "logic element": 8744,
-        "latch": 4096,
-        "Longest Path": 10,
-        "Average Path": 6,
-        "Estimated LUTs": 8744,
-        "Total Node": 12841
-    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

@@ -369,7 +369,7 @@
         "Multiplier": 5,
         "Memory": 0,
         "generic logic size": 4,
-        "Longest Path": 130,
+        "Longest Path": 135,
         "Average Path": 6,
         "Estimated LUTs": 1172,
         "Total Node": 1493
@@ -664,91 +664,6 @@
         "Average Path": 6,
         "Estimated LUTs": 3389,
         "Total Node": 3490
-    },
-    "full/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "full/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "ch_intrinsics.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'single_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/ch_intrinsics/no_arch": {
-        "test_name": "full/ch_intrinsics/no_arch",
-        "input_blif": "ch_intrinsics.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'single_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "full/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "LU8PEEng.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/LU8PEEng/no_arch": {
-        "test_name": "full/LU8PEEng/no_arch",
-        "input_blif": "LU8PEEng.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/mcml/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "full/mcml/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "mcml.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/mcml/no_arch": {
-        "test_name": "full/mcml/no_arch",
-        "input_blif": "mcml.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "memory_controller.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/memory_controller/no_arch": {
-        "test_name": "full/memory_controller/no_arch",
-        "input_blif": "memory_controller.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "full/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "mkPktMerge.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
-    },
-    "full/mkPktMerge/no_arch": {
-        "test_name": "full/mkPktMerge/no_arch",
-        "input_blif": "mkPktMerge.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for 'dual_port_ram' with matching ports was not found."
-        ]
     },
     "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm",

@@ -906,7 +906,7 @@
 .param SRST_POLARITY 00000000000000000000000000000000
 .param SRST_VALUE 000000000
 .param WIDTH 00000000000000000000000000001001
-.subckt $sdffe CLK=x1.clk D[0]=x1.delta_$mux_S_1_Y[0] D[1]=x1.delta_$mux_S_1_Y[1] D[2]=x1.delta_$mux_S_1_Y[2] D[3]=x1.delta_$mux_S_1_Y[3] D[4]=x1.delta_$mux_S_1_Y[4] D[5]=x1.delta_$mux_S_1_Y[5] D[6]=x1.delta_$mux_S_1_Y[6] D[7]=x1.delta_$mux_S_1_Y[7] D[8]=x1.delta_$mux_S_1_Y[8] EN=x1.phase0 Q[0]=x1.A0[0] Q[1]=x1.A0[1] Q[2]=x1.A0[2] Q[3]=x1.A0[3] Q[4]=x1.A0[4] Q[5]=x1.A0[5] Q[6]=x1.A0[6] Q[7]=x1.A0[7] Q[8]=x1.A0[8] SRST=x1.enable
+.subckt $sdffe CLK=x1.clk D[0]=x1.delta_$mux_S_Y[0] D[1]=x1.delta_$mux_S_Y[1] D[2]=x1.delta_$mux_S_Y[2] D[3]=x1.delta_$mux_S_Y[3] D[4]=x1.delta_$mux_S_Y[4] D[5]=x1.delta_$mux_S_Y[5] D[6]=x1.delta_$mux_S_Y[6] D[7]=x1.delta_$mux_S_Y[7] D[8]=x1.delta_$mux_S_Y[8] EN=x1.phase0 Q[0]=x1.A0[0] Q[1]=x1.A0[1] Q[2]=x1.A0[2] Q[3]=x1.A0[3] Q[4]=x1.A0[4] Q[5]=x1.A0[5] Q[6]=x1.A0[6] Q[7]=x1.A0[7] Q[8]=x1.A0[8] SRST=x1.enable
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000000
 .param SRST_POLARITY 00000000000000000000000000000000
@@ -948,7 +948,7 @@
 .param SRST_POLARITY 00000000000000000000000000000000
 .param SRST_VALUE 000000000
 .param WIDTH 00000000000000000000000000001001
-.subckt $sdffe CLK=x1.clk D[0]=x1.delta_$mux_S_Y[0] D[1]=x1.delta_$mux_S_Y[1] D[2]=x1.delta_$mux_S_Y[2] D[3]=x1.delta_$mux_S_Y[3] D[4]=x1.delta_$mux_S_Y[4] D[5]=x1.delta_$mux_S_Y[5] D[6]=x1.delta_$mux_S_Y[6] D[7]=x1.delta_$mux_S_Y[7] D[8]=x1.delta_$mux_S_Y[8] EN=x1.phase0 Q[0]=x1.B0[0] Q[1]=x1.B0[1] Q[2]=x1.B0[2] Q[3]=x1.B0[3] Q[4]=x1.B0[4] Q[5]=x1.B0[5] Q[6]=x1.B0[6] Q[7]=x1.B0[7] Q[8]=x1.B0[8] SRST=x1.enable
+.subckt $sdffe CLK=x1.clk D[0]=x1.delta_$mux_S_1_Y[0] D[1]=x1.delta_$mux_S_1_Y[1] D[2]=x1.delta_$mux_S_1_Y[2] D[3]=x1.delta_$mux_S_1_Y[3] D[4]=x1.delta_$mux_S_1_Y[4] D[5]=x1.delta_$mux_S_1_Y[5] D[6]=x1.delta_$mux_S_1_Y[6] D[7]=x1.delta_$mux_S_1_Y[7] D[8]=x1.delta_$mux_S_1_Y[8] EN=x1.phase0 Q[0]=x1.B0[0] Q[1]=x1.B0[1] Q[2]=x1.B0[2] Q[3]=x1.B0[3] Q[4]=x1.B0[4] Q[5]=x1.B0[5] Q[6]=x1.B0[6] Q[7]=x1.B0[7] Q[8]=x1.B0[8] SRST=x1.enable
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000000
 .param SRST_POLARITY 00000000000000000000000000000000
@@ -1036,13 +1036,13 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=x1.phase8_$mux_S_1_Y[0] A[1]=x1.phase8_$mux_S_1_Y[1] A[2]=x1.phase8_$mux_S_1_Y[2] A[3]=x1.phase8_$mux_S_1_Y[3] A[4]=x1.phase8_$mux_S_1_Y[4] A[5]=x1.phase8_$mux_S_1_Y[5] A[6]=x1.phase8_$mux_S_1_Y[6] A[7]=x1.phase8_$mux_S_1_Y[7] A[8]=x1.phase8_$mux_S_1_Y[8] B[0]=x1.tmp1[0] B[1]=x1.tmp1[1] B[2]=x1.tmp1[2] B[3]=x1.tmp1[3] B[4]=x1.tmp1[4] B[5]=x1.tmp1[5] B[6]=x1.tmp1[6] B[7]=x1.tmp1[7] B[8]=x1.tmp1[8] S=x1.delta Y[0]=x1.delta_$mux_S_Y[0] Y[1]=x1.delta_$mux_S_Y[1] Y[2]=x1.delta_$mux_S_Y[2] Y[3]=x1.delta_$mux_S_Y[3] Y[4]=x1.delta_$mux_S_Y[4] Y[5]=x1.delta_$mux_S_Y[5] Y[6]=x1.delta_$mux_S_Y[6] Y[7]=x1.delta_$mux_S_Y[7] Y[8]=x1.delta_$mux_S_Y[8]
+.subckt $mux A[0]=x1.phase8_$mux_S_Y[0] A[1]=x1.phase8_$mux_S_Y[1] A[2]=x1.phase8_$mux_S_Y[2] A[3]=x1.phase8_$mux_S_Y[3] A[4]=x1.phase8_$mux_S_Y[4] A[5]=x1.phase8_$mux_S_Y[5] A[6]=x1.phase8_$mux_S_Y[6] A[7]=x1.phase8_$mux_S_Y[7] A[8]=x1.phase8_$mux_S_Y[8] B[0]=x1.tmp3[0] B[1]=x1.tmp3[1] B[2]=x1.tmp3[2] B[3]=x1.tmp3[3] B[4]=x1.tmp3[4] B[5]=x1.tmp3[5] B[6]=x1.tmp3[6] B[7]=x1.tmp3[7] B[8]=x1.tmp3[8] S=x1.delta Y[0]=x1.delta_$mux_S_Y[0] Y[1]=x1.delta_$mux_S_Y[1] Y[2]=x1.delta_$mux_S_Y[2] Y[3]=x1.delta_$mux_S_Y[3] Y[4]=x1.delta_$mux_S_Y[4] Y[5]=x1.delta_$mux_S_Y[5] Y[6]=x1.delta_$mux_S_Y[6] Y[7]=x1.delta_$mux_S_Y[7] Y[8]=x1.delta_$mux_S_Y[8]
 .param WIDTH 00000000000000000000000000001001
-.subckt $mux A[0]=x1.phase8_$mux_S_3_Y[0] A[1]=x1.phase8_$mux_S_3_Y[1] A[2]=x1.phase8_$mux_S_3_Y[2] A[3]=x1.phase8_$mux_S_3_Y[3] A[4]=x1.phase8_$mux_S_3_Y[4] A[5]=x1.phase8_$mux_S_3_Y[5] A[6]=x1.phase8_$mux_S_3_Y[6] A[7]=x1.phase8_$mux_S_3_Y[7] A[8]=x1.phase8_$mux_S_3_Y[8] B[0]=x1.tmp3[0] B[1]=x1.tmp3[1] B[2]=x1.tmp3[2] B[3]=x1.tmp3[3] B[4]=x1.tmp3[4] B[5]=x1.tmp3[5] B[6]=x1.tmp3[6] B[7]=x1.tmp3[7] B[8]=x1.tmp3[8] S=x1.delta Y[0]=x1.delta_$mux_S_1_Y[0] Y[1]=x1.delta_$mux_S_1_Y[1] Y[2]=x1.delta_$mux_S_1_Y[2] Y[3]=x1.delta_$mux_S_1_Y[3] Y[4]=x1.delta_$mux_S_1_Y[4] Y[5]=x1.delta_$mux_S_1_Y[5] Y[6]=x1.delta_$mux_S_1_Y[6] Y[7]=x1.delta_$mux_S_1_Y[7] Y[8]=x1.delta_$mux_S_1_Y[8]
+.subckt $mux A[0]=x1.phase8_$mux_S_2_Y[0] A[1]=x1.phase8_$mux_S_2_Y[1] A[2]=x1.phase8_$mux_S_2_Y[2] A[3]=x1.phase8_$mux_S_2_Y[3] A[4]=x1.phase8_$mux_S_2_Y[4] A[5]=x1.phase8_$mux_S_2_Y[5] A[6]=x1.phase8_$mux_S_2_Y[6] A[7]=x1.phase8_$mux_S_2_Y[7] A[8]=x1.phase8_$mux_S_2_Y[8] B[0]=x1.tmp1[0] B[1]=x1.tmp1[1] B[2]=x1.tmp1[2] B[3]=x1.tmp1[3] B[4]=x1.tmp1[4] B[5]=x1.tmp1[5] B[6]=x1.tmp1[6] B[7]=x1.tmp1[7] B[8]=x1.tmp1[8] S=x1.delta Y[0]=x1.delta_$mux_S_1_Y[0] Y[1]=x1.delta_$mux_S_1_Y[1] Y[2]=x1.delta_$mux_S_1_Y[2] Y[3]=x1.delta_$mux_S_1_Y[3] Y[4]=x1.delta_$mux_S_1_Y[4] Y[5]=x1.delta_$mux_S_1_Y[5] Y[6]=x1.delta_$mux_S_1_Y[6] Y[7]=x1.delta_$mux_S_1_Y[7] Y[8]=x1.delta_$mux_S_1_Y[8]
 .param WIDTH 00000000000000000000000000001001
 .subckt $mux A=$false B=$true S=x1.L_$ge_B_Y_$logic_and_B_Y Y=x1.delta
 .param WIDTH 00000000000000000000000000000001
-.subckt $sdffe CLK=x1.clk D[0]=x1.phase8_$mux_S_2_Y[0] D[1]=x1.phase8_$mux_S_2_Y[1] D[2]=x1.phase8_$mux_S_2_Y[2] D[3]=x1.phase8_$mux_S_2_Y[3] D[4]=x1.phase8_$mux_S_2_Y[4] D[5]=x1.phase8_$mux_S_2_Y[5] D[6]=x1.phase8_$mux_S_2_Y[6] D[7]=x1.phase8_$mux_S_2_Y[7] D[8]=x1.phase8_$mux_S_2_Y[8] EN=x1.phase0 Q[0]=x1.lambda0[0] Q[1]=x1.lambda0[1] Q[2]=x1.lambda0[2] Q[3]=x1.lambda0[3] Q[4]=x1.lambda0[4] Q[5]=x1.lambda0[5] Q[6]=x1.lambda0[6] Q[7]=x1.lambda0[7] Q[8]=x1.lambda0[8] SRST=x1.enable
+.subckt $sdffe CLK=x1.clk D[0]=x1.phase8_$mux_S_3_Y[0] D[1]=x1.phase8_$mux_S_3_Y[1] D[2]=x1.phase8_$mux_S_3_Y[2] D[3]=x1.phase8_$mux_S_3_Y[3] D[4]=x1.phase8_$mux_S_3_Y[4] D[5]=x1.phase8_$mux_S_3_Y[5] D[6]=x1.phase8_$mux_S_3_Y[6] D[7]=x1.phase8_$mux_S_3_Y[7] D[8]=x1.phase8_$mux_S_3_Y[8] EN=x1.phase0 Q[0]=x1.lambda0[0] Q[1]=x1.lambda0[1] Q[2]=x1.lambda0[2] Q[3]=x1.lambda0[3] Q[4]=x1.lambda0[4] Q[5]=x1.lambda0[5] Q[6]=x1.lambda0[6] Q[7]=x1.lambda0[7] Q[8]=x1.lambda0[8] SRST=x1.enable
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000000
 .param SRST_POLARITY 00000000000000000000000000000000
@@ -1090,7 +1090,7 @@
 .param SRST_POLARITY 00000000000000000000000000000000
 .param SRST_VALUE 000000000
 .param WIDTH 00000000000000000000000000001001
-.subckt $sdffe CLK=x1.clk D[0]=x1.phase8_$mux_S_Y[0] D[1]=x1.phase8_$mux_S_Y[1] D[2]=x1.phase8_$mux_S_Y[2] D[3]=x1.phase8_$mux_S_Y[3] D[4]=x1.phase8_$mux_S_Y[4] D[5]=x1.phase8_$mux_S_Y[5] D[6]=x1.phase8_$mux_S_Y[6] D[7]=x1.phase8_$mux_S_Y[7] D[8]=x1.phase8_$mux_S_Y[8] EN=x1.phase0 Q[0]=x1.omega0[0] Q[1]=x1.omega0[1] Q[2]=x1.omega0[2] Q[3]=x1.omega0[3] Q[4]=x1.omega0[4] Q[5]=x1.omega0[5] Q[6]=x1.omega0[6] Q[7]=x1.omega0[7] Q[8]=x1.omega0[8] SRST=x1.enable
+.subckt $sdffe CLK=x1.clk D[0]=x1.phase8_$mux_S_1_Y[0] D[1]=x1.phase8_$mux_S_1_Y[1] D[2]=x1.phase8_$mux_S_1_Y[2] D[3]=x1.phase8_$mux_S_1_Y[3] D[4]=x1.phase8_$mux_S_1_Y[4] D[5]=x1.phase8_$mux_S_1_Y[5] D[6]=x1.phase8_$mux_S_1_Y[6] D[7]=x1.phase8_$mux_S_1_Y[7] D[8]=x1.phase8_$mux_S_1_Y[8] EN=x1.phase0 Q[0]=x1.omega0[0] Q[1]=x1.omega0[1] Q[2]=x1.omega0[2] Q[3]=x1.omega0[3] Q[4]=x1.omega0[4] Q[5]=x1.omega0[5] Q[6]=x1.omega0[6] Q[7]=x1.omega0[7] Q[8]=x1.omega0[8] SRST=x1.enable
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000000
 .param SRST_POLARITY 00000000000000000000000000000000
@@ -1144,13 +1144,13 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000001001
 .param Y_WIDTH 00000000000000000000000000001001
-.subckt $mux A[0]=x1.omega7_$xor_A_Y[0] A[1]=x1.omega7_$xor_A_Y[1] A[2]=x1.omega7_$xor_A_Y[2] A[3]=x1.omega7_$xor_A_Y[3] A[4]=x1.omega7_$xor_A_Y[4] A[5]=x1.omega7_$xor_A_Y[5] A[6]=x1.omega7_$xor_A_Y[6] A[7]=x1.omega7_$xor_A_Y[7] A[8]=x1.omega7_$xor_A_Y[8] B[0]=x1.omega7[0] B[1]=x1.omega7[1] B[2]=x1.omega7[2] B[3]=x1.omega7[3] B[4]=x1.omega7[4] B[5]=x1.omega7[5] B[6]=x1.omega7[6] B[7]=x1.omega7[7] B[8]=x1.omega7[8] S=x1.phase8 Y[0]=x1.phase8_$mux_S_Y[0] Y[1]=x1.phase8_$mux_S_Y[1] Y[2]=x1.phase8_$mux_S_Y[2] Y[3]=x1.phase8_$mux_S_Y[3] Y[4]=x1.phase8_$mux_S_Y[4] Y[5]=x1.phase8_$mux_S_Y[5] Y[6]=x1.phase8_$mux_S_Y[6] Y[7]=x1.phase8_$mux_S_Y[7] Y[8]=x1.phase8_$mux_S_Y[8]
+.subckt $mux A[0]=x1.A6[0] A[1]=x1.A6[1] A[2]=x1.A6[2] A[3]=x1.A6[3] A[4]=x1.A6[4] A[5]=x1.A6[5] A[6]=x1.A6[6] A[7]=x1.A6[7] A[8]=x1.A6[8] B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false S=x1.phase8 Y[0]=x1.phase8_$mux_S_Y[0] Y[1]=x1.phase8_$mux_S_Y[1] Y[2]=x1.phase8_$mux_S_Y[2] Y[3]=x1.phase8_$mux_S_Y[3] Y[4]=x1.phase8_$mux_S_Y[4] Y[5]=x1.phase8_$mux_S_Y[5] Y[6]=x1.phase8_$mux_S_Y[6] Y[7]=x1.phase8_$mux_S_Y[7] Y[8]=x1.phase8_$mux_S_Y[8]
 .param WIDTH 00000000000000000000000000001001
-.subckt $mux A[0]=x1.B6[0] A[1]=x1.B6[1] A[2]=x1.B6[2] A[3]=x1.B6[3] A[4]=x1.B6[4] A[5]=x1.B6[5] A[6]=x1.B6[6] A[7]=x1.B6[7] A[8]=x1.B6[8] B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false S=x1.phase8 Y[0]=x1.phase8_$mux_S_1_Y[0] Y[1]=x1.phase8_$mux_S_1_Y[1] Y[2]=x1.phase8_$mux_S_1_Y[2] Y[3]=x1.phase8_$mux_S_1_Y[3] Y[4]=x1.phase8_$mux_S_1_Y[4] Y[5]=x1.phase8_$mux_S_1_Y[5] Y[6]=x1.phase8_$mux_S_1_Y[6] Y[7]=x1.phase8_$mux_S_1_Y[7] Y[8]=x1.phase8_$mux_S_1_Y[8]
+.subckt $mux A[0]=x1.omega7_$xor_A_Y[0] A[1]=x1.omega7_$xor_A_Y[1] A[2]=x1.omega7_$xor_A_Y[2] A[3]=x1.omega7_$xor_A_Y[3] A[4]=x1.omega7_$xor_A_Y[4] A[5]=x1.omega7_$xor_A_Y[5] A[6]=x1.omega7_$xor_A_Y[6] A[7]=x1.omega7_$xor_A_Y[7] A[8]=x1.omega7_$xor_A_Y[8] B[0]=x1.omega7[0] B[1]=x1.omega7[1] B[2]=x1.omega7[2] B[3]=x1.omega7[3] B[4]=x1.omega7[4] B[5]=x1.omega7[5] B[6]=x1.omega7[6] B[7]=x1.omega7[7] B[8]=x1.omega7[8] S=x1.phase8 Y[0]=x1.phase8_$mux_S_1_Y[0] Y[1]=x1.phase8_$mux_S_1_Y[1] Y[2]=x1.phase8_$mux_S_1_Y[2] Y[3]=x1.phase8_$mux_S_1_Y[3] Y[4]=x1.phase8_$mux_S_1_Y[4] Y[5]=x1.phase8_$mux_S_1_Y[5] Y[6]=x1.phase8_$mux_S_1_Y[6] Y[7]=x1.phase8_$mux_S_1_Y[7] Y[8]=x1.phase8_$mux_S_1_Y[8]
 .param WIDTH 00000000000000000000000000001001
-.subckt $mux A[0]=x1.tmp0_$xor_B_Y[0] A[1]=x1.tmp0_$xor_B_Y[1] A[2]=x1.tmp0_$xor_B_Y[2] A[3]=x1.tmp0_$xor_B_Y[3] A[4]=x1.tmp0_$xor_B_Y[4] A[5]=x1.tmp0_$xor_B_Y[5] A[6]=x1.tmp0_$xor_B_Y[6] A[7]=x1.tmp0_$xor_B_Y[7] A[8]=x1.tmp0_$xor_B_Y[8] B[0]=x1.lambda7[0] B[1]=x1.lambda7[1] B[2]=x1.lambda7[2] B[3]=x1.lambda7[3] B[4]=x1.lambda7[4] B[5]=x1.lambda7[5] B[6]=x1.lambda7[6] B[7]=x1.lambda7[7] B[8]=x1.lambda7[8] S=x1.phase8 Y[0]=x1.phase8_$mux_S_2_Y[0] Y[1]=x1.phase8_$mux_S_2_Y[1] Y[2]=x1.phase8_$mux_S_2_Y[2] Y[3]=x1.phase8_$mux_S_2_Y[3] Y[4]=x1.phase8_$mux_S_2_Y[4] Y[5]=x1.phase8_$mux_S_2_Y[5] Y[6]=x1.phase8_$mux_S_2_Y[6] Y[7]=x1.phase8_$mux_S_2_Y[7] Y[8]=x1.phase8_$mux_S_2_Y[8]
+.subckt $mux A[0]=x1.B6[0] A[1]=x1.B6[1] A[2]=x1.B6[2] A[3]=x1.B6[3] A[4]=x1.B6[4] A[5]=x1.B6[5] A[6]=x1.B6[6] A[7]=x1.B6[7] A[8]=x1.B6[8] B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false S=x1.phase8 Y[0]=x1.phase8_$mux_S_2_Y[0] Y[1]=x1.phase8_$mux_S_2_Y[1] Y[2]=x1.phase8_$mux_S_2_Y[2] Y[3]=x1.phase8_$mux_S_2_Y[3] Y[4]=x1.phase8_$mux_S_2_Y[4] Y[5]=x1.phase8_$mux_S_2_Y[5] Y[6]=x1.phase8_$mux_S_2_Y[6] Y[7]=x1.phase8_$mux_S_2_Y[7] Y[8]=x1.phase8_$mux_S_2_Y[8]
 .param WIDTH 00000000000000000000000000001001
-.subckt $mux A[0]=x1.A6[0] A[1]=x1.A6[1] A[2]=x1.A6[2] A[3]=x1.A6[3] A[4]=x1.A6[4] A[5]=x1.A6[5] A[6]=x1.A6[6] A[7]=x1.A6[7] A[8]=x1.A6[8] B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false S=x1.phase8 Y[0]=x1.phase8_$mux_S_3_Y[0] Y[1]=x1.phase8_$mux_S_3_Y[1] Y[2]=x1.phase8_$mux_S_3_Y[2] Y[3]=x1.phase8_$mux_S_3_Y[3] Y[4]=x1.phase8_$mux_S_3_Y[4] Y[5]=x1.phase8_$mux_S_3_Y[5] Y[6]=x1.phase8_$mux_S_3_Y[6] Y[7]=x1.phase8_$mux_S_3_Y[7] Y[8]=x1.phase8_$mux_S_3_Y[8]
+.subckt $mux A[0]=x1.tmp0_$xor_B_Y[0] A[1]=x1.tmp0_$xor_B_Y[1] A[2]=x1.tmp0_$xor_B_Y[2] A[3]=x1.tmp0_$xor_B_Y[3] A[4]=x1.tmp0_$xor_B_Y[4] A[5]=x1.tmp0_$xor_B_Y[5] A[6]=x1.tmp0_$xor_B_Y[6] A[7]=x1.tmp0_$xor_B_Y[7] A[8]=x1.tmp0_$xor_B_Y[8] B[0]=x1.lambda7[0] B[1]=x1.lambda7[1] B[2]=x1.lambda7[2] B[3]=x1.lambda7[3] B[4]=x1.lambda7[4] B[5]=x1.lambda7[5] B[6]=x1.lambda7[6] B[7]=x1.lambda7[7] B[8]=x1.lambda7[8] S=x1.phase8 Y[0]=x1.phase8_$mux_S_3_Y[0] Y[1]=x1.phase8_$mux_S_3_Y[1] Y[2]=x1.phase8_$mux_S_3_Y[2] Y[3]=x1.phase8_$mux_S_3_Y[3] Y[4]=x1.phase8_$mux_S_3_Y[4] Y[5]=x1.phase8_$mux_S_3_Y[5] Y[6]=x1.phase8_$mux_S_3_Y[6] Y[7]=x1.phase8_$mux_S_3_Y[7] Y[8]=x1.phase8_$mux_S_3_Y[8]
 .param WIDTH 00000000000000000000000000001001
 .subckt $xor A[0]=x1.lambda7[0] A[1]=x1.lambda7[1] A[2]=x1.lambda7[2] A[3]=x1.lambda7[3] A[4]=x1.lambda7[4] A[5]=x1.lambda7[5] A[6]=x1.lambda7[6] A[7]=x1.lambda7[7] A[8]=x1.lambda7[8] B[0]=x1.tmp0[0] B[1]=x1.tmp0[1] B[2]=x1.tmp0[2] B[3]=x1.tmp0[3] B[4]=x1.tmp0[4] B[5]=x1.tmp0[5] B[6]=x1.tmp0[6] B[7]=x1.tmp0[7] B[8]=x1.tmp0[8] Y[0]=x1.tmp0_$xor_B_Y[0] Y[1]=x1.tmp0_$xor_B_Y[1] Y[2]=x1.tmp0_$xor_B_Y[2] Y[3]=x1.tmp0_$xor_B_Y[3] Y[4]=x1.tmp0_$xor_B_Y[4] Y[5]=x1.tmp0_$xor_B_Y[5] Y[6]=x1.tmp0_$xor_B_Y[6] Y[7]=x1.tmp0_$xor_B_Y[7] Y[8]=x1.tmp0_$xor_B_Y[8]
 .param A_SIGNED 00000000000000000000000000000000
@@ -1568,7 +1568,7 @@
 .param SRST_POLARITY 00000000000000000000000000000000
 .param SRST_VALUE 000000000
 .param WIDTH 00000000000000000000000000001001
-.subckt $reduce_and A[0]=x2.shorten_$not_A_Y A[1]=x2.load_$reduce_bool_A_Y Y=x2.o7_$sdffe_Q_EN
+.subckt $reduce_and A[0]=x2.load_$reduce_bool_A_Y A[1]=x2.shorten_$not_A_Y Y=x2.o7_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001

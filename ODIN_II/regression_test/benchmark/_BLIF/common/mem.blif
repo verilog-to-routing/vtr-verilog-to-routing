@@ -67,13 +67,13 @@
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $mux A=$false B=$true S=WR_CLK_$eq_A_Y Y=WR_CLK_$eq_A_Y_$mux_S_Y
 .param WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[7] EN=memory[0]_$dlatch_Q_EN Q=memory[0][7]
+.subckt $dlatch D=WR_DATA[0] EN=memory[0]_$dlatch_Q_EN Q=memory[0][0]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[6] EN=memory[0]_$dlatch_Q_1_EN Q=memory[0][6]
+.subckt $dlatch D=WR_DATA[7] EN=memory[0]_$dlatch_Q_1_EN Q=memory[0][7]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_1_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_1_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -89,11 +89,11 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[6] B=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[7] B=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -105,20 +105,16 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[6] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[7] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[6] Y=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[5] EN=memory[0]_$dlatch_Q_2_EN Q=memory[0][5]
+.subckt $dlatch D=WR_DATA[6] EN=memory[0]_$dlatch_Q_2_EN Q=memory[0][6]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_2_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_2_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -138,7 +134,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[5] B=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[6] B=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -150,20 +146,20 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[5] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[6] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[5] Y=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
+.subckt $not A=WR_EN[6] Y=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[4] EN=memory[0]_$dlatch_Q_3_EN Q=memory[0][4]
+.subckt $dlatch D=WR_DATA[5] EN=memory[0]_$dlatch_Q_3_EN Q=memory[0][5]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_3_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_3_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -183,7 +179,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[4] B=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[5] B=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -195,20 +191,20 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[4] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[5] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[4] Y=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
+.subckt $not A=WR_EN[5] Y=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[3] EN=memory[0]_$dlatch_Q_4_EN Q=memory[0][3]
+.subckt $dlatch D=WR_DATA[4] EN=memory[0]_$dlatch_Q_4_EN Q=memory[0][4]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_4_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_4_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -228,7 +224,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[3] B=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[4] B=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -240,20 +236,20 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[3] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[4] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[3] Y=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
+.subckt $not A=WR_EN[4] Y=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[2] EN=memory[0]_$dlatch_Q_5_EN Q=memory[0][2]
+.subckt $dlatch D=WR_DATA[3] EN=memory[0]_$dlatch_Q_5_EN Q=memory[0][3]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_5_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_5_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -273,7 +269,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[2] B=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[3] B=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -285,20 +281,20 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[2] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[3] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[2] Y=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
+.subckt $not A=WR_EN[3] Y=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[1] EN=memory[0]_$dlatch_Q_6_EN Q=memory[0][1]
+.subckt $dlatch D=WR_DATA[2] EN=memory[0]_$dlatch_Q_6_EN Q=memory[0][2]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_6_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_6_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -318,7 +314,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[1] B=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[2] B=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -330,20 +326,20 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[1] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[2] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[1] Y=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
+.subckt $not A=WR_EN[2] Y=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $dlatch D=WR_DATA[0] EN=memory[0]_$dlatch_Q_7_EN Q=memory[0][0]
+.subckt $dlatch D=WR_DATA[1] EN=memory[0]_$dlatch_Q_7_EN Q=memory[0][1]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_7_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_7_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -359,11 +355,11 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[0] B=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[1] B=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -375,13 +371,17 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[0] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[1] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_EN
+.subckt $not A=WR_EN[1] Y=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[0]_$dlatch_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -401,7 +401,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[7] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
+.subckt $and A=WR_EN[0] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B Y=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -413,7 +413,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=WR_EN[7] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $and A=WR_EN[0] B=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param B_SIGNED 00000000000000000000000000000000
@@ -423,11 +423,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[7] Y=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_CLK_$eq_A_Y_$mux_S_Y Y=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1
+.subckt $not A=WR_EN[0] Y=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -437,7 +433,7 @@
 .subckt $dlatch D=WR_DATA[6] EN=memory[1]_$dlatch_Q_1_EN Q=memory[1][6]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_1_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_1_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -453,7 +449,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -478,7 +474,7 @@
 .subckt $dlatch D=WR_DATA[5] EN=memory[1]_$dlatch_Q_2_EN Q=memory[1][5]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_2_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_2_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -494,7 +490,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -519,7 +515,7 @@
 .subckt $dlatch D=WR_DATA[4] EN=memory[1]_$dlatch_Q_3_EN Q=memory[1][4]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_3_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_3_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -535,7 +531,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -560,7 +556,7 @@
 .subckt $dlatch D=WR_DATA[3] EN=memory[1]_$dlatch_Q_4_EN Q=memory[1][3]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_4_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_4_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -576,7 +572,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -601,7 +597,7 @@
 .subckt $dlatch D=WR_DATA[2] EN=memory[1]_$dlatch_Q_5_EN Q=memory[1][2]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_5_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_5_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -617,7 +613,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -642,7 +638,7 @@
 .subckt $dlatch D=WR_DATA[1] EN=memory[1]_$dlatch_Q_6_EN Q=memory[1][1]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_6_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_6_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -658,7 +654,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -683,7 +679,7 @@
 .subckt $dlatch D=WR_DATA[0] EN=memory[1]_$dlatch_Q_7_EN Q=memory[1][0]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_7_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_7_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -699,7 +695,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -721,11 +717,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=WR_EN[0] Y=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -741,7 +733,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -767,13 +759,21 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=WR_EN[7] Y=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=WR_CLK_$eq_A_Y_$mux_S_Y Y=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
 .subckt $dlatch D=WR_DATA[7] EN=memory[2]_$dlatch_Q_EN Q=memory[2][7]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
 .subckt $dlatch D=WR_DATA[6] EN=memory[2]_$dlatch_Q_1_EN Q=memory[2][6]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_1_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_1_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -789,7 +789,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -814,7 +814,7 @@
 .subckt $dlatch D=WR_DATA[5] EN=memory[2]_$dlatch_Q_2_EN Q=memory[2][5]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_2_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_2_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -830,7 +830,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -855,7 +855,7 @@
 .subckt $dlatch D=WR_DATA[4] EN=memory[2]_$dlatch_Q_3_EN Q=memory[2][4]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_3_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_3_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -871,7 +871,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -896,7 +896,7 @@
 .subckt $dlatch D=WR_DATA[3] EN=memory[2]_$dlatch_Q_4_EN Q=memory[2][3]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_4_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_4_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -912,7 +912,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -937,7 +937,7 @@
 .subckt $dlatch D=WR_DATA[2] EN=memory[2]_$dlatch_Q_5_EN Q=memory[2][2]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_5_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_5_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -953,7 +953,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -978,7 +978,7 @@
 .subckt $dlatch D=WR_DATA[1] EN=memory[2]_$dlatch_Q_6_EN Q=memory[2][1]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_6_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_6_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -994,7 +994,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1019,7 +1019,7 @@
 .subckt $dlatch D=WR_DATA[0] EN=memory[2]_$dlatch_Q_7_EN Q=memory[2][0]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_7_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_7_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1035,7 +1035,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1057,7 +1057,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1073,7 +1073,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[2]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[2]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1105,7 +1105,7 @@
 .subckt $dlatch D=WR_DATA[6] EN=memory[3]_$dlatch_Q_1_EN Q=memory[3][6]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_1_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_1_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_1_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1121,7 +1121,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_1_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1146,7 +1146,7 @@
 .subckt $dlatch D=WR_DATA[5] EN=memory[3]_$dlatch_Q_2_EN Q=memory[3][5]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_2_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_2_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_2_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1162,7 +1162,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_2_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1187,7 +1187,7 @@
 .subckt $dlatch D=WR_DATA[4] EN=memory[3]_$dlatch_Q_3_EN Q=memory[3][4]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_3_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_3_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_3_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1203,7 +1203,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_3_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1228,7 +1228,7 @@
 .subckt $dlatch D=WR_DATA[3] EN=memory[3]_$dlatch_Q_4_EN Q=memory[3][3]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_4_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_4_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_4_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1244,7 +1244,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_4_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1269,7 +1269,7 @@
 .subckt $dlatch D=WR_DATA[2] EN=memory[3]_$dlatch_Q_5_EN Q=memory[3][2]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_5_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_5_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_5_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1285,7 +1285,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_5_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1310,7 +1310,7 @@
 .subckt $dlatch D=WR_DATA[1] EN=memory[3]_$dlatch_Q_6_EN Q=memory[3][1]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_6_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_6_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_6_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1326,7 +1326,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_6_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1351,7 +1351,7 @@
 .subckt $dlatch D=WR_DATA[0] EN=memory[3]_$dlatch_Q_7_EN Q=memory[3][0]
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_7_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_7_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_7_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1367,7 +1367,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_7_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1389,7 +1389,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_EN
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_EN_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -1405,7 +1405,7 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_or A[0]=memory[0]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
+.subckt $reduce_or A[0]=memory[1]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A_1 A[1]=memory[3]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B_$reduce_or_Y_A Y=memory[3]_$dlatch_Q_EN_$reduce_or_Y_A_$and_Y_B_$and_Y_B
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -2143,16 +2143,16 @@
 1 1
 .names $false i[31]
 1 1
-.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:60$1210.last_clk
+.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:60$12.last_clk
 1 1
-.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:60$1210.this_clk
+.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:60$12.this_clk
 1 1
-.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:67$1211.last_clk
+.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:67$13.last_clk
 1 1
-.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:67$1211.this_clk
+.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:67$13.this_clk
 1 1
-.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:76$1212.last_clk
+.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:76$14.last_clk
 1 1
-.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:76$1212.this_clk
+.names $undef port_active$func$regression_test/benchmark/_VERILOG/common/mem.v:76$14.this_clk
 1 1
 .end

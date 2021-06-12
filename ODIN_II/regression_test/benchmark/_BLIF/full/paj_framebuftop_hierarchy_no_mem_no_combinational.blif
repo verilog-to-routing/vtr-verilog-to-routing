@@ -410,17 +410,17 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_and A[0]=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A_1 A[1]=vidoutinst.tm3_clk_v0_2 A[2]=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y A[3]=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A Y=vidoutinst.pselect_$sdffe_Q_EN
+.subckt $reduce_and A[0]=vidoutinst.tm3_clk_v0_2 A[1]=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y A[2]=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A_1 A[3]=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A Y=vidoutinst.pselect_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000100
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_bool A[0]=vidoutinst.vert_$eq_A_2_Y_$and_B_Y A[1]=vidoutinst.vert_$eq_A_4_Y Y=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000010
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=vidoutinst.vert_$lt_A_Y_$and_A_Y Y=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A_1
+.subckt $not A=vidoutinst.vert_$lt_A_Y_$and_A_Y Y=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_bool A[0]=vidoutinst.vert_$eq_A_2_Y_$and_B_Y A[1]=vidoutinst.vert_$eq_A_4_Y Y=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_1_A_1
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $reduce_bool A[0]=vidoutinst.vert_$lt_A_Y_$and_A_Y A[1]=vidoutinst.vert_$eq_A_2_Y_$and_B_Y A[2]=vidoutinst.vert_$eq_A_4_Y Y=vidoutinst.nothsyncd_$eq_A_Y_$and_B_Y_$reduce_and_A_A
 .param A_SIGNED 00000000000000000000000000000000
@@ -546,7 +546,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 000000000000000000001
 .param WIDTH 00000000000000000000000000010101
-.subckt $reduce_and A[0]=vidoutinst.secondarybuffer_$sdffe_Q_EN_$reduce_and_Y_A A[1]=vidoutinst.tm3_clk_v0_2 A[2]=vidoutinst.vert[0] A[3]=vidoutinst.video_state_$eq_A_Y A[4]=vidoutinst.vert_$lt_A_3_Y_$and_B_Y Y=vidoutinst.secondarybuffer_$sdffe_Q_EN
+.subckt $reduce_and A[0]=vidoutinst.tm3_clk_v0_2 A[1]=vidoutinst.vert[0] A[2]=vidoutinst.video_state_$eq_A_Y A[3]=vidoutinst.vert_$lt_A_3_Y_$and_B_Y A[4]=vidoutinst.secondarybuffer_$sdffe_Q_EN_$reduce_and_Y_A Y=vidoutinst.secondarybuffer_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
 .param Y_WIDTH 00000000000000000000000000000001

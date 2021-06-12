@@ -265,6 +265,8 @@ enum operation_list {
                         // [START] operations to cover yosys subckt
     MULTI_BIT_MUX_2,    // like MUX_2 but with n-bit input/output
     MULTIPORT_nBIT_MUX, // n-bit input/output in multiple ports
+    HARD_ADD,           // VTR Adder hard block
+    HARD_MULTIPLY,      // VTR Multiply hard block
     PMUX,               // Multiplexer with many inputs using one-hot select signal
     ADFF,               // data, A to areset value and output port
     SDFF,               // data, S to reset value and output port

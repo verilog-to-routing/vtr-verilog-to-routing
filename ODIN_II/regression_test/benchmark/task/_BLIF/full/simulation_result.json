@@ -497,7 +497,7 @@
         "Adder": 132,
         "Multiplier": 5,
         "generic logic size": 4,
-        "Longest Path": 130,
+        "Longest Path": 135,
         "Average Path": 6,
         "Estimated LUTs": 1172,
         "Total Node": 1493

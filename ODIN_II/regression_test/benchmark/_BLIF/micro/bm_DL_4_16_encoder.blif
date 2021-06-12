@@ -9,12 +9,6 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $eq A[0]=Dec1.W[0] A[1]=Dec1.W[1] A[2]=Dec1.En B[0]=$true B[1]=$false B[2]=$true Y=Dec1.Y_$pmux_Y_S_1
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000011
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000011
-.param Y_WIDTH 00000000000000000000000000000001
 .subckt $eq A[0]=Dec1.W[0] A[1]=Dec1.W[1] A[2]=Dec1.En B[0]=$true B[1]=$true B[2]=$true Y=Dec1.Y_$pmux_Y_S_3
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -27,15 +21,15 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec1.Y_$pmux_Y_S_3 S[1]=Dec1.Y_$pmux_Y_S_2 S[2]=Dec1.Y_$pmux_Y_S_1 S[3]=Dec1.Y_$pmux_Y_S Y[0]=Dec1.Y[0] Y[1]=Dec1.Y[1] Y[2]=Dec1.Y[2] Y[3]=Dec1.Y[3]
-.param S_WIDTH 00000000000000000000000000000100
-.param WIDTH 00000000000000000000000000000100
-.subckt $eq A[0]=Dec2.W[0] A[1]=Dec2.W[1] A[2]=Dec2.En B[0]=$false B[1]=$false B[2]=$true Y=Dec2.Y_$pmux_Y_S
+.subckt $eq A[0]=Dec1.W[0] A[1]=Dec1.W[1] A[2]=Dec1.En B[0]=$true B[1]=$false B[2]=$true Y=Dec1.Y_$pmux_Y_S_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
+.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec1.Y_$pmux_Y_S_3 S[1]=Dec1.Y_$pmux_Y_S_2 S[2]=Dec1.Y_$pmux_Y_S_1 S[3]=Dec1.Y_$pmux_Y_S Y[0]=Dec1.Y[0] Y[1]=Dec1.Y[1] Y[2]=Dec1.Y[2] Y[3]=Dec1.Y[3]
+.param S_WIDTH 00000000000000000000000000000100
+.param WIDTH 00000000000000000000000000000100
 .subckt $eq A[0]=Dec2.W[0] A[1]=Dec2.W[1] A[2]=Dec2.En B[0]=$true B[1]=$true B[2]=$true Y=Dec2.Y_$pmux_Y_S_3
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -54,15 +48,15 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec2.Y_$pmux_Y_S_3 S[1]=Dec2.Y_$pmux_Y_S_2 S[2]=Dec2.Y_$pmux_Y_S_1 S[3]=Dec2.Y_$pmux_Y_S Y[0]=Dec2.Y[0] Y[1]=Dec2.Y[1] Y[2]=Dec2.Y[2] Y[3]=Dec2.Y[3]
-.param S_WIDTH 00000000000000000000000000000100
-.param WIDTH 00000000000000000000000000000100
-.subckt $eq A[0]=Dec3.W[0] A[1]=Dec3.W[1] A[2]=Dec3.En B[0]=$false B[1]=$false B[2]=$true Y=Dec3.Y_$pmux_Y_S
+.subckt $eq A[0]=Dec2.W[0] A[1]=Dec2.W[1] A[2]=Dec2.En B[0]=$false B[1]=$false B[2]=$true Y=Dec2.Y_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
+.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec2.Y_$pmux_Y_S_3 S[1]=Dec2.Y_$pmux_Y_S_2 S[2]=Dec2.Y_$pmux_Y_S_1 S[3]=Dec2.Y_$pmux_Y_S Y[0]=Dec2.Y[0] Y[1]=Dec2.Y[1] Y[2]=Dec2.Y[2] Y[3]=Dec2.Y[3]
+.param S_WIDTH 00000000000000000000000000000100
+.param WIDTH 00000000000000000000000000000100
 .subckt $eq A[0]=Dec3.W[0] A[1]=Dec3.W[1] A[2]=Dec3.En B[0]=$true B[1]=$true B[2]=$true Y=Dec3.Y_$pmux_Y_S_3
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -81,15 +75,15 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec3.Y_$pmux_Y_S_3 S[1]=Dec3.Y_$pmux_Y_S_2 S[2]=Dec3.Y_$pmux_Y_S_1 S[3]=Dec3.Y_$pmux_Y_S Y[0]=Dec3.Y[0] Y[1]=Dec3.Y[1] Y[2]=Dec3.Y[2] Y[3]=Dec3.Y[3]
-.param S_WIDTH 00000000000000000000000000000100
-.param WIDTH 00000000000000000000000000000100
-.subckt $eq A[0]=Dec4.W[0] A[1]=Dec4.W[1] A[2]=Dec4.En B[0]=$false B[1]=$false B[2]=$true Y=Dec4.Y_$pmux_Y_S
+.subckt $eq A[0]=Dec3.W[0] A[1]=Dec3.W[1] A[2]=Dec3.En B[0]=$false B[1]=$false B[2]=$true Y=Dec3.Y_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
+.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec3.Y_$pmux_Y_S_3 S[1]=Dec3.Y_$pmux_Y_S_2 S[2]=Dec3.Y_$pmux_Y_S_1 S[3]=Dec3.Y_$pmux_Y_S Y[0]=Dec3.Y[0] Y[1]=Dec3.Y[1] Y[2]=Dec3.Y[2] Y[3]=Dec3.Y[3]
+.param S_WIDTH 00000000000000000000000000000100
+.param WIDTH 00000000000000000000000000000100
 .subckt $eq A[0]=Dec4.W[0] A[1]=Dec4.W[1] A[2]=Dec4.En B[0]=$true B[1]=$true B[2]=$true Y=Dec4.Y_$pmux_Y_S_3
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -108,15 +102,15 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec4.Y_$pmux_Y_S_3 S[1]=Dec4.Y_$pmux_Y_S_2 S[2]=Dec4.Y_$pmux_Y_S_1 S[3]=Dec4.Y_$pmux_Y_S Y[0]=Dec4.Y[0] Y[1]=Dec4.Y[1] Y[2]=Dec4.Y[2] Y[3]=Dec4.Y[3]
-.param S_WIDTH 00000000000000000000000000000100
-.param WIDTH 00000000000000000000000000000100
-.subckt $eq A[0]=Dec5.W[0] A[1]=Dec5.W[1] A[2]=Dec5.En B[0]=$false B[1]=$false B[2]=$true Y=Dec5.Y_$pmux_Y_S
+.subckt $eq A[0]=Dec4.W[0] A[1]=Dec4.W[1] A[2]=Dec4.En B[0]=$false B[1]=$false B[2]=$true Y=Dec4.Y_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
+.subckt $pmux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$true B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$true B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$true S[0]=Dec4.Y_$pmux_Y_S_3 S[1]=Dec4.Y_$pmux_Y_S_2 S[2]=Dec4.Y_$pmux_Y_S_1 S[3]=Dec4.Y_$pmux_Y_S Y[0]=Dec4.Y[0] Y[1]=Dec4.Y[1] Y[2]=Dec4.Y[2] Y[3]=Dec4.Y[3]
+.param S_WIDTH 00000000000000000000000000000100
+.param WIDTH 00000000000000000000000000000100
 .subckt $eq A[0]=Dec5.W[0] A[1]=Dec5.W[1] A[2]=Dec5.En B[0]=$true B[1]=$true B[2]=$true Y=Dec5.Y_$pmux_Y_S_3
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -130,6 +124,12 @@
 .param B_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $eq A[0]=Dec5.W[0] A[1]=Dec5.W[1] A[2]=Dec5.En B[0]=$true B[1]=$false B[2]=$true Y=Dec5.Y_$pmux_Y_S_1
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $eq A[0]=Dec5.W[0] A[1]=Dec5.W[1] A[2]=Dec5.En B[0]=$false B[1]=$false B[2]=$true Y=Dec5.Y_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param B_SIGNED 00000000000000000000000000000000

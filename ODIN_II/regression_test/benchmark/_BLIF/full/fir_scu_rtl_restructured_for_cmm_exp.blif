@@ -96,35 +96,11 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6 A[10]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_5 A[11]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_4 A[12]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_3 A[13]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_2 A[14]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_1 A[15]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A A[16]=clk_cnt[17] A[17]=clk_cnt_$reduce_bool_A_Y A[18]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_0_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[17] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_2 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_1 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_2 A[11]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_1 A[12]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A A[13]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[14]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[15]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[16]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[17]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[18]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_0_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000010011
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $not A=clk_cnt[16] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[6] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[5] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[4] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[3] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[2] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[1] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -133,34 +109,6 @@
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $not A=clk_cnt[14] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_2
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[13] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_3
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[12] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_4
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[11] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_5
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[10] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[9] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[8] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=clk_cnt[7] Y=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -178,7 +126,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=clk_cnt[8] A[8]=clk_cnt_$reduce_bool_A_Y A[9]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_10_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[8] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[4]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_10_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -196,7 +144,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=clk_cnt[7] A[7]=clk_cnt_$reduce_bool_A_Y A[8]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_11_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[7] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_11_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -208,7 +156,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=clk_cnt[6] A[6]=clk_cnt_$reduce_bool_A_Y A[7]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_12_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[6] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_12_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001000
 .param Y_WIDTH 00000000000000000000000000000001
@@ -226,7 +174,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=clk_cnt[5] A[5]=clk_cnt_$reduce_bool_A_Y A[6]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_13_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[5] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 Y=shift_13_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000111
 .param Y_WIDTH 00000000000000000000000000000001
@@ -244,7 +192,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=clk_cnt[4] A[4]=clk_cnt_$reduce_bool_A_Y A[5]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_14_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[4] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 Y=shift_14_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000110
 .param Y_WIDTH 00000000000000000000000000000001
@@ -262,7 +210,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=clk_cnt[3] A[3]=clk_cnt_$reduce_bool_A_Y A[4]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_15_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[3] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 Y=shift_15_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
 .param Y_WIDTH 00000000000000000000000000000001
@@ -288,7 +236,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6 A[10]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_5 A[11]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_4 A[12]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_3 A[13]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_2 A[14]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_1 A[15]=clk_cnt[16] A[16]=clk_cnt_$reduce_bool_A_Y A[17]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_2_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[16] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_2 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_1 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_2 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_1 A[11]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A A[12]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[13]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[14]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[15]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[16]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[17]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_2_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000010010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -306,7 +254,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6 A[10]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_5 A[11]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_4 A[12]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_3 A[13]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_2 A[14]=clk_cnt[15] A[15]=clk_cnt_$reduce_bool_A_Y A[16]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_3_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[15] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_2 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_2 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_1 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A A[11]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[12]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[13]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[14]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[15]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[16]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_3_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000010001
 .param Y_WIDTH 00000000000000000000000000000001
@@ -324,9 +272,61 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6 A[10]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_5 A[11]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_4 A[12]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_3 A[13]=clk_cnt[14] A[14]=clk_cnt_$reduce_bool_A_Y A[15]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_4_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[14] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_2 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_1 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A A[10]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[11]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[12]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[13]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[14]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[15]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_4_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000010000
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[13] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[1] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[7] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[6] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[12] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_1
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[11] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_2
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[10] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[9] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[8] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[5] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[4] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[3] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=clk_cnt[2] Y=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $mul A[0]=shift_5[0] A[1]=shift_5[1] A[2]=shift_5[2] A[3]=shift_5[3] A[4]=shift_5[4] A[5]=shift_5[5] A[6]=shift_5[6] A[7]=shift_5[7] B[0]=$true B[1]=$true B[2]=$true B[3]=$false B[4]=$true B[5]=$false B[6]=$false B[7]=$false B[8]=$false Y[0]=shift_5_$mul_A_Y[0] Y[1]=shift_5_$mul_A_Y[1] Y[2]=shift_5_$mul_A_Y[2] Y[3]=shift_5_$mul_A_Y[3] Y[4]=shift_5_$mul_A_Y[4] Y[5]=shift_5_$mul_A_Y[5] Y[6]=shift_5_$mul_A_Y[6] Y[7]=shift_5_$mul_A_Y[7] Y[8]=shift_5_$mul_A_Y[8] Y[9]=shift_5_$mul_A_Y[9] Y[10]=shift_5_$mul_A_Y[10] Y[11]=shift_5_$mul_A_Y[11] Y[12]=shift_5_$mul_A_Y[12] Y[13]=shift_5_$mul_A_Y[13] Y[14]=shift_5_$mul_A_Y[14] Y[15]=shift_5_$mul_A_Y[15] Y[16]=shift_5_$mul_A_Y[16]
 .param A_SIGNED 00000000000000000000000000000000
@@ -342,7 +342,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6 A[10]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_5 A[11]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_4 A[12]=clk_cnt[13] A[13]=clk_cnt_$reduce_bool_A_Y A[14]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_5_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[13] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_2 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_1 A[9]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[11]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[12]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[13]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[14]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_5_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001111
 .param Y_WIDTH 00000000000000000000000000000001
@@ -360,7 +360,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6 A[10]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_5 A[11]=clk_cnt[12] A[12]=clk_cnt_$reduce_bool_A_Y A[13]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_6_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[12] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_2 A[8]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[11]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[12]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[13]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_6_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001110
 .param Y_WIDTH 00000000000000000000000000000001
@@ -378,7 +378,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_6 A[10]=clk_cnt[11] A[11]=clk_cnt_$reduce_bool_A_Y A[12]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_7_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[11] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_3 A[7]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[11]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[12]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_7_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001101
 .param Y_WIDTH 00000000000000000000000000000001
@@ -396,7 +396,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_7 A[9]=clk_cnt[10] A[10]=clk_cnt_$reduce_bool_A_Y A[11]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_8_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[10] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[5]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_4 A[6]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[11]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_8_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001100
 .param Y_WIDTH 00000000000000000000000000000001
@@ -414,7 +414,7 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $reduce_and A[0]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_15 A[1]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_14 A[2]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_13 A[3]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_12 A[4]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_11 A[5]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_10 A[6]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_9 A[7]=shift_0_$sdffe_Q_EN_$reduce_and_Y_A_8 A[8]=clk_cnt[9] A[9]=clk_cnt_$reduce_bool_A_Y A[10]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 Y=shift_9_$sdffe_Q_EN
+.subckt $reduce_and A[0]=clk_cnt[9] A[1]=clk_cnt_$reduce_bool_A_Y A[2]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_12 A[3]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_11 A[4]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_5 A[5]=pro_$sdffe_Q_EN_$reduce_and_Y_A_2 A[6]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_10 A[7]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_9 A[8]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_8 A[9]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_7 A[10]=shift_4_$sdffe_Q_EN_$reduce_and_Y_A_6 Y=shift_9_$sdffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001011
 .param Y_WIDTH 00000000000000000000000000000001
