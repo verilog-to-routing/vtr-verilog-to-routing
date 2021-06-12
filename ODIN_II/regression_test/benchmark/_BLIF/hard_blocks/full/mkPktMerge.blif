@@ -319,7 +319,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt dual_port_ram addr1[0]=fi0.fifo_1.rp[0] addr2[0]=fi0.fifo_1.wp[0] clock=fi0.fifo_1.clk data1[0]=fi0.fifo_1.din[0] data2[0]=$false out1[0]=fi0.fifo_1.doutz[0] out2[0]=fi0.fifo_1.junk_out[0] we1=fi0.fifo_1.we we2=$false
+.subckt dual_port_ram addr1[0]=fi0.fifo_1.rp[0] addr2[0]=fi0.fifo_1.wp[0] clk=fi0.fifo_1.clk data1[0]=fi0.fifo_1.din[0] data2[0]=$false out1[0]=fi0.fifo_1.doutz[0] out2[0]=fi0.fifo_1.junk_out[0] we1=fi0.fifo_1.we we2=$false
 .param ADDR_WIDTH 00000000000000000000000000000100
 .param DATA_WIDTH 00000000000000000000000010011001
 .subckt $logic_and A=fi0.fifo_1.re B=fi0.fifo_1.gb2_$logic_not_A_1_Y_$logic_and_B_Y_$logic_and_B_Y_$logic_and_A_B Y=fi0.fifo_1.re_$logic_and_A_Y
@@ -780,7 +780,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt dual_port_ram addr1[0]=fi1.fifo_1.rp[0] addr2[0]=fi1.fifo_1.wp[0] clock=fi1.fifo_1.clk data1[0]=fi1.fifo_1.din[0] data2[0]=$false out1[0]=fi1.fifo_1.doutz[0] out2[0]=fi1.fifo_1.junk_out[0] we1=fi1.fifo_1.we we2=$false
+.subckt dual_port_ram addr1[0]=fi1.fifo_1.rp[0] addr2[0]=fi1.fifo_1.wp[0] clk=fi1.fifo_1.clk data1[0]=fi1.fifo_1.din[0] data2[0]=$false out1[0]=fi1.fifo_1.doutz[0] out2[0]=fi1.fifo_1.junk_out[0] we1=fi1.fifo_1.we we2=$false
 .param ADDR_WIDTH 00000000000000000000000000000100
 .param DATA_WIDTH 00000000000000000000000010011001
 .subckt $logic_and A=fi1.fifo_1.re B=fi1.fifo_1.gb2_$logic_not_A_1_Y_$logic_and_B_Y_$logic_and_B_Y_$logic_and_A_B Y=fi1.fifo_1.re_$logic_and_A_Y
@@ -1219,7 +1219,7 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt dual_port_ram addr1[0]=fo.fifo_1.rp[0] addr2[0]=fo.fifo_1.wp[0] clock=fo.fifo_1.clk data1[0]=fo.fifo_1.din[0] data2[0]=$false out1[0]=fo.fifo_1.doutz[0] out2[0]=fo.fifo_1.junk_out[0] we1=fo.fifo_1.we we2=$false
+.subckt dual_port_ram addr1[0]=fo.fifo_1.rp[0] addr2[0]=fo.fifo_1.wp[0] clk=fo.fifo_1.clk data1[0]=fo.fifo_1.din[0] data2[0]=$false out1[0]=fo.fifo_1.doutz[0] out2[0]=fo.fifo_1.junk_out[0] we1=fo.fifo_1.we we2=$false
 .param ADDR_WIDTH 00000000000000000000000000000100
 .param DATA_WIDTH 00000000000000000000000010011001
 .subckt $logic_and A=fo.fifo_1.re B=fo.fifo_1.gb2_$logic_not_A_1_Y_$logic_and_B_Y_$logic_and_B_Y_$logic_and_A_B Y=fo.fifo_1.re_$logic_and_A_Y

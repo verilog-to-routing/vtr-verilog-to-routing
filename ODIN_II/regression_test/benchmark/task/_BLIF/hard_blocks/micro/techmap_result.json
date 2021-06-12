@@ -5,7 +5,7 @@
         "input_blif": "adder_hard_block.blif",
         "exit": 134,
         "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin top_module^cout: not available."
+            "[PARSE_BLIF] A subcircuit model for 'adder' with matching ports was not found."
         ]
     },
     "micro/adder_hard_block/no_arch": {
@@ -13,7 +13,7 @@
         "input_blif": "adder_hard_block.blif",
         "exit": 134,
         "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin top_module^cout: not available."
+            "[PARSE_BLIF] A subcircuit model for 'adder' with matching ports was not found."
         ]
     },
     "micro/hard_adder_cin_propagation/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -22,7 +22,7 @@
         "input_blif": "hard_adder_cin_propagation.blif",
         "exit": 134,
         "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin top_module^cout: not available."
+            "[PARSE_BLIF] A subcircuit model for 'adder' with matching ports was not found."
         ]
     },
     "micro/hard_adder_cin_propagation/no_arch": {
@@ -30,34 +30,27 @@
         "input_blif": "hard_adder_cin_propagation.blif",
         "exit": 134,
         "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin top_module^cout: not available."
+            "[PARSE_BLIF] A subcircuit model for 'adder' with matching ports was not found."
         ]
     },
     "micro/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "multiply_hard_block.blif",
+        "exit": 134,
+        "errors": [
+            "[PARSE_BLIF] A subcircuit model for 'multiply' with matching ports was not found."
+        ],
         "max_rss(MiB)": 12.1,
         "exec_time(ms)": 13.9,
-        "techmap_time(ms)": 2.2,
-        "Pi": 4,
-        "Po": 8,
-        "logic element": 8,
-        "Adder": 0,
-        "Multiplier": 2,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 8,
-        "Total Node": 10
+        "techmap_time(ms)": 2.2
     },
     "micro/multiply_hard_block/no_arch": {
         "test_name": "micro/multiply_hard_block/no_arch",
         "input_blif": "multiply_hard_block.blif",
         "exit": 134,
         "errors": [
-            "[AST] Cannot create soft multiplier with multiplicand width of 1."
+            "[PARSE_BLIF] A subcircuit model for 'multiply' with matching ports was not found."
         ]
     },
     "DEFAULT": {

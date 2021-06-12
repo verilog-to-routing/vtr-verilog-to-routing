@@ -36,23 +36,23 @@ module memory_controller
 		.addr (addr1),
 		.data (data1),
 		.we   (we1),	
-		.clock  (clk),	
+		.clk  (clk),	
 		.out  (spi_out)
 	);
 
 	defparam dp_ram.ADDR_WIDTH = `MEMORY_CONTROLLER_ADDR_SIZE;
 	defparam dp_ram.DATA_WIDTH = `MEMORY_CONTROLLER_DATA_SIZE;
 	dual_port_ram dp_ram (
-                .addr1 (addr1),
-		.addr2 (addr2),
-                .data1 (data1),
-		.data2 (data2),
-        	.we1 (we1),
-		.we2 (we2),
-	        .clock (clk),
-        	.out1 (dpi_out1),
-		.out2 (dpi_out2)
-        );
+        .addr1 (addr1),
+        .addr2 (addr2),
+        .data1 (data1),
+        .data2 (data2),
+        .we1 (we1),
+        .we2 (we2),
+        .clk (clk),
+        .out1 (dpi_out1),
+        .out2 (dpi_out2)
+    );
 
 	always @ (posedge clk)
 	begin 

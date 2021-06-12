@@ -35,7 +35,7 @@ module dpram_instance(
 		.data2	( value_in2 ),
 		.we1	( clock ),
 		.we2	( clock ),
-		.clock  ( clock ),
+		.clk    ( clock ),
 		.out1	( value_out1 ),
 		.out2	( value_out2 )
 	);

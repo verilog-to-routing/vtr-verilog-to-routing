@@ -3340,7 +3340,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
                     add_fanout_pin_to_net(clock_net, clock_pin);
                     signal_list_t* clock = init_signal_list();
                     add_pin_to_signal_list(clock, clock_pin);
-                    add_input_port_to_implicit_memory(memory, clock, "clock");
+                    add_input_port_to_implicit_memory(memory, clock, "clk");
                     free_signal_list(clock);
                     memory->clock_added = true;
                 }

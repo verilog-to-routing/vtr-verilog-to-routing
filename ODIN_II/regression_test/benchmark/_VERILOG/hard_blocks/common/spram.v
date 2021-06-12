@@ -24,7 +24,7 @@ module spram_instance(
 		.addr	( address ),
 		.data	( value_in ),
 		.we		( clock ),
-		.clock  ( clock ),
+		.clk    ( clock ),
 		.out	( value_out )
 	);
 

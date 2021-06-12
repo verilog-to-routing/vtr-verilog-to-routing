@@ -30,7 +30,7 @@ wire [7:0] str_out;
 defparam _str.ADDR_WIDTH = 5;
 defparam _str.DATA_WIDTH = 8;
 single_port_ram _str (
-	.clock( clk ),
+	.clk( clk ),
 	.addr( str_address ),
 	.we( str_write_enable ),
 	.data( str_in ),

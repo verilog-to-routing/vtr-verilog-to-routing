@@ -314,7 +314,7 @@ void finalize_implicit_memory(implicit_memory* memory) {
             has_we1 = true;
         else if (!strcmp(pin->mapping, "we2"))
             has_we2 = true;
-        else if (!strcmp(pin->mapping, "clock"))
+        else if (!strcmp(pin->mapping, "clk"))
             has_clk = true;
     }
 
@@ -328,7 +328,7 @@ void finalize_implicit_memory(implicit_memory* memory) {
     }
 
     if (!has_clk) {
-        add_dummy_input_port_to_implicit_memory(memory, 1, "clock");
+        add_dummy_input_port_to_implicit_memory(memory, 1, "clk");
         warning_message(NETLIST, memory->node->loc, "Implicit memory %s is not clocked. Padding clock pin.", memory->name);
     }
 
@@ -390,7 +390,7 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory* memory) {
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
         npin_t* pin = node->input_pins[i];
-        if (strcmp(pin->mapping, "clock"))
+        if (strcmp(pin->mapping, "clk"))
             pin->mapping[strlen(pin->mapping) - 1] = 0;
     }
 
