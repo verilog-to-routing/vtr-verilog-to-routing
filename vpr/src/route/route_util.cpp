@@ -5,6 +5,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -17,7 +18,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
         while (tptr != nullptr) {
             int inode = tptr->index;
 
-            if (device_ctx.rr_nodes[inode].type() == rr_type) {
+            if (rr_graph.node_type(RRNodeId(inode)) == rr_type) {
                 rr_nodes.insert(inode);
             }
             tptr = tptr->next;
@@ -29,7 +30,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
         auto& rr_node = device_ctx.rr_nodes[inode];
 
         if (rr_type == CHANX) {
-            VTR_ASSERT(rr_node.type() == CHANX);
+            VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX);
             VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
 
             int y = rr_node.ylow();
@@ -38,7 +39,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
             }
         } else {
             VTR_ASSERT(rr_type == CHANY);
-            VTR_ASSERT(rr_node.type() == CHANY);
+            VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANY);
             VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
 
             int x = rr_node.xlow();
@@ -55,21 +56,22 @@ vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         auto& rr_node = device_ctx.rr_nodes[inode];
 
-        if (rr_node.type() == CHANX && rr_type == CHANX) {
-            VTR_ASSERT(rr_node.type() == CHANX);
+        if (rr_graph.node_type(RRNodeId(inode)) == CHANX && rr_type == CHANX) {
+            VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX);
             VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
 
             int y = rr_node.ylow();
             for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
                 avail[x][y] += rr_node.capacity();
             }
-        } else if (rr_node.type() == CHANY && rr_type == CHANY) {
-            VTR_ASSERT(rr_node.type() == CHANY);
+        } else if (rr_graph.node_type(RRNodeId(inode)) == CHANY && rr_type == CHANY) {
+            VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANY);
             VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
 
             int x = rr_node.xlow();

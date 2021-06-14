@@ -48,6 +48,7 @@ void check_rr_graph(const t_graph_type graph_type,
     }
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     auto total_edges_to_node = std::vector<int>(device_ctx.rr_nodes.size());
     auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.rr_nodes.size());
@@ -59,7 +60,7 @@ void check_rr_graph(const t_graph_type graph_type,
         device_ctx.rr_nodes[inode].validate();
 
         /* Ignore any uninitialized rr_graph nodes */
-        if ((device_ctx.rr_nodes[inode].type() == SOURCE)
+        if ((rr_graph.node_type(RRNodeId(inode)) == SOURCE)
             && (device_ctx.rr_nodes[inode].xlow() == 0) && (device_ctx.rr_nodes[inode].ylow() == 0)
             && (device_ctx.rr_nodes[inode].xhigh() == 0) && (device_ctx.rr_nodes[inode].yhigh() == 0)) {
             continue;
@@ -70,7 +71,7 @@ void check_rr_graph(const t_graph_type graph_type,
             continue;
         }
 
-        t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+        t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
         int num_edges = device_ctx.rr_nodes[inode].num_edges();
 
         check_rr_node(inode, route_type, device_ctx);
@@ -121,7 +122,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
             VTR_ASSERT_MSG(num_edges_to_node > 1, "Expect multiple edges");
 
-            t_rr_type to_rr_type = device_ctx.rr_nodes[to_node].type();
+            t_rr_type to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
             /* It is unusual to have more than one programmable switch (in the same direction) between a from_node and a to_node,
              * as the duplicate switch doesn't add more routing flexibility.
@@ -205,7 +206,7 @@ void check_rr_graph(const t_graph_type graph_type,
     bool is_fringe_warning_sent = false;
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        t_rr_type rr_type = device_ctx.rr_nodes.node_type(RRNodeId(inode));
+        t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
 
         if (rr_type != SOURCE) {
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(inode)) {
@@ -224,7 +225,6 @@ void check_rr_graph(const t_graph_type graph_type,
                 }
 
                 const auto& node = device_ctx.rr_nodes[inode];
-                const auto& rr_graph = device_ctx.rr_graph;
 
                 bool is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
                                   || (device_ctx.rr_nodes[inode].ylow() == 1)
@@ -275,10 +275,11 @@ static bool rr_node_is_global_clb_ipin(int inode) {
     t_physical_tile_type_ptr type;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
 
-    if (device_ctx.rr_nodes[inode].type() != IPIN)
+    if (rr_graph.node_type(RRNodeId(inode)) != IPIN)
         return (false);
 
     ipin = device_ctx.rr_nodes[inode].ptc_num();
@@ -296,8 +297,9 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     t_physical_tile_type_ptr type;
     int nodes_per_chan, tracks_per_node, num_edges, cost_index;
     float C, R;
+    const auto& rr_graph = device_ctx.rr_graph;
 
-    rr_type = device_ctx.rr_nodes[inode].type();
+    rr_type = rr_graph.node_type(RRNodeId(inode));
     xlow = device_ctx.rr_nodes[inode].xlow();
     xhigh = device_ctx.rr_nodes[inode].xhigh();
     ylow = device_ctx.rr_nodes[inode].ylow();
@@ -534,8 +536,9 @@ static void check_unbuffered_edges(int from_node) {
     bool trans_matched;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
-    from_rr_type = device_ctx.rr_nodes[from_node].type();
+    from_rr_type = rr_graph.node_type(RRNodeId(from_node));
     if (from_rr_type != CHANX && from_rr_type != CHANY)
         return;
 
@@ -543,7 +546,7 @@ static void check_unbuffered_edges(int from_node) {
 
     for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
         to_node = device_ctx.rr_nodes[from_node].edge_sink_node(from_edge);
-        to_rr_type = device_ctx.rr_nodes[to_node].type();
+        to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
         if (to_rr_type != CHANX && to_rr_type != CHANY)
             continue;
@@ -583,7 +586,8 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
     /* TODO: this function should be reworked later to adapt RRGraphView interface 
      *       once xlow(), ylow(), side() APIs are implemented
      */
-    VTR_ASSERT(node.type() == IPIN || node.type() == OPIN);
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    VTR_ASSERT(rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN);
 
     if ((node.xlow() == 0 && !node.is_node_on_specific_side(RIGHT))                          //left device edge connects only along block's right side
         || (node.ylow() == int(grid.height() - 1) && !node.is_node_on_specific_side(BOTTOM)) //top device edge connects only along block's bottom side
