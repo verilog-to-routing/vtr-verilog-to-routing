@@ -180,10 +180,11 @@ bool highlight_rr_nodes(int hit_node) {
 void auto_zoom_rr_node(int rr_node_id) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     ezgl::rectangle rr_node;
 
     // find the location of the node
-    switch (device_ctx.rr_nodes[rr_node_id].type()) {
+    switch (rr_graph.node_type(RRNodeId(rr_node_id))) {
         case IPIN:
         case OPIN: {
             int i = device_ctx.rr_nodes[rr_node_id].xlow();

@@ -251,6 +251,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         REQUIRE(flow_succeeded == true);
 
         auto &device_ctx = g_vpr_ctx.mutable_device();
+        const auto& rr_graph = device_ctx.rr_graph;
         for(size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
             for(t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
                 auto sink_inode = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
@@ -260,7 +261,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
                 // Add additional features to edges that go to CLB.I[11:0] pins
                 // to correlate them with features of CLB input mux later.
-                auto sink_type = device_ctx.rr_nodes[sink_inode].type();
+                auto sink_type = rr_graph.node_type(RRNodeId(sink_inode));
                 if (sink_type == IPIN) {            
                     auto pin_feature = get_pin_feature(sink_inode);
                     value = value + "\n" + pin_feature;

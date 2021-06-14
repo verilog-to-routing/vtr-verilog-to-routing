@@ -80,8 +80,33 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                t_rr_type type,
                                int ptc,
                                e_side side) {
+    VTR_ASSERT(node); /* Must have a valid node id to be added */
     VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
 
+    resize_nodes(x, y, type, side);
+
+    if (size_t(ptc) >= rr_node_indices_[type][x][y][side].size()) {
+        /* Deposit invalid ids to newly allocated elements while original elements are untouched */
+        rr_node_indices_[type][x][y][side].resize(ptc + 1, int(size_t(RRNodeId::INVALID())));
+    }
+
+    /* Resize on demand finished; Register the node */
+    rr_node_indices_[type][x][y][side][ptc] = int(size_t(node));
+}
+
+void RRSpatialLookup::mirror_nodes(const vtr::Point<int>& src_coord,
+                                   const vtr::Point<int>& des_coord,
+                                   t_rr_type type,
+                                   e_side side) {
+    VTR_ASSERT(SOURCE == type || SINK == type);
+    resize_nodes(des_coord.x(), des_coord.y(), type, side);
+    rr_node_indices_[type][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][src_coord.x()][src_coord.y()][side];
+}
+
+void RRSpatialLookup::resize_nodes(int x,
+                                   int y,
+                                   t_rr_type type,
+                                   e_side side) {
     /* Expand the fast look-up if the new node is out-of-range
      * This may seldom happen because the rr_graph building function
      * should ensure the fast look-up well organized  
@@ -97,11 +122,4 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                        std::max(rr_node_indices_[type].dim_size(1), size_t(y) + 1),
                                        std::max(rr_node_indices_[type].dim_size(2), size_t(side) + 1)});
     }
-
-    if (size_t(ptc) >= rr_node_indices_[type][x][y][side].size()) {
-        rr_node_indices_[type][x][y][side].resize(ptc + 1);
-    }
-
-    /* Resize on demand finished; Register the node */
-    rr_node_indices_[type][x][y][side][ptc] = int(size_t(node));
 }

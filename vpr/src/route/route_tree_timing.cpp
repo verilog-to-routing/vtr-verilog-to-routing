@@ -80,7 +80,6 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     /* Allocates any structures needed to build the routing trees. */
 
     auto& device_ctx = g_vpr_ctx.device();
-    //ESR API Access (Get total number of nodes)
     bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.rr_nodes.size())
                                              || rt_node_free_list != nullptr);
     if (route_tree_structs_are_allocated) {
@@ -196,7 +195,6 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
 
     rt_root->inode = inode;
     rt_root->net_pin_index = OPEN;
-    //ESR API Access (get Capacitance and Resistance [4 times])
     rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
     rt_root->R_upstream = device_ctx.rr_nodes[inode].R();
     rt_root->Tdel = 0.5 * device_ctx.rr_nodes[inode].R() * device_ctx.rr_nodes[inode].C();
@@ -265,8 +263,8 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
         auto& device_ctx = g_vpr_ctx.device();
-        //ESR API Access (get type of node)
-        if (device_ctx.rr_nodes[node->inode].type() == SINK) { //ESR keep iterating until you get to a sink?
+        const auto& rr_graph = device_ctx.rr_graph;
+        if (rr_graph.node_type(RRNodeId(node->inode)) == SINK) {
             VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode]->inode == node->inode);
         } else {
             VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
@@ -290,14 +288,15 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     t_linked_rt_edge* linked_rt_edge;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     int inode = hptr->index;
 
-    //if (device_ctx.rr_nodes[inode].type() != SINK) {
+    //if (rr_graph.node_type(RRNodeId(inode)) != SINK) {
     //VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
     //"in add_subtree_to_route_tree. Expected type = SINK (%d).\n"
-    //"Got type = %d.",  SINK, device_ctx.rr_nodes[inode].type());
+    //"Got type = %d.",  SINK, rr_graph.node_type(RRNodeId(inode)));
     //}
 
     sink_rt_node = alloc_rt_node();
@@ -320,7 +319,6 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     std::unordered_set<int> all_visited;         //does not include sink
     inode = hptr->prev_node();
     RREdgeId edge = hptr->prev_edge();
-    //ESR API Access (get the switch for the edge)
     short iswitch = device_ctx.rr_nodes.edge_switch(edge);
 
     /* For all "new" nodes in the main path */
@@ -351,8 +349,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
 
         rr_node_to_rt_node[inode] = rt_node;
 
-        //ESR API Access (get type of node)
-        if (device_ctx.rr_nodes[inode].type() == IPIN) {
+        if (rr_graph.node_type(RRNodeId(inode)) == IPIN) {
             rt_node->re_expand = false;
         } else {
             rt_node->re_expand = true;
@@ -361,7 +358,6 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
         downstream_rt_node = rt_node;
         edge = route_ctx.rr_node_route_inf[inode].prev_edge;
         inode = route_ctx.rr_node_route_inf[inode].prev_node;
-        //ESR API Access (get type of edge)
         iswitch = device_ctx.rr_nodes.edge_switch(edge);
     }
 
@@ -397,6 +393,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
         visited.insert(rr_node);
 
         auto& device_ctx = g_vpr_ctx.device();
+        const auto& rr_graph = device_ctx.rr_graph;
 
         rt_node = rr_node_to_rt_node[rr_node];
 
@@ -410,8 +407,8 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 rt_node->u.child_list = nullptr;
                 rt_node->inode = rr_node;
                 rt_node->net_pin_index = OPEN;
-                //ESR API Access (get type of node)
-                if (device_ctx.rr_nodes[rr_node].type() == IPIN) {
+
+                if (rr_graph.node_type(RRNodeId(rr_node)) == IPIN) {
                     rt_node->re_expand = false;
                 } else {
                     rt_node->re_expand = true;
@@ -420,7 +417,6 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 VTR_ASSERT(rt_node->inode == rr_node);
             }
         }
-        //ESR API Access (get non configurable edges, configurable edges, and edge_sink_node)
         for (int iedge : device_ctx.rr_nodes[rr_node].non_configurable_edges()) {
             //Recursive case: expand children
             VTR_ASSERT(!device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge));
@@ -431,7 +427,6 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
             t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
 
             if (!child_rt_node) continue;
-            //ESR API Access (get type of switch)
             int iswitch = device_ctx.rr_nodes[rr_node].edge_switch(iedge);
 
             //Create the edge
@@ -477,7 +472,6 @@ void load_new_subtree_R_upstream(t_rt_node* rt_node) {
         }
         R_upstream += device_ctx.rr_switch_inf[iswitch].R; //Parent switch R
     }
-    //ESR API Access (get current node Resistance)
     R_upstream += device_ctx.rr_nodes[inode].R(); //Current node R
 
     rt_node->R_upstream = R_upstream;
@@ -493,7 +487,6 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
 
     if (rt_node) {
         auto& device_ctx = g_vpr_ctx.device();
-        //ESR API Access (get node's Capacitance)
         C_downstream += device_ctx.rr_nodes[rt_node->inode].C();
         for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
             /*Similar to net_delay.cpp, this for loop traverses a rc subtree, whose edges represent enabled switches.
@@ -586,7 +579,6 @@ void load_route_tree_Tdel(t_rt_node* subtree_rt_root, float Tarrival) {
     /* Assuming the downstream connections are, on average, connected halfway
      * along a wire segment's length.  See discussion in net_delay.c if you want
      * to change this.                                                           */
-    //ESR API Access (get node's Resistance)
     Tdel = Tarrival + 0.5 * subtree_rt_root->C_downstream * device_ctx.rr_nodes[inode].R();
     subtree_rt_root->Tdel = Tdel;
 
@@ -694,7 +686,6 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    //ESR API Access (get node's type string)
     VTR_LOG("%srt_node: %d (%s) \t ipin: %d \t R: %g \t C: %g \t delay: %g",
             indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string(), rt_node->net_pin_index, rt_node->R_upstream, rt_node->C_downstream, rt_node->Tdel);
 
@@ -706,7 +697,6 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& route_ctx = g_vpr_ctx.routing();
-    //ESR API Access (Get node's capacity)
     if (route_ctx.rr_node_route_inf[rt_node->inode].occ() > device_ctx.rr_nodes[rt_node->inode].capacity()) {
         VTR_LOG(" x");
     }
@@ -803,13 +793,13 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         int iswitch = trace->iswitch;
 
         auto& device_ctx = g_vpr_ctx.device();
+        const auto& rr_graph = device_ctx.rr_graph;
         auto itr = rr_node_to_rt.find(trace->index);
 
         // In some cases, the same sink node is put into the tree multiple times in a single route.
         // So it is possible to hit the same node index multiple times during traceback. Create a
         // separate rt_node for each sink with the same node index.
-        //ESR API Access (Get node's type)
-        if (itr == rr_node_to_rt.end() || device_ctx.rr_nodes[inode].type() == SINK) {
+        if (itr == rr_node_to_rt.end() || rr_graph.node_type(RRNodeId(inode)) == SINK) {
             //Create
 
             //Initialize route tree node
@@ -821,8 +811,8 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             node->R_upstream = std::numeric_limits<float>::quiet_NaN();
             node->C_downstream = std::numeric_limits<float>::quiet_NaN();
             node->Tdel = std::numeric_limits<float>::quiet_NaN();
-            //ESR API Access (Get node's type)
-            auto node_type = device_ctx.rr_nodes[inode].type();
+
+            auto node_type = rr_graph.node_type(RRNodeId(inode));
             if (node_type == IPIN || node_type == SINK)
                 node->re_expand = false;
             else
@@ -946,6 +936,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     t_trace* head;
     t_trace* tail;
@@ -962,8 +953,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
         nodes.insert(trace->index);
 
         //Sanity check that number of sinks match expected
-        //ESR API Access (Get node's type)
-        if (device_ctx.rr_nodes[trace->index].type() == SINK) {
+        if (rr_graph.node_type(RRNodeId(trace->index)) == SINK) {
             num_trace_sinks += 1;
         }
     }
@@ -986,8 +976,8 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
     VTR_ASSERT(node);
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
-    //ESR API Access (Get node's capacity)
     bool congested = (route_ctx.rr_node_route_inf[node->inode].occ() > device_ctx.rr_nodes[node->inode].capacity());
     int node_set = -1;
     auto itr = device_ctx.rr_node_to_non_config_node_set.find(node->inode);
@@ -1045,8 +1035,8 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
             edge = edge->next;
         }
     }
-    //ESR API Access (Get node's type)
-    if (device_ctx.rr_nodes[node->inode].type() == SINK) {
+
+    if (rr_graph.node_type(RRNodeId(node->inode)) == SINK) {
         if (!force_prune) {
             //Valid path to sink
 
@@ -1180,10 +1170,11 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vect
     VTR_ASSERT(rt_root);
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
-    //ESR API Access (Get node's type)
-    VTR_ASSERT_MSG(device_ctx.rr_nodes[rt_root->inode].type() == SOURCE, "Root of route tree must be SOURCE");
-    //ESR API Access (Get node's capacity) 
+
+    VTR_ASSERT_MSG(rr_graph.node_type(RRNodeId(rt_root->inode)) == SOURCE, "Root of route tree must be SOURCE");
+
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(),
                    "Route tree root/SOURCE should never be congested");
 
@@ -1265,10 +1256,10 @@ void print_edge(const t_linked_rt_edge* edge) {
 
 static void print_node(const t_rt_node* rt_node) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     int inode = rt_node->inode;
-    //ESR API Access (Get node's type)
-    t_rr_type node_type = device_ctx.rr_nodes[inode].type();
+    t_rr_type node_type = rr_graph.node_type(RRNodeId(inode));
     VTR_LOG("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
             rt_node->re_expand, rr_node_typename[node_type], inode);
 }
@@ -1288,7 +1279,6 @@ static void print_node_congestion(const t_rt_node* rt_node) {
 
     int inode = rt_node->inode;
     const auto& node_inf = route_ctx.rr_node_route_inf[inode];
-    //ESR API Access (Get node)
     const auto& node = device_ctx.rr_nodes[inode];
     VTR_LOG("%2d %2d|%-6d-> ", node_inf.acc_cost, rt_node->Tdel,
             node_inf.occ(), node.capacity(), inode);
@@ -1380,21 +1370,18 @@ bool is_valid_route_tree(const t_rt_node* root) {
     short iswitch = root->parent_switch;
     if (root->parent_node) {
         if (device_ctx.rr_switch_inf[iswitch].buffered()) {
-            //ESR API Access (Get node's Resistance)
             float R_upstream_check = device_ctx.rr_nodes[inode].R() + device_ctx.rr_switch_inf[iswitch].R;
             if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
                 VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
                 return false;
             }
         } else {
-            //ESR API Access (Get node's Resistance)
             float R_upstream_check = device_ctx.rr_nodes[inode].R() + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R;
             if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
                 VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
                 return false;
             }
         }
-        //ESR API Access (Get node's Resistance [two spots])
     } else if (root->R_upstream != device_ctx.rr_nodes[inode].R()) {
         VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, device_ctx.rr_nodes[inode].R());
         return false;
@@ -1406,7 +1393,6 @@ bool is_valid_route_tree(const t_rt_node* root) {
     // sink, must not be congested
     if (!edge) {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
-        //ESR API Access (Get node's capacity)
         int capacity = device_ctx.rr_nodes[inode].capacity();
         if (occ > capacity) {
             VTR_LOG("SINK %d occ %d > cap %d\n", inode, occ, capacity);
@@ -1438,7 +1424,6 @@ bool is_valid_route_tree(const t_rt_node* root) {
         }
         edge = edge->next;
     }
-    //ESR API Access (Get node's Capacitance)
     float C_downstream_check = C_downstream_children + device_ctx.rr_nodes[inode].C();
     if (!vtr::isclose(root->C_downstream, C_downstream_check, CAP_REL_TOL, CAP_ABS_TOL)) {
         VTR_LOG("%d mismatch C downstream %e supposed %e\n", inode, root->C_downstream, C_downstream_check);
@@ -1454,7 +1439,6 @@ bool is_uncongested_route_tree(const t_rt_node* root) {
     auto& device_ctx = g_vpr_ctx.device();
 
     int inode = root->inode;
-    //ESR API Access (Get node's capacity)
     if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
         //This node is congested
         return false;
@@ -1487,7 +1471,6 @@ init_route_tree_to_source_no_net(int inode) {
     rt_root->re_expand = true;
     rt_root->inode = inode;
     rt_root->net_pin_index = OPEN;
-    //ESR API Access (Get node's Capacitance and Resistance [4 times])
     rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
     rt_root->R_upstream = device_ctx.rr_nodes[inode].R();
     rt_root->Tdel = 0.5 * device_ctx.rr_nodes[inode].R() * device_ctx.rr_nodes[inode].C();

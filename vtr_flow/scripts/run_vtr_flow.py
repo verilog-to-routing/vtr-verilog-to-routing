@@ -42,7 +42,7 @@ class VtrStageArgparseAction(argparse.Action):
 
 # pylint: enable=too-few-public-methods
 
-
+# pylint: disable=too-many-statements
 def vtr_command_argparser(prog=None):
     """
     The VTR command arg parser
@@ -322,6 +322,13 @@ def vtr_command_argparser(prog=None):
         dest="odin_config",
         help="Supplies Odin with a custom config file for optimizations.",
     )
+    odin.add_argument(
+        "-include",
+        nargs="*",
+        default=None,
+        dest="include_list_file",
+        help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
+    )
     #
     # VPR arguments
     #
@@ -382,6 +389,9 @@ def vtr_command_argparser(prog=None):
     return parser
 
 
+# pylint: enable=too-many-statements
+
+
 def vtr_command_main(arg_list, prog=None):
     """
     Running VTR with the specified arguemnts.
@@ -423,6 +433,7 @@ def vtr_command_main(arg_list, prog=None):
             Path(args.architecture_file),
             Path(args.circuit_file),
             power_tech_file=args.power_tech,
+            include_files=args.include_list_file,
             temp_dir=temp_dir,
             start_stage=args.start,
             end_stage=args.end,

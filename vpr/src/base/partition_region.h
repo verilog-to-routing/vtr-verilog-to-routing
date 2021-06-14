@@ -28,6 +28,11 @@ class PartitionRegion {
     std::vector<Region> get_partition_region();
 
     /**
+     * @brief Set the union of regions
+     */
+    void set_partition_region(std::vector<Region> pr);
+
+    /**
      * @brief Check if the PartitionRegion is empty (meaning there is no constraint on the object the PartitionRegion belongs to)
      */
     bool empty();
@@ -43,10 +48,19 @@ class PartitionRegion {
     /**
      * @brief Global friend function that returns the intersection of two PartitionRegions
      *
-     *   @param pr1     One of the PartitionRegions to be intersected
-     *   @param pr2     One of the PartitionRegions to be intersected
+     *   @param cluster_pr     One of the PartitionRegions to be intersected
+     *   @param new_pr         One of the PartitionRegions to be intersected
      */
-    friend PartitionRegion intersection(PartitionRegion& pr1, PartitionRegion& pr2);
+    friend PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
+
+    /**
+     * @brief Global friend function that updates the PartitionRegion of a cluster with the intersection
+     *        of the cluster PartitionRegion and a new PartitionRegion
+     *
+     *   @param cluster_pr     The cluster PartitionRegion that is to be updated
+     *   @param new_pr         The new PartitionRegion that the cluster PartitionRegion will be intersected with
+     */
+    friend void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion& new_pr);
 
   private:
     std::vector<Region> partition_region; ///< union of rectangular regions that a partition can be placed in

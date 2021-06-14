@@ -90,7 +90,7 @@ grandfathered_files = [
 
 
 class TermColor:
-    """ Terminal codes for printing in color """
+    """Terminal codes for printing in color"""
 
     # pylint: disable=too-few-public-methods
 
@@ -105,14 +105,14 @@ class TermColor:
 
 
 def error(*msg, returncode=-1):
-    """ Print an error message and exit program """
+    """Print an error message and exit program"""
 
     print(TermColor.RED + "ERROR:", " ".join(str(item) for item in msg), TermColor.END)
     sys.exit(returncode)
 
 
 def expand_paths():
-    """ Build a list of all python files to process by going through 'paths_to_lint' """
+    """Build a list of all python files to process by going through 'paths_to_lint'"""
 
     paths = []
     for (path, is_recursive) in paths_to_lint:

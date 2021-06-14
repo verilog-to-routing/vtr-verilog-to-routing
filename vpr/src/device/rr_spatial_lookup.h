@@ -1,6 +1,7 @@
 #ifndef RR_SPATIAL_LOOKUP_H
 #define RR_SPATIAL_LOOKUP_H
 
+#include "vtr_geometry.h"
 #include "vpr_types.h"
 
 /******************************************************************** 
@@ -29,7 +30,8 @@ class RRSpatialLookup {
 
     /* -- Accessors -- */
   public:
-    /* Returns the index of the specified routing resource node.  
+    /**
+     * Returns the index of the specified routing resource node.  
      * - (x, y) are the grid location within the FPGA
      * - rr_type specifies the type of resource,
      * - ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
@@ -63,7 +65,8 @@ class RRSpatialLookup {
 
     /* -- Mutators -- */
   public:
-    /* Register a node in the fast look-up 
+    /**
+     * Register a node in the fast look-up 
      * - You must have a valid node id to register the node in the lookup
      * - (x, y) are the coordinate of the node to be indexable in the fast look-up
      * - type is the type of a node
@@ -89,7 +92,53 @@ class RRSpatialLookup {
                   int ptc,
                   e_side side);
 
-    /* TODO: Add an API remove_node() to unregister a node from the look-up */
+    /**
+     * Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+     * a destination coordinate.
+     * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
+     * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 
+     * SOURCE and SINK nodes are indexable in any location inside the boundry.
+     *
+     * An example of usage: 
+     * 
+     *   // Create a empty lookup
+     *   RRSpatialLookup rr_lookup;
+     *   // Adding other nodes ...
+     *   // Copy the nodes whose types are SOURCE at (1, 1) to (1, 2)
+     *   rr_lookup.mirror_nodes(vtr::Point<int>(1, 1),
+     *                          vtr::Point<int>(1, 2),
+     *                          SOURCE,
+     *                          TOP);
+     *
+     * Note: currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
+     * depending on needs
+     *
+     * TODO: Consider to make a high-level API to duplicate the nodes for large blocks. 
+     * Then this API can become a private one
+     * For example, 
+     *   expand_nodes(source_coordinate, bounding_box_coordinate, type, side);
+     * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y) 
+     * corner when dealing with large blocks. But this may require the data structure to be dependent 
+     * on DeviceGrid information (it needs to identify if a grid has height > 1 as well as width > 1)
+     */
+    void mirror_nodes(const vtr::Point<int>& src_coord,
+                      const vtr::Point<int>& des_coord,
+                      t_rr_type type,
+                      e_side side);
+
+    /**
+     * Resize the given 3 dimensions (x, y, side) of the RRSpatialLookup data structure for the given type
+     * This function will keep any existing data
+     *
+     * Strongly recommend to use when the sizes of dimensions are deterministic
+     *
+     * TODO: should have a reserve function but vtd::ndmatrix does not have such API
+     *       as a result, resize can be an internal one while reserve function is a public mutator
+     */
+    void resize_nodes(int x,
+                      int y,
+                      t_rr_type type,
+                      e_side side);
 
     /* -- Internal data storage -- */
   private:
