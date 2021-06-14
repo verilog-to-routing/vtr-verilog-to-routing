@@ -4,13 +4,72 @@
 import shutil
 from collections import OrderedDict
 from pathlib import Path
+import xml.etree.ElementTree as ET
 from vtr import file_replace, determine_memory_addr_width, verify_file, CommandRunner, paths
+
+
+def create_circuits_list(main_circuit, include_files):
+    """Create a list of all (.v) and (.vh) files"""
+    circuit_list = []
+    # Check include files exist
+    if include_files:
+        # Verify that files are Paths or convert them to Paths + check that they exist
+        for include in include_files:
+            include_file = verify_file(include, "Circuit")
+            circuit_list.append(include_file.name)
+
+    # Append the main circuit design as the last one
+    circuit_list.append(main_circuit.name)
+
+    return circuit_list
+
+
+# pylint: disable=too-many-arguments, too-many-locals
+def init_config_file(
+    odin_config_full_path,
+    circuit_list,
+    architecture_file,
+    output_netlist,
+    memory_addr_width,
+    min_hard_mult_size,
+    min_hard_adder_size,
+):
+
+    """initializing the raw odin config file"""
+    # Update the config file
+    file_replace(
+        odin_config_full_path,
+        {
+            "YYY": architecture_file,
+            "ZZZ": output_netlist,
+            "PPP": memory_addr_width,
+            "MMM": min_hard_mult_size,
+            "AAA": min_hard_adder_size,
+        },
+    )
+
+    # loading the given config file
+    config_file = ET.parse(odin_config_full_path)
+    root = config_file.getroot()
+
+    # based on the base condfig file
+    verilog_files_tag = root.find("verilog_files")
+    # remove the template line XXX, verilog_files_tag [0] is a comment
+    verilog_files_tag.remove(verilog_files_tag[0])
+    for circuit in circuit_list:
+        verilog_file = ET.SubElement(verilog_files_tag, "verilog_file")
+        verilog_file.tail = "\n\n\t" if (circuit == circuit_list[-1]) else "\n\n\t\t"
+        verilog_file.text = circuit
+
+    # update the config file with new values
+    config_file.write(odin_config_full_path)
 
 
 # pylint: disable=too-many-arguments, too-many-locals
 def run(
     architecture_file,
     circuit_file,
+    include_files,
     output_netlist,
     command_runner=CommandRunner(),
     temp_dir=Path("."),
@@ -90,17 +149,17 @@ def run(
     odin_config_full_path = str(temp_dir / odin_config)
     shutil.copyfile(odin_base_config, odin_config_full_path)
 
-    # Update the config file
-    file_replace(
+    # Create a list showing all (.v) and (.vh) files
+    circuit_list = create_circuits_list(circuit_file, include_files)
+
+    init_config_file(
         odin_config_full_path,
-        {
-            "XXX": circuit_file.name,
-            "YYY": architecture_file.name,
-            "ZZZ": output_netlist.name,
-            "PPP": determine_memory_addr_width(str(architecture_file)),
-            "MMM": min_hard_mult_size,
-            "AAA": min_hard_adder_size,
-        },
+        circuit_list,
+        architecture_file.name,
+        output_netlist.name,
+        determine_memory_addr_width(str(architecture_file)),
+        min_hard_mult_size,
+        min_hard_adder_size,
     )
 
     cmd = [odin_exec]
@@ -126,7 +185,7 @@ def run(
             "-a",
             architecture_file.name,
             "-V",
-            circuit_file.name,
+            circuit_list,
             "-o",
             output_netlist.name,
         ]
