@@ -52,6 +52,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     t_trace* tptr;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -135,7 +136,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
                 connected_to_route[inode] = true; /* Mark as in path. */
 
-                if (device_ctx.rr_nodes[inode].type() == SINK) {
+                if (rr_graph.node_type(RRNodeId(inode)) == SINK) {
                     check_sink(inode, net_pin_index, net_id, pin_done.get());
                     num_sinks += 1;
                 }
@@ -180,9 +181,10 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
  * the appropriate pin as being reached.                                   */
 static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
+    VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SINK);
 
     if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -199,10 +201,11 @@ static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* 
 /* Checks that the node passed in is a valid source for this net. */
 static void check_source(int inode, ClusterNetId net_id) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+    t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
     if (rr_type != SOURCE) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
@@ -240,11 +243,12 @@ static void check_switch(t_trace* tptr, int num_switch) {
     short switch_type;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     inode = tptr->index;
     switch_type = tptr->iswitch;
 
-    if (device_ctx.rr_nodes[inode].type() != SINK) {
+    if (rr_graph.node_type(RRNodeId(inode)) != SINK) {
         if (switch_type >= num_switch) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_switch: rr_node %d left via switch type %d.\n"
@@ -301,6 +305,7 @@ static bool check_adjacent(int from_node, int to_node) {
     t_physical_tile_type_ptr from_grid_type, to_grid_type;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     reached = false;
 
@@ -320,13 +325,13 @@ static bool check_adjacent(int from_node, int to_node) {
 
     num_adj = 0;
 
-    from_type = device_ctx.rr_nodes[from_node].type();
+    from_type = rr_graph.node_type(RRNodeId(from_node));
     from_xlow = device_ctx.rr_nodes[from_node].xlow();
     from_ylow = device_ctx.rr_nodes[from_node].ylow();
     from_xhigh = device_ctx.rr_nodes[from_node].xhigh();
     from_yhigh = device_ctx.rr_nodes[from_node].yhigh();
     from_ptc = device_ctx.rr_nodes[from_node].ptc_num();
-    to_type = device_ctx.rr_nodes[to_node].type();
+    to_type = rr_graph.node_type(RRNodeId(to_node));
     to_xlow = device_ctx.rr_nodes[to_node].xlow();
     to_ylow = device_ctx.rr_nodes[to_node].ylow();
     to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
@@ -558,6 +563,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         for (iclass = 0; iclass < (int)physical_tile_type(blk_id)->class_inf.size(); iclass++) {
@@ -570,7 +576,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
                 /* Now check that node is an OPIN of the right type. */
 
-                rr_type = device_ctx.rr_nodes[inode].type();
+                rr_type = rr_graph.node_type(RRNodeId(inode));
                 if (rr_type != OPIN) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s)\n"
@@ -824,10 +830,11 @@ bool StubFinder::CheckNet(ClusterNetId net) {
 // Returns true if this node is a stub.
 bool StubFinder::RecurseTree(t_rt_node* rt_root) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     if (rt_root->u.child_list == nullptr) {
         //If a leaf of the route tree is not a SINK, then it is a stub
-        if (device_ctx.rr_nodes[rt_root->inode].type() != SINK) {
+        if (rr_graph.node_type(RRNodeId(rt_root->inode)) != SINK) {
             return true; //It is the current root of this stub
         } else {
             return false;

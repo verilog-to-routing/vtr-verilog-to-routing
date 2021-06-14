@@ -257,6 +257,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
      */
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     //Declare a separate vector "interconnect_components" to hold the interconnect components. We need
     //this because we walk from the sink to the source, we will need to add elements to the front of
@@ -287,7 +288,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
     while (node != nullptr) {
         //Process the current interconnect component if it is of type OPIN, CHANX, CHANY, IPIN
         //Only process SOURCE, SINK in debug report mode
-        auto rr_type = device_ctx.rr_nodes[node->inode].type();
+        auto rr_type = rr_graph.node_type(RRNodeId(node->inode));
         if (rr_type == OPIN
             || rr_type == IPIN
             || rr_type == CHANX
@@ -297,7 +298,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
 
             net_component.type_name = device_ctx.rr_nodes[node->inode].type_string(); //write the component's type as a routing resource node
             net_component.type_name += ":" + std::to_string(node->inode) + " ";       //add the index of the routing resource node
-            if (device_ctx.rr_nodes[node->inode].type() == OPIN || device_ctx.rr_nodes[node->inode].type() == IPIN) {
+            if (rr_graph.node_type(RRNodeId(node->inode)) == OPIN || rr_graph.node_type(RRNodeId(node->inode)) == IPIN) {
                 net_component.type_name += "side: ("; //add the side of the routing resource node
                 for (const e_side& node_side : SIDES) {
                     if (!device_ctx.rr_nodes.is_node_on_specific_side(RRNodeId(node->inode), node_side)) {
@@ -314,7 +315,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
                 end_y = "";
                 arrow = "";
             }
-            if (device_ctx.rr_nodes[node->inode].type() == CHANX || device_ctx.rr_nodes[node->inode].type() == CHANY) { //for channels, we would like to describe the component with segment specific information
+            if (rr_graph.node_type(RRNodeId(node->inode)) == CHANX || rr_graph.node_type(RRNodeId(node->inode)) == CHANY) { //for channels, we would like to describe the component with segment specific information
                 int cost_index = device_ctx.rr_nodes[node->inode].cost_index();
                 int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
                 net_component.type_name += device_ctx.rr_segments[seg_index].name;                                 //Write the segment name

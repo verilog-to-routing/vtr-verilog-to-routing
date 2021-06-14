@@ -45,6 +45,7 @@ int subchaintotal = 0;
 int* sub = NULL;
 
 void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index, int flag);
+static void cleanup_sub_old_node(nnode_t* nodeo, netlist_t* netlist);
 
 /*---------------------------------------------------------------------------
  * (function: report_sub_distribution)
@@ -405,6 +406,11 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
         for (i = 0; i < b; i++) {
             /* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
              * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+            /* connecting untouched nets in the netlist creation to the pad node */
+            if (not_node[i]->input_pins[0]->net->num_driver_pins == 0) {
+                /* join untouched net with pad net */
+                join_nets(netlist->pad_net, not_node[i]->input_pins[0]->net);
+            }
             oassert(not_node[i]->input_pins[0]->net->num_driver_pins == 1);
             if (not_node[i]->input_pins[0]->net->driver_pins[0]->node->type == GND_NODE) {
                 connect_nodes(netlist->vcc_node, 0, node[0], (lefta + i));
@@ -426,6 +432,11 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
             for (i = 0; i < num; i++) {
                 /* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
                  * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+                /* connecting untouched nets in the netlist creation to the pad node */
+                if (not_node[i]->input_pins[0]->net->num_driver_pins == 0) {
+                    /* join untouched net with pad net */
+                    join_nets(netlist->pad_net, not_node[i]->input_pins[0]->net);
+                }
                 oassert(not_node[i]->input_pins[0]->net->num_driver_pins == 1);
                 if (not_node[i]->input_pins[0]->net->driver_pins[0]->node->type == GND_NODE) {
                     connect_nodes(netlist->vcc_node, 0, node[0], (sizea + i + 1));
@@ -449,6 +460,10 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
                 if (i == count - 1 && flag == 1) {
                     /* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
                      * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
+                    /* connecting untouched nets in the netlist creation to the pad node */
+                    if (not_node[(i * sizeb + j - 1)]->input_pins[0]->net->num_driver_pins == 0) {
+                        join_nets(netlist->pad_net, not_node[(i * sizeb + j - 1)]->input_pins[0]->net);
+                    }
                     oassert(not_node[(i * sizeb + j - 1)]->input_pins[0]->net->num_driver_pins == 1);
                     if (not_node[(i * sizeb + j - 1)]->input_pins[0]->net->driver_pins[0]->node->type == GND_NODE) {
                         connect_nodes(netlist->vcc_node, 0, node[i], (lefta + j));
@@ -464,6 +479,11 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
                     /* If the input pin of not gate connects to gnd, replacing the input pin and the not gate with vcc;
                      * if the input pin of not gate connects to vcc, replacing the input pin and the not gate with gnd.*/
                     const int index = i * sizeb + j - offset;
+                    /* connecting untouched nets in the netlist creation to the pad node */
+                    if (not_node[index]->input_pins[0]->net->num_driver_pins == 0) {
+                        /* join untouched net with pad net */
+                        join_nets(netlist->pad_net, not_node[index]->input_pins[0]->net);
+                    }
                     oassert(not_node[index]->input_pins[0]->net->num_driver_pins == 1);
                     if (not_node[index]->input_pins[0]->net->driver_pins[0]->node->type == GND_NODE) {
                         connect_nodes(netlist->vcc_node, 0, node[i], (sizea + j));
@@ -555,15 +575,9 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
     //connect_nodes(node[count - 1], (node[(count - 1)]->num_output_pins - 1), netlist->gnd_node, 0);
     //}
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(nodeo->name);
-    vtr::free(nodeo->input_port_sizes);
-    vtr::free(nodeo->output_port_sizes);
+    /* Freeing the old node! */
+    cleanup_sub_old_node(nodeo, netlist);
 
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(nodeo->input_pins);
-    vtr::free(nodeo->output_pins);
-    vtr::free(nodeo);
     vtr::free(node);
     vtr::free(not_node);
     return;
@@ -653,4 +667,58 @@ void clean_adders_for_sub() {
     while (processed_adder_list != NULL)
         processed_adder_list = delete_in_vptr_list(processed_adder_list);
     return;
+}
+
+/**
+ * -------------------------------------------------------------------------
+ * (function: cleanup_sub_old_node)
+ *
+ * @brief <clean up nodeo, a high level MINUS node> 
+ * In split_adder_for_sub function, nodeo is splitted to small adders/subtractors, 
+ * while because of the complexity of input pin connections they have not been 
+ * remapped to new nodes, they just copied and added to new nodes. This function 
+ * will detach input pins from the nodeo. Moreover, it will connect the net of 
+ * unconnected output signals to the GND node, detach the pin from nodeo and 
+ * free the output pins to avoid memory leak.
+ * 
+ * @param nodeo representing the old subtraction node
+ * @param netlist representing the current netlist
+ *-----------------------------------------------------------------------*/
+static void cleanup_sub_old_node(nnode_t* nodeo, netlist_t* netlist) {
+    int i;
+    /* Disconnecting input pins from the old node side */
+    for (i = 0; i < nodeo->num_input_pins; i++) {
+        nodeo->input_pins[i] = NULL;
+    }
+
+    /* connecting the extra output pins to the gnd node */
+    for (i = 0; i < nodeo->num_output_pins; i++) {
+        npin_t* output_pin = nodeo->output_pins[i];
+
+        if (output_pin && output_pin->node) {
+            /* for now we just pass the signals directly through */
+            npin_t* zero_pin = get_zero_pin(netlist);
+            int idx_2_buffer = zero_pin->pin_net_idx;
+
+            // Dont eliminate the buffer if there are multiple drivers or the AST included it
+            if (output_pin->net->num_driver_pins <= 1) {
+                /* join all fanouts of the output net with the input pins net */
+                join_nets(zero_pin->net, output_pin->net);
+
+                /* erase the pointer to this buffer */
+                zero_pin->net->fanout_pins[idx_2_buffer] = NULL;
+            }
+
+            free_nnet(output_pin->net);
+
+            free_npin(zero_pin);
+            free_npin(output_pin);
+
+            /* Disconnecting output pins from the old node side */
+            nodeo->output_pins[i] = NULL;
+        }
+    }
+
+    // CLEAN UP
+    free_nnode(nodeo);
 }

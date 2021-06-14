@@ -8,7 +8,8 @@ on:
   - cron: '0 0 * * 0' # weekly
 
 env:
-  MATRIX_EVAL: "CC=gcc-6 && CXX=g++-6"
+  # default compiler for all non-compatibility tests
+  MATRIX_EVAL: "CC=gcc-11 && CXX=g++-11"
 
 jobs:
 
@@ -27,13 +28,10 @@ jobs:
 
     - name: Test
       env:
-        MATRIX_EVAL: "CC=gcc-6 && CXX=g++-6"
         BUILD_TYPE: release
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh
 
 
   Format:
@@ -58,9 +56,7 @@ jobs:
     - name: Test
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./dev/${{ matrix.script }}
-        ./.github/travis/setup.sh
 
 
   UniTests:
@@ -78,13 +74,10 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         ./.github/travis/unittest.sh
-        ./.github/travis/setup.sh
 
 
   Warnings:
@@ -104,12 +97,9 @@ jobs:
         #In order to get compilation warnings produced per source file, we must do a non-IPO build
         #We also turn warnings into errors for this target by doing a strict compile
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh
 
 
   Regression:
@@ -157,13 +147,10 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
-        ./.github/travis/setup.sh
 
 
   Sanitized:
@@ -187,16 +174,13 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
-        MATRIX_EVAL: "CC=gcc-5 && CXX=g++-5"
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
-        ./.github/travis/setup.sh
 
   ODINII:
     name: 'ODIN-II Basic Tests'
@@ -213,14 +197,11 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
-        MATRIX_EVAL: 'CC=gcc-5 && CXX=g++-5'
         BUILD_TYPE: debug
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
-        ./.github/travis/setup.sh
 
 
   Compatibility:
@@ -229,13 +210,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 5 (Ubuntu Xenial - 16.04)',    eval: 'CC=gcc-5 && CXX=g++-5',           build: 'release_strict' }
-        - { name: 'GCC 6 (Debian Stretch)',           eval: 'CC=gcc-6 && CXX=g++-6',           build: 'release_strict' }
         - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           build: ''               }
-        - { name: 'GCC 9 (Latest Release)',           eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
-        - { name: 'GCC 8 (Ubuntu Latest)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
-        - { name: 'Clang 6 (Debian + Ubuntu common)', eval: 'CC=clang-6.0 && CXX=clang++-6.0', build: ''               }
-        - { name: 'Clang 8 (Latest Release)',         eval: 'CC=clang-8 && CXX=clang++-8',     build: ''               }
+        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
+        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
+        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         build: ''               }
+        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         build: ''               }
+        - { name: 'Clang 6 (Ubuntu Bionic - 18.04)',  eval: 'CC=clang-6.0 && CXX=clang++-6.0', build: ''               }
+        - { name: 'Clang 7 (Debian Buster)',          eval: 'CC=clang-7 && CXX=clang++-7',     build: ''               }
+        - { name: 'Clang 10 (Ubuntu Focal - 20.04)',  eval: 'CC=clang-10 && CXX=clang++-10',   build: ''               }
     name: 'B: ${{ matrix.name }}'
     steps:
 
@@ -253,9 +235,7 @@ jobs:
         BUILD_TYPE: ${{ matrix.build }}
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh
 
 
   Coverity:
@@ -282,11 +262,8 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
-        MATRIX_EVAL: 'CC=gcc-6 && CXX=g++-6'
         _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
         _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
       run: |
         source .github/travis/common.sh
-        ./.github/travis/setup.sh
         ./.github/travis/build.sh
-        ./.github/travis/setup.sh

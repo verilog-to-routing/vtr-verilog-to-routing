@@ -69,7 +69,10 @@ find vtr_flow/benchmarks/titan_blif/ -type f -not -name 'README.*' -delete
 find . -type f -regex ".*\.tar\.\(gz\|xz\)" -delete
 
 #Gzip output files from vtr_reg_nightly tests to lower working directory disk space
-find vtr_flow/tasks/regression_tests/vtr_reg_nightly/ -type f -print0 | xargs -0 -P $(nproc) gzip
+find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/ -type f -print0 | xargs -0 -P $(nproc) gzip
+find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test2/ -type f -print0 | xargs -0 -P $(nproc) gzip
+find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3/ -type f -print0 | xargs -0 -P $(nproc) gzip
+find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test4/ -type f -print0 | xargs -0 -P $(nproc) gzip
 
 # Make sure working directory doesn't exceed disk space limit!
 echo "Working directory size: $(du -sh)"
