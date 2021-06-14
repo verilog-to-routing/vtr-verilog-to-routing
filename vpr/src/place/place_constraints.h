@@ -44,9 +44,8 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
 /*
  * Update the PartitionRegions of non-head members of a macro,
  * based on the constraint that was calculated for the head region, head_pr.
- * The constraint that was calculated for the head region must have
- * calculated the tightest constraints for the head member
- * by shifting and intersecting the constraints on all macro members.
+ * The constraint on the head region must be the tightest possible (i.e. implied by the
+ * entire macro) before this routine is called.
  * For each macro member, the updated constraint is essentially the head constraint
  * with the member's offset applied.
  */
