@@ -50,7 +50,7 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
  * For each macro member, the updated constraint is essentially the head constraint
  * with the member's offset applied.
  */
-PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr);
+PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr, const t_pl_macro& pl_macro);
 
 /*
  * Updates the floorplan constraints information for all constrained macros.
@@ -60,6 +60,8 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
  * while placing macros during initial placement.
  */
 void propagate_place_constraints();
+
+void print_macro_constraint_error(const t_pl_macro& pl_macro);
 
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;

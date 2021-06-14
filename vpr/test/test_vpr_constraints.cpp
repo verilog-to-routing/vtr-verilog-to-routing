@@ -428,6 +428,7 @@ TEST_CASE("RegionLocked", "[vpr]") {
 
 //Test calculation of macro constraints
 TEST_CASE("MacroConstraints", "[vpr]") {
+    t_pl_macro pl_macro;
     PartitionRegion head_pr;
     t_pl_offset offset(2, 1, 0);
 
@@ -441,7 +442,7 @@ TEST_CASE("MacroConstraints", "[vpr]") {
     PartitionRegion grid_pr;
     grid_pr.add_to_part_region(grid_reg);
 
-    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset, grid_pr);
+    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset, grid_pr, pl_macro);
 
     std::vector<Region> mac_regions = macro_pr.get_partition_region();
 

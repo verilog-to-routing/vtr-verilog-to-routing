@@ -80,18 +80,11 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
 
                 vtr::Rect<int> reg_rect = block_regions[i].get_region_rect();
 
-                t_pl_loc min_pl_loc(reg_rect.xmin(), reg_rect.ymin(), block_regions[i].get_sub_tile());
+                modified_reg.set_region_rect(reg_rect.xmin() - offset.x, reg_rect.ymin() - offset.y, reg_rect.xmax() - offset.x, reg_rect.ymax() - offset.y);
 
-                t_pl_loc modified_min_pl_loc = min_pl_loc - offset;
-
-                t_pl_loc max_pl_loc(reg_rect.xmax(), reg_rect.ymax(), block_regions[i].get_sub_tile());
-
-                t_pl_loc modified_max_pl_loc = max_pl_loc - offset;
-
-                modified_reg.set_region_rect(modified_min_pl_loc.x, modified_min_pl_loc.y, modified_max_pl_loc.x, modified_max_pl_loc.y);
                 //check that subtile is not an invalid value before changing, otherwise it just stays -1
                 if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
-                    modified_reg.set_sub_tile(modified_min_pl_loc.sub_tile);
+                    modified_reg.set_sub_tile(block_regions[i].get_sub_tile() - offset.sub_tile);
                 }
 
                 modified_pr.add_to_part_region(modified_reg);
@@ -110,13 +103,13 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const Partition
 
     //if the intersection is empty, no way to place macro members together, give an error
     if (macro_head_pr.empty()) {
-        VPR_ERROR(VPR_ERROR_PLACE, " \n Feasible floorplanning constraints could not be calculated for the placement macro.\n");
+        print_macro_constraint_error(pl_macro);
     }
 
     return macro_head_pr;
 }
 
-PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr) {
+PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr, const t_pl_macro& pl_macro) {
     std::vector<Region> block_regions = head_pr.get_partition_region();
     PartitionRegion macro_pr;
 
@@ -125,32 +118,36 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
 
         vtr::Rect<int> reg_rect = block_regions[i].get_region_rect();
 
-        t_pl_loc min_pl_loc(reg_rect.xmin(), reg_rect.ymin(), block_regions[i].get_sub_tile());
+        modified_reg.set_region_rect(reg_rect.xmin() + offset.x, reg_rect.ymin() + offset.y, reg_rect.xmax() + offset.x, reg_rect.ymax() + offset.y);
 
-        t_pl_loc macro_min_pl_loc = min_pl_loc + offset;
-
-        t_pl_loc max_pl_loc(reg_rect.xmax(), reg_rect.ymax(), block_regions[i].get_sub_tile());
-
-        t_pl_loc macro_max_pl_loc = max_pl_loc + offset;
-
-        modified_reg.set_region_rect(macro_min_pl_loc.x, macro_min_pl_loc.y, macro_max_pl_loc.x, macro_max_pl_loc.y);
         //check that subtile is not an invalid value before changing, otherwise it just stays -1
         if (block_regions[i].get_sub_tile() != NO_SUBTILE) {
-            modified_reg.set_sub_tile(macro_min_pl_loc.sub_tile);
+            modified_reg.set_sub_tile(block_regions[i].get_sub_tile() + offset.sub_tile);
         }
 
         macro_pr.add_to_part_region(modified_reg);
     }
 
-    //intersect to ensure the head pr does not go outside of grid dimensions
+    //intersect to ensure the macro pr does not go outside of grid dimensions
     macro_pr = intersection(macro_pr, grid_pr);
 
     //if the intersection is empty, no way to place macro members together, give an error
     if (macro_pr.empty()) {
-        VPR_ERROR(VPR_ERROR_PLACE, " \n Feasible floorplanning constraints could not be calculated for the placement macro.\n");
+        print_macro_constraint_error(pl_macro);
     }
 
     return macro_pr;
+}
+
+void print_macro_constraint_error(const t_pl_macro& pl_macro) {
+    VTR_LOG(
+        "Feasible floorplanning constraints could not be calculated for the placement macro. \n"
+        "The placement macro contains the following blocks: \n");
+    for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
+        VTR_LOG("Block #%zu ", size_t(pl_macro.members[i].blk_index));
+    }
+    VTR_LOG("\n");
+    VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
 }
 
 void propagate_place_constraints() {
@@ -170,7 +167,7 @@ void propagate_place_constraints() {
     for (auto pl_macro : place_ctx.pl_macros) {
         if (is_macro_constrained(pl_macro)) {
             /*
-             * Update the PartitionRegion for the head of the macro
+             * Get the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro
              */
             PartitionRegion macro_head_pr = update_macro_head_pr(pl_macro, grid_pr);
@@ -180,11 +177,10 @@ void propagate_place_constraints() {
                 ClusterBlockId iblk = pl_macro.members[imember].blk_index;
                 auto offset = pl_macro.members[imember].offset;
 
-                //Update head PR
-                if (imember == 0) {
+                if (imember == 0) { //Update head PR
                     floorplanning_ctx.cluster_constraints[iblk] = macro_head_pr;
                 } else { //Update macro member PR
-                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset, grid_pr);
+                    PartitionRegion macro_pr = update_macro_member_pr(macro_head_pr, offset, grid_pr, pl_macro);
                     floorplanning_ctx.cluster_constraints[iblk] = macro_pr;
                 }
             }
