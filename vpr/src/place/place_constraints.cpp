@@ -205,11 +205,11 @@ void mark_fixed_blocks() {
             }
         }
     }
-    Region reg; t_logical_block_type_ptr block_type;
-    int i = num_tiles_covered(reg, block_type);
+    //Region reg; t_logical_block_type_ptr block_type;
+    //int i = num_tiles_covered(reg, block_type);
 }
 
-int num_tiles_covered(const Region& reg, t_logical_block_type_ptr block_type) {
+/*int num_tiles_covered(const Region& reg, t_logical_block_type_ptr block_type) {
 
 	auto& device_ctx = g_vpr_ctx.device();
 	int num_tiles = 1;
@@ -218,10 +218,11 @@ int num_tiles_covered(const Region& reg, t_logical_block_type_ptr block_type) {
 	int x = rb.xmin();
 	int y = rb.ymin();
 	auto tile = device_ctx.grid[x][y].type;
+	auto cap = tile->capacity;
 	if (is_tile_compatible(tile, block_type)) {
 		num_tiles++;
 	}
 
 	return num_tiles;
 
-}
+}*/
