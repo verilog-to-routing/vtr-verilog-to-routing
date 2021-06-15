@@ -134,7 +134,7 @@ static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_se
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
-    if (node.capacity() == 0 || node.num_edges() == 0) {
+    if (rr_graph.node_capacity(node.id()) == 0 || node.num_edges() == 0) {
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
@@ -205,7 +205,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
     for (auto& node : rr_nodes) {
         if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) continue;
-        if (node.capacity() == 0 || node.num_edges() == 0) continue;
+        if (rr_graph.node_capacity(node.id()) == 0 || node.num_edges() == 0) continue;
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 
         VTR_ASSERT(seg_index != OPEN);

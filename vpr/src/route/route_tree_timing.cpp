@@ -1276,13 +1276,14 @@ static void print_node_inf(const t_rt_node* rt_node) {
 
 static void print_node_congestion(const t_rt_node* rt_node) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     int inode = rt_node->inode;
     const auto& node_inf = route_ctx.rr_node_route_inf[inode];
-    const auto& node = device_ctx.rr_nodes[inode];
+    const short& node_capacity = rr_graph.node_capacity(RRNodeId(inode));
     VTR_LOG("%2d %2d|%-6d-> ", node_inf.acc_cost, rt_node->Tdel,
-            node_inf.occ(), node.capacity(), inode);
+            node_inf.occ(), node_capacity, inode);
 }
 
 void print_route_tree_inf(const t_rt_node* rt_root) {

@@ -123,9 +123,9 @@ inline short t_rr_node::yhigh() const {
     return storage_->node_yhigh(id_);
 }
 
-inline short t_rr_node::capacity() const {
+/*inline short t_rr_node::capacity() const { // no longer used
     return storage_->node_capacity(id_);
-}
+}*/
 
 inline short t_rr_node::ptc_num() const {
     return storage_->node_ptc_num(id_);
