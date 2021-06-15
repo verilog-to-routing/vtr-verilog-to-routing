@@ -146,7 +146,7 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
         "The placement macro contains the following blocks: \n");
     for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
         std::string blk_name = cluster_ctx.clb_nlist.block_name((pl_macro.members[i].blk_index));
-        VTR_LOG("Block %s (#%zu) ", blk_name, size_t(pl_macro.members[i].blk_index));
+        VTR_LOG("Block %s (#%zu) ", blk_name.c_str(), size_t(pl_macro.members[i].blk_index));
     }
     VTR_LOG("\n");
     VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
