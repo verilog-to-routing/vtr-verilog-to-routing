@@ -34,9 +34,33 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc);
 bool is_macro_constrained(const t_pl_macro& pl_macro);
 
 /*
- * Returns region of valid locations for the head of the macro based on floorplan constraints
+ * Returns PartitionRegion for the head of the macro based on the floorplan constraints
+ * of all blocks in the macro. For example, if there was a macro of length two and each block has
+ * a constraint, this routine will shift and intersect the two constraint regions to calculate
+ * the tightest region constraint for the head macro.
  */
-PartitionRegion constrained_macro_locs(const t_pl_macro& pl_macro);
+PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro, const PartitionRegion& grid_pr);
+
+/*
+ * Update the PartitionRegions of non-head members of a macro,
+ * based on the constraint that was calculated for the head region, head_pr.
+ * The constraint on the head region must be the tightest possible (i.e. implied by the
+ * entire macro) before this routine is called.
+ * For each macro member, the updated constraint is essentially the head constraint
+ * with the member's offset applied.
+ */
+PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offset& offset, const PartitionRegion& grid_pr, const t_pl_macro& pl_macro);
+
+/*
+ * Updates the floorplan constraints information for all constrained macros.
+ * Updates the constraints to be the tightest constraints possible while adhering
+ * to the floorplan constraints of each macro member.
+ * This is done at the start of initial placement to ease floorplan legality checking
+ * while placing macros during initial placement.
+ */
+void propagate_place_constraints();
+
+void print_macro_constraint_error(const t_pl_macro& pl_macro);
 
 inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     bool floorplan_legal;
