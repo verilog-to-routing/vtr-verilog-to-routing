@@ -140,11 +140,13 @@ PartitionRegion update_macro_member_pr(PartitionRegion& head_pr, const t_pl_offs
 }
 
 void print_macro_constraint_error(const t_pl_macro& pl_macro) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     VTR_LOG(
         "Feasible floorplanning constraints could not be calculated for the placement macro. \n"
         "The placement macro contains the following blocks: \n");
     for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
-        VTR_LOG("Block #%zu ", size_t(pl_macro.members[i].blk_index));
+        std::string blk_name = cluster_ctx.clb_nlist.block_name((pl_macro.members[i].blk_index));
+        VTR_LOG("Block %s (#%zu) ", blk_name, size_t(pl_macro.members[i].blk_index));
     }
     VTR_LOG("\n");
     VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");

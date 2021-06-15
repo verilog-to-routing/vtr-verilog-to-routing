@@ -427,6 +427,9 @@ TEST_CASE("RegionLocked", "[vpr]") {
 }
 
 //Test calculation of macro constraints
+/* Checks that the PartitionRegion of a macro member is updated properly according
+ * to the head member's PartitionRegion that is passed in.
+ */
 TEST_CASE("MacroConstraints", "[vpr]") {
     t_pl_macro pl_macro;
     PartitionRegion head_pr;
