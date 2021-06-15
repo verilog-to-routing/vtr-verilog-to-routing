@@ -428,7 +428,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     legal_pos.shrink_to_fit();
 }
 
-void mark_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
+void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();

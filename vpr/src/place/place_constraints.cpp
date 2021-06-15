@@ -198,7 +198,7 @@ void mark_fixed_blocks() {
                 t_pl_loc loc(rect.xmin(), rect.ymin(), subtile);
 
                 //Mark block location and grid usage
-                mark_block_location(blk_id, loc);
+                set_block_location(blk_id, loc);
 
                 //Set as fixed
                 place_ctx.block_locs[blk_id].is_fixed = true;

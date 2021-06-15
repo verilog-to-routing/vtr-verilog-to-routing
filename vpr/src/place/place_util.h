@@ -220,5 +220,5 @@ void load_grid_blocks_from_block_locs();
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos);
 
 ///@brief Marks the location and grid usage for a block that is set at a location
-void mark_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
+void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
 #endif

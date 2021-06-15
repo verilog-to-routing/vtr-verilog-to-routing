@@ -65,8 +65,9 @@ inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
 void load_cluster_constraints();
 
 /*
- * Marks blocks with a region with xlow = xhigh, ylow = yhigh, and subtile specified as fixed
- * Marking them as fixed indicates that they cannot be moved during simulated annealing
+ * Marks blocks as fixed if they have a constraint region that specifies exactly one x, y,
+ * subtile location as legal.
+ * Marking them as fixed indicates that they cannot be moved during initial placement and simulated annealing
  */
 void mark_fixed_blocks();
 
