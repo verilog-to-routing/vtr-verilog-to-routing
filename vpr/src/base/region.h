@@ -50,11 +50,6 @@ class Region {
     bool empty();
 
     /**
-     * @brief Checks whether a block is locked down to a specific x, y, subtile location
-     */
-    bool locked();
-
-    /**
      * @brief Check if the location is in the region (at a valid x, y, subtile location within the region bounds, inclusive)
      * If the region has no subtile specified, then the location subtile does not have to match. If it does, the location
      * and region subtile must match. The location provided is assumed to be valid.

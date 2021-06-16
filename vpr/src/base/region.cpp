@@ -30,10 +30,6 @@ void Region::set_sub_tile(int _sub_tile) {
     sub_tile = _sub_tile;
 }
 
-bool Region::locked() {
-    return region_bounds.xmin() == region_bounds.xmax() && region_bounds.ymin() == region_bounds.ymax() && sub_tile != NO_SUBTILE;
-}
-
 bool Region::empty() {
     return (region_bounds.xmax() < region_bounds.xmin() || region_bounds.ymax() < region_bounds.ymin());
 }

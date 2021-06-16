@@ -393,38 +393,6 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
     REQUIRE(regions[3].get_region_rect() == int_r2r4);
 }
 
-//Test the locked member function of the Region class
-TEST_CASE("RegionLocked", "[vpr]") {
-    Region r1;
-    bool is_r1_locked = false;
-
-    //set the region to a specific x, y, subtile location - region is locked
-    r1.set_region_rect(2, 3, 2, 3); //point (2,3) to point (2,3) - locking to specific x, y location
-    r1.set_sub_tile(3);             //locking down to subtile 3
-
-    is_r1_locked = r1.locked();
-
-    REQUIRE(is_r1_locked == true);
-
-    //do not set region to specific x, y location - region is not locked even if a subtile is specified
-    r1.set_region_rect(2, 3, 5, 6); //point (2,3) to point (5,6) - not locking to specific x, y location
-    r1.set_sub_tile(3);             //locking down to subtile 3
-
-    is_r1_locked = r1.locked();
-
-    REQUIRE(is_r1_locked == false);
-
-    //do not specify a subtile for the region - region is not locked even if it is set at specific x, y location
-    Region r2;
-    bool is_r2_locked = true;
-
-    r2.set_region_rect(2, 3, 2, 3);
-
-    is_r2_locked = r2.locked();
-
-    REQUIRE(is_r2_locked == false);
-}
-
 static constexpr const char kArchFile[] = "test_read_arch_metadata.xml";
 
 // Test that place constraints are not changed during placement
