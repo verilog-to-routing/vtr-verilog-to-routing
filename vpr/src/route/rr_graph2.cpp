@@ -570,17 +570,17 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
 
 /* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
  * Also stores the nodes to which this pin connects in rr_edges_to_create    */
-int get_bidir_opin_connections(const int i,
+int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                               const int i,
                                const int j,
                                const int ipin,
-                               const int from_rr_node,
+                               RRNodeId from_rr_node,
                                t_rr_edge_info_set& rr_edges_to_create,
                                const t_pin_to_track_lookup& opin_to_track_map,
-                               const t_rr_node_indices& L_rr_node_indices,
                                const t_chan_details& chan_details_x,
                                const t_chan_details& chan_details_y) {
     int num_conn, tr_i, tr_j, chan, seg;
-    int to_switch, to_node;
+    int to_switch;
     int is_connected_track;
     t_physical_tile_type_ptr type;
     t_rr_type to_type;
@@ -639,13 +639,13 @@ int get_bidir_opin_connections(const int i,
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch();
-                to_node = get_rr_node_index(L_rr_node_indices, tr_i, tr_j, to_type, to_track);
+                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(tr_i, tr_j, to_type, to_track);
 
-                if (to_node == OPEN) {
+                if (!to_node) {
                     continue;
                 }
 
-                rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch);
+                rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(to_node), to_switch);
                 ++num_conn;
             }
         }
@@ -654,25 +654,24 @@ int get_bidir_opin_connections(const int i,
     return num_conn;
 }
 
-int get_unidir_opin_connections(const int chan,
+int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                                const int chan,
                                 const int seg,
                                 int Fc,
                                 const int seg_type_index,
                                 const t_rr_type chan_type,
                                 const t_chan_seg_details* seg_details,
-                                const int from_rr_node,
+                                RRNodeId from_rr_node,
                                 t_rr_edge_info_set& rr_edges_to_create,
                                 vtr::NdMatrix<int, 3>& Fc_ofs,
                                 const int max_len,
                                 const int max_chan_width,
-                                const t_rr_node_indices& L_rr_node_indices,
                                 bool* Fc_clipped,
                                 t_opin_connections_scratchpad* scratchpad) {
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
     int num_inc_muxes, num_dec_muxes, iconn;
-    int inc_inode_index, dec_inode_index;
     int inc_mux, dec_mux;
     int inc_track, dec_track;
     int x, y;
@@ -716,18 +715,18 @@ int get_unidir_opin_connections(const int chan,
         dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
-        inc_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, inc_track);
-        dec_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, dec_track);
+        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(x, y, chan_type, inc_track);
+        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(x, y, chan_type, dec_track);
 
-        if (inc_inode_index == OPEN || dec_inode_index == OPEN) {
+        if (!inc_inode_index || !dec_inode_index) {
             continue;
         }
 
         /* Add to the list. */
-        rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, seg_details[inc_track].arch_opin_switch());
+        rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(inc_inode_index), seg_details[inc_track].arch_opin_switch());
         ++num_edges;
 
-        rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, seg_details[dec_track].arch_opin_switch());
+        rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(dec_inode_index), seg_details[dec_track].arch_opin_switch());
         ++num_edges;
     }
 
@@ -1993,7 +1992,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             int to_wire = conn_vector.at(iconn).to_wire;
             RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_x, to_y, to_chan_type, to_wire);
 
-            if (to_node) {
+            if (!to_node) {
                 continue;
             }
 
