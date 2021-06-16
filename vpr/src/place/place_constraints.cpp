@@ -193,7 +193,6 @@ void mark_fixed_blocks() {
         }
         PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto block_name = cluster_ctx.clb_nlist.block_name(blk_id);
         t_pl_loc loc;
 
         if (is_pr_size_one(pr, block_type, loc)) {
@@ -202,8 +201,6 @@ void mark_fixed_blocks() {
 
             //Set as fixed
             place_ctx.block_locs[blk_id].is_fixed = true;
-
-            VTR_LOG("Block %s marked as fixed \n", block_name.c_str());
         }
     }
 }
