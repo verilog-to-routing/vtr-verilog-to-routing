@@ -74,6 +74,32 @@ RRNodeId RRSpatialLookup::find_node(int x,
     return RRNodeId(rr_node_indices_[type][node_x][node_y][node_side][ptc]);
 }
 
+std::vector<RRNodeId> RRSpatialLookup::find_nodes(int x,
+                                                  int y,
+                                                  t_rr_type rr_type,
+                                                  int ptc) const {
+    std::vector<RRNodeId> indices;
+
+    /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
+    if (rr_type == IPIN || rr_type == OPIN) {
+        //For pins we need to look at all the sides of the current grid tile
+        for (e_side side : SIDES) {
+            RRNodeId rr_node_index = find_node(x, y, rr_type, ptc, side);
+            if (rr_node_index) {
+                indices.push_back(rr_node_index);
+            }
+        }
+    } else {
+        //Sides do not effect non-pins so there should only be one per ptc
+        RRNodeId rr_node_index = find_node(x, y, rr_type, ptc);
+        if (rr_node_index) {
+            indices.push_back(rr_node_index);
+        }
+    }
+
+    return indices;
+}
+
 void RRSpatialLookup::add_node(RRNodeId node,
                                int x,
                                int y,

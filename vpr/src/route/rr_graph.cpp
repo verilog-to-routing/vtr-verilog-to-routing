@@ -150,7 +150,8 @@ static int get_opin_direct_connections(int x,
                                        const t_clb_to_clb_directs* clb_to_clb_directs,
                                        t_opin_connections_scratchpad* scratchpad);
 
-static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_storage& L_rr_node,
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                                                  t_rr_graph_storage& L_rr_node,
                                                                   const int num_seg_types,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -209,7 +210,8 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
                                                                    const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                    const enum e_directionality directionality);
 
-static void build_rr_sinks_sources(const int i,
+static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
+                                   const int i,
                                    const int j,
                                    t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
@@ -685,6 +687,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     bool Fc_clipped = false;
     auto update_chan_width = alloc_and_load_rr_graph(
+        device_ctx.rr_graph_builder,
         device_ctx.rr_nodes, segment_inf.size(),
         chan_details_x, chan_details_y,
         track_to_pin_lookup, opin_to_track_map,
@@ -1131,7 +1134,8 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
 
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
-static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_storage& L_rr_node,
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                                                  t_rr_graph_storage& L_rr_node,
                                                                   const int num_seg_types,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -1180,7 +1184,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
     /* Connection SINKS and SOURCES to their pins. */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            build_rr_sinks_sources(i, j, L_rr_node, rr_edges_to_create, L_rr_node_indices,
+            build_rr_sinks_sources(rr_graph_builder, i, j, L_rr_node, rr_edges_to_create, L_rr_node_indices,
                                    delayless_switch, grid, &scratchpad);
 
             //Create the actual SOURCE->OPIN, IPIN->SINK edges
@@ -1370,7 +1374,8 @@ void free_rr_graph() {
     invalidate_router_lookahead_cache();
 }
 
-static void build_rr_sinks_sources(const int i,
+static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
+                                   const int i,
                                    const int j,
                                    t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
@@ -1394,10 +1399,10 @@ static void build_rr_sinks_sources(const int i,
 
     /* SINK and SOURCE-to-OPIN edges */
     for (int iclass = 0; iclass < num_class; ++iclass) {
-        int inode = 0;
+        RRNodeId inode = RRNodeId::INVALID();
         if (class_inf[iclass].type == DRIVER) { /* SOURCE */
-            inode = get_rr_node_index(L_rr_node_indices, i, j, SOURCE, iclass);
-            VTR_ASSERT(inode >= 0);
+            inode = rr_graph_builder.node_lookup().find_node(i, j, SOURCE, iclass);
+            VTR_ASSERT(inode);
 
             //Retrieve all the physical OPINs associated with this source, this includes
             //those at different grid tiles of this block
@@ -1406,6 +1411,7 @@ static void build_rr_sinks_sources(const int i,
                 for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                     for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
                         int pin_num = class_inf[iclass].pinlist[ipin];
+                        /* TODO: scratchpad should be reworked to use RRNodeId */
                         std::vector<int>& physical_pins = scratchpad->scratch[0];
                         get_rr_node_indices(L_rr_node_indices, i + width_offset, j + height_offset, OPIN, pin_num, &physical_pins);
                         opin_nodes.insert(opin_nodes.end(), physical_pins.begin(), physical_pins.end());
@@ -1414,17 +1420,18 @@ static void build_rr_sinks_sources(const int i,
             }
 
             //Connect the SOURCE to each OPIN
+            //TODO: rr_edges_to_create should be adapted to use RRNodeId
             for (size_t iedge = 0; iedge < opin_nodes.size(); ++iedge) {
-                rr_edges_to_create.emplace_back(inode, opin_nodes[iedge], delayless_switch);
+                rr_edges_to_create.emplace_back(size_t(inode), opin_nodes[iedge], delayless_switch);
             }
 
-            L_rr_node[inode].set_cost_index(SOURCE_COST_INDEX);
-            L_rr_node[inode].set_type(SOURCE);
+            L_rr_node.set_node_cost_index(inode, SOURCE_COST_INDEX);
+            L_rr_node.set_node_type(inode, SOURCE);
         } else { /* SINK */
             VTR_ASSERT(class_inf[iclass].type == RECEIVER);
-            inode = get_rr_node_index(L_rr_node_indices, i, j, SINK, iclass);
+            inode = rr_graph_builder.node_lookup().find_node(i, j, SINK, iclass);
 
-            VTR_ASSERT(inode >= 0);
+            VTR_ASSERT(inode);
 
             /* NOTE:  To allow route throughs through clbs, change the lines below to  *
              * make an edge from the input SINK to the output SOURCE.  Do for just the *
@@ -1432,17 +1439,21 @@ static void build_rr_sinks_sources(const int i,
              * leads to.  If route throughs are allowed, you may want to increase the  *
              * base cost of OPINs and/or SOURCES so they aren't used excessively.      */
 
-            L_rr_node[inode].set_cost_index(SINK_COST_INDEX);
-            L_rr_node[inode].set_type(SINK);
+            /* TODO: The casting will be removed when RRGraphBuilder has the following APIs:
+             * - set_node_cost_index(RRNodeId, int);
+             * - set_node_type(RRNodeId, t_rr_type);
+             */
+            L_rr_node.set_node_cost_index(inode, SINK_COST_INDEX);
+            L_rr_node.set_node_type(inode, SINK);
         }
 
         /* Things common to both SOURCEs and SINKs.   */
-        L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
-        L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
+        L_rr_node.set_node_capacity(inode, class_inf[iclass].num_pins);
+        L_rr_node.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
         float R = 0.;
         float C = 0.;
-        L_rr_node[inode].set_rc_index(find_create_rr_rc_data(R, C));
-        L_rr_node[inode].set_ptc_num(iclass);
+        L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
+        L_rr_node.set_node_ptc_num(inode, iclass);
     }
 
     /* Connect IPINS to SINKS and initialize OPINS */
@@ -1453,58 +1464,57 @@ static void build_rr_sinks_sources(const int i,
             for (int width_offset = 0; width_offset < type->width; ++width_offset) {
                 for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                     if (type->pinloc[width_offset][height_offset][side][ipin]) {
-                        int inode;
+                        RRNodeId inode = RRNodeId::INVALID();
                         int iclass = pin_class[ipin];
 
                         if (class_inf[iclass].type == RECEIVER) {
                             //Connect the input pin to the sink
-                            inode = get_rr_node_index(L_rr_node_indices, i + width_offset, j + height_offset, IPIN, ipin, side);
+                            inode = rr_graph_builder.node_lookup().find_node(i + width_offset, j + height_offset, IPIN, ipin, side);
 
                             /* Input pins are uniquified, we may not always find one */
-                            if (OPEN != inode) {
-                                int to_node = get_rr_node_index(L_rr_node_indices, i, j, SINK, iclass);
+                            if (inode) {
+                                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(i, j, SINK, iclass);
 
                                 //Add info about the edge to be created
-                                rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
+                                //TODO: rr_edges_to_create should be adapted to use RRNodeId
+                                rr_edges_to_create.emplace_back(size_t(inode), size_t(to_node), delayless_switch);
 
-                                VTR_ASSERT(inode >= 0);
-                                L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
-                                L_rr_node[inode].set_type(IPIN);
+                                L_rr_node.set_node_cost_index(inode, IPIN_COST_INDEX);
+                                L_rr_node.set_node_type(inode, IPIN);
                             }
                         } else {
                             VTR_ASSERT(class_inf[iclass].type == DRIVER);
                             //Initialize the output pin
                             // Note that we leave it's out-going edges unconnected (they will be hooked up to global routing later)
-                            inode = get_rr_node_index(L_rr_node_indices, i + width_offset, j + height_offset, OPIN, ipin, side);
+                            inode = rr_graph_builder.node_lookup().find_node(i + width_offset, j + height_offset, OPIN, ipin, side);
 
                             /* Output pins may not exist on some sides, we may not always find one */
-                            if (OPEN != inode) {
+                            if (inode) {
                                 //Initially left unconnected
-                                VTR_ASSERT(inode >= 0);
-                                L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
-                                L_rr_node[inode].set_type(OPIN);
+                                L_rr_node.set_node_cost_index(inode, OPIN_COST_INDEX);
+                                L_rr_node.set_node_type(inode, OPIN);
                             }
                         }
 
                         /* Common to both DRIVERs and RECEIVERs */
-                        if (OPEN != inode) {
-                            L_rr_node[inode].set_capacity(1);
+                        if (inode) {
+                            L_rr_node.set_node_capacity(inode, 1);
                             float R = 0.;
                             float C = 0.;
-                            L_rr_node[inode].set_rc_index(find_create_rr_rc_data(R, C));
-                            L_rr_node[inode].set_ptc_num(ipin);
+                            L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
+                            L_rr_node.set_node_ptc_num(inode, ipin);
 
                             //Note that we store the grid tile location and side where the pin is located,
                             //which greatly simplifies the drawing code
                             //For those pins located on multiple sides, we save the rr node index
                             //for the pin on all sides at which it exists
                             //As such, multipler driver problem can be avoided.
-                            L_rr_node[inode].set_coordinates(i + width_offset, j + height_offset, i + width_offset, j + height_offset);
-                            L_rr_node[inode].add_side(side);
+                            L_rr_node.set_node_coordinates(inode, i + width_offset, j + height_offset, i + width_offset, j + height_offset);
+                            L_rr_node.add_node_side(inode, side);
 
                             // Sanity check
-                            VTR_ASSERT(L_rr_node[inode].is_node_on_specific_side(side));
-                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node[inode].pin_num()]);
+                            VTR_ASSERT(L_rr_node.is_node_on_specific_side(inode, side));
+                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node.node_pin_num(inode)]);
                         }
                     }
                 }
