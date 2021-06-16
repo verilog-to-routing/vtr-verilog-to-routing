@@ -394,7 +394,6 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
     REQUIRE(regions[3].get_region_rect() == int_r2r4);
 }
 
-
 //Test calculation of macro constraints
 /* Checks that the PartitionRegion of a macro member is updated properly according
  * to the head member's PartitionRegion that is passed in.
@@ -425,7 +424,6 @@ TEST_CASE("MacroConstraints", "[vpr]") {
     REQUIRE(mac_rect.xmax() == 11);
     REQUIRE(mac_rect.ymax() == 7);
 }
-
 
 static constexpr const char kArchFile[] = "test_read_arch_metadata.xml";
 
