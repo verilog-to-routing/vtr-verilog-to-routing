@@ -220,7 +220,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGrid& grid,
                                    t_opin_connections_scratchpad* scratchpad);
 
-static void build_rr_chan(const int i,
+static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
+                          const int i,
                           const int j,
                           const t_rr_type chan_type,
                           const t_track_to_pin_lookup& track_to_pin_lookup,
@@ -234,7 +235,6 @@ static void build_rr_chan(const int i,
                           const int Fs_per_side,
                           const t_chan_details& chan_details_x,
                           const t_chan_details& chan_details_y,
-                          const t_rr_node_indices& L_rr_node_indices,
                           t_rr_edge_info_set& created_rr_edges,
                           t_rr_graph_storage& L_rr_node,
                           const int wire_to_ipin_switch,
@@ -1229,11 +1229,11 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         for (size_t j = 0; j < grid.height() - 1; ++j) {
             if (i > 0) {
                 int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
-                build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
+                build_rr_chan(rr_graph_builder, i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
                               CHANX_COST_INDEX_START,
                               max_chan_width, grid, tracks_per_chan,
                               sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
-                              L_rr_node_indices, rr_edges_to_create, L_rr_node,
+                              rr_edges_to_create, L_rr_node,
                               wire_to_ipin_switch,
                               directionality, &scratchpad);
 
@@ -1244,11 +1244,11 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
             if (j > 0) {
                 int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.y_list[i]);
-                build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
+                build_rr_chan(rr_graph_builder, i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
                               CHANX_COST_INDEX_START + num_seg_types,
                               max_chan_width, grid, tracks_per_chan,
                               sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
-                              L_rr_node_indices, rr_edges_to_create, L_rr_node,
+                              rr_edges_to_create, L_rr_node,
                               wire_to_ipin_switch,
                               directionality, &scratchpad);
 
@@ -1527,7 +1527,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
  * node properties such as cost, occupancy and capacity */
-static void build_rr_chan(const int x_coord,
+static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
+                          const int x_coord,
                           const int y_coord,
                           const t_rr_type chan_type,
                           const t_track_to_pin_lookup& track_to_pin_lookup,
@@ -1541,7 +1542,6 @@ static void build_rr_chan(const int x_coord,
                           const int Fs_per_side,
                           const t_chan_details& chan_details_x,
                           const t_chan_details& chan_details_y,
-                          const t_rr_node_indices& L_rr_node_indices,
                           t_rr_edge_info_set& rr_edges_to_create,
                           t_rr_graph_storage& L_rr_node,
                           const int wire_to_ipin_switch,
@@ -1599,16 +1599,16 @@ static void build_rr_chan(const int x_coord,
             from_seg_details = chan_details_x[start][y_coord].data();
         }
 
-        int node = get_rr_node_index(L_rr_node_indices, x_coord, y_coord, chan_type, track);
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(x_coord, y_coord, chan_type, track);
 
-        if (node == OPEN) {
+        if (!node) {
             continue;
         }
 
         /* Add the edges from this track to all it's connected pins into the list */
         int num_edges = 0;
-        num_edges += get_track_to_pins(start, chan_coord, track, tracks_per_chan, node, rr_edges_to_create,
-                                       L_rr_node_indices, track_to_pin_lookup, seg_details, chan_type, seg_dimension,
+        num_edges += get_track_to_pins(rr_graph_builder, start, chan_coord, track, tracks_per_chan, node, rr_edges_to_create,
+                                       track_to_pin_lookup, seg_details, chan_type, seg_dimension,
                                        wire_to_ipin_switch, directionality);
 
         /* get edges going from the current track into channel segments which are perpendicular to it */
@@ -1621,12 +1621,11 @@ static void build_rr_chan(const int x_coord,
                 to_seg_details = chan_details_x[x_coord][start].data();
             }
             if (to_seg_details->length() > 0) {
-                num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord,
+                num_edges += get_track_to_tracks(rr_graph_builder, chan_coord, start, track, chan_type, chan_coord,
                                                  opposite_chan_type, seg_dimension, max_chan_width, grid,
                                                  Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                                  from_seg_details, to_seg_details, opposite_chan_details,
                                                  directionality,
-                                                 L_rr_node_indices,
                                                  switch_block_conn, sb_conn_map, scratchpad);
             }
         }
@@ -1639,12 +1638,11 @@ static void build_rr_chan(const int x_coord,
                 to_seg_details = chan_details_x[x_coord + 1][start].data();
             }
             if (to_seg_details->length() > 0) {
-                num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord + 1,
+                num_edges += get_track_to_tracks(rr_graph_builder, chan_coord, start, track, chan_type, chan_coord + 1,
                                                  opposite_chan_type, seg_dimension, max_chan_width, grid,
                                                  Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                                  from_seg_details, to_seg_details, opposite_chan_details,
                                                  directionality,
-                                                 L_rr_node_indices,
                                                  switch_block_conn, sb_conn_map, scratchpad);
             }
         }
@@ -1669,36 +1667,35 @@ static void build_rr_chan(const int x_coord,
                     to_seg_details = chan_details_y[x_coord][target_seg].data();
                 }
                 if (to_seg_details->length() > 0) {
-                    num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, target_seg,
+                    num_edges += get_track_to_tracks(rr_graph_builder, chan_coord, start, track, chan_type, target_seg,
                                                      chan_type, seg_dimension, max_chan_width, grid,
                                                      Fs_per_side, sblock_pattern, node, rr_edges_to_create,
                                                      from_seg_details, to_seg_details, from_chan_details,
                                                      directionality,
-                                                     L_rr_node_indices,
                                                      switch_block_conn, sb_conn_map, scratchpad);
                 }
             }
         }
 
         /* Edge arrays have now been built up.  Do everything else.  */
-        L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index());
-        L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
+        L_rr_node.set_node_cost_index(node, cost_index_offset + seg_details[track].index());
+        L_rr_node.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {
-            L_rr_node[node].set_coordinates(start, y_coord, end, y_coord);
+            L_rr_node.set_node_coordinates(node, start, y_coord, end, y_coord);
         } else {
             VTR_ASSERT(chan_type == CHANY);
-            L_rr_node[node].set_coordinates(x_coord, start, x_coord, end);
+            L_rr_node.set_node_coordinates(node, x_coord, start, x_coord, end);
         }
 
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
         float C = length * seg_details[track].Cmetal();
-        L_rr_node[node].set_rc_index(find_create_rr_rc_data(R, C));
+        L_rr_node.set_node_rc_index(node, find_create_rr_rc_data(R, C));
 
-        L_rr_node[node].set_ptc_num(track);
-        L_rr_node[node].set_type(chan_type);
-        L_rr_node[node].set_direction(seg_details[track].direction());
+        L_rr_node.set_node_ptc_num(node, track);
+        L_rr_node.set_node_type(node, chan_type);
+        L_rr_node.set_node_direction(node, seg_details[track].direction());
     }
 }
 
