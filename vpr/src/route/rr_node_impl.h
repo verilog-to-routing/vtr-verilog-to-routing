@@ -71,9 +71,9 @@ inline t_rr_node t_rr_graph_storage::back() {
     return t_rr_node(this, RRNodeId(size() - 1));
 }
 
-inline t_rr_type t_rr_node::type() const {
+/*inline t_rr_type t_rr_node::type() const { // No longer used
     return storage_->node_type(id_);
-}
+}*/
 
 inline t_edge_size t_rr_node::num_edges() const {
     return storage_->num_edges(id_);

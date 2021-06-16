@@ -33,6 +33,8 @@ class TaskConfig:
         circuit_list_add,
         arch_list_add,
         parse_file,
+        includes_dir=None,
+        include_list_add=None,
         second_parse_file=None,
         script_path=None,
         script_params=None,
@@ -53,6 +55,8 @@ class TaskConfig:
         self.arch_dir = archs_dir
         self.circuits = circuit_list_add
         self.archs = arch_list_add
+        self.include_dir = includes_dir
+        self.includes = include_list_add
         self.parse_file = parse_file
         self.second_parse_file = second_parse_file
         self.script_path = script_path
@@ -82,6 +86,7 @@ class Job:
         task_name,
         arch,
         circuit,
+        include,
         script_params,
         work_dir,
         run_command,
@@ -92,6 +97,7 @@ class Job:
         self._task_name = task_name
         self._arch = arch
         self._circuit = circuit
+        self._include = include
         self._script_params = script_params
         self._run_command = run_command
         self._parse_command = parse_command
@@ -116,6 +122,12 @@ class Job:
         return the circuit file name of the job
         """
         return self._circuit
+
+    def include(self):
+        """
+        return the list of include files (.v/.vh) of the job.
+        """
+        return self._include
 
     def script_params(self):
         """
@@ -174,6 +186,7 @@ def load_task_config(config_file):
     unique_keys = set(
         [
             "circuits_dir",
+            "includes_dir",
             "archs_dir",
             "additional_files",
             "parse_file",
@@ -238,6 +251,7 @@ def load_task_config(config_file):
         key_values["script_params_common"] = split(key_values["script_params_common"])
 
     check_required_fields(config_file, required_keys, key_values)
+    check_include_fields(config_file, key_values)
 
     # Useful meta-data about the config
     config_dir = str(Path(config_file).parent)
@@ -257,6 +271,20 @@ def check_required_fields(config_file, required_keys, key_values):
             raise VtrError(
                 "Missing required key '{key}' in config file {file}".format(
                     key=required_key, file=config_file
+                )
+            )
+
+
+def check_include_fields(config_file, key_values):
+    """
+    Check that includes_dir was specified if some files to include
+    in the designs (include_list_add) was specified.
+    """
+    if "include_list_add" in key_values:
+        if "includes_dir" not in key_values:
+            raise VtrError(
+                "Missing required key '{key}' in config file {file}".format(
+                    key="includes_dir", file=config_file
                 )
             )
 
@@ -315,6 +343,19 @@ def create_jobs(args, configs, after_run=False):
 
             # Collect any extra script params from the config file
             cmd = [abs_circuit_filepath, abs_arch_filepath]
+
+            # Resolve and collect all include paths in the config file
+            # as -include ["include1", "include2", ..]
+            includes = []
+            if config.includes:
+                cmd += ["-include"]
+                for include in config.includes:
+                    abs_include_filepath = resolve_vtr_source_file(
+                        config, include, config.include_dir
+                    )
+                    includes.append(abs_include_filepath)
+
+                cmd += includes
 
             # Check if additional architectural data files are present
             if config.additional_files_list_add:
@@ -401,6 +442,7 @@ def create_jobs(args, configs, after_run=False):
                             args,
                             config,
                             circuit,
+                            includes,
                             arch,
                             value,
                             cmd,
@@ -418,6 +460,7 @@ def create_jobs(args, configs, after_run=False):
                         args,
                         config,
                         circuit,
+                        includes,
                         arch,
                         None,
                         cmd,
@@ -437,6 +480,7 @@ def create_job(
     args,
     config,
     circuit,
+    include,
     arch,
     param,
     cmd,
@@ -501,6 +545,7 @@ def create_job(
         config.task_name,
         arch,
         circuit,
+        include,
         param_string,
         work_dir + "/" + param_string,
         current_cmd,

@@ -430,6 +430,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
 
 static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_delays& src_opin_delays) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the variable on the next line is unneeded
     auto& rr_graph = device_ctx.rr_nodes;
 
     struct t_pq_entry {
@@ -476,7 +477,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
         t_pq_entry curr = pq.top();
         pq.pop();
 
-        e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
+        e_rr_type curr_rr_type = temp_rr_graph.node_type(curr.node);
         if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
             //We stop expansion at any CHANX/CHANY/SINK
             int seg_index;
@@ -530,6 +531,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the variable on the next line is unneeded
     auto& rr_graph = device_ctx.rr_nodes;
 
     struct t_pq_entry {
@@ -575,7 +577,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
         t_pq_entry curr = pq.top();
         pq.pop();
 
-        e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
+        e_rr_type curr_rr_type = temp_rr_graph.node_type(curr.node);
         if (curr_rr_type == IPIN) {
             int node_x = rr_graph.node_xlow(curr.node);
             int node_y = rr_graph.node_ylow(curr.node);

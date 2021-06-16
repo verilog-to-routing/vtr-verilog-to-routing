@@ -1,0 +1,43 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Power
+script_params=-power -track_memory_usage
+cmos_tech_behavior=PTM_45nm/45nm.xml
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog
+
+# Path to directory of architectures to use
+archs_dir=arch/power
+
+# Add circuits to list to sweep
+circuit_list_add=ch_intrinsics.v
+circuit_list_add=diffeq1.v
+circuit_list_add=LU8PEEng.v 
+
+# Add architectures to list to sweep
+arch_list_add=k6_N10_I40_Fi6_L4_frac1_ff1_45nm.xml
+arch_list_add=k6_N10_I40_Fi6_L4_frac1_ff2_45nm.xml
+
+arch_list_add=k6_N10_I47_Fi7_L4_frac1_ff1_45nm.xml
+arch_list_add=k6_N10_I47_Fi7_L4_frac1_ff2_45nm.xml
+
+arch_list_add=k6_N10_I53_Fi8_L4_frac1_ff1_45nm.xml
+arch_list_add=k6_N10_I53_Fi8_L4_frac1_ff2_45nm.xml
+
+arch_list_add=k6_N10_I40_Fi7_L4_frac1_ff1_45nm.xml
+arch_list_add=k6_N10_I40_Fi7_L4_frac1_ff2_45nm.xml
+
+arch_list_add=k6_N10_I40_Fi8_L4_frac1_ff1_45nm.xml
+arch_list_add=k6_N10_I40_Fi8_L4_frac1_ff2_45nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_power.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_power.txt
