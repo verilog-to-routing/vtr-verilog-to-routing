@@ -547,7 +547,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the rr_graph below is unneeded
     auto& rr_graph = device_ctx.rr_nodes;
 
-    int result = UNDEFINED;
+    RRNodeId result = RRNodeId::INVALID();
 
     if (rr_type != CHANX && rr_type != CHANY) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
@@ -561,19 +561,11 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
 
     int start_lookup_x = start_x;
     int start_lookup_y = start_y;
-    if (rr_type == CHANX) {
-        //Bizarely, rr_node_indices stores CHANX with swapped x/y...
-        std::swap(start_lookup_x, start_lookup_y);
-    }
 
-    const std::vector<int>& channel_node_list = device_ctx.rr_node_indices[rr_type][start_lookup_x][start_lookup_y][0];
 
     /* find first node in channel that has specified segment index and goes in the desired direction */
-    for (unsigned itrack = 0; itrack < channel_node_list.size(); itrack++) {
-        int node_ind = channel_node_list[itrack];
-        if (node_ind < 0) continue;
-
-        RRNodeId node_id(node_ind);
+    for (const RRNodeId& node_id : device_ctx.rr_graph.node_lookup().find_channel_nodes(start_lookup_x, start_lookup_y, rr_type)) {
+        if (!node_id) continue;
 
         VTR_ASSERT(temp_rr_graph.node_type(node_id) == rr_type);
 
@@ -583,7 +575,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
 
         if ((node_direction == direction || node_direction == BI_DIRECTION) && node_seg_ind == seg_index) {
             /* found first track that has the specified segment index and goes in the desired direction */
-            result = node_ind;
+            result = node_id;
             if (track_offset == 0) {
                 break;
             }
@@ -591,7 +583,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
         }
     }
 
-    return RRNodeId(result);
+    return result;
 }
 
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information

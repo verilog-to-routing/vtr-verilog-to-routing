@@ -77,6 +77,9 @@ RRNodeId RRSpatialLookup::find_node(int x,
 std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
                                                           int y,
                                                           t_rr_type type) const {
+    /* TODO: The implementation of this API should be worked 
+     * when rr_node_indices adapts RRNodeId natively!
+     */
     std::vector<RRNodeId> channel_nodes;
 
     /* Pre-check: the x, y, type are valid! Otherwise, return an empty vector */
