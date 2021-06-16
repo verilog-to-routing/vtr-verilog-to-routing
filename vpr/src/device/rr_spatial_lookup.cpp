@@ -74,6 +74,59 @@ RRNodeId RRSpatialLookup::find_node(int x,
     return RRNodeId(rr_node_indices_[type][node_x][node_y][node_side][ptc]);
 }
 
+std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
+                                                          int y,
+                                                          t_rr_type type) const {
+    std::vector<RRNodeId> channel_nodes;
+
+    /* Pre-check: the x, y, type are valid! Otherwise, return an empty vector */
+    if ((0 > x || 0 > y) && (CHANX == type || CHANY == type)) {
+        return channel_nodes;
+    }
+
+    /* Currently need to swap x and y for CHANX because of chan, seg convention 
+     * This is due to that the fast look-up builders uses (y, x) coordinate when
+     * registering a CHANX node in the look-up
+     * TODO: Once the builders is reworked for use consistent (x, y) convention,
+     * the following swapping can be removed
+     */
+    size_t node_x = x;
+    size_t node_y = y;
+    if (CHANX == type) {
+        std::swap(node_x, node_y);
+    }
+
+    VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
+
+    /* Sanity check to ensure the x, y, side are in range 
+     * - Return a list of valid ids by searching in look-up when all the parameters are in range
+     * - Return an empty list if any out-of-range is detected
+     */
+    if (size_t(type) >= rr_node_indices_.size()) {
+        return channel_nodes;
+    }
+
+    if (node_x >= rr_node_indices_[type].dim_size(0)) {
+        return channel_nodes;
+    }
+
+    if (node_y >= rr_node_indices_[type].dim_size(1)) {
+        return channel_nodes;
+    }
+
+    /* By default, we always added the channel nodes to the TOP side (to save memory) */
+    e_side node_side = TOP;
+    if (node_side >= rr_node_indices_[type].dim_size(2)) {
+        return channel_nodes;
+    }
+
+    for (const auto& node : rr_node_indices_[type][node_x][node_y][node_side]) {
+        channel_nodes.push_back(RRNodeId(node));
+    }
+
+    return channel_nodes;
+}
+
 void RRSpatialLookup::add_node(RRNodeId node,
                                int x,
                                int y,
