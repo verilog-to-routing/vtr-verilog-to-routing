@@ -1,0 +1,40 @@
+###############################################################
+# Configuration file for running experiments
+# This config file is testing the ability to specify include
+# files that should pass to Odin with the top module of the
+# benchmark (ch_intrinsic_top.v). This is done by specifying 
+# two Verilog header files that provide essential definitions, 
+# and memory_controller design that provides the design of an
+# internal component for ch_intrinsic_top. If the include files
+# are not properly included during compilation the benchmark is
+# incomplete and the flow will error out. 
+###############################################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/hdl_include
+
+# Path to directory of includes circuits to use
+includes_dir=benchmarks/hdl_include/include
+
+# Path to directory of architectures to use
+archs_dir=arch/no_timing/memory_sweep
+
+# Add circuits to list to sweep
+circuit_list_add=ch_intrinsics_modified.v
+
+# Add circuits to includes list to sweep
+include_list_add=generic_definitions1.vh
+include_list_add=generic_definitions2.vh
+include_list_add=memory_controller.v
+
+# Add architectures to list to sweep
+arch_list_add=k4_N10_memSize16384_memData64.xml
+
+# Parse info and how to parse
+parse_file=vpr_no_timing.txt
+
+# How to parse QoR info
+qor_parse_file=qor_no_timing.txt
+
+# Script parameters
+script_params_common=-track_memory_usage --timing_analysis off

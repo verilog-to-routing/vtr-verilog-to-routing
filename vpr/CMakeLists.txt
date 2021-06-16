@@ -190,6 +190,8 @@ if (VTR_ENABLE_STRICT_COMPILE)
     set(VPR_STRICT_COMPILE_FLAGS_TO_CHECK
         #GCC-like
         "-Werror"
+        # due to the pointer hackery in timing_driven_route_structs and BinaryHeap.heap_
+        "-Wno-error=free-nonheap-object"
         )
 
     foreach(flag ${VPR_STRICT_COMPILE_FLAGS_TO_CHECK})

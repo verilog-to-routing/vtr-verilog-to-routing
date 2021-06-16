@@ -442,6 +442,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     VTR_ASSERT(max_chan_width > 0);
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     t_clb_to_clb_directs* clb_to_clb_directs = nullptr;
     if (num_directs > 0) {
@@ -711,11 +712,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         // clock_modeling::DEDICATED_NETWORK will append some rr nodes after
         // the regular graph.
         for (int i = 0; i < num_rr_nodes; i++) {
-            if (device_ctx.rr_nodes[i].type() == CHANX) {
+            if (rr_graph.node_type(RRNodeId(i)) == CHANX) {
                 int ylow = device_ctx.rr_nodes[i].ylow();
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
             }
-            if (device_ctx.rr_nodes[i].type() == CHANY) {
+            if (rr_graph.node_type(RRNodeId(i)) == CHANY) {
                 int xlow = device_ctx.rr_nodes[i].xlow();
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.y_list[xlow]);
             }
@@ -2437,6 +2438,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
 
 std::string describe_rr_node(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);
 
@@ -2449,7 +2451,7 @@ std::string describe_rr_node(int inode) {
         msg += vtr::string_fmt(" <-> (%d,%d)", rr_node.xhigh(), rr_node.yhigh());
     }
 
-    if (rr_node.type() == CHANX || rr_node.type() == CHANY) {
+    if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
         int cost_index = rr_node.cost_index();
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
@@ -2468,7 +2470,7 @@ std::string describe_rr_node(int inode) {
                                    seg_index,
                                    rr_node.direction_string());
         }
-    } else if (rr_node.type() == IPIN || rr_node.type() == OPIN) {
+    } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
         auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
         std::string pin_name = block_type_pin_index_to_name(type, rr_node.pin_num());
 
@@ -2476,7 +2478,7 @@ std::string describe_rr_node(int inode) {
                                rr_node.pin_num(),
                                pin_name.c_str());
     } else {
-        VTR_ASSERT(rr_node.type() == SOURCE || rr_node.type() == SINK);
+        VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK);
 
         msg += vtr::string_fmt(" class: %d", rr_node.class_num());
     }
@@ -2918,8 +2920,10 @@ static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_
     //candidate would be picked (i.e. to minimize the drawn edge length).
     //
     //This function attempts to pick the 'best/closest' of the candidates.
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT(rr_nodes[from_rr].type() == OPIN);
+    VTR_ASSERT(rr_graph.node_type(RRNodeId(from_rr)) == OPIN);
 
     float best_dist = std::numeric_limits<float>::infinity();
     int best_rr = OPEN;
@@ -2931,7 +2935,7 @@ static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_
         }
 
         for (int to_rr : candidate_rr_nodes) {
-            VTR_ASSERT(rr_nodes[to_rr].type() == IPIN);
+            VTR_ASSERT(rr_graph.node_type(RRNodeId(to_rr)) == IPIN);
             float to_dist = std::abs(rr_nodes[from_rr].xlow() - rr_nodes[to_rr].xlow())
                             + std::abs(rr_nodes[from_rr].ylow() - rr_nodes[to_rr].ylow());
 

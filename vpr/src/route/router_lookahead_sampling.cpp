@@ -127,9 +127,10 @@ static uint64_t interleave(uint32_t x) {
 // If the node is not interesting an invalid value is returned.
 static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_segments) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& rr_nodes = device_ctx.rr_nodes;
 
-    if (node.type() != CHANX && node.type() != CHANY) {
+    if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) {
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
@@ -196,13 +197,14 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     vtr::ScopedStartFinishTimer timer("finding sample regions");
     std::vector<SampleRegion> sample_regions;
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& rr_nodes = device_ctx.rr_nodes;
     std::vector<vtr::Matrix<int>> segment_counts(num_segments);
 
     // compute bounding boxes for each segment type
     std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
     for (auto& node : rr_nodes) {
-        if (node.type() != CHANX && node.type() != CHANY) continue;
+        if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) continue;
         if (node.capacity() == 0 || node.num_edges() == 0) continue;
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 

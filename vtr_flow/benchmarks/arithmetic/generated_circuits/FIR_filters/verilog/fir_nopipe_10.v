@@ -123,7 +123,7 @@ module fir (
 	// *
 	// *****************************************************
 
-	// ************************* LEVEL 0 ************************* \\
+	// ************************* LEVEL 0 *************************   
 	wire [dw-1:0] L0_output_wires_0;
 	wire [dw-1:0] L0_output_wires_1;
 	wire [dw-1:0] L0_output_wires_2;
@@ -162,8 +162,8 @@ module fir (
 
 	// (5 main tree Adders)
 
-	// ************************* LEVEL 1 ************************* \\
-	// **************** Multipliers **************** \\
+	// ************************* LEVEL 1 *************************   
+	// **************** Multipliers ****************   
 	wire [dw-1:0] L1_mult_wires_0;
 	wire [dw-1:0] L1_mult_wires_1;
 	wire [dw-1:0] L1_mult_wires_2;
@@ -202,7 +202,7 @@ module fir (
 
 	// (5 Multipliers)
 
-	// **************** Adders **************** \\
+	// **************** Adders ****************   
 	wire [dw-1:0] L1_output_wires_0;
 	wire [dw-1:0] L1_output_wires_1;
 	wire [dw-1:0] L1_output_wires_2;
@@ -221,7 +221,7 @@ module fir (
 
 	// (2 main tree Adders)
 
-	// ********* Byes ******** \\
+	// ********* Byes ********   
 	one_register L1_byereg_for_4(
 		.dataa (L1_mult_wires_4),
 		.result(L1_output_wires_2)
@@ -229,7 +229,7 @@ module fir (
 
 	// (1 byes)
 
-	// ************************* LEVEL 2 ************************* \\
+	// ************************* LEVEL 2 *************************   
 	wire [dw-1:0] L2_output_wires_0;
 	wire [dw-1:0] L2_output_wires_1;
 
@@ -241,7 +241,7 @@ module fir (
 
 	// (1 main tree Adders)
 
-	// ********* Byes ******** \\
+	// ********* Byes ********   
 	one_register L2_byereg_for_2(
 		.dataa (L1_output_wires_2),
 		.result(L2_output_wires_1)
@@ -249,7 +249,7 @@ module fir (
 
 	// (1 byes)
 
-	// ************************* LEVEL 3 ************************* \\
+	// ************************* LEVEL 3 *************************   
 	wire [dw-1:0] L3_output_wires_0;
 
 	adder_with_1_reg L3_adder_0and1(
