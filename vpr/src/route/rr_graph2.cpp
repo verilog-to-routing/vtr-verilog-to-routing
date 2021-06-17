@@ -1153,6 +1153,8 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes) {
     std::unordered_map<int, int> rr_node_counts;
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     for (t_rr_type rr_type : RR_TYPES) {
         int width = grid.width();
@@ -1173,14 +1175,14 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
 
                         auto& rr_node = rr_nodes[inode];
 
-                        if (rr_node.type() != rr_type) {
+                        if (rr_graph.node_type(RRNodeId(inode)) != rr_type) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node type does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                                      rr_node_typename[rr_node.type()],
+                                      rr_node_typename[rr_graph.node_type(RRNodeId(inode))],
                                       rr_node_typename[rr_type],
                                       describe_rr_node(inode).c_str());
                         }
 
-                        if (rr_node.type() == CHANX) {
+                        if (rr_graph.node_type(RRNodeId(inode)) == CHANX) {
                             //CHANX has this bizare swapped x / y storage...
                             std::swap(x, y);
 
@@ -1202,7 +1204,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
                             }
 
                             std::swap(x, y); //Swap back
-                        } else if (rr_node.type() == CHANY) {
+                        } else if (rr_graph.node_type(RRNodeId(inode)) == CHANY) {
                             VTR_ASSERT_MSG(rr_node.xlow() == rr_node.xhigh(), "CHANY should be veritcal");
 
                             if (x != rr_node.xlow()) {
@@ -1219,7 +1221,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
                                           y,
                                           describe_rr_node(inode).c_str());
                             }
-                        } else if (rr_node.type() == SOURCE || rr_node.type() == SINK) {
+                        } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
                             //Sources have co-ordintes covering the entire block they are in
                             if (x < rr_node.xlow() || x > rr_node.xhigh()) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
@@ -1238,7 +1240,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
                             }
 
                         } else {
-                            VTR_ASSERT(rr_node.type() == IPIN || rr_node.type() == OPIN);
+                            VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN);
                             /* As we allow a pin to be indexable on multiple sides,
                              * This check code should be invalid
                              * if (rr_node.xlow() != x) {
@@ -1296,7 +1298,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
 
         auto& rr_node = rr_nodes[inode];
 
-        if (rr_node.type() == SOURCE || rr_node.type() == SINK) {
+        if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
             int rr_width = (rr_node.xhigh() - rr_node.xlow() + 1);
             int rr_height = (rr_node.yhigh() - rr_node.ylow() + 1);
             int rr_area = rr_width * rr_height;
@@ -1310,7 +1312,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
             /* As we allow a pin to be indexable on multiple sides,
              * This check code should not be applied to input and output pins
              */
-        } else if ((OPIN != rr_node.type()) && (IPIN != rr_node.type())) {
+        } else if ((OPIN != rr_graph.node_type(RRNodeId(inode))) && (IPIN != rr_graph.node_type(RRNodeId(inode)))) {
             if (count != rr_node.length() + 1) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node length (%d) and count within rr_node_indices (%d, should be length + 1): %s",
                           rr_node.length(),
@@ -2754,22 +2756,24 @@ static bool should_apply_switch_override(int switch_override) {
  */
 void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes, int inode) {
     const t_rr_node& rr_node = rr_nodes[inode];
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
         for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
-            auto rr_type = rr_node.type();
+            auto rr_type = rr_graph.node_type(RRNodeId(inode));
             if (rr_type == IPIN || rr_type == OPIN) {
                 for (const e_side& side : SIDES) {
                     if (!rr_node.is_node_on_specific_side(side)) {
                         continue;
                     }
-                    insert_at_ptc_index(rr_node_indices[rr_node.type()][x][y][side], rr_node.ptc_num(), inode);
+                    insert_at_ptc_index(rr_node_indices[rr_graph.node_type(RRNodeId(inode))][x][y][side], rr_node.ptc_num(), inode);
                 }
             } else if (rr_type == CHANX) {
                 //CHANX uses odd swapped x/y indices....
-                insert_at_ptc_index(rr_node_indices[rr_node.type()][y][x][0], rr_node.ptc_num(), inode);
+                insert_at_ptc_index(rr_node_indices[rr_graph.node_type(RRNodeId(inode))][y][x][0], rr_node.ptc_num(), inode);
             } else {
-                insert_at_ptc_index(rr_node_indices[rr_node.type()][x][y][0], rr_node.ptc_num(), inode);
+                insert_at_ptc_index(rr_node_indices[rr_graph.node_type(RRNodeId(inode))][x][y][0], rr_node.ptc_num(), inode);
             }
         }
     }

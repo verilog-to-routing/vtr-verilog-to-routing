@@ -240,9 +240,10 @@ static std::vector<size_t> count_rr_segment_types() {
     std::vector<size_t> rr_segment_type_counts;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        if (device_ctx.rr_nodes[inode].type() != CHANX && device_ctx.rr_nodes[inode].type() != CHANY) continue;
+        if (rr_graph.node_type(RRNodeId(inode)) != CHANX && rr_graph.node_type(RRNodeId(inode)) != CHANY) continue;
 
         int cost_index = device_ctx.rr_nodes[inode].cost_index();
 
@@ -313,6 +314,7 @@ static float get_delay_normalization_fac() {
  */
 static void load_rr_indexed_data_T_values() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
@@ -342,7 +344,7 @@ static void load_rr_indexed_data_T_values() {
      * data.
      */
     for (size_t inode = 0; inode < rr_nodes.size(); inode++) {
-        t_rr_type rr_type = rr_nodes[inode].type();
+        t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
 
         if (rr_type != CHANX && rr_type != CHANY) {
             continue;

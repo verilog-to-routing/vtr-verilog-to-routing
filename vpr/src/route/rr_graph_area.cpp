@@ -100,6 +100,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
      * something that is 1.5x or 2x the largest buffer, so this may be a bit     *
      * optimistic (but I still think it's pretty reasonable).                    */
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     int* num_inputs_to_cblock; /* [0..device_ctx.rr_nodes.size()-1], but all entries not    */
 
@@ -157,7 +158,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                                                                  R_minW_nmos, R_minW_pmos);
 
     for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
-        from_rr_type = device_ctx.rr_nodes[from_node].type();
+        from_rr_type = rr_graph.node_type(RRNodeId(from_node));
 
         switch (from_rr_type) {
             case CHANX:
@@ -166,10 +167,10 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
                     size_t to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
-                    to_rr_type = device_ctx.rr_nodes[to_node].type();
+                    to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                     /* Ignore any uninitialized rr_graph nodes */
-                    if ((device_ctx.rr_nodes[to_node].type() == SOURCE)
+                    if ((rr_graph.node_type(RRNodeId(to_node)) == SOURCE)
                         && (device_ctx.rr_nodes[to_node].xlow() == 0) && (device_ctx.rr_nodes[to_node].ylow() == 0)
                         && (device_ctx.rr_nodes[to_node].xhigh() == 0) && (device_ctx.rr_nodes[to_node].yhigh() == 0)) {
                         continue;
@@ -301,6 +302,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                       float R_minW_pmos,
                                       const float trans_sram_bit) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     bool* cblock_counted;      /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] -- 0th element unused. */
     int* num_inputs_to_cblock; /* [0..device_ctx.rr_nodes.size()-1], but all entries not    */
@@ -354,7 +356,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
     ntrans = 0;
     for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
-        from_rr_type = device_ctx.rr_nodes[from_node].type();
+        from_rr_type = rr_graph.node_type(RRNodeId(from_node));
 
         switch (from_rr_type) {
             case CHANX:
@@ -364,10 +366,10 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                 /* Increment number of inputs per cblock if IPIN */
                 for (iedge = 0; iedge < num_edges; iedge++) {
                     to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
-                    to_rr_type = device_ctx.rr_nodes[to_node].type();
+                    to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                     /* Ignore any uninitialized rr_graph nodes */
-                    if ((device_ctx.rr_nodes[to_node].type() == SOURCE)
+                    if ((rr_graph.node_type(RRNodeId(to_node)) == SOURCE)
                         && (device_ctx.rr_nodes[to_node].xlow() == 0) && (device_ctx.rr_nodes[to_node].ylow() == 0)
                         && (device_ctx.rr_nodes[to_node].xhigh() == 0) && (device_ctx.rr_nodes[to_node].yhigh() == 0)) {
                         continue;
