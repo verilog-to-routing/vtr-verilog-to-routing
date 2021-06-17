@@ -270,82 +270,86 @@ void mark_fixed_blocks() {
         }
         PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto block_name = cluster_ctx.clb_nlist.block_name(blk_id);
         t_pl_loc loc;
 
+        VTR_LOG("Checking block %s \n", block_name.c_str());
         if (is_pr_size_one(pr, block_type, loc)) {
             //Set block location and grid usage
             set_block_location(blk_id, loc);
 
             //Set as fixed
             place_ctx.block_locs[blk_id].is_fixed = true;
+            VTR_LOG("Block %s marked as fixed at %d, %d, %d. \n", block_name.c_str(), loc.x, loc.y, loc.sub_tile);
         }
     }
 }
 
-bool is_region_size_one(const Region& reg, t_logical_block_type_ptr block_type) {
+int region_size(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
     vtr::Rect<int> rb = reg.get_region_rect();
-    bool size_one = false;
+    int num_tiles = 0;
 
-    if (rb.xmin() == rb.xmax() && rb.ymin() == rb.ymax()) {
-        if (reg.get_sub_tile() != NO_SUBTILE) {
-            size_one = true;
-        } else {
-            int x = rb.xmin();
-            int y = rb.ymin();
-            auto tile = device_ctx.grid[x][y].type;
-            if (is_tile_compatible(tile, block_type)) {
-                auto cap = tile->capacity;
-                if (cap == 1) {
-                    size_one = true;
-                } else {
-                    size_one = false;
+    for (int x = rb.xmin(); x <= rb.xmax(); x++) {
+        for (int y = rb.ymin(); y <= rb.ymax(); y++) {
+            auto& tile = device_ctx.grid[x][y].type;
+            VTR_LOG("At tile (%d, %d) \n", x, y);
+            if (!is_tile_compatible(tile, block_type)) {
+                //VTR_LOG("Tile not compatible, skip block %d \n");
+                continue;
+            }
+
+            if (reg.get_sub_tile() != NO_SUBTILE) {
+                num_tiles++;
+                loc.x = x;
+                loc.y = y;
+                loc.sub_tile = reg.get_sub_tile();
+                //VTR_LOG("Number of tiles incremented, num_tiles is %d \n", num_tiles);
+                if (num_tiles > 1) {
+                    return num_tiles;
                 }
-            } else {
-                return false;
-                //give an error because somehow tile and block type not compatible;
+            } else if (reg.get_sub_tile() == NO_SUBTILE) {
+                auto& cap = tile->capacity;
+                for (int z = 0; z < cap; z++) {
+                    num_tiles++;
+                    loc.x = x;
+                    loc.y = y;
+                    loc.sub_tile = 0;
+                    //VTR_LOG("Number of tiles incremented, num_tiles is %d \n", num_tiles);
+                    if (num_tiles > 1) {
+                        return num_tiles;
+                    }
+                }
             }
         }
-    } else {
-        size_one = false;
     }
 
-    return size_one;
+    return num_tiles;
 }
 
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     std::vector<Region> regions = pr.get_partition_region();
     bool pr_size_one;
-    bool reg_size_one;
-    Region intersect_reg;
+
+    int pr_size = 0;
+    int reg_size;
 
     for (unsigned int i = 0; i < regions.size(); i++) {
-        reg_size_one = is_region_size_one(regions[i], block_type);
-        if (!reg_size_one) {
+        reg_size = region_size(regions[i], block_type, loc);
+        pr_size = pr_size + reg_size;
+        //VTR_LOG("Region size is %d \n", reg_size);
+        //VTR_LOG("Partition Region size is %d \n", pr_size);
+        if (pr_size > 1) {
             pr_size_one = false;
-            break;
-        } else {
-            if (i == 0) {
-                intersect_reg = regions[0];
-            } else {
-                intersect_reg = intersection(intersect_reg, regions[i]);
-            }
-            if (intersect_reg.empty()) {
-                pr_size_one = false;
-                break;
-            } else {
-                pr_size_one = true;
-            }
+            return pr_size_one;
         }
     }
 
-    vtr::Rect<int> rect = intersect_reg.get_region_rect();
-    loc.x = rect.xmin();
-    loc.y = rect.ymin();
-    if (intersect_reg.get_sub_tile() == NO_SUBTILE) {
-        loc.sub_tile = 0;
-    } else {
-        loc.sub_tile = intersect_reg.get_sub_tile();
+    if (pr_size == 0) {
+        pr_size_one = false;
+        return pr_size_one;
+    } else if (pr_size == 1) {
+        pr_size_one = true;
     }
 
     return pr_size_one;

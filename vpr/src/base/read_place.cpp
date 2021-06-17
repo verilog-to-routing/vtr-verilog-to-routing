@@ -254,7 +254,7 @@ void read_place_body(std::ifstream& placement_file,
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
                 if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile) {
-                	std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
+                    std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
                               "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
                               "Its location was last specified with block %s. \n",

@@ -98,7 +98,7 @@ void mark_fixed_blocks();
 /*
  * Number of tiles covered by a region
  */
-bool is_region_size_one(const Region& reg, t_logical_block_type_ptr block_type);
+int region_size(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
