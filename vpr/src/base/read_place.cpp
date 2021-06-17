@@ -187,7 +187,9 @@ void read_place_body(std::ifstream& placement_file,
     }
 
     /*
-     * If place file, initialize grid blocks
+     * If placement is being loaded (i.e. reading in a place file),
+     * the grid_blocks data structure has not been initialized yet,
+     * so it is initialized here.
      */
     if (is_place_file) {
         auto& grid_blocks = place_ctx.grid_blocks;
@@ -197,10 +199,6 @@ void read_place_body(std::ifstream& placement_file,
             for (size_t y = 0; y < device_grid.height(); ++y) {
                 auto& grid_block = grid_blocks[x][y];
                 grid_block.blocks.resize(device_ctx.grid[x][y].type->capacity);
-
-                for (int z = 0; z < device_ctx.grid[x][y].type->capacity; ++z) {
-                    grid_block.blocks[z] = EMPTY_BLOCK_ID;
-                }
             }
         }
     }
@@ -256,10 +254,11 @@ void read_place_body(std::ifstream& placement_file,
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
                 if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile) {
+                	std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
-                              "The location of cluster %d is specified %d times in the constraints file with conflicting locations. \n"
+                              "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
                               "Its location was last specified with block %s. \n",
-                              blk_id, seen_blocks[blk_id] + 1, c_block_name);
+                              cluster_name.c_str(), blk_id, seen_blocks[blk_id] + 1, c_block_name);
                 }
             }
 
