@@ -103,24 +103,17 @@ Region intersection(const Region& r1, const Region& r2) {
         intersect_rect = intersection(r1_rect, r2_rect);
         intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
 
-        return intersect;
-
     } else if (r1.get_sub_tile() == NO_SUBTILE && r2.get_sub_tile() != NO_SUBTILE) {
         intersect.set_sub_tile(r2.get_sub_tile());
         intersect_rect = intersection(r1_rect, r2_rect);
         intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
 
-        return intersect;
-
     } else if (r1.get_sub_tile() != NO_SUBTILE && r2.get_sub_tile() == NO_SUBTILE) {
         intersect.set_sub_tile(r1.get_sub_tile());
         intersect_rect = intersection(r1_rect, r2_rect);
         intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
-
-        return intersect;
     }
 
-    //If none of the above cases are true, an empty intersect region is returned
     return intersect;
 }
 
