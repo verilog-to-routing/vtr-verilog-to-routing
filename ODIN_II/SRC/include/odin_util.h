@@ -9,9 +9,9 @@
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc);
 
-std::string get_file_extension(std::string input_file);
-void create_directory(std::string path);
-void assert_supported_file_extension(std::string input_file, loc_t loc);
+std::string get_file_extension(const std::string& input_file);
+void create_directory(const std::string& path);
+void assert_supported_file_extension(const std::string& input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
 
 const char* name_based_on_op(operation_list op);
@@ -66,7 +66,7 @@ double wall_time();
 int print_progress_bar(double completion, int position, int length, double time);
 
 void trim_string(char* string, const char* chars);
-bool only_one_is_true(std::vector<bool> tested);
+bool only_one_is_true(const std::vector<bool>& tested);
 int odin_sprintf(char* s, const char* format, ...);
 char* str_collate(char* str1, char* str2);
 

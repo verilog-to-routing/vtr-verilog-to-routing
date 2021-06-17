@@ -66,12 +66,12 @@ float find_hold_worst_slack(const tatum::HoldTimingAnalyzer& hold_analyzer, cons
 std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins = 10);
 
 //Print a useful summary of timing information
-void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, std::string prefix);
+void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer);
 
 float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyzer& hold_analyzer);
 
-tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range arrival_tags,
-                                              const tatum::TimingTags::tag_range required_tags,
+tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range& arrival_tags,
+                                              const tatum::TimingTags::tag_range& required_tags,
                                               float slack);
 
 /*
@@ -200,12 +200,12 @@ float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, cons
 // which handles the trade-off between different timing constraints in multi-clock circuits.
 float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_req,
                                const std::map<DomainPair, float>& domains_worst_slack,
-                               const tatum::TimingTags::tag_range tags);
+                               const tatum::TimingTags::tag_range& tags);
 
 /*
  * Debug
  */
-void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds);
+void print_tatum_cpds(const std::vector<tatum::TimingPathInfo>& cpds);
 
 tatum::NodeId id_or_pin_name_to_tnode(std::string name_or_id);
 tatum::NodeId pin_name_to_tnode(std::string name);

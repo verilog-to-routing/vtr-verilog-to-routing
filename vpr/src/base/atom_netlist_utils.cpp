@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cmath>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -48,7 +49,7 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity);
 std::string make_unconn(size_t& unconn_count, PinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
 
-void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist) {
+void print_netlist_as_blif(const std::string& filename, const AtomNetlist& netlist) {
     FILE* f = std::fopen(filename.c_str(), "w");
     print_netlist_as_blif(f, netlist);
     std::fclose(f);
@@ -125,7 +126,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
         fprintf(f, "\n");
 
         //Artificial buffers
-        for (auto buf_pair : artificial_buffer_connections_required) {
+        for (const auto& buf_pair : artificial_buffer_connections_required) {
             fprintf(f, "#Artificially inserted primary-output assigment buffer\n");
             fprintf(f, ".names %s %s\n", buf_pair.first.c_str(), buf_pair.second.c_str());
             fprintf(f, "1 1\n");
@@ -346,10 +347,10 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
         fprintf(f, "\n");
 
-        for (auto param : netlist.block_params(blk_id)) {
+        for (const auto& param : netlist.block_params(blk_id)) {
             fprintf(f, ".param %s %s\n", param.first.c_str(), param.second.c_str());
         }
-        for (auto attr : netlist.block_attrs(blk_id)) {
+        for (const auto& attr : netlist.block_attrs(blk_id)) {
             fprintf(f, ".attr %s %s\n", attr.first.c_str(), attr.second.c_str());
         }
 
@@ -650,7 +651,7 @@ std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNet
 
     VTR_ASSERT(netlist.port_type(output_port) == PortType::OUTPUT);
 
-    std::string out_port_name = netlist.port_name(output_port);
+    const std::string& out_port_name = netlist.port_name(output_port);
 
     AtomBlockId blk = netlist.port_block(output_port);
 
@@ -672,7 +673,7 @@ std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNet
 
     VTR_ASSERT(netlist.port_type(output_port) == PortType::OUTPUT);
 
-    std::string out_port_name = netlist.port_name(output_port);
+    const std::string& out_port_name = netlist.port_name(output_port);
 
     AtomBlockId blk = netlist.port_block(output_port);
 
@@ -1282,7 +1283,7 @@ std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTab
 
 std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube) {
     std::vector<size_t> minterms;
-    cube_to_minterms_recurr(cube, minterms);
+    cube_to_minterms_recurr(std::move(cube), minterms);
     return minterms;
 }
 

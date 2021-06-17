@@ -129,6 +129,7 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -437,7 +438,7 @@ static int get_max_lcm(vector<t_switchblock_inf>* switchblocks, const t_wire_typ
 
 /* computes a horizontal row of switchblocks of size sb_row_size (or of grid.width()-4, whichever is smaller), starting
  * at coordinate (1,1) */
-static void compute_switchblock_row(int sb_row_size, t_chan_details* chan_details_x, t_chan_details* chan_details_y, vector<t_switchblock_inf>* switchblocks, const DeviceGrid& grid, int nodes_per_chan, const t_wire_type_sizes* wire_type_sizes, e_directionality directionality, t_sb_connection_map* sb_row) {
+static void compute_switchblock_row(int sb_row_size, t_chan_details* chan_details_x, t_chan_details* chan_details_y, vector<t_switchblock_inf>* switchblocks, const DeviceGrid& grid, int nodes_per_chan, t_wire_type_sizes* wire_type_sizes, e_directionality directionality, t_sb_connection_map* sb_row) {
     int y = 1;
     for (int isb = 0; isb < (int)switchblocks->size(); isb++) {
         t_switchblock_inf* sb = &(switchblocks->at(isb));
@@ -981,7 +982,7 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
     vars.set_var_value("from", from_wire_count);
     vars.set_var_value("to", to_wire_count);
 
-    return scratchpad->formula_parser.parse_formula(num_conns_formula, vars);
+    return scratchpad->formula_parser.parse_formula(std::move(num_conns_formula), vars);
 }
 
 /* Here we find the correct channel (x or y), and the coordinates to index into it based on the

@@ -71,7 +71,7 @@ struct t_range_limiters {
 };
 
 //Records a reasons for an aborted move
-void log_move_abort(std::string reason);
+void log_move_abort(const std::string& reason);
 
 //Prints a breif report about aborted move reasons and counts
 void report_aborted_moves();

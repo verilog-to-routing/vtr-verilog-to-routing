@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "tatum/TimingGraphFwd.hpp"
 #include "tatum/util/tatum_range.hpp"
@@ -40,7 +41,7 @@ class TimingAnalyzer {
         ///Returns the set of nodes which were modified by the last call to update_timing()
         node_range modified_nodes() const { return modified_nodes_impl(); }
 
-        double get_profiling_data(std::string key) const { return get_profiling_data_impl(key); }
+        double get_profiling_data(std::string key) const { return get_profiling_data_impl(std::move(key)); }
 
         virtual size_t num_unconstrained_startpoints() const { return num_unconstrained_startpoints_impl(); }
         virtual size_t num_unconstrained_endpoints() const { return num_unconstrained_endpoints_impl(); }

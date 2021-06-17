@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <string>
 #include <unordered_set>
+#include <utility>
 
 #include "vtr_error.h"
 
@@ -39,7 +40,7 @@ class VprError : public vtr::VtrError {
              std::string msg = "",
              std::string file = "",
              size_t linenum = -1)
-        : VtrError(msg, file, linenum)
+        : VtrError(std::move(msg), std::move(file), linenum)
         , type_(err_type) {}
 
     t_vpr_error_type type() const { return type_; }
@@ -51,7 +52,7 @@ class VprError : public vtr::VtrError {
 // This function is used to save into the functions_to_demote set
 // all the function names which contain VPR_THROW errors that are
 // going to be demoted to be VTR_LOG_WARN
-void map_error_activation_status(std::string function_name);
+void map_error_activation_status(const std::string& function_name);
 
 //VPR error reporting routines
 //

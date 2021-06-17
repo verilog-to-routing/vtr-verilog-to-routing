@@ -192,7 +192,7 @@ static std::string _radix_digit_to_bits_str(const char digit, size_t radix, cons
             break;
         }
         case 256: {
-            std::string bitstring = "";
+            std::string bitstring;
             char temp = digit;
             // 8 bit per char
             for (int i = 0; i < 8; i++) {
@@ -222,7 +222,7 @@ static std::string _radix_digit_to_bits(const char digit, size_t radix, const ch
  * convert from different radix to bitstring
  */
 std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix) {
-    std::string result = "";
+    std::string result;
 
     switch (radix) {
         case 2:
@@ -266,7 +266,7 @@ std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix) 
     while (!orig_string.empty()) {
         switch (radix) {
             case 10: {
-                std::string new_number = "";
+                std::string new_number;
 
                 uint8_t rem_digit = 0;
                 for (char current_digit : orig_string) {

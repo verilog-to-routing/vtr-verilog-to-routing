@@ -7,18 +7,18 @@ namespace tatum {
  * Tag utilities
  */
 //Return the tag from the range [first,last) which has the lowest value
-TimingTags::const_iterator find_minimum_tag(TimingTags::tag_range tags) {
+TimingTags::const_iterator find_minimum_tag(const TimingTags::tag_range& tags) {
 
     return std::min_element(tags.begin(), tags.end(), TimingTagValueComp()); 
 }
 
 //Return the tag from the range [first,last) which has the highest value
-TimingTags::const_iterator find_maximum_tag(TimingTags::tag_range tags) {
+TimingTags::const_iterator find_maximum_tag(const TimingTags::tag_range& tags) {
 
     return std::max_element(tags.begin(), tags.end(), TimingTagValueComp()); 
 }
 
-TimingTags::const_iterator find_tag(TimingTags::tag_range tags, 
+TimingTags::const_iterator find_tag(const TimingTags::tag_range& tags, 
                                            DomainId launch_domain, 
                                            DomainId capture_domain) {
     for(auto iter = tags.begin(); iter != tags.end(); ++iter) {
@@ -31,7 +31,7 @@ TimingTags::const_iterator find_tag(TimingTags::tag_range tags,
 }
 
 //Returns true of the specified set of tags would constrain a node of type node_type
-bool is_constrained(NodeType node_type, TimingTags::tag_range tags) {
+bool is_constrained(NodeType node_type, const TimingTags::tag_range& tags) {
     bool has_clock_launch = false;
     bool has_clock_capture = false;
     bool has_data_required = false;

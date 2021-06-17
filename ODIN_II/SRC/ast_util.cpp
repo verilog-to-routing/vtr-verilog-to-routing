@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include <algorithm>
+#include <utility>
 #include "odin_globals.h"
 #include "odin_types.h"
 
@@ -520,7 +521,7 @@ void change_to_number_node(ast_node_t* node, VNumber number) {
 
     node->type = NUMBERS;
     node->types.identifier = temp_ident;
-    node->types.vnumber = new VNumber(number);
+    node->types.vnumber = new VNumber(std::move(number));
 }
 
 /*---------------------------------------------------------------------------------------------

@@ -52,7 +52,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno);
 static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
 static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input);
 static std::string format_name(std::string name);
 static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
 
@@ -107,7 +107,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     ++lineno;
     header.clear();
     header = vtr::split(header_str);
-    if (header[0] == "Array" && header[1] == "size:" && (vtr::atou(header[2].c_str()) != device_ctx.grid.width() || vtr::atou(header[4].c_str()) != device_ctx.grid.height())) {
+    if (header[0] == "Array" && header[1] == "size:" && (vtr::atou(header[2]) != device_ctx.grid.width() || vtr::atou(header[4]) != device_ctx.grid.height())) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, lineno,
                   "Device dimensions %sx%s specified in the routing file does not match given %dx%d ",
                   header[2].c_str(), header[4].c_str(), device_ctx.grid.width(), device_ctx.grid.height());
@@ -248,7 +248,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
         } else if (tokens[0] == "Node:") {
             /*An actual line, go through each node and add it to the route tree*/
             inode = atoi(tokens[1].c_str());
-            auto node = device_ctx.rr_nodes[inode];
+            auto& node = device_ctx.rr_nodes[inode];
 
             /*First node needs to be source. It is isolated to correctly set heap head.*/
             if (node_count == 0 && tokens[2] != "SOURCE") {
@@ -467,7 +467,7 @@ static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId n
  * @brief Parse the pin info in the form of pb_name.port_name[pb_pin_num]
  *        into its appropriate variables
  */
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input) {
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input) {
     std::stringstream pb_info(input);
     std::getline(pb_info, pb_name, '.');
     std::getline(pb_info, port_name, '[');

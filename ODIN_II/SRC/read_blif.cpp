@@ -290,7 +290,7 @@ void create_latch_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
             names[4] = names[2];
             names[2] = vtr::strdup("re");
         } else {
-            std::string line = "";
+            std::string line;
             for (int i = 0; i < input_token_count; i++) {
                 line += names[i];
                 line += " ";

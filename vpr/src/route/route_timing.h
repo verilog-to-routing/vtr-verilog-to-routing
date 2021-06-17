@@ -23,8 +23,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                              const std::vector<t_segment_inf>& segment_inf,
                              ClbNetPinsMatrix<float>& net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                             const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                             const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                              ScreenUpdatePriority first_iteration_priority);
 
 template<typename ConnectionRouter>

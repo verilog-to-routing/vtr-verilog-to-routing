@@ -14,7 +14,7 @@
 #include "rtl_utils.hpp"
 
 #define bad_ops(test) _bad_ops(test, __func__, __LINE__)
-inline static std::string _bad_ops(std::string test, const char* FUNCT, int LINE) {
+inline static std::string _bad_ops(const std::string& test, const char* FUNCT, int LINE) {
     std::cerr << "INVALID INPUT OPS: (" << test << ")@" << FUNCT << "::" << std::to_string(LINE) << std::endl;
     std::abort();
 }
@@ -26,7 +26,7 @@ inline static std::string _bad_ops(std::string test, const char* FUNCT, int LINE
  *                                                             
  * 	This is used for testing purposes only, unused in ODIN as the input is already preprocessed
  */
-static std::string arithmetic(std::string op, std::string a_in) {
+static std::string arithmetic(const std::string& op, const std::string& a_in) {
     VNumber a(a_in);
     VNumber result;
 
@@ -75,7 +75,7 @@ static std::string arithmetic(std::string op, std::string a_in) {
     return result.to_verilog_bitstring();
 }
 
-static std::string arithmetic(std::string a_in, std::string op, std::string b_in) {
+static std::string arithmetic(const std::string& a_in, const std::string& op, const std::string& b_in) {
     VNumber a(a_in);
     VNumber b(b_in);
     VNumber result;
@@ -141,15 +141,48 @@ static std::string arithmetic(std::string a_in, std::string op, std::string b_in
 
 int main(int argc, char** argv) {
     std::vector<std::string> input;
+    input.reserve(argc);
     for (int i = 0; i < argc; i++)
         input.push_back(argv[i]);
 
-    std::string result = "";
+    std::string result;
 
     if (argc < 3) {
         ERR_MSG("Not Enough Arguments: " << std::to_string(argc - 1));
 
         return -1;
+    } else if (argc == 3 && input[1] == "is_true") {
+        VNumber input_2(input[2]);
+
+        result = (V_TRUE(input_2) ? "pass" : "fail");
+    } else if (argc == 3 && input[1] == "is_false") {
+        VNumber input_2(input[2]);
+
+        result = (V_FALSE(input_2) ? "pass" : "fail");
+    } else if (argc == 3 && input[1] == "is_unk") {
+        VNumber input_2(input[2]);
+
+        result = (V_UNK(input_2) ? "pass" : "fail");
+    } else if (argc == 3 && input[1] == "is_x") {
+        VNumber input_2(input[2]);
+
+        result = (V_IS_X(input_2) ? "pass" : "fail");
+    } else if (argc == 3 && input[1] == "is_z") {
+        VNumber input_2(input[2]);
+
+        result = (V_IS_Z(input_2) ? "pass" : "fail");
+    } else if (argc == 3 && input[1] == "is_unsigned") {
+        VNumber input_2(input[2]);
+
+        result = (V_IS_UNSIGNED(input_2) ? "pass" : "fail");
+    } else if (argc == 3 && input[1] == "is_signed") {
+        VNumber input_2(input[2]);
+
+        result = (V_IS_SIGNED(input_2) ? "pass" : "fail");
+    } else if (argc == 3 && input[1] == "display") {
+        VNumber input_2(input[2]);
+
+        result = V_STRING(input_2);
     } else if (argc == 3) {
         result = arithmetic(input[1], input[2]);
     } else if (argc == 4 && input[1] == "display") {

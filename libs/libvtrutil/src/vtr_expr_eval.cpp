@@ -83,7 +83,7 @@ bool additional_assignment_op(int arg1, int arg2);
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
-int FormulaParser::parse_formula(std::string formula, const t_formula_data& mydata, bool is_breakpoint) {
+int FormulaParser::parse_formula(const std::string& formula, const t_formula_data& mydata, bool is_breakpoint) {
     int result = -1;
 
     /* output in reverse-polish notation */
@@ -481,6 +481,7 @@ static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& 
     if (E_FML_OPERATOR != fobj.type) {
         throw vtr::VtrError(vtr::string_fmt("in handle_operator: passed in formula object not of type operator\n"), __FILE__, __LINE__);
     }
+
     int op_pr = get_fobj_precedence(fobj);
     bool op_assoc_is_left = op_associativity_is_left(fobj.data.op);
 
@@ -654,6 +655,7 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
             }
         }
     }
+
     return result;
 }
 
@@ -770,7 +772,7 @@ static bool is_operator(const char ch) {
 }
 
 //returns true if string signifies a function e.g max, min
-static bool is_function(std::string name) {
+static bool is_function(const std::string& name) {
     if (name == "min"
         || name == "max"
         || name == "gcd"
@@ -801,7 +803,7 @@ t_compound_operator is_compound_op(const char* ch) {
 }
 
 //checks if the entered string is a known variable name
-static bool is_variable(std::string var_name) {
+static bool is_variable(const std::string& var_name) {
     if (same_string(var_name, "from_block") || same_string(var_name, "temp_count") || same_string(var_name, "move_num") || same_string(var_name, "route_net_id") || same_string(var_name, "in_blocks_affected") || same_string(var_name, "router_iter")) {
         return true;
     }

@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include <utility>
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
@@ -57,9 +58,9 @@ std::vector<HistogramBucket> build_histogram(std::vector<float> values, size_t n
 void print_histogram(std::vector<HistogramBucket> histogram) {
     size_t char_width = 80;
 
-    auto lines = format_histogram(histogram, char_width);
+    auto lines = format_histogram(std::move(histogram), char_width);
 
-    for (auto line : lines) {
+    for (const auto& line : lines) {
         VTR_LOG("%s\n", line.c_str());
     }
 }

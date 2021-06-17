@@ -1,5 +1,6 @@
 #include <cstdarg>
 #include <string>
+#include <utility>
 
 #include "vtr_util.h"
 #include "vtr_log.h"
@@ -17,7 +18,7 @@ static std::unordered_set<std::string> functions_to_demote;
  *			anything but throw an exception which will be caught
  *			main.c.
  */
-void map_error_activation_status(std::string function_name) {
+void map_error_activation_status(const std::string& function_name) {
     functions_to_demote.insert(function_name);
 }
 
@@ -56,7 +57,7 @@ void vpr_throw_msg(enum e_vpr_error type,
                    const char* psz_file_name,
                    unsigned int line_num,
                    std::string msg) {
-    throw VprError(type, msg, psz_file_name, line_num);
+    throw VprError(type, std::move(msg), psz_file_name, line_num);
 }
 
 void vpr_throw_opt(enum e_vpr_error type,

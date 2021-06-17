@@ -29,33 +29,33 @@
 #include "vtr_memory.h"
 
 void Hashtable::destroy_free_items() {
-    for (auto kv : my_map)
+    for (const auto& kv : my_map)
         vtr::free(kv.second);
 }
 
-void Hashtable::add(std::string key, void* item) {
-    this->my_map.emplace(key, item);
+void Hashtable::add(const std::string& key, void* item) {
+    this->my_map.insert({key, item});
 }
 
-void* Hashtable::remove(std::string key) {
+void* Hashtable::remove(const std::string& key) {
     void* value = NULL;
     auto v = this->my_map.find(key);
     if (v != this->my_map.end()) {
-        value = v->second;
-        this->my_map.erase(v);
+        value = this->my_map[key];
+        this->my_map.erase(key);
     }
     return value;
 }
 
-void* Hashtable::get(std::string key) {
+void* Hashtable::get(const std::string& key) {
     void* value = NULL;
     auto v = this->my_map.find(key);
     if (v != this->my_map.end())
-        value = v->second;
+        value = this->my_map[key];
 
     return value;
 }
 
 bool Hashtable::is_empty() {
-    return my_map.empty();
+    return (my_map.size() == 0);
 }

@@ -1,13 +1,14 @@
 #include "pugixml_util.hpp"
 #include <algorithm>
+#include <utility>
 
 namespace pugiutil {
 
 //Loads the XML file specified by filename into the passed pugi::xml_document
 //
 //Returns loc_data look-up for xml node line numbers
-loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded with file contents
-                  const std::string filename) { //Filename to load from
+loc_data load_xml(pugi::xml_document& doc,       //Document object to be loaded with file contents
+                  const std::string& filename) { //Filename to load from
     auto location_data = loc_data(filename);
 
     auto load_result = doc.load_file(filename.c_str());
@@ -17,7 +18,7 @@ loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded w
         auto col = location_data.col(load_result.offset);
         throw XmlError("Unable to load XML file '" + filename + "', " + msg
                            + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
-                       filename.c_str(), line);
+                       filename, line);
     }
 
     return location_data;
@@ -110,7 +111,7 @@ size_t count_children(const pugi::xml_node node,
 //  loc_data - XML file location data
 //  expected_count - The expected number of child nodes
 void expect_child_node_count(const pugi::xml_node node,
-                             std::string child_name,
+                             const std::string& child_name,
                              size_t expected_count,
                              const loc_data& loc_data) {
     size_t actual_count = count_children(node, child_name, loc_data, OPTIONAL);
@@ -188,7 +189,7 @@ void expect_only_children(const pugi::xml_node node,
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
-                            std::string explanation,
+                            const std::string& explanation,
                             const loc_data& loc_data) {
     for (auto attrib : node.attributes()) {
         std::string attrib_name = attrib.name();
@@ -233,7 +234,7 @@ void expect_only_attributes(const pugi::xml_node node,
 void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
                             const loc_data& loc_data) {
-    expect_only_attributes(node, attribute_names, "", loc_data);
+    expect_only_attributes(node, std::move(attribute_names), "", loc_data);
 }
 
 //Counts the number of attributes on the specified node

@@ -23,7 +23,7 @@ GraphvizDotWriter::GraphvizDotWriter(const TimingGraph& tg, const DelayCalculato
     nodes_to_dump_ = std::set<NodeId>(nodes.begin(), nodes.end());
 }
 
-void GraphvizDotWriter::write_dot_file(std::string filename) {
+void GraphvizDotWriter::write_dot_file(const std::string& filename) {
     std::ofstream os(filename);
     write_dot_file(os);
 }
@@ -43,11 +43,11 @@ void GraphvizDotWriter::write_dot_file(std::ostream& os) {
     write_dot_format(os, node_tags, node_slacks, timing_type);
 }
 
-void GraphvizDotWriter::write_dot_file(std::string filename, const SetupTimingAnalyzer& analyzer) {
+void GraphvizDotWriter::write_dot_file(const std::string& filename, const SetupTimingAnalyzer& analyzer) {
     std::ofstream os(filename);
     write_dot_file(os, analyzer);
 }
-void GraphvizDotWriter::write_dot_file(std::string filename, const HoldTimingAnalyzer& analyzer) {
+void GraphvizDotWriter::write_dot_file(const std::string& filename, const HoldTimingAnalyzer& analyzer) {
     std::ofstream os(filename);
     write_dot_file(os, analyzer);
 }
@@ -165,7 +165,7 @@ void GraphvizDotWriter::write_dot_edge(std::ostream& os, const EdgeId edge, cons
 
         EdgeType edge_type = tg_.edge_type(edge);
 
-        std::string color = "";
+        std::string color;
         os << "\t" << node_name(src_node) << " -> " << node_name(sink_node);
         os << " [ label=\"" << edge;
         if(edge_type == EdgeType::PRIMITIVE_CLOCK_CAPTURE) {

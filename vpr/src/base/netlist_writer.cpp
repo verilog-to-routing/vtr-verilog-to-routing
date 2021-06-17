@@ -3,6 +3,7 @@
 #include <sstream>
 #include <set>
 #include <map>
+#include <utility>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -113,10 +114,10 @@ void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& 
 void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth);
 
 std::string create_unconn_net(size_t& unconn_count);
-std::string escape_verilog_identifier(const std::string id);
-std::string escape_sdf_identifier(const std::string id);
+std::string escape_verilog_identifier(const std::string& id);
+std::string escape_sdf_identifier(const std::string& id);
 bool is_special_sdf_char(char c);
-std::string join_identifier(std::string lhs, std::string rhs);
+std::string join_identifier(const std::string& lhs, const std::string& rhs);
 
 //
 //
@@ -203,10 +204,10 @@ class LutInst : public Instance {
             std::vector<Arc> timing_arc_values)                         ///<The timing arcs of this instance
         : type_("LUT_K")
         , lut_size_(lut_size)
-        , lut_mask_(lut_mask)
-        , inst_name_(inst_name)
-        , port_conns_(port_conns)
-        , timing_arcs_(timing_arc_values) {
+        , lut_mask_(std::move(lut_mask))
+        , inst_name_(std::move(inst_name))
+        , port_conns_(std::move(port_conns))
+        , timing_arcs_(std::move(timing_arc_values)) {
     }
 
     //Accessors
@@ -429,8 +430,8 @@ class LatchInst : public Instance {
               double tcq = std::numeric_limits<double>::quiet_NaN(),  ///<Clock-to-Q delay
               double tsu = std::numeric_limits<double>::quiet_NaN(),  ///<Setup time
               double thld = std::numeric_limits<double>::quiet_NaN()) ///<Hold time
-        : instance_name_(inst_name)
-        , port_connections_(port_conns)
+        : instance_name_(std::move(inst_name))
+        , port_connections_(std::move(port_conns))
         , type_(type)
         , initial_value_(init_value)
         , tcq_(tcq)
@@ -544,9 +545,9 @@ class LatchInst : public Instance {
     std::map<std::string, std::string> port_connections_;
     Type type_;
     vtr::LogicValue initial_value_;
-    double tcq_;  ///<Clock delay + tcq
-    double tsu_;  ///<Setup time
-    double thld_; ///<Hold time
+    double tcq_;  //Clock delay + tcq
+    double tsu_;  //Setup time
+    double thld_; //Hold time
 };
 
 class BlackBoxInst : public Instance {
@@ -561,16 +562,16 @@ class BlackBoxInst : public Instance {
                  std::map<std::string, sequential_port_delay_pair> ports_tsu,       ///<Port setup checks
                  std::map<std::string, sequential_port_delay_pair> ports_thld,      ///<Port hold checks
                  std::map<std::string, sequential_port_delay_pair> ports_tcq)       ///<Port clock-to-q delays
-        : type_name_(type_name)
-        , inst_name_(inst_name)
-        , params_(params)
-        , attrs_(attrs)
-        , input_port_conns_(input_port_conns)
-        , output_port_conns_(output_port_conns)
-        , timing_arcs_(timing_arcs)
-        , ports_tsu_(ports_tsu)
-        , ports_thld_(ports_thld)
-        , ports_tcq_(ports_tcq) {}
+        : type_name_(std::move(type_name))
+        , inst_name_(std::move(inst_name))
+        , params_(std::move(params))
+        , attrs_(std::move(attrs))
+        , input_port_conns_(std::move(input_port_conns))
+        , output_port_conns_(std::move(output_port_conns))
+        , timing_arcs_(std::move(timing_arcs))
+        , ports_tsu_(std::move(ports_tsu))
+        , ports_thld_(std::move(ports_thld))
+        , ports_tcq_(std::move(ports_tcq)) {}
 
     void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) override {
         os << indent(depth) << ".subckt " << type_name_ << " \\"
@@ -728,7 +729,7 @@ class BlackBoxInst : public Instance {
         }
     }
 
-    size_t find_port_size(std::string port_name) {
+    size_t find_port_size(const std::string& port_name) {
         auto iter = input_port_conns_.find(port_name);
         if (iter != input_port_conns_.end()) {
             return iter->second.size();
@@ -767,13 +768,13 @@ class Assignment {
   public:
     Assignment(std::string lval, ///<The left value (assigned to)
                std::string rval) ///<The right value (assigned from)
-        : lval_(lval)
-        , rval_(rval) {}
+        : lval_(std::move(lval))
+        , rval_(std::move(rval)) {}
 
-    void print_verilog(std::ostream& os, std::string indent) {
+    void print_verilog(std::ostream& os, const std::string& indent) {
         os << indent << "assign " << escape_verilog_identifier(lval_) << " = " << escape_verilog_identifier(rval_) << ";\n";
     }
-    void print_blif(std::ostream& os, std::string indent) {
+    void print_blif(std::ostream& os, const std::string& indent) {
         os << indent << ".names " << rval_ << " " << lval_ << "\n";
         os << indent << "1 1\n";
     }
@@ -797,7 +798,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         : verilog_os_(verilog_os)
         , blif_os_(blif_os)
         , sdf_os_(sdf_os)
-        , delay_calc_(delay_calc) {
+        , delay_calc_(std::move(delay_calc)) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
         //Initialize the pin to tnode look-up
@@ -1057,7 +1058,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                int port_idx,           ///<The instance port index
                                int pin_idx) {          ///<The instance pin index
 
-        std::string wire_name = inst_name;
+        std::string wire_name = std::move(inst_name);
         if (port_type == PortType::INPUT) {
             wire_name = join_identifier(wire_name, "input");
         } else if (port_type == PortType::CLOCK) {
@@ -1739,11 +1740,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         auto& atom_ctx = g_vpr_ctx.atom();
         AtomBlockId blk_id = atom_ctx.lookup.pb_atom(atom);
-        for (auto param : atom_ctx.nlist.block_params(blk_id)) {
+        for (const auto& param : atom_ctx.nlist.block_params(blk_id)) {
             params[param.first] = param.second;
         }
 
-        for (auto attr : atom_ctx.nlist.block_attrs(blk_id)) {
+        for (const auto& attr : atom_ctx.nlist.block_attrs(blk_id)) {
             attrs[attr.first] = attr.second;
         }
 
@@ -2023,9 +2024,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
     ///@brief Returns the name of the routing segment between two wires
     std::string interconnect_name(std::string driver_wire, std::string sink_wire) {
-        std::string name = join_identifier("routing_segment", driver_wire);
+        std::string name = join_identifier("routing_segment", std::move(driver_wire));
         name = join_identifier(name, "to");
-        name = join_identifier(name, sink_wire);
+        name = join_identifier(name, std::move(sink_wire));
 
         return name;
     }
@@ -2074,7 +2075,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 //
 
 ///@brief Main routing for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc) {
+void netlist_writer(const std::string& basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
@@ -2087,7 +2088,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
 
-    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc);
+    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, std::move(delay_calc));
 
     NetlistWalker nl_walker(visitor);
 
@@ -2208,7 +2209,7 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
 }
 
 ///@brief Escapes the given identifier to be safe for verilog
-std::string escape_verilog_identifier(const std::string identifier) {
+std::string escape_verilog_identifier(const std::string& identifier) {
     //Verilog allows escaped identifiers
     //
     //The escaped identifiers start with a literal back-slash '\'
@@ -2255,7 +2256,7 @@ bool is_special_sdf_char(char c) {
 }
 
 ///@brief Escapes the given identifier to be safe for sdf
-std::string escape_sdf_identifier(const std::string identifier) {
+std::string escape_sdf_identifier(const std::string& identifier) {
     //SDF allows escaped characters
     //
     //We look at each character in the string and escape it if it is
@@ -2274,6 +2275,6 @@ std::string escape_sdf_identifier(const std::string identifier) {
 }
 
 ///@brief Joins two identifier strings
-std::string join_identifier(std::string lhs, std::string rhs) {
+std::string join_identifier(const std::string& lhs, const std::string& rhs) {
     return lhs + '_' + rhs;
 }

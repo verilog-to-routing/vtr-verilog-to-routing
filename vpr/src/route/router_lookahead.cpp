@@ -1,5 +1,7 @@
 #include "router_lookahead.h"
 
+#include <utility>
+
 #include "router_lookahead_map.h"
 #include "router_lookahead_extended_map.h"
 #include "vpr_error.h"
@@ -26,8 +28,8 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lo
 
 std::unique_ptr<RouterLookahead> make_router_lookahead(
     e_router_lookahead router_lookahead_type,
-    std::string write_lookahead,
-    std::string read_lookahead,
+    const std::string& write_lookahead,
+    const std::string& read_lookahead,
     const std::vector<t_segment_inf>& segment_inf) {
     std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type);
 
@@ -193,7 +195,7 @@ void invalidate_router_lookahead_cache() {
 const RouterLookahead* get_cached_router_lookahead(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
-    std::string read_lookahead,
+    const std::string& read_lookahead,
     const std::vector<t_segment_inf>& segment_inf) {
     auto& router_ctx = g_vpr_ctx.routing();
 
@@ -211,7 +213,7 @@ const RouterLookahead* get_cached_router_lookahead(
             cache_key,
             make_router_lookahead(
                 router_lookahead_type,
-                write_lookahead,
+                std::move(write_lookahead),
                 read_lookahead,
                 segment_inf));
     }

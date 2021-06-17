@@ -5,6 +5,7 @@
 #include <string>
 #include <set>
 #include <limits>
+#include <utility>
 
 #include "argparse.hpp"
 #include "argparse_util.hpp"
@@ -17,15 +18,15 @@ namespace argparse {
      */
 
     ArgumentParser::ArgumentParser(std::string prog_name, std::string description_str, std::ostream& os)
-        : description_(description_str)
+        : description_(std::move(description_str))
         , formatter_(new DefaultFormatter())
         , os_(os)
         {
-        prog(prog_name);
+        prog(std::move(prog_name));
         argument_groups_.push_back(ArgumentGroup("arguments"));
     }
 
-    ArgumentParser& ArgumentParser::prog(std::string prog_name, bool basename_only) {
+    ArgumentParser& ArgumentParser::prog(const std::string& prog_name, bool basename_only) {
         if (basename_only) {
             prog_ = basename(prog_name);
         } else {
@@ -35,17 +36,17 @@ namespace argparse {
     }
 
     ArgumentParser& ArgumentParser::version(std::string version_str) {
-        version_ = version_str;
+        version_ = std::move(version_str);
         return *this;
     }
 
     ArgumentParser& ArgumentParser::epilog(std::string epilog_str) {
-        epilog_ = epilog_str;
+        epilog_ = std::move(epilog_str);
         return *this;
     }
 
     ArgumentGroup& ArgumentParser::add_argument_group(std::string description_str) {
-        argument_groups_.push_back(ArgumentGroup(description_str));
+        argument_groups_.push_back(ArgumentGroup(std::move(description_str)));
         return argument_groups_[argument_groups_.size() - 1];
     }
 
@@ -410,11 +411,11 @@ namespace argparse {
      * ArgumentGroup
      */
     ArgumentGroup::ArgumentGroup(std::string name_str)
-        : name_(name_str)
+        : name_(std::move(name_str))
         {}
 
     ArgumentGroup& ArgumentGroup::epilog(std::string str) {
-        epilog_ = str;
+        epilog_ = std::move(str);
         return *this;
     }
     std::string ArgumentGroup::name() const { return name_; }
@@ -425,8 +426,8 @@ namespace argparse {
      * Argument
      */
     Argument::Argument(std::string long_opt, std::string short_opt)
-        : long_opt_(long_opt)
-        , short_opt_(short_opt) {
+        : long_opt_(std::move(long_opt))
+        , short_opt_(std::move(short_opt)) {
 
         if (long_opt_.size() < 1) {
             throw ArgParseError("Argument must be at least one character long");
@@ -445,7 +446,7 @@ namespace argparse {
     }
 
     Argument& Argument::help(std::string help_str) {
-        help_ = help_str;
+        help_ = std::move(help_str);
         return *this;
     }
 
@@ -476,12 +477,12 @@ namespace argparse {
     }
 
     Argument& Argument::metavar(std::string metavar_str) {
-        metavar_ = metavar_str;
+        metavar_ = std::move(metavar_str);
         return *this;
     }
 
     Argument& Argument::choices(std::vector<std::string> choice_values) {
-        choices_ = choice_values;
+        choices_ = std::move(choice_values);
         return *this;
     }
 
@@ -536,7 +537,7 @@ namespace argparse {
     }
 
     Argument& Argument::group_name(std::string grp) {
-        group_name_ = grp;
+        group_name_ = std::move(grp);
         return *this;
     }
 

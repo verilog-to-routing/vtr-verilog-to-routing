@@ -786,7 +786,7 @@ class Netlist {
      *   @param blk_id   : The block to be renamed
      *   @param new_name : The new name for the specified block
      */
-    void set_block_name(const BlockId blk_id, const std::string new_name);
+    void set_block_name(const BlockId blk_id, const std::string& new_name);
 
     /**
      * @brief Set a block attribute

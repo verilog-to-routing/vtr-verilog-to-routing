@@ -286,7 +286,7 @@ TimingConstraints::source_latency_range TimingConstraints::source_latencies(Arri
     }
 }
 
-DomainId TimingConstraints::create_clock_domain(const std::string name) { 
+DomainId TimingConstraints::create_clock_domain(const std::string& name) { 
     DomainId id = find_clock_domain(name);
     if(!id) {
         //Create it

@@ -174,7 +174,7 @@ FILE* create_blif(const char* file_name) {
 
     /* open the file for output */
     if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED) {
-        std::string out_file = "";
+        std::string out_file;
         out_file = out_file + file_name + "_" + global_args.high_level_block.value() + ".blif";
         out = fopen(out_file.c_str(), "w+");
     } else {

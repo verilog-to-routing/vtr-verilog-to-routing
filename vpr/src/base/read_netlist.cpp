@@ -349,7 +349,7 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
             std::string cval = Cur.text().get();
             bool found = false;
             // Look for corresponding key-value in range from AtomNetlist
-            for (auto bitem : atom_net_range) {
+            for (const auto& bitem : atom_net_range) {
                 if (bitem.first == cname) {
                     if (bitem.second != cval) {
                         // Found in AtomNetlist range, but values don't match
@@ -369,7 +369,7 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
         }
     }
     // Check for attrs/params in AtomNetlist but not in .net file
-    for (auto bitem : atom_net_range) {
+    for (const auto& bitem : atom_net_range) {
         if (kvs.find(bitem.first) == kvs.end())
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Parent),
                       ".net file and .blif file do not match, %s %s missing in .net file.\n",
@@ -692,7 +692,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
 
                     if (strcmp(pins[i].c_str(), "open") != 0) {
                         //For connected pins look-up the inter-block net index associated with it
-                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i].c_str());
+                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i]);
                         if (!net_id) {
                             VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                                             ".blif and .net do not match, unknown net %s found in .net file.\n.",
@@ -772,7 +772,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                     const t_pb_graph_pin* pb_gpin = &pb->pb_graph_node->output_pins[out_port][i];
                     int rr_node_index = pb_gpin->pin_count_in_cluster;
                     if (strcmp(pins[i].c_str(), "open") != 0) {
-                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i].c_str());
+                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i]);
                         if (!net_id) {
                             VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                                             ".blif and .net do not match, unknown net %s found in .net file.\n",

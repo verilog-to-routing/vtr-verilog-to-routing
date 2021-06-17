@@ -132,7 +132,7 @@ class Callback {
 /*
  * External functions for loading an SDC file
  */
-void sdc_parse_filename(std::string filename, Callback& callback);
+void sdc_parse_filename(const std::string& filename, Callback& callback);
 void sdc_parse_filename(const char* filename, Callback& callback);
 
 //Loads from 'sdc'. 'filename' only used to pass a filename to callback and can be left unspecified

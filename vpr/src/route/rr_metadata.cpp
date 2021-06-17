@@ -1,5 +1,7 @@
 #include "rr_metadata.h"
 
+#include <utility>
+
 #include "globals.h"
 
 namespace vpr {
@@ -37,7 +39,7 @@ const t_metadata_value* rr_edge_metadata(int src_node, int sink_id, short switch
         return nullptr;
     }
 
-    return iter->second.one(key);
+    return iter->second.one(std::move(key));
 }
 
 void add_rr_edge_metadata(int src_node, int sink_id, short switch_id, vtr::string_view key, vtr::string_view value) {

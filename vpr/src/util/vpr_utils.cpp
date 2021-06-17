@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -709,7 +710,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid) {
 }
 
 InstPort parse_inst_port(std::string str) {
-    InstPort inst_port(str);
+    InstPort inst_port(std::move(str));
 
     auto& device_ctx = g_vpr_ctx.device();
     auto blk_type = find_tile_type_by_name(inst_port.instance_name(), device_ctx.physical_tile_types);
@@ -1067,7 +1068,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
 }
 
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name) {
-    const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, port_name, 0);
+    const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, std::move(port_name), 0);
 
     if (gpin != nullptr) {
         return gpin->port;
@@ -1075,7 +1076,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
     return nullptr;
 }
 
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index) {
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
         if (pb_gnode->num_input_pins[iport] < index) continue;
 

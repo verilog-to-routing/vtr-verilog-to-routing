@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 #include <cmath>
@@ -295,6 +296,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     }
 
     CBRR connections_inf{};
+    VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
     route_budgets budgeting_inf;
 
@@ -1179,8 +1181,10 @@ static bool timing_driven_pre_route_to_clock_root(
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
+    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
+    const RouterLookahead& router_lookahead,
     SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1572,7 +1576,7 @@ static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay) {
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
             if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
-                if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
+                if (std::fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
                               "in timing_driven_check_net_delays: net %lu pin %d.\n"
                               "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
