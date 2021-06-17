@@ -80,6 +80,16 @@ class RRSpatialLookup {
                                              int y,
                                              t_rr_type type) const;
 
+    /**
+     * Like find_node() but returns all matching nodes on all the sides.
+     * This is particularly useful for getting all instances
+     * of a specific IPIN/OPIN at a specific gird tile (x,y) location.
+     */
+    std::vector<RRNodeId> find_nodes_at_all_sides(int x,
+                                                  int y,
+                                                  t_rr_type rr_type,
+                                                  int ptc) const;
+
     /* -- Mutators -- */
   public:
     /**
