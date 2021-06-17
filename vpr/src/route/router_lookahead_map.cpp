@@ -562,7 +562,6 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     int start_lookup_x = start_x;
     int start_lookup_y = start_y;
 
-
     /* find first node in channel that has specified segment index and goes in the desired direction */
     for (const RRNodeId& node_id : device_ctx.rr_graph.node_lookup().find_channel_nodes(start_lookup_x, start_lookup_y, rr_type)) {
         if (!node_id) continue;
