@@ -143,7 +143,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  int to_pin_class,
                                                  int* src_rr,
                                                  int* sink_rr,
-                                                 std::vector<int>* scratch);
+                                                 std::vector<RRNodeId>* scratch);
 
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
 
@@ -956,7 +956,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  int to_pin_class,
                                                  int* src_rr,
                                                  int* sink_rr,
-                                                 std::vector<int>* scratch) {
+                                                 std::vector<RRNodeId>* scratch) {
     VTR_ASSERT(from_type != nullptr);
     VTR_ASSERT(to_type != nullptr);
 
@@ -982,9 +982,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 RRNodeId from_pin_rr = device_ctx.rr_graph.node_lookup().find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
                 from_pin_found = (from_pin_rr != RRNodeId::INVALID());
             } else {
-                std::vector<int>& from_pin_rrs = *scratch;
-                get_rr_node_indices(device_ctx.rr_node_indices, from_x, from_y, OPIN, from_pin, &from_pin_rrs);
-                from_pin_found = !from_pin_rrs.empty();
+                (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(from_x, from_y, OPIN, from_pin);
+                from_pin_found = !(*scratch).empty();
             }
             if (!from_pin_found) continue;
 
@@ -1000,9 +999,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 RRNodeId to_pin_rr = device_ctx.rr_graph.node_lookup().find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
                 to_pin_found = (to_pin_rr != RRNodeId::INVALID());
             } else {
-                std::vector<int>& to_pin_rrs = *scratch;
-                get_rr_node_indices(device_ctx.rr_node_indices, to_x, to_y, IPIN, to_pin, &to_pin_rrs);
-                to_pin_found = !to_pin_rrs.empty();
+                (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(to_x, to_y, IPIN, to_pin);
+                to_pin_found = !(*scratch).empty();
             }
             if (!to_pin_found) continue;
 
@@ -1039,17 +1037,15 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //
 
     {
-        std::vector<int>& source_rr_nodes = *scratch;
-        get_rr_node_indices(device_ctx.rr_node_indices, from_x, from_y, SOURCE, from_pin_class, &source_rr_nodes);
-        VTR_ASSERT(source_rr_nodes.size() > 0);
-        *src_rr = source_rr_nodes[0];
+        (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(from_x, from_y, SOURCE, from_pin_class);
+        VTR_ASSERT((*scratch).size() > 0);
+        *src_rr = size_t((*scratch)[0]);
     }
 
     {
-        std::vector<int>& sink_rr_nodes = *scratch;
-        get_rr_node_indices(device_ctx.rr_node_indices, to_x, to_y, SINK, to_pin_class, &sink_rr_nodes);
-        VTR_ASSERT(sink_rr_nodes.size() > 0);
-        *sink_rr = sink_rr_nodes[0];
+        (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(to_x, to_y, SINK, to_pin_class);
+        VTR_ASSERT((*scratch).size() > 0);
+        *sink_rr = size_t((*scratch)[0]);
     }
 
     return true;
@@ -1082,7 +1078,7 @@ void OverrideDelayModel::compute_override_delay_model(
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();
-    std::vector<int> scratch;
+    std::vector<RRNodeId> scratch;
     for (int idirect = 0; idirect < device_ctx.arch->num_directs; ++idirect) {
         const t_direct_inf* direct = &device_ctx.arch->Directs[idirect];
 
