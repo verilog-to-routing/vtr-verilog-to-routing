@@ -185,6 +185,25 @@ void read_place_body(std::ifstream& placement_file,
         place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
     }
 
+    /*
+     * If place file, initialize grid blocks
+     */
+    if (is_place_file) {
+        auto& grid_blocks = place_ctx.grid_blocks;
+        auto& device_grid = device_ctx.grid;
+        grid_blocks.resize({device_grid.width(), device_grid.height()});
+        for (size_t x = 0; x < device_grid.width(); ++x) {
+            for (size_t y = 0; y < device_grid.height(); ++y) {
+                auto& grid_block = grid_blocks[x][y];
+                grid_block.blocks.resize(device_ctx.grid[x][y].type->capacity);
+
+                for (int z = 0; z < device_ctx.grid[x][y].type->capacity; ++z) {
+                    grid_block.blocks[z] = EMPTY_BLOCK_ID;
+                }
+            }
+        }
+    }
+
     //used to count how many times a block has been seen in the place/constraints file so duplicate blocks can be detected
     vtr::vector_map<ClusterBlockId, int> seen_blocks;
 
@@ -271,10 +290,15 @@ void read_place_body(std::ifstream& placement_file,
             //for a place file, grid usage is marked elsewhere
             if (!is_place_file) {
                 place_ctx.block_locs[blk_id].is_fixed = true;
-                place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;
-                if (seen_blocks[blk_id] == 0) {
-                    place_ctx.grid_blocks[block_x][block_y].usage++;
-                }
+                /*place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;
+                 * if (seen_blocks[blk_id] == 0) {
+                 * place_ctx.grid_blocks[block_x][block_y].usage++;
+                 * }*/
+            }
+
+            place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;
+            if (seen_blocks[blk_id] == 0) {
+                place_ctx.grid_blocks[block_x][block_y].usage++;
             }
 
             //mark the block as seen
