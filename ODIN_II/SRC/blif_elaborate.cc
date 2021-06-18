@@ -70,16 +70,19 @@ static void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, net
 static void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void make_selector_as_first_port(nnode_t* node);
 static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */);
-static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */);
+static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 /*******************************************************************************************************
  ********************************************** [UTILS] ************************************************
  *******************************************************************************************************/
 static void look_for_clocks(netlist_t* netlist);
-static signal_list_t* constant_shift (signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
+static signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
 
 /**
  *-------------------------------------------------------------------------
@@ -102,8 +105,7 @@ void blif_elaborate_top(netlist_t* netlist) {
          *  nothing needs to be done since the netlist 
          *  is already compatible with Odin_II style 
          */
-    }
-    else if (configuration.coarsen) {
+    } else if (configuration.coarsen) {
         /* do the elaboration without any larger structures identified */
         depth_first_traversal_to_blif_elaborate(SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
         /**
@@ -195,8 +197,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
     switch (node->type) {
         case GTE: //fallthrough
         case LTE: //fallthrough
-        case GT: //fallthrough
-        case LT: //fallthrough
+        case GT:  //fallthrough
+        case LT:  //fallthrough
         case LOGICAL_OR:
         case LOGICAL_AND:
         case LOGICAL_NOT:
@@ -204,7 +206,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case LOGICAL_NAND:
         case LOGICAL_XOR:
         case LOGICAL_XNOR:
-        case LOGICAL_EQUAL: 
+        case LOGICAL_EQUAL:
         case NOT_EQUAL: {
             /** 
              * to make sure they have only one output pin for partial mapping phase 
@@ -212,8 +214,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_logical_node(node, traverse_number, netlist);
             break;
         }
-        case SL: //fallthrough
-        case SR: //fallthrough
+        case SL:  //fallthrough
+        case SR:  //fallthrough
         case ASL: //fallthrough
         case ASR: {
             /**
@@ -352,12 +354,19 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_dffsr_node(node, traverse_number, netlist);
             break;
         }
+        case DFFSRE: {
+            /**
+             * resolving a dff node with set and reset and enable
+            */
+            resolve_dffsre_node(node, traverse_number, netlist);
+            break;
+        }
         case MULTIPORT_nBIT_MUX: {
             /**
              * need to reorder the input pins, so that the 
              * selector signal comes at the first place
              */
-            make_selector_as_first_port(node);            
+            make_selector_as_first_port(node);
             break;
         }
         case PMUX: {
@@ -380,10 +389,24 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case DPRAM: {
-           /**
+            /**
              * resolving a single port ram by create the related soft logic
             */
             resolve_dual_port_ram(node, traverse_number, netlist);
+            break;
+        }
+        case ROM: {
+            /**
+             * resolving a read_only_memory node based on the given architecture
+            */
+            resolve_rom_node(node, traverse_number, netlist);
+            break;
+        }
+        case BRAM: {
+            /**
+             * resolving a block memory node based on the given architecture
+            */
+            resolve_bram_node(node, traverse_number, netlist);
             break;
         }
         case MULTI_BIT_MUX_2:
@@ -391,7 +414,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case VCC_NODE:
         case PAD_NODE:
         case INPUT_NODE:
-        case OUTPUT_NODE: 
+        case OUTPUT_NODE:
         case MEMORY:
         case BUF_NODE:
         case BITWISE_NOT:
@@ -405,7 +428,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case MUX_2:
-        case MULTI_PORT_MUX: 
+        case MULTI_PORT_MUX:
         case HARD_IP:
         case ADDER_FUNC:
         case CARRY_FUNC:
@@ -423,7 +446,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
  * @brief resolving the logical nodes by 
  * connecting the ouput pins[1..n] to GND
  * 
- * @param node pointing to a logical not node 
+ * @param node pointing to a logical node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -437,7 +460,7 @@ static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, 
     int width_a = node->input_port_sizes[0];
     int width_b = (node->num_input_port_sizes == 2) ? node->input_port_sizes[1] : -1;
     int max_width = std::max(width_a, width_b);
-    
+
     /* making a new node with input port sizes equal to max_width and a single output pin */
     nnode_t* new_node = (node->num_input_port_sizes == 1)
                             ? make_1port_gate(node->type, max_width, 1, node, traverse_mark_number)
@@ -458,7 +481,7 @@ static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, 
                 add_input_pin_to_node(new_node, get_zero_pin(netlist), max_width + i);
             }
         }
-    }    
+    }
 
     /* handle output pins */
     for (i = 0; i < node->num_output_pins; i++) {
@@ -471,7 +494,7 @@ static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, 
         } else {
             /* detach output pins [1..n] and drive them with GND */
             nnet_t* output_net = output_pin->net;
-            
+
             // make GND the driver the output pins
             for (j = 0; j < output_net->num_fanout_pins; j++) {
                 npin_t* fanout_pin = output_net->fanout_pins[j];
@@ -484,7 +507,7 @@ static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, 
             free_nnet(output_net);
         }
     }
-    
+
     // CLEAN UP
     free_nnode(node);
 }
@@ -495,7 +518,7 @@ static void resolve_logical_node(nnode_t* node, uintptr_t traverse_mark_number, 
  * @brief resolving the shift nodes by making
  * the input port sizes the same
  * 
- * @param node pointing to a logical not node 
+ * @param node pointing to a shift node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -526,7 +549,7 @@ static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, ne
 
     int i;
     npin_t* extension_pin = NULL;
-    
+
     for (i = 0; i < max_size; i++) {
         /* port a needs to be extended */
         if (port_a_size < max_size) {
@@ -534,42 +557,41 @@ static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, ne
             if (i < port_a_size) {
                 /* need to remap existing pin */
                 remap_pin_to_new_node(node->input_pins[i],
-                                        new_shift_node,
-                                        i);
+                                      new_shift_node,
+                                      i);
             } else {
                 /* need to add extension pin */
                 extension_pin = (node->attributes->port_a_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_a_size - 1]) : get_zero_pin(netlist);
                 add_input_pin_to_node(new_shift_node,
-                                        extension_pin,
-                                        i);
+                                      extension_pin,
+                                      i);
             }
 
             /* remapping the b pins untouched */
             remap_pin_to_new_node(node->input_pins[i + max_size],
-                                    new_shift_node,
-                                    i + max_size);
-            
+                                  new_shift_node,
+                                  i + max_size);
 
-        } 
+        }
         /* port b needs to be extended */
         else if (port_b_size < max_size) {
             /* remapping the a pins untouched */
             remap_pin_to_new_node(node->input_pins[i],
-                                    new_shift_node,
-                                    i);
+                                  new_shift_node,
+                                  i);
 
             /* remapping the b pins + adding extension pin */
             if (i < port_b_size) {
                 /* need to remap existing pin */
                 remap_pin_to_new_node(node->input_pins[i + max_size],
-                                        new_shift_node,
-                                        i + max_size);
+                                      new_shift_node,
+                                      i + max_size);
             } else {
                 /* need to add extension pin */
                 extension_pin = (node->attributes->port_b_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_b_size - 1 + max_size]) : get_zero_pin(netlist);
                 add_input_pin_to_node(new_shift_node,
-                                        extension_pin,
-                                        i + max_size);
+                                      extension_pin,
+                                      i + max_size);
             }
         }
     }
@@ -577,8 +599,8 @@ static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, ne
     /* Connecting output pins */
     for (i = 0; i < port_y_size; i++) {
         remap_pin_to_new_node(node->output_pins[i],
-                            new_shift_node,
-                            i);
+                              new_shift_node,
+                              i);
     }
 
     // CLEAN UP
@@ -591,7 +613,7 @@ static void resolve_shift_node(nnode_t* node, uintptr_t traverse_mark_number, ne
  * @brief resolving the CASE EQUAL node using XNOR 
  * for each pin and finally AND all XNOR outputs
  * 
- * @param node pointing to a logical not node 
+ * @param node pointing to a netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -729,7 +751,7 @@ static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_n
 
     free_signal_list(xnor_outputs);
     free_signal_list(and_outputs);
-    
+
     free_nnode(node);
 
     return (output_node);
@@ -741,7 +763,7 @@ static nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_n
  * @brief resolving the CASE NOT EQUAL node using 
  * NOT gate after case equal output node
  * 
- * @param node pointing to a logical not node 
+ * @param node pointing to a netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -843,27 +865,27 @@ static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_n
                 int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
 
                 new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
-                                            out_port_size,
-                                            node, traverse_mark_number);
+                                           out_port_size,
+                                           node, traverse_mark_number);
 
                 for (i = 0; i < in_port1_size; i++) {
                     remap_pin_to_new_node(node->input_pins[i],
-                                            new_node,
-                                            i);
+                                          new_node,
+                                          i);
                 }
 
                 for (i = 0; i < in_port2_size; i++) {
                     remap_pin_to_new_node(node->input_pins[i + in_port1_size],
-                                            new_node,
-                                            i + in_port1_size);
+                                          new_node,
+                                          i + in_port1_size);
                 }
 
                 // moving the output pins to the new node
                 for (i = 0; i < out_port_size; i++) {
                     if (i < node->num_output_pins) {
                         remap_pin_to_new_node(node->output_pins[i],
-                                                new_node,
-                                                i);
+                                              new_node,
+                                              i);
                     } else {
                         npin_t* new_pin1 = allocate_npin();
                         npin_t* new_pin2 = allocate_npin();
@@ -887,18 +909,18 @@ static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_n
                     nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
                     /* adding the GND input pin to the buf node */
                     add_input_pin_to_node(buf_node,
-                                            get_zero_pin(netlist),
-                                            0);
+                                          get_zero_pin(netlist),
+                                          0);
                     /* remapping the outpin to buf node */
                     remap_pin_to_new_node(node->output_pins[i],
-                                            buf_node,
-                                            0);
+                                          buf_node,
+                                          0);
                 }
 
                 // CLEAN UP
                 free_nnode(node);
             }
-            /* otherwise there is unary minus, like -A. no need for any change */ 
+            /* otherwise there is unary minus, like -A. no need for any change */
             else if (num_input_port == 1) {
                 new_node = node;
             }
@@ -911,9 +933,9 @@ static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_n
         }
         default: {
             error_message(BLIF_ELBORATION, node->loc,
-                              "The node(%s) type is not among Odin's arithmetic types [ADD, MINUS and MULTIPLY]\n", node->name);
-            break;                
-        }    
+                          "The node(%s) type is not among Odin's arithmetic types [ADD, MINUS and MULTIPLY]\n", node->name);
+            break;
+        }
     }
 
     return (new_node);
@@ -926,7 +948,7 @@ static nnode_t* resolve_arithmetic_node(nnode_t* node, uintptr_t traverse_mark_n
  * @brief checking for constant multipication. If one port is constant, t
  * he multipication node will explode into multiple adders 
  * 
- * @param node pointing to the netlist node 
+ * @param node pointing to the mul node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------------------------*/
@@ -990,7 +1012,7 @@ static bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_
  * 
  * @brief resolving module node by 
  * 
- * @param node pointing to a logical not node 
+ * @param node pointing to a mod node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -1012,20 +1034,20 @@ static void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, n
  * 
  * @brief resolving divide node
  * 
- * @param node pointing to a logical not node 
+ * @param node pointing to a div node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
 static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
-    
+
     /**
      * Div Ports:
      * IN1: Dividend (m bits) 
      * IN2: Divisor  (n bits) 
      * OUT: Quotient (k bits)
     */
-    int divisor_width   = node->input_port_sizes[1];
+    int divisor_width = node->input_port_sizes[1];
 
     /** 
      * checking the division restrictions 
@@ -1033,7 +1055,7 @@ static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, n
      * 1. m == 2*n - 1
      * 2. divisor MSB == 1 (left)
      * 3. n == k
-    */    
+    */
     /**
      * modify div input signals to provide compatibility 
      * with the first and third restrictions.
@@ -1043,7 +1065,7 @@ static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, n
     signal_list_t** modified_input_signals = modify_div_signal_sizes(node, netlist);
     /* keep the record of the extesnsion size for divisor for future transformation */
     int new_divisor_width = modified_input_signals[1]->count; // modified_input_signals[1] == new divisor signals
-    
+
     /* validate new sizes */
     oassert(divisor_width == new_divisor_width);
 
@@ -1063,7 +1085,7 @@ static void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, n
  * @brief split the dlatch node read from yosys blif to
  * latch nodes with input/output width one
  * 
- * @param node pointing to the dff node 
+ * @param node pointing to the dlatch node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -1189,7 +1211,7 @@ static void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, n
  * @brief split the adlatch node read from yosys blif to
  * latch nodes with input/output width one
  * 
- * @param node pointing to the dff node 
+ * @param node pointing to the adlatch node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -1387,7 +1409,6 @@ static void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, 
     vtr::free(en_muxes);
     vtr::free(rst_muxes);
     vtr::free(buf_nodes);
-
 }
 
 /**
@@ -1408,9 +1429,9 @@ static void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netl
      * need to reformat the order of pins and the number of ports
      * since odin ff_node has only one port which the last pin is clk
     */
-    int i;   
+    int i;
     int width = node->num_output_pins;
-    nnode_t* ff_node = make_1port_gate(FF_NODE, width+1, width, node, traverse_mark_number);
+    nnode_t* ff_node = make_1port_gate(FF_NODE, width + 1, width, node, traverse_mark_number);
     ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
     /* remap the last bit of the clk pin to the last input pin since the resit does not work at all */
     int clk_width = node->input_port_sizes[0];
@@ -1420,35 +1441,35 @@ static void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netl
     for (i = 0; i < width; i++) {
         remap_pin_to_new_node(node->input_pins[clk_width + i], ff_node, i);
     }
-    
+
     /* hook the output pins into the new ff_node */
     for (i = 0; i < width; i++) {
         remap_pin_to_new_node(node->output_pins[i], ff_node, i);
-    }  
+    }
 
     /** if it is multibit we will leave it for partial mapping phase,
      * otherwise we need to add single bit ff node to the ff_node 
      * list of the current netlist 
     */
-   /* single bit dff, [0]: clk, [1]: D */
-   if (node->num_input_pins == 2) {
+    /* single bit dff, [0]: clk, [1]: D */
+    if (node->num_input_pins == 2) {
         /* adding the new generated node to the ff node list of the enetlist */
         netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
         netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
         netlist->num_ff_nodes++;
-   }
+    }
 
     // CLEAN UP
-    free_nnode(node); 
+    free_nnode(node);
 }
 
 /**
  * (function: resolve_adff_node)
  * 
- * @brief resolving the adff node by connecting 
+ * @brief resolving the dff node by connecting 
  * the multiplexing the D input with reset value
  * 
- * @param node pointing to a adff node 
+ * @param node pointing to a dff node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -1468,7 +1489,7 @@ static void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, net
     */
     int i;
     int ARST_width = node->input_port_sizes[0]; // == 1
-    int CLK_width = node->input_port_sizes[1]; // == 1
+    int CLK_width = node->input_port_sizes[1];  // == 1
     int D_width = node->input_port_sizes[2];
 
     /*****************************************************************************************/
@@ -1517,7 +1538,6 @@ static void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, net
     nnode_t** RST_ff_nodes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
 
     for (i = 0; i < D_width; i++) {
-
         /*****************************************************************************************/
         /*************************************** D_FF_NODE ***************************************/
         /*****************************************************************************************/
@@ -1583,7 +1603,6 @@ static void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, net
         add_driver_pin_to_net(RST_ff_node_net, RST_ff_node_out1);
         /* hook up the new pin 2 to this new net */
         add_fanout_pin_to_net(RST_ff_node_net, RST_ff_node_out2);
-
 
         /*****************************************************************************************/
         /*************************************** RST_MUX *****************************************/
@@ -1769,7 +1788,7 @@ static void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, net
  * @brief resolving the dffe node by connecting 
  * multiplexed D input with Q as the output 
  * 
- * @param node pointing to a dff node 
+ * @param node pointing to a dffe node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -1935,7 +1954,7 @@ static void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, ne
     */
     int i;
     int ARST_width = node->input_port_sizes[0]; // == 1
-    int CLK_width = node->input_port_sizes[1]; // == 1
+    int CLK_width = node->input_port_sizes[1];  // == 1
     int D_width = node->input_port_sizes[2];
 
     /*****************************************************************************************/
@@ -2156,13 +2175,13 @@ static void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, ne
 }
 
 /**
- * (function: resolve_adffe_node)
+ * (function: resolve_sdffe_node)
  * 
- * @brief resolving the adffe node by connecting 
+ * @brief resolving the sdffe node by connecting 
  * the multiplexing the D input with Q ff_node output 
  * and enabling reset value 
  * 
- * @param node pointing to a dffe node 
+ * @param node pointing to a sdffe node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -2398,10 +2417,10 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
      * D:   input port 2
      * SET: input port 3
     */
-    int width     = node->num_output_pins;
+    int width = node->num_output_pins;
     int CLK_width = node->input_port_sizes[0];
     int CLR_width = node->input_port_sizes[1];
-    int D_width   = node->input_port_sizes[2];
+    int D_width = node->input_port_sizes[2];
 
     nnode_t** mux_set = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
     nnode_t** mux_clr = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
@@ -2412,12 +2431,12 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
         /**************************************** MUX_SET ****************************************/
         /*****************************************************************************************/
         mux_set[i] = make_2port_gate(MUX_2, 2, 2, 1, node, traverse_mark_number);
-        
+
         // connect related pin of second_input to related multiplexer as a selector
         nnode_t* select_set = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
         // SET[i] === mux_set selector[i]
         remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + D_width + i], select_set, 0);
-        
+
         // make a not of selector
         nnode_t* not_select_set = make_not_gate(select_set, traverse_mark_number);
         connect_nodes(select_set, 0, not_select_set, 0);
@@ -2452,17 +2471,16 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
         /* hook up the new pin 2 to this new net */
         add_fanout_pin_to_net(new_net_set, new_pin2_set);
 
-        
         /*****************************************************************************************/
         /**************************************** MUX_CLR ****************************************/
         /*****************************************************************************************/
         mux_clr[i] = make_2port_gate(MUX_2, 2, 2, 1, node, traverse_mark_number);
-        
+
         // connect related pin of second_input to related multiplexer as a selector
         nnode_t* select_clr = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
         // CLR[i] === mux_clr selector[i]
         remap_pin_to_new_node(node->input_pins[CLK_width + i], select_clr, 0);
-        
+
         // make a not of selector
         nnode_t* not_select_clr = make_not_gate(select_clr, traverse_mark_number);
         connect_nodes(select_clr, 0, not_select_clr, 0);
@@ -2478,12 +2496,12 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
 
         // connect mux_set[i] output pin to the mux_clr[i]
         add_input_pin_to_node(mux_clr[i],
-                                new_pin2_set,
-                                2);
+                              new_pin2_set,
+                              2);
         // connect GND to the mux_clr[i]
         add_input_pin_to_node(mux_clr[i],
-                                get_zero_pin(netlist),
-                                3);
+                              get_zero_pin(netlist),
+                              3);
         // specify mux_clr[i] output pin
         npin_t* new_pin1_clr = allocate_npin();
         npin_t* new_pin2_clr = allocate_npin();
@@ -2529,6 +2547,250 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
             add_input_pin_to_node(ff_node, copy_input_npin(node->input_pins[0]), 1);
         }
 
+        /**
+         * remap D[i] from the dffsr node to the ff node 
+         * since we do not need it in dff node anymore 
+         **/
+        add_input_pin_to_node(ff_node, new_pin2_clr, 0);
+
+        // remap node's output pin to mux_clr
+        remap_pin_to_new_node(node->output_pins[i], ff_node, 0);
+
+        netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
+        netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
+        netlist->num_ff_nodes++;
+    }
+    vtr::free(mux_set);
+    vtr::free(mux_clr);
+    free_nnode(node);
+}
+
+/**
+ * (function: resolve_dffsre_node)
+ * 
+ * @brief resolving the dffsr node by connecting 
+ * the ouput pins[1..n] to GND/VCC/D based on 
+ * the clr/set edge and adding enable mux
+ * 
+ * @param node pointing to a dffsre node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 5);
+    oassert(node->num_output_port_sizes == 1);
+
+    /**
+     * CLK: input port 0
+     * CLR: input port 1
+     * D:   input port 2
+     * EN:  input port 3
+     * Q:   output port 0
+     * SET: input port 4
+    */
+    int width = node->num_output_pins;
+    int CLK_width = node->input_port_sizes[0];
+    int CLR_width = node->input_port_sizes[1];
+    int D_width = node->input_port_sizes[2];
+    int EN_width = node->input_port_sizes[3];
+
+    nnode_t** select_enable = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
+    nnode_t** mux_en = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
+    nnode_t** mux_set = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
+    nnode_t** mux_clr = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
+
+    int i;
+    for (i = 0; i < width; i++) {
+        /*****************************************************************************************/
+        /**************************************** EN_CHECK ***************************************/
+        /*****************************************************************************************/
+        /* creating equal node to compare the value of enable */
+        select_enable[i] = make_2port_gate(LOGICAL_EQUAL, 1, 1, 1, node, traverse_mark_number);
+        /* connecting EN pin */
+        remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + D_width + i],
+                              select_enable[i],
+                              0);
+
+        /* to check the polarity and connect the correspondence signal */
+        if (node->attributes->enable_polarity == ACTIVE_HIGH_SENSITIVITY) {
+            add_input_pin_to_node(select_enable[i],
+                                  get_one_pin(netlist),
+                                  1);
+        } else if (node->attributes->enable_polarity == ACTIVE_LOW_SENSITIVITY) {
+            add_input_pin_to_node(select_enable[i],
+                                  get_zero_pin(netlist),
+                                  1);
+        }
+
+        /* Specifying the level_muxes outputs */
+        // Connect output pin to related input pin
+        npin_t* new_pin1 = allocate_npin();
+        npin_t* select_enable_output = allocate_npin();
+        nnet_t* new_net = allocate_nnet();
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, select_enable[i]->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(select_enable[i], new_pin1, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, select_enable_output);
+
+        // make a not of selector
+        nnode_t* not_select_enable = make_not_gate(select_enable[i], traverse_mark_number);
+        connect_nodes(select_enable[i], 0, not_select_enable, 0);
+        /*****************************************************************************************/
+        /*************************************** VALUE_MUX ***************************************/
+        /*****************************************************************************************/
+        mux_en[i] = make_2port_gate(MUX_2, 2, 2, 1, node, traverse_mark_number);
+
+        /* connecting selectors */
+        connect_nodes(select_enable[i], 0, mux_en[i], 1);
+        connect_nodes(not_select_enable, 0, mux_en[i], 0);
+
+        /* connecting the pad node to the 0: input of the mux pin */
+        add_input_pin_to_node(mux_en[i],
+                              get_pad_pin(netlist),
+                              2);
+
+        /* remapping the D[i] pin to 0: mux input */
+        remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + i],
+                              mux_en[i],
+                              3);
+
+        // specify mux_en[i] output pin
+        npin_t* new_pin1_en = allocate_npin();
+        npin_t* new_pin2_en = allocate_npin();
+        nnet_t* new_net_en = allocate_nnet();
+        new_net_en->name = make_full_ref_name(NULL, NULL, NULL, mux_en[i]->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(mux_en[i], new_pin1_en, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net_en, new_pin1_en);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net_en, new_pin2_en);
+
+        /*****************************************************************************************/
+        /**************************************** MUX_SET ****************************************/
+        /*****************************************************************************************/
+        mux_set[i] = make_2port_gate(MUX_2, 2, 2, 1, node, traverse_mark_number);
+
+        // connect related pin of second_input to related multiplexer as a selector
+        nnode_t* select_set = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+        // SET[i] === mux_set selector[i]
+        remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + D_width + EN_width + i],
+                              select_set,
+                              0);
+
+        // make a not of selector
+        nnode_t* not_select_set = make_not_gate(select_set, traverse_mark_number);
+        connect_nodes(select_set, 0, not_select_set, 0);
+
+        // connect mux_set selector based on the SET polarity
+        if (node->attributes->set_edge_type == RISING_EDGE_SENSITIVITY) {
+            connect_nodes(select_set, 0, mux_set[i], 1);
+            connect_nodes(not_select_set, 0, mux_set[i], 0);
+        } else if (node->attributes->set_edge_type == FALLING_EDGE_SENSITIVITY) {
+            connect_nodes(select_set, 0, mux_set[i], 0);
+            connect_nodes(not_select_set, 0, mux_set[i], 1);
+        }
+
+        // remap D[i] to the mux_set[i]
+        add_input_pin_to_node(mux_set[i],
+                              new_pin2_en,
+                              2);
+        // connect VCC to the mux_set[i]
+        add_input_pin_to_node(mux_set[i],
+                              get_one_pin(netlist),
+                              3);
+
+        // specify mux_set[i] output pin
+        npin_t* new_pin1_set = allocate_npin();
+        npin_t* new_pin2_set = allocate_npin();
+        nnet_t* new_net_set = allocate_nnet();
+        new_net_set->name = make_full_ref_name(NULL, NULL, NULL, mux_set[i]->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(mux_set[i], new_pin1_set, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net_set, new_pin1_set);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net_set, new_pin2_set);
+
+        /*****************************************************************************************/
+        /**************************************** MUX_CLR ****************************************/
+        /*****************************************************************************************/
+        mux_clr[i] = make_2port_gate(MUX_2, 2, 2, 1, node, traverse_mark_number);
+
+        // connect related pin of second_input to related multiplexer as a selector
+        nnode_t* select_clr = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+        // CLR[i] === mux_clr selector[i]
+        remap_pin_to_new_node(node->input_pins[CLK_width + i], select_clr, 0);
+
+        // make a not of selector
+        nnode_t* not_select_clr = make_not_gate(select_clr, traverse_mark_number);
+        connect_nodes(select_clr, 0, not_select_clr, 0);
+
+        // connect mux_clr selector based on the CLR polarity
+        if (node->attributes->clr_edge_type == RISING_EDGE_SENSITIVITY) {
+            connect_nodes(select_clr, 0, mux_clr[i], 1);
+            connect_nodes(not_select_clr, 0, mux_clr[i], 0);
+        } else if (node->attributes->clr_edge_type == FALLING_EDGE_SENSITIVITY) {
+            connect_nodes(select_clr, 0, mux_clr[i], 0);
+            connect_nodes(not_select_clr, 0, mux_clr[i], 1);
+        }
+
+        // connect mux_set[i] output pin to the mux_clr[i]
+        add_input_pin_to_node(mux_clr[i],
+                              new_pin2_set,
+                              2);
+        // connect GND to the mux_clr[i]
+        add_input_pin_to_node(mux_clr[i],
+                              get_zero_pin(netlist),
+                              3);
+        // specify mux_clr[i] output pin
+        npin_t* new_pin1_clr = allocate_npin();
+        npin_t* new_pin2_clr = allocate_npin();
+        nnet_t* new_net_clr = allocate_nnet();
+        new_net_clr->name = make_full_ref_name(NULL, NULL, NULL, mux_clr[i]->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(mux_clr[i], new_pin1_clr, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net_clr, new_pin1_clr);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net_clr, new_pin2_clr);
+
+        /*****************************************************************************************/
+        /**************************************** FF_NODE ****************************************/
+        /*****************************************************************************************/
+        /* create FF node for DFFSR output */
+        nnode_t* ff_node = allocate_nnode(node->loc);
+
+        ff_node->type = FF_NODE;
+        ff_node->traverse_visited = traverse_mark_number;
+        ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+
+        ff_node->name = node_name(ff_node, NULL);
+
+        add_input_port_information(ff_node, 2);
+        allocate_more_input_pins(ff_node, 2);
+
+        add_output_port_information(ff_node, 1);
+        allocate_more_output_pins(ff_node, 1);
+
+        /**
+         * remap the CLK pin from the dffsr node to the ff node
+         * since we do not need it in dff node anymore 
+         **/
+        if (i == width - 1) {
+            /**
+             * remap the CLK pin from the dffsr node to the new  
+             * ff node since we do not need it in dffsr node anymore 
+             **/
+            remap_pin_to_new_node(node->input_pins[0], ff_node, 1);
+        } else {
+            /* add a copy of CLK pin from the dffsr node to the new ff node */
+            add_input_pin_to_node(ff_node, copy_input_npin(node->input_pins[0]), 1);
+        }
 
         /**
          * remap D[i] from the dffsr node to the ff node 
@@ -2542,9 +2804,11 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
         netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*) * (netlist->num_ff_nodes + 1));
         netlist->ff_nodes[netlist->num_ff_nodes] = ff_node;
         netlist->num_ff_nodes++;
-
-
     }
+
+    // CLEAN UP
+    vtr::free(select_enable);
+    vtr::free(mux_en);
     vtr::free(mux_set);
     vtr::free(mux_clr);
     free_nnode(node);
@@ -2560,28 +2824,28 @@ static void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, ne
  */
 static void make_selector_as_first_port(nnode_t* node) {
     long num_input_pins = node->num_input_pins;
-    npin_t** input_pins = (npin_t**)vtr::malloc(num_input_pins*sizeof(npin_t*)); // the input pins
-    
+    npin_t** input_pins = (npin_t**)vtr::malloc(num_input_pins * sizeof(npin_t*)); // the input pins
+
     int num_input_port_sizes = node->num_input_port_sizes;
-    int* input_port_sizes = (int*)vtr::malloc(num_input_port_sizes*sizeof(int)); // info about the input ports
+    int* input_port_sizes = (int*)vtr::malloc(num_input_port_sizes * sizeof(int)); // info about the input ports
 
     int i, j;
-        int acc_port_sizes = 0;
-    i = num_input_port_sizes-1;
+    int acc_port_sizes = 0;
+    i = num_input_port_sizes - 1;
     while (i > 0) {
-        acc_port_sizes += node->input_port_sizes[i-1];
+        acc_port_sizes += node->input_port_sizes[i - 1];
         i--;
     }
-    
-    for (j = 0; j < node->input_port_sizes[num_input_port_sizes-1]; j++) {
+
+    for (j = 0; j < node->input_port_sizes[num_input_port_sizes - 1]; j++) {
         input_pins[j] = node->input_pins[j + acc_port_sizes];
         input_pins[j]->pin_node_idx = j;
     }
 
     acc_port_sizes = 0;
-    int offset = input_port_sizes[0] = node->input_port_sizes[num_input_port_sizes-1];
+    int offset = input_port_sizes[0] = node->input_port_sizes[num_input_port_sizes - 1];
     for (i = 1; i < num_input_port_sizes; i++) {
-        input_port_sizes[i] = node->input_port_sizes[i-1];
+        input_port_sizes[i] = node->input_port_sizes[i - 1];
 
         for (j = 0; j < input_port_sizes[i]; j++) {
             input_pins[offset] = node->input_pins[j + acc_port_sizes];
@@ -2591,9 +2855,10 @@ static void make_selector_as_first_port(nnode_t* node) {
         acc_port_sizes += input_port_sizes[i];
     }
 
+    // CLEAN UP
     vtr::free(node->input_pins);
     vtr::free(node->input_port_sizes);
-    
+
     node->input_pins = input_pins;
     node->input_port_sizes = input_port_sizes;
 }
@@ -2604,7 +2869,7 @@ static void make_selector_as_first_port(nnode_t* node) {
  * @brief resolving the pmux node including many input
  * multiplexing using a one-hot select signal
  * 
- * @param node pointing to a logical not node 
+ * @param node pointing to a pmux node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
@@ -2819,7 +3084,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
                 add_input_pin_to_node(ternary_muxes[ternary_idx],
                                       get_pad_pin(netlist),
                                       j + width + 1);
-            
+
                 /* Specifying the ternary_muxes outputs */
                 // Connect output pin to related input pin
                 new_pin1 = allocate_npin();
@@ -2875,7 +3140,6 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
                     remap_pin_to_new_node(node->output_pins[j], level_muxes[i], j);
                 }
             }
-
         }
     }
 
@@ -2884,8 +3148,8 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
         /* 1: B */
         if (j < width) {
             remap_pin_to_new_node(signal_B->pins[j],
-                                level_muxes[0],
-                                j + width + 1);
+                                  level_muxes[0],
+                                  j + width + 1);
         } else {
             remove_fanout_pins_from_net(signal_B->pins[j]->net,
                                         signal_B->pins[j],
@@ -2900,7 +3164,7 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
     for (i = 0; i < selector_width; i++) {
         free_signal_list(level_muxes_out_signals[i]);
 
-        if (i < selector_width-1) {
+        if (i < selector_width - 1) {
             free_signal_list(ternary_muxes_out_signals[i]);
         }
     }
@@ -2922,11 +3186,11 @@ static void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, net
  * @brief resolve the spram block by reordering the input signals 
  * to be compatible with Odin's partial mapping phase
  * 
- * @param node pointing to a logical not node
+ * @param node pointing to a spram node
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_input_port_sizes == 4);
     oassert(node->num_output_port_sizes == 1);
@@ -2947,58 +3211,109 @@ static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_numbe
      * DATAOUT: output port [0] 
      */
 
-
-    int ADDR_width  = node->input_port_sizes[0];  
-    int CLK_width   = node->input_port_sizes[1];  // should be 1
-    int DATA_width  = node->input_port_sizes[2];  
-    int WE_width    = node->input_port_sizes[3];  // should be 1
+    int i, j;
+    int SP_ADDR_width = node->input_port_sizes[0];
+    int SP_CLK_width  = node->input_port_sizes[1]; // should be 1
+    int SP_DATA_width = node->input_port_sizes[2];
+    int SP_WE_width   = node->input_port_sizes[3]; // should be 1
+    int SP_OUT_width = node->output_port_sizes[0];
 
     /* validate the data width */
-    oassert(DATA_width == node->output_port_sizes[0]);
+    oassert(SP_DATA_width == node->output_port_sizes[0]);
+    oassert(SP_CLK_width == 1);
 
-    int i;
-    /* creating a new node */
-    nnode_t* spram = allocate_nnode(node->loc);
-    spram->type = MEMORY;
-    spram->name = vtr::strdup(node->name);
-    spram->related_ast_node = node->related_ast_node;
+    int widths[5] = {SP_ADDR_width, SP_CLK_width, SP_DATA_width, SP_WE_width, SP_OUT_width};
 
-    /* INPUTS */
-    /* adding the first input port as address */
-    add_input_port_information(spram, ADDR_width);
-    allocate_more_input_pins(spram, ADDR_width);
-    for (i = 0; i < ADDR_width; i++) {
-        /* hook the addr pin to new node */
-        remap_pin_to_new_node(node->input_pins[i], spram, i);
+    /* getting the hb ports sizes if any hb model exist */
+    int* hp_ports_sizes = get_spram_hb_ports_sizes(widths, node);
+
+    int addr_width = (hp_ports_sizes) ? hp_ports_sizes[0] : SP_ADDR_width;
+    int clk_width  = (hp_ports_sizes) ? hp_ports_sizes[1] : SP_CLK_width;
+    int data_width = (hp_ports_sizes) ? hp_ports_sizes[2] : SP_DATA_width;
+    int we_width   = (hp_ports_sizes) ? hp_ports_sizes[3] : SP_WE_width;
+    int out_width  = (hp_ports_sizes) ? hp_ports_sizes[4] : SP_OUT_width;
+
+    /* currently odin supports one bit data width for each spram */
+    if (hp_ports_sizes) {
+        oassert(data_width == 1);
+        oassert(data_width == out_width);
     }
-    
-    /* adding the second input port as data */
-    add_input_port_information(spram, DATA_width);
-    allocate_more_input_pins(spram, DATA_width);
-    for (i = 0; i < DATA_width; i++) {
+
+    /* creating spram node for the range of data width */
+    for (i = 0; i < SP_DATA_width; i++) {
+        /* creating a new node */
+        nnode_t* spram = allocate_nnode(node->loc);
+        spram->type = MEMORY;
+        spram->related_ast_node = node->related_ast_node;
+
+        char* hb_name = spram->related_ast_node->identifier_node->types.identifier;
+        spram->name = hard_node_name(spram,
+                                     netlist->identifier,
+                                     hb_name,
+                                     node->attributes->memory_id);
+
+        /* INPUTS */
+        /* adding the first input port as address */
+        add_input_port_information(spram, addr_width);
+        allocate_more_input_pins(spram, addr_width);
+        for (j = 0; j < addr_width; j++) {
+            /* container for address pin */
+            npin_t* addr_pin = NULL;
+
+            /* hook the addr pin to new node */
+            if (j < SP_ADDR_width) {
+                addr_pin = node->input_pins[j];
+                if (i != SP_DATA_width - 1)
+                    add_input_pin_to_node(spram, copy_input_npin(addr_pin), j);
+                else
+                    remap_pin_to_new_node(addr_pin, spram, j);
+            } else {
+                addr_pin = get_pad_pin(netlist);
+                addr_pin->mapping = vtr::strdup("addr");
+                add_input_pin_to_node(spram, addr_pin, j);
+            }
+        }
+
+        /* adding the second input port as clock */
+        add_input_port_information(spram, clk_width);
+        allocate_more_input_pins(spram, clk_width);
+        /* hook the clk pin to new node */
+        npin_t* clk_pin = node->input_pins[SP_ADDR_width];
+        if (i != SP_DATA_width - 1)
+            add_input_pin_to_node(spram, copy_input_npin(clk_pin), addr_width);
+        else
+            remap_pin_to_new_node(clk_pin, spram, addr_width);
+
+        /* adding the third input port as data */
+        add_input_port_information(spram, 1);
+        allocate_more_input_pins(spram, 1);
+        npin_t* data_pin = node->input_pins[SP_ADDR_width + SP_CLK_width + i];
         /* hook the data in pin to new node */
-        remap_pin_to_new_node(node->input_pins[ADDR_width + CLK_width + i], spram, ADDR_width + i);
-    }
+        remap_pin_to_new_node(data_pin,
+                              spram,
+                              addr_width + clk_width);
 
-    /* adding the third input port as we */
-    add_input_port_information(spram, WE_width);
-    allocate_more_input_pins(spram, WE_width);
-    /* hook the we pin to new node */
-    remap_pin_to_new_node(node->input_pins[ADDR_width + CLK_width + DATA_width], spram, ADDR_width + DATA_width);
+        /* adding the forth input port as we */
+        add_input_port_information(spram, we_width);
+        allocate_more_input_pins(spram, we_width);
+        npin_t* we_pin = node->input_pins[SP_ADDR_width + SP_CLK_width + SP_DATA_width];
+        /* hook the we pin to new node */
+        if (i != SP_DATA_width - 1)
+            add_input_pin_to_node(spram,
+                                  copy_input_npin(we_pin),
+                                  addr_width + clk_width + 1);
+        else
+            remap_pin_to_new_node(we_pin,
+                                  spram,
+                                  addr_width + clk_width + 1);
 
-    /* adding the forth input port as clock */
-    add_input_port_information(spram, CLK_width);
-    allocate_more_input_pins(spram, CLK_width);
-    /* hook the clk pin to new node */
-    remap_pin_to_new_node(node->input_pins[ADDR_width], spram, ADDR_width + DATA_width + WE_width);
-
-    /* OUTPUT */
-    /* adding the output port */
-    add_output_port_information(spram, DATA_width);
-    allocate_more_output_pins(spram, DATA_width);
-    for (i = 0; i < DATA_width; i++) {
+        /* OUTPUT */
+        /* adding the output port */
+        add_output_port_information(spram, 1);
+        allocate_more_output_pins(spram, 1);
+        npin_t* out_pin = node->output_pins[i];
         /* hook the data out pin to new node */
-        remap_pin_to_new_node(node->output_pins[i], spram, i);
+        remap_pin_to_new_node(out_pin, spram, 0);
     }
 
     // CLEAN UP
@@ -3011,11 +3326,11 @@ static void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_numbe
  * @brief resolve the dpram block by reordering the input signals 
  * to be compatible with Odin's partial mapping phase
  * 
- * @param node pointing to a logical not node
+ * @param node pointing to a dual port ram node
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_input_port_sizes == 7);
     oassert(node->num_output_port_sizes == 2);
@@ -3026,7 +3341,7 @@ static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number,
                       "%s", "DPRAM ports mismatch with VTR dual_port_ram hard block ports\n");
 
     /** 
-     * blif single port ram information 
+     * blif dual port ram information 
      * 
      * ADDR1:    input port [0] 
      * ADDR2:    input port [1] 
@@ -3040,13 +3355,13 @@ static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number,
      * DATAOUT2: output port [1] 
      */
 
-    int ADDR1_width  = node->input_port_sizes[0];  
-    int ADDR2_width  = node->input_port_sizes[1];  
-    int CLK_width    = node->input_port_sizes[2];  // should be 1
-    int DATA1_width  = node->input_port_sizes[3];  
-    int DATA2_width  = node->input_port_sizes[4];  
-    int WE1_width    = node->input_port_sizes[5];  // should be 1
-    int WE2_width    = node->input_port_sizes[6];  // should be 1
+    int ADDR1_width = node->input_port_sizes[0];
+    int ADDR2_width = node->input_port_sizes[1];
+    int CLK_width = node->input_port_sizes[2]; // should be 1
+    int DATA1_width = node->input_port_sizes[3];
+    int DATA2_width = node->input_port_sizes[4];
+    int WE1_width = node->input_port_sizes[5]; // should be 1
+    int WE2_width = node->input_port_sizes[6]; // should be 1
 
     /* validate the port width */
     oassert((CLK_width == 1) && (WE1_width == 1) && (WE2_width == 1));
@@ -3085,7 +3400,7 @@ static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number,
                               dpram,
                               ADDR1_width + ADDR2_width + i);
     }
-     /* adding the forth input port as data2 */
+    /* adding the forth input port as data2 */
     add_input_port_information(dpram, DATA2_width);
     allocate_more_input_pins(dpram, DATA2_width);
     for (i = 0; i < DATA2_width; i++) {
@@ -3094,7 +3409,7 @@ static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number,
                               dpram,
                               ADDR1_width + ADDR2_width + DATA1_width + i);
     }
-    
+
     /* adding the third input port as we1 */
     add_input_port_information(dpram, WE1_width);
     allocate_more_input_pins(dpram, WE1_width);
@@ -3110,7 +3425,7 @@ static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number,
     remap_pin_to_new_node(node->input_pins[ADDR1_width + ADDR2_width + CLK_width + DATA1_width + DATA2_width + WE1_width],
                           dpram,
                           ADDR1_width + ADDR2_width + DATA1_width + DATA2_width + WE1_width);
-    
+
     /* adding the forth input port as clock */
     add_input_port_information(dpram, CLK_width);
     allocate_more_input_pins(dpram, CLK_width);
@@ -3133,6 +3448,368 @@ static void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number,
     for (i = 0; i < DATA1_width; i++) {
         /* hook the data out pin to new node */
         remap_pin_to_new_node(node->output_pins[DATA1_width + i], dpram, DATA1_width + i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+}
+
+/**
+ * (function: resolve_rom_node)
+ * 
+ * @brief read_only_memory will be considered as single port ram
+ * this function reorders inputs and add data_in input to new node
+ * which is connected to pad node
+ * 
+ * @param node pointing to a rom node node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 3);
+
+    int i, j;
+    /** 
+     * yosys single port ram information 
+     * 
+     * RD_ADDR:    input port [0] 
+     * RD_CLOCK:   input port [1] 
+     * RD_DATA:    output port [0] 
+     * RD_ENABLE:  input port [2] 
+    */
+    int RD_ADDR_width = node->input_port_sizes[0];
+    int RD_CLK_width = node->input_port_sizes[1];
+    int RD_DATA_width = node->output_port_sizes[0];
+    int RD_ENABLE_width = node->input_port_sizes[2];
+
+    /* validate port sizes */
+    oassert(RD_CLK_width == 1);
+
+    /* creating a new node to reorder pins and specify the related hard block name */
+    nnode_t* new_node = allocate_nnode(node->loc);
+    new_node->type = MEMORY;
+    new_node->traverse_visited = traverse_mark_number;
+    char* hb_name = vtr::strdup(SINGLE_PORT_RAM_string);
+    // new_node->name = hard_node_name(new_node,
+    //                                 netlist->identifier,
+    //                                 hb_name,
+    //                                 node->attributes->memory_id);
+    new_node->name = make_full_ref_name(hb_name, NULL, NULL, NULL, -1);
+    ;
+
+    new_node->related_ast_node = node->related_ast_node;
+
+    char* hard_block_identifier = new_node->related_ast_node->identifier_node->types.identifier;
+    /* setting single port ram as corresponding memory hard block */
+    if (hard_block_identifier)
+        vtr::free(hard_block_identifier);
+
+    new_node->related_ast_node->identifier_node->types.identifier = hb_name;
+
+    /* INPUTS */
+    /* add read addr port info */
+    add_input_port_information(new_node, RD_ADDR_width);
+    allocate_more_input_pins(new_node, RD_ADDR_width);
+    for (i = 0; i < RD_ADDR_width; i++) {
+        npin_t* rd_addr_pin = node->input_pins[i];
+        if (rd_addr_pin->mapping)
+            vtr::free(rd_addr_pin->mapping);
+
+        rd_addr_pin->mapping = vtr::strdup("addr");
+        remap_pin_to_new_node(rd_addr_pin, new_node, i);
+    }
+
+    /* add read clock port info */
+    add_input_port_information(new_node, 1);
+    allocate_more_input_pins(new_node, 1);
+    npin_t* clk_pin = node->input_pins[RD_ADDR_width];
+    if (clk_pin->mapping)
+        vtr::free(clk_pin->mapping);
+
+    clk_pin->mapping = vtr::strdup("clk");
+    remap_pin_to_new_node(clk_pin,
+                          new_node,
+                          RD_ADDR_width);
+
+    /* add data in port info */
+    add_input_port_information(new_node, RD_DATA_width);
+    allocate_more_input_pins(new_node, RD_DATA_width);
+    /* since ROM does not have any data in we connect the data in port to pad */
+    for (i = 0; i < RD_DATA_width; i++) {
+        npin_t* pad_pin = get_pad_pin(netlist);
+        pad_pin->mapping = vtr::strdup("data");
+        add_input_pin_to_node(new_node, pad_pin, RD_ADDR_width + 1 + i);
+    }
+
+    /* add read enable port info */
+    add_input_port_information(new_node, 1);
+    allocate_more_input_pins(new_node, 1);
+    npin_t* rd_en_pin = NULL;
+    if (RD_ENABLE_width == 1) {
+        rd_en_pin = node->input_pins[RD_ADDR_width + RD_CLK_width];
+        if (rd_en_pin->mapping)
+            vtr::free(rd_en_pin->mapping);
+
+        rd_en_pin->mapping = vtr::strdup("we");
+        remap_pin_to_new_node(rd_en_pin,
+                              new_node,
+                              RD_ADDR_width + 1 + RD_DATA_width);
+
+    } else if (RD_ENABLE_width > 1) {
+        /* need to OR all enable since we1 should be one bit in single port ram */
+        signal_list_t* rd_en_signal_list = init_signal_list();
+        for (j = 0; j < RD_ENABLE_width; j++) {
+            add_pin_to_signal_list(rd_en_signal_list, node->input_pins[RD_ADDR_width + RD_CLK_width + j]);
+        }
+        /* OR enable signals */
+        rd_en_pin = make_or_chain(rd_en_signal_list, new_node);
+        rd_en_pin->mapping = vtr::strdup("we");
+        /* hook the final enable pin to the new node */
+        add_input_pin_to_node(new_node, rd_en_pin, RD_ADDR_width + 1 + RD_DATA_width);
+    }
+
+    /* OUTPUTS */
+    /* adding the output port */
+    add_output_port_information(new_node, RD_DATA_width);
+    allocate_more_output_pins(new_node, RD_DATA_width);
+    for (i = 0; i < RD_DATA_width; i++) {
+        npin_t* out_pin = node->output_pins[i];
+        if (out_pin->mapping)
+            vtr::free(out_pin->mapping);
+
+        out_pin->mapping = vtr::strdup("out");
+        out_pin->name = make_full_ref_name(new_node->name, NULL, NULL, node->output_pins[i]->mapping, i);
+        /* hook the data out pin to new node */
+        remap_pin_to_new_node(out_pin, new_node, i);
+    }
+
+    /* resolve the new created node using spram resolving since it is a spram in the end  */
+    resolve_single_port_ram(new_node, traverse_mark_number, netlist);
+
+    //CLEAN UP
+    free_nnode(node);
+}
+
+/**
+ * (function: resolve_ram_node)
+ * 
+ * @brief block_ram will be considered as dual port ram
+ * this function reorders inputs and hook pad pins into datain2 
+ * it also leaves the second output of the dual port ram unconnected
+ * 
+ * @param node pointing to a bram node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 7);
+    oassert(node->num_output_port_sizes == 1);
+
+    int i, j;
+    /** 
+     * yosys dual port ram information 
+     * 
+     * RD_ADDR:    input port [0] 
+     * RD_CLOCK:   input port [1] 
+     * RD_DATA:    output port [0] 
+     * RD_ENABLE:  input port [2] 
+     * WR_ADDR:    input port [3] 
+     * WR_CLOCK:   input port [4] 
+     * WR_DATA:    input port [5] 
+     * WR_ENABLE:  input port [6] 
+    */
+    int RD_ADDR_width = node->input_port_sizes[0];
+    int RD_CLK_width = node->input_port_sizes[1];
+    int RD_DATA_width = node->output_port_sizes[0];
+    int RD_ENABLE_width = node->input_port_sizes[2];
+    int WR_ADDR_width = node->input_port_sizes[3];
+    int WR_CLK_width = node->input_port_sizes[4];
+    int WR_DATA_width = node->input_port_sizes[5];
+    int WR_ENABLE_width = node->input_port_sizes[6];
+    /* creating new node since we need to reorder some input port for each inferenece mode */
+    nnode_t* new_node = allocate_nnode(node->loc);
+    new_node->type = MEMORY;
+    char* hb_name = vtr::strdup(DUAL_PORT_RAM_string);
+    new_node->name = hard_node_name(new_node,
+                                    netlist->identifier,
+                                    hb_name,
+                                    node->attributes->memory_id);
+
+    new_node->related_ast_node = node->related_ast_node;
+
+    char* hard_block_identifier = new_node->related_ast_node->identifier_node->types.identifier;
+    /* setting single port ram as corresponding memory hard block */
+    if (hard_block_identifier)
+        vtr::free(hard_block_identifier);
+
+    new_node->related_ast_node->identifier_node->types.identifier = hb_name;
+
+    /* INPUTS */
+    /* adding the read addr input port as address1 */
+    add_input_port_information(new_node, RD_ADDR_width);
+    allocate_more_input_pins(new_node, RD_ADDR_width);
+    for (i = 0; i < RD_ADDR_width; i++) {
+        npin_t* rd_addr_pin = node->input_pins[i];
+        if (rd_addr_pin->mapping)
+            vtr::free(rd_addr_pin->mapping);
+
+        rd_addr_pin->mapping = vtr::strdup("addr1");
+        /* hook the addr1 pin to new node */
+        remap_pin_to_new_node(rd_addr_pin, new_node, i);
+    }
+    /* adding the write addr port as address2 */
+    add_input_port_information(new_node, WR_ADDR_width);
+    allocate_more_input_pins(new_node, WR_ADDR_width);
+    for (i = 0; i < WR_ADDR_width; i++) {
+        npin_t* wr_addr_pin = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + i];
+        if (wr_addr_pin->mapping)
+            vtr::free(wr_addr_pin->mapping);
+
+        wr_addr_pin->mapping = vtr::strdup("addr2");
+        /* hook the addr pin to new node */
+        remap_pin_to_new_node(wr_addr_pin,
+                              new_node,
+                              RD_ADDR_width + i);
+    }
+    /* adding the write data port as data1 */
+    add_input_port_information(new_node, WR_DATA_width);
+    allocate_more_input_pins(new_node, WR_DATA_width);
+    for (i = 0; i < WR_DATA_width; i++) {
+        npin_t* wr_data_pin = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + i];
+        if (wr_data_pin->mapping)
+            vtr::free(wr_data_pin->mapping);
+
+        wr_data_pin->mapping = vtr::strdup("data1");
+        /* hook the data in pin to new node */
+        remap_pin_to_new_node(wr_data_pin,
+                              new_node,
+                              RD_ADDR_width + WR_ADDR_width + i);
+    }
+    /* hook pad pins into data2 port */
+    add_input_port_information(new_node, WR_DATA_width);
+    allocate_more_input_pins(new_node, WR_DATA_width);
+    for (i = 0; i < WR_DATA_width; i++) {
+        npin_t* pad_pin = get_pad_pin(netlist);
+        pad_pin->mapping = vtr::strdup("data2");
+        /* hook the data in pin to new node */
+        add_input_pin_to_node(new_node,
+                              pad_pin,
+                              RD_ADDR_width + WR_ADDR_width + WR_DATA_width + i);
+    }
+
+    /* add read enable port as we1 */
+    add_input_port_information(new_node, 1);
+    allocate_more_input_pins(new_node, 1);
+    if (RD_ENABLE_width == 1) {
+        npin_t* rd_en_pin = node->input_pins[RD_ADDR_width + RD_CLK_width];
+        if (rd_en_pin->mapping)
+            vtr::free(rd_en_pin->mapping);
+
+        rd_en_pin->mapping = vtr::strdup("we1");
+        remap_pin_to_new_node(rd_en_pin,
+                              new_node,
+                              RD_ADDR_width + WR_ADDR_width + 2 * WR_DATA_width);
+
+    } else if (RD_ENABLE_width > 1) {
+        /* need to OR all read enable since we1 should be one bit in dual port ram */
+        signal_list_t* rd_en_signal_list = init_signal_list();
+        for (j = 0; j < RD_ENABLE_width; j++) {
+            add_pin_to_signal_list(rd_en_signal_list, node->input_pins[RD_ADDR_width + RD_CLK_width + j]);
+        }
+        /* OR enable signals */
+        npin_t* rd_en_pin = make_or_chain(rd_en_signal_list, new_node);
+        rd_en_pin->mapping = vtr::strdup("we1");
+        /* hook the final enable pin to the new node */
+        add_input_pin_to_node(new_node, rd_en_pin, RD_ADDR_width + WR_ADDR_width + 2 * WR_DATA_width);
+    }
+
+    /* add write enable port as we1 */
+    add_input_port_information(new_node, 1);
+    allocate_more_input_pins(new_node, 1);
+    if (WR_ENABLE_width == 1) {
+        npin_t* wr_en_pin = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + WR_DATA_width];
+        if (wr_en_pin->mapping)
+            vtr::free(wr_en_pin->mapping);
+
+        wr_en_pin->mapping = vtr::strdup("we2");
+        remap_pin_to_new_node(wr_en_pin,
+                              new_node,
+                              RD_ADDR_width + WR_ADDR_width + 2 * WR_DATA_width + 1);
+
+    } else if (WR_ENABLE_width > 1) {
+        /* need to OR all write enable since we2 should be one bit in dual port ram */
+        signal_list_t* wr_en_signal_list = init_signal_list();
+        for (j = 0; j < WR_ENABLE_width; j++) {
+            add_pin_to_signal_list(wr_en_signal_list,
+                                   node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + WR_DATA_width + j]);
+        }
+        /* OR enable signals */
+        npin_t* wr_en_pin = make_or_chain(wr_en_signal_list, new_node);
+        wr_en_pin->mapping = vtr::strdup("we2");
+        /* hook the final enable pin to the new node */
+        add_input_pin_to_node(new_node, wr_en_pin, RD_ADDR_width + WR_ADDR_width + 2 * WR_DATA_width + 1);
+    }
+
+    /* adding the OR of rd_clk and wr_clk as clock port */
+    npin_t* rd_clk = node->input_pins[RD_ADDR_width];
+    npin_t* wr_clk = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width];
+
+    nnode_t* or_gate = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, traverse_mark_number);
+    /* hook input pins */
+    remap_pin_to_new_node(rd_clk, or_gate, 0);
+    remap_pin_to_new_node(wr_clk, or_gate, 1);
+    // specify the output pin
+    npin_t* or_gate_new_pin1 = allocate_npin();
+    npin_t* or_gate_new_pin2 = allocate_npin();
+    nnet_t* or_gate_new_net = allocate_nnet();
+    or_gate_new_net->name = make_full_ref_name(NULL, NULL, NULL, or_gate->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(or_gate, or_gate_new_pin1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(or_gate_new_net, or_gate_new_pin1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(or_gate_new_net, or_gate_new_pin2);
+
+    /* hook the OR output into clock signal of the new node */
+    add_input_port_information(new_node, 1);
+    allocate_more_input_pins(new_node, 1);
+    or_gate_new_pin2->mapping = vtr::strdup("clk");
+    /* hook the clk pin to new node */
+    add_input_pin_to_node(new_node,
+                          or_gate_new_pin2,
+                          RD_ADDR_width + WR_ADDR_width + 2 * WR_DATA_width + 1 + 1);
+
+    /* OUTPUT */
+    /* adding the read data port as output1 */
+    add_output_port_information(new_node, RD_DATA_width);
+    allocate_more_output_pins(new_node, RD_DATA_width);
+    for (i = 0; i < RD_DATA_width; i++) {
+        npin_t* out_pin = node->output_pins[i];
+        if (out_pin->mapping)
+            vtr::free(out_pin->mapping);
+
+        out_pin->mapping = vtr::strdup("out1");
+        /* hook the data out pin to new node */
+        remap_pin_to_new_node(out_pin, new_node, i);
+    }
+    /* leave second output port unconnected */
+    add_output_port_information(new_node, RD_DATA_width);
+    allocate_more_output_pins(new_node, RD_DATA_width);
+    for (i = 0; i < RD_DATA_width; i++) {
+        // specify the output pin
+        npin_t* new_pin1 = allocate_npin();
+        npin_t* new_pin2 = allocate_npin();
+        nnet_t* new_net = allocate_nnet();
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, RD_DATA_width + i);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(new_node, new_pin1, RD_DATA_width + i);
+        new_pin1->mapping = vtr::strdup("out2");
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, new_pin2);
     }
 
     // CLEAN UP

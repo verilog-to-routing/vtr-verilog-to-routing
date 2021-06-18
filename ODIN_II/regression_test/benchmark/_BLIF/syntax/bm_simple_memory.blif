@@ -3,152 +3,20 @@
 .model bm_simple_memory
 .inputs clock address_in[0] address_in[1] address_in[2] address_in[3] address_out[0] address_out[1] address_out[2] address_out[3]
 .outputs value_out[0] value_out[1] value_out[2]
-.subckt $mux A[0]=address_out_$memrd_ADDR_DATA_$mux_Y_A[0] A[1]=address_out_$memrd_ADDR_DATA_$mux_Y_A[1] A[2]=address_out_$memrd_ADDR_DATA_$mux_Y_A[2] B[0]=address_out_$memrd_ADDR_DATA_$mux_Y_B[0] B[1]=address_out_$memrd_ADDR_DATA_$mux_Y_B[1] B[2]=address_out_$memrd_ADDR_DATA_$mux_Y_B[2] S=address_out[2] Y[0]=address_out_$memrd_ADDR_DATA[0] Y[1]=address_out_$memrd_ADDR_DATA[1] Y[2]=address_out_$memrd_ADDR_DATA[2]
+.subckt $mem RD_ADDR[0]=address_out[0] RD_ADDR[1]=address_out[1] RD_ADDR[2]=address_out[2] RD_ADDR[3]=address_out[3] RD_CLK=$undef RD_DATA[0]=address_out_$memrd_ADDR_DATA[0] RD_DATA[1]=address_out_$memrd_ADDR_DATA[1] RD_DATA[2]=address_out_$memrd_ADDR_DATA[2] RD_EN=$undef WR_ADDR[0]=address_in[0] WR_ADDR[1]=address_in[1] WR_ADDR[2]=address_in[2] WR_ADDR[3]=address_in[3] WR_CLK=clock WR_DATA[0]=address_in[0] WR_DATA[1]=address_in[1] WR_DATA[2]=address_in[2] WR_EN[0]=$true WR_EN[1]=$true WR_EN[2]=$true
+.param ABITS 00000000000000000000000000000100
+.param INIT xxxxxxxxxxxxxxxxxxxxxxxx
+.param MEMID "\\memory"
+.param OFFSET 00000000000000000000000000000000
+.param RD_CLK_ENABLE 0
+.param RD_CLK_POLARITY 0
+.param RD_PORTS 00000000000000000000000000000001
+.param RD_TRANSPARENT 0
+.param SIZE 00000000000000000000000000001000
 .param WIDTH 00000000000000000000000000000011
-.subckt $mux A[0]=memory[0]_$mux_A_Y[0] A[1]=memory[0]_$mux_A_Y[1] A[2]=memory[0]_$mux_A_Y[2] B[0]=memory[2]_$mux_A_Y[0] B[1]=memory[2]_$mux_A_Y[1] B[2]=memory[2]_$mux_A_Y[2] S=address_out[1] Y[0]=address_out_$memrd_ADDR_DATA_$mux_Y_A[0] Y[1]=address_out_$memrd_ADDR_DATA_$mux_Y_A[1] Y[2]=address_out_$memrd_ADDR_DATA_$mux_Y_A[2]
-.param WIDTH 00000000000000000000000000000011
-.subckt $mux A[0]=memory[4]_$mux_A_Y[0] A[1]=memory[4]_$mux_A_Y[1] A[2]=memory[4]_$mux_A_Y[2] B[0]=memory[6]_$mux_A_Y[0] B[1]=memory[6]_$mux_A_Y[1] B[2]=memory[6]_$mux_A_Y[2] S=address_out[1] Y[0]=address_out_$memrd_ADDR_DATA_$mux_Y_B[0] Y[1]=address_out_$memrd_ADDR_DATA_$mux_Y_B[1] Y[2]=address_out_$memrd_ADDR_DATA_$mux_Y_B[2]
-.param WIDTH 00000000000000000000000000000011
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[0]_$dffe_Q_EN Q[0]=memory[0][0] Q[1]=memory[0][1] Q[2]=memory[0][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[0]_$dffe_Q_EN_$and_Y_A B=memory[0]_$dffe_Q_EN_$and_Y_B Y=memory[0]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memory[6]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=memory[5]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memory[0]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memory[0]_$dffe_Q_EN_$and_Y_B_$and_Y_A B=memory[0]_$dffe_Q_EN_$and_Y_B_$and_Y_B Y=memory[0]_$dffe_Q_EN_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=address_in[2] Y=memory[0]_$dffe_Q_EN_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=address_in[3] Y=memory[0]_$dffe_Q_EN_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memory[0][0] A[1]=memory[0][1] A[2]=memory[0][2] B[0]=memory[1][0] B[1]=memory[1][1] B[2]=memory[1][2] S=address_out[0] Y[0]=memory[0]_$mux_A_Y[0] Y[1]=memory[0]_$mux_A_Y[1] Y[2]=memory[0]_$mux_A_Y[2]
-.param WIDTH 00000000000000000000000000000011
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[1]_$dffe_Q_EN Q[0]=memory[1][0] Q[1]=memory[1][1] Q[2]=memory[1][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[5]_$dffe_Q_EN_$and_Y_A B=memory[0]_$dffe_Q_EN_$and_Y_B Y=memory[1]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[2]_$dffe_Q_EN Q[0]=memory[2][0] Q[1]=memory[2][1] Q[2]=memory[2][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[6]_$dffe_Q_EN_$and_Y_A B=memory[0]_$dffe_Q_EN_$and_Y_B Y=memory[2]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memory[2][0] A[1]=memory[2][1] A[2]=memory[2][2] B[0]=memory[3][0] B[1]=memory[3][1] B[2]=memory[3][2] S=address_out[0] Y[0]=memory[2]_$mux_A_Y[0] Y[1]=memory[2]_$mux_A_Y[1] Y[2]=memory[2]_$mux_A_Y[2]
-.param WIDTH 00000000000000000000000000000011
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[3]_$dffe_Q_EN Q[0]=memory[3][0] Q[1]=memory[3][1] Q[2]=memory[3][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[7]_$dffe_Q_EN_$and_Y_A B=memory[0]_$dffe_Q_EN_$and_Y_B Y=memory[3]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[4]_$dffe_Q_EN Q[0]=memory[4][0] Q[1]=memory[4][1] Q[2]=memory[4][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[0]_$dffe_Q_EN_$and_Y_A B=memory[5]_$dffe_Q_EN_$and_Y_B Y=memory[4]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memory[4][0] A[1]=memory[4][1] A[2]=memory[4][2] B[0]=memory[5][0] B[1]=memory[5][1] B[2]=memory[5][2] S=address_out[0] Y[0]=memory[4]_$mux_A_Y[0] Y[1]=memory[4]_$mux_A_Y[1] Y[2]=memory[4]_$mux_A_Y[2]
-.param WIDTH 00000000000000000000000000000011
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[5]_$dffe_Q_EN Q[0]=memory[5][0] Q[1]=memory[5][1] Q[2]=memory[5][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[5]_$dffe_Q_EN_$and_Y_A B=memory[5]_$dffe_Q_EN_$and_Y_B Y=memory[5]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=address_in[0] B=memory[5]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=memory[5]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=address_in[1] Y=memory[5]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=address_in[2] B=memory[0]_$dffe_Q_EN_$and_Y_B_$and_Y_B Y=memory[5]_$dffe_Q_EN_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[6]_$dffe_Q_EN Q[0]=memory[6][0] Q[1]=memory[6][1] Q[2]=memory[6][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[6]_$dffe_Q_EN_$and_Y_A B=memory[5]_$dffe_Q_EN_$and_Y_B Y=memory[6]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=memory[6]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=address_in[1] Y=memory[6]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=address_in[0] Y=memory[6]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=memory[6][0] A[1]=memory[6][1] A[2]=memory[6][2] B[0]=memory[7][0] B[1]=memory[7][1] B[2]=memory[7][2] S=address_out[0] Y[0]=memory[6]_$mux_A_Y[0] Y[1]=memory[6]_$mux_A_Y[1] Y[2]=memory[6]_$mux_A_Y[2]
-.param WIDTH 00000000000000000000000000000011
-.subckt $dffe CLK=clock D[0]=address_in[0] D[1]=address_in[1] D[2]=address_in[2] EN=memory[7]_$dffe_Q_EN Q[0]=memory[7][0] Q[1]=memory[7][1] Q[2]=memory[7][2]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000011
-.subckt $and A=memory[7]_$dffe_Q_EN_$and_Y_A B=memory[5]_$dffe_Q_EN_$and_Y_B Y=memory[7]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=address_in[0] B=address_in[1] Y=memory[7]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
+.param WR_CLK_ENABLE 1
+.param WR_CLK_POLARITY 1
+.param WR_PORTS 00000000000000000000000000000001
 .names address_out_$memrd_ADDR_DATA[0] value_out[0]
 1 1
 .names address_out_$memrd_ADDR_DATA[1] value_out[1]

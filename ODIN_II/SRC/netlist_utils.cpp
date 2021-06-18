@@ -685,6 +685,20 @@ attr_t* init_attribute() {
     attribute->port_a_signed = UNSIGNED;
     attribute->port_b_signed = UNSIGNED;
 
+    /* memory node attributes */
+    attribute->depth = NULL;
+    attribute->width = NULL;
+    attribute->offset = NULL;
+    attribute->memory_id = NULL;
+    
+    attribute->RD_CLK_ENABLE = UNDEFINED_SENSITIVITY; 
+    attribute->WR_CLK_ENABLE = UNDEFINED_SENSITIVITY; 
+    attribute->RD_CLK_POLARITY = UNDEFINED_SENSITIVITY; 
+    attribute->WR_CLK_POLARITY = UNDEFINED_SENSITIVITY; 
+
+    attribute->RD_ACCESS = false;
+    attribute->WR_ACCESS = false;
+
     return attribute;
 }
 
@@ -867,7 +881,22 @@ void free_signal_list(signal_list_t* list) {
 void free_attribute(attr_t* attribute) {
     if (attribute) {
         vtr::free(attribute->areset_value);
+        attribute->areset_value = NULL;
+
         vtr::free(attribute->sreset_value);
+        attribute->sreset_value = NULL;
+        
+        vtr::free(attribute->depth);
+        attribute->depth = NULL;
+        
+        vtr::free(attribute->width);
+        attribute->width = NULL;
+
+        vtr::free(attribute->offset);
+        attribute->offset = NULL;
+
+        vtr::free(attribute->memory_id);
+        attribute->memory_id = NULL;
     }
 
     vtr::free(attribute);

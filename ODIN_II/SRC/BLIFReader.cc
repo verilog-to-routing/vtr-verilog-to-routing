@@ -337,13 +337,17 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
 
     if (configuration.coarsen) {
         new_node->type = yosys_subckt_str[subcircuit_name];
+        
+        if (new_node->type == BRAM) {
+            new_node->type = (new_node->attributes->RD_ACCESS && new_node->attributes->WR_ACCESS)    ? BRAM
+                             : (new_node->attributes->RD_ACCESS && !new_node->attributes->WR_ACCESS) ? ROM
+                                                                                                     : operation_list_END;
+        }
     } else {
         if (odin_subckt_str[subcircuit_name] != NO_OP)
             new_node->type = odin_subckt_str[subcircuit_name];
         else if (odin_subckt_str[subcircuit_name_prefix] != NO_OP)
             new_node->type = odin_subckt_str[subcircuit_name_prefix];
-        else
-            new_node->type = MEMORY;
     }
     
     // Look up the model in the models cache.
@@ -417,7 +421,11 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
         new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
         new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
-    } else if (configuration.coarsen && (new_node->type == SPRAM || new_node->type == DPRAM)) {
+    } else if (configuration.coarsen
+               && (new_node->type == SPRAM
+                   || new_node->type == DPRAM
+                   || new_node->type == BRAM
+                   || new_node->type == ROM)) {
         new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
         new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
     }
@@ -1883,9 +1891,11 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
             break;
         }
         case (SPRAM): //fallthrough
+        case (ROM): //fallthrough
         case (SDFF): //fallthrough
         case (SDFFE): //fallthrough
-        case (DFFSR): {
+        case (DFFSR): //fallthrough
+        case (DFFSRE): {
             // create a model with single output port, being read as the port [n-2] among [0...n-1]
             model = create_model(name, ports, ports->count-2, ports->count-1);
             break;
@@ -1893,6 +1903,11 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (DPRAM): {
             // create a model with two output ports,being read as the port [n-4, n-3] among [0...n-1]
             model = create_model(name, ports, ports->count-4, ports->count-2);
+            break;
+        }
+        case (BRAM): {
+            // create a model with single output port, being read as the seconf port among [0...n-1]
+            model = create_model(name, ports, 2, 3);
             break;
         }
         default: {
@@ -1967,7 +1982,8 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  *---------------------------------------------------------------------------------------------
  * (function: hard_block_sensitivities)
  * 
- * @brief specify whether a type needs clock sensitivity or not
+ * @brief specify sensitivities related to a hard block
+ * they are specified under .param tab in blif file
  * 
  * @param subckt_name hard block name 
  * @param new_node pointer to the netlist node
@@ -1994,6 +2010,20 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                     attributes->sreset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
                 } else if (!strcmp(ptr, "ARST_VALUE")) {
                     attributes->areset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                } else if (!strcmp(ptr, "OFFSET")) {
+                    attributes->offset = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                } else if (!strcmp(ptr, "SIZE")) {
+                    attributes->depth = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                } else if (!strcmp(ptr, "WIDTH")) {
+                    attributes->width = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                } else if (!strcmp(ptr, "MEMID")) {
+                    std::string memory_id(vtr::strtok(NULL, TOKENS, file, buffer));
+                    unsigned first_back_slash = memory_id.find_last_of(YOSYS_ID_FIRST_DELIMITER);
+                    unsigned last_double_quote = memory_id.find_last_not_of(YOSYS_ID_LAST_DELIMITER);
+                    attributes->memory_id = vtr::strdup(
+                        memory_id.substr(
+                                     first_back_slash + 1, last_double_quote - first_back_slash)
+                            .c_str());
                 } else {
                     int sensitivity = atoi(vtr::strtok(NULL, TOKENS, file, buffer));
                     if (!strcmp(ptr, "A_SIGNED")) {
@@ -2043,8 +2073,45 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                             attributes->sreset_polarity = ACTIVE_HIGH_SENSITIVITY;
                         else if (sensitivity == 0)
                             attributes->sreset_polarity = ACTIVE_LOW_SENSITIVITY;
-                    
+
+                    } else if (!strcmp(ptr, "RD_CLK_ENABLE")) {
+                        if (sensitivity == 1)
+                            attributes->RD_CLK_ENABLE = ACTIVE_HIGH_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->RD_CLK_ENABLE = ACTIVE_LOW_SENSITIVITY;
+
+                    } else if (!strcmp(ptr, "WR_CLK_ENABLE")) {
+                        if (sensitivity == 1)
+                            attributes->WR_CLK_ENABLE = ACTIVE_HIGH_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->WR_CLK_ENABLE = ACTIVE_LOW_SENSITIVITY;
+
+                    } else if (!strcmp(ptr, "RD_CLK_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->RD_CLK_POLARITY = ACTIVE_HIGH_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->RD_CLK_POLARITY = ACTIVE_LOW_SENSITIVITY;
+
+                    } else if (!strcmp(ptr, "WR_CLK_POLARITY")) {
+                        if (sensitivity == 1)
+                            attributes->WR_CLK_POLARITY = ACTIVE_HIGH_SENSITIVITY;
+                        else if (sensitivity == 0)
+                            attributes->WR_CLK_POLARITY = ACTIVE_LOW_SENSITIVITY;
+
+                    } else if (!strcmp(ptr, "RD_PORTS")) {
+                        if (sensitivity == 1)
+                            attributes->RD_ACCESS = true;
+                        else if (sensitivity == 0)
+                            attributes->RD_ACCESS = false;
+
+                    } else if (!strcmp(ptr, "WR_PORTS")) {
+                        if (sensitivity == 1)
+                            attributes->WR_ACCESS = true;
+                        else if (sensitivity == 0)
+                            attributes->WR_ACCESS = false;
+
                     }
+                    
                 }
             } else if (!strcmp(ptr, ".end")) {
                 break;
@@ -2081,6 +2148,9 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
          case (ADFFE): //fallthrough
          case (SDFFE): //fallthrough
          case (DFFSR): //fallthrough
+         case (DFFSRE): //fallthrough
+         case (BRAM): //fallthrough
+         case (ROM): //fallthrough
          case (FF_NODE):  {
              return_value = true;
              break;

@@ -3,109 +3,21 @@
 .model multiclock_reader_writer
 .inputs clock addr_read[0] addr_read[1] addr_read[2] addr_write[0] addr_write[1] addr_write[2] in[0] in[1] in[2] in[3]
 .outputs out[0] out[1] out[2] out[3]
-.subckt $mux A[0]=addr_read_$mux_S_1_Y[0] A[1]=addr_read_$mux_S_1_Y[1] A[2]=addr_read_$mux_S_1_Y[2] A[3]=addr_read_$mux_S_1_Y[3] A[4]=addr_read_$mux_S_1_Y[4] A[5]=addr_read_$mux_S_1_Y[5] A[6]=addr_read_$mux_S_1_Y[6] A[7]=addr_read_$mux_S_1_Y[7] B[0]=addr_read_$mux_S_Y[0] B[1]=addr_read_$mux_S_Y[1] B[2]=addr_read_$mux_S_Y[2] B[3]=addr_read_$mux_S_Y[3] B[4]=addr_read_$mux_S_Y[4] B[5]=addr_read_$mux_S_Y[5] B[6]=addr_read_$mux_S_Y[6] B[7]=addr_read_$mux_S_Y[7] S=addr_read[1] Y[0]=addr_read_$memrd_ADDR_DATA[0] Y[1]=addr_read_$memrd_ADDR_DATA[1] Y[2]=addr_read_$memrd_ADDR_DATA[2] Y[3]=addr_read_$memrd_ADDR_DATA[3] Y[4]=addr_read_$memrd_ADDR_DATA[4] Y[5]=addr_read_$memrd_ADDR_DATA[5] Y[6]=addr_read_$memrd_ADDR_DATA[6] Y[7]=addr_read_$memrd_ADDR_DATA[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=register[2][0] A[1]=register[2][1] A[2]=register[2][2] A[3]=register[2][3] A[4]=$false A[5]=$false A[6]=$false A[7]=$false B[0]=register[3][0] B[1]=register[3][1] B[2]=register[3][2] B[3]=register[3][3] B[4]=$false B[5]=$false B[6]=$false B[7]=$false S=addr_read[0] Y[0]=addr_read_$mux_S_Y[0] Y[1]=addr_read_$mux_S_Y[1] Y[2]=addr_read_$mux_S_Y[2] Y[3]=addr_read_$mux_S_Y[3] Y[4]=addr_read_$mux_S_Y[4] Y[5]=addr_read_$mux_S_Y[5] Y[6]=addr_read_$mux_S_Y[6] Y[7]=addr_read_$mux_S_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=register[0][0] A[1]=register[0][1] A[2]=register[0][2] A[3]=register[0][3] A[4]=$false A[5]=$false A[6]=$false A[7]=$false B[0]=register[1][0] B[1]=register[1][1] B[2]=register[1][2] B[3]=register[1][3] B[4]=$false B[5]=$false B[6]=$false B[7]=$false S=addr_read[0] Y[0]=addr_read_$mux_S_1_Y[0] Y[1]=addr_read_$mux_S_1_Y[1] Y[2]=addr_read_$mux_S_1_Y[2] Y[3]=addr_read_$mux_S_1_Y[3] Y[4]=addr_read_$mux_S_1_Y[4] Y[5]=addr_read_$mux_S_1_Y[5] Y[6]=addr_read_$mux_S_1_Y[6] Y[7]=addr_read_$mux_S_1_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=addr_write[1] B=addr_write_$not_A_1_Y Y=register[2]_$dffe_Q_EN_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=addr_write[0] Y=register[0]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=addr_write[2] Y=addr_write_$not_A_1_Y
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=addr_write[1] Y=addr_write_$not_A_2_Y
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=clock D[0]=addr_read_$memrd_ADDR_DATA[0] D[1]=addr_read_$memrd_ADDR_DATA[1] D[2]=addr_read_$memrd_ADDR_DATA[2] D[3]=addr_read_$memrd_ADDR_DATA[3] Q[0]=out[0] Q[1]=out[1] Q[2]=out[2] Q[3]=out[3]
 .param CLK_POLARITY 0
 .param WIDTH 00000000000000000000000000000100
-.subckt $dffe CLK=clock D[0]=in[0] D[1]=in[1] D[2]=in[2] D[3]=in[3] EN=register[0]_$dffe_Q_EN Q[0]=register[0][0] Q[1]=register[0][1] Q[2]=register[0][2] Q[3]=register[0][3]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000100
-.subckt $and A=register[0]_$dffe_Q_EN_$and_Y_A B=register[0]_$dffe_Q_EN_$and_Y_B Y=register[0]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=addr_write_$not_A_2_Y B=addr_write_$not_A_1_Y Y=register[0]_$dffe_Q_EN_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=in[0] D[1]=in[1] D[2]=in[2] D[3]=in[3] EN=register[1]_$dffe_Q_EN Q[0]=register[1][0] Q[1]=register[1][1] Q[2]=register[1][2] Q[3]=register[1][3]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000100
-.subckt $and A=addr_write[0] B=register[0]_$dffe_Q_EN_$and_Y_B Y=register[1]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=in[0] D[1]=in[1] D[2]=in[2] D[3]=in[3] EN=register[2]_$dffe_Q_EN Q[0]=register[2][0] Q[1]=register[2][1] Q[2]=register[2][2] Q[3]=register[2][3]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000100
-.subckt $and A=register[0]_$dffe_Q_EN_$and_Y_A B=register[2]_$dffe_Q_EN_$and_Y_B Y=register[2]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=in[0] D[1]=in[1] D[2]=in[2] D[3]=in[3] EN=register[3]_$dffe_Q_EN Q[0]=register[3][0] Q[1]=register[3][1] Q[2]=register[3][2] Q[3]=register[3][3]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000100
-.subckt $and A=addr_write[0] B=register[2]_$dffe_Q_EN_$and_Y_B Y=register[3]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.names $false register[0][4]
-1 1
-.names $false register[0][5]
-1 1
-.names $false register[0][6]
-1 1
-.names $false register[0][7]
-1 1
-.names $false register[1][4]
-1 1
-.names $false register[1][5]
-1 1
-.names $false register[1][6]
-1 1
-.names $false register[1][7]
-1 1
-.names $false register[2][4]
-1 1
-.names $false register[2][5]
-1 1
-.names $false register[2][6]
-1 1
-.names $false register[2][7]
-1 1
-.names $false register[3][4]
-1 1
-.names $false register[3][5]
-1 1
-.names $false register[3][6]
-1 1
-.names $false register[3][7]
-1 1
+.subckt $mem RD_ADDR[0]=addr_read[0] RD_ADDR[1]=addr_read[1] RD_ADDR[2]=addr_read[2] RD_CLK=$undef RD_DATA[0]=addr_read_$memrd_ADDR_DATA[0] RD_DATA[1]=addr_read_$memrd_ADDR_DATA[1] RD_DATA[2]=addr_read_$memrd_ADDR_DATA[2] RD_DATA[3]=addr_read_$memrd_ADDR_DATA[3] RD_DATA[4]=addr_read_$memrd_ADDR_DATA[4] RD_DATA[5]=addr_read_$memrd_ADDR_DATA[5] RD_DATA[6]=addr_read_$memrd_ADDR_DATA[6] RD_DATA[7]=addr_read_$memrd_ADDR_DATA[7] RD_EN=$undef WR_ADDR[0]=addr_write[0] WR_ADDR[1]=addr_write[1] WR_ADDR[2]=addr_write[2] WR_CLK=clock WR_DATA[0]=in[0] WR_DATA[1]=in[1] WR_DATA[2]=in[2] WR_DATA[3]=in[3] WR_DATA[4]=$false WR_DATA[5]=$false WR_DATA[6]=$false WR_DATA[7]=$false WR_EN[0]=$true WR_EN[1]=$true WR_EN[2]=$true WR_EN[3]=$true WR_EN[4]=$true WR_EN[5]=$true WR_EN[6]=$true WR_EN[7]=$true
+.param ABITS 00000000000000000000000000000011
+.param INIT xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+.param MEMID "\\register"
+.param OFFSET 00000000000000000000000000000000
+.param RD_CLK_ENABLE 0
+.param RD_CLK_POLARITY 0
+.param RD_PORTS 00000000000000000000000000000001
+.param RD_TRANSPARENT 0
+.param SIZE 00000000000000000000000000000100
+.param WIDTH 00000000000000000000000000001000
+.param WR_CLK_ENABLE 1
+.param WR_CLK_POLARITY 1
+.param WR_PORTS 00000000000000000000000000000001
 .end

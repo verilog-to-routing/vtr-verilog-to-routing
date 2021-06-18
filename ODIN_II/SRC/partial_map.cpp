@@ -660,6 +660,10 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
             buffer_is_removed = false;
         }
     }
+
+    // CLEAN UP
+    free_attribute(node->attributes);
+
     return buffer_is_removed;
 }
 

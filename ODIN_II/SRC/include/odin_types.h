@@ -274,10 +274,13 @@ enum operation_list {
     ADFFE,              // data, asynchronous reset value and enable to output port
     SDFFE,              // data, synchronous reset value and enable to output port
     DFFSR,              // data, clear and set to output port
+    DFFSRE,             // data, clear and set with enable to output port
     DLATCH,             // datato output port based on polarity without clk
     ADLATCH,            // datato output port based on polarity without clk
     SPRAM,              // representing primitive single port ram
     DPRAM,              // representing primitive dual port ram
+    BRAM,               // block of memry generated in yosys subcircuit formet blif file
+    ROM,                // single port block of memry generated in yosys subcircuit formet blif file (READ ACCES)
                         // [END] operations to cover yosys subckt
     operation_list_END
 };
@@ -484,6 +487,20 @@ struct attr_t {
 
     operation_list port_a_signed;
     operation_list port_b_signed;
+
+    /* memory node attributes */
+    char* depth; // memory depth
+    char* width; // memory width
+    char* offset; // ADDR offset
+    char* memory_id; // the id of memory in verilog file (different from name since for memory it is $mem~#)
+    edge_type_e RD_CLK_ENABLE; // read clock enable
+    edge_type_e WR_CLK_ENABLE; // write clock enable
+    edge_type_e RD_CLK_POLARITY; // read clock polarity
+    edge_type_e WR_CLK_POLARITY; // write clock polarity
+    bool RD_ACCESS;
+    bool WR_ACCESS;
+
+
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version

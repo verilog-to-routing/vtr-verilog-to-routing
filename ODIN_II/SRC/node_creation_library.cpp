@@ -30,6 +30,7 @@
 #include "odin_util.h"
 #include "node_creation_library.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 long unique_node_name_id = 0;
 
@@ -222,6 +223,68 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
     add_output_port_information(logic_node, width_output);
 
     return logic_node;
+}
+
+/**
+ * ---------------------------------------------------------------------------------------------
+ * (function: make or chain)
+ * 
+ * @brief create a chain of OR gates that OR the given pins
+ * 
+ * @param inputs signal list of pins need to be OR
+ * @param node netlist node that input pins come from it
+ * 
+ * @return the last output pin of the chain
+ * -------------------------------------------------------------------------------------------
+ */
+npin_t* make_or_chain(signal_list_t* inputs, nnode_t* node) {
+    int i;
+    int width = inputs->count;
+    npin_t* output = NULL;
+
+    nnode_t** or_gates = (nnode_t**)vtr::calloc(width - 1, sizeof(nnode_t*));
+    signal_list_t* internal_outputs = init_signal_list();
+
+    /* ending in (width - 1) since we take first two pins in the beginning */
+    for (i = 0; i < width - 1; i++) {
+        or_gates[i] = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, node->traverse_visited);
+
+        if (i == 0) {
+            /* taking the first two pins */
+            remap_pin_to_new_node(inputs->pins[0], or_gates[i], 0);
+            remap_pin_to_new_node(inputs->pins[1], or_gates[i], 1);
+
+        } else {
+            /* taking the first two pins */
+            remap_pin_to_new_node(inputs->pins[i + 1], or_gates[i], 0);
+            add_input_pin_to_node(or_gates[i], internal_outputs->pins[i - 1], 1);
+        }
+
+        // specify the output pin
+        npin_t* new_pin1 = allocate_npin();
+        npin_t* new_pin2 = allocate_npin();
+        nnet_t* new_net = allocate_nnet();
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, or_gates[i]->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(or_gates[i], new_pin1, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, new_pin2);
+
+        /* adding to interanl outputs signal list */
+        add_pin_to_signal_list(internal_outputs, new_pin2);
+    }
+
+    /* the output pin of the last or gate */
+    output = internal_outputs->pins[width - 2];
+
+    // CLEAN UP
+    free_signal_list(inputs);
+    free_signal_list(internal_outputs);
+    vtr::free(or_gates);
+
+    return (output);
 }
 
 const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc) {

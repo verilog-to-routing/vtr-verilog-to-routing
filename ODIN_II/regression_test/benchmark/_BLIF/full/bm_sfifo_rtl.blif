@@ -43,332 +43,24 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000100000
 .param Y_WIDTH 00000000000000000000000000100000
-.subckt $dffe CLK=clock D[0]=fifo_mem$rdreg[0]$d[0] D[1]=fifo_mem$rdreg[0]$d[1] D[2]=fifo_mem$rdreg[0]$d[2] D[3]=fifo_mem$rdreg[0]$d[3] D[4]=fifo_mem$rdreg[0]$d[4] D[5]=fifo_mem$rdreg[0]$d[5] D[6]=fifo_mem$rdreg[0]$d[6] D[7]=fifo_mem$rdreg[0]$d[7] EN=read_n Q[0]=data_out[0] Q[1]=data_out[1] Q[2]=data_out[2] Q[3]=data_out[3] Q[4]=data_out[4] Q[5]=data_out[5] Q[6]=data_out[6] Q[7]=data_out[7]
+.subckt $dffe CLK=clock D[0]=rd_pointer_$memrd_ADDR_DATA[0] D[1]=rd_pointer_$memrd_ADDR_DATA[1] D[2]=rd_pointer_$memrd_ADDR_DATA[2] D[3]=rd_pointer_$memrd_ADDR_DATA[3] D[4]=rd_pointer_$memrd_ADDR_DATA[4] D[5]=rd_pointer_$memrd_ADDR_DATA[5] D[6]=rd_pointer_$memrd_ADDR_DATA[6] D[7]=rd_pointer_$memrd_ADDR_DATA[7] EN=read_n Q[0]=data_out[0] Q[1]=data_out[1] Q[2]=data_out[2] Q[3]=data_out[3] Q[4]=data_out[4] Q[5]=data_out[5] Q[6]=data_out[6] Q[7]=data_out[7]
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000000
 .param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=fifo_mem$rdreg[0]$d_$mux_Y_A[0] A[1]=fifo_mem$rdreg[0]$d_$mux_Y_A[1] A[2]=fifo_mem$rdreg[0]$d_$mux_Y_A[2] A[3]=fifo_mem$rdreg[0]$d_$mux_Y_A[3] A[4]=fifo_mem$rdreg[0]$d_$mux_Y_A[4] A[5]=fifo_mem$rdreg[0]$d_$mux_Y_A[5] A[6]=fifo_mem$rdreg[0]$d_$mux_Y_A[6] A[7]=fifo_mem$rdreg[0]$d_$mux_Y_A[7] B[0]=fifo_mem$rdreg[0]$d_$mux_Y_B[0] B[1]=fifo_mem$rdreg[0]$d_$mux_Y_B[1] B[2]=fifo_mem$rdreg[0]$d_$mux_Y_B[2] B[3]=fifo_mem$rdreg[0]$d_$mux_Y_B[3] B[4]=fifo_mem$rdreg[0]$d_$mux_Y_B[4] B[5]=fifo_mem$rdreg[0]$d_$mux_Y_B[5] B[6]=fifo_mem$rdreg[0]$d_$mux_Y_B[6] B[7]=fifo_mem$rdreg[0]$d_$mux_Y_B[7] S=rd_pointer[3] Y[0]=fifo_mem$rdreg[0]$d[0] Y[1]=fifo_mem$rdreg[0]$d[1] Y[2]=fifo_mem$rdreg[0]$d[2] Y[3]=fifo_mem$rdreg[0]$d[3] Y[4]=fifo_mem$rdreg[0]$d[4] Y[5]=fifo_mem$rdreg[0]$d[5] Y[6]=fifo_mem$rdreg[0]$d[6] Y[7]=fifo_mem$rdreg[0]$d[7]
+.subckt $mem RD_ADDR[0]=rd_pointer[0] RD_ADDR[1]=rd_pointer[1] RD_ADDR[2]=rd_pointer[2] RD_ADDR[3]=rd_pointer[3] RD_CLK=$undef RD_DATA[0]=rd_pointer_$memrd_ADDR_DATA[0] RD_DATA[1]=rd_pointer_$memrd_ADDR_DATA[1] RD_DATA[2]=rd_pointer_$memrd_ADDR_DATA[2] RD_DATA[3]=rd_pointer_$memrd_ADDR_DATA[3] RD_DATA[4]=rd_pointer_$memrd_ADDR_DATA[4] RD_DATA[5]=rd_pointer_$memrd_ADDR_DATA[5] RD_DATA[6]=rd_pointer_$memrd_ADDR_DATA[6] RD_DATA[7]=rd_pointer_$memrd_ADDR_DATA[7] RD_EN=$undef
+.param ABITS 00000000000000000000000000000100
+.param INIT xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+.param MEMID "\\fifo_mem"
+.param OFFSET 00000000000000000000000000000000
+.param RD_CLK_ENABLE 0
+.param RD_CLK_POLARITY 0
+.param RD_PORTS 00000000000000000000000000000001
+.param RD_TRANSPARENT 0
+.param SIZE 00000000000000000000000000001111
 .param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[0]_$dffe_Q_EN Q[0]=fifo_mem[0][0] Q[1]=fifo_mem[0][1] Q[2]=fifo_mem[0][2] Q[3]=fifo_mem[0][3] Q[4]=fifo_mem[0][4] Q[5]=fifo_mem[0][5] Q[6]=fifo_mem[0][6] Q[7]=fifo_mem[0][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[0]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[0]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=write_n_$mux_S_Y[0] Y=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=write_n_$mux_S_Y[1] Y=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=write_n_$mux_S_Y[2] Y=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=write_n_$mux_S_Y[3] Y=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[0][0] A[1]=fifo_mem[0][1] A[2]=fifo_mem[0][2] A[3]=fifo_mem[0][3] A[4]=fifo_mem[0][4] A[5]=fifo_mem[0][5] A[6]=fifo_mem[0][6] A[7]=fifo_mem[0][7] B[0]=fifo_mem[1][0] B[1]=fifo_mem[1][1] B[2]=fifo_mem[1][2] B[3]=fifo_mem[1][3] B[4]=fifo_mem[1][4] B[5]=fifo_mem[1][5] B[6]=fifo_mem[1][6] B[7]=fifo_mem[1][7] S=rd_pointer[0] Y[0]=fifo_mem[0]_$mux_A_Y[0] Y[1]=fifo_mem[0]_$mux_A_Y[1] Y[2]=fifo_mem[0]_$mux_A_Y[2] Y[3]=fifo_mem[0]_$mux_A_Y[3] Y[4]=fifo_mem[0]_$mux_A_Y[4] Y[5]=fifo_mem[0]_$mux_A_Y[5] Y[6]=fifo_mem[0]_$mux_A_Y[6] Y[7]=fifo_mem[0]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[10]_$dffe_Q_EN Q[0]=fifo_mem[10][0] Q[1]=fifo_mem[10][1] Q[2]=fifo_mem[10][2] Q[3]=fifo_mem[10][3] Q[4]=fifo_mem[10][4] Q[5]=fifo_mem[10][5] Q[6]=fifo_mem[10][6] Q[7]=fifo_mem[10][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[10]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[10]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[10]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[10][0] A[1]=fifo_mem[10][1] A[2]=fifo_mem[10][2] A[3]=fifo_mem[10][3] A[4]=fifo_mem[10][4] A[5]=fifo_mem[10][5] A[6]=fifo_mem[10][6] A[7]=fifo_mem[10][7] B[0]=fifo_mem[11][0] B[1]=fifo_mem[11][1] B[2]=fifo_mem[11][2] B[3]=fifo_mem[11][3] B[4]=fifo_mem[11][4] B[5]=fifo_mem[11][5] B[6]=fifo_mem[11][6] B[7]=fifo_mem[11][7] S=rd_pointer[0] Y[0]=fifo_mem[10]_$mux_A_Y[0] Y[1]=fifo_mem[10]_$mux_A_Y[1] Y[2]=fifo_mem[10]_$mux_A_Y[2] Y[3]=fifo_mem[10]_$mux_A_Y[3] Y[4]=fifo_mem[10]_$mux_A_Y[4] Y[5]=fifo_mem[10]_$mux_A_Y[5] Y[6]=fifo_mem[10]_$mux_A_Y[6] Y[7]=fifo_mem[10]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[11]_$dffe_Q_EN Q[0]=fifo_mem[11][0] Q[1]=fifo_mem[11][1] Q[2]=fifo_mem[11][2] Q[3]=fifo_mem[11][3] Q[4]=fifo_mem[11][4] Q[5]=fifo_mem[11][5] Q[6]=fifo_mem[11][6] Q[7]=fifo_mem[11][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[11]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[11]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[11]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[12]_$dffe_Q_EN Q[0]=fifo_mem[12][0] Q[1]=fifo_mem[12][1] Q[2]=fifo_mem[12][2] Q[3]=fifo_mem[12][3] Q[4]=fifo_mem[12][4] Q[5]=fifo_mem[12][5] Q[6]=fifo_mem[12][6] Q[7]=fifo_mem[12][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[12]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[12]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[12]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=write_n_$mux_S_Y[2] B=write_n_$mux_S_Y[3] Y=fifo_mem[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[12][0] A[1]=fifo_mem[12][1] A[2]=fifo_mem[12][2] A[3]=fifo_mem[12][3] A[4]=fifo_mem[12][4] A[5]=fifo_mem[12][5] A[6]=fifo_mem[12][6] A[7]=fifo_mem[12][7] B[0]=fifo_mem[13][0] B[1]=fifo_mem[13][1] B[2]=fifo_mem[13][2] B[3]=fifo_mem[13][3] B[4]=fifo_mem[13][4] B[5]=fifo_mem[13][5] B[6]=fifo_mem[13][6] B[7]=fifo_mem[13][7] S=rd_pointer[0] Y[0]=fifo_mem[12]_$mux_A_Y[0] Y[1]=fifo_mem[12]_$mux_A_Y[1] Y[2]=fifo_mem[12]_$mux_A_Y[2] Y[3]=fifo_mem[12]_$mux_A_Y[3] Y[4]=fifo_mem[12]_$mux_A_Y[4] Y[5]=fifo_mem[12]_$mux_A_Y[5] Y[6]=fifo_mem[12]_$mux_A_Y[6] Y[7]=fifo_mem[12]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[13]_$dffe_Q_EN Q[0]=fifo_mem[13][0] Q[1]=fifo_mem[13][1] Q[2]=fifo_mem[13][2] Q[3]=fifo_mem[13][3] Q[4]=fifo_mem[13][4] Q[5]=fifo_mem[13][5] Q[6]=fifo_mem[13][6] Q[7]=fifo_mem[13][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[13]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[13]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[13]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[14]_$dffe_Q_EN Q[0]=fifo_mem[14][0] Q[1]=fifo_mem[14][1] Q[2]=fifo_mem[14][2] Q[3]=fifo_mem[14][3] Q[4]=fifo_mem[14][4] Q[5]=fifo_mem[14][5] Q[6]=fifo_mem[14][6] Q[7]=fifo_mem[14][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[14]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[14]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[12]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[14]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[14][0] A[1]=fifo_mem[14][1] A[2]=fifo_mem[14][2] A[3]=fifo_mem[14][3] A[4]=fifo_mem[14][4] A[5]=fifo_mem[14][5] A[6]=fifo_mem[14][6] A[7]=fifo_mem[14][7] B[0]=fifo_mem[14]_$mux_A_B[0] B[1]=fifo_mem[14]_$mux_A_B[1] B[2]=fifo_mem[14]_$mux_A_B[2] B[3]=fifo_mem[14]_$mux_A_B[3] B[4]=fifo_mem[14]_$mux_A_B[4] B[5]=fifo_mem[14]_$mux_A_B[5] B[6]=fifo_mem[14]_$mux_A_B[6] B[7]=fifo_mem[14]_$mux_A_B[7] S=rd_pointer[0] Y[0]=fifo_mem[14]_$mux_A_Y[0] Y[1]=fifo_mem[14]_$mux_A_Y[1] Y[2]=fifo_mem[14]_$mux_A_Y[2] Y[3]=fifo_mem[14]_$mux_A_Y[3] Y[4]=fifo_mem[14]_$mux_A_Y[4] Y[5]=fifo_mem[14]_$mux_A_Y[5] Y[6]=fifo_mem[14]_$mux_A_Y[6] Y[7]=fifo_mem[14]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[1]_$dffe_Q_EN Q[0]=fifo_mem[1][0] Q[1]=fifo_mem[1][1] Q[2]=fifo_mem[1][2] Q[3]=fifo_mem[1][3] Q[4]=fifo_mem[1][4] Q[5]=fifo_mem[1][5] Q[6]=fifo_mem[1][6] Q[7]=fifo_mem[1][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[1]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[1]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[1]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=write_n_$mux_S_Y[0] B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=fifo_mem[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[2]_$dffe_Q_EN Q[0]=fifo_mem[2][0] Q[1]=fifo_mem[2][1] Q[2]=fifo_mem[2][2] Q[3]=fifo_mem[2][3] Q[4]=fifo_mem[2][4] Q[5]=fifo_mem[2][5] Q[6]=fifo_mem[2][6] Q[7]=fifo_mem[2][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[2]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[2]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[2]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=write_n_$mux_S_Y[1] Y=fifo_mem[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[2][0] A[1]=fifo_mem[2][1] A[2]=fifo_mem[2][2] A[3]=fifo_mem[2][3] A[4]=fifo_mem[2][4] A[5]=fifo_mem[2][5] A[6]=fifo_mem[2][6] A[7]=fifo_mem[2][7] B[0]=fifo_mem[3][0] B[1]=fifo_mem[3][1] B[2]=fifo_mem[3][2] B[3]=fifo_mem[3][3] B[4]=fifo_mem[3][4] B[5]=fifo_mem[3][5] B[6]=fifo_mem[3][6] B[7]=fifo_mem[3][7] S=rd_pointer[0] Y[0]=fifo_mem[2]_$mux_A_Y[0] Y[1]=fifo_mem[2]_$mux_A_Y[1] Y[2]=fifo_mem[2]_$mux_A_Y[2] Y[3]=fifo_mem[2]_$mux_A_Y[3] Y[4]=fifo_mem[2]_$mux_A_Y[4] Y[5]=fifo_mem[2]_$mux_A_Y[5] Y[6]=fifo_mem[2]_$mux_A_Y[6] Y[7]=fifo_mem[2]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[3]_$dffe_Q_EN Q[0]=fifo_mem[3][0] Q[1]=fifo_mem[3][1] Q[2]=fifo_mem[3][2] Q[3]=fifo_mem[3][3] Q[4]=fifo_mem[3][4] Q[5]=fifo_mem[3][5] Q[6]=fifo_mem[3][6] Q[7]=fifo_mem[3][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[3]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[3]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[3]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=write_n_$mux_S_Y[0] B=write_n_$mux_S_Y[1] Y=fifo_mem[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[4]_$dffe_Q_EN Q[0]=fifo_mem[4][0] Q[1]=fifo_mem[4][1] Q[2]=fifo_mem[4][2] Q[3]=fifo_mem[4][3] Q[4]=fifo_mem[4][4] Q[5]=fifo_mem[4][5] Q[6]=fifo_mem[4][6] Q[7]=fifo_mem[4][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[4]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[4]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[4]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=write_n_$mux_S_Y[2] B=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=fifo_mem[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[4][0] A[1]=fifo_mem[4][1] A[2]=fifo_mem[4][2] A[3]=fifo_mem[4][3] A[4]=fifo_mem[4][4] A[5]=fifo_mem[4][5] A[6]=fifo_mem[4][6] A[7]=fifo_mem[4][7] B[0]=fifo_mem[5][0] B[1]=fifo_mem[5][1] B[2]=fifo_mem[5][2] B[3]=fifo_mem[5][3] B[4]=fifo_mem[5][4] B[5]=fifo_mem[5][5] B[6]=fifo_mem[5][6] B[7]=fifo_mem[5][7] S=rd_pointer[0] Y[0]=fifo_mem[4]_$mux_A_Y[0] Y[1]=fifo_mem[4]_$mux_A_Y[1] Y[2]=fifo_mem[4]_$mux_A_Y[2] Y[3]=fifo_mem[4]_$mux_A_Y[3] Y[4]=fifo_mem[4]_$mux_A_Y[4] Y[5]=fifo_mem[4]_$mux_A_Y[5] Y[6]=fifo_mem[4]_$mux_A_Y[6] Y[7]=fifo_mem[4]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[5]_$dffe_Q_EN Q[0]=fifo_mem[5][0] Q[1]=fifo_mem[5][1] Q[2]=fifo_mem[5][2] Q[3]=fifo_mem[5][3] Q[4]=fifo_mem[5][4] Q[5]=fifo_mem[5][5] Q[6]=fifo_mem[5][6] Q[7]=fifo_mem[5][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[5]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[5]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[5]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[6]_$dffe_Q_EN Q[0]=fifo_mem[6][0] Q[1]=fifo_mem[6][1] Q[2]=fifo_mem[6][2] Q[3]=fifo_mem[6][3] Q[4]=fifo_mem[6][4] Q[5]=fifo_mem[6][5] Q[6]=fifo_mem[6][6] Q[7]=fifo_mem[6][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[6]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[6]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[6]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[6][0] A[1]=fifo_mem[6][1] A[2]=fifo_mem[6][2] A[3]=fifo_mem[6][3] A[4]=fifo_mem[6][4] A[5]=fifo_mem[6][5] A[6]=fifo_mem[6][6] A[7]=fifo_mem[6][7] B[0]=fifo_mem[7][0] B[1]=fifo_mem[7][1] B[2]=fifo_mem[7][2] B[3]=fifo_mem[7][3] B[4]=fifo_mem[7][4] B[5]=fifo_mem[7][5] B[6]=fifo_mem[7][6] B[7]=fifo_mem[7][7] S=rd_pointer[0] Y[0]=fifo_mem[6]_$mux_A_Y[0] Y[1]=fifo_mem[6]_$mux_A_Y[1] Y[2]=fifo_mem[6]_$mux_A_Y[2] Y[3]=fifo_mem[6]_$mux_A_Y[3] Y[4]=fifo_mem[6]_$mux_A_Y[4] Y[5]=fifo_mem[6]_$mux_A_Y[5] Y[6]=fifo_mem[6]_$mux_A_Y[6] Y[7]=fifo_mem[6]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[7]_$dffe_Q_EN Q[0]=fifo_mem[7][0] Q[1]=fifo_mem[7][1] Q[2]=fifo_mem[7][2] Q[3]=fifo_mem[7][3] Q[4]=fifo_mem[7][4] Q[5]=fifo_mem[7][5] Q[6]=fifo_mem[7][6] Q[7]=fifo_mem[7][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[7]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[7]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[4]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[7]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[8]_$dffe_Q_EN Q[0]=fifo_mem[8][0] Q[1]=fifo_mem[8][1] Q[2]=fifo_mem[8][2] Q[3]=fifo_mem[8][3] Q[4]=fifo_mem[8][4] Q[5]=fifo_mem[8][5] Q[6]=fifo_mem[8][6] Q[7]=fifo_mem[8][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[8]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[8]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[8]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[0]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A B=write_n_$mux_S_Y[3] Y=fifo_mem[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=fifo_mem[8][0] A[1]=fifo_mem[8][1] A[2]=fifo_mem[8][2] A[3]=fifo_mem[8][3] A[4]=fifo_mem[8][4] A[5]=fifo_mem[8][5] A[6]=fifo_mem[8][6] A[7]=fifo_mem[8][7] B[0]=fifo_mem[9][0] B[1]=fifo_mem[9][1] B[2]=fifo_mem[9][2] B[3]=fifo_mem[9][3] B[4]=fifo_mem[9][4] B[5]=fifo_mem[9][5] B[6]=fifo_mem[9][6] B[7]=fifo_mem[9][7] S=rd_pointer[0] Y[0]=fifo_mem[8]_$mux_A_Y[0] Y[1]=fifo_mem[8]_$mux_A_Y[1] Y[2]=fifo_mem[8]_$mux_A_Y[2] Y[3]=fifo_mem[8]_$mux_A_Y[3] Y[4]=fifo_mem[8]_$mux_A_Y[4] Y[5]=fifo_mem[8]_$mux_A_Y[5] Y[6]=fifo_mem[8]_$mux_A_Y[6] Y[7]=fifo_mem[8]_$mux_A_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $dffe CLK=clock D[0]=write_n_$mux_S_1_Y[0] D[1]=write_n_$mux_S_1_Y[1] D[2]=write_n_$mux_S_1_Y[2] D[3]=write_n_$mux_S_1_Y[3] D[4]=write_n_$mux_S_1_Y[4] D[5]=write_n_$mux_S_1_Y[5] D[6]=write_n_$mux_S_1_Y[6] D[7]=write_n_$mux_S_1_Y[7] EN=fifo_mem[9]_$dffe_Q_EN Q[0]=fifo_mem[9][0] Q[1]=fifo_mem[9][1] Q[2]=fifo_mem[9][2] Q[3]=fifo_mem[9][3] Q[4]=fifo_mem[9][4] Q[5]=fifo_mem[9][5] Q[6]=fifo_mem[9][6] Q[7]=fifo_mem[9][7]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000001000
-.subckt $and A=fifo_mem[9]_$dffe_Q_EN_$and_Y_A B=write_n_$mux_S_2_Y[7] Y=fifo_mem[9]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=fifo_mem[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=fifo_mem[8]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=fifo_mem[9]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
+.param WR_CLK_ENABLE 0
+.param WR_CLK_POLARITY 0
+.param WR_PORTS 00000000000000000000000000000000
 .subckt $add A[0]=rd_pointer[0] A[1]=rd_pointer[1] A[2]=rd_pointer[2] A[3]=rd_pointer[3] B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$false B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$false B[16]=$false B[17]=$false B[18]=$false B[19]=$false B[20]=$false B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$false B[26]=$false B[27]=$false B[28]=$false B[29]=$false B[30]=$false B[31]=$false Y[0]=rd_pointer_$add_A_Y[0] Y[1]=rd_pointer_$add_A_Y[1] Y[2]=rd_pointer_$add_A_Y[2] Y[3]=rd_pointer_$add_A_Y[3] Y[4]=rd_pointer_$add_A_Y[4] Y[5]=rd_pointer_$add_A_Y[5] Y[6]=rd_pointer_$add_A_Y[6] Y[7]=rd_pointer_$add_A_Y[7] Y[8]=rd_pointer_$add_A_Y[8] Y[9]=rd_pointer_$add_A_Y[9] Y[10]=rd_pointer_$add_A_Y[10] Y[11]=rd_pointer_$add_A_Y[11] Y[12]=rd_pointer_$add_A_Y[12] Y[13]=rd_pointer_$add_A_Y[13] Y[14]=rd_pointer_$add_A_Y[14] Y[15]=rd_pointer_$add_A_Y[15] Y[16]=rd_pointer_$add_A_Y[16] Y[17]=rd_pointer_$add_A_Y[17] Y[18]=rd_pointer_$add_A_Y[18] Y[19]=rd_pointer_$add_A_Y[19] Y[20]=rd_pointer_$add_A_Y[20] Y[21]=rd_pointer_$add_A_Y[21] Y[22]=rd_pointer_$add_A_Y[22] Y[23]=rd_pointer_$add_A_Y[23] Y[24]=rd_pointer_$add_A_Y[24] Y[25]=rd_pointer_$add_A_Y[25] Y[26]=rd_pointer_$add_A_Y[26] Y[27]=rd_pointer_$add_A_Y[27] Y[28]=rd_pointer_$add_A_Y[28] Y[29]=rd_pointer_$add_A_Y[29] Y[30]=rd_pointer_$add_A_Y[30] Y[31]=rd_pointer_$add_A_Y[31]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000100
@@ -383,18 +75,6 @@
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $mux A[0]=rd_pointer_$add_A_Y[0] A[1]=rd_pointer_$add_A_Y[1] A[2]=rd_pointer_$add_A_Y[2] A[3]=rd_pointer_$add_A_Y[3] B[0]=$false B[1]=$false B[2]=$false B[3]=$false S=rd_pointer_$eq_A_Y Y[0]=rd_pointer_$eq_A_Y_$mux_S_Y[0] Y[1]=rd_pointer_$eq_A_Y_$mux_S_Y[1] Y[2]=rd_pointer_$eq_A_Y_$mux_S_Y[2] Y[3]=rd_pointer_$eq_A_Y_$mux_S_Y[3]
 .param WIDTH 00000000000000000000000000000100
-.subckt $mux A[0]=fifo_mem[12]_$mux_A_Y[0] A[1]=fifo_mem[12]_$mux_A_Y[1] A[2]=fifo_mem[12]_$mux_A_Y[2] A[3]=fifo_mem[12]_$mux_A_Y[3] A[4]=fifo_mem[12]_$mux_A_Y[4] A[5]=fifo_mem[12]_$mux_A_Y[5] A[6]=fifo_mem[12]_$mux_A_Y[6] A[7]=fifo_mem[12]_$mux_A_Y[7] B[0]=fifo_mem[14]_$mux_A_Y[0] B[1]=fifo_mem[14]_$mux_A_Y[1] B[2]=fifo_mem[14]_$mux_A_Y[2] B[3]=fifo_mem[14]_$mux_A_Y[3] B[4]=fifo_mem[14]_$mux_A_Y[4] B[5]=fifo_mem[14]_$mux_A_Y[5] B[6]=fifo_mem[14]_$mux_A_Y[6] B[7]=fifo_mem[14]_$mux_A_Y[7] S=rd_pointer[1] Y[0]=rd_pointer_$mux_S_Y[0] Y[1]=rd_pointer_$mux_S_Y[1] Y[2]=rd_pointer_$mux_S_Y[2] Y[3]=rd_pointer_$mux_S_Y[3] Y[4]=rd_pointer_$mux_S_Y[4] Y[5]=rd_pointer_$mux_S_Y[5] Y[6]=rd_pointer_$mux_S_Y[6] Y[7]=rd_pointer_$mux_S_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=fifo_mem[8]_$mux_A_Y[0] A[1]=fifo_mem[8]_$mux_A_Y[1] A[2]=fifo_mem[8]_$mux_A_Y[2] A[3]=fifo_mem[8]_$mux_A_Y[3] A[4]=fifo_mem[8]_$mux_A_Y[4] A[5]=fifo_mem[8]_$mux_A_Y[5] A[6]=fifo_mem[8]_$mux_A_Y[6] A[7]=fifo_mem[8]_$mux_A_Y[7] B[0]=fifo_mem[10]_$mux_A_Y[0] B[1]=fifo_mem[10]_$mux_A_Y[1] B[2]=fifo_mem[10]_$mux_A_Y[2] B[3]=fifo_mem[10]_$mux_A_Y[3] B[4]=fifo_mem[10]_$mux_A_Y[4] B[5]=fifo_mem[10]_$mux_A_Y[5] B[6]=fifo_mem[10]_$mux_A_Y[6] B[7]=fifo_mem[10]_$mux_A_Y[7] S=rd_pointer[1] Y[0]=rd_pointer_$mux_S_1_Y[0] Y[1]=rd_pointer_$mux_S_1_Y[1] Y[2]=rd_pointer_$mux_S_1_Y[2] Y[3]=rd_pointer_$mux_S_1_Y[3] Y[4]=rd_pointer_$mux_S_1_Y[4] Y[5]=rd_pointer_$mux_S_1_Y[5] Y[6]=rd_pointer_$mux_S_1_Y[6] Y[7]=rd_pointer_$mux_S_1_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=fifo_mem[4]_$mux_A_Y[0] A[1]=fifo_mem[4]_$mux_A_Y[1] A[2]=fifo_mem[4]_$mux_A_Y[2] A[3]=fifo_mem[4]_$mux_A_Y[3] A[4]=fifo_mem[4]_$mux_A_Y[4] A[5]=fifo_mem[4]_$mux_A_Y[5] A[6]=fifo_mem[4]_$mux_A_Y[6] A[7]=fifo_mem[4]_$mux_A_Y[7] B[0]=fifo_mem[6]_$mux_A_Y[0] B[1]=fifo_mem[6]_$mux_A_Y[1] B[2]=fifo_mem[6]_$mux_A_Y[2] B[3]=fifo_mem[6]_$mux_A_Y[3] B[4]=fifo_mem[6]_$mux_A_Y[4] B[5]=fifo_mem[6]_$mux_A_Y[5] B[6]=fifo_mem[6]_$mux_A_Y[6] B[7]=fifo_mem[6]_$mux_A_Y[7] S=rd_pointer[1] Y[0]=rd_pointer_$mux_S_2_Y[0] Y[1]=rd_pointer_$mux_S_2_Y[1] Y[2]=rd_pointer_$mux_S_2_Y[2] Y[3]=rd_pointer_$mux_S_2_Y[3] Y[4]=rd_pointer_$mux_S_2_Y[4] Y[5]=rd_pointer_$mux_S_2_Y[5] Y[6]=rd_pointer_$mux_S_2_Y[6] Y[7]=rd_pointer_$mux_S_2_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=fifo_mem[0]_$mux_A_Y[0] A[1]=fifo_mem[0]_$mux_A_Y[1] A[2]=fifo_mem[0]_$mux_A_Y[2] A[3]=fifo_mem[0]_$mux_A_Y[3] A[4]=fifo_mem[0]_$mux_A_Y[4] A[5]=fifo_mem[0]_$mux_A_Y[5] A[6]=fifo_mem[0]_$mux_A_Y[6] A[7]=fifo_mem[0]_$mux_A_Y[7] B[0]=fifo_mem[2]_$mux_A_Y[0] B[1]=fifo_mem[2]_$mux_A_Y[1] B[2]=fifo_mem[2]_$mux_A_Y[2] B[3]=fifo_mem[2]_$mux_A_Y[3] B[4]=fifo_mem[2]_$mux_A_Y[4] B[5]=fifo_mem[2]_$mux_A_Y[5] B[6]=fifo_mem[2]_$mux_A_Y[6] B[7]=fifo_mem[2]_$mux_A_Y[7] S=rd_pointer[1] Y[0]=rd_pointer_$mux_S_3_Y[0] Y[1]=rd_pointer_$mux_S_3_Y[1] Y[2]=rd_pointer_$mux_S_3_Y[2] Y[3]=rd_pointer_$mux_S_3_Y[3] Y[4]=rd_pointer_$mux_S_3_Y[4] Y[5]=rd_pointer_$mux_S_3_Y[5] Y[6]=rd_pointer_$mux_S_3_Y[6] Y[7]=rd_pointer_$mux_S_3_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=rd_pointer_$mux_S_1_Y[0] A[1]=rd_pointer_$mux_S_1_Y[1] A[2]=rd_pointer_$mux_S_1_Y[2] A[3]=rd_pointer_$mux_S_1_Y[3] A[4]=rd_pointer_$mux_S_1_Y[4] A[5]=rd_pointer_$mux_S_1_Y[5] A[6]=rd_pointer_$mux_S_1_Y[6] A[7]=rd_pointer_$mux_S_1_Y[7] B[0]=rd_pointer_$mux_S_Y[0] B[1]=rd_pointer_$mux_S_Y[1] B[2]=rd_pointer_$mux_S_Y[2] B[3]=rd_pointer_$mux_S_Y[3] B[4]=rd_pointer_$mux_S_Y[4] B[5]=rd_pointer_$mux_S_Y[5] B[6]=rd_pointer_$mux_S_Y[6] B[7]=rd_pointer_$mux_S_Y[7] S=rd_pointer[2] Y[0]=fifo_mem$rdreg[0]$d_$mux_Y_B[0] Y[1]=fifo_mem$rdreg[0]$d_$mux_Y_B[1] Y[2]=fifo_mem$rdreg[0]$d_$mux_Y_B[2] Y[3]=fifo_mem$rdreg[0]$d_$mux_Y_B[3] Y[4]=fifo_mem$rdreg[0]$d_$mux_Y_B[4] Y[5]=fifo_mem$rdreg[0]$d_$mux_Y_B[5] Y[6]=fifo_mem$rdreg[0]$d_$mux_Y_B[6] Y[7]=fifo_mem$rdreg[0]$d_$mux_Y_B[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A[0]=rd_pointer_$mux_S_3_Y[0] A[1]=rd_pointer_$mux_S_3_Y[1] A[2]=rd_pointer_$mux_S_3_Y[2] A[3]=rd_pointer_$mux_S_3_Y[3] A[4]=rd_pointer_$mux_S_3_Y[4] A[5]=rd_pointer_$mux_S_3_Y[5] A[6]=rd_pointer_$mux_S_3_Y[6] A[7]=rd_pointer_$mux_S_3_Y[7] B[0]=rd_pointer_$mux_S_2_Y[0] B[1]=rd_pointer_$mux_S_2_Y[1] B[2]=rd_pointer_$mux_S_2_Y[2] B[3]=rd_pointer_$mux_S_2_Y[3] B[4]=rd_pointer_$mux_S_2_Y[4] B[5]=rd_pointer_$mux_S_2_Y[5] B[6]=rd_pointer_$mux_S_2_Y[6] B[7]=rd_pointer_$mux_S_2_Y[7] S=rd_pointer[2] Y[0]=fifo_mem$rdreg[0]$d_$mux_Y_A[0] Y[1]=fifo_mem$rdreg[0]$d_$mux_Y_A[1] Y[2]=fifo_mem$rdreg[0]$d_$mux_Y_A[2] Y[3]=fifo_mem$rdreg[0]$d_$mux_Y_A[3] Y[4]=fifo_mem$rdreg[0]$d_$mux_Y_A[4] Y[5]=fifo_mem$rdreg[0]$d_$mux_Y_A[5] Y[6]=fifo_mem$rdreg[0]$d_$mux_Y_A[6] Y[7]=fifo_mem$rdreg[0]$d_$mux_Y_A[7]
-.param WIDTH 00000000000000000000000000001000
 .subckt $sdffe CLK=clock D[0]=rd_pointer_$eq_A_Y_$mux_S_Y[0] D[1]=rd_pointer_$eq_A_Y_$mux_S_Y[1] D[2]=rd_pointer_$eq_A_Y_$mux_S_Y[2] D[3]=rd_pointer_$eq_A_Y_$mux_S_Y[3] EN=read_n Q[0]=rd_pointer[0] Q[1]=rd_pointer[1] Q[2]=rd_pointer[2] Q[3]=rd_pointer[3] SRST=reset_n
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000000
@@ -417,26 +97,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $add A[0]=wr_pointer[0] A[1]=wr_pointer[1] A[2]=wr_pointer[2] A[3]=wr_pointer[3] B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$false B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$false B[16]=$false B[17]=$false B[18]=$false B[19]=$false B[20]=$false B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$false B[26]=$false B[27]=$false B[28]=$false B[29]=$false B[30]=$false B[31]=$false Y[0]=wr_pointer_$add_A_Y[0] Y[1]=wr_pointer_$add_A_Y[1] Y[2]=wr_pointer_$add_A_Y[2] Y[3]=wr_pointer_$add_A_Y[3] Y[4]=wr_pointer_$add_A_Y[4] Y[5]=wr_pointer_$add_A_Y[5] Y[6]=wr_pointer_$add_A_Y[6] Y[7]=wr_pointer_$add_A_Y[7] Y[8]=wr_pointer_$add_A_Y[8] Y[9]=wr_pointer_$add_A_Y[9] Y[10]=wr_pointer_$add_A_Y[10] Y[11]=wr_pointer_$add_A_Y[11] Y[12]=wr_pointer_$add_A_Y[12] Y[13]=wr_pointer_$add_A_Y[13] Y[14]=wr_pointer_$add_A_Y[14] Y[15]=wr_pointer_$add_A_Y[15] Y[16]=wr_pointer_$add_A_Y[16] Y[17]=wr_pointer_$add_A_Y[17] Y[18]=wr_pointer_$add_A_Y[18] Y[19]=wr_pointer_$add_A_Y[19] Y[20]=wr_pointer_$add_A_Y[20] Y[21]=wr_pointer_$add_A_Y[21] Y[22]=wr_pointer_$add_A_Y[22] Y[23]=wr_pointer_$add_A_Y[23] Y[24]=wr_pointer_$add_A_Y[24] Y[25]=wr_pointer_$add_A_Y[25] Y[26]=wr_pointer_$add_A_Y[26] Y[27]=wr_pointer_$add_A_Y[27] Y[28]=wr_pointer_$add_A_Y[28] Y[29]=wr_pointer_$add_A_Y[29] Y[30]=wr_pointer_$add_A_Y[30] Y[31]=wr_pointer_$add_A_Y[31]
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000100
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000100000
-.param Y_WIDTH 00000000000000000000000000100000
-.subckt $eq A[0]=wr_pointer[0] A[1]=wr_pointer[1] A[2]=wr_pointer[2] A[3]=wr_pointer[3] B[0]=$false B[1]=$true B[2]=$true B[3]=$true Y=wr_pointer_$eq_A_Y
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000100
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000100
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=wr_pointer_$add_A_Y[0] A[1]=wr_pointer_$add_A_Y[1] A[2]=wr_pointer_$add_A_Y[2] A[3]=wr_pointer_$add_A_Y[3] B[0]=$false B[1]=$false B[2]=$false B[3]=$false S=wr_pointer_$eq_A_Y Y[0]=wr_pointer_$eq_A_Y_$mux_S_Y[0] Y[1]=wr_pointer_$eq_A_Y_$mux_S_Y[1] Y[2]=wr_pointer_$eq_A_Y_$mux_S_Y[2] Y[3]=wr_pointer_$eq_A_Y_$mux_S_Y[3]
-.param WIDTH 00000000000000000000000000000100
-.subckt $sdffe CLK=clock D[0]=wr_pointer_$eq_A_Y_$mux_S_Y[0] D[1]=wr_pointer_$eq_A_Y_$mux_S_Y[1] D[2]=wr_pointer_$eq_A_Y_$mux_S_Y[2] D[3]=wr_pointer_$eq_A_Y_$mux_S_Y[3] EN=write_n Q[0]=wr_pointer[0] Q[1]=wr_pointer[1] Q[2]=wr_pointer[2] Q[3]=wr_pointer[3] SRST=reset_n
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000000
-.param SRST_POLARITY 00000000000000000000000000000000
-.param SRST_VALUE 0000
-.param WIDTH 00000000000000000000000000000100
 .subckt $logic_and A=read_n_$not_A_1_Y B=write_n Y=write_n_$logic_and_B_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
@@ -445,30 +105,10 @@
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $mux A[0]=read_n_$logic_and_B_Y_$mux_S_Y[0] A[1]=read_n_$logic_and_B_Y_$mux_S_Y[1] A[2]=read_n_$logic_and_B_Y_$mux_S_Y[2] A[3]=read_n_$logic_and_B_Y_$mux_S_Y[3] B[0]=counter_$sub_A_Y[0] B[1]=counter_$sub_A_Y[1] B[2]=counter_$sub_A_Y[2] B[3]=counter_$sub_A_Y[3] S=write_n_$logic_and_B_Y Y[0]=write_n_$logic_and_B_Y_$mux_S_Y[0] Y[1]=write_n_$logic_and_B_Y_$mux_S_Y[1] Y[2]=write_n_$logic_and_B_Y_$mux_S_Y[2] Y[3]=write_n_$logic_and_B_Y_$mux_S_Y[3]
 .param WIDTH 00000000000000000000000000000100
-.subckt $mux A[0]=wr_pointer[0] A[1]=wr_pointer[1] A[2]=wr_pointer[2] A[3]=wr_pointer[3] B[0]=$undef B[1]=$undef B[2]=$undef B[3]=$undef S=write_n Y[0]=write_n_$mux_S_Y[0] Y[1]=write_n_$mux_S_Y[1] Y[2]=write_n_$mux_S_Y[2] Y[3]=write_n_$mux_S_Y[3]
-.param WIDTH 00000000000000000000000000000100
-.subckt $mux A[0]=data_in[0] A[1]=data_in[1] A[2]=data_in[2] A[3]=data_in[3] A[4]=data_in[4] A[5]=data_in[5] A[6]=data_in[6] A[7]=data_in[7] B[0]=$undef B[1]=$undef B[2]=$undef B[3]=$undef B[4]=$undef B[5]=$undef B[6]=$undef B[7]=$undef S=write_n Y[0]=write_n_$mux_S_1_Y[0] Y[1]=write_n_$mux_S_1_Y[1] Y[2]=write_n_$mux_S_1_Y[2] Y[3]=write_n_$mux_S_1_Y[3] Y[4]=write_n_$mux_S_1_Y[4] Y[5]=write_n_$mux_S_1_Y[5] Y[6]=write_n_$mux_S_1_Y[6] Y[7]=write_n_$mux_S_1_Y[7]
-.param WIDTH 00000000000000000000000000001000
-.subckt $mux A=$true B=$false S=write_n Y=write_n_$mux_S_2_Y[7]
-.param WIDTH 00000000000000000000000000000001
 .subckt $not A=write_n Y=write_n_$not_A_1_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.names write_n_$mux_S_2_Y[7] write_n_$mux_S_2_Y[0]
-1 1
-.names write_n_$mux_S_2_Y[7] write_n_$mux_S_2_Y[1]
-1 1
-.names write_n_$mux_S_2_Y[7] write_n_$mux_S_2_Y[2]
-1 1
-.names write_n_$mux_S_2_Y[7] write_n_$mux_S_2_Y[3]
-1 1
-.names write_n_$mux_S_2_Y[7] write_n_$mux_S_2_Y[4]
-1 1
-.names write_n_$mux_S_2_Y[7] write_n_$mux_S_2_Y[5]
-1 1
-.names write_n_$mux_S_2_Y[7] write_n_$mux_S_2_Y[6]
-1 1
 .names counter_$eq_A_1_Y_$mux_S_Y empty
 1 1
 .names counter_$eq_A_Y_$mux_S_Y full
@@ -478,8 +118,6 @@
 .names read_n_$not_A_1_Y read_n_$not_A_2_Y
 1 1
 .names read_n_$not_A_1_Y read_n_$not_A_Y
-1 1
-.names write_n_$not_A_1_Y write_n_$not_A_2_Y
 1 1
 .names write_n_$not_A_1_Y write_n_$not_A_Y
 1 1

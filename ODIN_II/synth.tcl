@@ -16,7 +16,9 @@ fsm;
 
 opt;
 
-memory;
+memory_collect;
+
+memory_nordff;
 
 opt;
 

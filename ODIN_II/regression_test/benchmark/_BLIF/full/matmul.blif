@@ -17,7 +17,7 @@
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $mux A[0]=$false A[1]=$false A[2]=$false A[3]=$false B[0]=addr_tmp_$add_A_Y[0] B[1]=addr_tmp_$add_A_Y[1] B[2]=addr_tmp_$add_A_Y[2] B[3]=addr_tmp_$add_A_Y[3] S=addr_tmp_$lt_A_Y Y[0]=addr_tmp_$lt_A_Y_$mux_S_Y[0] Y[1]=addr_tmp_$lt_A_Y_$mux_S_Y[1] Y[2]=addr_tmp_$lt_A_Y_$mux_S_Y[2] Y[3]=addr_tmp_$lt_A_Y_$mux_S_Y[3]
 .param WIDTH 00000000000000000000000000000100
-.subckt $sdffe CLK=clk D[0]=rst_$mux_S_2_Y[0] D[1]=rst_$mux_S_2_Y[1] D[2]=rst_$mux_S_2_Y[2] D[3]=rst_$mux_S_2_Y[3] EN=direction_tmp Q[0]=addr_tmp[0] Q[1]=addr_tmp[1] Q[2]=addr_tmp[2] Q[3]=addr_tmp[3] SRST=rst
+.subckt $sdffe CLK=clk D[0]=rst_$mux_S_1_Y[0] D[1]=rst_$mux_S_1_Y[1] D[2]=rst_$mux_S_1_Y[2] D[3]=rst_$mux_S_1_Y[3] EN=direction_tmp Q[0]=addr_tmp[0] Q[1]=addr_tmp[1] Q[2]=addr_tmp[2] Q[3]=addr_tmp[3] SRST=rst
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000000
 .param SRST_POLARITY 00000000000000000000000000000001
@@ -35,17 +35,19 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000100000
 .param Y_WIDTH 00000000000000000000000000100000
+.subckt $dffe CLK=clk D[0]=matrixA_RD_DATA[0] D[1]=matrixA_RD_DATA[1] EN=data_out_$dffe_Q_EN Q[0]=data_out[0] Q[1]=data_out[1]
+.param CLK_POLARITY 00000000000000000000000000000001
+.param EN_POLARITY 00000000000000000000000000000001
+.param WIDTH 00000000000000000000000000000010
 .subckt $mux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef A[4]=$undef A[5]=$undef A[6]=$undef A[7]=$undef A[8]=$undef A[9]=$undef A[10]=$undef A[11]=$undef A[12]=$undef A[13]=$undef A[14]=$undef A[15]=$undef A[16]=$undef A[17]=$undef A[18]=$undef A[19]=$undef A[20]=$undef A[21]=$undef A[22]=$undef A[23]=$undef A[24]=$undef A[25]=$undef A[26]=$undef A[27]=$undef A[28]=$undef A[29]=$undef A[30]=$undef A[31]=$undef B[0]=addr_tmp_$sub_A_Y_$add_B_Y[0] B[1]=addr_tmp_$sub_A_Y_$add_B_Y[1] B[2]=addr_tmp_$sub_A_Y_$add_B_Y[2] B[3]=addr_tmp_$sub_A_Y_$add_B_Y[3] B[4]=addr_tmp_$sub_A_Y_$add_B_Y[4] B[5]=addr_tmp_$sub_A_Y_$add_B_Y[5] B[6]=addr_tmp_$sub_A_Y_$add_B_Y[6] B[7]=addr_tmp_$sub_A_Y_$add_B_Y[7] B[8]=addr_tmp_$sub_A_Y_$add_B_Y[8] B[9]=addr_tmp_$sub_A_Y_$add_B_Y[9] B[10]=addr_tmp_$sub_A_Y_$add_B_Y[10] B[11]=addr_tmp_$sub_A_Y_$add_B_Y[11] B[12]=addr_tmp_$sub_A_Y_$add_B_Y[12] B[13]=addr_tmp_$sub_A_Y_$add_B_Y[13] B[14]=addr_tmp_$sub_A_Y_$add_B_Y[14] B[15]=addr_tmp_$sub_A_Y_$add_B_Y[15] B[16]=addr_tmp_$sub_A_Y_$add_B_Y[16] B[17]=addr_tmp_$sub_A_Y_$add_B_Y[17] B[18]=addr_tmp_$sub_A_Y_$add_B_Y[18] B[19]=addr_tmp_$sub_A_Y_$add_B_Y[19] B[20]=addr_tmp_$sub_A_Y_$add_B_Y[20] B[21]=addr_tmp_$sub_A_Y_$add_B_Y[21] B[22]=addr_tmp_$sub_A_Y_$add_B_Y[22] B[23]=addr_tmp_$sub_A_Y_$add_B_Y[23] B[24]=addr_tmp_$sub_A_Y_$add_B_Y[24] B[25]=addr_tmp_$sub_A_Y_$add_B_Y[25] B[26]=addr_tmp_$sub_A_Y_$add_B_Y[26] B[27]=addr_tmp_$sub_A_Y_$add_B_Y[27] B[28]=addr_tmp_$sub_A_Y_$add_B_Y[28] B[29]=addr_tmp_$sub_A_Y_$add_B_Y[29] B[30]=addr_tmp_$sub_A_Y_$add_B_Y[30] B[31]=addr_tmp_$sub_A_Y_$add_B_Y[31] S=direction_tmp Y[0]=direction_tmp_$mux_S_Y[0] Y[1]=direction_tmp_$mux_S_Y[1] Y[2]=direction_tmp_$mux_S_Y[2] Y[3]=direction_tmp_$mux_S_Y[3] Y[4]=direction_tmp_$mux_S_Y[4] Y[5]=direction_tmp_$mux_S_Y[5] Y[6]=direction_tmp_$mux_S_Y[6] Y[7]=direction_tmp_$mux_S_Y[7] Y[8]=direction_tmp_$mux_S_Y[8] Y[9]=direction_tmp_$mux_S_Y[9] Y[10]=direction_tmp_$mux_S_Y[10] Y[11]=direction_tmp_$mux_S_Y[11] Y[12]=direction_tmp_$mux_S_Y[12] Y[13]=direction_tmp_$mux_S_Y[13] Y[14]=direction_tmp_$mux_S_Y[14] Y[15]=direction_tmp_$mux_S_Y[15] Y[16]=direction_tmp_$mux_S_Y[16] Y[17]=direction_tmp_$mux_S_Y[17] Y[18]=direction_tmp_$mux_S_Y[18] Y[19]=direction_tmp_$mux_S_Y[19] Y[20]=direction_tmp_$mux_S_Y[20] Y[21]=direction_tmp_$mux_S_Y[21] Y[22]=direction_tmp_$mux_S_Y[22] Y[23]=direction_tmp_$mux_S_Y[23] Y[24]=direction_tmp_$mux_S_Y[24] Y[25]=direction_tmp_$mux_S_Y[25] Y[26]=direction_tmp_$mux_S_Y[26] Y[27]=direction_tmp_$mux_S_Y[27] Y[28]=direction_tmp_$mux_S_Y[28] Y[29]=direction_tmp_$mux_S_Y[29] Y[30]=direction_tmp_$mux_S_Y[30] Y[31]=direction_tmp_$mux_S_Y[31]
 .param WIDTH 00000000000000000000000000100000
-.subckt $mux A[0]=$undef A[1]=$undef B[0]=addr_tmp[0] B[1]=addr_tmp[1] S=direction_tmp Y[0]=direction_tmp_$mux_S_1_Y[0] Y[1]=direction_tmp_$mux_S_1_Y[1]
-.param WIDTH 00000000000000000000000000000010
-.subckt $mux A[0]=addr_tmp_$lt_A_Y_$mux_S_Y[0] A[1]=addr_tmp_$lt_A_Y_$mux_S_Y[1] A[2]=addr_tmp_$lt_A_Y_$mux_S_Y[2] A[3]=addr_tmp_$lt_A_Y_$mux_S_Y[3] B[0]=$undef B[1]=$undef B[2]=$undef B[3]=$undef S=direction_tmp Y[0]=direction_tmp_$mux_S_2_Y[0] Y[1]=direction_tmp_$mux_S_2_Y[1] Y[2]=direction_tmp_$mux_S_2_Y[2] Y[3]=direction_tmp_$mux_S_2_Y[3]
+.subckt $mux A[0]=addr_tmp_$lt_A_Y_$mux_S_Y[0] A[1]=addr_tmp_$lt_A_Y_$mux_S_Y[1] A[2]=addr_tmp_$lt_A_Y_$mux_S_Y[2] A[3]=addr_tmp_$lt_A_Y_$mux_S_Y[3] B[0]=$undef B[1]=$undef B[2]=$undef B[3]=$undef S=direction_tmp Y[0]=direction_tmp_$mux_S_1_Y[0] Y[1]=direction_tmp_$mux_S_1_Y[1] Y[2]=direction_tmp_$mux_S_1_Y[2] Y[3]=direction_tmp_$mux_S_1_Y[3]
 .param WIDTH 00000000000000000000000000000100
 .subckt $not A=direction_tmp Y=direction_tmp_$not_A_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $reduce_and A[0]=direction_tmp_$not_A_Y A[1]=direction_tmp_$not_A_Y_$reduce_and_A_A Y=matrixA$rdreg[0]_EN
+.subckt $reduce_and A[0]=direction_tmp_$not_A_Y A[1]=direction_tmp_$not_A_Y_$reduce_and_A_A Y=data_out_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
@@ -58,485 +60,47 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 0
 .param WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clk D[0]=matrixA$rdreg[0]$d[0] D[1]=matrixA$rdreg[0]$d[1] EN=matrixA$rdreg[0]_EN Q[0]=data_out[0] Q[1]=data_out[1]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
+.subckt $mem RD_ADDR[0]=rst_$mux_S_1_Y_$add_A_Y[0] RD_ADDR[1]=rst_$mux_S_1_Y_$add_A_Y[1] RD_ADDR[2]=rst_$mux_S_1_Y_$add_A_Y[2] RD_ADDR[3]=rst_$mux_S_1_Y_$add_A_Y[3] RD_ADDR[4]=rst_$mux_S_1_Y_$add_A_Y[4] RD_ADDR[5]=rst_$mux_S_1_Y_$add_A_Y[5] RD_ADDR[6]=rst_$mux_S_1_Y_$add_A_Y[6] RD_ADDR[7]=rst_$mux_S_1_Y_$add_A_Y[7] RD_ADDR[8]=rst_$mux_S_1_Y_$add_A_Y[8] RD_ADDR[9]=rst_$mux_S_1_Y_$add_A_Y[9] RD_ADDR[10]=rst_$mux_S_1_Y_$add_A_Y[10] RD_ADDR[11]=rst_$mux_S_1_Y_$add_A_Y[11] RD_ADDR[12]=rst_$mux_S_1_Y_$add_A_Y[12] RD_ADDR[13]=rst_$mux_S_1_Y_$add_A_Y[13] RD_ADDR[14]=rst_$mux_S_1_Y_$add_A_Y[14] RD_ADDR[15]=rst_$mux_S_1_Y_$add_A_Y[15] RD_ADDR[16]=rst_$mux_S_1_Y_$add_A_Y[16] RD_ADDR[17]=rst_$mux_S_1_Y_$add_A_Y[17] RD_ADDR[18]=rst_$mux_S_1_Y_$add_A_Y[18] RD_ADDR[19]=rst_$mux_S_1_Y_$add_A_Y[19] RD_ADDR[20]=rst_$mux_S_1_Y_$add_A_Y[20] RD_ADDR[21]=rst_$mux_S_1_Y_$add_A_Y[21] RD_ADDR[22]=rst_$mux_S_1_Y_$add_A_Y[22] RD_ADDR[23]=rst_$mux_S_1_Y_$add_A_Y[23] RD_ADDR[24]=rst_$mux_S_1_Y_$add_A_Y[24] RD_ADDR[25]=rst_$mux_S_1_Y_$add_A_Y[25] RD_ADDR[26]=rst_$mux_S_1_Y_$add_A_Y[26] RD_ADDR[27]=rst_$mux_S_1_Y_$add_A_Y[27] RD_ADDR[28]=rst_$mux_S_1_Y_$add_A_Y[28] RD_ADDR[29]=rst_$mux_S_1_Y_$add_A_Y[29] RD_ADDR[30]=rst_$mux_S_1_Y_$add_A_Y[30] RD_ADDR[31]=rst_$mux_S_1_Y_$add_A_Y[31] RD_CLK=$undef RD_DATA[0]=matrixA_RD_DATA[0] RD_DATA[1]=matrixA_RD_DATA[1] RD_EN=$undef WR_ADDR[0]=rst_$mux_S_Y[0] WR_ADDR[1]=rst_$mux_S_Y[1] WR_ADDR[2]=rst_$mux_S_Y[2] WR_ADDR[3]=rst_$mux_S_Y[3] WR_ADDR[4]=rst_$mux_S_Y[4] WR_ADDR[5]=rst_$mux_S_Y[5] WR_ADDR[6]=rst_$mux_S_Y[6] WR_ADDR[7]=rst_$mux_S_Y[7] WR_ADDR[8]=rst_$mux_S_Y[8] WR_ADDR[9]=rst_$mux_S_Y[9] WR_ADDR[10]=rst_$mux_S_Y[10] WR_ADDR[11]=rst_$mux_S_Y[11] WR_ADDR[12]=rst_$mux_S_Y[12] WR_ADDR[13]=rst_$mux_S_Y[13] WR_ADDR[14]=rst_$mux_S_Y[14] WR_ADDR[15]=rst_$mux_S_Y[15] WR_ADDR[16]=rst_$mux_S_Y[16] WR_ADDR[17]=rst_$mux_S_Y[17] WR_ADDR[18]=rst_$mux_S_Y[18] WR_ADDR[19]=rst_$mux_S_Y[19] WR_ADDR[20]=rst_$mux_S_Y[20] WR_ADDR[21]=rst_$mux_S_Y[21] WR_ADDR[22]=rst_$mux_S_Y[22] WR_ADDR[23]=rst_$mux_S_Y[23] WR_ADDR[24]=rst_$mux_S_Y[24] WR_ADDR[25]=rst_$mux_S_Y[25] WR_ADDR[26]=rst_$mux_S_Y[26] WR_ADDR[27]=rst_$mux_S_Y[27] WR_ADDR[28]=rst_$mux_S_Y[28] WR_ADDR[29]=rst_$mux_S_Y[29] WR_ADDR[30]=rst_$mux_S_Y[30] WR_ADDR[31]=rst_$mux_S_Y[31] WR_CLK=clk WR_DATA[0]=matrixA_WR_DATA[0] WR_DATA[1]=matrixA_WR_DATA[1] WR_EN[0]=matrixA_WR_EN[1] WR_EN[1]=matrixA_WR_EN[1]
+.param ABITS 00000000000000000000000000100000
+.param INIT xxxxxxxx
+.param MEMID "\\matrixA"
+.param OFFSET 00000000000000000000000000000000
+.param RD_CLK_ENABLE 0
+.param RD_CLK_POLARITY 0
+.param RD_PORTS 00000000000000000000000000000001
+.param RD_TRANSPARENT 0
+.param SIZE 00000000000000000000000000000100
 .param WIDTH 00000000000000000000000000000010
-.subckt $mux A[0]=matrixA$rdreg[0]$d_$mux_Y_A[0] A[1]=matrixA$rdreg[0]$d_$mux_Y_A[1] B[0]=matrixA$rdreg[0]$d_$mux_Y_B[0] B[1]=matrixA$rdreg[0]$d_$mux_Y_B[1] S=matrixA[0]_$mux_A_S[1] Y[0]=matrixA$rdreg[0]$d[0] Y[1]=matrixA$rdreg[0]$d[1]
+.param WR_CLK_ENABLE 1
+.param WR_CLK_POLARITY 1
+.param WR_PORTS 00000000000000000000000000000001
+.subckt $mux A[0]=matrixA_WR_DATA_$mux_Y_A[0] A[1]=matrixA_WR_DATA_$mux_Y_A[1] B[0]=$undef B[1]=$undef S=rst Y[0]=matrixA_WR_DATA[0] Y[1]=matrixA_WR_DATA[1]
 .param WIDTH 00000000000000000000000000000010
-.subckt $dffe CLK=clk D[0]=matrixA[3]_$dffe_Q_D[0] D[1]=matrixA[3]_$dffe_Q_D[1] EN=matrixA[0]_$dffe_Q_EN Q[0]=matrixA[0][0] Q[1]=matrixA[0][1]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
+.subckt $mux A[0]=$undef A[1]=$undef B[0]=addr_tmp[0] B[1]=addr_tmp[1] S=direction_tmp Y[0]=matrixA_WR_DATA_$mux_Y_A[0] Y[1]=matrixA_WR_DATA_$mux_Y_A[1]
 .param WIDTH 00000000000000000000000000000010
-.subckt $and A=matrixA[0]_$dffe_Q_EN_$and_Y_A B=matrixA[0]_$dffe_Q_EN_$and_Y_B[1] Y=matrixA[0]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=matrixA[0]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[0] Y=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[1] Y=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A=matrixA[0]_$dffe_Q_EN_$and_Y_B_$mux_Y_A[1] B=$false S=rst Y=matrixA[0]_$dffe_Q_EN_$and_Y_B[1]
+.subckt $mux A=matrixA_WR_EN_$mux_Y_A[1] B=$false S=rst Y=matrixA_WR_EN[1]
 .param WIDTH 00000000000000000000000000000001
-.subckt $mux A=$false B=$true S=direction_tmp Y=matrixA[0]_$dffe_Q_EN_$and_Y_B_$mux_Y_A[1]
+.subckt $mux A=$false B=$true S=direction_tmp Y=matrixA_WR_EN_$mux_Y_A[1]
 .param WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=matrixA[0][0] A[1]=matrixA[0][1] B[0]=matrixA[1][0] B[1]=matrixA[1][1] S=matrixA[0]_$mux_A_S[0] Y[0]=matrixA$rdreg[0]$d_$mux_Y_A[0] Y[1]=matrixA$rdreg[0]$d_$mux_Y_A[1]
-.param WIDTH 00000000000000000000000000000010
-.subckt $dffe CLK=clk D[0]=matrixA[3]_$dffe_Q_D[0] D[1]=matrixA[3]_$dffe_Q_D[1] EN=matrixA[1]_$dffe_Q_EN Q[0]=matrixA[1][0] Q[1]=matrixA[1][1]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000010
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A B=matrixA[0]_$dffe_Q_EN_$and_Y_B[1] Y=matrixA[1]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=rst_$mux_S_Y[0] B=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[2] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[3] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[4] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[5] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[6] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[7] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[8] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[9] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[10] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[11] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[12] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[13] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[14] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[15] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[16] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[17] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[18] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[19] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[20] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[21] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[22] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[23] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[24] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[25] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[26] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[27] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[28] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[29] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[30] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $not A=rst_$mux_S_Y[31] Y=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B_$and_Y_B
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $dffe CLK=clk D[0]=matrixA[3]_$dffe_Q_D[0] D[1]=matrixA[3]_$dffe_Q_D[1] EN=matrixA[2]_$dffe_Q_EN Q[0]=matrixA[2][0] Q[1]=matrixA[2][1]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000010
-.subckt $and A=matrixA[2]_$dffe_Q_EN_$and_Y_A B=matrixA[0]_$dffe_Q_EN_$and_Y_B[1] Y=matrixA[2]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=matrixA[2]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[0]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=rst_$mux_S_Y[1] Y=matrixA[2]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $mux A[0]=matrixA[2][0] A[1]=matrixA[2][1] B[0]=matrixA[3][0] B[1]=matrixA[3][1] S=matrixA[0]_$mux_A_S[0] Y[0]=matrixA$rdreg[0]$d_$mux_Y_B[0] Y[1]=matrixA$rdreg[0]$d_$mux_Y_B[1]
-.param WIDTH 00000000000000000000000000000010
-.subckt $dffe CLK=clk D[0]=matrixA[3]_$dffe_Q_D[0] D[1]=matrixA[3]_$dffe_Q_D[1] EN=matrixA[3]_$dffe_Q_EN Q[0]=matrixA[3][0] Q[1]=matrixA[3][1]
-.param CLK_POLARITY 00000000000000000000000000000001
-.param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000010
-.subckt $and A=matrixA[3]_$dffe_Q_EN_$and_Y_A B=matrixA[0]_$dffe_Q_EN_$and_Y_B[1] Y=matrixA[3]_$dffe_Q_EN
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_B Y=matrixA[3]_$dffe_Q_EN_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A B=matrixA[1]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_B Y=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
-.subckt $and A=rst_$mux_S_Y[0] B=rst_$mux_S_Y[1] Y=matrixA[3]_$dffe_Q_EN_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A_$and_Y_A
-.param A_SIGNED 00000000000000000000000000000000
-.param A_WIDTH 00000000000000000000000000000001
-.param B_SIGNED 00000000000000000000000000000000
-.param B_WIDTH 00000000000000000000000000000001
-.param Y_WIDTH 00000000000000000000000000000001
 .subckt $mux A[0]=direction_tmp_$mux_S_Y[0] A[1]=direction_tmp_$mux_S_Y[1] A[2]=direction_tmp_$mux_S_Y[2] A[3]=direction_tmp_$mux_S_Y[3] A[4]=direction_tmp_$mux_S_Y[4] A[5]=direction_tmp_$mux_S_Y[5] A[6]=direction_tmp_$mux_S_Y[6] A[7]=direction_tmp_$mux_S_Y[7] A[8]=direction_tmp_$mux_S_Y[8] A[9]=direction_tmp_$mux_S_Y[9] A[10]=direction_tmp_$mux_S_Y[10] A[11]=direction_tmp_$mux_S_Y[11] A[12]=direction_tmp_$mux_S_Y[12] A[13]=direction_tmp_$mux_S_Y[13] A[14]=direction_tmp_$mux_S_Y[14] A[15]=direction_tmp_$mux_S_Y[15] A[16]=direction_tmp_$mux_S_Y[16] A[17]=direction_tmp_$mux_S_Y[17] A[18]=direction_tmp_$mux_S_Y[18] A[19]=direction_tmp_$mux_S_Y[19] A[20]=direction_tmp_$mux_S_Y[20] A[21]=direction_tmp_$mux_S_Y[21] A[22]=direction_tmp_$mux_S_Y[22] A[23]=direction_tmp_$mux_S_Y[23] A[24]=direction_tmp_$mux_S_Y[24] A[25]=direction_tmp_$mux_S_Y[25] A[26]=direction_tmp_$mux_S_Y[26] A[27]=direction_tmp_$mux_S_Y[27] A[28]=direction_tmp_$mux_S_Y[28] A[29]=direction_tmp_$mux_S_Y[29] A[30]=direction_tmp_$mux_S_Y[30] A[31]=direction_tmp_$mux_S_Y[31] B[0]=$undef B[1]=$undef B[2]=$undef B[3]=$undef B[4]=$undef B[5]=$undef B[6]=$undef B[7]=$undef B[8]=$undef B[9]=$undef B[10]=$undef B[11]=$undef B[12]=$undef B[13]=$undef B[14]=$undef B[15]=$undef B[16]=$undef B[17]=$undef B[18]=$undef B[19]=$undef B[20]=$undef B[21]=$undef B[22]=$undef B[23]=$undef B[24]=$undef B[25]=$undef B[26]=$undef B[27]=$undef B[28]=$undef B[29]=$undef B[30]=$undef B[31]=$undef S=rst Y[0]=rst_$mux_S_Y[0] Y[1]=rst_$mux_S_Y[1] Y[2]=rst_$mux_S_Y[2] Y[3]=rst_$mux_S_Y[3] Y[4]=rst_$mux_S_Y[4] Y[5]=rst_$mux_S_Y[5] Y[6]=rst_$mux_S_Y[6] Y[7]=rst_$mux_S_Y[7] Y[8]=rst_$mux_S_Y[8] Y[9]=rst_$mux_S_Y[9] Y[10]=rst_$mux_S_Y[10] Y[11]=rst_$mux_S_Y[11] Y[12]=rst_$mux_S_Y[12] Y[13]=rst_$mux_S_Y[13] Y[14]=rst_$mux_S_Y[14] Y[15]=rst_$mux_S_Y[15] Y[16]=rst_$mux_S_Y[16] Y[17]=rst_$mux_S_Y[17] Y[18]=rst_$mux_S_Y[18] Y[19]=rst_$mux_S_Y[19] Y[20]=rst_$mux_S_Y[20] Y[21]=rst_$mux_S_Y[21] Y[22]=rst_$mux_S_Y[22] Y[23]=rst_$mux_S_Y[23] Y[24]=rst_$mux_S_Y[24] Y[25]=rst_$mux_S_Y[25] Y[26]=rst_$mux_S_Y[26] Y[27]=rst_$mux_S_Y[27] Y[28]=rst_$mux_S_Y[28] Y[29]=rst_$mux_S_Y[29] Y[30]=rst_$mux_S_Y[30] Y[31]=rst_$mux_S_Y[31]
 .param WIDTH 00000000000000000000000000100000
-.subckt $mux A[0]=direction_tmp_$mux_S_1_Y[0] A[1]=direction_tmp_$mux_S_1_Y[1] B[0]=$undef B[1]=$undef S=rst Y[0]=matrixA[3]_$dffe_Q_D[0] Y[1]=matrixA[3]_$dffe_Q_D[1]
-.param WIDTH 00000000000000000000000000000010
-.subckt $mux A[0]=direction_tmp_$mux_S_2_Y[0] A[1]=direction_tmp_$mux_S_2_Y[1] A[2]=direction_tmp_$mux_S_2_Y[2] A[3]=direction_tmp_$mux_S_2_Y[3] B[0]=$undef B[1]=$undef B[2]=$undef B[3]=$undef S=rst Y[0]=rst_$mux_S_2_Y[0] Y[1]=rst_$mux_S_2_Y[1] Y[2]=rst_$mux_S_2_Y[2] Y[3]=rst_$mux_S_2_Y[3]
+.subckt $mux A[0]=direction_tmp_$mux_S_1_Y[0] A[1]=direction_tmp_$mux_S_1_Y[1] A[2]=direction_tmp_$mux_S_1_Y[2] A[3]=direction_tmp_$mux_S_1_Y[3] B[0]=$undef B[1]=$undef B[2]=$undef B[3]=$undef S=rst Y[0]=rst_$mux_S_1_Y[0] Y[1]=rst_$mux_S_1_Y[1] Y[2]=rst_$mux_S_1_Y[2] Y[3]=rst_$mux_S_1_Y[3]
 .param WIDTH 00000000000000000000000000000100
-.subckt $add A[0]=$false A[1]=rst_$mux_S_2_Y[1] A[2]=rst_$mux_S_2_Y[2] A[3]=rst_$mux_S_2_Y[3] A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false A[21]=$false A[22]=$false A[23]=$false A[24]=$false A[25]=$false A[26]=$false A[27]=$false A[28]=$false A[29]=$false A[30]=$false A[31]=$false B[0]=rst_$mux_S_2_Y_$sub_A_Y[0] B[1]=rst_$mux_S_2_Y_$sub_A_Y[1] B[2]=rst_$mux_S_2_Y_$sub_A_Y[2] B[3]=rst_$mux_S_2_Y_$sub_A_Y[3] B[4]=rst_$mux_S_2_Y_$sub_A_Y[4] B[5]=rst_$mux_S_2_Y_$sub_A_Y[5] B[6]=rst_$mux_S_2_Y_$sub_A_Y[6] B[7]=rst_$mux_S_2_Y_$sub_A_Y[7] B[8]=rst_$mux_S_2_Y_$sub_A_Y[8] B[9]=rst_$mux_S_2_Y_$sub_A_Y[9] B[10]=rst_$mux_S_2_Y_$sub_A_Y[10] B[11]=rst_$mux_S_2_Y_$sub_A_Y[11] B[12]=rst_$mux_S_2_Y_$sub_A_Y[12] B[13]=rst_$mux_S_2_Y_$sub_A_Y[13] B[14]=rst_$mux_S_2_Y_$sub_A_Y[14] B[15]=rst_$mux_S_2_Y_$sub_A_Y[15] B[16]=rst_$mux_S_2_Y_$sub_A_Y[16] B[17]=rst_$mux_S_2_Y_$sub_A_Y[17] B[18]=rst_$mux_S_2_Y_$sub_A_Y[18] B[19]=rst_$mux_S_2_Y_$sub_A_Y[19] B[20]=rst_$mux_S_2_Y_$sub_A_Y[20] B[21]=rst_$mux_S_2_Y_$sub_A_Y[21] B[22]=rst_$mux_S_2_Y_$sub_A_Y[22] B[23]=rst_$mux_S_2_Y_$sub_A_Y[23] B[24]=rst_$mux_S_2_Y_$sub_A_Y[24] B[25]=rst_$mux_S_2_Y_$sub_A_Y[25] B[26]=rst_$mux_S_2_Y_$sub_A_Y[26] B[27]=rst_$mux_S_2_Y_$sub_A_Y[27] B[28]=rst_$mux_S_2_Y_$sub_A_Y[28] B[29]=rst_$mux_S_2_Y_$sub_A_Y[29] B[30]=rst_$mux_S_2_Y_$sub_A_Y[30] B[31]=rst_$mux_S_2_Y_$sub_A_Y[31] Y[0]=matrixA[0]_$mux_A_S[0] Y[1]=matrixA[0]_$mux_A_S[1] Y[2]=matrixA[0]_$mux_A_S[2] Y[3]=matrixA[0]_$mux_A_S[3] Y[4]=matrixA[0]_$mux_A_S[4] Y[5]=matrixA[0]_$mux_A_S[5] Y[6]=matrixA[0]_$mux_A_S[6] Y[7]=matrixA[0]_$mux_A_S[7] Y[8]=matrixA[0]_$mux_A_S[8] Y[9]=matrixA[0]_$mux_A_S[9] Y[10]=matrixA[0]_$mux_A_S[10] Y[11]=matrixA[0]_$mux_A_S[11] Y[12]=matrixA[0]_$mux_A_S[12] Y[13]=matrixA[0]_$mux_A_S[13] Y[14]=matrixA[0]_$mux_A_S[14] Y[15]=matrixA[0]_$mux_A_S[15] Y[16]=matrixA[0]_$mux_A_S[16] Y[17]=matrixA[0]_$mux_A_S[17] Y[18]=matrixA[0]_$mux_A_S[18] Y[19]=matrixA[0]_$mux_A_S[19] Y[20]=matrixA[0]_$mux_A_S[20] Y[21]=matrixA[0]_$mux_A_S[21] Y[22]=matrixA[0]_$mux_A_S[22] Y[23]=matrixA[0]_$mux_A_S[23] Y[24]=matrixA[0]_$mux_A_S[24] Y[25]=matrixA[0]_$mux_A_S[25] Y[26]=matrixA[0]_$mux_A_S[26] Y[27]=matrixA[0]_$mux_A_S[27] Y[28]=matrixA[0]_$mux_A_S[28] Y[29]=matrixA[0]_$mux_A_S[29] Y[30]=matrixA[0]_$mux_A_S[30] Y[31]=matrixA[0]_$mux_A_S[31]
+.subckt $add A[0]=$false A[1]=rst_$mux_S_1_Y[1] A[2]=rst_$mux_S_1_Y[2] A[3]=rst_$mux_S_1_Y[3] A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false A[21]=$false A[22]=$false A[23]=$false A[24]=$false A[25]=$false A[26]=$false A[27]=$false A[28]=$false A[29]=$false A[30]=$false A[31]=$false B[0]=rst_$mux_S_1_Y_$sub_A_Y[0] B[1]=rst_$mux_S_1_Y_$sub_A_Y[1] B[2]=rst_$mux_S_1_Y_$sub_A_Y[2] B[3]=rst_$mux_S_1_Y_$sub_A_Y[3] B[4]=rst_$mux_S_1_Y_$sub_A_Y[4] B[5]=rst_$mux_S_1_Y_$sub_A_Y[5] B[6]=rst_$mux_S_1_Y_$sub_A_Y[6] B[7]=rst_$mux_S_1_Y_$sub_A_Y[7] B[8]=rst_$mux_S_1_Y_$sub_A_Y[8] B[9]=rst_$mux_S_1_Y_$sub_A_Y[9] B[10]=rst_$mux_S_1_Y_$sub_A_Y[10] B[11]=rst_$mux_S_1_Y_$sub_A_Y[11] B[12]=rst_$mux_S_1_Y_$sub_A_Y[12] B[13]=rst_$mux_S_1_Y_$sub_A_Y[13] B[14]=rst_$mux_S_1_Y_$sub_A_Y[14] B[15]=rst_$mux_S_1_Y_$sub_A_Y[15] B[16]=rst_$mux_S_1_Y_$sub_A_Y[16] B[17]=rst_$mux_S_1_Y_$sub_A_Y[17] B[18]=rst_$mux_S_1_Y_$sub_A_Y[18] B[19]=rst_$mux_S_1_Y_$sub_A_Y[19] B[20]=rst_$mux_S_1_Y_$sub_A_Y[20] B[21]=rst_$mux_S_1_Y_$sub_A_Y[21] B[22]=rst_$mux_S_1_Y_$sub_A_Y[22] B[23]=rst_$mux_S_1_Y_$sub_A_Y[23] B[24]=rst_$mux_S_1_Y_$sub_A_Y[24] B[25]=rst_$mux_S_1_Y_$sub_A_Y[25] B[26]=rst_$mux_S_1_Y_$sub_A_Y[26] B[27]=rst_$mux_S_1_Y_$sub_A_Y[27] B[28]=rst_$mux_S_1_Y_$sub_A_Y[28] B[29]=rst_$mux_S_1_Y_$sub_A_Y[29] B[30]=rst_$mux_S_1_Y_$sub_A_Y[30] B[31]=rst_$mux_S_1_Y_$sub_A_Y[31] Y[0]=rst_$mux_S_1_Y_$add_A_Y[0] Y[1]=rst_$mux_S_1_Y_$add_A_Y[1] Y[2]=rst_$mux_S_1_Y_$add_A_Y[2] Y[3]=rst_$mux_S_1_Y_$add_A_Y[3] Y[4]=rst_$mux_S_1_Y_$add_A_Y[4] Y[5]=rst_$mux_S_1_Y_$add_A_Y[5] Y[6]=rst_$mux_S_1_Y_$add_A_Y[6] Y[7]=rst_$mux_S_1_Y_$add_A_Y[7] Y[8]=rst_$mux_S_1_Y_$add_A_Y[8] Y[9]=rst_$mux_S_1_Y_$add_A_Y[9] Y[10]=rst_$mux_S_1_Y_$add_A_Y[10] Y[11]=rst_$mux_S_1_Y_$add_A_Y[11] Y[12]=rst_$mux_S_1_Y_$add_A_Y[12] Y[13]=rst_$mux_S_1_Y_$add_A_Y[13] Y[14]=rst_$mux_S_1_Y_$add_A_Y[14] Y[15]=rst_$mux_S_1_Y_$add_A_Y[15] Y[16]=rst_$mux_S_1_Y_$add_A_Y[16] Y[17]=rst_$mux_S_1_Y_$add_A_Y[17] Y[18]=rst_$mux_S_1_Y_$add_A_Y[18] Y[19]=rst_$mux_S_1_Y_$add_A_Y[19] Y[20]=rst_$mux_S_1_Y_$add_A_Y[20] Y[21]=rst_$mux_S_1_Y_$add_A_Y[21] Y[22]=rst_$mux_S_1_Y_$add_A_Y[22] Y[23]=rst_$mux_S_1_Y_$add_A_Y[23] Y[24]=rst_$mux_S_1_Y_$add_A_Y[24] Y[25]=rst_$mux_S_1_Y_$add_A_Y[25] Y[26]=rst_$mux_S_1_Y_$add_A_Y[26] Y[27]=rst_$mux_S_1_Y_$add_A_Y[27] Y[28]=rst_$mux_S_1_Y_$add_A_Y[28] Y[29]=rst_$mux_S_1_Y_$add_A_Y[29] Y[30]=rst_$mux_S_1_Y_$add_A_Y[30] Y[31]=rst_$mux_S_1_Y_$add_A_Y[31]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000100000
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000100000
 .param Y_WIDTH 00000000000000000000000000100000
-.subckt $sub A[0]=rst_$mux_S_2_Y[0] A[1]=rst_$mux_S_2_Y[1] A[2]=rst_$mux_S_2_Y[2] A[3]=rst_$mux_S_2_Y[3] B[0]=$false B[1]=rst_$mux_S_2_Y[1] B[2]=rst_$mux_S_2_Y[2] B[3]=rst_$mux_S_2_Y[3] B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$false B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$false B[16]=$false B[17]=$false B[18]=$false B[19]=$false B[20]=$false B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$false B[26]=$false B[27]=$false B[28]=$false B[29]=$false B[30]=$false B[31]=$false Y[0]=rst_$mux_S_2_Y_$sub_A_Y[0] Y[1]=rst_$mux_S_2_Y_$sub_A_Y[1] Y[2]=rst_$mux_S_2_Y_$sub_A_Y[2] Y[3]=rst_$mux_S_2_Y_$sub_A_Y[3] Y[4]=rst_$mux_S_2_Y_$sub_A_Y[4] Y[5]=rst_$mux_S_2_Y_$sub_A_Y[5] Y[6]=rst_$mux_S_2_Y_$sub_A_Y[6] Y[7]=rst_$mux_S_2_Y_$sub_A_Y[7] Y[8]=rst_$mux_S_2_Y_$sub_A_Y[8] Y[9]=rst_$mux_S_2_Y_$sub_A_Y[9] Y[10]=rst_$mux_S_2_Y_$sub_A_Y[10] Y[11]=rst_$mux_S_2_Y_$sub_A_Y[11] Y[12]=rst_$mux_S_2_Y_$sub_A_Y[12] Y[13]=rst_$mux_S_2_Y_$sub_A_Y[13] Y[14]=rst_$mux_S_2_Y_$sub_A_Y[14] Y[15]=rst_$mux_S_2_Y_$sub_A_Y[15] Y[16]=rst_$mux_S_2_Y_$sub_A_Y[16] Y[17]=rst_$mux_S_2_Y_$sub_A_Y[17] Y[18]=rst_$mux_S_2_Y_$sub_A_Y[18] Y[19]=rst_$mux_S_2_Y_$sub_A_Y[19] Y[20]=rst_$mux_S_2_Y_$sub_A_Y[20] Y[21]=rst_$mux_S_2_Y_$sub_A_Y[21] Y[22]=rst_$mux_S_2_Y_$sub_A_Y[22] Y[23]=rst_$mux_S_2_Y_$sub_A_Y[23] Y[24]=rst_$mux_S_2_Y_$sub_A_Y[24] Y[25]=rst_$mux_S_2_Y_$sub_A_Y[25] Y[26]=rst_$mux_S_2_Y_$sub_A_Y[26] Y[27]=rst_$mux_S_2_Y_$sub_A_Y[27] Y[28]=rst_$mux_S_2_Y_$sub_A_Y[28] Y[29]=rst_$mux_S_2_Y_$sub_A_Y[29] Y[30]=rst_$mux_S_2_Y_$sub_A_Y[30] Y[31]=rst_$mux_S_2_Y_$sub_A_Y[31]
+.subckt $sub A[0]=rst_$mux_S_1_Y[0] A[1]=rst_$mux_S_1_Y[1] A[2]=rst_$mux_S_1_Y[2] A[3]=rst_$mux_S_1_Y[3] B[0]=$false B[1]=rst_$mux_S_1_Y[1] B[2]=rst_$mux_S_1_Y[2] B[3]=rst_$mux_S_1_Y[3] B[4]=$false B[5]=$false B[6]=$false B[7]=$false B[8]=$false B[9]=$false B[10]=$false B[11]=$false B[12]=$false B[13]=$false B[14]=$false B[15]=$false B[16]=$false B[17]=$false B[18]=$false B[19]=$false B[20]=$false B[21]=$false B[22]=$false B[23]=$false B[24]=$false B[25]=$false B[26]=$false B[27]=$false B[28]=$false B[29]=$false B[30]=$false B[31]=$false Y[0]=rst_$mux_S_1_Y_$sub_A_Y[0] Y[1]=rst_$mux_S_1_Y_$sub_A_Y[1] Y[2]=rst_$mux_S_1_Y_$sub_A_Y[2] Y[3]=rst_$mux_S_1_Y_$sub_A_Y[3] Y[4]=rst_$mux_S_1_Y_$sub_A_Y[4] Y[5]=rst_$mux_S_1_Y_$sub_A_Y[5] Y[6]=rst_$mux_S_1_Y_$sub_A_Y[6] Y[7]=rst_$mux_S_1_Y_$sub_A_Y[7] Y[8]=rst_$mux_S_1_Y_$sub_A_Y[8] Y[9]=rst_$mux_S_1_Y_$sub_A_Y[9] Y[10]=rst_$mux_S_1_Y_$sub_A_Y[10] Y[11]=rst_$mux_S_1_Y_$sub_A_Y[11] Y[12]=rst_$mux_S_1_Y_$sub_A_Y[12] Y[13]=rst_$mux_S_1_Y_$sub_A_Y[13] Y[14]=rst_$mux_S_1_Y_$sub_A_Y[14] Y[15]=rst_$mux_S_1_Y_$sub_A_Y[15] Y[16]=rst_$mux_S_1_Y_$sub_A_Y[16] Y[17]=rst_$mux_S_1_Y_$sub_A_Y[17] Y[18]=rst_$mux_S_1_Y_$sub_A_Y[18] Y[19]=rst_$mux_S_1_Y_$sub_A_Y[19] Y[20]=rst_$mux_S_1_Y_$sub_A_Y[20] Y[21]=rst_$mux_S_1_Y_$sub_A_Y[21] Y[22]=rst_$mux_S_1_Y_$sub_A_Y[22] Y[23]=rst_$mux_S_1_Y_$sub_A_Y[23] Y[24]=rst_$mux_S_1_Y_$sub_A_Y[24] Y[25]=rst_$mux_S_1_Y_$sub_A_Y[25] Y[26]=rst_$mux_S_1_Y_$sub_A_Y[26] Y[27]=rst_$mux_S_1_Y_$sub_A_Y[27] Y[28]=rst_$mux_S_1_Y_$sub_A_Y[28] Y[29]=rst_$mux_S_1_Y_$sub_A_Y[29] Y[30]=rst_$mux_S_1_Y_$sub_A_Y[30] Y[31]=rst_$mux_S_1_Y_$sub_A_Y[31]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000100
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000100000
 .param Y_WIDTH 00000000000000000000000000100000
-.names matrixA[0]_$dffe_Q_EN_$and_Y_B[1] matrixA[0]_$dffe_Q_EN_$and_Y_B[0]
+.names matrixA_WR_EN[1] matrixA_WR_EN[0]
 1 1
-.names matrixA[0]_$dffe_Q_EN_$and_Y_B_$mux_Y_A[1] matrixA[0]_$dffe_Q_EN_$and_Y_B_$mux_Y_A[0]
+.names matrixA_WR_EN_$mux_Y_A[1] matrixA_WR_EN_$mux_Y_A[0]
 1 1
 .names addr_tmp[0] addr[0]
 1 1

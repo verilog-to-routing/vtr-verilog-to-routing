@@ -114,4 +114,6 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
 void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 void add_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 
+int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
+
 #endif // MEMORIES_H

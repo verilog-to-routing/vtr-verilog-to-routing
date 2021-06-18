@@ -33,6 +33,9 @@
 
 #define TOKENS " \t\n"
 #define YOSYS_TOKENS "[]"
+#define YOSYS_ID_FIRST_DELIMITER "\\\\"
+#define YOSYS_ID_LAST_DELIMITER "\""
+#define YOSYS_TOKENS "[]"
 #define GND_NAME "gnd"
 #define VCC_NAME "vcc"
 #define HBPAD_NAME "unconn"

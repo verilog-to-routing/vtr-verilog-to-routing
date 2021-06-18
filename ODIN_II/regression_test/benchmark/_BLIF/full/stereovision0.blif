@@ -5514,7 +5514,7 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000001000000
-.subckt single_port_ram addr[0]=odinram.tm3_sram_addr[0] clock=odinram.tm3_clk_v0 data[0]=odinram.tm3_sram_data_out[0] out[0]=odinram.outdata0[0] we=odinram.tm3_sram_we[0]
+.subckt single_port_ram addr[0]=odinram.tm3_sram_addr[0] clk=odinram.tm3_clk_v0 data[0]=odinram.tm3_sram_data_out[0] out[0]=odinram.outdata0[0] we=odinram.tm3_sram_we[0]
 .param ADDR_WIDTH 00000000000000000000000000010011
 .param DATA_WIDTH 00000000000000000000000001000000
 .subckt $eq A[0]=odinram.tm3_sram_oe[0] A[1]=odinram.tm3_sram_oe[1] B[0]=$true B[1]=$true Y=odinram.tm3_sram_oe_$eq_A_Y
