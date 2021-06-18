@@ -369,10 +369,10 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
         }
     }
 
-    if (pr_size == 0 || pr_size > 1) {
-        pr_size_one = false;
-    } else if (pr_size == 1) {
+    if (pr_size == 1) {
         pr_size_one = true;
+    } else { //pr_size = 0 or pr_size > 1
+        pr_size_one = false;
     }
 
     return pr_size_one;
