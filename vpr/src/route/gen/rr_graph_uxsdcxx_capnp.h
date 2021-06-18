@@ -17,6 +17,7 @@
 #include <sstream>
 #include <limits>
 #include "capnp/serialize.h"
+#include "globals.h"
 #include "rr_graph_uxsdcxx.capnp.h"
 #include "rr_graph_uxsdcxx_interface.h"
 
@@ -1182,7 +1183,8 @@ inline void write_rr_nodes_capnp_type(T& in, ucap::RrNodes::Builder& root, Conte
     for (size_t i = 0; i < num_rr_nodes_nodes; i++) {
         auto rr_nodes_node = rr_nodes_nodes[i];
         auto child_context = in.get_rr_nodes_node(i, context);
-        rr_nodes_node.setCapacity(in.get_node_capacity(child_context));
+        const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+        rr_nodes_node.setCapacity(rr_graph.node_capacity(child_context.id()));
         if ((bool)in.get_node_direction(child_context))
             rr_nodes_node.setDirection(conv_to_enum_node_direction(in.get_node_direction(child_context)));
         rr_nodes_node.setId(in.get_node_id(child_context));

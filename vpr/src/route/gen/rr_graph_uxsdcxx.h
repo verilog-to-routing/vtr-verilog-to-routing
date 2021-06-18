@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "pugixml.hpp"
+#include "globals.h"
 
 #include "rr_graph_uxsdcxx_interface.h"
 /* All uxsdcxx functions and structs live in this namespace. */
@@ -4282,10 +4283,11 @@ inline void write_rr_nodes(T& in, std::ostream& os, Context& context) {
     (void)os;
     (void)context;
     {
+        const auto& rr_graph = g_vpr_ctx.device().rr_graph;
         for (size_t i = 0, n = in.num_rr_nodes_node(context); i < n; i++) {
             auto child_context = in.get_rr_nodes_node(i, context);
             os << "<node";
-            os << " capacity=\"" << in.get_node_capacity(child_context) << "\"";
+            os << " capacity=\"" << rr_graph.node_capacity(child_context.id()) << "\"";
             if ((bool)in.get_node_direction(child_context))
                 os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_context)] << "\"";
             os << " id=\"" << in.get_node_id(child_context) << "\"";

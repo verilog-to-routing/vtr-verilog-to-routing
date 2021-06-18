@@ -462,7 +462,6 @@ class RrGraphBase {
      *   <xs:attribute name="capacity" type="xs:unsignedInt" use="required" />
      * </xs:complexType>
      */
-    virtual inline unsigned int get_node_capacity(typename ContextTypes::NodeReadContext& ctx) = 0;
     virtual inline enum_node_direction get_node_direction(typename ContextTypes::NodeReadContext& ctx) = 0;
     virtual inline void set_node_direction(enum_node_direction direction, typename ContextTypes::NodeWriteContext& ctx) = 0;
     virtual inline unsigned int get_node_id(typename ContextTypes::NodeReadContext& ctx) = 0;
