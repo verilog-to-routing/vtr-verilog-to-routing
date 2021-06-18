@@ -96,10 +96,19 @@ void load_cluster_constraints();
 void mark_fixed_blocks();
 
 /*
- * Number of tiles covered by a region
+ * Returns the number of tiles covered by a floorplan region.
+ * The return value of this routine will either be 0, 1, or 2. This
+ * is because this routine is used to check whether the region covers no tile,
+ * one tile, or more than one tile, and so as soon as it is seen that the number of tiles
+ * covered is 2, no further information is needed.
  */
-int region_size(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc);
+int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
+/*
+ * Returns whether the PartitionRegion covers no tiles, 1 tile, or more than 1 tile.
+ * Used to decide whether to mark a block with the .is_fixed flag based on its floorplan
+ * region.
+ */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

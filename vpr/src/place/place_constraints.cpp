@@ -270,22 +270,28 @@ void mark_fixed_blocks() {
         }
         PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto block_name = cluster_ctx.clb_nlist.block_name(blk_id);
         t_pl_loc loc;
 
-        VTR_LOG("Checking block %s \n", block_name.c_str());
         if (is_pr_size_one(pr, block_type, loc)) {
             //Set block location and grid usage
             set_block_location(blk_id, loc);
 
             //Set as fixed
             place_ctx.block_locs[blk_id].is_fixed = true;
-            VTR_LOG("Block %s marked as fixed at %d, %d, %d. \n", block_name.c_str(), loc.x, loc.y, loc.sub_tile);
         }
     }
 }
 
-int region_size(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
+/*
+ * Returns 0, 1, or 2 depending on the number of tiles covered.
+ * Will not return a value above 2 because as soon as num_tiles is above 1,
+ * it is known that the block that is assigned to this region will not be fixed, and so
+ * num_tiles is immediately returned.
+ * Updates the location passed in because if num_tiles turns out to be 1 after checking the
+ * region, the location that was set will be used as the location to which the block
+ * will be fixed.
+ */
+int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
     vtr::Rect<int> rb = reg.get_region_rect();
     int num_tiles = 0;
@@ -293,21 +299,36 @@ int region_size(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc
     for (int x = rb.xmin(); x <= rb.xmax(); x++) {
         for (int y = rb.ymin(); y <= rb.ymax(); y++) {
             auto& tile = device_ctx.grid[x][y].type;
-            VTR_LOG("At tile (%d, %d) \n", x, y);
+
+            /*
+             * If the tile at the grid location is not compatible with the cluster block
+             * type, do not count this tile for num_tiles
+             */
             if (!is_tile_compatible(tile, block_type)) {
-                //VTR_LOG("Tile not compatible, skip block %d \n");
                 continue;
             }
 
+            /*
+             * If the region passed has a specific subtile set, increment
+             * the number of tiles set the location using the x, y, subtile
+             * values
+             */
             if (reg.get_sub_tile() != NO_SUBTILE) {
                 num_tiles++;
                 loc.x = x;
                 loc.y = y;
                 loc.sub_tile = reg.get_sub_tile();
-                //VTR_LOG("Number of tiles incremented, num_tiles is %d \n", num_tiles);
                 if (num_tiles > 1) {
                     return num_tiles;
                 }
+
+                /*
+                 * If the region passed does not have a subtile set, set the
+                 * subtile to zero. The loc that is set will only be used in the
+                 * event that num_tiles is 1, and num_tiles will only be 1 if the
+                 * capacity of the tile type turns out to be zero, thus implying
+                 * that the location subtile will be zero.
+                 */
             } else if (reg.get_sub_tile() == NO_SUBTILE) {
                 auto& cap = tile->capacity;
                 for (int z = 0; z < cap; z++) {
@@ -315,7 +336,6 @@ int region_size(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc
                     loc.x = x;
                     loc.y = y;
                     loc.sub_tile = 0;
-                    //VTR_LOG("Number of tiles incremented, num_tiles is %d \n", num_tiles);
                     if (num_tiles > 1) {
                         return num_tiles;
                     }
@@ -327,6 +347,13 @@ int region_size(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc
     return num_tiles;
 }
 
+/*
+ * Used when marking fixed blocks to check whether the ParitionRegion associated with a block
+ * covers one tile. If it covers one tile, it is marked as fixed. If it covers 0 tiles or
+ * more than one tile, it will not be marked as fixed. As soon as it is known that the
+ * PartitionRegion covers more than one tile, there is no need to check further regions
+ * and the routine will return false.
+ */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     std::vector<Region> regions = pr.get_partition_region();
     bool pr_size_one;
@@ -335,19 +362,15 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     int reg_size;
 
     for (unsigned int i = 0; i < regions.size(); i++) {
-        reg_size = region_size(regions[i], block_type, loc);
+        reg_size = region_tile_cover(regions[i], block_type, loc);
         pr_size = pr_size + reg_size;
-        //VTR_LOG("Region size is %d \n", reg_size);
-        //VTR_LOG("Partition Region size is %d \n", pr_size);
         if (pr_size > 1) {
-            pr_size_one = false;
-            return pr_size_one;
+            break;
         }
     }
 
-    if (pr_size == 0) {
+    if (pr_size == 0 || pr_size > 1) {
         pr_size_one = false;
-        return pr_size_one;
     } else if (pr_size == 1) {
         pr_size_one = true;
     }
