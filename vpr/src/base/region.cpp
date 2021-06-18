@@ -81,20 +81,36 @@ bool do_regions_intersect(Region r1, Region r2) {
 
 Region intersection(const Region& r1, const Region& r2) {
     Region intersect;
+    vtr::Rect<int> r1_rect = r1.get_region_rect();
+    vtr::Rect<int> r2_rect = r2.get_region_rect();
+    vtr::Rect<int> intersect_rect;
 
-    /**
-     * If the subtiles of the two regions don't match, there is no intersection.
-     * If they do match, the intersection function if used to get the overlap of the two regions' rectangles.
-     * If there is no overlap, an empty rectangle will be returned.
+    /*
+     * If the subtiles of two regions match (i.e. they both have no subtile specified, or the same subtile specified),
+     * the regions are intersected. The resulting intersection region will have a rectangle that reflects their overlap,
+     * (it will be empty if there is no overlap), and a subtile that is the same as that of both regions.
+     *
+     * If one of the two regions has a subtile specified, and the other does not, the regions are intersected.
+     * The resulting intersection region will have a rectangle that reflects their overlap (it will be empty if there is
+     * no overlap), and a subtile that is the same as the subtile of the region with the specific subtile assigned.
+     *
+     * If none of the above cases are true (i.e. the regions both have subtiles specified, but the subtiles do not
+     * match each other) then the intersection is not performed and a region with an empty rectangle is returned.
+     * This is because there can be no overlap in this case since the regions are constrained to two separate subtiles.
      */
     if (r1.get_sub_tile() == r2.get_sub_tile()) {
         intersect.set_sub_tile(r1.get_sub_tile());
-        vtr::Rect<int> r1_rect = r1.get_region_rect();
-        vtr::Rect<int> r2_rect = r2.get_region_rect();
-        vtr::Rect<int> intersect_rect;
-
         intersect_rect = intersection(r1_rect, r2_rect);
+        intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
 
+    } else if (r1.get_sub_tile() == NO_SUBTILE && r2.get_sub_tile() != NO_SUBTILE) {
+        intersect.set_sub_tile(r2.get_sub_tile());
+        intersect_rect = intersection(r1_rect, r2_rect);
+        intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
+
+    } else if (r1.get_sub_tile() != NO_SUBTILE && r2.get_sub_tile() == NO_SUBTILE) {
+        intersect.set_sub_tile(r1.get_sub_tile());
+        intersect_rect = intersection(r1_rect, r2_rect);
         intersect.set_region_rect(intersect_rect.xmin(), intersect_rect.ymin(), intersect_rect.xmax(), intersect_rect.ymax());
     }
 
