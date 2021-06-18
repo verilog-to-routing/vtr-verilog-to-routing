@@ -357,12 +357,39 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
     std::vector<Region> regions = pr.get_partition_region();
     bool pr_size_one;
-
+    Region intersect_reg;
     int pr_size = 0;
     int reg_size;
 
     for (unsigned int i = 0; i < regions.size(); i++) {
         reg_size = region_tile_cover(regions[i], block_type, loc);
+
+        /*
+         * If multiple regions in the PartitionRegion all have size 1,
+         * the block may still be marked as locked, in the case that
+         * they all cover the exact same tile. To check whether this
+         * is the case, whenever there is a size 1 region, it is intersected
+         * with the previous size 1 regions to see whether it covers the same tile.
+         * If there is an intersection, it does cover the same tile, and so pr_size is
+         * not incremented (unless this is the first size 1 region encountered).
+         */
+        if (reg_size == 1) {
+            if (i == 0) {
+                intersect_reg = regions[0];
+                pr_size = pr_size + reg_size;
+            } else {
+                intersect_reg = intersection(intersect_reg, regions[i]);
+            }
+            if (intersect_reg.empty()) {
+                pr_size = pr_size + reg_size;
+                if (pr_size > 1) {
+                    break;
+                }
+            } else {
+                continue;
+            }
+        }
+
         pr_size = pr_size + reg_size;
         if (pr_size > 1) {
             break;
