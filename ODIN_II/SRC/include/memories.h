@@ -115,5 +115,6 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
 void add_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 
 int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
+int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
 
 #endif // MEMORIES_H

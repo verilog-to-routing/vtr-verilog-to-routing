@@ -1099,6 +1099,104 @@
         "Estimated LUTs": 5,
         "Total Node": 5
     },
+    "common/bram/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/bram/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "bram_generated.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Node should have been converted to softer version: dual_port_ram~0"
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ]
+    },
+    "common/bram/no_arch": {
+        "test_name": "common/bram/no_arch",
+        "generated_blif": "bram_generated.blif",
+        "exit": 134,
+        "errors": [
+            "[UTIL] failed for CLK:$mem~0^lOR~18^lOR~1282 input size is 2 expected 3:"
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ]
+    },
+    "common/dffsre/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/dffsre/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "dffsre_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.2,
+        "exec_time(ms)": 22.1,
+        "simulation_time(ms)": 9,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 7,
+        "Po": 2,
+        "logic element": 36,
+        "latch": 2,
+        "generic logic size": 4,
+        "Longest Path": 11,
+        "Average Path": 5,
+        "Estimated LUTs": 36,
+        "Total Node": 39
+    },
+    "common/dffsre/no_arch": {
+        "test_name": "common/dffsre/no_arch",
+        "generated_blif": "dffsre_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 8.1,
+        "exec_time(ms)": 10.7,
+        "simulation_time(ms)": 8.9,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 7,
+        "Po": 2,
+        "logic element": 36,
+        "latch": 2,
+        "Longest Path": 11,
+        "Average Path": 5,
+        "Estimated LUTs": 36,
+        "Total Node": 39
+    },
+    "common/rom/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/rom/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "rom_generated.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Node should have been converted to softer version: single_port_ram~0"
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ]
+    },
+    "common/rom/no_arch": {
+        "test_name": "common/rom/no_arch",
+        "generated_blif": "rom_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit",
+            "[OUTPUT_BLIF] clock(unconn) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 9.1,
+        "exec_time(ms)": 142.6,
+        "simulation_time(ms)": 135.8,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 2,
+        "Pi": 5,
+        "Po": 8,
+        "logic element": 571,
+        "latch": 136,
+        "Longest Path": 12,
+        "Average Path": 5,
+        "Estimated LUTs": 571,
+        "Total Node": 709
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

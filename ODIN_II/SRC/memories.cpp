@@ -1868,7 +1868,6 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
     return return_list;
 }
 
-
 /**
  * (function: get_sp_ram_hb_ports_sizes)
  * 
@@ -1896,7 +1895,7 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
 
     if (hb_model) {
         /* intialize the array */
-        ports_sizes = (int*)vtr::calloc(5, sizeof(int));
+        ports_sizes = (int*)vtr::calloc(spram_ports_e::spram_ports_e_END, sizeof(int));
 
         /* Declare the hard block as used for the blif generation */
         hb_model->used = 1;
@@ -1950,6 +1949,136 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                 //     throw;
                 if (ports_sizes[spram_ports_e::DATA] > 1)
                         throw;
+            }
+            
+        } catch (vtr::VtrError& vtr_error) {
+            error_message(BLIF_ELBORATION, hb_instance->loc,
+                          "Hard Block (%s) Port (%s): Not match with FPGA Architecture Hard Block ports", hb_instance->name, hb_ports);
+            vtr::free(ports_sizes);
+        }
+    }
+
+    return (ports_sizes);
+}
+
+/**
+ * (function: get_dp_ram_hb_ports_sizes)
+ * 
+ * @brief getting the dual port ram port 
+ * sizes from the architecture file.
+ * 
+ * @param hb_instance_ports_sizes ports sizes of the dpram instance
+ * @param hb_instance dpram hard block instance
+*/
+int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
+    /* return value */
+    int* ports_sizes = NULL;
+
+    enum dpram_ports_e {
+        ADDR1,
+        ADDR2,
+        CLK,
+        DATA1,
+        DATA2,
+        WE1,
+        WE2,
+        OUT1,
+        OUT2,
+        dpram_ports_e_END
+    };
+
+    /* See if the hard block declared is supported by FPGA architecture */
+    t_model* hb_model = find_hard_block(hb_instance->related_ast_node->identifier_node->types.identifier);
+
+    if (hb_model) {
+        /* intialize the array */
+        ports_sizes = (int*)vtr::calloc(dpram_ports_e::dpram_ports_e_END, sizeof(int));
+
+        /* Declare the hard block as used for the blif generation */
+        hb_model->used = 1;
+    
+        t_model_ports* hb_ports = hb_model->inputs;
+        /**
+         * need to validate the hb port size and hb instance port size
+         * cannot support larger ports than hard block has 
+        */
+        try {
+            /* INPUTS */
+            while (hb_ports) {
+                if (!strcmp(hb_ports->name, "addr1")) {
+                    /* [0] addr1 size */
+                    ports_sizes[dpram_ports_e::ADDR1] = hb_ports->size;
+                    
+                    if (ports_sizes[dpram_ports_e::ADDR1] < hb_instance_ports_sizes[dpram_ports_e::ADDR1])
+                        throw;
+                } else if (!strcmp(hb_ports->name, "addr2")) {
+                    /* [1] addr2 size */
+                    ports_sizes[dpram_ports_e::ADDR2] = hb_ports->size;
+                    
+                    if (ports_sizes[dpram_ports_e::ADDR2] < hb_instance_ports_sizes[dpram_ports_e::ADDR2])
+                        throw;
+                } else if (!strcmp(hb_ports->name, "clk")) {
+                    /* [2] clk size */
+                    ports_sizes[dpram_ports_e::CLK] = hb_ports->size;
+                    if (ports_sizes[dpram_ports_e::CLK] < hb_instance_ports_sizes[dpram_ports_e::CLK])
+                        throw;
+
+                } else if (!strcmp(hb_ports->name, "data1")) {
+                    /* [3] data1 size */
+                    ports_sizes[dpram_ports_e::DATA1]= hb_ports->size;
+                    // [TODO]: the number of hard blocks need to change if we have more than
+                    // one data in pin connected to each hard block
+                    // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
+                    //     throw;
+                    if (ports_sizes[dpram_ports_e::DATA1] > 1)
+                        throw;
+
+                } else if (!strcmp(hb_ports->name, "data2")) {
+                    /* [4] data2 size */
+                    ports_sizes[dpram_ports_e::DATA2]= hb_ports->size;
+                    // [TODO]: the number of hard blocks need to change if we have more than
+                    // one data in pin connected to each hard block
+                    // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
+                    //     throw;
+                    if (ports_sizes[dpram_ports_e::DATA2] > 1)
+                        throw;
+                } else if (!strcmp(hb_ports->name, "we1")) {
+                    /* [5] we1 size */
+                    ports_sizes[dpram_ports_e::WE1] = hb_ports->size;
+                    if (ports_sizes[dpram_ports_e::WE1] < hb_instance_ports_sizes[dpram_ports_e::WE1])
+                        throw;
+                } else if (!strcmp(hb_ports->name, "we2")) {
+                    /* [6] we2 size */
+                    ports_sizes[dpram_ports_e::WE2] = hb_ports->size;
+                    if (ports_sizes[dpram_ports_e::WE2] < hb_instance_ports_sizes[dpram_ports_e::WE2])
+                        throw;
+                } 
+                hb_ports = hb_ports->next;
+            }
+
+            /* OUTOUT */
+            hb_ports = hb_model->outputs;
+            while (hb_ports) {
+                if (!strcmp(hb_ports->name, "out1")) {
+                    /* [7] out1 size */
+                    ports_sizes[dpram_ports_e::OUT1] = hb_ports->size;
+                    // [TODO]: the number of hard blocks need to change if we have more than
+                    // one data in pin connected to each hard block
+                    // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
+                    //     throw;
+                    if (ports_sizes[dpram_ports_e::OUT1] > 1)
+                            throw;
+                } else if (!strcmp(hb_ports->name, "out2")) {
+                    /* [8] out2 size */
+                    ports_sizes[dpram_ports_e::OUT2] = hb_ports->size;
+                    // [TODO]: the number of hard blocks need to change if we have more than
+                    // one data in pin connected to each hard block
+                    // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
+                    //     throw;
+                    if (ports_sizes[dpram_ports_e::OUT2] > 1)
+                            throw;
+                }
+                hb_ports = hb_ports->next;
             }
             
         } catch (vtr::VtrError& vtr_error) {
