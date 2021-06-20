@@ -690,11 +690,11 @@ attr_t* init_attribute() {
     attribute->width = NULL;
     attribute->offset = NULL;
     attribute->memory_id = NULL;
-    
-    attribute->RD_CLK_ENABLE = UNDEFINED_SENSITIVITY; 
-    attribute->WR_CLK_ENABLE = UNDEFINED_SENSITIVITY; 
-    attribute->RD_CLK_POLARITY = UNDEFINED_SENSITIVITY; 
-    attribute->WR_CLK_POLARITY = UNDEFINED_SENSITIVITY; 
+
+    attribute->RD_CLK_ENABLE = UNDEFINED_SENSITIVITY;
+    attribute->WR_CLK_ENABLE = UNDEFINED_SENSITIVITY;
+    attribute->RD_CLK_POLARITY = UNDEFINED_SENSITIVITY;
+    attribute->WR_CLK_POLARITY = UNDEFINED_SENSITIVITY;
 
     attribute->RD_ACCESS = false;
     attribute->WR_ACCESS = false;
@@ -885,10 +885,10 @@ void free_attribute(attr_t* attribute) {
 
         vtr::free(attribute->sreset_value);
         attribute->sreset_value = NULL;
-        
+
         vtr::free(attribute->depth);
         attribute->depth = NULL;
-        
+
         vtr::free(attribute->width);
         attribute->width = NULL;
 

@@ -1303,10 +1303,10 @@ bool is_ast_adder(ast_node_t* node) {
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  *-----------------------------------------------------------------------------------------*/
-nnode_t* check_missing_ports (nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     nnode_t* new_node = NULL;
     int num_input_port = node->num_input_port_sizes;
-    
+
     /* check for operations that has 2 operands */
     if (num_input_port == 2) {
         int i;
@@ -1315,27 +1315,27 @@ nnode_t* check_missing_ports (nnode_t* node, uintptr_t traverse_mark_number, net
         int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
 
         new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
-                                out_port_size,
-                                node, traverse_mark_number);
+                                   out_port_size,
+                                   node, traverse_mark_number);
 
         for (i = 0; i < in_port1_size; i++) {
             remap_pin_to_new_node(node->input_pins[i],
-                                new_node,
-                                i);
+                                  new_node,
+                                  i);
         }
 
         for (i = 0; i < in_port2_size; i++) {
             remap_pin_to_new_node(node->input_pins[i + in_port1_size],
-                                new_node,
-                                i + in_port1_size);
+                                  new_node,
+                                  i + in_port1_size);
         }
 
         // moving the output pins to the new node
         for (i = 0; i < out_port_size; i++) {
             if (i < node->num_output_pins) {
                 remap_pin_to_new_node(node->output_pins[i],
-                                    new_node,
-                                    i);
+                                      new_node,
+                                      i);
             } else {
                 npin_t* new_pin1 = allocate_npin();
                 npin_t* new_pin2 = allocate_npin();
@@ -1353,18 +1353,18 @@ nnode_t* check_missing_ports (nnode_t* node, uintptr_t traverse_mark_number, net
         /**
          * if number of output pins is greater than the max of input pins, 
          * here we connect the exceeded pins to the GND 
-        */
+         */
         for (i = out_port_size; i < node->num_output_pins; i++) {
             /* creating a buf node */
             nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
             /* adding the GND input pin to the buf node */
             add_input_pin_to_node(buf_node,
-                                get_zero_pin(netlist),
-                                0);
+                                  get_zero_pin(netlist),
+                                  0);
             /* remapping the outpin to buf node */
             remap_pin_to_new_node(node->output_pins[i],
-                                buf_node,
-                                0);
+                                  buf_node,
+                                  0);
         }
 
         // CLEAN UP

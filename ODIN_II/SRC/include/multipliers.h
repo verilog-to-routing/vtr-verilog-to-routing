@@ -33,10 +33,10 @@ struct t_multiplier {
 };
 
 enum class mult_port_stat_e {
-    NOT_CONSTANT,           // neither of ports are constant
-    MULTIPLIER_CONSTANT,    // first input port is constant
-    MULTIPICAND_CONSTANT,   // second input port is constant
-    CONSTANT,               // bot input ports are constant
+    NOT_CONSTANT,         // neither of ports are constant
+    MULTIPLIER_CONSTANT,  // first input port is constant
+    MULTIPICAND_CONSTANT, // second input port is constant
+    CONSTANT,             // bot input ports are constant
     mult_port_stat_END
 };
 

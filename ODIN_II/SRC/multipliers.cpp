@@ -257,7 +257,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
 
     signal_list_t* return_value = init_signal_list();
 
-      /**
+    /**
      * Multiply ports
      * IN1: (n bits)        input_port[0]
      * IN2: (m bits)        input_port[1]
@@ -269,7 +269,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
     int i, j;
     int const_operand_offset = (port_status == mult_port_stat_e::MULTIPICAND_CONSTANT) ? IN1_width : 0;
     int const_operand_width = node->input_port_sizes[(port_status == mult_port_stat_e::MULTIPICAND_CONSTANT) ? 1 : 0];
-    
+
     int variable_operand_offset = (port_status == mult_port_stat_e::MULTIPICAND_CONSTANT) ? 0 : IN1_width;
     int variable_operand_width = node->num_input_pins - const_operand_width;
 
@@ -279,14 +279,14 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
     /* container for constatnt operand */
     signal_list_t* const_operand = init_signal_list();
     for (i = 0; i < const_operand_width; i++) {
-        add_pin_to_signal_list(const_operand, node->input_pins[const_operand_offset + i]);   
+        add_pin_to_signal_list(const_operand, node->input_pins[const_operand_offset + i]);
     }
     /* container for variable operand */
     signal_list_t* variable_operand = init_signal_list();
     for (i = 0; i < variable_operand_width; i++) {
-        add_pin_to_signal_list(variable_operand, node->input_pins[variable_operand_offset + i]);   
+        add_pin_to_signal_list(variable_operand, node->input_pins[variable_operand_offset + i]);
     }
-    
+
     /* netlist GND and VCC net */
     nnet_t* gnd_net = netlist->zero_net;
     nnet_t* vcc_net = netlist->one_net;
@@ -334,19 +334,19 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
                 /*************************************** SHIFT_NODE **************************************/
                 /*****************************************************************************************/
                 /**
-                  * create a shift node to shift the variable port based on the i idx 
-                  * 
-                  * (shift node)
-                  * IN1: variable_operand of the multiplier
-                  * IN2: shift value (const_operand_width maximum size)
-                  * OUT: shifted IN1 (width)
-                  * 
+                 * create a shift node to shift the variable port based on the i idx 
+                 * 
+                 * (shift node)
+                 * IN1: variable_operand of the multiplier
+                 * IN2: shift value (const_operand_width maximum size)
+                 * OUT: shifted IN1 (width)
+                 * 
                  */
                 nnode_t* shift_node = make_2port_gate(SL, width, width, width, node, mark);
                 /* connecting the shift value pins */
                 const char* value_str = std::bitset<2>(i).to_string().c_str();
                 signal_list_t* shift_value = create_constant_value(value_str, width, netlist);
-                
+
                 /* keeping the shift output nodes for adding with the previous stage internal outputs */
                 signal_list_t* shift_outputs = init_signal_list();
 
@@ -408,7 +408,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
                     /* hook up new pin 1 into the new net */
                     add_driver_pin_to_net(add_op_net, add_op_out1);
                     /* hook up the new pin 2 to this new net */
-                    add_fanout_pin_to_net(add_op_net, add_op_out2);   
+                    add_fanout_pin_to_net(add_op_net, add_op_out2);
 
                     /* adding the output pin to the shoft output signal container */
                     add_pin_to_signal_list(internal_outputs[i], add_op_out2);
@@ -421,7 +421,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
         }
     }
 
-    // CLEAN UP    
+    // CLEAN UP
     free_signal_list(const_operand);
     free_signal_list(variable_operand);
 
@@ -430,7 +430,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
             free_signal_list(internal_outputs[i]);
     }
     vtr::free(internal_outputs);
-    
+
     return (return_value);
 }
 
@@ -475,10 +475,9 @@ void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_l
         free_npin(node->input_pins[i]);
         node->input_pins[i] = NULL;
     }
-    
+
     free_nnode(node);
 }
-
 
 /*---------------------------------------------------------------------------
  * (function: init_mult_distribution)
@@ -1585,7 +1584,7 @@ mult_port_stat_e is_constant_multipication(nnode_t* node, netlist_t* netlist) {
             break;
         }
     }
-    
+
     bool multiplicand_const = true;
     /* going through the IN1 port */
     for (i = 0; i < IN2_width; i++) {

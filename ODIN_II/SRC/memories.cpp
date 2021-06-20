@@ -1876,7 +1876,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
  * 
  * @param hb_instance_ports_sizes ports sizes of the spram instance
  * @param hb_instance spram hard block instance
-*/
+ */
 int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
     /* return value */
     int* ports_sizes = NULL;
@@ -1899,19 +1899,19 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
 
         /* Declare the hard block as used for the blif generation */
         hb_model->used = 1;
-    
+
         t_model_ports* hb_ports = hb_model->inputs;
         /**
          * need to validate the hb port size and hb instance port size
          * cannot support larger ports than hard block has 
-        */
+         */
         try {
             /* INPUTS */
             while (hb_ports) {
                 if (!strcmp(hb_ports->name, "addr")) {
                     /* [0] addr size */
                     ports_sizes[spram_ports_e::ADDR] = hb_ports->size;
-                    
+
                     if (ports_sizes[spram_ports_e::ADDR] < hb_instance_ports_sizes[spram_ports_e::ADDR])
                         throw;
                 } else if (!strcmp(hb_ports->name, "clk")) {
@@ -1922,7 +1922,7 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
 
                 } else if (!strcmp(hb_ports->name, "data")) {
                     /* [2] data size */
-                    ports_sizes[spram_ports_e::DATA]= hb_ports->size;
+                    ports_sizes[spram_ports_e::DATA] = hb_ports->size;
                     // [TODO]: the number of hard blocks need to change if we have more than
                     // one data in pin connected to each hard block
                     // if (ports_sizes[spram_ports_e::DATA] < hb_instance_ports_sizes[spram_ports_e::DATA])
@@ -1934,7 +1934,7 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     ports_sizes[spram_ports_e::WE] = hb_ports->size;
                     if (ports_sizes[spram_ports_e::WE] < hb_instance_ports_sizes[spram_ports_e::WE])
                         throw;
-                } 
+                }
                 hb_ports = hb_ports->next;
             }
 
@@ -1948,9 +1948,9 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                 // if (ports_sizes[spram_ports_e::OUT] < hb_instance_ports_sizes[spram_ports_e::OUT])
                 //     throw;
                 if (ports_sizes[spram_ports_e::DATA] > 1)
-                        throw;
+                    throw;
             }
-            
+
         } catch (vtr::VtrError& vtr_error) {
             error_message(BLIF_ELBORATION, hb_instance->loc,
                           "Hard Block (%s) Port (%s): Not match with FPGA Architecture Hard Block ports", hb_instance->name, hb_ports);
@@ -1969,7 +1969,7 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
  * 
  * @param hb_instance_ports_sizes ports sizes of the dpram instance
  * @param hb_instance dpram hard block instance
-*/
+ */
 int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
     /* return value */
     int* ports_sizes = NULL;
@@ -1996,25 +1996,25 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
 
         /* Declare the hard block as used for the blif generation */
         hb_model->used = 1;
-    
+
         t_model_ports* hb_ports = hb_model->inputs;
         /**
          * need to validate the hb port size and hb instance port size
          * cannot support larger ports than hard block has 
-        */
+         */
         try {
             /* INPUTS */
             while (hb_ports) {
                 if (!strcmp(hb_ports->name, "addr1")) {
                     /* [0] addr1 size */
                     ports_sizes[dpram_ports_e::ADDR1] = hb_ports->size;
-                    
+
                     if (ports_sizes[dpram_ports_e::ADDR1] < hb_instance_ports_sizes[dpram_ports_e::ADDR1])
                         throw;
                 } else if (!strcmp(hb_ports->name, "addr2")) {
                     /* [1] addr2 size */
                     ports_sizes[dpram_ports_e::ADDR2] = hb_ports->size;
-                    
+
                     if (ports_sizes[dpram_ports_e::ADDR2] < hb_instance_ports_sizes[dpram_ports_e::ADDR2])
                         throw;
                 } else if (!strcmp(hb_ports->name, "clk")) {
@@ -2025,7 +2025,7 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
 
                 } else if (!strcmp(hb_ports->name, "data1")) {
                     /* [3] data1 size */
-                    ports_sizes[dpram_ports_e::DATA1]= hb_ports->size;
+                    ports_sizes[dpram_ports_e::DATA1] = hb_ports->size;
                     // [TODO]: the number of hard blocks need to change if we have more than
                     // one data in pin connected to each hard block
                     // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
@@ -2035,7 +2035,7 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
 
                 } else if (!strcmp(hb_ports->name, "data2")) {
                     /* [4] data2 size */
-                    ports_sizes[dpram_ports_e::DATA2]= hb_ports->size;
+                    ports_sizes[dpram_ports_e::DATA2] = hb_ports->size;
                     // [TODO]: the number of hard blocks need to change if we have more than
                     // one data in pin connected to each hard block
                     // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
@@ -2052,7 +2052,7 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     ports_sizes[dpram_ports_e::WE2] = hb_ports->size;
                     if (ports_sizes[dpram_ports_e::WE2] < hb_instance_ports_sizes[dpram_ports_e::WE2])
                         throw;
-                } 
+                }
                 hb_ports = hb_ports->next;
             }
 
@@ -2067,7 +2067,7 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::OUT1] > 1)
-                            throw;
+                        throw;
                 } else if (!strcmp(hb_ports->name, "out2")) {
                     /* [8] out2 size */
                     ports_sizes[dpram_ports_e::OUT2] = hb_ports->size;
@@ -2076,11 +2076,11 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::OUT2] > 1)
-                            throw;
+                        throw;
                 }
                 hb_ports = hb_ports->next;
             }
-            
+
         } catch (vtr::VtrError& vtr_error) {
             error_message(BLIF_ELBORATION, hb_instance->loc,
                           "Hard Block (%s) Port (%s): Not match with FPGA Architecture Hard Block ports", hb_instance->name, hb_ports);
@@ -2090,7 +2090,6 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
 
     return (ports_sizes);
 }
-
 
 /**
  * (function: resolve_single_port_ram)
@@ -2462,7 +2461,7 @@ void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
      * RD_CLOCK:   input port [1] 
      * RD_DATA:    output port [0] 
      * RD_ENABLE:  input port [2] 
-    */
+     */
     int RD_ADDR_width = node->input_port_sizes[0];
     int RD_CLK_width = node->input_port_sizes[1];
     int RD_DATA_width = node->output_port_sizes[0];
@@ -2599,7 +2598,7 @@ void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
      * WR_CLOCK:   input port [4] 
      * WR_DATA:    input port [5] 
      * WR_ENABLE:  input port [6] 
-    */
+     */
     int RD_ADDR_width = node->input_port_sizes[0];
     int RD_CLK_width = node->input_port_sizes[1];
     int RD_DATA_width = node->output_port_sizes[0];
