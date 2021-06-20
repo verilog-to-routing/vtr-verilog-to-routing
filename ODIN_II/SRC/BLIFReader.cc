@@ -321,7 +321,8 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);
 
     // init the edge sensitivity of hard block
-    hard_block_sensitivities(subcircuit_name, new_node);
+    if (configuration.coarsen)
+        hard_block_sensitivities(subcircuit_name, new_node);
 
     // Determine the type of hard block.
     char subcircuit_name_prefix[6];
@@ -341,6 +342,8 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
             new_node->type = odin_subckt_str[subcircuit_name];
         else if (odin_subckt_str[subcircuit_name_prefix] != NO_OP)
             new_node->type = odin_subckt_str[subcircuit_name_prefix];
+        else    
+            new_node->type = MEMORY;
     }
 
     // Look up the model in the models cache.
@@ -627,7 +630,7 @@ void BLIF::Reader::add_top_input_nodes() {
      * this also fix the issue of constant verilog (no input)
      * that cannot simulate due to empty input vector
      */
-    if (insert_global_clock) {
+    if (insert_global_clock && !configuration.coarsen) {
         insert_global_clock = false;
         build_top_input_node(DEFAULT_CLOCK_NAME);
     }
