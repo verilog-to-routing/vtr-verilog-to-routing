@@ -6,8 +6,4 @@
 circuits_dir=regression_test/benchmark/_VERILOG/keywords/
 
 # circuits' name
-<<<<<<< HEAD
 circuit_list_add=and/*.vh
-=======
-circuit_list_add=and/*.v
->>>>>>> a741f2d1d... keywords

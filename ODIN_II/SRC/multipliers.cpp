@@ -206,8 +206,17 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
             /* ELSE IF - these are the middle values that come from the LSbit of partial adders */
             remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[i - 1], 0);
         } else {
-            /* ELSE - the final outputs are straight from the outputs of the last adder */
-            remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width - 2], current_index);
+            if (current_index > multiplier_width) {
+                /* output pins greater than 2X multiplier width will be driven with pad node */
+                nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, mark);
+                /* hook a pad pin into buf node */
+                add_input_pin_to_node(buf_node, get_pad_pin(netlist), 0);
+                /* hook the over size output pin to into the buf node */
+                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+            } else {
+                /* ELSE - the final outputs are straight from the outputs of the last adder */
+                remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width - 2], current_index);
+            }                
             current_index++;
         }
     }
