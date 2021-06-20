@@ -59,7 +59,7 @@ The mode and slice is declared here:
           <clock name="clk"/>
 
 This is followed by a description of the primitives within the slice.
-There are two sets of 36 flip-flops for the input ports and one set of 64 flip-flops for the output port.
+There are two sets of 36 flip-flops for the input ports and one set of 72 flip-flops for the output port.
 There is one 36x36 multiplier primitive.
 These primitives are described by four *pb_types* as follows:
 
