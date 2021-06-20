@@ -7,20 +7,12 @@ read_verilog $env(TCL_CIRCUIT);
 hierarchy -check -auto-top
 
 autoname;
-#expose -dff;
-procs; 
 
-opt;
+procs; opt;
 
-fsm;
+fsm; opt;
 
-opt;
-
-memory_collect;
-
-memory_nordff;
-
-opt;
+memory_collect; memory_nordff; opt;
 
 check;
 

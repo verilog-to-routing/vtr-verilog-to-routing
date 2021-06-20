@@ -225,7 +225,7 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
     /*****************************************************************************************/
     /**************************************** RST_CHECK **************************************/
     /*****************************************************************************************/
-    signal_list_t* reset_value = create_constant_value(node->attributes->areset_value, D_width, netlist);
+    signal_list_t* reset_value = create_constant_signal(node->attributes->areset_value, D_width, netlist);
 
     /* creating equal node to compare the value of enable */
     nnode_t* select_reset = make_2port_gate(LOGICAL_EQUAL, 1, 1, 1, node, traverse_mark_number);

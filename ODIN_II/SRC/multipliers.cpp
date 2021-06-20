@@ -345,7 +345,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
                 nnode_t* shift_node = make_2port_gate(SL, width, width, width, node, mark);
                 /* connecting the shift value pins */
                 const char* value_str = std::bitset<2>(i).to_string().c_str();
-                signal_list_t* shift_value = create_constant_value(value_str, width, netlist);
+                signal_list_t* shift_value = create_constant_signal(value_str, width, netlist);
 
                 /* keeping the shift output nodes for adding with the previous stage internal outputs */
                 signal_list_t* shift_outputs = init_signal_list();

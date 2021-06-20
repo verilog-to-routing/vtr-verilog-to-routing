@@ -111,7 +111,7 @@ void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     /*****************************************************************************************/
     /**************************************** RST_CHECK **************************************/
     /*****************************************************************************************/
-    signal_list_t* reset_value = create_constant_value(node->attributes->areset_value, D_width, netlist);
+    signal_list_t* reset_value = create_constant_signal(node->attributes->areset_value, D_width, netlist);
 
     /* creating equal node to compare the value of enable */
     nnode_t* select_reset = make_2port_gate(LOGICAL_EQUAL, 1, 1, 1, node, traverse_mark_number);
@@ -282,7 +282,7 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
 
-    signal_list_t* reset_value = create_constant_value(node->attributes->sreset_value, D_width, netlist);
+    signal_list_t* reset_value = create_constant_signal(node->attributes->sreset_value, D_width, netlist);
 
     /*****************************************************************************************/
     /**************************************** RST_CHECK **************************************/
@@ -614,7 +614,7 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     /*****************************************************************************************/
     /**************************************** RST_CHECK **************************************/
     /*****************************************************************************************/
-    signal_list_t* reset_value = create_constant_value(node->attributes->areset_value, D_width, netlist);
+    signal_list_t* reset_value = create_constant_signal(node->attributes->areset_value, D_width, netlist);
 
     /* creating equal node to compare the value of enable */
     nnode_t* select_reset = make_2port_gate(LOGICAL_EQUAL, 1, 1, 1, node, traverse_mark_number);
@@ -865,7 +865,7 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     /*****************************************************************************************/
     /**************************************** RST_CHECK **************************************/
     /*****************************************************************************************/
-    signal_list_t* reset_value = create_constant_value(node->attributes->sreset_value, D_width, netlist);
+    signal_list_t* reset_value = create_constant_signal(node->attributes->sreset_value, D_width, netlist);
 
     /* creating equal node to compare the value of enable */
     nnode_t* select_reset = make_2port_gate(LOGICAL_EQUAL, 1, 1, 1, node, traverse_mark_number);

@@ -719,11 +719,73 @@ signal_list_t* init_signal_list() {
     return list;
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: create_constant_value)
- * 	create the signal_list of the given constant value
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: is_constant_signal)
+ *
+ * @brief showing that a given signal list has a constant value or not
+ * 
+ * @param signal list of pins
+ * @param netlist pointer to the current netlist file
+ * 
+ * @return is it constant or not
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_constant_value(const char* value, const size_t width, netlist_t* netlist) {
+bool is_constant_signal(signal_list_t* signal, netlist_t* netlist) {
+
+    int i;
+    bool is_constant = true;
+
+    for (i = 0; i < signal->count; i++) {
+        nnet_t* net = signal->pins[i]->net;
+        /* neither connected to GND nor VCC */
+        if (strcmp(net->name, netlist->zero_net->name) && strcmp(net->name, netlist->one_net->name)) {
+            is_constant = false;
+            break;
+        }
+    }
+    
+    return (is_constant);
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: constant_signal_value)
+ *
+ * @brief calculating the value of a constant siignal list
+ * 
+ * @param signal list of pins
+ * @param netlist pointer to the current netlist file
+ * 
+ * @return the integer value of the constant signal
+ *-------------------------------------------------------------------------------------------*/
+long constant_signal_value(signal_list_t* signal, netlist_t* netlist) {
+    oassert(is_constant_signal(signal, netlist));
+    
+    long return_value = 0;
+
+    int i;
+    for (i = 0; i < signal->count; i++) {
+        nnet_t* net = signal->pins[i]->net;
+        /* if the pin is connected to VCC */
+        if (!strcmp(net->name, netlist->one_net->name)) {
+            return_value += shift_left_value_with_overflow_check(0X1, i, unknown_location);
+        }
+    }
+    
+    return (return_value);
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: create_constant_signal)
+ *
+ * @brief create the signal_list of the given constant value
+ * 
+ * @param value a string representing the value, e.g. 10010
+ * @param width the length of the string 
+ * @param netlist pointer to the netlist
+ *-------------------------------------------------------------------------------------------*/
+signal_list_t* create_constant_signal(const char* value, const size_t width, netlist_t* netlist) {
     signal_list_t* list = init_signal_list();
 
     int i;
