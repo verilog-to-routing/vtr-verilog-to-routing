@@ -2655,29 +2655,49 @@ void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     npin_t* rd_clk = node->input_pins[RD_ADDR_width];
     npin_t* wr_clk = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width];
 
-    nnode_t* or_gate = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, traverse_mark_number);
+    nnode_t* nor_gate = make_2port_gate(LOGICAL_NOR, 1, 1, 1, node, traverse_mark_number);
     /* hook input pins */
-    remap_pin_to_new_node(rd_clk, or_gate, 0);
-    remap_pin_to_new_node(wr_clk, or_gate, 1);
+    remap_pin_to_new_node(rd_clk, nor_gate, 0);
+    remap_pin_to_new_node(wr_clk, nor_gate, 1);
     // specify the output pin
-    npin_t* or_gate_new_pin1 = allocate_npin();
-    npin_t* or_gate_new_pin2 = allocate_npin();
-    nnet_t* or_gate_new_net = allocate_nnet();
-    or_gate_new_net->name = make_full_ref_name(NULL, NULL, NULL, or_gate->name, 0);
+    npin_t* nor_gate_new_pin1 = allocate_npin();
+    npin_t* nor_gate_new_pin2 = allocate_npin();
+    nnet_t* nor_gate_new_net = allocate_nnet();
+    nor_gate_new_net->name = make_full_ref_name(NULL, NULL, NULL, nor_gate->name, 0);
     /* hook the output pin into the node */
-    add_output_pin_to_node(or_gate, or_gate_new_pin1, 0);
+    add_output_pin_to_node(nor_gate, nor_gate_new_pin1, 0);
     /* hook up new pin 1 into the new net */
-    add_driver_pin_to_net(or_gate_new_net, or_gate_new_pin1);
+    add_driver_pin_to_net(nor_gate_new_net, nor_gate_new_pin1);
     /* hook up the new pin 2 to this new net */
-    add_fanout_pin_to_net(or_gate_new_net, or_gate_new_pin2);
+    add_fanout_pin_to_net(nor_gate_new_net, nor_gate_new_pin2);
+  
+    /* create a clock node to specify the edge sensitivity */
+    nnode_t* clk_node = make_not_gate(nor_gate, traverse_mark_number);
+    connect_nodes(nor_gate, 0, clk_node, 0);//make_1port_gate(CLOCK_NODE, 1, 1, node, traverse_mark_number);
+    /* create the clk node's output pin */
+    npin_t* clk_node_new_pin1 = allocate_npin();
+    npin_t* clk_node_new_pin2 = allocate_npin();
+    nnet_t* clk_node_new_net = allocate_nnet();
+    clk_node_new_net->name = make_full_ref_name(NULL, NULL, NULL, clk_node->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(clk_node, clk_node_new_pin1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(clk_node_new_net, clk_node_new_pin1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(clk_node_new_net, clk_node_new_pin2);
+    clk_node_new_pin2->mapping = vtr::strdup("clk");
 
-    /* hook the OR output into clock signal of the new node */
+    /* adding the new clk node to netlist clocks */
+    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
+    netlist->clocks[netlist->num_clocks] = clk_node;
+    netlist->num_clocks++;
+
+    /* hook the clk node output into clock signal of the new node */
     add_input_port_information(new_node, 1);
     allocate_more_input_pins(new_node, 1);
-    or_gate_new_pin2->mapping = vtr::strdup("clk");
-    /* hook the clk pin to new node */
+    /* hook the clk node output pin to new node */
     add_input_pin_to_node(new_node,
-                          or_gate_new_pin2,
+                          clk_node_new_pin2,
                           RD_ADDR_width + WR_ADDR_width);
 
     /* adding the write data port as data1 */
