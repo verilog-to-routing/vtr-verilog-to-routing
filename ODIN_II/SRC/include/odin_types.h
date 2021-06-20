@@ -273,6 +273,7 @@ enum operation_list {
     DFFE,               // data, enable to output port
     ADFFE,              // data, asynchronous reset value and enable to output port
     SDFFE,              // data, synchronous reset value and enable to output port
+    SDFFCE,             // data, synchronous reset value and enable to reset value and output port
     DFFSR,              // data, clear and set to output port
     DFFSRE,             // data, clear and set with enable to output port
     DLATCH,             // datato output port based on polarity without clk
@@ -280,7 +281,7 @@ enum operation_list {
     SPRAM,              // representing primitive single port ram
     DPRAM,              // representing primitive dual port ram
     BRAM,               // block of memry generated in yosys subcircuit formet blif file
-    ROM,                // single port block of memry generated in yosys subcircuit formet blif file (READ ACCES)
+    ROM,                // single port block of memry generated in yosys subcircuit formet blif file (READ ACCESs)
                         // [END] operations to cover yosys subckt
     operation_list_END
 };

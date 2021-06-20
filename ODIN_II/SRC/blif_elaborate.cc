@@ -248,6 +248,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case DFFE:    //fallthrough
         case ADFFE:   //fallthrough
         case SDFFE:   //fallthrough
+        case SDFFCE:  //fallthrough
         case DFFSR:   //fallthrough
         case DFFSRE: {
             /**
@@ -674,6 +675,13 @@ static void resolve_ff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netl
              * resolving a dff node with enable and srst
             */
             resolve_sdffe_node(node, traverse_mark_number, netlist);
+            break;
+        }
+        case SDFFCE: {
+            /**
+             * resolving a dff node with srst and enable for both output and reset
+            */
+            resolve_sdffce_node(node, traverse_mark_number, netlist);
             break;
         }
         case DFFSR: {

@@ -1871,6 +1871,7 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
         case (ROM):   //fallthrough
         case (SDFF):  //fallthrough
         case (SDFFE): //fallthrough
+        case (SDFFCE): //fallthrough
         case (DFFSR): //fallthrough
         case (DFFSRE): {
             // create a model with single output port, being read as the port [n-2] among [0...n-1]
@@ -2118,6 +2119,7 @@ bool BLIF::Reader::need_params(operation_list type) {
         case (DFFE):    //fallthrough
         case (ADFFE):   //fallthrough
         case (SDFFE):   //fallthrough
+        case (SDFFCE):   //fallthrough
         case (DFFSR):   //fallthrough
         case (DFFSRE):  //fallthrough
         case (BRAM):    //fallthrough
