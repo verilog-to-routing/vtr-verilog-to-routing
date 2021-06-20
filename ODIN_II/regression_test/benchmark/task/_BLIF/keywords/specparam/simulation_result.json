@@ -3,9 +3,6 @@
         "test_name": "specparam/specparam_define_check/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "specparam_define_check_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 14.3,
         "simulation_time(ms)": 1.4,
@@ -22,9 +19,6 @@
     "specparam/specparam_define_check/no_arch": {
         "test_name": "specparam/specparam_define_check/no_arch",
         "generated_blif": "specparam_define_check_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 3.5,
         "simulation_time(ms)": 1.9,
@@ -41,9 +35,6 @@
         "test_name": "specparam/specparam_inside/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "specparam_inside_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.1,
         "exec_time(ms)": 14.1,
         "simulation_time(ms)": 1.4,
@@ -60,9 +51,6 @@
     "specparam/specparam_inside/no_arch": {
         "test_name": "specparam/specparam_inside/no_arch",
         "generated_blif": "specparam_inside_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 2.8,
         "simulation_time(ms)": 1.4,
@@ -79,9 +67,6 @@
         "test_name": "specparam/specparam_outside/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "specparam_outside_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 14.2,
         "simulation_time(ms)": 1.5,
@@ -98,9 +83,6 @@
     "specparam/specparam_outside/no_arch": {
         "test_name": "specparam/specparam_outside/no_arch",
         "generated_blif": "specparam_outside_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 3,
         "simulation_time(ms)": 1.4,

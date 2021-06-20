@@ -3,9 +3,6 @@
         "test_name": "nand/nand_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "nand_indexed_port_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 15.8,
         "simulation_time(ms)": 2.7,
@@ -22,9 +19,6 @@
     "nand/nand_indexed_port/no_arch": {
         "test_name": "nand/nand_indexed_port/no_arch",
         "generated_blif": "nand_indexed_port_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 4.3,
         "simulation_time(ms)": 2.7,
@@ -41,9 +35,6 @@
         "test_name": "nand/nand_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "nand_wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 14.6,
         "simulation_time(ms)": 1.7,
@@ -60,9 +51,6 @@
     "nand/nand_wire/no_arch": {
         "test_name": "nand/nand_wire/no_arch",
         "generated_blif": "nand_wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 3.2,
         "simulation_time(ms)": 1.7,
@@ -79,9 +67,6 @@
         "test_name": "nand/range_nand_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "range_nand_int_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 46.7,
         "simulation_time(ms)": 32.8,
@@ -98,9 +83,6 @@
     "nand/range_nand_int_wide/no_arch": {
         "test_name": "nand/range_nand_int_wide/no_arch",
         "generated_blif": "range_nand_int_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 35.3,
         "simulation_time(ms)": 32.7,
@@ -117,9 +99,6 @@
         "test_name": "nand/range_nand_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "range_nand_ultra_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 10.7,
         "exec_time(ms)": 279.3,
         "simulation_time(ms)": 259.9,
@@ -136,9 +115,6 @@
     "nand/range_nand_ultra_wide/no_arch": {
         "test_name": "nand/range_nand_ultra_wide/no_arch",
         "generated_blif": "range_nand_ultra_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.9,
         "exec_time(ms)": 265,
         "simulation_time(ms)": 256.9,
@@ -155,9 +131,6 @@
         "test_name": "nand/range_nand_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "range_nand_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 16.5,
         "simulation_time(ms)": 3.7,
@@ -174,9 +147,6 @@
     "nand/range_nand_wide/no_arch": {
         "test_name": "nand/range_nand_wide/no_arch",
         "generated_blif": "range_nand_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 5.3,
         "simulation_time(ms)": 3.7,

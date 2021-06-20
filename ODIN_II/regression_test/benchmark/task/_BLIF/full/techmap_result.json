@@ -119,18 +119,18 @@
         "exec_time(ms)": 13,
         "techmap_time(ms)": 0.7,
         "Latch Drivers": 1,
-        "Pi": 13,
+        "Pi": 10,
         "Po": 12,
-        "logic element": 383,
-        "latch": 76,
+        "logic element": 51,
+        "latch": 12,
         "Adder": 0,
         "Multiplier": 0,
-        "Memory": 0,
+        "Memory": 1,
         "generic logic size": 4,
-        "Longest Path": 23,
-        "Average Path": 6,
-        "Estimated LUTs": 383,
-        "Total Node": 460
+        "Longest Path": 17,
+        "Average Path": 5,
+        "Estimated LUTs": 51,
+        "Total Node": 65
     },
     "full/bm_base_memory/no_arch": {
         "test_name": "full/bm_base_memory/no_arch",
@@ -138,15 +138,15 @@
         "max_rss(MiB)": 7.4,
         "exec_time(ms)": 0.9,
         "techmap_time(ms)": 0.7,
-        "Latch Drivers": 1,
+        "Latch Drivers": 2,
         "Pi": 13,
         "Po": 12,
-        "logic element": 383,
+        "logic element": 607,
         "latch": 76,
-        "Longest Path": 23,
+        "Longest Path": 22,
         "Average Path": 6,
-        "Estimated LUTs": 383,
-        "Total Node": 460
+        "Estimated LUTs": 607,
+        "Total Node": 685
     },
     "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/bm_DL_four_bit_adder_continuous_assign_using_vectors/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -185,24 +185,38 @@
         "test_name": "full/bm_sfifo_rtl/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bm_sfifo_rtl.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin bm_sfifo_rtl^fifo_mem[14]_$mux_A_B~0: not available."
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 12.2,
-        "techmap_time(ms)": 0.7
+        "techmap_time(ms)": 0.7,
+        "Latch Drivers": 1,
+        "Pi": 4,
+        "Po": 11,
+        "logic element": 318,
+        "latch": 20,
+        "Adder": 20,
+        "Multiplier": 0,
+        "Memory": 1,
+        "generic logic size": 4,
+        "Longest Path": 41,
+        "Average Path": 6,
+        "Estimated LUTs": 338,
+        "Total Node": 360
     },
     "full/bm_sfifo_rtl/no_arch": {
         "test_name": "full/bm_sfifo_rtl/no_arch",
         "input_blif": "bm_sfifo_rtl.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin bm_sfifo_rtl^fifo_mem[14]_$mux_A_B~0: not available."
-        ],
         "max_rss(MiB)": 7.2,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.7
+        "techmap_time(ms)": 0.7,
+        "Latch Drivers": 2,
+        "Pi": 11,
+        "Po": 11,
+        "logic element": 1462,
+        "latch": 148,
+        "Longest Path": 44,
+        "Average Path": 6,
+        "Estimated LUTs": 1462,
+        "Total Node": 1612
     },
     "full/cf_cordic_v_18_18_18/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/cf_cordic_v_18_18_18/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -496,38 +510,21 @@
         "test_name": "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "matmul.blif",
+        "exit": 134,
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 12.1,
-        "techmap_time(ms)": 0.7,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 7,
-        "logic element": 498,
-        "latch": 15,
-        "Adder": 77,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 72,
-        "Average Path": 6,
-        "Estimated LUTs": 508,
-        "Total Node": 591
+        "techmap_time(ms)": 0.7
     },
     "full/matmul/no_arch": {
         "test_name": "full/matmul/no_arch",
         "input_blif": "matmul.blif",
+        "exit": 134,
+        "errors": [
+            "[NETLIST] Memory matrix_multiplication of depth 2^32 exceeds ODIN bound of 2^10."
+        ],
         "max_rss(MiB)": 7.3,
         "exec_time(ms)": 0.9,
-        "techmap_time(ms)": 0.7,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 7,
-        "logic element": 637,
-        "latch": 15,
-        "Longest Path": 87,
-        "Average Path": 6,
-        "Estimated LUTs": 637,
-        "Total Node": 653
+        "techmap_time(ms)": 0.7
     },
     "full/oc54_cpu/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/oc54_cpu/k6_frac_N10_frac_chain_mem32K_40nm",

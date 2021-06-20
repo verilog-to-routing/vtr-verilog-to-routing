@@ -3,9 +3,6 @@
         "test_name": "xnor/range_xnor_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "range_xnor_int_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 44,
         "simulation_time(ms)": 29.5,
@@ -22,9 +19,6 @@
     "xnor/range_xnor_int_wide/no_arch": {
         "test_name": "xnor/range_xnor_int_wide/no_arch",
         "generated_blif": "range_xnor_int_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 29.8,
         "simulation_time(ms)": 27.6,
@@ -41,9 +35,6 @@
         "test_name": "xnor/range_xnor_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "range_xnor_ultra_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 10.7,
         "exec_time(ms)": 237.5,
         "simulation_time(ms)": 218,
@@ -60,9 +51,6 @@
     "xnor/range_xnor_ultra_wide/no_arch": {
         "test_name": "xnor/range_xnor_ultra_wide/no_arch",
         "generated_blif": "range_xnor_ultra_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.6,
         "exec_time(ms)": 224.2,
         "simulation_time(ms)": 216.3,
@@ -79,9 +67,6 @@
         "test_name": "xnor/range_xnor_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "range_xnor_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 16.5,
         "simulation_time(ms)": 3.8,
@@ -98,9 +83,6 @@
     "xnor/range_xnor_wide/no_arch": {
         "test_name": "xnor/range_xnor_wide/no_arch",
         "generated_blif": "range_xnor_wide_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 5.3,
         "simulation_time(ms)": 3.7,
@@ -117,9 +99,6 @@
         "test_name": "xnor/xnor_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "xnor_indexed_port_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.1,
         "exec_time(ms)": 16.2,
         "simulation_time(ms)": 3.5,
@@ -136,9 +115,6 @@
     "xnor/xnor_indexed_port/no_arch": {
         "test_name": "xnor/xnor_indexed_port/no_arch",
         "generated_blif": "xnor_indexed_port_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 5.1,
         "simulation_time(ms)": 3.5,
@@ -155,9 +131,6 @@
         "test_name": "xnor/xnor_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "xnor_wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.1,
         "exec_time(ms)": 15.9,
         "simulation_time(ms)": 2.1,
@@ -174,9 +147,6 @@
     "xnor/xnor_wire/no_arch": {
         "test_name": "xnor/xnor_wire/no_arch",
         "generated_blif": "xnor_wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8,
         "exec_time(ms)": 3.5,
         "simulation_time(ms)": 2.1,

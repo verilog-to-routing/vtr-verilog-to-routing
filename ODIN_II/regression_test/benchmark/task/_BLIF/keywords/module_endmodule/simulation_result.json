@@ -3,9 +3,6 @@
         "test_name": "module_endmodule/multiple_modules/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "multiple_modules_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 18.4,
         "simulation_time(ms)": 5,
@@ -22,9 +19,6 @@
     "module_endmodule/multiple_modules/no_arch": {
         "test_name": "module_endmodule/multiple_modules/no_arch",
         "generated_blif": "multiple_modules_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 6.7,
         "simulation_time(ms)": 5,

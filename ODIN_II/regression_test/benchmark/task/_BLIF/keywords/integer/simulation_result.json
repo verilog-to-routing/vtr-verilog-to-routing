@@ -3,9 +3,6 @@
         "test_name": "integer/integer_failure/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "integer_failure_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 11.3,
         "exec_time(ms)": 44.6,
         "simulation_time(ms)": 29.5,
@@ -23,9 +20,6 @@
     "integer/integer_failure/no_arch": {
         "test_name": "integer/integer_failure/no_arch",
         "generated_blif": "integer_failure_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.4,
         "exec_time(ms)": 27,
         "simulation_time(ms)": 24.5,
@@ -42,9 +36,6 @@
         "test_name": "integer/integer_port/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "integer_port_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 11.3,
         "exec_time(ms)": 35.1,
         "simulation_time(ms)": 20.2,
@@ -62,9 +53,6 @@
     "integer/integer_port/no_arch": {
         "test_name": "integer/integer_port/no_arch",
         "generated_blif": "integer_port_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 22.9,
         "simulation_time(ms)": 20.5,

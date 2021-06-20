@@ -3,9 +3,6 @@
         "test_name": "inout/double_assign_inout/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "double_assign_inout_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 14.5,
         "simulation_time(ms)": 1.3,
@@ -22,9 +19,6 @@
     "inout/double_assign_inout/no_arch": {
         "test_name": "inout/double_assign_inout/no_arch",
         "generated_blif": "double_assign_inout_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 2.7,
         "simulation_time(ms)": 1.3,
@@ -41,9 +35,6 @@
         "test_name": "inout/inout_failure/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "inout_failure_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 14.8,
         "simulation_time(ms)": 1.8,
@@ -60,9 +51,6 @@
     "inout/inout_failure/no_arch": {
         "test_name": "inout/inout_failure/no_arch",
         "generated_blif": "inout_failure_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 3.2,
         "simulation_time(ms)": 1.8,
@@ -79,9 +67,6 @@
         "test_name": "inout/simple_inout/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "simple_inout_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 14.6,
         "simulation_time(ms)": 1.8,
@@ -98,9 +83,6 @@
     "inout/simple_inout/no_arch": {
         "test_name": "inout/simple_inout/no_arch",
         "generated_blif": "simple_inout_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 3.2,
         "simulation_time(ms)": 1.8,

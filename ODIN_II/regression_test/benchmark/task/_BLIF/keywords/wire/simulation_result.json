@@ -3,9 +3,6 @@
         "test_name": "wire/input_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "input_wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 16.6,
         "simulation_time(ms)": 2.8,
@@ -22,9 +19,6 @@
     "wire/input_wire/no_arch": {
         "test_name": "wire/input_wire/no_arch",
         "generated_blif": "input_wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 5.1,
         "simulation_time(ms)": 3.1,
@@ -41,9 +35,6 @@
         "test_name": "wire/wire_failure/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "wire_failure_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.3,
         "exec_time(ms)": 14.4,
         "simulation_time(ms)": 1.4,
@@ -60,9 +51,6 @@
     "wire/wire_failure/no_arch": {
         "test_name": "wire/wire_failure/no_arch",
         "generated_blif": "wire_failure_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 3,
         "simulation_time(ms)": 1.5,
@@ -79,9 +67,6 @@
         "test_name": "wire/wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.1,
         "exec_time(ms)": 13.6,
         "simulation_time(ms)": 1,
@@ -98,9 +83,6 @@
     "wire/wire/no_arch": {
         "test_name": "wire/wire/no_arch",
         "generated_blif": "wire_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 2.6,
         "simulation_time(ms)": 1.2,

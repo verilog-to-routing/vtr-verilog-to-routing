@@ -3,9 +3,6 @@
         "test_name": "localparam/localparam/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "localparam_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.2,
         "exec_time(ms)": 14.7,
         "simulation_time(ms)": 1.9,
@@ -22,9 +19,6 @@
     "localparam/localparam/no_arch": {
         "test_name": "localparam/localparam/no_arch",
         "generated_blif": "localparam_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 3.5,
         "simulation_time(ms)": 1.9,
@@ -41,9 +35,6 @@
         "test_name": "localparam/parameter_define_localparam/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "parameter_define_localparam_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 9.1,
         "exec_time(ms)": 14.5,
         "simulation_time(ms)": 1.8,
@@ -60,9 +51,6 @@
     "localparam/parameter_define_localparam/no_arch": {
         "test_name": "localparam/parameter_define_localparam/no_arch",
         "generated_blif": "parameter_define_localparam_generated.blif",
-        "warnings": [
-            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
-        ],
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 3.3,
         "simulation_time(ms)": 1.8,

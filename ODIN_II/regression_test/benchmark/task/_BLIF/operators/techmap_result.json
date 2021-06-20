@@ -641,18 +641,32 @@
         "test_name": "operators/eightbit_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "eightbit_arithmetic_power.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 9,
+        "Po": 8,
+        "logic element": 19,
+        "latch": 8,
+        "Adder": 0,
+        "Multiplier": 1,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 19,
+        "Total Node": 29
     },
     "operators/eightbit_arithmetic_power/no_arch": {
         "test_name": "operators/eightbit_arithmetic_power/no_arch",
         "input_blif": "eightbit_arithmetic_power.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 9,
+        "Po": 8,
+        "logic element": 104,
+        "latch": 8,
+        "Longest Path": 19,
+        "Average Path": 5,
+        "Estimated LUTs": 104,
+        "Total Node": 113
     },
     "operators/minuscolon_6_bit/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/minuscolon_6_bit/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2335,18 +2349,32 @@
         "test_name": "operators/twobits_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "twobits_arithmetic_power.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 5,
+        "logic element": 48,
+        "latch": 4,
+        "Adder": 0,
+        "Multiplier": 2,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 10,
+        "Average Path": 5,
+        "Estimated LUTs": 48,
+        "Total Node": 55
     },
     "operators/twobits_arithmetic_power/no_arch": {
         "test_name": "operators/twobits_arithmetic_power/no_arch",
         "input_blif": "twobits_arithmetic_power.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$pow' with matching ports was not found."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 5,
+        "logic element": 86,
+        "latch": 4,
+        "Longest Path": 17,
+        "Average Path": 5,
+        "Estimated LUTs": 86,
+        "Total Node": 91
     },
     "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm",
