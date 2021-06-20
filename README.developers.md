@@ -183,7 +183,7 @@ Python files are automatically checked using `pylint` to ensure they follow esta
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
 
-There are 4 main regression tests:
+There are 4 main regression testing suites:
 
 * `vtr_reg_basic`: ~1 minute serial
 
@@ -216,54 +216,33 @@ There are 4 main regression tests:
 
     QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
     Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+    
+* `vtr_reg_nightly_test#, #:1-3`:
 
-* `vtr_reg_nightly_test1`: ~4.5 hours with `-j8`
-
-    **Goal:** Basic QoR and Performance evaluation.
-
+    **Goal:** Basic QoR and Performance evaluation 
+  
     **Feature Coverage:** Medium
-
-    **Benchmarks:** Small-medium size, diverse. Includes:
-
-    * ISPD benchmarks
-    * MCNC20 benchmarks
-    * VTR benchmarks
-
+    
     **Architectures:** A wider variety of architectures
+    
+    **Benchmarks:** Small-medium size, diverse. All include: 
+    
+    * VTR benchmarks
+    * Additional benchmarks for each suite. 
 
-   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
+   QoR checks in these regression suites are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
    
-* `vtr_reg_nightly_test2`: ~6 hours with `-j8`
-
-    **Goal:** Basic QoR and Performance evaluation.
-
-    **Feature Coverage:** Medium
-
-    **Benchmarks:** Small-medium size, diverse. Includes:
-
-    * VTR benchmarks
-    * Titan 'other' benchmarks (smaller than Titan23)
-
-    **Architectures:** A wider variety of architectures
-
-   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
-   As a result any QoR failures are a concern and should be investigated and understood.
+   Note:
    
-* `vtr_reg_nightly_test3`: ~5.5 hours with `-j8`
-
-    **Goal:** Basic QoR and Performance evaluation.
-
-    **Feature Coverage:** Medium
-
-    **Benchmarks:** Small-medium size, diverse. Includes:
-    * VTR benchmarks
-
-    **Architectures:** A wider variety of architectures
-
-   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
-   As a result any QoR failures are a concern and should be investigated and understood.
-
+   These suites comproise a single large suite, `vtr_reg_nightly` and should be run together to test nightly level regression. They are mostly similar in benchmark coverage interms of size and diversity however each suite tests some unique benchmarks in addition to the VTR benchmarks.  
+    
+	| suite | wall-clock time| Additional benchmarks|
+	|-------|----------------|----------------------|
+	|vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
+	|vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
+	|vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
+	
 * `vtr_reg_weekly`: ~42 hours with `-j4`
 
     **Goal:** Full QoR and Performance evaluation.
