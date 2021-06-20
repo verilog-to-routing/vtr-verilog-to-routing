@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2009 Peter Andrew Jamieson (jamieson.peter@gmail.com)
- *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -22,15 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef __MODULO_H__
+#define __MODULO_H__
 
-#ifndef PARTIAL_MAP_H
-#define PARTIAL_MAP_H
+#include "odin_types.h"
 
-// PROTOTYPES
-void partial_map_top(netlist_t* netlist);
-void instantiate_add_w_carry(nnode_t* node, short mark, netlist_t* netlist);
-void instantiate_multi_port_mux(nnode_t* node, short mark, netlist_t* netlist);
-void instantiate_multi_bits_mux_2(nnode_t* node, short mark, netlist_t* /*netlist*/);
-void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* /*netlist*/);
+extern void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
-#endif
+#endif //__MODULO_H__

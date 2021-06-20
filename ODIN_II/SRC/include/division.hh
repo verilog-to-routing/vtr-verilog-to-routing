@@ -25,8 +25,6 @@
 
 #include "odin_types.h"
 
-extern signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist);
-extern signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals, netlist_t* netlist);
-extern void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
-#endif
+#endif //__DIVISION_H__

@@ -58,6 +58,8 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b);
 void split_multiplier_b(nnode_t* node, int a, int b1, int b0);
 void pad_multiplier(nnode_t* node, netlist_t* netlist);
 void split_soft_multiplier(nnode_t* node, netlist_t* netlist);
+static mult_port_stat_e is_constant_multipication(nnode_t* node, netlist_t* netlist);
+static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e port_status, short mark, netlist_t* netlist);
 
 // data structure representing a row of bits an adder tree
 struct AdderTreeRow {
@@ -248,7 +250,7 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
  * 
  * @return output signal
  * -------------------------------------------------------------------------*/
-signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e port_status, short mark, netlist_t* netlist) {
+static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e port_status, short mark, netlist_t* netlist) {
     /* validate the port sizes */
     oassert(node->num_input_port_sizes == 2);
     oassert(node->num_output_port_sizes == 1);
@@ -1608,6 +1610,35 @@ mult_port_stat_e is_constant_multipication(nnode_t* node, netlist_t* netlist) {
         is_const = mult_port_stat_e::NOT_CONSTANT;
 
     return (is_const);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: check_constant_multipication )
+ * 
+ * @brief checking for constant multipication. If one port is constant,
+ * the multipication node will explode into multiple adders 
+ * 
+ * @param node pointing to the mul node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /* to calculate return value */
+    mult_port_stat_e is_const;
+
+    /* checking multipication ports to specify whether it is constant or not */
+    if ((is_const = is_constant_multipication(node, netlist)) != mult_port_stat_e::NOT_CONSTANT) {
+        /* implementation of constant multipication which is actually cascading adders */
+        signal_list_t* output_signals = implement_constant_multipication(node, is_const, static_cast<short>(traverse_mark_number), netlist);
+
+        /* connecting the output pins */
+        connect_constant_mult_outputs(node, output_signals);
+    }
+
+    return (is_const != mult_port_stat_e::NOT_CONSTANT);
 }
 
 bool is_ast_multiplier(ast_node_t* node) {

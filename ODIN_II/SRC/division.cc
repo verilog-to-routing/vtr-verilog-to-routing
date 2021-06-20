@@ -29,7 +29,59 @@
 
 static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signal_list_t* output_signal_list);
 static signal_list_t* CR_output_signal_init ();
+static signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist);
+static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals, netlist_t* netlist);
+static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist);
 
+/**
+ * (function: resolve_divide_node)
+ * 
+ * @brief resolving divide node
+ * 
+ * @param node pointing to a div node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /**
+     * Div Ports:
+     * IN1: Dividend (m bits) 
+     * IN2: Divisor  (n bits) 
+     * OUT: Quotient (k bits)
+    */
+    int divisor_width = node->input_port_sizes[1];
+
+    /** 
+     * checking the division restrictions 
+     * 
+     * 1. m == 2*n - 1
+     * 2. divisor MSB == 1 (left)
+     * 3. n == k
+    */
+    /**
+     * modify div input signals to provide compatibility 
+     * with the first and third restrictions.
+     * [0]: Modified Dividend
+     * [1]: Modified Divisor
+     */
+    signal_list_t** modified_input_signals = modify_div_signal_sizes(node, netlist);
+    /* keep the record of the extesnsion size for divisor for future transformation */
+    int new_divisor_width = modified_input_signals[1]->count; // modified_input_signals[1] == new divisor signals
+
+    /* validate new sizes */
+    oassert(divisor_width == new_divisor_width);
+
+    /* implementation of the divison circuitry using cellular architecture */
+    signal_list_t** div_output_lists = implement_division(node, modified_input_signals, netlist);
+
+    /* remap the div output pin to calculated nodes */
+    connect_div_output_pins(node, div_output_lists, traverse_mark_number, netlist);
+
+    // CLEAN UP
+    free_nnode(node);
+}
 
 /**
  * (function: modify_div_signal_sizes)
@@ -43,7 +95,7 @@ static signal_list_t* CR_output_signal_init ();
  * 
  * @return modified signal lists [0]: dividend [1]: divisor
  */
-signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist) {
+static signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist) {
     int i;
 
     int dividend_width = node->input_port_sizes[0];
@@ -98,7 +150,7 @@ signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist) {
  * 
  * @return two signal lists -> [0]: quotient pins [1]: remainder pins
  */
-signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals, netlist_t* netlist) {
+static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals, netlist_t* netlist) {
     /* to be returned signal lists */
     signal_list_t* quotient_signal_list = init_signal_list();
     signal_list_t* remainder_signal_list = init_signal_list();
@@ -332,7 +384,7 @@ signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals,
  * @param output_signals calculated output signals of the div node
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  */
-void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(output_signals);
     
     int i;

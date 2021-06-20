@@ -1864,9 +1864,10 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         case (ADD): //fallthrough
         case (PMUX): //fallthrough
         case (MINUS): //fallthrough
+        case (MULTIPLY): //fallthrough
+        case (POWER): //fallthrough
         case (MODULO): //fallthrough
         case (DIVIDE): //fallthrough
-        case (MULTIPLY): //fallthrough
         case (DLATCH): //fallthrough
         case (ADLATCH): //fallthrough
         case (ADFF): //fallthrough

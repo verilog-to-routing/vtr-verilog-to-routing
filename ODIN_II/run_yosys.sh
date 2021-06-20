@@ -64,11 +64,11 @@ function print_test_stat() {
     START_TIME="$2"
 
     if [ _${STAT} == "_E" ]; then
-        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . _VERILOG/${TASK_NAME}/${TCL_BLIF_NAME}"
+        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . _VERILOG/${TASK_DIR}/${TCL_BLIF_NAME}"
     elif [ _${STAT} == "_C" ]; then
-        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . _VERILOG/${TASK_NAME}/${TCL_BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
+        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . _VERILOG/${TASK_DIR}/${TCL_BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
     elif [ _${STAT} == "_F" ]; then
-        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}_VERILOG/${TASK_NAME}/${TCL_BLIF_NAME}"
+        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}_VERILOG/${TASK_DIR}/${TCL_BLIF_NAME}"
     fi
 }
 
