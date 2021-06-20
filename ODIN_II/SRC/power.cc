@@ -28,7 +28,6 @@
 #include "multipliers.h"
 #include "vtr_memory.h"
 
-
 /**
  *-------------------------------------------------------------------------------------------
  * (function: resolve_power_node )
@@ -131,15 +130,15 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
             /* mul input pins */
             add_input_pin_to_node(mul_nodes[i - 2], copy_input_npin(internal_outputs[i - 1]->pins[j]), j);
             add_input_pin_to_node(mul_nodes[i - 2], copy_input_npin(internal_outputs[1]->pins[j]), OUT_width + j);
-            
+
             /* mul output */
             // specify not gate output pin
             npin_t* new_pin1 = allocate_npin();
             npin_t* new_pin2 = allocate_npin();
             nnet_t* new_net = allocate_nnet();
-            new_net->name = make_full_ref_name(NULL, NULL, NULL, mul_nodes[i-2]->name, j);
+            new_net->name = make_full_ref_name(NULL, NULL, NULL, mul_nodes[i - 2]->name, j);
             /* hook the output pin into the node */
-            add_output_pin_to_node(mul_nodes[i-2], new_pin1, j);
+            add_output_pin_to_node(mul_nodes[i - 2], new_pin1, j);
             /* hook up new pin 1 into the new net */
             add_driver_pin_to_net(new_net, new_pin1);
             /* hook up the new pin 2 to this new net */
@@ -156,7 +155,6 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     multiport_mux->traverse_visited = traverse_mark_number;
     multiport_mux->name = node_name(multiport_mux, node->name);
 
-    
     /* add selector port */
     add_input_port_information(multiport_mux, EXPO_width);
     allocate_more_input_pins(multiport_mux, EXPO_width);
@@ -190,7 +188,7 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     for (i = 0; i < OUT_width; i++) {
         remap_pin_to_new_node(node->output_pins[i], multiport_mux, i);
     }
-    
+
     // CLEAN UP
     for (i = 0; i < pow_two_by_EXPO_width; i++) {
         free_signal_list(internal_outputs[i]);

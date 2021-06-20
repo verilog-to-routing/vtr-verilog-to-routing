@@ -27,7 +27,8 @@
 #include "parse_making_ast.h"
 #include "netlist_create_from_ast.h"
 
-VerilogReader::VerilogReader(): GenericReader() {}
+VerilogReader::VerilogReader()
+    : GenericReader() {}
 
 VerilogReader::~VerilogReader() = default;
 

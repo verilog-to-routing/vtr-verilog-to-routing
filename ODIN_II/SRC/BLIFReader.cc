@@ -45,8 +45,6 @@
 
 #include "BLIF.hh"
 
-
-
 int line_count;
 int num_lines;
 bool skip_reading_bit_map;
@@ -56,13 +54,11 @@ FILE* file;
 netlist_t* blif_netlist;
 Hashtable* output_nets_hash;
 
-
 /**
  * -----------------------------------------------------------------------------------------------------------------------------
  * ---------------------------------------------------------- Reader -----------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------------------------------
 */
-
 
 BLIF::Reader::Reader() {
     insert_global_clock = true;
@@ -72,7 +68,7 @@ BLIF::Reader::Reader() {
     my_location.col = -1;
 
     blif_netlist = allocate_netlist();
-    
+
     skip_reading_bit_map = false;
     /*Opening the blif file */
     file = vtr::fopen(configuration.list_of_file_names[my_location.file].c_str(), "r");
@@ -88,7 +84,6 @@ BLIF::Reader::Reader() {
 BLIF::Reader::~Reader() {
     delete output_nets_hash;
 }
-
 
 void* BLIF::Reader::__read() {
     printf("Reading top level module\n");
@@ -132,8 +127,6 @@ void* BLIF::Reader::__read() {
     return static_cast<void*>(blif_netlist);
 }
 
-
-
 /**
  * #############################################################################################################################
  * #################################################### PROTECTED METHODS ######################################################
@@ -146,7 +139,7 @@ void* BLIF::Reader::__read() {
  * Parses the given line from the blif file. Returns true if there are more lines
  * to read.
  *-------------------------------------------------------------------------------------------*/
- int BLIF::Reader::read_tokens(char* buffer, hard_block_models* models) {
+int BLIF::Reader::read_tokens(char* buffer, hard_block_models* models) {
     /* Figures out which, if any token is at the start of this line and *
      * takes the appropriate action.                                    */
     char* token = vtr::strtok(buffer, TOKENS, file, buffer);
@@ -210,7 +203,7 @@ void BLIF::Reader::find_top_module() {
     }
 
     if (!found) {
-        warning_message(PARSE_BLIF, unknown_location, 
+        warning_message(PARSE_BLIF, unknown_location,
                         "%s", "The top module name has not been specifed in the BLIF file, automatically considered as 'top'.\n");
 
         blif_netlist->identifier = vtr::strdup("top");
@@ -228,7 +221,7 @@ void BLIF::Reader::find_top_module() {
  * 
  * @brief find the output nets and add the corresponding nets
  *-------------------------------------------------------------------------------------------*/
- void BLIF::Reader::hook_up_nets() {
+void BLIF::Reader::hook_up_nets() {
     nnode_t** node_sets[] = {blif_netlist->internal_nodes, blif_netlist->ff_nodes, blif_netlist->top_output_nodes};
     int counts[] = {blif_netlist->num_internal_nodes, blif_netlist->num_ff_nodes, blif_netlist->num_top_output_nodes};
     int num_sets = 3;
@@ -253,7 +246,7 @@ void BLIF::Reader::find_top_module() {
  * 
  * @param node represents one of netlist internal nodes or ff nodes or top output nodes
  * ---------------------------------------------------------------------------------------------*/
- void BLIF::Reader::hook_up_node(nnode_t* node) {
+void BLIF::Reader::hook_up_node(nnode_t* node) {
     int j;
     for (j = 0; j < node->num_input_pins; j++) {
         npin_t* input_pin = node->input_pins[j];
@@ -331,13 +324,13 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     hard_block_sensitivities(subcircuit_name, new_node);
 
     // Determine the type of hard block.
-    char subcircuit_name_prefix [6];
+    char subcircuit_name_prefix[6];
     memcpy(subcircuit_name_prefix, subcircuit_name, 5);
     subcircuit_name_prefix[5] = '\0';
 
     if (configuration.coarsen) {
         new_node->type = yosys_subckt_str[subcircuit_name];
-        
+
         if (new_node->type == BRAM) {
             new_node->type = (new_node->attributes->RD_ACCESS && new_node->attributes->WR_ACCESS)    ? BRAM
                              : (new_node->attributes->RD_ACCESS && !new_node->attributes->WR_ACCESS) ? ROM
@@ -349,7 +342,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         else if (odin_subckt_str[subcircuit_name_prefix] != NO_OP)
             new_node->type = odin_subckt_str[subcircuit_name_prefix];
     }
-    
+
     // Look up the model in the models cache.
     hard_block_model* model = NULL;
     if ((subcircuit_name != NULL) && (!(model = get_hard_block_model(subcircuit_name, ports, models)))) {
@@ -358,7 +351,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         // Add it to the cache.
         add_hard_block_model(model, ports, models);
     }
-    
+
     /* Add input and output ports to the new node. */
     {
         hard_block_ports* p;
@@ -401,7 +394,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         if (!name) error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", model->outputs->names[i]);
 
         npin_t* new_pin = allocate_npin();
-        new_pin->name = NULL;//vtr::strdup(name);
+        new_pin->name = NULL; //vtr::strdup(name);
         new_pin->type = OUTPUT;
         new_pin->mapping = get_hard_block_port_name(mapping);
 
@@ -618,7 +611,7 @@ void BLIF::Reader::build_top_input_node(const char* name_str) {
 
     output_nets_hash->add(temp_string, new_net);
     vtr::free(temp_string);
-} 
+}
 
 /**
  * (function: add_top_input_nodes)
@@ -688,7 +681,6 @@ void BLIF::Reader::rb_create_top_output_nodes() {
         vtr::free(temp_string);
     }
 }
-
 
 /**
  *---------------------------------------------------------------------------------------------
@@ -914,7 +906,6 @@ void BLIF::Reader::rb_create_top_driver_nets(const char* instance_name_prefix) {
     blif_netlist->pad_node->name = vtr::strdup(HBPAD_NAME);
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: look_for_clocks)
@@ -982,7 +973,6 @@ operation_list BLIF::Reader::assign_node_type_from_node_name(char* output_name) 
     return result;
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * function: read_bit_map_find_unknown_gate
@@ -990,10 +980,9 @@ operation_list BLIF::Reader::assign_node_type_from_node_name(char* output_name) 
  * ---------------------------------------------------------------------------------------------
  */
 operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nnode_t* node) {
-    
     if (configuration.coarsen)
-        return BUF_NODE;    
-    
+        return BUF_NODE;
+
     operation_list to_return = operation_list_END;
 
     fpos_t pos;
@@ -1239,7 +1228,6 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
     return to_return;
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * function:create_latch_node_and_driver
@@ -1259,7 +1247,7 @@ void BLIF::Reader::create_latch_node_and_driver() {
         input_token_count += 1;
         names = (char**)vtr::realloc(names, (sizeof(char*)) * (input_token_count));
 
-        names[input_token_count - 1] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier ,ptr);
+        names[input_token_count - 1] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
     }
 
     /* assigning the new_node */
@@ -1342,7 +1330,6 @@ void BLIF::Reader::create_latch_node_and_driver() {
     vtr::free(ptr);
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * function: search_clock_name
@@ -1414,7 +1401,6 @@ char* BLIF::Reader::search_clock_name() {
     return to_return;
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * Gets the text in the given string which occurs
@@ -1432,7 +1418,6 @@ char* BLIF::Reader::get_hard_block_port_name(char* name) {
     else
         return name;
 }
-
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -1462,7 +1447,6 @@ long BLIF::Reader::get_hard_block_pin_number(char* original_name) {
     return pin_number;
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * Callback function for qsort which compares pin names
@@ -1490,7 +1474,6 @@ int BLIF::Reader::compare_hard_block_pin_names(const void* p1, const void* p2) {
         return portname_difference;
     }
 }
-
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -1535,7 +1518,6 @@ hard_block_ports* BLIF::Reader::get_hard_block_ports(char** pins, int count) {
     return ports;
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * Creates a hashtable index for an array of strings of
@@ -1552,7 +1534,6 @@ Hashtable* BLIF::Reader::index_names(char** names, int count) {
     return index;
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * Create an associative index of names1[i]=>names2[i]
@@ -1565,7 +1546,6 @@ Hashtable* BLIF::Reader::associate_names(char** names1, char** names2, int count
 
     return index;
 }
-
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -1589,7 +1569,6 @@ hard_block_model* BLIF::Reader::get_hard_block_model(char* name, hard_block_port
 
     return to_return;
 }
-
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -1617,7 +1596,6 @@ void BLIF::Reader::add_hard_block_model(hard_block_model* m, hard_block_ports* p
     }
 }
 
-
 /**
  * ---------------------------------------------------------------------------------------------
  * Generates string which represents the geometry of the given hard block ports.
@@ -1637,7 +1615,6 @@ char* BLIF::Reader::generate_hard_block_ports_signature(hard_block_ports* ports)
     }
     return vtr::strdup(buffer);
 }
-
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -1670,7 +1647,6 @@ int BLIF::Reader::count_blif_lines() {
     rewind(file);
     return local_num_lines;
 }
-
 
 /**
  * ---------------------------------------------------------------------------------------------
@@ -1739,8 +1715,6 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
     vtr::free(p);
 }
 
-
-
 /**
  * #############################################################################################################################
  * ##################################################### PRIVATE METHODS #######################################################
@@ -1760,77 +1734,77 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
 char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_prefix, const char* name_str) {
     char* return_string = NULL;
 
-        char* name = NULL;
-        char* index = NULL;
-        char* first_part = NULL;
-        char* second_part = NULL;
-        const char* pos = strchr(name_str, '[');
-        while (pos) {
-           const char* pre_pos = pos;
-            pos = strchr(pos+1, '[');
-            if (!pos) {
-                pos = pre_pos;
-                break;
-            }
+    char* name = NULL;
+    char* index = NULL;
+    char* first_part = NULL;
+    char* second_part = NULL;
+    const char* pos = strchr(name_str, '[');
+    while (pos) {
+        const char* pre_pos = pos;
+        pos = strchr(pos + 1, '[');
+        if (!pos) {
+            pos = pre_pos;
+            break;
         }
+    }
 
-        if (pos) {
-            name = (char*)vtr::malloc((pos - name_str + 1) * sizeof(char));
-            memcpy(name, name_str, pos - name_str);
-            name[pos - name_str] = '\0';
+    if (pos) {
+        name = (char*)vtr::malloc((pos - name_str + 1) * sizeof(char));
+        memcpy(name, name_str, pos - name_str);
+        name[pos - name_str] = '\0';
 
-            const char* pos2 = strchr(pos, ']');
-            if (pos2) {
-                index = (char*)vtr::malloc((pos2 - (pos + 1) + 1) * sizeof(char));
-                memcpy(index, pos + 1, pos2 - (pos + 1));
-                index[pos2 - (pos + 1)] = '\0';
+        const char* pos2 = strchr(pos, ']');
+        if (pos2) {
+            index = (char*)vtr::malloc((pos2 - (pos + 1) + 1) * sizeof(char));
+            memcpy(index, pos + 1, pos2 - (pos + 1));
+            index[pos2 - (pos + 1)] = '\0';
 
-                const char* end = strchr(pos, '\0');
-                if (end) {
-                    second_part = (char*)vtr::malloc((end - (pos2 + 1) + 1) * sizeof(char));
-                    memcpy(second_part, pos2 + 1, end - (pos2 + 1));
-                    second_part[end - (pos2 + 1)] = '\0';
-                } else {
-                    error_message(PARSE_BLIF, my_location, "Invalid pin name (%s)\n", name_str);
-                }
-            }
-        }
-
-        if (name && configuration.coarsen) {
-            oassert(index && "Invalid signal indexing!\n");
-            int idx = vtr::atoi(index);
-            if (name_prefix)
-                first_part = make_full_ref_name(name_prefix, NULL, NULL, name, idx);
-            else 
-                first_part = make_full_ref_name(NULL, NULL, NULL, name, idx);
-                
-            return_string = vtr::strdup((std::string(first_part)+std::string(second_part)).c_str());
-        } else {
-            if (!strcmp(name_str, "$true")) {
-                return_string =  make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
-
-            } else if (!strcmp(name_str, "$false")) {
-                return_string =  make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
-
-            } else if (!strcmp(name_str, "$undef")) {
-                return_string =  make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
-
+            const char* end = strchr(pos, '\0');
+            if (end) {
+                second_part = (char*)vtr::malloc((end - (pos2 + 1) + 1) * sizeof(char));
+                memcpy(second_part, pos2 + 1, end - (pos2 + 1));
+                second_part[end - (pos2 + 1)] = '\0';
             } else {
-                if (name_prefix && configuration.coarsen && strcmp(name_str, DEFAULT_CLOCK_NAME))
-                    return_string = make_full_ref_name(name_prefix, NULL, NULL, name_str, -1);
-                else 
-                    return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
+                error_message(PARSE_BLIF, my_location, "Invalid pin name (%s)\n", name_str);
             }
         }
+    }
 
-        if (name)
-            vtr::free(name);
-        if (index)
-            vtr::free(index);
-        if (first_part)
-            vtr::free(first_part);
-        if (second_part)
-            vtr::free(second_part);
+    if (name && configuration.coarsen) {
+        oassert(index && "Invalid signal indexing!\n");
+        int idx = vtr::atoi(index);
+        if (name_prefix)
+            first_part = make_full_ref_name(name_prefix, NULL, NULL, name, idx);
+        else
+            first_part = make_full_ref_name(NULL, NULL, NULL, name, idx);
+
+        return_string = vtr::strdup((std::string(first_part) + std::string(second_part)).c_str());
+    } else {
+        if (!strcmp(name_str, "$true")) {
+            return_string = make_full_ref_name(VCC_NAME, NULL, NULL, NULL, -1);
+
+        } else if (!strcmp(name_str, "$false")) {
+            return_string = make_full_ref_name(GND_NAME, NULL, NULL, NULL, -1);
+
+        } else if (!strcmp(name_str, "$undef")) {
+            return_string = make_full_ref_name(HBPAD_NAME, NULL, NULL, NULL, -1);
+
+        } else {
+            if (name_prefix && configuration.coarsen && strcmp(name_str, DEFAULT_CLOCK_NAME))
+                return_string = make_full_ref_name(name_prefix, NULL, NULL, name_str, -1);
+            else
+                return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
+        }
+    }
+
+    if (name)
+        vtr::free(name);
+    if (index)
+        vtr::free(index);
+    if (first_part)
+        vtr::free(first_part);
+    if (second_part)
+        vtr::free(second_part);
 
     return return_string;
 }
@@ -1846,64 +1820,63 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  * @param ports list of a hard block ports
  * -------------------------------------------------------------------------------------------
  */
- hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operation_list type, hard_block_ports* ports) {
+hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operation_list type, hard_block_ports* ports) {
     oassert(ports);
 
-    
     hard_block_model* model = NULL;
-    
+
     switch (type) {
-        case (LT): //fallthrough
-        case (GT): //fallthrough
-        case (LTE): //fallthrough
-        case (GTE): //fallthrough
-        case (SL): //fallthrough
-        case (SR): //fallthrough
-        case (ASL): //fallthrough
-        case (ASR): //fallthrough
-        case (ADD): //fallthrough
-        case (PMUX): //fallthrough
-        case (MINUS): //fallthrough
-        case (MULTIPLY): //fallthrough
-        case (POWER): //fallthrough
-        case (MODULO): //fallthrough
-        case (DIVIDE): //fallthrough
-        case (DLATCH): //fallthrough
-        case (ADLATCH): //fallthrough
-        case (ADFF): //fallthrough
-        case (DFFE): //fallthrough
-        case (ADFFE): //fallthrough
-        case (FF_NODE): //fallthrough
-        case (BITWISE_OR): //fallthrough
-        case (BITWISE_NOT): //fallthrough
-        case (BITWISE_AND): //fallthrough
-        case (LOGICAL_OR): //fallthrough
-        case (LOGICAL_XOR): //fallthrough
-        case (LOGICAL_AND): //fallthrough
-        case (LOGICAL_NOT): //fallthrough
-        case (LOGICAL_XNOR): //fallthrough
-        case (LOGICAL_EQUAL): //fallthrough
-        case (NOT_EQUAL): //fallthrough
-        case (CASE_EQUAL): //fallthrough
+        case (LT):             //fallthrough
+        case (GT):             //fallthrough
+        case (LTE):            //fallthrough
+        case (GTE):            //fallthrough
+        case (SL):             //fallthrough
+        case (SR):             //fallthrough
+        case (ASL):            //fallthrough
+        case (ASR):            //fallthrough
+        case (ADD):            //fallthrough
+        case (PMUX):           //fallthrough
+        case (MINUS):          //fallthrough
+        case (MULTIPLY):       //fallthrough
+        case (POWER):          //fallthrough
+        case (MODULO):         //fallthrough
+        case (DIVIDE):         //fallthrough
+        case (DLATCH):         //fallthrough
+        case (ADLATCH):        //fallthrough
+        case (ADFF):           //fallthrough
+        case (DFFE):           //fallthrough
+        case (ADFFE):          //fallthrough
+        case (FF_NODE):        //fallthrough
+        case (BITWISE_OR):     //fallthrough
+        case (BITWISE_NOT):    //fallthrough
+        case (BITWISE_AND):    //fallthrough
+        case (LOGICAL_OR):     //fallthrough
+        case (LOGICAL_XOR):    //fallthrough
+        case (LOGICAL_AND):    //fallthrough
+        case (LOGICAL_NOT):    //fallthrough
+        case (LOGICAL_XNOR):   //fallthrough
+        case (LOGICAL_EQUAL):  //fallthrough
+        case (NOT_EQUAL):      //fallthrough
+        case (CASE_EQUAL):     //fallthrough
         case (CASE_NOT_EQUAL): //fallthrough
         case (MULTIPORT_nBIT_MUX): {
             // create a model with single output port, being read as the port [n-1] among [0...n-1]
-            model = create_model(name, ports, ports->count-1, ports->count);
+            model = create_model(name, ports, ports->count - 1, ports->count);
             break;
         }
         case (SPRAM): //fallthrough
-        case (ROM): //fallthrough
-        case (SDFF): //fallthrough
+        case (ROM):   //fallthrough
+        case (SDFF):  //fallthrough
         case (SDFFE): //fallthrough
         case (DFFSR): //fallthrough
         case (DFFSRE): {
             // create a model with single output port, being read as the port [n-2] among [0...n-1]
-            model = create_model(name, ports, ports->count-2, ports->count-1);
+            model = create_model(name, ports, ports->count - 2, ports->count - 1);
             break;
         }
         case (DPRAM): {
             // create a model with two output ports,being read as the port [n-4, n-3] among [0...n-1]
-            model = create_model(name, ports, ports->count-4, ports->count-2);
+            model = create_model(name, ports, ports->count - 4, ports->count - 2);
             break;
         }
         case (BRAM): {
@@ -1932,7 +1905,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  * @param output_idx_END showing the end idx of output ports (outputs exluding the END idx)
  * -------------------------------------------------------------------------------------------
  */
- hard_block_model* BLIF::Reader::create_model(const char* name, hard_block_ports* ports, int output_idx_START, int output_idx_END) {
+hard_block_model* BLIF::Reader::create_model(const char* name, hard_block_ports* ports, int output_idx_START, int output_idx_END) {
     int i, j;
     char* pin_name;
     hard_block_model* model = NULL;
@@ -1955,13 +1928,13 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                 sprintf(pin_name, "%s[%d]", ports->names[i], j);
 
             /* model input ports */
-            if (i < output_idx_START || i >= output_idx_END ) {
+            if (i < output_idx_START || i >= output_idx_END) {
                 inputs->names = (char**)vtr::realloc(inputs->names, (inputs->count + 1) * sizeof(char*));
 
                 inputs->names[inputs->count] = vtr::strdup(pin_name);
                 inputs->count++;
 
-            /* model single output port */
+                /* model single output port */
             } else {
                 outputs->names = (char**)vtr::realloc(outputs->names, (outputs->count + 1) * sizeof(char*));
 
@@ -1990,7 +1963,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  * @param new_node pointer to the netlist node
  * -------------------------------------------------------------------------------------------
  */
- void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* new_node) {
+void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* new_node) {
     // Store the current position in the file.
     fpos_t pos;
     int last_line = my_location.line;
@@ -2004,7 +1977,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             ptr = vtr::strtok(buffer, TOKENS, file, buffer);
-            
+
             if (!strcmp(ptr, ".param")) {
                 ptr = vtr::strtok(NULL, TOKENS, file, buffer);
                 if (!strcmp(ptr, "SRST_VALUE")) {
@@ -2062,7 +2035,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                             attributes->enable_polarity = ACTIVE_HIGH_SENSITIVITY;
                         else if (sensitivity == 0)
                             attributes->enable_polarity = ACTIVE_LOW_SENSITIVITY;
-                    
+
                     } else if (!strcmp(ptr, "ARST_POLARITY")) {
                         if (sensitivity == 1)
                             attributes->areset_polarity = ACTIVE_HIGH_SENSITIVITY;
@@ -2110,9 +2083,7 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
                             attributes->WR_ACCESS = true;
                         else if (sensitivity == 0)
                             attributes->WR_ACCESS = false;
-
                     }
-                    
                 }
             } else if (!strcmp(ptr, ".end")) {
                 break;
@@ -2122,8 +2093,8 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
 
     // Restore the original position in the file.
     my_location.line = last_line;
-    fsetpos(file, &pos);     
- }
+    fsetpos(file, &pos);
+}
 
 /**
  *---------------------------------------------------------------------------------------------
@@ -2134,31 +2105,31 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
  * @param type node type
  * -------------------------------------------------------------------------------------------
  */
- bool BLIF::Reader::need_params(operation_list type) {
-     bool return_value = false;
-     switch (type) {
-         case (SL): //fallthrough
-         case (SR): //fallthrough
-         case (ASL): //fallthrough
-         case (ASR): //fallthrough
-         case (DLATCH): //fallthrough
-         case (ADLATCH): //fallthrough
-         case (ADFF): //fallthrough
-         case (SDFF): //fallthrough
-         case (DFFE): //fallthrough
-         case (ADFFE): //fallthrough
-         case (SDFFE): //fallthrough
-         case (DFFSR): //fallthrough
-         case (DFFSRE): //fallthrough
-         case (BRAM): //fallthrough
-         case (ROM): //fallthrough
-         case (FF_NODE):  {
-             return_value = true;
-             break;
-         }
-         default:
+bool BLIF::Reader::need_params(operation_list type) {
+    bool return_value = false;
+    switch (type) {
+        case (SL):      //fallthrough
+        case (SR):      //fallthrough
+        case (ASL):     //fallthrough
+        case (ASR):     //fallthrough
+        case (DLATCH):  //fallthrough
+        case (ADLATCH): //fallthrough
+        case (ADFF):    //fallthrough
+        case (SDFF):    //fallthrough
+        case (DFFE):    //fallthrough
+        case (ADFFE):   //fallthrough
+        case (SDFFE):   //fallthrough
+        case (DFFSR):   //fallthrough
+        case (DFFSRE):  //fallthrough
+        case (BRAM):    //fallthrough
+        case (ROM):     //fallthrough
+        case (FF_NODE): {
+            return_value = true;
             break;
-     }
+        }
+        default:
+            break;
+    }
 
     return return_value;
- }
+}

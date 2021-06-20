@@ -21,25 +21,25 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #include "GenericWriter.hh"
 #include "VerilogReader.hh"
 #include "BLIF.hh"
 #include "config_t.h"
 #include "odin_ii.h"
 
-GenericWriter::GenericWriter(): GenericIO() {
+GenericWriter::GenericWriter()
+    : GenericIO() {
     this->output_file = NULL;
     this->blif_writer = NULL;
 }
 
-GenericWriter::~GenericWriter() {            
+GenericWriter::~GenericWriter() {
     if (this->output_file)
         fclose(this->output_file);
 }
 
-inline void GenericWriter::__write(const netlist_t* netlist) { 
-    switch(configuration.output_file_type) {
+inline void GenericWriter::__write(const netlist_t* netlist) {
+    switch (configuration.output_file_type) {
         case (file_type_e::_BLIF): {
             this->_write_blif(netlist);
             break;
@@ -58,8 +58,8 @@ inline void GenericWriter::__write(const netlist_t* netlist) {
                 this->write_systemverilog();
                 break;
             }
-         */ 
-        default : {
+         */
+        default: {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file format! Should have specified in command line arguments\n");
             exit(ERROR_INITIALIZATION);
         }
@@ -69,13 +69,13 @@ inline void GenericWriter::__write(const netlist_t* netlist) {
 inline void GenericWriter::_write_blif(const netlist_t* netlist) {
     oassert(this->blif_writer);
     this->blif_writer->__write(netlist);
-    
+
     if (this->blif_writer)
         delete this->blif_writer;
 }
 
 inline void GenericWriter::__create_file(const file_type_e file_type) {
-    switch(file_type) {
+    switch (file_type) {
         case (file_type_e::_BLIF): {
             if (!this->blif_writer) {
                 this->blif_writer = new BLIF::Writer();
@@ -100,8 +100,8 @@ inline void GenericWriter::__create_file(const file_type_e file_type) {
                 this->sverilog_writer->__create_file();
                 break;
             }
-         */ 
-        default : {
+         */
+        default: {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown or invalid output file format!\n");
             exit(ERROR_INITIALIZATION);
         }

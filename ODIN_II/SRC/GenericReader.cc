@@ -21,14 +21,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #include "GenericReader.hh"
 #include "VerilogReader.hh"
 #include "BLIF.hh"
 #include "config_t.h"
 #include "odin_ii.h"
 
-GenericReader::GenericReader(): GenericIO() {
+GenericReader::GenericReader()
+    : GenericIO() {
     this->verilog_reader = NULL;
     this->blif_reader = NULL;
 }
@@ -37,8 +37,8 @@ GenericReader::~GenericReader() = default;
 
 inline void* GenericReader::__read() {
     void* netlist = NULL;
-    
-    switch(configuration.input_file_type) {
+
+    switch (configuration.input_file_type) {
         case (file_type_e::_VERILOG): {
             netlist = this->_read_verilog();
             break;
@@ -57,14 +57,14 @@ inline void* GenericReader::__read() {
                 this->read_systemverilog();
                 break;
             }
-         */ 
-        default : {
+         */
+        default: {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file format! Should have specified in command line arguments\n");
             exit(ERROR_PARSE_ARGS);
         }
     }
 
-    return static_cast<void*>(netlist);   
+    return static_cast<void*>(netlist);
 }
 
 inline void* GenericReader::_read_verilog() {
@@ -73,7 +73,7 @@ inline void* GenericReader::_read_verilog() {
 
     if (this->verilog_reader)
         delete this->verilog_reader;
-    
+
     return to_return;
 }
 

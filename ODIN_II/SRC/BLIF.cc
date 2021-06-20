@@ -51,7 +51,6 @@
 #include "VerilogReader.hh"
 #include "BLIF.hh"
 
-
 /**
  * @brief Construct the BLIF object
  * required by compiler

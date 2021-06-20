@@ -222,11 +222,11 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_case_equal_nodes(node, traverse_number, netlist);
             break;
         }
-        case ADD: //fallthrough
-        case MINUS: //fallthorugh
+        case ADD:      //fallthrough
+        case MINUS:    //fallthorugh
         case MULTIPLY: //fallthrough
-        case POWER: //fallthrough
-        case MODULO: //fallthrough
+        case POWER:    //fallthrough
+        case MODULO:   //fallthrough
         case DIVIDE: {
             /**
              * resolving the arithmetic node by
@@ -243,12 +243,12 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case FF_NODE: //fallthrough
-        case ADFF: //fallthrough
-        case SDFF: //fallthrough
-        case DFFE: //fallthrough
-        case ADFFE: //fallthrough
-        case SDFFE: //fallthrough
-        case DFFSR: //fallthrough
+        case ADFF:    //fallthrough
+        case SDFF:    //fallthrough
+        case DFFE:    //fallthrough
+        case ADFFE:   //fallthrough
+        case SDFFE:   //fallthrough
+        case DFFSR:   //fallthrough
         case DFFSRE: {
             /**
              * resolving flip flop nodes 
@@ -256,10 +256,10 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_ff_nodes(node, traverse_number, netlist);
             break;
         }
-        case PMUX: //fallthrough
-        case MUX_2: //fallthrough
-        case MULTI_PORT_MUX: //fallthrough
-        case MULTI_BIT_MUX_2://fallthorugh
+        case PMUX:            //fallthrough
+        case MUX_2:           //fallthrough
+        case MULTI_PORT_MUX:  //fallthrough
+        case MULTI_BIT_MUX_2: //fallthorugh
         case MULTIPORT_nBIT_MUX: {
             /**
              * resolving multiplexer nodes which
@@ -267,10 +267,10 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_mux_nodes(node, traverse_number, netlist);
             break;
         }
-        case SPRAM:  //fallthrough
-        case DPRAM:  //fallthrough
-        case ROM:  //fallthrough
-        case BRAM: //fallthrough
+        case SPRAM: //fallthrough
+        case DPRAM: //fallthrough
+        case ROM:   //fallthrough
+        case BRAM:  //fallthrough
         case MEMORY: {
             /**
              * resolving memory nodes based on the given architecture
@@ -753,7 +753,6 @@ static void resolve_memory_nodes(nnode_t* node, uintptr_t traverse_mark_number, 
     }
 }
 
-
 /*******************************************************************************************************
  ********************************************** [UTILS] ************************************************
  *******************************************************************************************************/
@@ -761,9 +760,9 @@ static void resolve_memory_nodes(nnode_t* node, uintptr_t traverse_mark_number, 
  * (function: look_for_clocks)
  * 
  * @brief going through all FF nodes looking for the clock signals.
- * If they are not clock type, they should alter to one. Since BUF
- * nodes be removed in the partial mapping, the driver of the BUF
- * nodes should be considered as a clock node. 
+ * If they are not clock type, they should be altered to a clock node. 
+ * Since BUF nodes be removed in the partial mapping, the driver of 
+ * the BUF nodes should be considered as a clock node. 
  * 
  * @param netlist pointer to the current netlist file
  */

@@ -29,17 +29,17 @@ GenericIO::GenericIO() = default;
 GenericIO::~GenericIO() = default;
 
 void* GenericIO::__read() {
-    error_message(UTIL, unknown_location, 
-                 "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__); 
-    return NULL;     
+    error_message(UTIL, unknown_location,
+                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
+    return NULL;
 }
 
-void GenericIO::__write (const netlist_t* /* netlist */) {
-    error_message(UTIL, unknown_location, 
-                 "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__); 
+void GenericIO::__write(const netlist_t* /* netlist */) {
+    error_message(UTIL, unknown_location,
+                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
 }
 
-void GenericIO::__create_file (const file_type_e /* file_type */) {
-    error_message(UTIL, unknown_location, 
-                 "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__); 
+void GenericIO::__create_file(const file_type_e /* file_type */) {
+    error_message(UTIL, unknown_location,
+                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
 }

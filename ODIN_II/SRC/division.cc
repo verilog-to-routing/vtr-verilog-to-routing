@@ -27,11 +27,11 @@
 #include "netlist_utils.h"
 #include "vtr_memory.h"
 
-static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signal_list_t* output_signal_list);
-static signal_list_t* CR_output_signal_init ();
-static signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist);
+static void make_CR_node(nnode_t* node, signal_list_t* input_signal_list, signal_list_t* output_signal_list);
+static signal_list_t* CR_output_signal_init();
+static signal_list_t** modify_div_signal_sizes(nnode_t* node, netlist_t* netlist);
 static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_signals, netlist_t* netlist);
-static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void connect_div_output_pins(nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 /**
  * (function: resolve_divide_node)
@@ -95,11 +95,11 @@ void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
  * 
  * @return modified signal lists [0]: dividend [1]: divisor
  */
-static signal_list_t** modify_div_signal_sizes (nnode_t* node, netlist_t* netlist) {
+static signal_list_t** modify_div_signal_sizes(nnode_t* node, netlist_t* netlist) {
     int i;
 
     int dividend_width = node->input_port_sizes[0];
-    int divisor_width  = node->input_port_sizes[1];
+    int divisor_width = node->input_port_sizes[1];
 
     /* new widths which will be adjusted in the following */
     int new_dividend_width = dividend_width;
@@ -168,9 +168,9 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
     signal_list_t* dividend_sig_list = input_signals[0];
     signal_list_t* divisor_sig_list = input_signals[1];
 
-    int dividend_size  = dividend_sig_list->count;
-    int divisor_size   = divisor_sig_list->count;
-    int quotient_size  = divisor_size;
+    int dividend_size = dividend_sig_list->count;
+    int divisor_size = divisor_sig_list->count;
+    int quotient_size = divisor_size;
     int remainder_size = divisor_size;
 
     /* checking the division circuit restrictions */
@@ -181,7 +181,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
 
     /* creating CR nodes for each row to do the partial division */
     int offset = divisor_size;
-    
+
     /* creating the network */
     for (i = 0; i < divisor_size; i++) {
         /**
@@ -240,7 +240,8 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
              * [3] = _c      [next CR quotiont]
              */
             int dividend_idx = dividend_size - offset + j;
-            int divisor_idx = (i == 0) ? (j) : (j == num_CR_per_row - 1) ? (-1) : (j);
+            int divisor_idx = (i == 0) ? (j) : (j == num_CR_per_row - 1) ? (-1)
+                                                                         : (j);
 
             /* setting up containers for CR outptu pins */
             npin_t* b = CR_outputs[i][j]->pins[0];
@@ -250,8 +251,8 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
             /* specifying the CR input pins */
             signal_list_t* CR_node_input_signals = init_signal_list();
             /* containers for input pins to clarify the code */
-            npin_t* x  = NULL; /* CR_node_input_signals->pins[0] */
-            npin_t* y  = NULL; /* CR_node_input_signals->pins[1] */
+            npin_t* x = NULL;  /* CR_node_input_signals->pins[0] */
+            npin_t* y = NULL;  /* CR_node_input_signals->pins[1] */
             npin_t* b_ = NULL; /* CR_node_input_signals->pins[2] */
             npin_t* _c = NULL; /* CR_node_input_signals->pins[3] */
 
@@ -324,7 +325,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
             /* Quotient */
             if (j == 0) {
                 /* adding to output signal list for returning */
-                add_pin_to_signal_list(quotient_signal_list, c);                
+                add_pin_to_signal_list(quotient_signal_list, c);
             }
             /* Remanider */
             if (i == divisor_size - 1 && j != num_CR_per_row - 1) {
@@ -354,7 +355,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
         free_signal_list(input_signals[i]);
     }
     vtr::free(input_signals);
-    /* local variables */    
+    /* local variables */
     for (i = 0; i < divisor_size; i++) {
         /* In the first row, the divisor is not shifting, so we need one less CR node */
         int num_CR_per_row = (i == 0) ? (divisor_size) : (divisor_size + 1);
@@ -370,7 +371,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
     signal_list_t** return_sig_list = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
     return_sig_list[0] = quotient_signal_list;
     return_sig_list[1] = remainder_signal_list;
-    
+
     return (return_sig_list);
 }
 
@@ -384,35 +385,35 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
  * @param output_signals calculated output signals of the div node
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  */
-static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist) {
+static void connect_div_output_pins(nnode_t* node, signal_list_t** output_signals, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(output_signals);
-    
+
     int i;
-    int divisor_width  = node->input_port_sizes[1];
+    int divisor_width = node->input_port_sizes[1];
     int actual_width = node->output_port_sizes[0];
 
     /* quotient and remainder signal lists returned by implement_division function */
     signal_list_t* quotient_signal_list = output_signals[0];
     signal_list_t* remainder_signal_list = output_signals[1];
 
-    int new_quotient_width   = quotient_signal_list->count;
-    int new_remainder_width  = remainder_signal_list->count;
-    
+    int new_quotient_width = quotient_signal_list->count;
+    int new_remainder_width = remainder_signal_list->count;
+
     /* validate new sizes */
     oassert(new_quotient_width == divisor_width);
     oassert(new_quotient_width == new_remainder_width);
 
-    switch (node->type) { 
+    switch (node->type) {
         case DIVIDE: {
             int quotient_width = actual_width;
             /* checking the adjusted width with actual one to connect properly */
-            if (quotient_width >= new_quotient_width) {       
+            if (quotient_width >= new_quotient_width) {
                 for (i = 0; i < quotient_width; i++) {
                     npin_t* quotient_pin = quotient_signal_list->pins[i];
                     /* creating a buf node to cionnect the calculated quotient to the main div node outputs */
                     nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
 
-                    if (i < new_quotient_width) {    
+                    if (i < new_quotient_width) {
                         /* connect the calculatd quotient pin as buf node driver */
                         add_input_pin_to_node(buf_node, quotient_pin, 0);
                         /* remap the main div output pin to the buf node output pin */
@@ -424,8 +425,7 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
                         remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
                     }
                 }
-                
-                
+
             } else {
                 /* keep the record of extension size for future usage */
                 int extension_size = new_quotient_width - quotient_width;
@@ -450,7 +450,6 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
                 }
             }
 
-
             /* dunp remainders */
             for (i = 0; i < new_remainder_width; i++) {
                 npin_t* remainder_pin = remainder_signal_list->pins[i];
@@ -467,13 +466,13 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
         case MODULO: {
             int remainder_width = actual_width;
             /* checking the adjusted width with actual one to connect properly */
-            if (remainder_width >= new_remainder_width) {       
+            if (remainder_width >= new_remainder_width) {
                 for (i = 0; i < remainder_width; i++) {
                     npin_t* remainder_pin = remainder_signal_list->pins[i];
                     /* creating a buf node to cionnect the calculated remainder to the main div node outputs */
                     nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
 
-                    if (i < new_remainder_width) {    
+                    if (i < new_remainder_width) {
                         /* connect the calculatd remainder pin as buf node driver */
                         add_input_pin_to_node(buf_node, remainder_pin, 0);
                         /* remap the main div output pin to the buf node output pin */
@@ -485,8 +484,7 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
                         remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
                     }
                 }
-                
-                
+
             } else {
                 /* remainder_width < new_remainder_width */
                 for (i = 0; i < new_remainder_width; i++) {
@@ -508,7 +506,6 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
                     }
                 }
             }
-
 
             /* dunp quotient */
             for (i = 0; i < new_quotient_width; i++) {
@@ -551,7 +548,7 @@ static void connect_div_output_pins (nnode_t* node, signal_list_t** output_signa
  *                           [1] = p
  *                           [2] = c 
  */
-static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signal_list_t* output_signal_list) {
+static void make_CR_node(nnode_t* node, signal_list_t* input_signal_list, signal_list_t* output_signal_list) {
     /* CR  node has fixed four inputs */
     oassert(input_signal_list->count == 4);
 
@@ -583,8 +580,8 @@ static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signa
      */
 
     /* CR input pins */
-    npin_t* x  = input_signal_list->pins[0];
-    npin_t* y  = input_signal_list->pins[1];
+    npin_t* x = input_signal_list->pins[0];
+    npin_t* y = input_signal_list->pins[1];
     npin_t* b_ = input_signal_list->pins[2];
     npin_t* _c = input_signal_list->pins[3];
 
@@ -592,7 +589,7 @@ static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signa
     npin_t* b = output_signal_list->pins[0]->net->driver_pins[0];
     npin_t* p = output_signal_list->pins[1]->net->driver_pins[0];
     npin_t* c = output_signal_list->pins[2]->net->driver_pins[0];
-    
+
     /*********************************************************************************************************
      ********************************************* FULL SUBTRACTOR *******************************************
      *********************************************************************************************************/
@@ -612,7 +609,7 @@ static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signa
         remap_pin_to_new_node(y, fs_node, 1);
     else
         add_input_pin_to_node(fs_node, y, 1);
-    
+
     if (b_->node)
         remap_pin_to_new_node(b_, fs_node, 2);
     else
@@ -630,15 +627,14 @@ static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signa
     /* need to create the fs_output_pin as an internal pin */
     npin_t* new_pin1 = allocate_npin();
     npin_t* fs_output_pin = allocate_npin();
-    nnet_t* new_net  = allocate_nnet();
+    nnet_t* new_net = allocate_nnet();
     new_net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 0);
     /* hook the output pin into the node */
     add_output_pin_to_node(fs_node, new_pin1, 0);
     /* hook up new pin 1 into the new net */
     add_driver_pin_to_net(new_net, new_pin1);
     /* hook up the new pin 2 to this new net */
-    add_fanout_pin_to_net(new_net, fs_output_pin);    
-    
+    add_fanout_pin_to_net(new_net, fs_output_pin);
 
     /*********************************************************************************************************
      ************************************************** MUX **************************************************
@@ -689,11 +685,11 @@ static void make_CR_node (nnode_t* node, signal_list_t* input_signal_list, signa
  *         [1] = p
  *         [2] = c 
  */
-static signal_list_t* CR_output_signal_init () {
+static signal_list_t* CR_output_signal_init() {
     /* signal list to be returned */
     signal_list_t* return_sig_list = init_signal_list();
 
-    npin_t* b     = allocate_npin();
+    npin_t* b = allocate_npin();
     npin_t* b_out = allocate_npin();
     nnet_t* b_net = allocate_nnet();
     /* hook up c into the c net */
@@ -703,7 +699,7 @@ static signal_list_t* CR_output_signal_init () {
     /* storing in the CR output signal for CR creation function */
     add_pin_to_signal_list(return_sig_list, b_out);
 
-    npin_t* p     = allocate_npin();
+    npin_t* p = allocate_npin();
     npin_t* p_out = allocate_npin();
     nnet_t* p_net = allocate_nnet();
     /* hook up p into the p net */
@@ -712,8 +708,8 @@ static signal_list_t* CR_output_signal_init () {
     add_fanout_pin_to_net(p_net, p_out);
     /* storing in the CR output signal for CR creation function */
     add_pin_to_signal_list(return_sig_list, p_out);
-    
-    npin_t* c     = allocate_npin();
+
+    npin_t* c = allocate_npin();
     npin_t* c_out = allocate_npin();
     nnet_t* c_net = allocate_nnet();
     /* hook up c into the c net */
@@ -723,5 +719,5 @@ static signal_list_t* CR_output_signal_init () {
     /* storing in the CR output signal for CR creation function */
     add_pin_to_signal_list(return_sig_list, c_out);
 
-    return (return_sig_list);   
+    return (return_sig_list);
 }

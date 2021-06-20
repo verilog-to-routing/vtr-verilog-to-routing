@@ -51,16 +51,14 @@
 #include "VerilogReader.hh"
 #include "BLIF.hh"
 
-
 /**
  * -----------------------------------------------------------------------------------------------------------------------------
  * ---------------------------------------------------------- Writer -----------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------------------------------
 */
 
-
-
-BLIF::Writer::Writer(): GenericWriter() {
+BLIF::Writer::Writer()
+    : GenericWriter() {
     this->haveOutputLatchBlackbox = false;
 }
 
@@ -333,7 +331,7 @@ void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp,
     netlist->gnd_node->name = vtr::strdup("gnd");
     netlist->vcc_node->name = vtr::strdup("vcc");
     netlist->pad_node->name = vtr::strdup("unconn");
-    
+
     /* now traverse the ground, vcc, and unconn pins */
     depth_traverse_output_blif(netlist->gnd_node, marker_value, fp);
     depth_traverse_output_blif(netlist->vcc_node, marker_value, fp);
