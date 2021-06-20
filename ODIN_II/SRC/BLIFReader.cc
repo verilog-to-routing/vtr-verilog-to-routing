@@ -333,9 +333,9 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         new_node->type = yosys_subckt_str[subcircuit_name];
 
         if (new_node->type == BRAM) {
-            new_node->type = (new_node->attributes->RD_ACCESS && new_node->attributes->WR_ACCESS)    ? BRAM
-                             : (new_node->attributes->RD_ACCESS && !new_node->attributes->WR_ACCESS) ? ROM
-                                                                                                     : operation_list_END;
+            new_node->type = (new_node->attributes->RD_PORTS && new_node->attributes->WR_PORTS)    ? BRAM
+                             : (new_node->attributes->RD_PORTS && !new_node->attributes->WR_PORTS) ? ROM
+                                                                                                   : operation_list_END;
         }
     } else {
         if (odin_subckt_str[subcircuit_name] != NO_OP)
@@ -2076,19 +2076,15 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
                             attributes->WR_CLK_POLARITY = ACTIVE_LOW_SENSITIVITY;
 
                     } else if (!strcmp(ptr, "RD_PORTS")) {
-                        if (sensitivity == 1)
-                            attributes->RD_ACCESS = true;
-                        else if (sensitivity == 0)
-                            attributes->RD_ACCESS = false;
+                        if (sensitivity > 0)
+                            attributes->RD_PORTS = sensitivity;
 
                     } else if (!strcmp(ptr, "WR_PORTS")) {
-                        if (sensitivity == 1)
-                            attributes->WR_ACCESS = true;
-                        else if (sensitivity == 0)
-                            attributes->WR_ACCESS = false;
+                        if (sensitivity > 0)
+                            attributes->WR_PORTS = sensitivity;
                     }
                 }
-            } else if (!strcmp(ptr, ".end")) {
+            } else if (!strcmp(ptr, ".end") || !strcmp(ptr, ".subckt")) {
                 break;
             }
         }

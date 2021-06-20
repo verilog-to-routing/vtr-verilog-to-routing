@@ -696,8 +696,8 @@ attr_t* init_attribute() {
     attribute->RD_CLK_POLARITY = UNDEFINED_SENSITIVITY;
     attribute->WR_CLK_POLARITY = UNDEFINED_SENSITIVITY;
 
-    attribute->RD_ACCESS = false;
-    attribute->WR_ACCESS = false;
+    attribute->RD_PORTS = 0;
+    attribute->WR_PORTS = 0;
 
     return attribute;
 }
