@@ -183,7 +183,7 @@ Python files are automatically checked using `pylint` to ensure they follow esta
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
 
-There are 4 main regression tests:
+There are 4 main regression testing suites:
 
 * `vtr_reg_basic`: ~1 minute serial
 
@@ -216,24 +216,33 @@ There are 4 main regression tests:
 
     QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
     Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+    
+* `vtr_reg_nightly_test#, #:1-3`:
 
-* `vtr_reg_nightly`: ~6 hours with `-j3`
-
-    **Goal:** Basic QoR and Performance evaluation.
-
+    **Goal:** Basic QoR and Performance evaluation 
+  
     **Feature Coverage:** Medium
-
-    **Benchmarks:** Small-medium size, diverse. Includes:
-
-    * MCNC20 benchmarks
-    * VTR benchmarks
-    * Titan 'other' benchmarks (smaller than Titan23)
-
+    
     **Architectures:** A wider variety of architectures
+    
+    **Benchmarks:** Small-medium size, diverse. All include: 
+    
+    * VTR benchmarks
+    * Additional benchmarks for each suite. 
 
-   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
+   QoR checks in these regression suites are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
-
+   
+   Note:
+   
+   These suites comproise a single large suite, `vtr_reg_nightly` and should be run together to test nightly level regression. They are mostly similar in benchmark coverage interms of size and diversity however each suite tests some unique benchmarks in addition to the VTR benchmarks.  
+    
+	| suite | wall-clock time| Additional benchmarks|
+	|-------|----------------|----------------------|
+	|vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
+	|vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
+	|vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
+	
 * `vtr_reg_weekly`: ~42 hours with `-j4`
 
     **Goal:** Full QoR and Performance evaluation.
@@ -265,7 +274,9 @@ make get_ispd_benchmarks
 ```
 They can then be run using `run_reg_test.py`:
 ```shell
-$ ./run_reg_test.py vtr_reg_nightly
+$ ./run_reg_test.py vtr_reg_nightly_test1 
+$ ./run_reg_test.py vtr_reg_nightly_test2 
+$ ./run_reg_test.py vtr_reg_nightly_test3 
 $ ./run_reg_test.py vtr_reg_weekly
 ```
 
@@ -564,15 +575,15 @@ A typical approach to evaluating an algorithm change would be to run `vtr_reg_qo
 $ cd vtr_flow/tasks
 
 #Run the VTR benchmarks
-$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_reg_qor_chain
 
 #Several hours later... they complete
 
 #Parse the results
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_reg_qor_chain
 
 #The run directory should now contain a summary parse_results.txt file
-$ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
+$ head -5 vtr_reg_nightly_test3/vtr_reg_qor_chain/latest/parse_results.txt
 arch                                  	circuit           	script_params	vpr_revision 	vpr_status	error	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_post_packed_blocks	device_width	device_height	num_clb	num_io	num_outputs	num_memoriesnum_mult	placed_wirelength_est	placed_CPD_est	placed_setup_TNS_est	placed_setup_WNS_est	min_chan_width	routed_wirelength	min_chan_width_route_success_iteration	crit_path_routed_wirelength	crit_path_route_success_iteration	critical_path_delay	setup_TNS	setup_WNS	hold_TNS	hold_WNS	logic_block_area_total	logic_block_area_used	min_chan_width_routing_area_total	min_chan_width_routing_area_per_tile	crit_path_routing_area_total	crit_path_routing_area_per_tile	odin_synth_time	abc_synth_time	abc_cec_time	abc_sec_time	ace_time	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	vtr_flow_elapsed_time	max_vpr_mem	max_odin_mem	max_abc_mem
 k6_frac_N10_frac_chain_mem32K_40nm.xml	bgm.v             	common       	9f591f6-dirty	success   	     	26431              	24575                	14738               	2258                  	53          	53           	1958   	257   	32         	0           11      	871090               	18.5121       	-13652.6            	-18.5121            	84            	328781           	32                                    	297718                     	18                               	20.4406            	-15027.8 	-20.4406 	0       	0       	1.70873e+08           	1.09883e+08          	1.63166e+07                      	5595.54                             	2.07456e+07                 	7114.41                        	11.16          	1.03          	-1          	-1          	-1      	141.53   	108.26    	142.42                   	15.63               	652.17               	1329712    	528868      	146796
 k6_frac_N10_frac_chain_mem32K_40nm.xml	blob_merge.v      	common       	9f591f6-dirty	success   	     	14163              	11407                	3445                	700                   	30          	30           	564    	36    	100        	0           0       	113369               	13.4111       	-2338.12            	-13.4111            	64            	80075            	18                                    	75615                      	23                               	15.3479            	-2659.17 	-15.3479 	0       	0       	4.8774e+07            	3.03962e+07          	3.87092e+06                      	4301.02                             	4.83441e+06                 	5371.56                        	0.46           	0.17          	-1          	-1          	-1      	67.89    	11.30     	47.60                    	3.48                	198.58               	307756     	48148       	58104
@@ -587,7 +598,7 @@ The are typically used as post-technology mapped netlists which have been pre-sy
 They are substantially larger and more realistic than the VTR benchmarks, but can only target specifically compatible architectures.
 They are used primarily to evaluate the optimization quality and scalability of VTR's CAD algorithms while targeting a fixed architecture (e.g. at a fixed channel width).
 
-A typical approach to evaluating an algorithm change would be to run `vtr_reg_titan` task from the weekly regression test:
+A typical approach to evaluating an algorithm change would be to run `titan_quick_qor` task from the nightly regression test:
 #### [Running and Integrating the Titan Benchmarks with VTR](https://docs.verilogtorouting.org/en/latest/tutorials/titan_benchmarks/)
 ```shell
 #From the VTR root
@@ -599,15 +610,15 @@ $ make get_titan_benchmarks
 $ cd vtr_flow/tasks
 
 #Run the VTR benchmarks
-$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/vtr_reg_titan
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test2/titan_quick_qor
 
 #Several days later... they complete
 
 #Parse the results
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/vtr_reg_titan
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test2/titan_quick_qor
 
 #The run directory should now contain a summary parse_results.txt file
-$ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
+$ head -5 vtr_reg_nightly_test2/titan_quick_qor/latest/parse_results.txt
 arch                     	circuit                                 	vpr_revision	vpr_status	error	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_post_packed_blocks	device_width	device_height	num_clb	num_io	num_outputs	num_memoriesnum_mult	placed_wirelength_est	placed_CPD_est	placed_setup_TNS_est	placed_setup_WNS_est	routed_wirelength	crit_path_route_success_iteration	logic_block_area_total	logic_block_area_used	routing_area_total	routing_area_per_tile	critical_path_delay	setup_TNS   setup_WNS	hold_TNS	hold_WNS	pack_time	place_time	crit_path_route_time	max_vpr_mem	max_odin_mem	max_abc_mem
 stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif       	0208312     	success   	     	119888             	86875                	51408               	3370                  	128         	95           	-1     	42    	35         	-1          -1      	3985635              	8.70971       	-234032             	-8.70971            	1086419          	20                               	0                     	0                    	2.66512e+08       	21917.1              	9.64877            	-262034     -9.64877 	0       	0       	127.92   	218.48    	259.96              	5133800    	-1          	-1
 stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif 	0208312     	success   	     	92813              	91974                	54564               	4170                  	77          	57           	-1     	173   	137        	-1          -1      	3213593              	7.87734       	-534295             	-7.87734            	1527941          	43                               	0                     	0                    	9.64428e+07       	21973.8              	9.06977            	-625483     -9.06977 	0       	0       	327.38   	338.65    	364.46              	3690032    	-1          	-1
@@ -744,24 +755,24 @@ will produce ratio tables and a summary table for the files parse_results1.txt, 
 ### Generating New QoR Golden Result
 There may be times when a regression test fails its QoR test because its golden_result needs to be changed due to known changes in code behaviour. In this case, a new golden result needs to be generated so that the test can be passed. To generate a new golden result, follow the steps outlined below.
 
-1. Move to the `vtr_flow/tasks` directory from the VTR root, and run the failing test. For example, if a test called `vtr_ex_test` in `vtr_reg_nightly` was failing:
+1. Move to the `vtr_flow/tasks` directory from the VTR root, and run the failing test. For example, if a test called `vtr_ex_test` in `vtr_reg_nightly_test3` was failing:
 
 	```shell
     #From the VTR root
     $ cd vtr_flow/tasks
-    $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test
+    $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test
 	```
 2. Next, generate new golden reference results using `parse_vtr_task.py` and the `-create_golden` option.
 
     ```shell
-    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test -create_golden
+    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test -create_golden
     ```
 3. Lastly, check that the results match with the `-check_golden` option
 
     ```shell
-    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test -check_golden
+    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test -check_golden
     ```
-Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly.
+Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly_test3.
 
 # Adding Tests
 
