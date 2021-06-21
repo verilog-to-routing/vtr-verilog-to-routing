@@ -8,7 +8,9 @@
  * "t_rr_type type".												*/
 
 const char* t_rr_node::type_string() const {
-    return rr_node_typename[type()];
+    // ESR API The contents of this function have been temporarily replaced
+    // Once the RRGraphView API is complete, this function will be removed completely
+    return rr_node_typename[g_vpr_ctx.device().rr_graph.node_type(id_)];
 }
 
 const char* t_rr_node::direction_string() const {

@@ -47,9 +47,9 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
 vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 
 //Sort the blocks according to how difficult they are to place, prior to initial placement
-std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_score> block_scores);
+std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
-void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks, vtr::vector<ClusterBlockId, t_block_score> block_scores);
+void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles) {
     for (int sub_tile : possible_sub_tiles) {
@@ -82,26 +82,26 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
     // Every macro can be placed until proven otherwise
     int macro_can_be_placed = true;
 
+    //Check whether macro contains blocks with floorplan constraints
     bool macro_constrained = is_macro_constrained(pl_macro);
-    PartitionRegion macro_pr;
-
-    if (macro_constrained) {
-        macro_pr = constrained_macro_locs(pl_macro);
-    }
 
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
-        //if the macro is constrained, check if the member position is within the PartitionRegion for the macro
-        if (macro_constrained) {
-            bool member_loc_good = macro_pr.is_loc_in_part_reg(member_pos);
+        /*
+         * If the macro is constrained, check that the head member is in a legal position from
+         * a floorplanning perspective. It is enough to do this check for the head member alone,
+         * because constraints propagation was performed to calculate smallest floorplan region for the head
+         * macro, based on the constraints on all of the blocks in the macro. So, if the head macro is in a
+         * legal floorplan location, all other blocks in the macro will be as well.
+         */
+        if (macro_constrained && imember == 0) {
+            bool member_loc_good = cluster_floorplanning_legal(pl_macro.members[imember].blk_index, member_pos);
             if (!member_loc_good) {
                 macro_can_be_placed = false;
-                VTR_LOG("Block member %zu did not pass the macro constraints check with location x: %d y: %d subtile %d\n", pl_macro.members[imember].blk_index, member_pos.x, member_pos.y, member_pos.sub_tile);
                 break;
             }
-            VTR_LOG("Block member %zu passed the macro constraints check with location x: %d y: %d subtile %d\n", pl_macro.members[imember].blk_index, member_pos.x, member_pos.y, member_pos.sub_tile);
         }
 
         // Check whether the location could accept block of this type
@@ -304,7 +304,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
             // Make sure that the position is EMPTY_BLOCK before placing the block down
             VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
 
-            bool floorplan_good = cluster_floorplanning_check(blk_id, to);
+            bool floorplan_good = cluster_floorplanning_legal(blk_id, to);
 
             if (floorplan_good) {
                 place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk_id;
@@ -359,6 +359,12 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     block_scores.resize(blocks.size());
 
+    /*
+     * For the blocks with no floorplan constraints, and the blocks that are not part of macros,
+     * the block scores will remain at their default values assigned by the constructor
+     * (macro_size = 0; floorplan_constraints = 0; num_equivalent_tiles =1;
+     */
+
     //go through all blocks and store floorplan constraints and num equivalent tiles
     for (auto blk_id : blocks) {
         if (is_cluster_constrained(blk_id)) {
@@ -380,7 +386,7 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     return block_scores;
 }
 
-std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_score> block_scores) {
+std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto blocks = cluster_ctx.clb_nlist.blocks();
@@ -400,7 +406,7 @@ std::vector<ClusterBlockId> sort_blocks(vtr::vector<ClusterBlockId, t_block_scor
     return sorted_blocks;
 }
 
-void print_sorted_blocks(std::vector<ClusterBlockId> sorted_blocks, vtr::vector<ClusterBlockId, t_block_score> block_scores) {
+void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     VTR_LOG("\nPrinting sorted blocks: \n");
     for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
         VTR_LOG("Block_Id: %zu, Macro size: %d, Num floorplan constraints: %d, Num equivalent tiles %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].floorplan_constraints, block_scores[sorted_blocks[i]].num_equivalent_tiles);
@@ -418,6 +424,11 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     //Sort blocks
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
+
+    /* Go through cluster blocks to calculate the tightest placement
+     * floorplan constraint for each constrained block
+     */
+    propagate_place_constraints();
 
     // Loading legal placement locations
     zero_initialize_grid_blocks();

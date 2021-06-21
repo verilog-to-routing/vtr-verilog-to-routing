@@ -6,6 +6,7 @@
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "region.h"
+#include "place_constraints.h"
 
 /**
  * This file contains unit tests that check the functionality of all classes related to vpr constraints. These classes include
@@ -423,6 +424,37 @@ TEST_CASE("RegionLocked", "[vpr]") {
     is_r2_locked = r2.locked();
 
     REQUIRE(is_r2_locked == false);
+}
+
+//Test calculation of macro constraints
+/* Checks that the PartitionRegion of a macro member is updated properly according
+ * to the head member's PartitionRegion that is passed in.
+ */
+TEST_CASE("MacroConstraints", "[vpr]") {
+    t_pl_macro pl_macro;
+    PartitionRegion head_pr;
+    t_pl_offset offset(2, 1, 0);
+
+    Region reg;
+    reg.set_region_rect(5, 2, 9, 6);
+
+    head_pr.add_to_part_region(reg);
+
+    Region grid_reg;
+    grid_reg.set_region_rect(0, 0, 20, 20);
+    PartitionRegion grid_pr;
+    grid_pr.add_to_part_region(grid_reg);
+
+    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset, grid_pr, pl_macro);
+
+    std::vector<Region> mac_regions = macro_pr.get_partition_region();
+
+    vtr::Rect<int> mac_rect = mac_regions[0].get_region_rect();
+
+    REQUIRE(mac_rect.xmin() == 7);
+    REQUIRE(mac_rect.ymin() == 3);
+    REQUIRE(mac_rect.xmax() == 11);
+    REQUIRE(mac_rect.ymax() == 7);
 }
 
 static constexpr const char kArchFile[] = "test_read_arch_metadata.xml";

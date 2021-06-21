@@ -171,7 +171,7 @@ module fir (
 	// *
 	// *****************************************************
 
-	// ************************* LEVEL 0 ************************* \\
+	// ************************* LEVEL 0 *************************   
 	wire [dw-1:0] L0_output_wires_0;
 	wire [dw-1:0] L0_output_wires_1;
 	wire [dw-1:0] L0_output_wires_2;
@@ -279,8 +279,8 @@ module fir (
 
 	// (13 main tree Adders)
 
-	// ************************* LEVEL 1 ************************* \\
-	// **************** Multipliers **************** \\
+	// ************************* LEVEL 1 *************************   
+	// **************** Multipliers ****************   
 	wire [dw-1:0] L1_mult_wires_0;
 	wire [dw-1:0] L1_mult_wires_1;
 	wire [dw-1:0] L1_mult_wires_2;
@@ -388,7 +388,7 @@ module fir (
 
 	// (13 Multipliers)
 
-	// **************** Adders **************** \\
+	// **************** Adders ****************   
 	wire [dw-1:0] L1_output_wires_0;
 	wire [dw-1:0] L1_output_wires_1;
 	wire [dw-1:0] L1_output_wires_2;
@@ -441,7 +441,7 @@ module fir (
 
 	// (6 main tree Adders)
 
-	// ********* Byes ******** \\
+	// ********* Byes ********   
 	one_register L1_byereg_for_12(
 		.clk(clk), .clk_ena(clk_ena),
 		.dataa (L1_mult_wires_12),
@@ -450,7 +450,7 @@ module fir (
 
 	// (1 byes)
 
-	// ************************* LEVEL 2 ************************* \\
+	// ************************* LEVEL 2 *************************   
 	wire [dw-1:0] L2_output_wires_0;
 	wire [dw-1:0] L2_output_wires_1;
 	wire [dw-1:0] L2_output_wires_2;
@@ -479,7 +479,7 @@ module fir (
 
 	// (3 main tree Adders)
 
-	// ********* Byes ******** \\
+	// ********* Byes ********   
 	one_register L2_byereg_for_6(
 		.clk(clk), .clk_ena(clk_ena),
 		.dataa (L1_output_wires_6),
@@ -488,7 +488,7 @@ module fir (
 
 	// (1 byes)
 
-	// ************************* LEVEL 3 ************************* \\
+	// ************************* LEVEL 3 *************************   
 	wire [dw-1:0] L3_output_wires_0;
 	wire [dw-1:0] L3_output_wires_1;
 
@@ -508,7 +508,7 @@ module fir (
 
 	// (2 main tree Adders)
 
-	// ************************* LEVEL 4 ************************* \\
+	// ************************* LEVEL 4 *************************   
 	wire [dw-1:0] L4_output_wires_0;
 
 	adder_with_1_reg L4_adder_0and1(

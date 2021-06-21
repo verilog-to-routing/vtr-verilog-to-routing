@@ -175,6 +175,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     }
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& temp_rr_graph = device_ctx.rr_graph; //TODO Once the uses of rr_graph in the next line are removed, this will be renamed to rr_graph from temp_rr_graph
     auto& rr_graph = device_ctx.rr_nodes;
 
     int from_x = rr_graph.node_xlow(from_node);
@@ -187,7 +188,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     dx = to_x - from_x;
     dy = to_y - from_y;
 
-    e_rr_type from_type = rr_graph.node_type(from_node);
+    e_rr_type from_type = temp_rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
         return this->get_src_opin_cost(from_node, dx, dy, params);
     } else if (from_type == IPIN) {
@@ -361,6 +362,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
                                                          std::vector<util::Search_Path>* paths,
                                                          util::RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     int path_count = 0;
 
     /* a list of boolean flags (one for each rr node) to figure out if a
@@ -393,7 +395,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
         }
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
-        if (device_ctx.rr_nodes[size_t(node)].type() == IPIN) {
+        if (rr_graph.node_type(node) == IPIN) {
             // the last cost should be the highest
             max_cost = current.cost();
 
@@ -572,8 +574,9 @@ float ExtendedMapLookahead::get_expected_cost(
     const t_conn_cost_params& params,
     float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type rr_type = device_ctx.rr_nodes.node_type(current_node);
+    t_rr_type rr_type = rr_graph.node_type(current_node);
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;

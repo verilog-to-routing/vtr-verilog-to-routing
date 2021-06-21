@@ -191,15 +191,16 @@ void sync_grid_to_blocks() {
 
 std::string rr_node_arch_name(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     const t_rr_node& rr_node = device_ctx.rr_nodes[inode];
 
     std::string rr_node_arch_name;
-    if (rr_node.type() == OPIN || rr_node.type() == IPIN) {
+    if (rr_graph.node_type(RRNodeId(inode)) == OPIN || rr_graph.node_type(RRNodeId(inode)) == IPIN) {
         //Pin names
         auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_node.ptc_num());
-    } else if (rr_node.type() == SOURCE || rr_node.type() == SINK) {
+    } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
         //Set of pins associated with SOURCE/SINK
         auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
         auto pin_names = block_type_class_index_to_pin_names(type, rr_node.ptc_num());
@@ -213,7 +214,7 @@ std::string rr_node_arch_name(int inode) {
             rr_node_arch_name += pin_names[0];
         }
     } else {
-        VTR_ASSERT(rr_node.type() == CHANX || rr_node.type() == CHANY);
+        VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY);
         //Wire segment name
         auto cost_index = rr_node.cost_index();
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
@@ -1864,7 +1865,7 @@ void print_switch_usage() {
  * map<int, int> total_wire_count;
  * auto& device_ctx = g_vpr_ctx.device();
  * for (int inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
- * if (device_ctx.rr_nodes[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
+ * if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_node[inode].type() == CHANY) {
  * //int length = abs(device_ctx.rr_nodes[inode].get_xhigh() + rr_node[inode].get_yhigh()
  * //             - device_ctx.rr_nodes[inode].get_xlow() - rr_node[inode].get_ylow());
  * int length = device_ctx.rr_nodes[inode].get_length();

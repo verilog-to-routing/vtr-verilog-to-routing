@@ -34,6 +34,7 @@ def run(
     architecture_file,
     circuit_file,
     power_tech_file=None,
+    include_files=None,
     start_stage=VtrStage.ODIN,
     end_stage=VtrStage.VPR,
     command_runner=vtr.CommandRunner(),
@@ -134,7 +135,6 @@ def run(
     vpr_args = OrderedDict() if not vpr_args else vpr_args
     odin_args = OrderedDict() if not odin_args else odin_args
     abc_args = OrderedDict() if not abc_args else abc_args
-
     # Verify that files are Paths or convert them to Paths and check that they exist
     architecture_file = vtr.util.verify_file(architecture_file, "Architecture")
     circuit_file = vtr.util.verify_file(circuit_file, "Circuit")
@@ -167,6 +167,15 @@ def run(
     shutil.copy(str(circuit_file), str(circuit_copy))
     shutil.copy(str(architecture_file), str(architecture_copy))
 
+    # Check whether any inclulde is specified
+    if include_files:
+        # Verify include files are Paths or convert them to Path + check that they exist
+        # Copy include files to the run directory
+        for include in include_files:
+            include_file = vtr.util.verify_file(include, "Circuit")
+            include_copy = temp_dir / include_file.name
+            shutil.copy(str(include), str(include_copy))
+
     # There are multiple potential paths for the netlist to reach a tool
     # We initialize it here to the user specified circuit and let downstream
     # stages update it
@@ -179,6 +188,7 @@ def run(
         vtr.odin.run(
             architecture_copy,
             next_stage_netlist,
+            include_files,
             output_netlist=post_odin_netlist,
             command_runner=command_runner,
             temp_dir=temp_dir,

@@ -77,7 +77,7 @@ class t_rr_node {
         , id_(id) {}
 
   public: //Accessors
-    t_rr_type type() const;
+    //t_rr_type type() const; // ESR API This function has been replaced by RRGraphView::node_type()
     const char* type_string() const; /* Retrieve type as a string */
 
     edge_idx_range edges() const;
@@ -99,8 +99,6 @@ class t_rr_node {
     short xhigh() const;
     short yhigh() const;
     signed short length() const;
-
-    short capacity() const;
 
     short ptc_num() const;
     short pin_num() const;   //Same as ptc_num() but checks that type() is consistent
