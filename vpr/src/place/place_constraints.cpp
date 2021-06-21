@@ -11,6 +11,7 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
+#include "initial_placement.cpp"
 
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
@@ -272,12 +273,17 @@ void mark_fixed_blocks() {
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
         t_pl_loc loc;
 
+        /*
+         * If the block can be placed in exactly one
+         * legal (x, y, subtile) location, place it now
+         * and mark it as fixed.
+         */
         if (is_pr_size_one(pr, block_type, loc)) {
-            //Set block location and grid usage
             set_block_location(blk_id, loc);
 
-            //Set as fixed
             place_ctx.block_locs[blk_id].is_fixed = true;
+
+            VTR_LOG("Marked block %d as fixed at location %d, %d, %d \n", blk_id, loc.x, loc.y, loc.sub_tile);
         }
     }
 }
@@ -308,34 +314,36 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                 continue;
             }
 
+            auto possible_sub_tiles = get_possible_sub_tile_indices(tile, block_type);
+
             /*
              * If the region passed has a specific subtile set, increment
              * the number of tiles set the location using the x, y, subtile
-             * values
+             * values if the subtile is valid at this location
              */
             if (reg.get_sub_tile() != NO_SUBTILE) {
-                num_tiles++;
-                loc.x = x;
-                loc.y = y;
-                loc.sub_tile = reg.get_sub_tile();
-                if (num_tiles > 1) {
-                    return num_tiles;
-                }
+                //Check if the user-specified subtile is in the range of possible subtile values
+                auto st = std::find(possible_sub_tiles.begin(), possible_sub_tiles.end(), reg.get_sub_tile());
 
-                /*
-                 * If the region passed does not have a subtile set, set the
-                 * subtile to zero. The loc that is set will only be used in the
-                 * event that num_tiles is 1, and num_tiles will only be 1 if the
-                 * capacity of the tile type turns out to be zero, thus implying
-                 * that the location subtile will be zero.
-                 */
-            } else if (reg.get_sub_tile() == NO_SUBTILE) {
-                auto& cap = tile->capacity;
-                for (int z = 0; z < cap; z++) {
+                if (st != possible_sub_tiles.end()) {
                     num_tiles++;
                     loc.x = x;
                     loc.y = y;
-                    loc.sub_tile = 0;
+                    loc.sub_tile = reg.get_sub_tile();
+                    if (num_tiles > 1) {
+                        return num_tiles;
+                    }
+                }
+                /*
+                 * If the region passed does not have a subtile set, set the
+                 * subtile to the first possible slot at this location.
+                 */
+            } else if (reg.get_sub_tile() == NO_SUBTILE) {
+                for (int z = 0; z < possible_sub_tiles.size(); z++) {
+                    num_tiles++;
+                    loc.x = x;
+                    loc.y = y;
+                    loc.sub_tile = possible_sub_tiles[z];
                     if (num_tiles > 1) {
                         return num_tiles;
                     }
@@ -355,11 +363,15 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  * and the routine will return false.
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
+    auto& device_ctx = g_vpr_ctx.device();
     std::vector<Region> regions = pr.get_partition_region();
     bool pr_size_one;
-    Region intersect_reg;
     int pr_size = 0;
     int reg_size;
+
+    Region intersect_reg;
+    intersect_reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+    Region new_reg;
 
     for (unsigned int i = 0; i < regions.size(); i++) {
         reg_size = region_tile_cover(regions[i], block_type, loc);
@@ -367,32 +379,30 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
         /*
          * If multiple regions in the PartitionRegion all have size 1,
          * the block may still be marked as locked, in the case that
-         * they all cover the exact same tile. To check whether this
+         * they all cover the exact same x, y, subtile location. To check whether this
          * is the case, whenever there is a size 1 region, it is intersected
-         * with the previous size 1 regions to see whether it covers the same tile.
-         * If there is an intersection, it does cover the same tile, and so pr_size is
+         * with the previous size 1 regions to see whether it covers the same location.
+         * If there is an intersection, it does cover the same location, and so pr_size is
          * not incremented (unless this is the first size 1 region encountered).
          */
         if (reg_size == 1) {
-            if (i == 0) {
-                intersect_reg = regions[0];
-                pr_size = pr_size + reg_size;
-            } else {
-                intersect_reg = intersection(intersect_reg, regions[i]);
-            }
-            if (intersect_reg.empty()) {
+            //get the exact x, y, subtile location covered by regions[i]
+            new_reg.set_region_rect(loc.x, loc.y, loc.x, loc.y);
+            new_reg.set_sub_tile(loc.sub_tile);
+
+            intersect_reg = intersection(intersect_reg, new_reg);
+
+            if (i == 0 || intersect_reg.empty()) {
                 pr_size = pr_size + reg_size;
                 if (pr_size > 1) {
                     break;
                 }
-            } else {
-                continue;
             }
-        }
-
-        pr_size = pr_size + reg_size;
-        if (pr_size > 1) {
-            break;
+        } else {
+            pr_size = pr_size + reg_size;
+            if (pr_size > 1) {
+                break;
+            }
         }
     }
 
