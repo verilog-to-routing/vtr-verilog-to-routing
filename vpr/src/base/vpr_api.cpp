@@ -70,6 +70,7 @@
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
 #include "place_constraints.h"
+#include "place_util.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -683,6 +684,9 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     const auto& filename_opts = vpr_setup.FileNameOpts;
+
+    //Initialize placement data structures, which will be filled when loading placement
+    init_placement_context();
 
     //Load an existing placement from a file
     read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);

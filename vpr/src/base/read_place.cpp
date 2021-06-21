@@ -174,34 +174,11 @@ void read_place_body(std::ifstream& placement_file,
                      const char* place_file,
                      bool is_place_file) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     std::string line;
     int lineno = 0;
-
-    if (place_ctx.block_locs.size() != cluster_ctx.clb_nlist.blocks().size()) {
-        //Resize if needed
-        place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
-    }
-
-    /*
-     * If placement is being loaded (i.e. reading in a place file),
-     * the grid_blocks data structure has not been initialized yet,
-     * so it is initialized here.
-     */
-    if (is_place_file) {
-        auto& grid_blocks = place_ctx.grid_blocks;
-        auto& device_grid = device_ctx.grid;
-        grid_blocks.resize({device_grid.width(), device_grid.height()});
-        for (size_t x = 0; x < device_grid.width(); ++x) {
-            for (size_t y = 0; y < device_grid.height(); ++y) {
-                auto& grid_block = grid_blocks[x][y];
-                grid_block.blocks.resize(device_ctx.grid[x][y].type->capacity);
-            }
-        }
-    }
 
     //used to count how many times a block has been seen in the place/constraints file so duplicate blocks can be detected
     vtr::vector_map<ClusterBlockId, int> seen_blocks;
