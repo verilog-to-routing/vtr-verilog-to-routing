@@ -11,7 +11,6 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
-#include "initial_placement.cpp"
 
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
@@ -282,8 +281,6 @@ void mark_fixed_blocks() {
             set_block_location(blk_id, loc);
 
             place_ctx.block_locs[blk_id].is_fixed = true;
-
-            VTR_LOG("Marked block %d as fixed at location %d, %d, %d \n", blk_id, loc.x, loc.y, loc.sub_tile);
         }
     }
 }
@@ -314,18 +311,13 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                 continue;
             }
 
-            auto possible_sub_tiles = get_possible_sub_tile_indices(tile, block_type);
-
             /*
              * If the region passed has a specific subtile set, increment
              * the number of tiles set the location using the x, y, subtile
-             * values if the subtile is valid at this location
+             * values if the subtile is compatible at this location
              */
             if (reg.get_sub_tile() != NO_SUBTILE) {
-                //Check if the user-specified subtile is in the range of possible subtile values
-                auto st = std::find(possible_sub_tiles.begin(), possible_sub_tiles.end(), reg.get_sub_tile());
-
-                if (st != possible_sub_tiles.end()) {
+                if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
                     num_tiles++;
                     loc.x = x;
                     loc.y = y;
@@ -334,18 +326,26 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                         return num_tiles;
                     }
                 }
+
                 /*
-                 * If the region passed does not have a subtile set, set the
-                 * subtile to the first possible slot at this location.
+                 * If the region passed in does not have a subtile set, set the
+                 * subtile to the first possible slot found at this location.
                  */
             } else if (reg.get_sub_tile() == NO_SUBTILE) {
-                for (int z = 0; z < possible_sub_tiles.size(); z++) {
-                    num_tiles++;
-                    loc.x = x;
-                    loc.y = y;
-                    loc.sub_tile = possible_sub_tiles[z];
-                    if (num_tiles > 1) {
-                        return num_tiles;
+                int num_compatible_st = 0;
+
+                for (int z = 0; z < tile->capacity; z++) {
+                    if (is_sub_tile_compatible(tile, block_type, z)) {
+                        num_tiles++;
+                        num_compatible_st++;
+                        if (num_compatible_st == 1) { //set loc.sub_tile to the first compatible subtile value found
+                            loc.x = x;
+                            loc.y = y;
+                            loc.sub_tile = z;
+                        }
+                        if (num_tiles > 1) {
+                            return num_tiles;
+                        }
                     }
                 }
             }
@@ -371,7 +371,7 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
 
     Region intersect_reg;
     intersect_reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-    Region new_reg;
+    Region current_reg;
 
     for (unsigned int i = 0; i < regions.size(); i++) {
         reg_size = region_tile_cover(regions[i], block_type, loc);
@@ -386,11 +386,10 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
          * not incremented (unless this is the first size 1 region encountered).
          */
         if (reg_size == 1) {
-            //get the exact x, y, subtile location covered by regions[i]
-            new_reg.set_region_rect(loc.x, loc.y, loc.x, loc.y);
-            new_reg.set_sub_tile(loc.sub_tile);
-
-            intersect_reg = intersection(intersect_reg, new_reg);
+            //get the exact x, y, subtile location covered by the current region (regions[i])
+            current_reg.set_region_rect(loc.x, loc.y, loc.x, loc.y);
+            current_reg.set_sub_tile(loc.sub_tile);
+            intersect_reg = intersection(intersect_reg, current_reg);
 
             if (i == 0 || intersect_reg.empty()) {
                 pr_size = pr_size + reg_size;

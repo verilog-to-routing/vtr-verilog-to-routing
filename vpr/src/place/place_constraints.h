@@ -105,9 +105,11 @@ void mark_fixed_blocks();
 int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
 /*
- * Returns whether the PartitionRegion covers no tiles, 1 tile, or more than 1 tile.
+ * Returns a bool that indicates if the PartitionRegion covers exactly one compatible location.
  * Used to decide whether to mark a block with the .is_fixed flag based on its floorplan
  * region.
+ * block_type is used to determine whether the PartitionRegion is compatible with the cluster block type
+ * and loc is updated with the location covered by the PartitionRegion
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 

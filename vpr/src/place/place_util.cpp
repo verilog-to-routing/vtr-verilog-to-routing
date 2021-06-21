@@ -433,7 +433,7 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    std::string block_name = cluster_ctx.clb_nlist.block_name(blk_id);
+    const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
 
     //Check if block location is out of range of grid dimensions
     if (location.x < 0 || location.x > int(device_ctx.grid.width() - 1)
