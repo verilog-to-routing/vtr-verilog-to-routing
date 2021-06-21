@@ -378,7 +378,7 @@ Grid Location Tags
 
         **Default:** ``0``
 
-    :opt_param incry:
+    :opt_param incrx:
         An expression specifying the horizontal increment between block instantiations within the region.
 
         **Default:** ``w``
@@ -442,7 +442,7 @@ Grid Location Tags
         An expression specifying the vertical repeat factor of the column.
 
     :opt_param incry:
-        An expression specifying the horizontal increment between block instantiations within the region.
+        An expression specifying the vertical increment between block instantiations within the region.
 
         **Default:** ``h``
 
@@ -965,7 +965,7 @@ The following tags are common to all ``<tile>`` tags:
                 Desctibes the mapping of a physical tile's port on the logical block's (pb_type) port.
                 ``direct`` is an option sub-tag of ``site``.
 
-                .. note:: This tag is need only if the pin_mapping of the ``site`` is defined as ``custom``
+                .. note:: This tag is needed only if the pin_mapping of the ``site`` is defined as ``custom``
 
                 Attributes:
                     - ``from`` is relative to the physical tile pins
