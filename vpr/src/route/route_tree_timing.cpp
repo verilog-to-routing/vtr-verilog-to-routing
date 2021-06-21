@@ -686,6 +686,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     VTR_LOG("%srt_node: %d (%s) \t ipin: %d \t R: %g \t C: %g \t delay: %g",
             indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string(), rt_node->net_pin_index, rt_node->R_upstream, rt_node->C_downstream, rt_node->Tdel);
 
@@ -697,7 +698,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& route_ctx = g_vpr_ctx.routing();
-    if (route_ctx.rr_node_route_inf[rt_node->inode].occ() > device_ctx.rr_nodes[rt_node->inode].capacity()) {
+    if (route_ctx.rr_node_route_inf[rt_node->inode].occ() > rr_graph.node_capacity(RRNodeId(rt_node->inode))) {
         VTR_LOG(" x");
     }
 
@@ -978,7 +979,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
-    bool congested = (route_ctx.rr_node_route_inf[node->inode].occ() > device_ctx.rr_nodes[node->inode].capacity());
+    bool congested = (route_ctx.rr_node_route_inf[node->inode].occ() > rr_graph.node_capacity(RRNodeId(node->inode)));
     int node_set = -1;
     auto itr = device_ctx.rr_node_to_non_config_node_set.find(node->inode);
     if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
@@ -1175,7 +1176,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vect
 
     VTR_ASSERT_MSG(rr_graph.node_type(RRNodeId(rt_root->inode)) == SOURCE, "Root of route tree must be SOURCE");
 
-    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(),
+    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= rr_graph.node_capacity(RRNodeId(rt_root->inode)),
                    "Route tree root/SOURCE should never be congested");
 
     return prune_route_tree_recurr(rt_root, connections_inf, false, non_config_node_set_usage);
@@ -1275,13 +1276,14 @@ static void print_node_inf(const t_rt_node* rt_node) {
 
 static void print_node_congestion(const t_rt_node* rt_node) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     int inode = rt_node->inode;
     const auto& node_inf = route_ctx.rr_node_route_inf[inode];
-    const auto& node = device_ctx.rr_nodes[inode];
+    const short& node_capacity = rr_graph.node_capacity(RRNodeId(inode));
     VTR_LOG("%2d %2d|%-6d-> ", node_inf.acc_cost, rt_node->Tdel,
-            node_inf.occ(), node.capacity(), inode);
+            node_inf.occ(), node_capacity, inode);
 }
 
 void print_route_tree_inf(const t_rt_node* rt_root) {
@@ -1359,6 +1361,7 @@ bool is_valid_skeleton_tree(const t_rt_node* root) {
 bool is_valid_route_tree(const t_rt_node* root) {
     // check upstream resistance
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     constexpr float CAP_REL_TOL = 1e-6;
@@ -1393,7 +1396,7 @@ bool is_valid_route_tree(const t_rt_node* root) {
     // sink, must not be congested
     if (!edge) {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
-        int capacity = device_ctx.rr_nodes[inode].capacity();
+        int capacity = rr_graph.node_capacity(RRNodeId(inode));
         if (occ > capacity) {
             VTR_LOG("SINK %d occ %d > cap %d\n", inode, occ, capacity);
             return false;
@@ -1437,9 +1440,10 @@ bool is_valid_route_tree(const t_rt_node* root) {
 bool is_uncongested_route_tree(const t_rt_node* root) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     int inode = root->inode;
-    if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
+    if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(RRNodeId(inode))) {
         //This node is congested
         return false;
     }

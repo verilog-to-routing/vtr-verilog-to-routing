@@ -1163,7 +1163,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
             }
         }
     }
-    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
+    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= rr_graph.node_capacity(RRNodeId(rt_root->inode)), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
@@ -1597,6 +1597,7 @@ static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay) {
 static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if_force_reroute) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     t_trace* tptr = route_ctx.trace[net_id].head;
 
@@ -1608,7 +1609,7 @@ static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if
     for (;;) {
         int inode = tptr->index;
         int occ = route_ctx.rr_node_route_inf[inode].occ();
-        int capacity = device_ctx.rr_nodes[inode].capacity();
+        int capacity = rr_graph.node_capacity(RRNodeId(inode));
 
         if (occ > capacity) {
             return true; /* overuse detected */
@@ -1672,7 +1673,7 @@ static size_t calculate_wirelength_available() {
             size_t length_x = device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow();
             size_t length_y = device_ctx.rr_nodes[i].yhigh() - device_ctx.rr_nodes[i].ylow();
 
-            available_wirelength += device_ctx.rr_nodes[i].capacity() * (length_x + length_y + 1);
+            available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * (length_x + length_y + 1);
         }
     }
     return available_wirelength;

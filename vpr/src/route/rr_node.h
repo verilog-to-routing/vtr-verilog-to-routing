@@ -100,8 +100,6 @@ class t_rr_node {
     short yhigh() const;
     signed short length() const;
 
-    short capacity() const;
-
     short ptc_num() const;
     short pin_num() const;   //Same as ptc_num() but checks that type() is consistent
     short track_num() const; //Same as ptc_num() but checks that type() is consistent

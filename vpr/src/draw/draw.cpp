@@ -1111,7 +1111,7 @@ static void draw_congestion(ezgl::renderer* g) {
     std::vector<int> congested_rr_nodes = collect_congested_rr_nodes();
     for (int inode : congested_rr_nodes) {
         short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = device_ctx.rr_nodes[inode].capacity();
+        short capacity = rr_graph.node_capacity(RRNodeId(inode));
 
         float congestion_ratio = float(occ) / capacity;
 
@@ -1133,10 +1133,10 @@ static void draw_congestion(ezgl::renderer* g) {
     //valued nodes are not overdrawn by lower value ones (e.g-> when zoomed-out far)
     auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
         short lhs_occ = route_ctx.rr_node_route_inf[lhs_node].occ();
-        short lhs_capacity = device_ctx.rr_nodes[lhs_node].capacity();
+        short lhs_capacity = rr_graph.node_capacity(RRNodeId(lhs_node));
 
         short rhs_occ = route_ctx.rr_node_route_inf[rhs_node].occ();
-        short rhs_capacity = device_ctx.rr_nodes[rhs_node].capacity();
+        short rhs_capacity = rr_graph.node_capacity(RRNodeId(rhs_node));
 
         float lhs_cong_ratio = float(lhs_occ) / lhs_capacity;
         float rhs_cong_ratio = float(rhs_occ) / rhs_capacity;
@@ -1170,7 +1170,7 @@ static void draw_congestion(ezgl::renderer* g) {
     //Draw each congested node
     for (int inode : congested_rr_nodes) {
         short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = device_ctx.rr_nodes[inode].capacity();
+        short capacity = rr_graph.node_capacity(RRNodeId(inode));
 
         float congestion_ratio = float(occ) / capacity;
 

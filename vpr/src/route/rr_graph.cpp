@@ -2483,7 +2483,7 @@ std::string describe_rr_node(int inode) {
         msg += vtr::string_fmt(" class: %d", rr_node.class_num());
     }
 
-    msg += vtr::string_fmt(" capacity: %d", rr_node.capacity());
+    msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-in: %d", rr_node.fan_in());
     msg += vtr::string_fmt(" fan-out: %d", rr_node.num_edges());
 

@@ -801,8 +801,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline unsigned int get_node_capacity(const t_rr_node& node) final {
-        return node.capacity();
+        const auto& rr_graph = (*rr_graph_);
+        return rr_graph.node_capacity(node.id());
     }
+
     inline unsigned int get_node_id(const t_rr_node& node) final {
         return size_t(node.id());
     }
