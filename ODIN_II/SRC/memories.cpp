@@ -1913,12 +1913,12 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     ports_sizes[spram_ports_e::ADDR] = hb_ports->size;
 
                     if (ports_sizes[spram_ports_e::ADDR] < hb_instance_ports_sizes[spram_ports_e::ADDR])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "clk")) {
                     /* [1] clk size */
                     ports_sizes[spram_ports_e::CLK] = hb_ports->size;
                     if (ports_sizes[spram_ports_e::CLK] < hb_instance_ports_sizes[spram_ports_e::CLK])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "data")) {
                     /* [2] data size */
@@ -1928,12 +1928,12 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     // if (ports_sizes[spram_ports_e::DATA] < hb_instance_ports_sizes[spram_ports_e::DATA])
                     //     throw;
                     if (ports_sizes[spram_ports_e::DATA] > 1)
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "we")) {
                     ports_sizes[spram_ports_e::WE] = hb_ports->size;
                     if (ports_sizes[spram_ports_e::WE] < hb_instance_ports_sizes[spram_ports_e::WE])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 }
                 hb_ports = hb_ports->next;
             }
@@ -1948,12 +1948,12 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                 // if (ports_sizes[spram_ports_e::OUT] < hb_instance_ports_sizes[spram_ports_e::OUT])
                 //     throw;
                 if (ports_sizes[spram_ports_e::DATA] > 1)
-                    throw;
+                    throw (vtr::VtrError(hb_ports->name));
             }
 
         } catch (vtr::VtrError& vtr_error) {
             error_message(BLIF_ELBORATION, hb_instance->loc,
-                          "Hard Block (%s) Port (%s): Not match with FPGA Architecture Hard Block ports", hb_instance->name, hb_ports);
+                          "Hard Block (%s) Port (%s) size: Not match with FPGA Architecture Hard Block ports", hb_instance->name, vtr_error.what());
             vtr::free(ports_sizes);
         }
     }
@@ -2010,18 +2010,18 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     ports_sizes[dpram_ports_e::ADDR1] = hb_ports->size;
 
                     if (ports_sizes[dpram_ports_e::ADDR1] < hb_instance_ports_sizes[dpram_ports_e::ADDR1])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "addr2")) {
                     /* [1] addr2 size */
                     ports_sizes[dpram_ports_e::ADDR2] = hb_ports->size;
 
                     if (ports_sizes[dpram_ports_e::ADDR2] < hb_instance_ports_sizes[dpram_ports_e::ADDR2])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "clk")) {
                     /* [2] clk size */
                     ports_sizes[dpram_ports_e::CLK] = hb_ports->size;
                     if (ports_sizes[dpram_ports_e::CLK] < hb_instance_ports_sizes[dpram_ports_e::CLK])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "data1")) {
                     /* [3] data1 size */
@@ -2031,7 +2031,7 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::DATA1] > 1)
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "data2")) {
                     /* [4] data2 size */
@@ -2041,17 +2041,17 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::DATA2] > 1)
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "we1")) {
                     /* [5] we1 size */
                     ports_sizes[dpram_ports_e::WE1] = hb_ports->size;
                     if (ports_sizes[dpram_ports_e::WE1] < hb_instance_ports_sizes[dpram_ports_e::WE1])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "we2")) {
                     /* [6] we2 size */
                     ports_sizes[dpram_ports_e::WE2] = hb_ports->size;
                     if (ports_sizes[dpram_ports_e::WE2] < hb_instance_ports_sizes[dpram_ports_e::WE2])
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 }
                 hb_ports = hb_ports->next;
             }
@@ -2067,7 +2067,7 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::OUT1] > 1)
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "out2")) {
                     /* [8] out2 size */
                     ports_sizes[dpram_ports_e::OUT2] = hb_ports->size;
@@ -2076,14 +2076,14 @@ int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
                     // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::OUT2] > 1)
-                        throw;
+                        throw (vtr::VtrError(hb_ports->name));
                 }
                 hb_ports = hb_ports->next;
             }
 
         } catch (vtr::VtrError& vtr_error) {
             error_message(BLIF_ELBORATION, hb_instance->loc,
-                          "Hard Block (%s) Port (%s): Not match with FPGA Architecture Hard Block ports", hb_instance->name, hb_ports);
+                          "Hard Block (%s) Port (%s) size: Not match with FPGA Architecture Hard Block ports", hb_instance->name, vtr_error.what());
             vtr::free(ports_sizes);
         }
     }
