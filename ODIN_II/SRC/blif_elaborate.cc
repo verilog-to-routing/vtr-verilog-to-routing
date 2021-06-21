@@ -465,31 +465,29 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
 
     switch (node->type) {
         case ADD: {
-            nnode_t* new_node = NULL;
             /** 
              * check for missing ports such as carry-in/out in case of 
              * dealing with generated netlist from Yosys blif file.
              */
             if (hard_adders) {
-                new_node = check_missing_ports(node, traverse_mark_number, netlist);
+                node = check_missing_ports(node, traverse_mark_number, netlist);
             }
 
             /* Adding to add_list for future checking on hard blocks */
-            add_list = insert_in_vptr_list(add_list, new_node);
+            add_list = insert_in_vptr_list(add_list, node);
             break;
         }
         case MINUS: {
-            nnode_t* new_node = NULL;
             /** 
              * check for missing ports such as carry-in/out in case of 
              * dealing with generated netlist from Yosys blif file.
              */
             if (hard_adders) {
-                new_node = check_missing_ports(node, traverse_mark_number, netlist);
+                node = check_missing_ports(node, traverse_mark_number, netlist);
             }
 
             /* Adding to sub_list for future checking on hard blocks */
-            sub_list = insert_in_vptr_list(sub_list, new_node);
+            sub_list = insert_in_vptr_list(sub_list, node);
             break;
         }
         case MULTIPLY: {

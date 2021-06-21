@@ -2119,9 +2119,11 @@ bool BLIF::Reader::need_params(operation_list type) {
         case (DFFE):    //fallthrough
         case (ADFFE):   //fallthrough
         case (SDFFE):   //fallthrough
-        case (SDFFCE):   //fallthrough
+        case (SDFFCE):  //fallthrough
         case (DFFSR):   //fallthrough
         case (DFFSRE):  //fallthrough
+        case (SPRAM):   //fallthrough
+        case (DPRAM):   //fallthrough
         case (BRAM):    //fallthrough
         case (ROM):     //fallthrough
         case (FF_NODE): {

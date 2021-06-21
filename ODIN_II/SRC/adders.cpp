@@ -58,6 +58,7 @@ netlist_t* the_netlist;
 
 void record_add_distribution(nnode_t* node);
 void init_split_adder(nnode_t* node, nnode_t* ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index, int flag, netlist_t* netlist);
+static void cleanup_add_old_node(nnode_t* nodeo, netlist_t* netlist);
 
 /*---------------------------------------------------------------------------
  * (function: init_add_distribution)
@@ -782,15 +783,9 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
         }
     }
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(nodeo->name);
-    vtr::free(nodeo->input_port_sizes);
-    vtr::free(nodeo->output_port_sizes);
+    /* Freeing the old node! */
+    cleanup_add_old_node(nodeo, netlist);
 
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(nodeo->input_pins);
-    vtr::free(nodeo->output_pins);
-    vtr::free(nodeo);
     vtr::free(node);
     return;
 }
@@ -853,6 +848,7 @@ void iterate_adders(netlist_t* netlist) {
                 count = countb;
             total++;
             split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+            std::cout << "hi" << std::endl;
         }
         // Store the node into processed_adder_list if the threshold is bigger than num
         else
@@ -1291,6 +1287,60 @@ bool is_ast_adder(ast_node_t* node) {
     }
 
     return is_adder;
+}
+
+/**
+ * -------------------------------------------------------------------------
+ * (function: cleanup_add_old_node)
+ *
+ * @brief <clean up nodeo, a high level ADD node> 
+ * In split_adder function, nodeo is splitted to small adders, 
+ * while because of the complexity of input pin connections they have not been 
+ * remapped to new nodes, they just copied and added to new nodes. This function 
+ * will detach input pins from the nodeo. Moreover, it will connect the net of 
+ * unconnected output signals to the GND node, detach the pin from nodeo and 
+ * free the output pins to avoid memory leak.
+ * 
+ * @param nodeo representing the old adder node
+ * @param netlist representing the current netlist
+ *-----------------------------------------------------------------------*/
+static void cleanup_add_old_node(nnode_t* nodeo, netlist_t* netlist) {
+    int i;
+    /* Disconnecting input pins from the old node side */
+    for (i = 0; i < nodeo->num_input_pins; i++) {
+        nodeo->input_pins[i] = NULL;
+    }
+
+    /* connecting the extra output pins to the gnd node */
+    for (i = 0; i < nodeo->num_output_pins; i++) {
+        npin_t* output_pin = nodeo->output_pins[i];
+
+        if (output_pin && output_pin->node) {
+            /* for now we just pass the signals directly through */
+            npin_t* zero_pin = get_zero_pin(netlist);
+            int idx_2_buffer = zero_pin->pin_net_idx;
+
+            // Dont eliminate the buffer if there are multiple drivers or the AST included it
+            if (output_pin->net->num_driver_pins <= 1) {
+                /* join all fanouts of the output net with the input pins net */
+                join_nets(zero_pin->net, output_pin->net);
+
+                /* erase the pointer to this buffer */
+                zero_pin->net->fanout_pins[idx_2_buffer] = NULL;
+            }
+
+            free_nnet(output_pin->net);
+
+            free_npin(zero_pin);
+            free_npin(output_pin);
+
+            /* Disconnecting output pins from the old node side */
+            nodeo->output_pins[i] = NULL;
+        }
+    }
+
+    // CLEAN UP
+    free_nnode(nodeo);
 }
 
 /**

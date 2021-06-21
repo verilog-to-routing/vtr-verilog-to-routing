@@ -300,13 +300,15 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
     nnet_t* gnd_net = netlist->zero_net;
     nnet_t* vcc_net = netlist->one_net;
 
+    int internal_outputs_size = const_operand_width;
     /* to keep the record of internal outputs for connection purposes */
-    signal_list_t** internal_outputs = (signal_list_t**)vtr::calloc(const_operand_width, sizeof(signal_list_t*));
+    signal_list_t** internal_outputs = (signal_list_t**)vtr::calloc(internal_outputs_size, sizeof(signal_list_t*));
     /* implementing the multipication using shift and add operation */
     for (i = 0; i < node->num_output_pins + 1; i++) {
         npin_t* pin;
         /* checking a couple conditions to avoid going further if there is not needed */
         if (i == node->num_output_pins || i == const_operand_width) {
+            internal_outputs_size = i;
             /* initializing the return value */
             for (j = 0; j < internal_outputs[i - 1]->count; j++) {
                 add_pin_to_signal_list(return_value, internal_outputs[i - 1]->pins[j]);
@@ -434,7 +436,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
     free_signal_list(const_operand);
     free_signal_list(variable_operand);
 
-    for (i = 0; i < node->num_output_pins; i++) {
+    for (i = 0; i < internal_outputs_size; i++) {
         if (internal_outputs[i])
             free_signal_list(internal_outputs[i]);
     }
