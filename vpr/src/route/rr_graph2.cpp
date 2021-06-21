@@ -39,8 +39,8 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index);
 
-static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
-                                       const t_rr_node_indices& L_rr_node_indices,
+static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                       const std::vector<int> conn_tracks,
                                        const int to_chan,
                                        const int to_seg,
                                        const int to_sb,
@@ -50,10 +50,11 @@ static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
                                        const int from_switch,
                                        const int switch_override,
                                        const enum e_directionality directionality,
-                                       const int from_rr_node,
+                                       RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create);
 
-static int get_unidir_track_to_chan_seg(const int from_track,
+static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                        const int from_track,
                                         const int to_chan,
                                         const int to_seg,
                                         const int to_sb,
@@ -65,23 +66,22 @@ static int get_unidir_track_to_chan_seg(const int from_track,
                                         const int Fs_per_side,
                                         t_sblock_pattern& sblock_pattern,
                                         const int switch_override,
-                                        const t_rr_node_indices& L_rr_node_indices,
                                         const t_chan_seg_details* seg_details,
                                         bool* Fs_clipped,
-                                        const int from_rr_node,
+                                        RRNodeId from_rr_node,
                                         t_rr_edge_info_set& rr_edges_to_create,
                                         t_opin_connections_scratchpad* scratchpad);
 
-static int get_track_to_chan_seg(const int from_track,
+static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                 const int from_track,
                                  const int to_chan,
                                  const int to_seg,
                                  const t_rr_type to_chan_type,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int swtich_override,
-                                 const t_rr_node_indices& L_rr_node_indices,
                                  t_sb_connection_map* sb_conn_map,
-                                 const int from_rr_node,
+                                 RRNodeId from_rr_node,
                                  t_rr_edge_info_set& rr_edges_to_create);
 
 static int vpr_to_phy_track(const int itrack,
@@ -570,17 +570,17 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
 
 /* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
  * Also stores the nodes to which this pin connects in rr_edges_to_create    */
-int get_bidir_opin_connections(const int i,
+int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                               const int i,
                                const int j,
                                const int ipin,
-                               const int from_rr_node,
+                               RRNodeId from_rr_node,
                                t_rr_edge_info_set& rr_edges_to_create,
                                const t_pin_to_track_lookup& opin_to_track_map,
-                               const t_rr_node_indices& L_rr_node_indices,
                                const t_chan_details& chan_details_x,
                                const t_chan_details& chan_details_y) {
     int num_conn, tr_i, tr_j, chan, seg;
-    int to_switch, to_node;
+    int to_switch;
     int is_connected_track;
     t_physical_tile_type_ptr type;
     t_rr_type to_type;
@@ -639,13 +639,13 @@ int get_bidir_opin_connections(const int i,
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch();
-                to_node = get_rr_node_index(L_rr_node_indices, tr_i, tr_j, to_type, to_track);
+                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(tr_i, tr_j, to_type, to_track);
 
-                if (to_node == OPEN) {
+                if (!to_node) {
                     continue;
                 }
 
-                rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch);
+                rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(to_node), to_switch);
                 ++num_conn;
             }
         }
@@ -654,25 +654,24 @@ int get_bidir_opin_connections(const int i,
     return num_conn;
 }
 
-int get_unidir_opin_connections(const int chan,
+int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
+                                const int chan,
                                 const int seg,
                                 int Fc,
                                 const int seg_type_index,
                                 const t_rr_type chan_type,
                                 const t_chan_seg_details* seg_details,
-                                const int from_rr_node,
+                                RRNodeId from_rr_node,
                                 t_rr_edge_info_set& rr_edges_to_create,
                                 vtr::NdMatrix<int, 3>& Fc_ofs,
                                 const int max_len,
                                 const int max_chan_width,
-                                const t_rr_node_indices& L_rr_node_indices,
                                 bool* Fc_clipped,
                                 t_opin_connections_scratchpad* scratchpad) {
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
     int num_inc_muxes, num_dec_muxes, iconn;
-    int inc_inode_index, dec_inode_index;
     int inc_mux, dec_mux;
     int inc_track, dec_track;
     int x, y;
@@ -716,18 +715,18 @@ int get_unidir_opin_connections(const int chan,
         dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
-        inc_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, inc_track);
-        dec_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, dec_track);
+        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(x, y, chan_type, inc_track);
+        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(x, y, chan_type, dec_track);
 
-        if (inc_inode_index == OPEN || dec_inode_index == OPEN) {
+        if (!inc_inode_index || !dec_inode_index) {
             continue;
         }
 
         /* Add to the list. */
-        rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, seg_details[inc_track].arch_opin_switch());
+        rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(inc_inode_index), seg_details[inc_track].arch_opin_switch());
         ++num_edges;
 
-        rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, seg_details[dec_track].arch_opin_switch());
+        rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(dec_inode_index), seg_details[dec_track].arch_opin_switch());
         ++num_edges;
     }
 
@@ -1562,13 +1561,13 @@ int find_average_rr_node_index(int device_width,
     return (inode);
 }
 
-int get_track_to_pins(int seg,
+int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
+                      int seg,
                       int chan,
                       int track,
                       int tracks_per_chan,
-                      int from_rr_node,
+                      RRNodeId from_rr_node,
                       t_rr_edge_info_set& rr_edges_to_create,
-                      const t_rr_node_indices& L_rr_node_indices,
                       const t_track_to_pin_lookup& track_to_pin_lookup,
                       const t_chan_seg_details* seg_details,
                       enum e_rr_type chan_type,
@@ -1626,9 +1625,9 @@ int get_track_to_pins(int seg,
 
                     /* Check there is a connection and Fc map isn't wrong */
                     /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
-                    int to_node = get_rr_node_index(L_rr_node_indices, x, y, IPIN, ipin, side);
-                    if (to_node >= 0) {
-                        rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch);
+                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(x, y, IPIN, ipin, side);
+                    if (to_node) {
+                        rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(to_node), wire_to_ipin_switch);
                         ++num_conn;
                     }
                 }
@@ -1656,7 +1655,8 @@ int get_track_to_pins(int seg,
  * switches are marked as being of the types of the larger (lower R) pass
  * transistor.
  */
-int get_track_to_tracks(const int from_chan,
+int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
+                        const int from_chan,
                         const int from_seg,
                         const int from_track,
                         const t_rr_type from_type,
@@ -1667,13 +1667,12 @@ int get_track_to_tracks(const int from_chan,
                         const DeviceGrid& grid,
                         const int Fs_per_side,
                         t_sblock_pattern& sblock_pattern,
-                        const int from_rr_node,
+                        RRNodeId from_rr_node,
                         t_rr_edge_info_set& rr_edges_to_create,
                         const t_chan_seg_details* from_seg_details,
                         const t_chan_seg_details* to_seg_details,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
-                        const t_rr_node_indices& L_rr_node_indices,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         t_sb_connection_map* sb_conn_map,
                         t_opin_connections_scratchpad* scratchpad) {
@@ -1804,10 +1803,9 @@ int get_track_to_tracks(const int from_chan,
         if (sb_seg < end_sb_seg) {
             if (custom_switch_block) {
                 if (DEC_DIRECTION == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side,
                                                       switch_override,
-                                                      L_rr_node_indices,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
                 }
             } else {
@@ -1815,8 +1813,8 @@ int get_track_to_tracks(const int from_chan,
                     /* For bidir, the target segment might have an unbuffered (bidir pass transistor)
                      * switchbox, so we follow through regardless of whether the current segment has an SB */
                     conn_tracks = switch_block_conn[from_side_a][to_side][from_track];
-                    num_conn += get_bidir_track_to_chan_seg(conn_tracks,
-                                                            L_rr_node_indices, to_chan, to_seg, to_sb, to_type,
+                    num_conn += get_bidir_track_to_chan_seg(rr_graph_builder, conn_tracks,
+                                                            to_chan, to_seg, to_sb, to_type,
                                                             to_seg_details, from_is_sblock, from_switch,
                                                             switch_override,
                                                             directionality, from_rr_node, rr_edges_to_create);
@@ -1826,12 +1824,12 @@ int get_track_to_tracks(const int from_chan,
                     /* Also, we are connecting from the top or right of SB so it
                      * makes the most sense to only get there from DEC_DIRECTION wires. */
                     if ((from_is_sblock) && (DEC_DIRECTION == from_seg_details[from_track].direction())) {
-                        num_conn += get_unidir_track_to_chan_seg(from_track, to_chan,
+                        num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, from_track, to_chan,
                                                                  to_seg, to_sb, to_type, max_chan_width, grid,
                                                                  from_side_a, to_side, Fs_per_side,
                                                                  sblock_pattern,
                                                                  switch_override,
-                                                                 L_rr_node_indices, to_seg_details,
+                                                                 to_seg_details,
                                                                  &Fs_clipped, from_rr_node, rr_edges_to_create, scratchpad);
                     }
                 }
@@ -1843,10 +1841,9 @@ int get_track_to_tracks(const int from_chan,
         if (sb_seg > start_sb_seg) {
             if (custom_switch_block) {
                 if (INC_DIRECTION == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
                                                       switch_override,
-                                                      L_rr_node_indices,
                                                       sb_conn_map, from_rr_node, rr_edges_to_create);
                 }
             } else {
@@ -1854,8 +1851,8 @@ int get_track_to_tracks(const int from_chan,
                     /* For bidir, the target segment might have an unbuffered (bidir pass transistor)
                      * switchbox, so we follow through regardless of whether the current segment has an SB */
                     conn_tracks = switch_block_conn[from_side_b][to_side][from_track];
-                    num_conn += get_bidir_track_to_chan_seg(conn_tracks,
-                                                            L_rr_node_indices, to_chan, to_seg, to_sb, to_type,
+                    num_conn += get_bidir_track_to_chan_seg(rr_graph_builder, conn_tracks,
+                                                            to_chan, to_seg, to_sb, to_type,
                                                             to_seg_details, from_is_sblock, from_switch,
                                                             switch_override,
                                                             directionality, from_rr_node, rr_edges_to_create);
@@ -1866,12 +1863,12 @@ int get_track_to_tracks(const int from_chan,
                      * makes the most sense to only get there from INC_DIRECTION wires. */
                     if ((from_is_sblock)
                         && (INC_DIRECTION == from_seg_details[from_track].direction())) {
-                        num_conn += get_unidir_track_to_chan_seg(from_track, to_chan,
+                        num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, from_track, to_chan,
                                                                  to_seg, to_sb, to_type, max_chan_width, grid,
                                                                  from_side_b, to_side, Fs_per_side,
                                                                  sblock_pattern,
                                                                  switch_override,
-                                                                 L_rr_node_indices, to_seg_details,
+                                                                 to_seg_details,
                                                                  &Fs_clipped, from_rr_node, rr_edges_to_create, scratchpad);
                     }
                 }
@@ -1882,8 +1879,8 @@ int get_track_to_tracks(const int from_chan,
     return num_conn;
 }
 
-static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
-                                       const t_rr_node_indices& L_rr_node_indices,
+static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                       const std::vector<int> conn_tracks,
                                        const int to_chan,
                                        const int to_seg,
                                        const int to_sb,
@@ -1893,10 +1890,10 @@ static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
                                        const int from_switch,
                                        const int switch_override,
                                        const enum e_directionality directionality,
-                                       const int from_rr_node,
+                                       RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create) {
     unsigned iconn;
-    int to_track, to_node, to_switch, num_conn, to_x, to_y, i;
+    int to_track, to_switch, num_conn, to_x, to_y, i;
     bool to_is_sblock;
     short switch_types[2];
 
@@ -1914,9 +1911,9 @@ static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
     num_conn = 0;
     for (iconn = 0; iconn < conn_tracks.size(); ++iconn) {
         to_track = conn_tracks[iconn];
-        to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_type, to_track);
+        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_x, to_y, to_type, to_track);
 
-        if (to_node == OPEN) {
+        if (!to_node) {
             continue;
         }
 
@@ -1937,7 +1934,7 @@ static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
             }
 
             /* Add the edge to the list */
-            rr_edges_to_create.emplace_back(from_rr_node, to_node, switch_types[i]);
+            rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(to_node), switch_types[i]);
             ++num_conn;
         }
     }
@@ -1950,16 +1947,16 @@ static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
  * edges added .
  * See route/build_switchblocks.c for a detailed description of how the switch block
  * connection map sb_conn_map is generated. */
-static int get_track_to_chan_seg(const int from_wire,
+static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                 const int from_wire,
                                  const int to_chan,
                                  const int to_seg,
                                  const t_rr_type to_chan_type,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int switch_override,
-                                 const t_rr_node_indices& L_rr_node_indices,
                                  t_sb_connection_map* sb_conn_map,
-                                 const int from_rr_node,
+                                 RRNodeId from_rr_node,
                                  t_rr_edge_info_set& rr_edges_to_create) {
     int edge_count = 0;
     int to_x, to_y;
@@ -1993,9 +1990,9 @@ static int get_track_to_chan_seg(const int from_wire,
             if (conn_vector.at(iconn).from_wire != from_wire) continue;
 
             int to_wire = conn_vector.at(iconn).to_wire;
-            int to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_chan_type, to_wire);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_x, to_y, to_chan_type, to_wire);
 
-            if (to_node == OPEN) {
+            if (!to_node) {
                 continue;
             }
 
@@ -2007,14 +2004,14 @@ static int get_track_to_chan_seg(const int from_wire,
                 src_switch = switch_override;
             }
 
-            rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch);
+            rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(to_node), src_switch);
             ++edge_count;
 
             auto& device_ctx = g_vpr_ctx.device();
 
             if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
                 //Add reverse edge since bi-directional
-                rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch);
+                rr_edges_to_create.emplace_back(size_t(to_node), size_t(from_rr_node), src_switch);
                 ++edge_count;
             }
         }
@@ -2024,7 +2021,8 @@ static int get_track_to_chan_seg(const int from_wire,
     return edge_count;
 }
 
-static int get_unidir_track_to_chan_seg(const int from_track,
+static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
+                                        const int from_track,
                                         const int to_chan,
                                         const int to_seg,
                                         const int to_sb,
@@ -2036,10 +2034,9 @@ static int get_unidir_track_to_chan_seg(const int from_track,
                                         const int Fs_per_side,
                                         t_sblock_pattern& sblock_pattern,
                                         const int switch_override,
-                                        const t_rr_node_indices& L_rr_node_indices,
                                         const t_chan_seg_details* seg_details,
                                         bool* Fs_clipped,
-                                        const int from_rr_node,
+                                        RRNodeId from_rr_node,
                                         t_rr_edge_info_set& rr_edges_to_create,
                                         t_opin_connections_scratchpad* scratchpad) {
     int num_labels = 0;
@@ -2090,9 +2087,9 @@ static int get_unidir_track_to_chan_seg(const int from_track,
                 sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][j + 1] = to_track;
             }
 
-            int to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_type, to_track);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_x, to_y, to_type, to_track);
 
-            if (to_node == OPEN) {
+            if (!to_node) {
                 continue;
             }
 
@@ -2106,13 +2103,13 @@ static int get_unidir_track_to_chan_seg(const int from_track,
             VTR_ASSERT(iswitch != OPEN);
 
             /* Add edge to list. */
-            rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch);
+            rr_edges_to_create.emplace_back(size_t(from_rr_node), size_t(to_node), iswitch);
             ++count;
 
             auto& device_ctx = g_vpr_ctx.device();
             if (device_ctx.arch_switch_inf[iswitch].directionality() == BI_DIRECTIONAL) {
                 //Add reverse edge since bi-directional
-                rr_edges_to_create.emplace_back(to_node, from_rr_node, iswitch);
+                rr_edges_to_create.emplace_back(size_t(to_node), size_t(from_rr_node), iswitch);
                 ++count;
             }
         }
