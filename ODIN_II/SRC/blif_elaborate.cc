@@ -39,6 +39,8 @@
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "memories.h"
+#include "block_memories.hh"
+#include "memories.h"
 #include "adders.h"
 #include "division.hh"
 #include "latch.hh"
@@ -95,6 +97,9 @@ void blif_elaborate_top(netlist_t* netlist) {
          *  is already compatible with Odin_II style 
          */
     } else if (configuration.coarsen) {
+        /* init hashtable to index memory blocks and ROMs */
+        init_block_memory_index();
+
         /* do the elaboration without any larger structures identified */
         depth_first_traversal_to_blif_elaborate(SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
         /**

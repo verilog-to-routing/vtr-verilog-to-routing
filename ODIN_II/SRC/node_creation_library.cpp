@@ -237,10 +237,10 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
  * @return the last output pin of the chain
  * -------------------------------------------------------------------------------------------
  */
-npin_t* make_or_chain(signal_list_t* inputs, nnode_t* node) {
+signal_list_t* make_or_chain(signal_list_t* inputs, nnode_t* node) {
     int i;
     int width = inputs->count;
-    npin_t* output = NULL;
+    signal_list_t* output = init_signal_list();
 
     nnode_t** or_gates = (nnode_t**)vtr::calloc(width - 1, sizeof(nnode_t*));
     signal_list_t* internal_outputs = init_signal_list();
@@ -277,7 +277,7 @@ npin_t* make_or_chain(signal_list_t* inputs, nnode_t* node) {
     }
 
     /* the output pin of the last or gate */
-    output = internal_outputs->pins[width - 2];
+    add_pin_to_signal_list(output, internal_outputs->pins[width - 2]);
 
     // CLEAN UP
     free_signal_list(inputs);

@@ -848,7 +848,6 @@ void iterate_adders(netlist_t* netlist) {
                 count = countb;
             total++;
             split_adder(node, a, b, sizea, sizeb, 1, 1, count, netlist);
-            std::cout << "hi" << std::endl;
         }
         // Store the node into processed_adder_list if the threshold is bigger than num
         else

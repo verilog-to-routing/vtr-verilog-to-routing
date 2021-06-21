@@ -51,6 +51,7 @@
 
 #include "hard_blocks.h"
 #include "memories.h"
+#include "block_memories.hh"
 #include "simulate_blif.h"
 
 #include "netlist_visualizer.h"
@@ -116,6 +117,12 @@ static ODIN_ERROR_CODE synthesize() {
             reduce_operations(verilog_netlist, MULTIPLY);
             iterate_multipliers(verilog_netlist);
             clean_multipliers();
+        }
+
+        if (read_only_memory_list || block_memory_list) {
+            /* Perform a hard block registration if an architecture is given */
+            iterate_block_memories();
+            free_block_memories(); 
         }
 
         if (single_port_rams || dual_port_rams) {

@@ -53,8 +53,6 @@ void pad_memory_input_port(nnode_t* node, netlist_t* netlist, t_model* model, co
 
 void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
 void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
-void remap_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
-void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, char* port_name);
 
 int get_sp_ram_split_width();
 int get_dp_ram_split_width();
@@ -138,6 +136,8 @@ void remap_input_port_to_memory(nnode_t* node, signal_list_t* signals, const cha
     for (i = 0; i < signals->count; i++, j++) {
         npin_t* pin = signals->pins[i];
         if (strcmp(pin->mapping, port_name)) {
+            if (pin->mapping)
+                vtr::free(pin->mapping);
             pin->mapping = vtr::strdup(port_name);
         }
         remap_pin_to_new_node(pin, node, j);
@@ -169,15 +169,10 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
     // Add the new port.
     for (i = 0; i < signalsvar->count; i++, j++) {
         npin_t* pin = signalsvar->pins[i];
-        //if (pin->node && pin->node->input_pins && pin->node->input_pins[pin->pin_node_idx])
-        //	pin->node->input_pins[pin->pin_node_idx] = NULL;
         if (pin->mapping) {
             vtr::free(pin->mapping);
         }
         pin->mapping = vtr::strdup(port_name);
-        //if (pin->node)
-        //	remap_pin_to_new_node(pin, node, j);
-        //else
         add_input_pin_to_node(node, pin, j);
     }
 }
@@ -185,7 +180,7 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
 /*
  * Re-maps the given output signals to the given port name on the given memory node.
  */
-void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, char* port_name) {
+void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name) {
     int i;
     int j = node->num_output_pins;
 
@@ -206,6 +201,8 @@ void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, char*
     for (i = 0; i < signalsvar->count; i++, j++) {
         npin_t* pin = signalsvar->pins[i];
         if (strcmp(pin->mapping, port_name)) {
+            if (pin->mapping)
+                vtr::free(pin->mapping);
             pin->mapping = vtr::strdup(port_name);
         }
         remap_pin_to_new_node(pin, node, j);
@@ -226,8 +223,8 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     for (i = 0; i < j; i++) {
         npin_t* pin = node->output_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            // error_message(NETLIST, node->loc,
-            //               "Attempted to reassign output port %s to node %s.", port_name, node->name);
+            error_message(NETLIST, node->loc,
+                          "Attempted to reassign output port %s to node %s.", port_name, node->name);
             return;
         }
     }
@@ -240,6 +237,8 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     for (i = 0; i < signals->count; i++, j++) {
         npin_t* pin = signals->pins[i];
         if (pin->mapping) {
+            if (pin->mapping)
+                vtr::free(pin->mapping);
             vtr::free(pin->mapping);
         }
         pin->mapping = vtr::strdup(port_name);
@@ -1868,6 +1867,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
     return return_list;
 }
 
+
 /**
  * (function: get_sp_ram_hb_ports_sizes)
  * 
@@ -1877,7 +1877,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
  * @param hb_instance_ports_sizes ports sizes of the spram instance
  * @param hb_instance spram hard block instance
  */
-int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
+int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
     /* return value */
     int* ports_sizes = NULL;
 
@@ -1970,7 +1970,7 @@ int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance
  * @param hb_instance_ports_sizes ports sizes of the dpram instance
  * @param hb_instance dpram hard block instance
  */
-int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
+int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
     /* return value */
     int* ports_sizes = NULL;
 
@@ -2136,7 +2136,7 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
     int widths[5] = {SP_ADDR_width, SP_CLK_width, SP_DATA_width, SP_WE_width, SP_OUT_width};
 
     /* getting the hb ports sizes if any hb model exist */
-    int* hb_ports_sizes = get_spram_hb_ports_sizes(widths, node);
+    int* hb_ports_sizes = check_spram_hb_ports_sizes(widths, node);
 
     int addr_width = (hb_ports_sizes) ? hb_ports_sizes[0] : SP_ADDR_width;
     int clk_width = (hb_ports_sizes) ? hb_ports_sizes[1] : SP_CLK_width;
@@ -2288,7 +2288,7 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
     int widths[9] = {DP_ADDR1_width, DP_ADDR2_width, DP_CLK_width, DP_DATA1_width, DP_DATA2_width, DP_WE1_width, DP_WE2_width, DP_OUT1_width, DP_OUT2_width};
 
     /* getting the hb ports sizes if any hb model exist */
-    int* hb_ports_sizes = get_dpram_hb_ports_sizes(widths, node);
+    int* hb_ports_sizes = check_dpram_hb_ports_sizes(widths, node);
 
     int addr1_width = (hb_ports_sizes) ? hb_ports_sizes[0] : DP_ADDR1_width;
     int addr2_width = (hb_ports_sizes) ? hb_ports_sizes[1] : DP_ADDR2_width;
@@ -2436,451 +2436,11 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
         npin_t* out_pin2 = node->output_pins[DP_OUT1_width + i];
         /* hook the data out pin to new node */
         remap_pin_to_new_node(out_pin2, dpram, 1);
+
+
+        dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
     }
 
-    // CLEAN UP
-    free_nnode(node);
-}
-
-/**
- * (function: resolve_rom_node)
- * 
- * @brief read_only_memory will be considered as single port ram
- * this function reorders inputs and add data_in input to new node
- * which is connected to pad node
- * 
- * @param node pointing to a rom node node
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-    oassert(node->num_input_port_sizes == 3);
-
-    int i, j;
-    /** 
-     * yosys single port ram information 
-     * 
-     * RD_ADDR:    input port [0] 
-     * RD_CLOCK:   input port [1] 
-     * RD_DATA:    output port [0] 
-     * RD_ENABLE:  input port [2] 
-     */
-    int RD_ADDR_width = node->input_port_sizes[0];
-    int RD_CLK_width = node->input_port_sizes[1];
-    int RD_DATA_width = node->output_port_sizes[0];
-    int RD_ENABLE_width = node->input_port_sizes[2];
-
-    /* validate port sizes */
-    oassert(RD_CLK_width == 1);
-
-    /* creating a new node to reorder pins and specify the related hard block name */
-    nnode_t* new_node = allocate_nnode(node->loc);
-    new_node->type = MEMORY;
-    new_node->traverse_visited = traverse_mark_number;
-    char* hb_name = vtr::strdup(SINGLE_PORT_RAM_string);
-    new_node->name = make_full_ref_name(hb_name, NULL, NULL, NULL, -1);
-
-    new_node->related_ast_node = node->related_ast_node;
-
-    char* hard_block_identifier = new_node->related_ast_node->identifier_node->types.identifier;
-    /* setting single port ram as corresponding memory hard block */
-    if (hard_block_identifier)
-        vtr::free(hard_block_identifier);
-
-    new_node->related_ast_node->identifier_node->types.identifier = hb_name;
-
-    /* INPUTS */
-    /* add read addr port info */
-    add_input_port_information(new_node, RD_ADDR_width);
-    allocate_more_input_pins(new_node, RD_ADDR_width);
-    for (i = 0; i < RD_ADDR_width; i++) {
-        npin_t* rd_addr_pin = node->input_pins[i];
-        if (rd_addr_pin->mapping)
-            vtr::free(rd_addr_pin->mapping);
-
-        rd_addr_pin->mapping = vtr::strdup("addr");
-        remap_pin_to_new_node(rd_addr_pin, new_node, i);
-    }
-
-    /* add read clock port info */
-    add_input_port_information(new_node, 1);
-    allocate_more_input_pins(new_node, 1);
-    npin_t* clk_pin = node->input_pins[RD_ADDR_width];
-    if (clk_pin->mapping)
-        vtr::free(clk_pin->mapping);
-
-    clk_pin->mapping = vtr::strdup("clk");
-    remap_pin_to_new_node(clk_pin,
-                          new_node,
-                          RD_ADDR_width);
-
-    /* add data in port info */
-    add_input_port_information(new_node, RD_DATA_width);
-    allocate_more_input_pins(new_node, RD_DATA_width);
-    /* since ROM does not have any data in we connect the data in port to pad */
-    for (i = 0; i < RD_DATA_width; i++) {
-        npin_t* pad_pin = get_pad_pin(netlist);
-        pad_pin->mapping = vtr::strdup("data");
-        add_input_pin_to_node(new_node, pad_pin, RD_ADDR_width + 1 + i);
-    }
-
-    /* add read enable port info */
-    add_input_port_information(new_node, 1);
-    allocate_more_input_pins(new_node, 1);
-    npin_t* rd_en_pin = NULL;
-    if (RD_ENABLE_width == 1) {
-        rd_en_pin = node->input_pins[RD_ADDR_width + RD_CLK_width];
-        if (rd_en_pin->mapping)
-            vtr::free(rd_en_pin->mapping);
-
-        rd_en_pin->mapping = vtr::strdup("we");
-        remap_pin_to_new_node(rd_en_pin,
-                              new_node,
-                              RD_ADDR_width + 1 + RD_DATA_width);
-
-    } else if (RD_ENABLE_width > 1) {
-        /* need to OR all enable since we1 should be one bit in single port ram */
-        signal_list_t* rd_en_signal_list = init_signal_list();
-        for (j = 0; j < RD_ENABLE_width; j++) {
-            add_pin_to_signal_list(rd_en_signal_list, node->input_pins[RD_ADDR_width + RD_CLK_width + j]);
-        }
-        /* OR enable signals */
-        rd_en_pin = make_or_chain(rd_en_signal_list, new_node);
-        rd_en_pin->mapping = vtr::strdup("we");
-        /* hook the final enable pin to the new node */
-        add_input_pin_to_node(new_node, rd_en_pin, RD_ADDR_width + 1 + RD_DATA_width);
-    }
-
-    /* OUTPUTS */
-    /* adding the output port */
-    add_output_port_information(new_node, RD_DATA_width);
-    allocate_more_output_pins(new_node, RD_DATA_width);
-    for (i = 0; i < RD_DATA_width; i++) {
-        npin_t* out_pin = node->output_pins[i];
-        if (out_pin->mapping)
-            vtr::free(out_pin->mapping);
-
-        out_pin->mapping = vtr::strdup("out");
-        out_pin->name = make_full_ref_name(new_node->name, NULL, NULL, node->output_pins[i]->mapping, i);
-        /* hook the data out pin to new node */
-        remap_pin_to_new_node(out_pin, new_node, i);
-    }
-
-    /* resolve the new created node using spram resolving since it is a spram in the end  */
-    resolve_single_port_ram(new_node, traverse_mark_number, netlist);
-
-    //CLEAN UP
-    free_nnode(node);
-}
-
-/**
- * (function: resolve_ram_node)
- * 
- * @brief block_ram will be considered as dual port ram
- * this function reorders inputs and hook pad pins into datain2 
- * it also leaves the second output of the dual port ram unconnected
- * 
- * @param node pointing to a bram node
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-    oassert(node->num_input_port_sizes == 7);
-    oassert(node->num_output_port_sizes == 1);
-
-    int i, j;
-    /** 
-     * yosys dual port ram information 
-     * 
-     * RD_ADDR:    input port [0] 
-     * RD_CLOCK:   input port [1] 
-     * RD_DATA:    output port [0] 
-     * RD_ENABLE:  input port [2] 
-     * WR_ADDR:    input port [3] 
-     * WR_CLOCK:   input port [4] 
-     * WR_DATA:    input port [5] 
-     * WR_ENABLE:  input port [6] 
-     */
-    int RD_ADDR_width = node->input_port_sizes[0];
-    int RD_CLK_width = node->input_port_sizes[1];
-    int RD_DATA_width = node->output_port_sizes[0];
-    int RD_ENABLE_width = node->input_port_sizes[2];
-    int WR_ADDR_width = node->input_port_sizes[3];
-    int WR_CLK_width = node->input_port_sizes[4];
-    int WR_DATA_width = node->input_port_sizes[5];
-    int WR_ENABLE_width = node->input_port_sizes[6];
-    /* creating new node since we need to reorder some input port for each inferenece mode */
-    nnode_t* new_node = allocate_nnode(node->loc);
-    new_node->type = MEMORY;
-    new_node->traverse_visited = traverse_mark_number;
-    char* hb_name = vtr::strdup(DUAL_PORT_RAM_string);
-    new_node->name = make_full_ref_name(hb_name, NULL, NULL, NULL, -1);
-
-    new_node->related_ast_node = node->related_ast_node;
-
-    char* hard_block_identifier = new_node->related_ast_node->identifier_node->types.identifier;
-    /* setting single port ram as corresponding memory hard block */
-    if (hard_block_identifier)
-        vtr::free(hard_block_identifier);
-
-    new_node->related_ast_node->identifier_node->types.identifier = hb_name;
-
-    /* INPUTS */
-    /* adding the read addr input port as address1 */
-    add_input_port_information(new_node, RD_ADDR_width);
-    allocate_more_input_pins(new_node, RD_ADDR_width);
-    for (i = 0; i < RD_ADDR_width; i++) {
-        npin_t* rd_addr_pin = node->input_pins[i];
-        if (rd_addr_pin->mapping)
-            vtr::free(rd_addr_pin->mapping);
-
-        rd_addr_pin->mapping = vtr::strdup("addr1");
-        /* hook the addr1 pin to new node */
-        remap_pin_to_new_node(rd_addr_pin, new_node, i);
-    }
-    /* adding the write addr port as address2 */
-    add_input_port_information(new_node, WR_ADDR_width);
-    allocate_more_input_pins(new_node, WR_ADDR_width);
-    for (i = 0; i < WR_ADDR_width; i++) {
-        npin_t* wr_addr_pin = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + i];
-        if (wr_addr_pin->mapping)
-            vtr::free(wr_addr_pin->mapping);
-
-        wr_addr_pin->mapping = vtr::strdup("addr2");
-        /* hook the addr pin to new node */
-        remap_pin_to_new_node(wr_addr_pin,
-                              new_node,
-                              RD_ADDR_width + i);
-    }
-
-
-    /* adding the OR of rd_clk and wr_clk as clock port */
-    nnode_t* nor_gate = allocate_nnode(node->loc);
-    nor_gate->traverse_visited = traverse_mark_number;
-    nor_gate->type = LOGICAL_NOR;
-    nor_gate->name = node_name(nor_gate, node->name);
-
-    add_input_port_information(nor_gate, RD_CLK_width);
-    allocate_more_input_pins(nor_gate, RD_CLK_width);
-    /* hook input pins */
-    for (i = 0; i < RD_CLK_width; i++) {
-        npin_t* rd_clk = node->input_pins[RD_ADDR_width + i];
-        remap_pin_to_new_node(rd_clk, nor_gate, i);
-    }
-    add_input_port_information(nor_gate, WR_CLK_width);
-    allocate_more_input_pins(nor_gate, WR_CLK_width);
-    /* hook input pins */
-    for (i = 0; i < WR_CLK_width; i++) {
-        npin_t* wr_clk = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + i];
-        remap_pin_to_new_node(wr_clk, nor_gate, RD_CLK_width + i);
-    }
-
-    /* add nor gate output information */
-    add_output_port_information(nor_gate, 1);
-    allocate_more_output_pins(nor_gate, 1);
-    // specify the output pin
-    npin_t* nor_gate_new_pin1 = allocate_npin();
-    npin_t* nor_gate_new_pin2 = allocate_npin();
-    nnet_t* nor_gate_new_net = allocate_nnet();
-    nor_gate_new_net->name = make_full_ref_name(NULL, NULL, NULL, nor_gate->name, 0);
-    /* hook the output pin into the node */
-    add_output_pin_to_node(nor_gate, nor_gate_new_pin1, 0);
-    /* hook up new pin 1 into the new net */
-    add_driver_pin_to_net(nor_gate_new_net, nor_gate_new_pin1);
-    /* hook up the new pin 2 to this new net */
-    add_fanout_pin_to_net(nor_gate_new_net, nor_gate_new_pin2);
-  
-    /* create a clock node to specify the edge sensitivity */
-    nnode_t* clk_node = make_not_gate(nor_gate, traverse_mark_number);
-    connect_nodes(nor_gate, 0, clk_node, 0);//make_1port_gate(CLOCK_NODE, 1, 1, node, traverse_mark_number);
-    /* create the clk node's output pin */
-    npin_t* clk_node_new_pin1 = allocate_npin();
-    npin_t* clk_node_new_pin2 = allocate_npin();
-    nnet_t* clk_node_new_net = allocate_nnet();
-    clk_node_new_net->name = make_full_ref_name(NULL, NULL, NULL, clk_node->name, 0);
-    /* hook the output pin into the node */
-    add_output_pin_to_node(clk_node, clk_node_new_pin1, 0);
-    /* hook up new pin 1 into the new net */
-    add_driver_pin_to_net(clk_node_new_net, clk_node_new_pin1);
-    /* hook up the new pin 2 to this new net */
-    add_fanout_pin_to_net(clk_node_new_net, clk_node_new_pin2);
-    clk_node_new_pin2->mapping = vtr::strdup("clk");
-
-    /* adding the new clk node to netlist clocks */
-    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
-    netlist->clocks[netlist->num_clocks] = clk_node;
-    netlist->num_clocks++;
-
-    /* hook the clk node output into clock signal of the new node */
-    add_input_port_information(new_node, 1);
-    allocate_more_input_pins(new_node, 1);
-    /* hook the clk node output pin to new node */
-    add_input_pin_to_node(new_node,
-                          clk_node_new_pin2,
-                          RD_ADDR_width + WR_ADDR_width);
-
-    if (node->attributes->WR_PORTS > 1) {
-        signal_list_t* width_value = create_constant_signal(node->attributes->width,
-                                                            strlen(node->attributes->width),
-                                                            netlist);
-        int new_WR_DATA_width = constant_signal_value(width_value, netlist);
-        /* validate not go further than two write ports */
-        oassert(WR_DATA_width == 2 * new_WR_DATA_width);
-        WR_DATA_width = new_WR_DATA_width;
-
-        // clean up
-        free_signal_list(width_value);
-
-        /* adding the write data port as data1 */
-        add_input_port_information(new_node, WR_DATA_width);
-        allocate_more_input_pins(new_node, WR_DATA_width);
-        for (i = 0; i < WR_DATA_width; i++) {
-            npin_t* wr_data_pin1 = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + i];
-            if (wr_data_pin1->mapping)
-                vtr::free(wr_data_pin1->mapping);
-
-            wr_data_pin1->mapping = vtr::strdup("data1");
-            /* hook the data in pin to new node */
-            remap_pin_to_new_node(wr_data_pin1,
-                                  new_node,
-                                  RD_ADDR_width + WR_ADDR_width + 1 + i);
-        }
-        /* hook pad pins into data2 port */
-        add_input_port_information(new_node, WR_DATA_width);
-        allocate_more_input_pins(new_node, WR_DATA_width);
-        for (i = 0; i < WR_DATA_width; i++) {
-            npin_t* wr_data_pin2 = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + WR_DATA_width + i];
-            if (wr_data_pin2->mapping)
-                vtr::free(wr_data_pin2->mapping);
-
-            wr_data_pin2->mapping = vtr::strdup("data2");
-            /* hook the data in pin to new node */
-            remap_pin_to_new_node(wr_data_pin2,
-                                  new_node,
-                                  RD_ADDR_width + WR_ADDR_width + 1 + WR_DATA_width + i);
-        }
-
-    }
-    /* we pad the second data port using pad pins */
-    else {
-        /* adding the write data port as data1 */
-        add_input_port_information(new_node, WR_DATA_width);
-        allocate_more_input_pins(new_node, WR_DATA_width);
-        for (i = 0; i < WR_DATA_width; i++) {
-            npin_t* wr_data_pin = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + i];
-            if (wr_data_pin->mapping)
-                vtr::free(wr_data_pin->mapping);
-
-            wr_data_pin->mapping = vtr::strdup("data1");
-            /* hook the data in pin to new node */
-            remap_pin_to_new_node(wr_data_pin,
-                                  new_node,
-                                  RD_ADDR_width + WR_ADDR_width + 1 + i);
-        }
-        /* hook pad pins into data2 port */
-        add_input_port_information(new_node, WR_DATA_width);
-        allocate_more_input_pins(new_node, WR_DATA_width);
-        for (i = 0; i < WR_DATA_width; i++) {
-            npin_t* pad_pin = get_pad_pin(netlist);
-            pad_pin->mapping = vtr::strdup("data2");
-            /* hook the data in pin to new node */
-            add_input_pin_to_node(new_node,
-                                  pad_pin,
-                                  RD_ADDR_width + WR_ADDR_width + 1 + WR_DATA_width + i);
-        }
-    }
-
-    /* add read enable port as we1 */
-    add_input_port_information(new_node, 1);
-    allocate_more_input_pins(new_node, 1);
-    if (RD_ENABLE_width == 1) {
-        npin_t* rd_en_pin = node->input_pins[RD_ADDR_width + RD_CLK_width];
-        if (rd_en_pin->mapping)
-            vtr::free(rd_en_pin->mapping);
-
-        rd_en_pin->mapping = vtr::strdup("we1");
-        remap_pin_to_new_node(rd_en_pin,
-                              new_node,
-                              RD_ADDR_width + WR_ADDR_width + 1 + 2 * WR_DATA_width);
-
-    } else if (RD_ENABLE_width > 1) {
-        /* need to OR all read enable since we1 should be one bit in dual port ram */
-        signal_list_t* rd_en_signal_list = init_signal_list();
-        for (j = 0; j < RD_ENABLE_width; j++) {
-            add_pin_to_signal_list(rd_en_signal_list, node->input_pins[RD_ADDR_width + RD_CLK_width + j]);
-        }
-        /* OR enable signals */
-        npin_t* rd_en_pin = make_or_chain(rd_en_signal_list, new_node);
-        rd_en_pin->mapping = vtr::strdup("we1");
-        /* hook the final enable pin to the new node */
-        add_input_pin_to_node(new_node, rd_en_pin, RD_ADDR_width + WR_ADDR_width + 1 + 2 * WR_DATA_width);
-    }
-
-    /* add write enable port as we1 */
-    add_input_port_information(new_node, 1);
-    allocate_more_input_pins(new_node, 1);
-    if (WR_ENABLE_width == 1) {
-        npin_t* wr_en_pin = node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + WR_DATA_width];
-        if (wr_en_pin->mapping)
-            vtr::free(wr_en_pin->mapping);
-
-        wr_en_pin->mapping = vtr::strdup("we2");
-        remap_pin_to_new_node(wr_en_pin,
-                              new_node,
-                              RD_ADDR_width + WR_ADDR_width + 1 + 2 * WR_DATA_width + 1);
-
-    } else if (WR_ENABLE_width > 1) {
-        /* need to OR all write enable since we2 should be one bit in dual port ram */
-        signal_list_t* wr_en_signal_list = init_signal_list();
-        for (j = 0; j < WR_ENABLE_width; j++) {
-            /* WR_DATA has changed if we have two wr ports */
-            int modified_WR_DATA_width = (node->attributes->WR_PORTS > 1) ? 2*WR_DATA_width : WR_DATA_width;
-
-            add_pin_to_signal_list(wr_en_signal_list,
-                                node->input_pins[RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + modified_WR_DATA_width + j]);
-        }
-        /* OR enable signals */
-        npin_t* wr_en_pin = make_or_chain(wr_en_signal_list, new_node);
-        wr_en_pin->mapping = vtr::strdup("we2");
-        /* hook the final enable pin to the new node */
-        add_input_pin_to_node(new_node, wr_en_pin, RD_ADDR_width + WR_ADDR_width + 1 + 2 * WR_DATA_width + 1);
-    }
-
-    /* OUTPUT */
-    /* adding the read data port as output1 */
-    add_output_port_information(new_node, RD_DATA_width);
-    allocate_more_output_pins(new_node, RD_DATA_width);
-    for (i = 0; i < RD_DATA_width; i++) {
-        npin_t* out_pin = node->output_pins[i];
-        if (out_pin->mapping)
-            vtr::free(out_pin->mapping);
-
-        out_pin->mapping = vtr::strdup("out1");
-        /* hook the data out pin to new node */
-        remap_pin_to_new_node(out_pin, new_node, i);
-    }
-    /* leave second output port unconnected */
-    add_output_port_information(new_node, RD_DATA_width);
-    allocate_more_output_pins(new_node, RD_DATA_width);
-    for (i = 0; i < RD_DATA_width; i++) {
-        // specify the output pin
-        npin_t* new_pin1 = allocate_npin();
-        npin_t* new_pin2 = allocate_npin();
-        nnet_t* new_net = allocate_nnet();
-        new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, RD_DATA_width + i);
-        /* hook the output pin into the node */
-        add_output_pin_to_node(new_node, new_pin1, RD_DATA_width + i);
-        new_pin1->mapping = vtr::strdup("out2");
-        /* hook up new pin 1 into the new net */
-        add_driver_pin_to_net(new_net, new_pin1);
-        /* hook up the new pin 2 to this new net */
-        add_fanout_pin_to_net(new_net, new_pin2);
-    }
-
-    /* resolve the new created node using dpram resolving since it is a dpram in the end  */
-    resolve_dual_port_ram(new_node, traverse_mark_number, netlist);
 
     // CLEAN UP
     free_nnode(node);

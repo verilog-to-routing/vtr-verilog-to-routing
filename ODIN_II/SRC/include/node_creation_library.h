@@ -18,7 +18,7 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
 npin_t* get_zero_pin();
 npin_t* get_one_pin();
 
-npin_t* make_or_chain(signal_list_t* inputs, nnode_t* node);
+signal_list_t* make_or_chain(signal_list_t* inputs, nnode_t* node);
 
 char* node_name(nnode_t* node, char* instance_prefix_name);
 char* op_node_name(operation_list op, char* instance_prefix_name);
