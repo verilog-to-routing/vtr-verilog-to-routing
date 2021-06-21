@@ -37,6 +37,12 @@
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 
+/******************* Variables local to this module ************************/
+
+/* Used to pass directionality from the binary_search_place_and_route subroutine *
+ * to the init_chan subroutine.                                                  */
+static t_graph_type graph_directionality;
+
 /******************* Subroutines local to this module ************************/
 
 static float comp_width(t_chan* chan, float x, float separation);
@@ -87,8 +93,10 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
+        graph_directionality = GRAPH_GLOBAL;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
     best_routing = alloc_saved_routing();
@@ -395,6 +403,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     t_chan_width chan_width;
     chan_width.x_list.resize(grid.height());
     chan_width.y_list.resize(grid.width());
+    int computed_width;
 
     if (grid.height() > 1) {
         int num_channels = grid.height() - 1;
@@ -403,7 +412,12 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
         for (size_t i = 0; i < grid.height(); ++i) {
             float y = float(i) / num_channels;
-            chan_width.x_list[i] = (int)floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+            computed_width = (int)floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+            if ((GRAPH_BIDIR == graph_directionality) || computed_width % 2 == 0) {
+                chan_width.x_list[i] = computed_width;
+            } else {
+                chan_width.x_list[i] = computed_width - 1;
+            }
             chan_width.x_list[i] = std::max(chan_width.x_list[i], 1); //Minimum channel width 1
         }
     }
@@ -415,8 +429,12 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
         for (size_t i = 0; i < grid.width(); ++i) { //-2 for no perim channels
             float x = float(i) / num_channels;
-
-            chan_width.y_list[i] = (int)floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+            computed_width = (int)floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+            if ((GRAPH_BIDIR == graph_directionality) || computed_width % 2 == 0) {
+                chan_width.y_list[i] = computed_width;
+            } else {
+                chan_width.y_list[i] = computed_width - 1;
+            }
             chan_width.y_list[i] = std::max(chan_width.y_list[i], 1); //Minimum channel width 1
         }
     }

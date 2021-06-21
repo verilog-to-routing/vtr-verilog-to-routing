@@ -12,8 +12,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_router_opts& RouterOpts,
                 const t_det_routing_arch& RoutingArch,
                 const std::vector<t_segment_inf>& Segments,
-                const t_timing_inf Timing,
-                const t_chan_width_dist Chans) {
+                const t_timing_inf Timing) {
     int i;
     int Tmp;
 
@@ -58,15 +57,6 @@ void CheckSetup(const t_packer_opts& PackerOpts,
             && (DEMAND_ONLY != RouterOpts.base_cost_type && DEMAND_ONLY_NORMALIZED_LENGTH != RouterOpts.base_cost_type)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "base_cost_type must be demand_only or demand_only_normailzed_length when timing analysis is disabled.\n");
-        }
-    }
-
-    if (DETAILED == RouterOpts.route_type) {
-        if ((Chans.chan_x_dist.type != UNIFORM)
-            || (Chans.chan_y_dist.type != UNIFORM)
-            || (Chans.chan_x_dist.peak != Chans.chan_y_dist.peak)) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Detailed routing currently only supported on FPGAs with all channels of equal width.\n");
         }
     }
 

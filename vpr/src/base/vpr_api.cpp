@@ -301,8 +301,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     CheckSetup(vpr_setup->PackerOpts,
                vpr_setup->PlacerOpts,
                vpr_setup->RouterOpts,
-               vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
-               arch->Chans);
+               vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing);
 
     /* flush any messages to user still in stdout that hasn't gotten displayed */
     fflush(stdout);
@@ -1164,10 +1163,9 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_router_opts& RouterOpts,
                      const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf& Timing,
-                     const t_chan_width_dist& Chans) {
+                     const t_timing_inf& Timing) {
     CheckSetup(PackerOpts, PlacerOpts, RouterOpts, RoutingArch,
-               Segments, Timing, Chans);
+               Segments, Timing);
 }
 
 ///@brief Show current setup
