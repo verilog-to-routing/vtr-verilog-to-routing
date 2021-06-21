@@ -20,6 +20,8 @@ flatten;
 
 autoname;
 
+pmuxtree;
+
 write_blif -param -impltf $env(OUTPUT_BLIF_PATH)/$env(TCL_BLIF_NAME);
 
 exit;
