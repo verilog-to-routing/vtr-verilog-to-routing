@@ -3,6 +3,7 @@
 
 #include "vpr_types.h"
 #include "manual_moves.h"
+
 void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
                const t_router_opts& router_opts,
@@ -14,7 +15,5 @@ void try_place(const t_placer_opts& placer_opts,
                int num_directs);
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup);
-void manual_move_info_from_user_and_open_window(ManualMovesInfo* manual_move_info);
-//void update_manual_move_cost_and_open_window(ManualMovesInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double delta_bb, double delta_t);
 
 #endif

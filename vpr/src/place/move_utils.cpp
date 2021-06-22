@@ -5,6 +5,9 @@
 
 #include "vtr_random.h"
 
+#include "draw_debug.h"
+#include "draw.h"
+
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
@@ -447,9 +450,14 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
+    GObject* manual_move_toggle = application.get_object("manualMove");
+
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
+    	if(gtk_toggle_button_get_active((GtkToggleButton*)manual_move_toggle)) {
+    		invalid_breakpoint_entry_window("Dimensions are out of bounds");
+    	}
         return false;
     }
 
@@ -458,6 +466,9 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
 
     if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity
         || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
+    	if(gtk_toggle_button_get_active((GtkToggleButton*)manual_move_toggle)) {
+    		invalid_breakpoint_entry_window("Blocks are not compatible");
+    	}
         return false;
     }
     // If the destination block is user constrained, abort this swap
