@@ -1,0 +1,1967 @@
+<!-- A diagram for the SLICEL is shown in;
+    7 Series FPGAs CLB User Guide UG474 (v1.8) September 27, 2016
+    Figure 2-4: Diagram of SLICEL
+  -->
+<pb_type name="SLICEL0" num_pb="1">
+
+    <input name="DX" num_pins="1"/>
+    <input name="D1" num_pins="1"/>
+    <input name="D2" num_pins="1"/>
+    <input name="D3" num_pins="1"/>
+    <input name="D4" num_pins="1"/>
+    <input name="D5" num_pins="1"/>
+    <input name="D6" num_pins="1"/>
+
+    <input name="CX" num_pins="1"/>
+    <input name="C1" num_pins="1"/>
+    <input name="C2" num_pins="1"/>
+    <input name="C3" num_pins="1"/>
+    <input name="C4" num_pins="1"/>
+    <input name="C5" num_pins="1"/>
+    <input name="C6" num_pins="1"/>
+
+    <input name="BX" num_pins="1"/>
+    <input name="B1" num_pins="1"/>
+    <input name="B2" num_pins="1"/>
+    <input name="B3" num_pins="1"/>
+    <input name="B4" num_pins="1"/>
+    <input name="B5" num_pins="1"/>
+    <input name="B6" num_pins="1"/>
+
+    <input name="AX" num_pins="1"/>
+    <input name="A1" num_pins="1"/>
+    <input name="A2" num_pins="1"/>
+    <input name="A3" num_pins="1"/>
+    <input name="A4" num_pins="1"/>
+    <input name="A5" num_pins="1"/>
+    <input name="A6" num_pins="1"/>
+
+    <input name="SR" num_pins="1"/>
+    <input name="CE" num_pins="1"/>
+
+    <clock name="CLK" num_pins="1"/>
+
+    <input name="CIN" num_pins="1"/>
+    <output name="COUT" num_pins="1"/>
+
+    <output name="DMUX" num_pins="1"/>
+    <output name="D" num_pins="1"/>
+    <output name="DQ" num_pins="1"/>
+
+    <output name="CMUX" num_pins="1"/>
+    <output name="C" num_pins="1"/>
+    <output name="CQ" num_pins="1"/>
+
+    <output name="BMUX" num_pins="1"/>
+    <output name="B" num_pins="1"/>
+    <output name="BQ" num_pins="1"/>
+
+    <output name="AMUX" num_pins="1"/>
+    <output name="A" num_pins="1"/>
+    <output name="AQ" num_pins="1"/>
+
+    <!-- d6lut, c6lut, b6lut, a6lut == N6lut
+       A fracturable 6 input LUT. Can either be;
+        - 2 * 5 input, 1 output LUT
+        - 1 * 6 input, 1 output LUT
+    -->
+    <pb_type name="COMMON_LUT_AND_F78MUX" num_pb="1">
+        <input name="D1" num_pins="1"/>
+        <input name="D2" num_pins="1"/>
+        <input name="D3" num_pins="1"/>
+        <input name="D4" num_pins="1"/>
+        <input name="D5" num_pins="1"/>
+        <input name="D6" num_pins="1"/>
+
+        <input name="CX" num_pins="1"/>
+        <input name="C1" num_pins="1"/>
+        <input name="C2" num_pins="1"/>
+        <input name="C3" num_pins="1"/>
+        <input name="C4" num_pins="1"/>
+        <input name="C5" num_pins="1"/>
+        <input name="C6" num_pins="1"/>
+
+        <input name="BX" num_pins="1"/>
+        <input name="B1" num_pins="1"/>
+        <input name="B2" num_pins="1"/>
+        <input name="B3" num_pins="1"/>
+        <input name="B4" num_pins="1"/>
+        <input name="B5" num_pins="1"/>
+        <input name="B6" num_pins="1"/>
+
+        <input name="AX" num_pins="1"/>
+        <input name="A1" num_pins="1"/>
+        <input name="A2" num_pins="1"/>
+        <input name="A3" num_pins="1"/>
+        <input name="A4" num_pins="1"/>
+        <input name="A5" num_pins="1"/>
+        <input name="A6" num_pins="1"/>
+
+        <output name="DO6" num_pins="1"/>
+        <output name="CO6" num_pins="1"/>
+        <output name="BO6" num_pins="1"/>
+        <output name="AO6" num_pins="1"/>
+
+        <output name="DO5" num_pins="1"/>
+        <output name="CO5" num_pins="1"/>
+        <output name="BO5" num_pins="1"/>
+        <output name="AO5" num_pins="1"/>
+
+        <output name="F7AMUX_O" num_pins="1"/>
+        <output name="F7BMUX_O" num_pins="1"/>
+        <output name="F8MUX_O" num_pins="1"/>
+
+        <!-- vim: set ai sw=1 ts=1 sta et: -->
+
+        <!-- D6LUT, C6LUT, B6LUT, A6LUT == W6LUT
+     A fracturable 6 input LUT. Can either be;
+      - 2 * 5 input, 1 output LUT
+      - 1 * 6 input, 1 output LUT
+  -->
+        <pb_type name="aLUT" num_pb="1"
+            <input name="A1" num_pins="1"/>
+        <input name="A2" num_pins="1"/>
+        <input name="A3" num_pins="1"/>
+        <input name="A4" num_pins="1"/>
+        <input name="A5" num_pins="1"/>
+        <input name="A6" num_pins="1"/>
+        <output name="O5" num_pins="1"/>
+        <output name="O6" num_pins="1"/>
+
+        <!-- LUT5+LUT5+F6MUX with two outputs -->
+        <mode name="aLUT-LUT5_MUX">
+            <pb_type name="a5LUT" num_pb="2" class="lut" blif_model=".names">
+                <input name="in" num_pins="5" port_class="lut_in" />
+                <output name="out" num_pins="1" port_class="lut_out" />
+                <delay_matrix type="max" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+                </delay_matrix>
+                <delay_matrix type="min" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+                </delay_matrix>
+                <metadata>
+                    <meta name="type">bel</meta>
+                    <meta name="subtype">lut</meta>
+                </metadata>
+            </pb_type>
+            <xi:include href="../muxes/f6mux/f6mux.pb_type.xml" />
+            <interconnect>
+                <!-- LUT5 (upper) -> O6 -->
+                <direct name="aLUT_A5_0" input="aLUT.A5" output="a5LUT[0].in[4]"/>
+                <direct name="aLUT_A4_0" input="aLUT.A4" output="a5LUT[0].in[3]"/>
+                <direct name="aLUT_A3_0" input="aLUT.A3" output="a5LUT[0].in[2]"/>
+                <direct name="aLUT_A2_0" input="aLUT.A2" output="a5LUT[0].in[1]"/>
+                <direct name="aLUT_A1_0" input="aLUT.A1" output="a5LUT[0].in[0]"/>
+
+                <!-- LUT5 (lower) -> O5 -->
+                <direct name="aLUT_A5_1" input="aLUT.A5" output="a5LUT[1].in[4]"/>
+                <direct name="aLUT_A4_1" input="aLUT.A4" output="a5LUT[1].in[3]"/>
+                <direct name="aLUT_A3_1" input="aLUT.A3" output="a5LUT[1].in[2]"/>
+                <direct name="aLUT_A2_1" input="aLUT.A2" output="a5LUT[1].in[1]"/>
+                <direct name="aLUT_A1_1" input="aLUT.A1" output="a5LUT[1].in[0]"/>
+
+                <!-- MUX used for LUT6 -->
+                <direct name="F6MUX_I0" input="a5LUT[0].out" output="F6MUX.I0">
+                    <pack_pattern in_port="a5LUT[0].out" name="LUT5toLUT6" out_port="F6MUX.I0"/>
+                    <pack_pattern in_port="a5LUT[0].out" name="LUT5toLUT7" out_port="F6MUX.I0"/>
+                    <pack_pattern in_port="a5LUT[0].out" name="LUT5toLUT8" out_port="F6MUX.I0"/>
+                </direct>
+                <direct name="F6MUX_I1" input="a5LUT[1].out" output="F6MUX.I1">
+                    <pack_pattern in_port="a5LUT[1].out" name="LUT5toLUT6" out_port="F6MUX.I1"/>
+                    <pack_pattern in_port="a5LUT[1].out" name="LUT5toLUT7" out_port="F6MUX.I1"/>
+                    <pack_pattern in_port="a5LUT[1].out" name="LUT5toLUT8" out_port="F6MUX.I1"/>
+                </direct>
+                <direct name="F6MUX_S" input="aLUT.A6" output="F6MUX.S">
+                </direct>
+
+                <!-- LUT outputs -->
+                <direct name="O5" input="a5LUT[0].out" output="aLUT.O5">
+                    <pack_pattern name="LUT_to_FF_FDSE" />
+                    <pack_pattern name="LUT_to_FF_FDRE" />
+                    <pack_pattern name="LUT_to_FF_FDCE" />
+                    <pack_pattern name="LUT_to_FF_FDPE" />
+                </direct>
+                <mux name="O6" input="a5LUT[1].out F6MUX.O" output="aLUT.O6">
+                    <pack_pattern in_port="a5LUT[1].out" name="LUT_to_FF_FDSE" out_port="aLUT.O6" />
+                    <pack_pattern in_port="a5LUT[1].out" name="LUT_to_FF_FDRE" out_port="aLUT.O6" />
+                    <pack_pattern in_port="a5LUT[1].out" name="LUT_to_FF_FDPE" out_port="aLUT.O6" />
+                    <pack_pattern in_port="a5LUT[1].out" name="LUT_to_FF_FDCE" out_port="aLUT.O6" />
+
+                    <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDSE" out_port="aLUT.O6" />
+                    <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDRE" out_port="aLUT.O6" />
+                    <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDPE" out_port="aLUT.O6" />
+                    <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDCE" out_port="aLUT.O6" />
+
+                    <pack_pattern in_port="F6MUX.O" name="LUT5toLUT6" out_port="aLUT.O6"/>
+                    <pack_pattern in_port="F6MUX.O" name="LUT5toLUT7" out_port="aLUT.O6"/>
+                    <pack_pattern in_port="F6MUX.O" name="LUT5toLUT8" out_port="aLUT.O6"/>
+                </mux>
+            </interconnect>
+            <metadata>
+                <meta name="fasm_type">SPLIT_LUT</meta>
+                <meta name="fasm_lut">
+       aLUT.INIT[31:0] = a5LUT[0]
+       aLUT.INIT[63:32] = a5LUT[1]
+                </meta>
+            </metadata>
+        </mode>
+        <metadata>
+            <meta name="type">block</meta>
+            <meta name="subtype">ignore</meta>
+        </metadata>
+    </pb_type>
+
+    <!-- vim: set ai sw=1 ts=1 sta et: -->
+
+    <!-- D6LUT, C6LUT, B6LUT, A6LUT == W6LUT
+     A fracturable 6 input LUT. Can either be;
+      - 2 * 5 input, 1 output LUT
+      - 1 * 6 input, 1 output LUT
+  -->
+    <pb_type name="bLUT" num_pb="1"
+        <input name="A1" num_pins="1"/>
+    <input name="A2" num_pins="1"/>
+    <input name="A3" num_pins="1"/>
+    <input name="A4" num_pins="1"/>
+    <input name="A5" num_pins="1"/>
+    <input name="A6" num_pins="1"/>
+    <output name="O5" num_pins="1"/>
+    <output name="O6" num_pins="1"/>
+
+    <!-- LUT5+LUT5+F6MUX with two outputs -->
+    <mode name="bLUT-LUT5_MUX">
+        <pb_type name="b5LUT" num_pb="2" class="lut" blif_model=".names">
+            <input name="in" num_pins="5" port_class="lut_in" />
+            <output name="out" num_pins="1" port_class="lut_out" />
+            <delay_matrix type="max" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+            </delay_matrix>
+            <delay_matrix type="min" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+            </delay_matrix>
+            <metadata>
+                <meta name="type">bel</meta>
+                <meta name="subtype">lut</meta>
+            </metadata>
+        </pb_type>
+        <xi:include href="../muxes/f6mux/f6mux.pb_type.xml" />
+        <interconnect>
+            <!-- LUT5 (upper) -> O6 -->
+            <direct name="bLUT_A5_0" input="bLUT.A5" output="b5LUT[0].in[4]"/>
+            <direct name="bLUT_A4_0" input="bLUT.A4" output="b5LUT[0].in[3]"/>
+            <direct name="bLUT_A3_0" input="bLUT.A3" output="b5LUT[0].in[2]"/>
+            <direct name="bLUT_A2_0" input="bLUT.A2" output="b5LUT[0].in[1]"/>
+            <direct name="bLUT_A1_0" input="bLUT.A1" output="b5LUT[0].in[0]"/>
+
+            <!-- LUT5 (lower) -> O5 -->
+            <direct name="bLUT_A5_1" input="bLUT.A5" output="b5LUT[1].in[4]"/>
+            <direct name="bLUT_A4_1" input="bLUT.A4" output="b5LUT[1].in[3]"/>
+            <direct name="bLUT_A3_1" input="bLUT.A3" output="b5LUT[1].in[2]"/>
+            <direct name="bLUT_A2_1" input="bLUT.A2" output="b5LUT[1].in[1]"/>
+            <direct name="bLUT_A1_1" input="bLUT.A1" output="b5LUT[1].in[0]"/>
+
+            <!-- MUX used for LUT6 -->
+            <direct name="F6MUX_I0" input="b5LUT[0].out" output="F6MUX.I0">
+                <pack_pattern in_port="b5LUT[0].out" name="LUT5toLUT6" out_port="F6MUX.I0"/>
+                <pack_pattern in_port="b5LUT[0].out" name="LUT5toLUT7" out_port="F6MUX.I0"/>
+                <pack_pattern in_port="b5LUT[0].out" name="LUT5toLUT8" out_port="F6MUX.I0"/>
+            </direct>
+            <direct name="F6MUX_I1" input="b5LUT[1].out" output="F6MUX.I1">
+                <pack_pattern in_port="b5LUT[1].out" name="LUT5toLUT6" out_port="F6MUX.I1"/>
+                <pack_pattern in_port="b5LUT[1].out" name="LUT5toLUT7" out_port="F6MUX.I1"/>
+                <pack_pattern in_port="b5LUT[1].out" name="LUT5toLUT8" out_port="F6MUX.I1"/>
+            </direct>
+            <direct name="F6MUX_S" input="bLUT.A6" output="F6MUX.S">
+            </direct>
+
+            <!-- LUT outputs -->
+            <direct name="O5" input="b5LUT[0].out" output="bLUT.O5">
+                <pack_pattern name="LUT_to_FF_FDSE" />
+                <pack_pattern name="LUT_to_FF_FDRE" />
+                <pack_pattern name="LUT_to_FF_FDCE" />
+                <pack_pattern name="LUT_to_FF_FDPE" />
+            </direct>
+            <mux name="O6" input="b5LUT[1].out F6MUX.O" output="bLUT.O6">
+                <pack_pattern in_port="b5LUT[1].out" name="LUT_to_FF_FDSE" out_port="bLUT.O6" />
+                <pack_pattern in_port="b5LUT[1].out" name="LUT_to_FF_FDRE" out_port="bLUT.O6" />
+                <pack_pattern in_port="b5LUT[1].out" name="LUT_to_FF_FDPE" out_port="bLUT.O6" />
+                <pack_pattern in_port="b5LUT[1].out" name="LUT_to_FF_FDCE" out_port="bLUT.O6" />
+
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDSE" out_port="bLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDRE" out_port="bLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDPE" out_port="bLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDCE" out_port="bLUT.O6" />
+
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT6" out_port="bLUT.O6"/>
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT7" out_port="bLUT.O6"/>
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT8" out_port="bLUT.O6"/>
+            </mux>
+        </interconnect>
+        <metadata>
+            <meta name="fasm_type">SPLIT_LUT</meta>
+            <meta name="fasm_lut">
+       bLUT.INIT[31:0] = b5LUT[0]
+       bLUT.INIT[63:32] = b5LUT[1]
+            </meta>
+        </metadata>
+    </mode>
+    <metadata>
+        <meta name="type">block</meta>
+        <meta name="subtype">ignore</meta>
+    </metadata>
+</pb_type>
+
+<!-- vim: set ai sw=1 ts=1 sta et: -->
+
+<!-- D6LUT, C6LUT, B6LUT, A6LUT == W6LUT
+     A fracturable 6 input LUT. Can either be;
+      - 2 * 5 input, 1 output LUT
+      - 1 * 6 input, 1 output LUT
+  -->
+<pb_type name="cLUT" num_pb="1">
+    <input name="A1" num_pins="1"/>
+    <input name="A2" num_pins="1"/>
+    <input name="A3" num_pins="1"/>
+    <input name="A4" num_pins="1"/>
+    <input name="A5" num_pins="1"/>
+    <input name="A6" num_pins="1"/>
+    <output name="O5" num_pins="1"/>
+    <output name="O6" num_pins="1"/>
+
+    <!-- LUT5+LUT5+F6MUX with two outputs -->
+    <mode name="cLUT-LUT5_MUX">
+        <pb_type name="c5LUT" num_pb="2" class="lut" blif_model=".names">
+            <input name="in" num_pins="5" port_class="lut_in" />
+            <output name="out" num_pins="1" port_class="lut_out" />
+            <delay_matrix type="max" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+            </delay_matrix>
+            <delay_matrix type="min" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+            </delay_matrix>
+            <metadata>
+                <meta name="type">bel</meta>
+                <meta name="subtype">lut</meta>
+            </metadata>
+        </pb_type>
+        <xi:include href="../muxes/f6mux/f6mux.pb_type.xml" />
+        <interconnect>
+            <!-- LUT5 (upper) -> O6 -->
+            <direct name="cLUT_A5_0" input="cLUT.A5" output="c5LUT[0].in[4]"/>
+            <direct name="cLUT_A4_0" input="cLUT.A4" output="c5LUT[0].in[3]"/>
+            <direct name="cLUT_A3_0" input="cLUT.A3" output="c5LUT[0].in[2]"/>
+            <direct name="cLUT_A2_0" input="cLUT.A2" output="c5LUT[0].in[1]"/>
+            <direct name="cLUT_A1_0" input="cLUT.A1" output="c5LUT[0].in[0]"/>
+
+            <!-- LUT5 (lower) -> O5 -->
+            <direct name="cLUT_A5_1" input="cLUT.A5" output="c5LUT[1].in[4]"/>
+            <direct name="cLUT_A4_1" input="cLUT.A4" output="c5LUT[1].in[3]"/>
+            <direct name="cLUT_A3_1" input="cLUT.A3" output="c5LUT[1].in[2]"/>
+            <direct name="cLUT_A2_1" input="cLUT.A2" output="c5LUT[1].in[1]"/>
+            <direct name="cLUT_A1_1" input="cLUT.A1" output="c5LUT[1].in[0]"/>
+
+            <!-- MUX used for LUT6 -->
+            <direct name="F6MUX_I0" input="c5LUT[0].out" output="F6MUX.I0">
+                <pack_pattern in_port="c5LUT[0].out" name="LUT5toLUT6" out_port="F6MUX.I0"/>
+                <pack_pattern in_port="c5LUT[0].out" name="LUT5toLUT7" out_port="F6MUX.I0"/>
+                <pack_pattern in_port="c5LUT[0].out" name="LUT5toLUT8" out_port="F6MUX.I0"/>
+            </direct>
+            <direct name="F6MUX_I1" input="c5LUT[1].out" output="F6MUX.I1">
+                <pack_pattern in_port="c5LUT[1].out" name="LUT5toLUT6" out_port="F6MUX.I1"/>
+                <pack_pattern in_port="c5LUT[1].out" name="LUT5toLUT7" out_port="F6MUX.I1"/>
+                <pack_pattern in_port="c5LUT[1].out" name="LUT5toLUT8" out_port="F6MUX.I1"/>
+            </direct>
+            <direct name="F6MUX_S" input="cLUT.A6" output="F6MUX.S">
+            </direct>
+
+            <!-- LUT outputs -->
+            <direct name="O5" input="c5LUT[0].out" output="cLUT.O5">
+                <pack_pattern name="LUT_to_FF_FDSE" />
+                <pack_pattern name="LUT_to_FF_FDRE" />
+                <pack_pattern name="LUT_to_FF_FDCE" />
+                <pack_pattern name="LUT_to_FF_FDPE" />
+            </direct>
+            <mux name="O6" input="c5LUT[1].out F6MUX.O" output="cLUT.O6">
+                <pack_pattern in_port="c5LUT[1].out" name="LUT_to_FF_FDSE" out_port="cLUT.O6" />
+                <pack_pattern in_port="c5LUT[1].out" name="LUT_to_FF_FDRE" out_port="cLUT.O6" />
+                <pack_pattern in_port="c5LUT[1].out" name="LUT_to_FF_FDPE" out_port="cLUT.O6" />
+                <pack_pattern in_port="c5LUT[1].out" name="LUT_to_FF_FDCE" out_port="cLUT.O6" />
+
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDSE" out_port="cLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDRE" out_port="cLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDPE" out_port="cLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDCE" out_port="cLUT.O6" />
+
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT6" out_port="cLUT.O6"/>
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT7" out_port="cLUT.O6"/>
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT8" out_port="cLUT.O6"/>
+            </mux>
+        </interconnect>
+        <metadata>
+            <meta name="fasm_type">SPLIT_LUT</meta>
+            <meta name="fasm_lut">
+       cLUT.INIT[31:0] = c5LUT[0]
+       cLUT.INIT[63:32] = c5LUT[1]
+            </meta>
+        </metadata>
+    </mode>
+    <metadata>
+        <meta name="type">block</meta>
+        <meta name="subtype">ignore</meta>
+    </metadata>
+</pb_type>
+
+<!-- vim: set ai sw=1 ts=1 sta et: -->
+
+<!-- D6LUT, C6LUT, B6LUT, A6LUT == W6LUT
+     A fracturable 6 input LUT. Can either be;
+      - 2 * 5 input, 1 output LUT
+      - 1 * 6 input, 1 output LUT
+  -->
+<pb_type name="dLUT" num_pb="1">
+    <input name="A1" num_pins="1"/>
+    <input name="A2" num_pins="1"/>
+    <input name="A3" num_pins="1"/>
+    <input name="A4" num_pins="1"/>
+    <input name="A5" num_pins="1"/>
+    <input name="A6" num_pins="1"/>
+    <output name="O5" num_pins="1"/>
+    <output name="O6" num_pins="1"/>
+
+    <!-- LUT5+LUT5+F6MUX with two outputs -->
+    <mode name="dLUT-LUT5_MUX">
+        <pb_type name="d5LUT" num_pb="2" class="lut" blif_model=".names">
+            <input name="in" num_pins="5" port_class="lut_in" />
+            <output name="out" num_pins="1" port_class="lut_out" />
+            <delay_matrix type="max" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+            </delay_matrix>
+            <delay_matrix type="min" in_port="in" out_port="out">
+      {{iopath_A1_O5}}
+      {{iopath_A2_O5}}
+      {{iopath_A3_O5}}
+      {{iopath_A4_O5}}
+      {{iopath_A5_O5}}
+            </delay_matrix>
+            <metadata>
+                <meta name="type">bel</meta>
+                <meta name="subtype">lut</meta>
+            </metadata>
+        </pb_type>
+        <xi:include href="../muxes/f6mux/f6mux.pb_type.xml" />
+        <interconnect>
+            <!-- LUT5 (upper) -> O6 -->
+            <direct name="dLUT_A5_0" input="dLUT.A5" output="d5LUT[0].in[4]"/>
+            <direct name="dLUT_A4_0" input="dLUT.A4" output="d5LUT[0].in[3]"/>
+            <direct name="dLUT_A3_0" input="dLUT.A3" output="d5LUT[0].in[2]"/>
+            <direct name="dLUT_A2_0" input="dLUT.A2" output="d5LUT[0].in[1]"/>
+            <direct name="dLUT_A1_0" input="dLUT.A1" output="d5LUT[0].in[0]"/>
+
+            <!-- LUT5 (lower) -> O5 -->
+            <direct name="dLUT_A5_1" input="dLUT.A5" output="d5LUT[1].in[4]"/>
+            <direct name="dLUT_A4_1" input="dLUT.A4" output="d5LUT[1].in[3]"/>
+            <direct name="dLUT_A3_1" input="dLUT.A3" output="d5LUT[1].in[2]"/>
+            <direct name="dLUT_A2_1" input="dLUT.A2" output="d5LUT[1].in[1]"/>
+            <direct name="dLUT_A1_1" input="dLUT.A1" output="d5LUT[1].in[0]"/>
+
+            <!-- MUX used for LUT6 -->
+            <direct name="F6MUX_I0" input="d5LUT[0].out" output="F6MUX.I0">
+                <pack_pattern in_port="d5LUT[0].out" name="LUT5toLUT6" out_port="F6MUX.I0"/>
+                <pack_pattern in_port="d5LUT[0].out" name="LUT5toLUT7" out_port="F6MUX.I0"/>
+                <pack_pattern in_port="d5LUT[0].out" name="LUT5toLUT8" out_port="F6MUX.I0"/>
+            </direct>
+            <direct name="F6MUX_I1" input="d5LUT[1].out" output="F6MUX.I1">
+                <pack_pattern in_port="d5LUT[1].out" name="LUT5toLUT6" out_port="F6MUX.I1"/>
+                <pack_pattern in_port="d5LUT[1].out" name="LUT5toLUT7" out_port="F6MUX.I1"/>
+                <pack_pattern in_port="d5LUT[1].out" name="LUT5toLUT8" out_port="F6MUX.I1"/>
+            </direct>
+            <direct name="F6MUX_S" input="dLUT.A6" output="F6MUX.S">
+            </direct>
+
+            <!-- LUT outputs -->
+            <direct name="O5" input="d5LUT[0].out" output="dLUT.O5">
+                <pack_pattern name="LUT_to_FF_FDSE" />
+                <pack_pattern name="LUT_to_FF_FDRE" />
+                <pack_pattern name="LUT_to_FF_FDCE" />
+                <pack_pattern name="LUT_to_FF_FDPE" />
+            </direct>
+            <mux name="O6" input="d5LUT[1].out F6MUX.O" output="dLUT.O6">
+                <pack_pattern in_port="d5LUT[1].out" name="LUT_to_FF_FDSE" out_port="dLUT.O6" />
+                <pack_pattern in_port="d5LUT[1].out" name="LUT_to_FF_FDRE" out_port="dLUT.O6" />
+                <pack_pattern in_port="d5LUT[1].out" name="LUT_to_FF_FDPE" out_port="dLUT.O6" />
+                <pack_pattern in_port="d5LUT[1].out" name="LUT_to_FF_FDCE" out_port="dLUT.O6" />
+
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDSE" out_port="dLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDRE" out_port="dLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDPE" out_port="dLUT.O6" />
+                <pack_pattern in_port="F6MUX.O" name="F6MUX_to_FF_FDCE" out_port="dLUT.O6" />
+
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT6" out_port="dLUT.O6"/>
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT7" out_port="dLUT.O6"/>
+                <pack_pattern in_port="F6MUX.O" name="LUT5toLUT8" out_port="dLUT.O6"/>
+            </mux>
+        </interconnect>
+        <metadata>
+            <meta name="fasm_type">SPLIT_LUT</meta>
+            <meta name="fasm_lut">
+       dLUT.INIT[31:0] = d5LUT[0]
+       dLUT.INIT[63:32] = d5LUT[1]
+            </meta>
+        </metadata>
+    </mode>
+    <metadata>
+        <meta name="type">block</meta>
+        <meta name="subtype">ignore</meta>
+    </metadata>
+</pb_type>
+
+<xi:include href="muxes/f7amux/f7amux.pb_type.xml"/>
+<xi:include href="muxes/f7bmux/f7bmux.pb_type.xml"/>
+<xi:include href="muxes/f8mux/f8mux.pb_type.xml"/>
+
+<interconnect>
+    <!-- LUT input pins -->
+    <direct name="D1" input="COMMON_LUT_AND_F78MUX.D1" output="DLUT.A1" />
+    <direct name="D2" input="COMMON_LUT_AND_F78MUX.D2" output="DLUT.A2" />
+    <direct name="D3" input="COMMON_LUT_AND_F78MUX.D3" output="DLUT.A3" />
+    <direct name="D4" input="COMMON_LUT_AND_F78MUX.D4" output="DLUT.A4" />
+    <direct name="D5" input="COMMON_LUT_AND_F78MUX.D5" output="DLUT.A5" />
+    <direct name="D6" input="COMMON_LUT_AND_F78MUX.D6" output="DLUT.A6" />
+
+    <direct name="C1" input="COMMON_LUT_AND_F78MUX.C1" output="CLUT.A1" />
+    <direct name="C2" input="COMMON_LUT_AND_F78MUX.C2" output="CLUT.A2" />
+    <direct name="C3" input="COMMON_LUT_AND_F78MUX.C3" output="CLUT.A3" />
+    <direct name="C4" input="COMMON_LUT_AND_F78MUX.C4" output="CLUT.A4" />
+    <direct name="C5" input="COMMON_LUT_AND_F78MUX.C5" output="CLUT.A5" />
+    <direct name="C6" input="COMMON_LUT_AND_F78MUX.C6" output="CLUT.A6" />
+
+    <direct name="B1" input="COMMON_LUT_AND_F78MUX.B1" output="BLUT.A1" />
+    <direct name="B2" input="COMMON_LUT_AND_F78MUX.B2" output="BLUT.A2" />
+    <direct name="B3" input="COMMON_LUT_AND_F78MUX.B3" output="BLUT.A3" />
+    <direct name="B4" input="COMMON_LUT_AND_F78MUX.B4" output="BLUT.A4" />
+    <direct name="B5" input="COMMON_LUT_AND_F78MUX.B5" output="BLUT.A5" />
+    <direct name="B6" input="COMMON_LUT_AND_F78MUX.B6" output="BLUT.A6" />
+
+    <direct name="A1" input="COMMON_LUT_AND_F78MUX.A1" output="ALUT.A1" />
+    <direct name="A2" input="COMMON_LUT_AND_F78MUX.A2" output="ALUT.A2" />
+    <direct name="A3" input="COMMON_LUT_AND_F78MUX.A3" output="ALUT.A3" />
+    <direct name="A4" input="COMMON_LUT_AND_F78MUX.A4" output="ALUT.A4" />
+    <direct name="A5" input="COMMON_LUT_AND_F78MUX.A5" output="ALUT.A5" />
+    <direct name="A6" input="COMMON_LUT_AND_F78MUX.A6" output="ALUT.A6" />
+
+    <direct name="DO6" input="DLUT.O6" output="COMMON_LUT_AND_F78MUX.DO6" />
+    <direct name="DO5" input="DLUT.O5" output="COMMON_LUT_AND_F78MUX.DO5" />
+
+    <direct name="CO6" input="CLUT.O6" output="COMMON_LUT_AND_F78MUX.CO6" />
+    <direct name="CO5" input="CLUT.O5" output="COMMON_LUT_AND_F78MUX.CO5" />
+
+    <direct name="BO6" input="BLUT.O6" output="COMMON_LUT_AND_F78MUX.BO6" />
+    <direct name="BO5" input="BLUT.O5" output="COMMON_LUT_AND_F78MUX.BO5" />
+
+    <direct name="AO6" input="ALUT.O6" output="COMMON_LUT_AND_F78MUX.AO6" />
+    <direct name="AO5" input="ALUT.O5" output="COMMON_LUT_AND_F78MUX.AO5" />
+
+    <!-- F7AMUX inputs -->
+    <direct name="F7AMUX_I0" input="BLUT.O6" output="F7AMUX.I0">
+        <pack_pattern in_port="BLUT.O6" name="LUT5toLUT7" out_port="F7AMUX.I0"/>
+        <pack_pattern in_port="BLUT.O6" name="LUT5toLUT8" out_port="F7AMUX.I0"/>
+    </direct>
+    <direct name="F7AMUX_I1" input="ALUT.O6" output="F7AMUX.I1">
+        <pack_pattern in_port="ALUT.O6" name="LUT5toLUT7" out_port="F7AMUX.I1"/>
+        <pack_pattern in_port="ALUT.O6" name="LUT5toLUT8" out_port="F7AMUX.I1"/>
+    </direct>
+    <direct name="F7AMUX_S" input="COMMON_LUT_AND_F78MUX.AX" output="F7AMUX.S" />
+    <!-- F7BMUX inputs -->
+    <direct name="F7BMUX_I0" input="DLUT.O6" output="F7BMUX.I0">
+        <pack_pattern in_port="DLUT.O6" name="LUT5toLUT7" out_port="F7BMUX.I0"/>
+        <pack_pattern in_port="DLUT.O6" name="LUT5toLUT8" out_port="F7BMUX.I0"/>
+    </direct>
+    <direct name="F7BMUX_I1" input="CLUT.O6" output="F7BMUX.I1">
+        <pack_pattern in_port="CLUT.O6" name="LUT5toLUT7" out_port="F7BMUX.I1"/>
+        <pack_pattern in_port="CLUT.O6" name="LUT5toLUT8" out_port="F7BMUX.I1"/>
+    </direct>
+    <direct name="F7BMUX_S" input="COMMON_LUT_AND_F78MUX.CX" output="F7BMUX.S" />
+    <!-- F8MUX inputs -->
+    <direct name="F8MUX_I0" input="F7BMUX.O" output="F8MUX.I0">
+        <pack_pattern in_port="F7BMUX.O" name="LUT5toLUT8" out_port="F8MUX.I0"/>
+    </direct>
+    <direct name="F8MUX_I1" input="F7AMUX.O" output="F8MUX.I1">
+        <pack_pattern in_port="F7AMUX.O" name="LUT5toLUT8" out_port="F8MUX.I1"/>
+    </direct>
+    <direct name="F8MUX_S" input="COMMON_LUT_AND_F78MUX.BX" output="F8MUX.S" />
+
+    <direct name="F7AMUX_O" input="F7AMUX.O" output="COMMON_LUT_AND_F78MUX.F7AMUX_O" />
+    <direct name="F7BMUX_O" input="F7BMUX.O" output="COMMON_LUT_AND_F78MUX.F7BMUX_O" />
+    <direct name="F8MUX_O" input="F8MUX.O" output="COMMON_LUT_AND_F78MUX.F8MUX_O" />
+</interconnect>
+<metadata>
+    <meta name="type">block</meta>
+    <meta name="subtype">ignore</meta>
+</metadata>
+</pb_type>
+
+<!-- A diagram for the SLICEL is shown in;
+    7 Series FPGAs CLB User Guide UG474 (v1.8) September 27, 2016
+    Figure 2-4: Diagram of SLICEL
+
+    COMMON_SLICE is the common wiring between SLICEL and SLICEM.
+
+    Note: For SLICEL, the AMC31 input is left unconnected.
+  -->
+<pb_type name="COMMON_SLICE" num_pb="1">
+
+<input name="DX" num_pins="1"/>
+<input name="CX" num_pins="1"/>
+<input name="BX" num_pins="1"/>
+<input name="AX" num_pins="1"/>
+
+<input name="DO6" num_pins="1"/>
+<input name="CO6" num_pins="1"/>
+<input name="BO6" num_pins="1"/>
+<input name="AO6" num_pins="1"/>
+
+<input name="DO5" num_pins="1"/>
+<input name="CO5" num_pins="1"/>
+<input name="BO5" num_pins="1"/>
+<input name="AO5" num_pins="1"/>
+
+<input name="SR" num_pins="1"/>
+<input name="CE" num_pins="1"/>
+
+<input name="F7AMUX_O" num_pins="1"/>
+<input name="F7BMUX_O" num_pins="1"/>
+<input name="F8MUX_O" num_pins="1"/>
+
+<!-- This input in unconnected on SLICEL -->
+<input name="AMC31" num_pins="1"/>
+
+<clock name="CLK" num_pins="1"/>
+
+<input name="CIN" num_pins="1"/>
+<output name="COUT" num_pins="1"/>
+
+<output name="DMUX" num_pins="1"/>
+<output name="D" num_pins="1"/>
+<output name="DQ" num_pins="1"/>
+
+<output name="CMUX" num_pins="1"/>
+<output name="C" num_pins="1"/>
+<output name="CQ" num_pins="1"/>
+
+<output name="BMUX" num_pins="1"/>
+<output name="B" num_pins="1"/>
+<output name="BQ" num_pins="1"/>
+
+<output name="AMUX" num_pins="1"/>
+<output name="A" num_pins="1"/>
+<output name="AQ" num_pins="1"/>
+
+
+<!-- Model of FF group in SLICEL and SLICEM -->
+<pb_type name="SLICE_FF" num_pb="1">
+    <!-- CK, CE and SR are slice wide. -->
+    <input name="CE" num_pins="8"/>
+    <input name="SR" num_pins="8"/>
+    <clock name="CK" num_pins="1"/>
+
+    <input name="D" num_pins="4"/>
+    <output name="Q" num_pins="4"/>
+    <input name="D5" num_pins="4"/>
+    <output name="Q5" num_pins="4"/>
+
+    <!-- |      |FFSYNC|LATCH|ZRST | -->
+    <!-- |FDSE  |   X  |     |     | -->
+    <!-- |FDRE  |   X  |     |  X  | -->
+    <!-- |FDPE  |      |     |     | -->
+    <!-- |FDCE  |      |     |  X  | -->
+    <!-- |LDPE  |      |  X  |     | -->
+    <!-- |LDCE  |      |  X  |  X  | -->
+    <mode name="NO_FF">
+        <pb_type name="NO_FF" num_pb="4" blif_model=".subckt NO_FF">
+            <input name="D" num_pins="1"/>
+            <metadata>
+                <meta name="type">bel</meta>
+                <meta name="subtype">flipflop</meta>
+            </metadata>
+        </pb_type>
+        <interconnect>
+            <direct name="D" input="SLICE_FF.D" output="NO_FF.D"/>
+        </interconnect>
+    </mode>
+
+    <mode name="FDSE_or_FDRE">
+        <pb_type name="FF_FDSE_or_FDRE" num_pb="4">
+            <input name="D" num_pins="1"/>
+            <input name="CE" num_pins="1"/>
+            <clock name="C" num_pins="1"/>
+            <input name="SR" num_pins="1"/>
+            <output name="Q" num_pins="1"/>
+
+            <mode name="FDSE">
+                <pb_type name="FDSE" num_pb="1" blif_model=".subckt FDSE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="S" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="S" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="S" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="FF_FDSE_or_FDRE.D" output="FDSE.D">
+                        <pack_pattern name="LUT_to_FF_FDSE" />
+                    </direct>
+                    <direct name="CE" input="FF_FDSE_or_FDRE.CE" output="FDSE.CE">
+                        <pack_pattern name="CE_FF_FDSE"/>
+                        <pack_pattern name="CESR_FF_FDSE"/>
+                    </direct>
+                    <direct name="C" input="FF_FDSE_or_FDRE.C" output="FDSE.C" />
+                    <direct name="S" input="FF_FDSE_or_FDRE.SR" output="FDSE.S">
+                        <pack_pattern name="SR_FF_FDSE"/>
+                        <pack_pattern name="CESR_FF_FDSE"/>
+                    </direct>
+                    <direct name="Q" input="FDSE.Q" output="FF_FDSE_or_FDRE.Q" />
+                </interconnect>
+            </mode>
+
+            <mode name="FDRE">
+                <pb_type name="FDRE" num_pb="1" blif_model=".subckt FDRE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="R" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="R" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="R" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="fasm_features">ZRST</meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="FF_FDSE_or_FDRE.D" output="FDRE.D">
+                        <pack_pattern name="LUT_to_FF_FDRE" />
+                    </direct>
+                    <direct name="CE" input="FF_FDSE_or_FDRE.CE" output="FDRE.CE">
+                        <pack_pattern name="CE_FF_FDRE"/>
+                        <pack_pattern name="CESR_FF_FDRE"/>
+                    </direct>
+                    <direct name="C" input="FF_FDSE_or_FDRE.C" output="FDRE.C" />
+                    <direct name="R" input="FF_FDSE_or_FDRE.SR" output="FDRE.R">
+                        <pack_pattern name="SR_FF_FDRE"/>
+                        <pack_pattern name="CESR_FF_FDRE"/>
+                    </direct>
+                    <direct name="Q" input="FDRE.Q" output="FF_FDSE_or_FDRE.Q" />
+                </interconnect>
+            </mode>
+
+            <metadata>
+                <meta name="fasm_prefix">A5FF B5FF C5FF D5FF</meta>
+                <meta name="type">block</meta>
+                <meta name="subtype">ignore</meta>
+            </metadata>
+        </pb_type>
+
+        <pb_type name="REG_FDSE_or_FDRE" num_pb="4">
+            <input name="D" num_pins="1"/>
+            <input name="CE" num_pins="1"/>
+            <clock name="C" num_pins="1"/>
+            <input name="SR" num_pins="1"/>
+            <output name="Q" num_pins="1"/>
+
+            <mode name="FDSE">
+                <pb_type name="FDSE" num_pb="1" blif_model=".subckt FDSE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="S" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="S" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="S" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="REG_FDSE_or_FDRE.D" output="FDSE.D">
+                        <pack_pattern name="LUT_to_FF_FDSE" />
+                        <pack_pattern name="F6MUX_to_FF_FDSE" />
+                    </direct>
+                    <direct name="CE" input="REG_FDSE_or_FDRE.CE" output="FDSE.CE">
+                        <pack_pattern name="CE_FF_FDSE"/>
+                        <pack_pattern name="CESR_FF_FDSE"/>
+                    </direct>
+                    <direct name="C" input="REG_FDSE_or_FDRE.C" output="FDSE.C" />
+                    <direct name="S" input="REG_FDSE_or_FDRE.SR" output="FDSE.S">
+                        <pack_pattern name="SR_FF_FDSE"/>
+                        <pack_pattern name="CESR_FF_FDSE"/>
+                    </direct>
+                    <direct name="Q" input="FDSE.Q" output="REG_FDSE_or_FDRE.Q" />
+                </interconnect>
+            </mode>
+
+            <mode name="FDRE">
+                <pb_type name="FDRE" num_pb="1" blif_model=".subckt FDRE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="R" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="R" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="R" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="fasm_features">ZRST</meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="REG_FDSE_or_FDRE.D" output="FDRE.D">
+                        <pack_pattern name="LUT_to_FF_FDRE" />
+                        <pack_pattern name="F6MUX_to_FF_FDRE" />
+                    </direct>
+                    <direct name="CE" input="REG_FDSE_or_FDRE.CE" output="FDRE.CE">
+                        <pack_pattern name="CE_FF_FDRE"/>
+                        <pack_pattern name="CESR_FF_FDRE"/>
+                    </direct>
+                    <direct name="C" input="REG_FDSE_or_FDRE.C" output="FDRE.C" />
+                    <direct name="R" input="REG_FDSE_or_FDRE.SR" output="FDRE.R">
+                        <pack_pattern name="SR_FF_FDRE"/>
+                        <pack_pattern name="CESR_FF_FDRE"/>
+                    </direct>
+                    <direct name="Q" input="FDRE.Q" output="REG_FDSE_or_FDRE.Q" />
+                </interconnect>
+            </mode>
+
+            <metadata>
+                <meta name="fasm_prefix">AFF BFF CFF DFF</meta>
+                <meta name="type">block</meta>
+                <meta name="subtype">ignore</meta>
+            </metadata>
+        </pb_type>
+
+        <interconnect>
+            <direct name="CE_FF" input="SLICE_FF.CE[7:4]" output="FF_FDSE_or_FDRE.CE" />
+            <direct name="CE_REG" input="SLICE_FF.CE[3:0]" output="REG_FDSE_or_FDRE.CE" />
+            <complete name="C_FF" input="SLICE_FF.CK" output="FF_FDSE_or_FDRE.C" />
+            <complete name="C_REG" input="SLICE_FF.CK" output="REG_FDSE_or_FDRE.C" />
+            <direct name="SR_FF" input="SLICE_FF.SR[7:4]" output="FF_FDSE_or_FDRE.SR" />
+            <direct name="SR_REG" input="SLICE_FF.SR[3:0]" output="REG_FDSE_or_FDRE.SR" />
+
+            <direct name="D" input="SLICE_FF.D" output="REG_FDSE_or_FDRE.D" />
+            <direct name="Q" input="REG_FDSE_or_FDRE.Q" output="SLICE_FF.Q" />
+
+            <direct name="D5" input="SLICE_FF.D5" output="FF_FDSE_or_FDRE.D" />
+            <direct name="Q5" input="FF_FDSE_or_FDRE.Q" output="SLICE_FF.Q5" />
+        </interconnect>
+        <metadata>
+            <meta name="fasm_features">FFSYNC</meta>
+        </metadata>
+    </mode>
+    <mode name="FDPE_or_FDCE">
+        <pb_type name="FF_FDPE_or_FDCE" num_pb="4">
+            <input name="D" num_pins="1"/>
+            <input name="CE" num_pins="1"/>
+            <clock name="C" num_pins="1"/>
+            <input name="SR" num_pins="1"/>
+            <output name="Q" num_pins="1"/>
+
+            <mode name="FDPE">
+                <pb_type name="FDPE" num_pb="1" blif_model=".subckt FDPE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="PRE" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="PRE" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="PRE" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="FF_FDPE_or_FDCE.D" output="FDPE.D">
+                        <pack_pattern name="LUT_to_FF_FDPE" />
+                    </direct>
+                    <direct name="CE" input="FF_FDPE_or_FDCE.CE" output="FDPE.CE">
+                        <pack_pattern name="CE_FF_FDPE"/>
+                        <pack_pattern name="CESR_FF_FDPE"/>
+                    </direct>
+                    <direct name="C" input="FF_FDPE_or_FDCE.C" output="FDPE.C" />
+                    <direct name="PRE" input="FF_FDPE_or_FDCE.SR" output="FDPE.PRE">
+                        <pack_pattern name="SR_FF_FDPE"/>
+                        <pack_pattern name="CESR_FF_FDPE"/>
+                    </direct>
+                    <direct name="Q" input="FDPE.Q" output="FF_FDPE_or_FDCE.Q" />
+                </interconnect>
+            </mode>
+
+            <mode name="FDCE">
+                <pb_type name="FDCE" num_pb="1" blif_model=".subckt FDCE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="CLR" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="CLR" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="CLR" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="fasm_features">ZRST</meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="FF_FDPE_or_FDCE.D" output="FDCE.D">
+                        <pack_pattern name="LUT_to_FF_FDCE" />
+                    </direct>
+                    <direct name="CE" input="FF_FDPE_or_FDCE.CE" output="FDCE.CE">
+                        <pack_pattern name="CE_FF_FDCE"/>
+                        <pack_pattern name="CESR_FF_FDCE"/>
+                    </direct>
+                    <direct name="C" input="FF_FDPE_or_FDCE.C" output="FDCE.C" />
+                    <direct name="CLR" input="FF_FDPE_or_FDCE.SR" output="FDCE.CLR">
+                        <pack_pattern name="SR_FF_FDCE"/>
+                        <pack_pattern name="CESR_FF_FDCE"/>
+                    </direct>
+                    <direct name="Q" input="FDCE.Q" output="FF_FDPE_or_FDCE.Q" />
+                </interconnect>
+            </mode>
+
+            <metadata>
+                <meta name="fasm_prefix">A5FF B5FF C5FF D5FF</meta>
+                <meta name="type">block</meta>
+                <meta name="subtype">ignore</meta>
+            </metadata>
+        </pb_type>
+
+        <pb_type name="REG_FDPE_or_FDCE" num_pb="4">
+            <input name="D" num_pins="1"/>
+            <input name="CE" num_pins="1"/>
+            <clock name="C" num_pins="1"/>
+            <input name="SR" num_pins="1"/>
+            <output name="Q" num_pins="1"/>
+
+            <mode name="FDPE">
+                <pb_type name="FDPE" num_pb="1" blif_model=".subckt FDPE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="PRE" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="PRE" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="PRE" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="REG_FDPE_or_FDCE.D" output="FDPE.D">
+                        <pack_pattern name="LUT_to_FF_FDPE" />
+                        <pack_pattern name="F6MUX_to_FF_FDPE" />
+                    </direct>
+                    <direct name="CE" input="REG_FDPE_or_FDCE.CE" output="FDPE.CE">
+                        <pack_pattern name="CE_FF_FDPE"/>
+                        <pack_pattern name="CESR_FF_FDPE"/>
+                    </direct>
+                    <direct name="C" input="REG_FDPE_or_FDCE.C" output="FDPE.C" />
+                    <direct name="PRE" input="REG_FDPE_or_FDCE.SR" output="FDPE.PRE">
+                        <pack_pattern name="SR_FF_FDPE"/>
+                        <pack_pattern name="CESR_FF_FDPE"/>
+                    </direct>
+                    <direct name="Q" input="FDPE.Q" output="REG_FDPE_or_FDCE.Q" />
+                </interconnect>
+            </mode>
+
+            <mode name="FDCE">
+                <pb_type name="FDCE" num_pb="1" blif_model=".subckt FDCE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="CE" num_pins="1"/>
+                    <clock name="C" num_pins="1"/>
+                    <input name="CLR" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="C" />
+                    <T_setup value="{setup_CLK_CE}" port="CE" clock="C" />
+                    <T_setup value="{recovery_CLK_SR}" port="CLR" clock="C" />
+                    <T_hold value="{hold_CLK_DIN}" port="D" clock="C" />
+                    <T_hold value="{hold_CLK_CE}" port="CE" clock="C" />
+                    <T_hold value="{removal_CLK_SR}" port="CLR" clock="C" />
+                    <T_clock_to_Q max="{iopath_CLK_Q}" port="Q" clock="C" />
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="fasm_features">ZRST</meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="REG_FDPE_or_FDCE.D" output="FDCE.D">
+                        <pack_pattern name="LUT_to_FF_FDCE" />
+                        <pack_pattern name="F6MUX_to_FF_FDCE" />
+                    </direct>
+                    <direct name="CE" input="REG_FDPE_or_FDCE.CE" output="FDCE.CE">
+                        <pack_pattern name="CE_FF_FDCE"/>
+                        <pack_pattern name="CESR_FF_FDCE"/>
+                    </direct>
+                    <direct name="C" input="REG_FDPE_or_FDCE.C" output="FDCE.C" />
+                    <direct name="CLR" input="REG_FDPE_or_FDCE.SR" output="FDCE.CLR">
+                        <pack_pattern name="SR_FF_FDCE"/>
+                        <pack_pattern name="CESR_FF_FDCE"/>
+                    </direct>
+                    <direct name="Q" input="FDCE.Q" output="REG_FDPE_or_FDCE.Q" />
+                </interconnect>
+            </mode>
+            <metadata>
+                <meta name="fasm_prefix">AFF BFF CFF DFF</meta>
+                <meta name="type">block</meta>
+                <meta name="subtype">ignore</meta>
+            </metadata>
+        </pb_type>
+
+        <interconnect>
+            <direct name="CE_FF" input="SLICE_FF.CE[7:4]" output="FF_FDPE_or_FDCE.CE" />
+            <complete name="C_FF" input="SLICE_FF.CK" output="FF_FDPE_or_FDCE.C" />
+            <direct name="SR_FF" input="SLICE_FF.SR[7:4]" output="FF_FDPE_or_FDCE.SR" />
+
+            <direct name="CE_REG" input="SLICE_FF.CE[3:0]" output="REG_FDPE_or_FDCE.CE" />
+            <complete name="C_REG" input="SLICE_FF.CK" output="REG_FDPE_or_FDCE.C" />
+            <direct name="SR_REG" input="SLICE_FF.SR[3:0]" output="REG_FDPE_or_FDCE.SR" />
+
+            <direct name="D" input="SLICE_FF.D[3:0]" output="REG_FDPE_or_FDCE.D" />
+            <direct name="Q" input="REG_FDPE_or_FDCE.Q" output="SLICE_FF.Q" />
+
+            <direct name="D5" input="SLICE_FF.D5[3:0]" output="FF_FDPE_or_FDCE.D" />
+            <direct name="Q5" input="FF_FDPE_or_FDCE.Q" output="SLICE_FF.Q5" />
+        </interconnect>
+    </mode>
+    <mode name="LDPE_or_LDCE">
+        <pb_type name="LDPE_or_LDCE" num_pb="4">
+            <input name="D" num_pins="1"/>
+            <input name="CE" num_pins="1"/>
+            <clock name="C" num_pins="1"/>
+            <input name="SR" num_pins="1"/>
+            <output name="Q" num_pins="1"/>
+
+            <mode name="LDPE">
+                <pb_type name="LDPE" num_pb="1" blif_model=".subckt LDPE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="GE" num_pins="1"/>
+                    <clock name="G" num_pins="1"/>
+                    <input name="PRE" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="G" />
+                    <T_clock_to_Q max="{iopath_D_Q}" port="D" clock="G" />
+                    <delay_constant max="{iopath_CLK_Q}" in_port="G" out_port="Q" />
+                    <delay_constant max="{iopath_CE_Q}" in_port="GE" out_port="Q"/>
+                    <delay_constant max="{iopath_SR_Q}" in_port="PRE" out_port="Q"/>
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="LDPE_or_LDCE.D" output="LDPE.D" />
+                    <direct name="CE" input="LDPE_or_LDCE.CE" output="LDPE.GE" />
+                    <direct name="C" input="LDPE_or_LDCE.C" output="LDPE.G" />
+                    <direct name="SR" input="LDPE_or_LDCE.SR" output="LDPE.PRE" />
+                    <direct name="Q" input="LDPE.Q" output="LDPE_or_LDCE.Q" />
+                </interconnect>
+            </mode>
+
+            <mode name="LDCE">
+                <pb_type name="LDCE" num_pb="1" blif_model=".subckt LDCE_ZINI">
+                    <input name="D" num_pins="1"/>
+                    <input name="GE" num_pins="1"/>
+                    <clock name="G" num_pins="1"/>
+                    <input name="CLR" num_pins="1"/>
+                    <output name="Q" num_pins="1"/>
+                    <T_setup value="{setup_CLK_DIN}" port="D" clock="G" />
+                    <T_clock_to_Q max="{iopath_D_Q}" port="D" clock="G" />
+                    <delay_constant max="{iopath_CLK_Q}" in_port="G" out_port="Q" />
+                    <delay_constant max="{iopath_CE_Q}" in_port="GE" out_port="Q"/>
+                    <delay_constant max="{iopath_SR_Q}" in_port="CLR" out_port="Q"/>
+                    <metadata>
+                        <meta name="fasm_params">
+              ZINI = ZINI
+                        </meta>
+                        <meta name="fasm_features">ZRST</meta>
+                        <meta name="type">bel</meta>
+                        <meta name="subtype">flipflop</meta>
+                    </metadata>
+                </pb_type>
+                <interconnect>
+                    <direct name="D" input="LDPE_or_LDCE.D" output="LDCE.D" />
+                    <direct name="CE" input="LDPE_or_LDCE.CE" output="LDCE.GE" />
+                    <direct name="C" input="LDPE_or_LDCE.C" output="LDCE.G" />
+                    <direct name="SR" input="LDPE_or_LDCE.SR" output="LDCE.CLR" />
+                    <direct name="Q" input="LDCE.Q" output="LDPE_or_LDCE.Q" />
+                </interconnect>
+            </mode>
+            <metadata>
+                <meta name="fasm_prefix">AFF BFF CFF DFF</meta>
+                <meta name="type">block</meta>
+                <meta name="subtype">ignore</meta>
+            </metadata>
+        </pb_type>
+
+        <interconnect>
+            <direct name="CE_TO_LD" input="SLICE_FF.CE[0:3]" output="LDPE_or_LDCE.CE" />
+            <complete name="C_TO_LD" input="SLICE_FF.CK" output="LDPE_or_LDCE.C" />
+            <direct name="SR_TO_LD" input="SLICE_FF.SR[0:3]" output="LDPE_or_LDCE.SR" />
+
+            <direct name="D" input="SLICE_FF.D" output="LDPE_or_LDCE.D" />
+            <direct name="Q" input="LDPE_or_LDCE.Q" output="SLICE_FF.Q" />
+        </interconnect>
+        <metadata>
+            <meta name="fasm_features">LATCH</meta>
+        </metadata>
+    </mode>
+    <metadata>
+        <meta name="type">block</meta>
+        <meta name="subtype">ignore</meta>
+    </metadata>
+</pb_type>
+
+
+<!-- CARRY4 logic -->
+
+<pb_type blif_model=".subckt CARRY4_VPR" name="CARRY4_VPR" num_pb="1">
+    <input name="CIN" num_pins="1"/>
+    <output name="CO0" num_pins="1"/>
+    <output name="CO1" num_pins="1"/>
+    <output name="CO2" num_pins="1"/>
+    <output name="CO3" num_pins="1"/>
+    <input name="CYINIT" num_pins="1"/>
+    <input name="DI0" num_pins="1"/>
+    <input name="DI1" num_pins="1"/>
+    <input name="DI2" num_pins="1"/>
+    <input name="DI3" num_pins="1"/>
+    <output name="O0" num_pins="1"/>
+    <output name="O1" num_pins="1"/>
+    <output name="O2" num_pins="1"/>
+    <output name="O3" num_pins="1"/>
+    <input name="S0" num_pins="1"/>
+    <input name="S1" num_pins="1"/>
+    <input name="S2" num_pins="1"/>
+    <input name="S3" num_pins="1"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_CO0}" out_port="CO0"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CYINIT_CO0}" out_port="CO0"/>
+    <delay_constant in_port="DI0" max="{iopath_DI0_CO0}" out_port="CO0"/>
+    <delay_constant in_port="S0" max="{iopath_S0_CO0}" out_port="CO0"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_CO1}" out_port="CO1"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CYINIT_CO1}" out_port="CO1"/>
+    <delay_constant in_port="DI0" max="{iopath_DI0_CO1}" out_port="CO1"/>
+    <delay_constant in_port="DI1" max="{iopath_DI1_CO1}" out_port="CO1"/>
+    <delay_constant in_port="S0" max="{iopath_S0_CO1}" out_port="CO1"/>
+    <delay_constant in_port="S1" max="{iopath_S1_CO1}" out_port="CO1"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_CO2}" out_port="CO2"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CYINIT_CO2}" out_port="CO2"/>
+    <delay_constant in_port="DI0" max="{iopath_DI0_CO2}" out_port="CO2"/>
+    <delay_constant in_port="DI1" max="{iopath_DI1_CO2}" out_port="CO2"/>
+    <delay_constant in_port="DI2" max="{iopath_DI2_CO2}" out_port="CO2"/>
+    <delay_constant in_port="S0" max="{iopath_S0_CO2}" out_port="CO2"/>
+    <delay_constant in_port="S1" max="{iopath_S1_CO2}" out_port="CO2"/>
+    <delay_constant in_port="S2" max="{iopath_S2_CO2}" out_port="CO2"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_CO3}" out_port="CO3"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CYINIT_CO3}" out_port="CO3"/>
+    <delay_constant in_port="DI0" max="{iopath_DI0_CO3}" out_port="CO3"/>
+    <delay_constant in_port="DI1" max="{iopath_DI0_CO3}" out_port="CO3"/>
+    <delay_constant in_port="DI2" max="{iopath_DI0_CO3}" out_port="CO3"/>
+    <delay_constant in_port="DI3" max="{iopath_DI0_CO3}" out_port="CO3"/>
+    <delay_constant in_port="S0" max="{iopath_S0_CO3}" out_port="CO3"/>
+    <delay_constant in_port="S1" max="{iopath_S1_CO3}" out_port="CO3"/>
+    <delay_constant in_port="S2" max="{iopath_S2_CO3}" out_port="CO3"/>
+    <delay_constant in_port="S3" max="{iopath_S3_CO3}" out_port="CO3"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_O0}" out_port="O0"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CYINIT_O0}" out_port="O0"/>
+    <delay_constant in_port="S0" max="{iopath_S0_O0}" out_port="O0"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_O1}" out_port="O1"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CYINIT_O1}" out_port="O1"/>
+    <delay_constant in_port="DI0" max="{iopath_DI0_O1}" out_port="O1"/>
+    <delay_constant in_port="S0" max="{iopath_S0_O1}" out_port="O1"/>
+    <delay_constant in_port="S1" max="{iopath_S1_O1}" out_port="O1"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_O2}" out_port="O2"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CYINIT_O2}" out_port="O2"/>
+    <delay_constant in_port="DI0" max="{iopath_DI0_O2}" out_port="O2"/>
+    <delay_constant in_port="DI1" max="{iopath_DI1_O2}" out_port="O2"/>
+    <delay_constant in_port="S0" max="{iopath_S0_O2}" out_port="O2"/>
+    <delay_constant in_port="S1" max="{iopath_S1_O2}" out_port="O2"/>
+    <delay_constant in_port="S2" max="{iopath_S2_O2}" out_port="O2"/>
+    <delay_constant in_port="CIN" max="{iopath_CIN_O3}" out_port="O3"/>
+    <delay_constant in_port="CYINIT" max="{iopath_CIN_O3}" out_port="O3"/>
+    <delay_constant in_port="DI0" max="{iopath_DI0_O3}" out_port="O3"/>
+    <delay_constant in_port="DI1" max="{iopath_DI1_O3}" out_port="O3"/>
+    <delay_constant in_port="DI2" max="{iopath_DI2_O3}" out_port="O3"/>
+    <delay_constant in_port="S0" max="{iopath_S0_O3}" out_port="O3"/>
+    <delay_constant in_port="S1" max="{iopath_S1_O3}" out_port="O3"/>
+    <delay_constant in_port="S2" max="{iopath_S2_O3}" out_port="O3"/>
+    <delay_constant in_port="S3" max="{iopath_S3_O3}" out_port="O3"/>
+    <metadata>
+        <meta name="fasm_params">
+      PRECYINIT.C0 = CYINIT_C0
+      PRECYINIT.C1 = CYINIT_C1
+        </meta>
+        <meta name="type">bel</meta>
+        <meta name="subtype">blackbox</meta>
+    </metadata>
+</pb_type>
+
+<xi:include href="carry/carry_cout_plug.pb_type.xml" />
+
+<pb_type name="CEUSEDMUX" num_pb="1">
+    <input name="CE" num_pins="1" />
+    <output name="CE_OUT" num_pins="8" />
+
+    <mode name="CE_VCC">
+        <pb_type name="CE_VCC" blif_model=".subckt CE_VCC" num_pb="8">
+            <output name="VCC" num_pins="1" />
+        </pb_type>
+        <interconnect>
+            <direct name="CE0" input="CE_VCC[0].VCC" output="CEUSEDMUX.CE_OUT[0]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="CE1" input="CE_VCC[1].VCC" output="CEUSEDMUX.CE_OUT[1]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="CE2" input="CE_VCC[2].VCC" output="CEUSEDMUX.CE_OUT[2]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="CE3" input="CE_VCC[3].VCC" output="CEUSEDMUX.CE_OUT[3]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="CE4" input="CE_VCC[4].VCC" output="CEUSEDMUX.CE_OUT[4]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="CE5" input="CE_VCC[5].VCC" output="CEUSEDMUX.CE_OUT[5]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="CE6" input="CE_VCC[6].VCC" output="CEUSEDMUX.CE_OUT[6]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="CE7" input="CE_VCC[7].VCC" output="CEUSEDMUX.CE_OUT[7]">
+                <pack_pattern name="CE_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="CE_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="CE_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="CE_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+        </interconnect>
+    </mode>
+    <mode name="CEUSEDMUX">
+        <interconnect>
+            <complete name="CE" input="CEUSEDMUX.CE" output="CEUSEDMUX.CE_OUT" />
+        </interconnect>
+    </mode>
+</pb_type>
+
+<pb_type name="SRUSEDMUX" num_pb="1">
+    <input name="SR" num_pins="1" />
+    <output name="SR_OUT" num_pins="8" />
+
+
+    <mode name="SR_GND">
+        <pb_type name="SR_GND" blif_model=".subckt SR_GND" num_pb="8">
+            <output name="GND" num_pins="1" />
+        </pb_type>
+        <interconnect>
+            <direct name="SR0" input="SR_GND[0].GND" output="SRUSEDMUX.SR_OUT[0]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="SR1" input="SR_GND[1].GND" output="SRUSEDMUX.SR_OUT[1]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="SR2" input="SR_GND[2].GND" output="SRUSEDMUX.SR_OUT[2]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="SR3" input="SR_GND[3].GND" output="SRUSEDMUX.SR_OUT[3]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="SR4" input="SR_GND[4].GND" output="SRUSEDMUX.SR_OUT[4]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="SR5" input="SR_GND[5].GND" output="SRUSEDMUX.SR_OUT[5]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="SR6" input="SR_GND[6].GND" output="SRUSEDMUX.SR_OUT[6]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+            <direct name="SR7" input="SR_GND[7].GND" output="SRUSEDMUX.SR_OUT[7]">
+                <pack_pattern name="SR_FF_FDSE"/>
+                <pack_pattern name="CESR_FF_FDSE"/>
+                <pack_pattern name="SR_FF_FDRE"/>
+                <pack_pattern name="CESR_FF_FDRE"/>
+                <pack_pattern name="SR_FF_FDPE"/>
+                <pack_pattern name="CESR_FF_FDPE"/>
+                <pack_pattern name="SR_FF_FDCE"/>
+                <pack_pattern name="CESR_FF_FDCE"/>
+            </direct>
+        </interconnect>
+    </mode>
+    <mode name="SRUSEDMUX">
+        <interconnect>
+            <complete name="SR" input="SRUSEDMUX.SR" output="SRUSEDMUX.SR_OUT" />
+        </interconnect>
+    </mode>
+</pb_type>
+
+<interconnect>
+    <!-- 5FF MUXs -->
+    <mux name="D5FFMUX" input="COMMON_SLICE.DX COMMON_SLICE.DO5" output="SLICE_FF.D5[3]">
+        <pack_pattern in_port="COMMON_SLICE.DO5" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D5[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO5" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D5[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO5" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D5[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO5" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D5[3]" />
+
+        <delay_constant in_port="COMMON_SLICE.DX" max="{interconnect_dx_d5ffl}" out_port="SLICE_FF.D5[3]" />
+        <delay_constant in_port="COMMON_SLICE.DO5" max="{interconnect_d5lut_d5ffl}" out_port="SLICE_FF.D5[3]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.DO5 = D5FFMUX.IN_A
+                        COMMON_SLICE.DX = D5FFMUX.IN_B
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="C5FFMUX" input="COMMON_SLICE.CX COMMON_SLICE.CO5" output="SLICE_FF.D5[2]">
+        <pack_pattern in_port="COMMON_SLICE.CO5" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D5[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO5" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D5[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO5" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D5[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO5" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D5[2]" />
+
+        <delay_constant in_port="COMMON_SLICE.CX" max="{interconnect_cx_c5ffl}" out_port="SLICE_FF.D5[2]" />
+        <delay_constant in_port="COMMON_SLICE.CO5" max="{interconnect_c5lut_c5ffl}" out_port="SLICE_FF.D5[2]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.CO5 = C5FFMUX.IN_A
+                        COMMON_SLICE.CX = C5FFMUX.IN_B
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="B5FFMUX" input="COMMON_SLICE.BX COMMON_SLICE.BO5" output="SLICE_FF.D5[1]">
+        <pack_pattern in_port="COMMON_SLICE.BO5" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D5[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO5" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D5[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO5" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D5[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO5" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D5[1]" />
+
+        <delay_constant in_port="COMMON_SLICE.BX" max="{interconnect_bx_b5ffl}" out_port="SLICE_FF.D5[1]" />
+        <delay_constant in_port="COMMON_SLICE.BO5" max="{interconnect_b5lut_b5ffl}" out_port="SLICE_FF.D5[1]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.BO5 = B5FFMUX.IN_A
+                        COMMON_SLICE.BX = B5FFMUX.IN_B
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="A5FFMUX" input="COMMON_SLICE.AX COMMON_SLICE.AO5" output="SLICE_FF.D5[0]">
+        <pack_pattern in_port="COMMON_SLICE.AO5" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D5[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO5" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D5[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO5" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D5[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO5" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D5[0]" />
+
+        <delay_constant in_port="COMMON_SLICE.AX" max="{interconnect_ax_a5ffl}" out_port="SLICE_FF.D5[0]" />
+        <delay_constant in_port="COMMON_SLICE.AO5" max="{interconnect_a5lut_a5ffl}" out_port="SLICE_FF.D5[0]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.AO5 = A5FFMUX.IN_A
+                        COMMON_SLICE.AX = A5FFMUX.IN_B
+            </meta>
+        </metadata>
+    </mux>
+
+    <!-- [A-D]MUX -->
+    <mux name="DOUTMUX" input="COMMON_SLICE.AMC31 SLICE_FF.Q5[3] CARRY4_VPR.O3 CARRY4_VPR.CO3 COMMON_SLICE.DO6 COMMON_SLICE.DO5" output="COMMON_SLICE.DMUX">
+        <delay_constant in_port="SLICE_FF.Q5[3]" max="{interconnect_d5ff_dmux}" out_port="COMMON_SLICE.DMUX" />
+        <delay_constant in_port="CARRY4_VPR.O3" max="{interconnect_carry4_co3_dmux}" out_port="COMMON_SLICE.DMUX" />
+        <delay_constant in_port="CARRY4_VPR.CO3" max="{interconnect_carry4_o3_dmux}" out_port="COMMON_SLICE.DMUX" />
+        <delay_constant in_port="COMMON_SLICE.DO6" max="{interconnect_d6lut_dmux}" out_port="COMMON_SLICE.DMUX" />
+        <delay_constant in_port="COMMON_SLICE.DO5" max="{interconnect_d5lut_dmux}" out_port="COMMON_SLICE.DMUX" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.AMC31 = DOUTMUX.MC31
+                        SLICE_FF.Q5[3] = DOUTMUX.D5Q
+                        COMMON_SLICE.DO5 = DOUTMUX.O5
+                        COMMON_SLICE.DO6 = DOUTMUX.O6
+                        CARRY4_VPR.CO3 = DOUTMUX.CY
+                        CARRY4_VPR.O3 = DOUTMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="COUTMUX" input="SLICE_FF.Q5[2] CARRY4_VPR.O2 CARRY4_VPR.CO2 COMMON_SLICE.CO6 COMMON_SLICE.CO5 COMMON_SLICE.F7BMUX_O" output="COMMON_SLICE.CMUX">
+        <delay_constant in_port="SLICE_FF.Q5[2]" max="{interconnect_c5ff_cmux}" out_port="COMMON_SLICE.CMUX" />
+        <delay_constant in_port="CARRY4_VPR.O2" max="{interconnect_carry4_co2_cmux}" out_port="COMMON_SLICE.CMUX" />
+        <delay_constant in_port="CARRY4_VPR.CO2" max="{interconnect_carry4_o2_cmux}" out_port="COMMON_SLICE.CMUX" />
+        <delay_constant in_port="COMMON_SLICE.CO6" max="{interconnect_c6lut_cmux}" out_port="COMMON_SLICE.CMUX" />
+        <delay_constant in_port="COMMON_SLICE.CO5" max="{interconnect_c5lut_cmux}" out_port="COMMON_SLICE.CMUX" />
+        <metadata>
+            <meta name="fasm_mux">
+                        SLICE_FF.Q5[2] = COUTMUX.C5Q
+                        COMMON_SLICE.F7BMUX_O = COUTMUX.F7
+                        COMMON_SLICE.CO5 = COUTMUX.O5
+                        COMMON_SLICE.CO6 = COUTMUX.O6
+                        CARRY4_VPR.CO2 = COUTMUX.CY
+                        CARRY4_VPR.O2 = COUTMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="BOUTMUX" input="SLICE_FF.Q5[1] CARRY4_VPR.O1 CARRY4_VPR.CO1 COMMON_SLICE.BO6 COMMON_SLICE.BO5 COMMON_SLICE.F8MUX_O" output="COMMON_SLICE.BMUX">
+        <delay_constant in_port="SLICE_FF.Q5[1]" max="{interconnect_b5ff_bmux}" out_port="COMMON_SLICE.BMUX" />
+        <delay_constant in_port="CARRY4_VPR.O1" max="{interconnect_carry4_co1_bmux}" out_port="COMMON_SLICE.BMUX" />
+        <delay_constant in_port="CARRY4_VPR.CO1" max="{interconnect_carry4_o1_bmux}" out_port="COMMON_SLICE.BMUX" />
+        <delay_constant in_port="COMMON_SLICE.BO6" max="{interconnect_b6lut_bmux}" out_port="COMMON_SLICE.BMUX" />
+        <delay_constant in_port="COMMON_SLICE.BO5" max="{interconnect_b5lut_bmux}" out_port="COMMON_SLICE.BMUX" />
+        <metadata>
+            <meta name="fasm_mux">
+                        SLICE_FF.Q5[1] = BOUTMUX.B5Q
+                        COMMON_SLICE.F8MUX_O = BOUTMUX.F8
+                        COMMON_SLICE.BO5 = BOUTMUX.O5
+                        COMMON_SLICE.BO6 = BOUTMUX.O6
+                        CARRY4_VPR.CO1 = BOUTMUX.CY
+                        CARRY4_VPR.O1 = BOUTMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="AOUTMUX" input="SLICE_FF.Q5[0] CARRY4_VPR.O0 CARRY4_VPR.CO0 COMMON_SLICE.AO6 COMMON_SLICE.AO5 COMMON_SLICE.F7AMUX_O" output="COMMON_SLICE.AMUX">
+        <delay_constant in_port="SLICE_FF.Q5[0]" max="{interconnect_a5ff_amux}" out_port="COMMON_SLICE.AMUX" />
+        <delay_constant in_port="CARRY4_VPR.O0" max="{interconnect_carry4_co0_amux}" out_port="COMMON_SLICE.AMUX" />
+        <delay_constant in_port="CARRY4_VPR.CO0" max="{interconnect_carry4_o0_amux}" out_port="COMMON_SLICE.AMUX" />
+        <delay_constant in_port="COMMON_SLICE.AO6" max="{interconnect_a6lut_amux}" out_port="COMMON_SLICE.AMUX" />
+        <delay_constant in_port="COMMON_SLICE.AO5" max="{interconnect_a5lut_amux}" out_port="COMMON_SLICE.AMUX" />
+        <metadata>
+            <meta name="fasm_mux">
+                        SLICE_FF.Q5[0] = AOUTMUX.A5Q
+                        COMMON_SLICE.F7AMUX_O = AOUTMUX.F7
+                        COMMON_SLICE.AO5 = AOUTMUX.O5
+                        COMMON_SLICE.AO6 = AOUTMUX.O6
+                        CARRY4_VPR.CO0 = AOUTMUX.CY
+                        CARRY4_VPR.O0 = AOUTMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+
+    <!-- [A-D]FFMUX -->
+    <mux name="DFFMUX" input="COMMON_SLICE.AMC31 CARRY4_VPR.O3 CARRY4_VPR.CO3 COMMON_SLICE.DO6 COMMON_SLICE.DO5 COMMON_SLICE.DX" output="SLICE_FF.D[3]">
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D[3]" />
+
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="F6MUX_to_FF_FDSE" out_port="SLICE_FF.D[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="F6MUX_to_FF_FDRE" out_port="SLICE_FF.D[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="F6MUX_to_FF_FDPE" out_port="SLICE_FF.D[3]" />
+        <pack_pattern in_port="COMMON_SLICE.DO6" name="F6MUX_to_FF_FDCE" out_port="SLICE_FF.D[3]" />
+
+        <delay_constant in_port="COMMON_SLICE.DX" max="{interconnect_dx_dff}" out_port="SLICE_FF.D[3]" />
+        <delay_constant in_port="COMMON_SLICE.DO5" max="{interconnect_d5lut_dff}" out_port="SLICE_FF.D[3]" />
+        <delay_constant in_port="COMMON_SLICE.DO6" max="{interconnect_d6lut_dff}" out_port="SLICE_FF.D[3]" />
+        <delay_constant in_port="CARRY4_VPR.CO3" max="{interconnect_carry4_co3_dff}" out_port="SLICE_FF.D[3]" />
+        <delay_constant in_port="CARRY4_VPR.O3" max="{interconnect_carry4_o3_dff}" out_port="SLICE_FF.D[3]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.AMC31 = DFFMUX.MC31
+                        COMMON_SLICE.DX = DFFMUX.DX
+                        COMMON_SLICE.DO5 = DFFMUX.O5
+                        COMMON_SLICE.DO6 = DFFMUX.O6
+                        CARRY4_VPR.CO3 = DFFMUX.CY
+                        CARRY4_VPR.O3 = DFFMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="CFFMUX" input="CARRY4_VPR.O2 CARRY4_VPR.CO2 COMMON_SLICE.CO6 COMMON_SLICE.CO5 COMMON_SLICE.CX COMMON_SLICE.F7BMUX_O" output="SLICE_FF.D[2]">
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D[2]" />
+
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="F6MUX_to_FF_FDSE" out_port="SLICE_FF.D[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="F6MUX_to_FF_FDRE" out_port="SLICE_FF.D[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="F6MUX_to_FF_FDPE" out_port="SLICE_FF.D[2]" />
+        <pack_pattern in_port="COMMON_SLICE.CO6" name="F6MUX_to_FF_FDCE" out_port="SLICE_FF.D[2]" />
+
+        <delay_constant in_port="COMMON_SLICE.CX" max="{interconnect_cx_cff}" out_port="SLICE_FF.D[2]" />
+        <delay_constant in_port="COMMON_SLICE.F7BMUX_O" max="{interconnect_f7bmux_cff}" out_port="SLICE_FF.D[2]" />
+        <delay_constant in_port="COMMON_SLICE.CO5" max="{interconnect_c5lut_cff}" out_port="SLICE_FF.D[2]" />
+        <delay_constant in_port="COMMON_SLICE.CO6" max="{interconnect_c6lut_cff}" out_port="SLICE_FF.D[2]" />
+        <delay_constant in_port="CARRY4_VPR.CO2" max="{interconnect_carry4_co2_cff}" out_port="SLICE_FF.D[2]" />
+        <delay_constant in_port="CARRY4_VPR.O2" max="{interconnect_carry4_o2_cff}" out_port="SLICE_FF.D[2]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.CX = CFFMUX.CX
+                        COMMON_SLICE.F7BMUX_O = CFFMUX.F7
+                        COMMON_SLICE.CO5 = CFFMUX.O5
+                        COMMON_SLICE.CO6 = CFFMUX.O6
+                        CARRY4_VPR.CO2 = CFFMUX.CY
+                        CARRY4_VPR.O2 = CFFMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="BFFMUX" input="CARRY4_VPR.O1 CARRY4_VPR.CO1 COMMON_SLICE.BO6 COMMON_SLICE.BO5 COMMON_SLICE.BX COMMON_SLICE.F8MUX_O" output="SLICE_FF.D[1]">
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D[1]" />
+
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="F6MUX_to_FF_FDSE" out_port="SLICE_FF.D[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="F6MUX_to_FF_FDRE" out_port="SLICE_FF.D[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="F6MUX_to_FF_FDPE" out_port="SLICE_FF.D[1]" />
+        <pack_pattern in_port="COMMON_SLICE.BO6" name="F6MUX_to_FF_FDCE" out_port="SLICE_FF.D[1]" />
+
+        <delay_constant in_port="COMMON_SLICE.BX" max="{interconnect_bx_bff}" out_port="SLICE_FF.D[1]" />
+        <delay_constant in_port="COMMON_SLICE.F8MUX_O" max="{interconnect_f8mux_bff}" out_port="SLICE_FF.D[1]" />
+        <delay_constant in_port="COMMON_SLICE.BO5" max="{interconnect_b5lut_bff}" out_port="SLICE_FF.D[1]" />
+        <delay_constant in_port="COMMON_SLICE.BO6" max="{interconnect_b6lut_bff}" out_port="SLICE_FF.D[1]" />
+        <delay_constant in_port="CARRY4_VPR.CO1" max="{interconnect_carry4_co1_bff}" out_port="SLICE_FF.D[1]" />
+        <delay_constant in_port="CARRY4_VPR.O1" max="{interconnect_carry4_o1_bff}" out_port="SLICE_FF.D[1]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.BX = BFFMUX.BX
+                        COMMON_SLICE.F8MUX_O = BFFMUX.F8
+                        COMMON_SLICE.BO5 = BFFMUX.O5
+                        COMMON_SLICE.BO6 = BFFMUX.O6
+                        CARRY4_VPR.CO1 = BFFMUX.CY
+                        CARRY4_VPR.O1 = BFFMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="AFFMUX" input="CARRY4_VPR.O0 CARRY4_VPR.CO0 COMMON_SLICE.AO6 COMMON_SLICE.AO5 COMMON_SLICE.AX COMMON_SLICE.F7AMUX_O" output="SLICE_FF.D[0]">
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="LUT_to_FF_FDSE" out_port="SLICE_FF.D[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="LUT_to_FF_FDRE" out_port="SLICE_FF.D[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="LUT_to_FF_FDPE" out_port="SLICE_FF.D[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="LUT_to_FF_FDCE" out_port="SLICE_FF.D[0]" />
+
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="F6MUX_to_FF_FDSE" out_port="SLICE_FF.D[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="F6MUX_to_FF_FDRE" out_port="SLICE_FF.D[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="F6MUX_to_FF_FDPE" out_port="SLICE_FF.D[0]" />
+        <pack_pattern in_port="COMMON_SLICE.AO6" name="F6MUX_to_FF_FDCE" out_port="SLICE_FF.D[0]" />
+
+        <delay_constant in_port="COMMON_SLICE.AX" max="{interconnect_ax_aff}" out_port="SLICE_FF.D[0]" />
+        <delay_constant in_port="COMMON_SLICE.F7AMUX_O" max="{interconnect_f7amux_aff}" out_port="SLICE_FF.D[0]" />
+        <delay_constant in_port="COMMON_SLICE.AO5" max="{interconnect_a5lut_aff}" out_port="SLICE_FF.D[0]" />
+        <delay_constant in_port="COMMON_SLICE.AO6" max="{interconnect_a6lut_aff}" out_port="SLICE_FF.D[0]" />
+        <delay_constant in_port="CARRY4_VPR.CO0" max="{interconnect_carry4_co0_aff}" out_port="SLICE_FF.D[0]" />
+        <delay_constant in_port="CARRY4_VPR.O0" max="{interconnect_carry4_o0_aff}" out_port="SLICE_FF.D[0]" />
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.AX = AFFMUX.AX
+                        COMMON_SLICE.F7AMUX_O = AFFMUX.F7
+                        COMMON_SLICE.AO5 = AFFMUX.O5
+                        COMMON_SLICE.AO6 = AFFMUX.O6
+                        CARRY4_VPR.CO0 = AFFMUX.CY
+                        CARRY4_VPR.O0 = AFFMUX.XOR
+            </meta>
+        </metadata>
+    </mux>
+
+    <!-- [A-F]Q outputs -->
+    <direct name="AFF" input="SLICE_FF.Q[0]" output="COMMON_SLICE.AQ" />
+    <direct name="BFF" input="SLICE_FF.Q[1]" output="COMMON_SLICE.BQ" />
+    <direct name="CFF" input="SLICE_FF.Q[2]" output="COMMON_SLICE.CQ" />
+    <direct name="DFF" input="SLICE_FF.Q[3]" output="COMMON_SLICE.DQ" />
+
+    <!-- LUT O6 output -->
+    <direct name="COMMON_SLICE_DOUT" input="COMMON_SLICE.DO6" output="COMMON_SLICE.D">
+        <delay_constant in_port="COMMON_SLICE.DO6" max="{interconnect_d6lut_d}" out_port="COMMON_SLICE.D" />
+    </direct>
+    <direct name="COMMON_SLICE_COUT" input="COMMON_SLICE.CO6" output="COMMON_SLICE.C">
+        <delay_constant in_port="COMMON_SLICE.CO6" max="{interconnect_c6lut_c}" out_port="COMMON_SLICE.C" />
+    </direct>
+    <direct name="COMMON_SLICE_BOUT" input="COMMON_SLICE.BO6" output="COMMON_SLICE.B">
+        <delay_constant in_port="COMMON_SLICE.BO6" max="{interconnect_b6lut_b}" out_port="COMMON_SLICE.B" />
+    </direct>
+    <direct name="COMMON_SLICE_AOUT" input="COMMON_SLICE.AO6" output="COMMON_SLICE.A">
+        <delay_constant in_port="COMMON_SLICE.AO6" max="{interconnect_a6lut_a}" out_port="COMMON_SLICE.A" />
+    </direct>
+
+    <!-- Carry -->
+
+    <!-- Carry initialization -->
+    <direct name="PRECYINIT_MUX" input="COMMON_SLICE.AX" output="CARRY4_VPR.CYINIT">
+        <metadata>
+            <meta name="fasm_mux">
+                      COMMON_SLICE.AX = PRECYINIT.AX
+            </meta>
+        </metadata>
+    </direct>
+
+    <direct name="CIN_TO_CARRY0" input="COMMON_SLICE.CIN" output="CARRY4_VPR.CIN">
+        <pack_pattern name="CARRYCHAIN"/>
+        <metadata>
+            <meta name="fasm_mux">
+                      COMMON_SLICE.CIN = PRECYINIT.CIN
+            </meta>
+        </metadata>
+    </direct>
+
+    <!-- Carry selects -->
+    <direct name="CARRY_S3" input="COMMON_SLICE.DO6" output="CARRY4_VPR.S3">
+    </direct>
+    <direct name="CARRY_S2" input="COMMON_SLICE.CO6" output="CARRY4_VPR.S2">
+    </direct>
+    <direct name="CARRY_S1" input="COMMON_SLICE.BO6" output="CARRY4_VPR.S1">
+    </direct>
+    <direct name="CARRY_S0" input="COMMON_SLICE.AO6" output="CARRY4_VPR.S0">
+    </direct>
+
+    <!-- Carry MUXCY.DI -->
+    <mux name="CARRY_DI3" input="COMMON_SLICE.DO5 COMMON_SLICE.DX" output="CARRY4_VPR.DI3">
+        <delay_constant max=".058e-9" in_port="DX" out_port="CARRY4_VPR.DI3" />
+        <metadata>
+            <meta name="fasm_mux">
+                      COMMON_SLICE.DO5 = CARRY4.DCY0
+                      COMMON_SLICE.DX = NULL
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="CARRY_DI2" input="COMMON_SLICE.CO5 COMMON_SLICE.CX" output="CARRY4_VPR.DI2">
+        <delay_constant max=".094e-9" in_port="CX" out_port="CARRY4_VPR.DI2" />
+        <metadata>
+            <meta name="fasm_mux">
+                      COMMON_SLICE.CO5 = CARRY4.CCY0
+                      COMMON_SLICE.CX = NULL
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="CARRY_DI1" input="COMMON_SLICE.BO5 COMMON_SLICE.BX" output="CARRY4_VPR.DI1">
+        <delay_constant max=".085e-9" in_port="BX" out_port="CARRY4_VPR.DI1" />
+        <metadata>
+            <meta name="fasm_mux">
+                      COMMON_SLICE.BO5 = CARRY4.BCY0
+                      COMMON_SLICE.BX = NULL
+            </meta>
+        </metadata>
+    </mux>
+    <mux name="CARRY_DI0" input="COMMON_SLICE.AO5 COMMON_SLICE.AX" output="CARRY4_VPR.DI0">
+        <delay_constant max=".105e-9" in_port="AX" out_port="CARRY4_VPR.DI0" />
+        <metadata>
+            <meta name="fasm_mux">
+                      COMMON_SLICE.AO5 = CARRY4.ACY0
+                      COMMON_SLICE.AX = NULL
+            </meta>
+        </metadata>
+    </mux>
+
+    <direct name="COUT_TO_PLUG" input="CARRY4_VPR.CO3" output="CARRY_COUT_PLUG.CIN">
+        <pack_pattern name="CARRYCHAIN"/>
+        <delay_constant in_port="CARRY4_VPR.CO3" max="{interconnect_carry4_co3_cout}" out_port="CARRY_COUT_PLUG.CIN" />
+    </direct>
+
+    <direct name="COUT" input="CARRY_COUT_PLUG.COUT" output="COMMON_SLICE.COUT">
+        <pack_pattern name="CARRYCHAIN"/>
+    </direct>
+
+    <!-- Clock, Clock Enable and Reset -->
+    <direct name="CK" input="COMMON_SLICE.CLK" output="SLICE_FF.CK"/>
+
+    <direct name="CE" input="COMMON_SLICE.CE" output="CEUSEDMUX.CE">
+        <metadata>
+            <meta name="fasm_mux">
+                    COMMON_SLICE.CE = CEUSEDMUX
+            </meta>
+        </metadata>
+    </direct>
+    <direct name="CE_OUT" input="CEUSEDMUX.CE_OUT" output="SLICE_FF.CE" />
+
+    <direct name="SR" input="COMMON_SLICE.SR" output="SRUSEDMUX.SR">
+        <metadata>
+            <meta name="fasm_mux">
+                        COMMON_SLICE.SR = SRUSEDMUX
+            </meta>
+        </metadata>
+    </direct>
+    <direct name="SR_OUT" input="SRUSEDMUX.SR_OUT" output="SLICE_FF.SR" />
+
+</interconnect>
+<metadata>
+    <meta name="type">block</meta>
+    <meta name="subtype">ignore</meta>
+</metadata>
+</pb_type>
+
+
+<interconnect>
+<!-- LUT input pins -->
+<direct name="D1" input="SLICEL0.D1" output="COMMON_LUT_AND_F78MUX.D1" />
+<direct name="D2" input="SLICEL0.D2" output="COMMON_LUT_AND_F78MUX.D2" />
+<direct name="D3" input="SLICEL0.D3" output="COMMON_LUT_AND_F78MUX.D3" />
+<direct name="D4" input="SLICEL0.D4" output="COMMON_LUT_AND_F78MUX.D4" />
+<direct name="D5" input="SLICEL0.D5" output="COMMON_LUT_AND_F78MUX.D5" />
+<direct name="D6" input="SLICEL0.D6" output="COMMON_LUT_AND_F78MUX.D6" />
+
+<direct name="C1" input="SLICEL0.C1" output="COMMON_LUT_AND_F78MUX.C1" />
+<direct name="C2" input="SLICEL0.C2" output="COMMON_LUT_AND_F78MUX.C2" />
+<direct name="C3" input="SLICEL0.C3" output="COMMON_LUT_AND_F78MUX.C3" />
+<direct name="C4" input="SLICEL0.C4" output="COMMON_LUT_AND_F78MUX.C4" />
+<direct name="C5" input="SLICEL0.C5" output="COMMON_LUT_AND_F78MUX.C5" />
+<direct name="C6" input="SLICEL0.C6" output="COMMON_LUT_AND_F78MUX.C6" />
+
+<direct name="B1" input="SLICEL0.B1" output="COMMON_LUT_AND_F78MUX.B1" />
+<direct name="B2" input="SLICEL0.B2" output="COMMON_LUT_AND_F78MUX.B2" />
+<direct name="B3" input="SLICEL0.B3" output="COMMON_LUT_AND_F78MUX.B3" />
+<direct name="B4" input="SLICEL0.B4" output="COMMON_LUT_AND_F78MUX.B4" />
+<direct name="B5" input="SLICEL0.B5" output="COMMON_LUT_AND_F78MUX.B5" />
+<direct name="B6" input="SLICEL0.B6" output="COMMON_LUT_AND_F78MUX.B6" />
+
+<direct name="A1" input="SLICEL0.A1" output="COMMON_LUT_AND_F78MUX.A1" />
+<direct name="A2" input="SLICEL0.A2" output="COMMON_LUT_AND_F78MUX.A2" />
+<direct name="A3" input="SLICEL0.A3" output="COMMON_LUT_AND_F78MUX.A3" />
+<direct name="A4" input="SLICEL0.A4" output="COMMON_LUT_AND_F78MUX.A4" />
+<direct name="A5" input="SLICEL0.A5" output="COMMON_LUT_AND_F78MUX.A5" />
+<direct name="A6" input="SLICEL0.A6" output="COMMON_LUT_AND_F78MUX.A6" />
+
+<direct name="CX" input="SLICEL0.CX" output="COMMON_LUT_AND_F78MUX.CX" />
+<direct name="BX" input="SLICEL0.BX" output="COMMON_LUT_AND_F78MUX.BX" />
+<direct name="AX" input="SLICEL0.AX" output="COMMON_LUT_AND_F78MUX.AX" />
+
+<!-- COMMON_SLICE inputs -->
+<direct name="DX2" input="SLICEL0.DX" output="COMMON_SLICE.DX" />
+<direct name="DO6" input="COMMON_LUT_AND_F78MUX.DO6" output="COMMON_SLICE.DO6" />
+<direct name="DO5" input="COMMON_LUT_AND_F78MUX.DO5" output="COMMON_SLICE.DO5" />
+
+<direct name="CX2" input="SLICEL0.CX" output="COMMON_SLICE.CX" />
+<direct name="CO6" input="COMMON_LUT_AND_F78MUX.CO6" output="COMMON_SLICE.CO6" />
+<direct name="CO5" input="COMMON_LUT_AND_F78MUX.CO5" output="COMMON_SLICE.CO5" />
+
+<direct name="BX2" input="SLICEL0.BX" output="COMMON_SLICE.BX" />
+<direct name="BO6" input="COMMON_LUT_AND_F78MUX.BO6" output="COMMON_SLICE.BO6" />
+<direct name="BO5" input="COMMON_LUT_AND_F78MUX.BO5" output="COMMON_SLICE.BO5" />
+
+<direct name="AX2" input="SLICEL0.AX" output="COMMON_SLICE.AX" />
+<direct name="AO6" input="COMMON_LUT_AND_F78MUX.AO6" output="COMMON_SLICE.AO6" />
+<direct name="AO5" input="COMMON_LUT_AND_F78MUX.AO5" output="COMMON_SLICE.AO5" />
+
+<direct name="F7AMUX_O" input="COMMON_LUT_AND_F78MUX.F7AMUX_O" output="COMMON_SLICE.F7AMUX_O" />
+<direct name="F7BMUX_O" input="COMMON_LUT_AND_F78MUX.F7BMUX_O" output="COMMON_SLICE.F7BMUX_O" />
+<direct name="F8MUX_O" input="COMMON_LUT_AND_F78MUX.F8MUX_O" output="COMMON_SLICE.F8MUX_O" />
+
+<!-- [A-F]Q outputs -->
+<direct name="AQ" input="COMMON_SLICE.AQ" output="SLICEL0.AQ" />
+<direct name="BQ" input="COMMON_SLICE.BQ" output="SLICEL0.BQ" />
+<direct name="CQ" input="COMMON_SLICE.CQ" output="SLICEL0.CQ" />
+<direct name="DQ" input="COMMON_SLICE.DQ" output="SLICEL0.DQ" />
+
+<!-- A-D output -->
+<direct name="SLICEL_DOUT" input="COMMON_SLICE.D" output="SLICEL0.D" />
+<direct name="SLICEL_COUT" input="COMMON_SLICE.C" output="SLICEL0.C" />
+<direct name="SLICEL_BOUT" input="COMMON_SLICE.B" output="SLICEL0.B" />
+<direct name="SLICEL_AOUT" input="COMMON_SLICE.A" output="SLICEL0.A" />
+
+<!-- AMUX-DMUX output -->
+<direct name="SLICEL_DMUX" input="COMMON_SLICE.DMUX" output="SLICEL0.DMUX" />
+<direct name="SLICEL_CMUX" input="COMMON_SLICE.CMUX" output="SLICEL0.CMUX" />
+<direct name="SLICEL_BMUX" input="COMMON_SLICE.BMUX" output="SLICEL0.BMUX" />
+<direct name="SLICEL_AMUX" input="COMMON_SLICE.AMUX" output="SLICEL0.AMUX" />
+
+<!-- Carry -->
+
+<direct name="CIN" input="SLICEL0.CIN" output="COMMON_SLICE.CIN">
+</direct>
+<direct name="COUT" input="COMMON_SLICE.COUT" output="SLICEL0.COUT">
+</direct>
+
+<!-- Clock, Clock Enable and Reset -->
+<direct name="CK" input="SLICEL0.CLK" output="COMMON_SLICE.CLK"/>
+<direct name="CE" input="SLICEL0.CE" output="COMMON_SLICE.CE"/>
+<direct name="SR" input="SLICEL0.SR" output="COMMON_SLICE.SR"/>
+
+</interconnect>
+<metadata>
+<meta name="type">block</meta>
+<meta name="subtype">ignore</meta>
+</metadata>
+</pb_type>

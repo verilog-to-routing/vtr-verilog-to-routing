@@ -135,3 +135,6 @@ tags
 
 
 ~/VTR/vtr-verilog-to-routing/vtr_flow/arch/timing/COPY_k6_frac_N10_frac_chain_mem32K_40nm.xml
+~/VTR/vtr-verilog-to-routing/vtr_flow/arch/timing/temp_combine_parts
+~/VTR/vtr-verilog-to-routing/vtr_flow/tasks/tab2csv.sh
+~/VTR/vtr-verilog-to-routing/vtr_flow/tasks/tab2csv.py
