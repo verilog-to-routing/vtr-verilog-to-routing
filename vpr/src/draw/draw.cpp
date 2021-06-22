@@ -201,12 +201,28 @@ static void manual_moves_callback(GtkWidget *widget, gint /*response_id*/,
 		gpointer /*data*/, ezgl::application *app);
 static void run_graphics_commands(std::string commands);
 
+<<<<<<< HEAD
+=======
+//Manual moves generator functions
+void manual_move_generator_window();
+void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+
+>>>>>>> 69d872953e314b4bc008b304a5aa8f7e510b6a86
 /************************** File Scope Variables ****************************/
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+
+//struct that contains information about manual moves for drawing
+struct ManualMovesGlobal {
+     manual_move_info draw_manual_move_info;
+     GtkWidget* manual_move_window;
+     //Considering adding more informtion if needed*****
+};
+
+
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -4554,6 +4570,16 @@ static void setup_default_ezgl_callbacks(ezgl::application *app) {
 	GObject *debugger = app->get_object("debugButton");
 	g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
 
+<<<<<<< HEAD
+=======
+    // Connect Debug Button
+    GObject* debugger = app->get_object("debugButton");
+    g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
+
+    //Manual Moves Button
+    GObject* manual_moves = app->get_object("manualMove");
+    g_signal_connect(manual_moves, "toggled", G_CALLBACK(move_generator_button_callback), app);
+>>>>>>> 69d872953e314b4bc008b304a5aa8f7e510b6a86
 }
 
 // Callback function for Block Outline checkbox

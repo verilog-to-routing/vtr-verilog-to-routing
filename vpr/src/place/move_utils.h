@@ -171,6 +171,25 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
 
+<<<<<<< HEAD
 std::string e_move_result_to_string(e_move_result move_outcome);
+=======
+//Manual moves struct: Contains the values needed for a manual move (e.g. block_ID, block_name, x_position, y_position, cost, timing, if input is valid, and if the move is acepted.
+struct manual_move_info {
+    int block_id = -1;
+    std::string block_name = NULL;
+    int x_position = -1;
+    int y_position = -1;
+    float delta_cost = 0;
+    float delta_timing = 0;
+    bool valid_input = true;
+    e_move_result user_move_outcome = ABORTED;
+    e_move_result placer_move_outcome = ABORTED;
+    //considering adding more attributes needed for manual moves******
+};
+
+
+
+>>>>>>> 69d872953e314b4bc008b304a5aa8f7e510b6a86
 
 #endif
