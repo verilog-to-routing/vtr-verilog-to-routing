@@ -305,7 +305,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     CheckSetup(vpr_setup->PackerOpts,
                vpr_setup->PlacerOpts,
                vpr_setup->RouterOpts,
-               vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing);
+               vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing, arch->Chans);
 
     /* flush any messages to user still in stdout that hasn't gotten displayed */
     fflush(stdout);
@@ -885,14 +885,17 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     auto det_routing_arch = &vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
 
-    t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans);
-
     t_graph_type graph_type;
+    t_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
+        graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
+
+    t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans, graph_directionality);
 
     int warnings = 0;
 
@@ -1175,9 +1178,10 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_router_opts& RouterOpts,
                      const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
-                     const t_timing_inf& Timing) {
+                     const t_timing_inf& Timing,
+                     const t_chan_width_dist& Chans) {
     CheckSetup(PackerOpts, PlacerOpts, RouterOpts, RoutingArch,
-               Segments, Timing);
+               Segments, Timing, Chans);
 }
 
 ///@brief Show current setup

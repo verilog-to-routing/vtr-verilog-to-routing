@@ -37,14 +37,9 @@
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 
-/******************* Variables local to this module ************************/
-
-/* Used to pass directionality from the binary_search_place_and_route subroutine *
- * to the init_chan subroutine.                                                  */
-static t_graph_type graph_directionality;
-
 /******************* Subroutines local to this module ************************/
 
+static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, t_graph_type graph_directionality);
 static float comp_width(t_chan* chan, float x, float separation);
 
 /************************* Subroutine Definitions ****************************/
@@ -82,6 +77,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     int warnings;
 
     t_graph_type graph_type;
+    t_graph_type graph_directionality;
 
     /* We have chosen to pass placer_opts_ref by reference because of its large size. *
      * However, since the value is mutated later in the function, we declare a        *
@@ -93,7 +89,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_GLOBAL;
+        graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
@@ -350,7 +346,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     /* End binary search verification. */
     /* Restore the best placement (if necessary), the best routing, and  *
      * * the best channel widths for final drawing and statistics output.  */
-    t_chan_width chan_width = init_chan(final, arch->Chans);
+    t_chan_width chan_width = init_chan(final, arch->Chans, graph_directionality);
 
     free_rr_graph();
 
@@ -391,9 +387,11 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
  * @brief Assigns widths to channels (in tracks).
  *
  * Minimum one track per channel. The channel distributions read from
- * the architecture file are scaled by cfactor.
+ * the architecture file are scaled by cfactor. The graph directionality
+ * is used to determine if the channel width should be rounded to an
+ * even number.
  */
-t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
+t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_type graph_directionality) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
 
@@ -403,7 +401,6 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     t_chan_width chan_width;
     chan_width.x_list.resize(grid.height());
     chan_width.y_list.resize(grid.width());
-    int computed_width;
 
     if (grid.height() > 1) {
         int num_channels = grid.height() - 1;
@@ -412,12 +409,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
         for (size_t i = 0; i < grid.height(); ++i) {
             float y = float(i) / num_channels;
-            computed_width = (int)floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-            if ((GRAPH_BIDIR == graph_directionality) || computed_width % 2 == 0) {
-                chan_width.x_list[i] = computed_width;
-            } else {
-                chan_width.x_list[i] = computed_width - 1;
-            }
+            chan_width.x_list[i] = compute_chan_width(cfactor, chan_x_dist, y, separation, graph_directionality);
             chan_width.x_list[i] = std::max(chan_width.x_list[i], 1); //Minimum channel width 1
         }
     }
@@ -429,12 +421,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
         for (size_t i = 0; i < grid.width(); ++i) { //-2 for no perim channels
             float x = float(i) / num_channels;
-            computed_width = (int)floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-            if ((GRAPH_BIDIR == graph_directionality) || computed_width % 2 == 0) {
-                chan_width.y_list[i] = computed_width;
-            } else {
-                chan_width.y_list[i] = computed_width - 1;
-            }
+            chan_width.y_list[i] = compute_chan_width(cfactor, chan_y_dist, x, separation, graph_directionality);
             chan_width.y_list[i] = std::max(chan_width.y_list[i], 1); //Minimum channel width 1
         }
     }
@@ -468,6 +455,26 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 #endif
 
     return chan_width;
+}
+
+/**
+ * @brief Computes the channel width and adjusts it to be an an even number if unidirectional 
+ *        since unidirectional graphs need to have paired wires.
+ * 
+ *   @param cfactor                 Channel width factor.
+ *   @param chan_dist               Channel width distribution.
+ *   @param x                       The distance (between 0 and 1) we are across the chip.
+ *   @param separation              The distance between two channels in the 0 to 1 coordinate system.
+ *   @param graph_directionality    The directionality of the graph (unidirectional or bidirectional).
+ */
+static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, t_graph_type graph_directionality) {
+    int computed_width;
+    computed_width = (int)floor(cfactor * comp_width(&chan_dist, distance, separation) + 0.5);
+    if ((GRAPH_BIDIR == graph_directionality) || computed_width % 2 == 0) {
+        return computed_width;
+    } else {
+        return computed_width - 1;
+    }
 }
 
 /**

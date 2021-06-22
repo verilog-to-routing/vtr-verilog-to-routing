@@ -754,6 +754,8 @@ Global Routing Information
 If global routing is to be performed, channels in different directions and in different parts of the FPGA can be set to different relative widths.
 This is specified in the content within the ``<chan_width_distr>`` tag.
 
+.. note:: If detailed routing is to be performed, only uniform distributions may be used
+
 .. arch:tag:: <x distr="{gaussian|uniform|pulse|delta}" peak="float" width=" float" xpeak=" float" dc=" float"/>
 
     :req_param distr: The channel width distribution function
