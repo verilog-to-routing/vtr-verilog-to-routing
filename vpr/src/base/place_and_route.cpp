@@ -461,7 +461,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_t
  * @brief Computes the channel width and adjusts it to be an an even number if unidirectional 
  *        since unidirectional graphs need to have paired wires.
  * 
- *   @param cfactor                 Channel width factor.
+ *   @param cfactor                 Channel width factor: multiplier on the channel width distribution (usually the number of tracks in the widest channel).
  *   @param chan_dist               Channel width distribution.
  *   @param x                       The distance (between 0 and 1) we are across the chip.
  *   @param separation              The distance between two channels in the 0 to 1 coordinate system.
