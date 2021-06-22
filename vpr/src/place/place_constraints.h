@@ -88,4 +88,29 @@ inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
  */
 void load_cluster_constraints();
 
+/*
+ * Marks blocks as fixed if they have a constraint region that specifies exactly one x, y,
+ * subtile location as legal.
+ * Marking them as fixed indicates that they cannot be moved during initial placement and simulated annealing
+ */
+void mark_fixed_blocks();
+
+/*
+ * Returns the number of tiles covered by a floorplan region.
+ * The return value of this routine will either be 0, 1, or 2. This
+ * is because this routine is used to check whether the region covers no tile,
+ * one tile, or more than one tile, and so as soon as it is seen that the number of tiles
+ * covered is 2, no further information is needed.
+ */
+int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc);
+
+/*
+ * Returns a bool that indicates if the PartitionRegion covers exactly one compatible location.
+ * Used to decide whether to mark a block with the .is_fixed flag based on its floorplan
+ * region.
+ * block_type is used to determine whether the PartitionRegion is compatible with the cluster block type
+ * and loc is updated with the location covered by the PartitionRegion
+ */
+bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
+
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

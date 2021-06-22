@@ -427,3 +427,38 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     //avoid any memory waste
     legal_pos.shrink_to_fit();
 }
+
+void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
+
+    //Check if block location is out of range of grid dimensions
+    if (location.x < 0 || location.x > int(device_ctx.grid.width() - 1)
+        || location.y < 0 || location.y > int(device_ctx.grid.height() - 1)) {
+        VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n", block_name.c_str(), blk_id, location.x, location.y);
+    }
+
+    //Set the location of the block
+    place_ctx.block_locs[blk_id].loc.x = location.x;
+    place_ctx.block_locs[blk_id].loc.y = location.y;
+    place_ctx.block_locs[blk_id].loc.sub_tile = location.sub_tile;
+
+    //Check if block is at an illegal location
+    auto physical_tile = device_ctx.grid[location.x][location.y].type;
+    auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+
+    if (location.sub_tile >= physical_tile->capacity || location.sub_tile < 0) {
+        VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", block_name.c_str(), location.sub_tile);
+    }
+
+    if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
+        VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d, %d). \n", block_name.c_str(), blk_id, location.x, location.y);
+    }
+
+    //Mark the grid location and usage of the block
+    place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = blk_id;
+    place_ctx.grid_blocks[location.x][location.y].usage++;
+}

@@ -15,6 +15,7 @@
 #include "hash.h"
 #include "read_place.h"
 #include "read_xml_arch_file.h"
+#include "place_util.h"
 
 void read_place_header(
     std::ifstream& placement_file,
@@ -173,17 +174,11 @@ void read_place_body(std::ifstream& placement_file,
                      const char* place_file,
                      bool is_place_file) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     std::string line;
     int lineno = 0;
-
-    if (place_ctx.block_locs.size() != cluster_ctx.clb_nlist.blocks().size()) {
-        //Resize if needed
-        place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
-    }
 
     //used to count how many times a block has been seen in the place/constraints file so duplicate blocks can be detected
     vtr::vector_map<ClusterBlockId, int> seen_blocks;
@@ -236,45 +231,26 @@ void read_place_body(std::ifstream& placement_file,
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
                 if (block_x != place_ctx.block_locs[blk_id].loc.x || block_y != place_ctx.block_locs[blk_id].loc.y || sub_tile_index != place_ctx.block_locs[blk_id].loc.sub_tile) {
+                    std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
-                              "The location of cluster %d is specified %d times in the constraints file with conflicting locations. \n"
+                              "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
                               "Its location was last specified with block %s. \n",
-                              blk_id, seen_blocks[blk_id] + 1, c_block_name);
+                              cluster_name.c_str(), blk_id, seen_blocks[blk_id] + 1, c_block_name);
                 }
             }
 
-            //Check if block location is out of range of grid dimensions
-            if (block_x < 0 || block_x > int(device_ctx.grid.width() - 1)
-                || block_y < 0 || block_y > int(device_ctx.grid.height() - 1)) {
-                VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n", c_block_name, blk_id, block_x, block_y);
+            t_pl_loc loc;
+            loc.x = block_x;
+            loc.y = block_y;
+            loc.sub_tile = sub_tile_index;
+
+            if (seen_blocks[blk_id] == 0) {
+                set_block_location(blk_id, loc);
             }
 
-            //Set the location
-            place_ctx.block_locs[blk_id].loc.x = block_x;
-            place_ctx.block_locs[blk_id].loc.y = block_y;
-            place_ctx.block_locs[blk_id].loc.sub_tile = sub_tile_index;
-
-            //Check if block is at an illegal location
-
-            auto physical_tile = device_ctx.grid[block_x][block_y].type;
-            auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-
-            if (sub_tile_index >= physical_tile->capacity || sub_tile_index < 0) {
-                VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", c_block_name, sub_tile_index);
-            }
-
-            if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
-                VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d, %d). \n", c_block_name, blk_id, block_x, block_y);
-            }
-
-            //need to lock down blocks  and mark grid block usage if it is a constraints file
-            //for a place file, grid usage is marked during initial placement instead
+            //need to lock down blocks if it is a constraints file
             if (!is_place_file) {
                 place_ctx.block_locs[blk_id].is_fixed = true;
-                place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;
-                if (seen_blocks[blk_id] == 0) {
-                    place_ctx.grid_blocks[block_x][block_y].usage++;
-                }
             }
 
             //mark the block as seen
