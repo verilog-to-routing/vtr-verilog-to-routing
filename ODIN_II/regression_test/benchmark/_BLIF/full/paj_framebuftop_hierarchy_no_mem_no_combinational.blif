@@ -3,6 +3,186 @@
 .model paj_framebuftop_hierarchy_no_mem
 .inputs fbdata[0] fbdata[1] fbdata[2] fbdata[3] fbdata[4] fbdata[5] fbdata[6] fbdata[7] fbdata[8] fbdata[9] fbdata[10] fbdata[11] fbdata[12] fbdata[13] fbdata[14] fbdata[15] fbdata[16] fbdata[17] fbdata[18] fbdata[19] fbdata[20] fbdata[21] fbdata[22] fbdata[23] fbdata[24] fbdata[25] fbdata[26] fbdata[27] fbdata[28] fbdata[29] fbdata[30] fbdata[31] fbdata[32] fbdata[33] fbdata[34] fbdata[35] fbdata[36] fbdata[37] fbdata[38] fbdata[39] fbdata[40] fbdata[41] fbdata[42] fbdata[43] fbdata[44] fbdata[45] fbdata[46] fbdata[47] fbdata[48] fbdata[49] fbdata[50] fbdata[51] fbdata[52] fbdata[53] fbdata[54] fbdata[55] fbdata[56] fbdata[57] fbdata[58] fbdata[59] fbdata[60] fbdata[61] fbdata[62] fbdata[63] fbdatavalid oe globalreset tm3_clk_v0 tm3_clk_v0_2
 .outputs fbnextscanline tm3_vidout_red[0] tm3_vidout_red[1] tm3_vidout_red[2] tm3_vidout_red[3] tm3_vidout_red[4] tm3_vidout_red[5] tm3_vidout_red[6] tm3_vidout_red[7] tm3_vidout_red[8] tm3_vidout_red[9] tm3_vidout_green[0] tm3_vidout_green[1] tm3_vidout_green[2] tm3_vidout_green[3] tm3_vidout_green[4] tm3_vidout_green[5] tm3_vidout_green[6] tm3_vidout_green[7] tm3_vidout_green[8] tm3_vidout_green[9] tm3_vidout_blue[0] tm3_vidout_blue[1] tm3_vidout_blue[2] tm3_vidout_blue[3] tm3_vidout_blue[4] tm3_vidout_blue[5] tm3_vidout_blue[6] tm3_vidout_blue[7] tm3_vidout_blue[8] tm3_vidout_blue[9] tm3_vidout_clock tm3_vidout_hsync tm3_vidout_vsync tm3_vidout_blank
+.subckt $reduce_or A[0]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_2 A[1]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_1 A[2]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S Y=$auto$rtlil.cc:2131:ReduceOr$645
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_2 A[1]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_1 A[2]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S Y=$auto$rtlil.cc:2131:ReduceOr$661
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=vidoutinst.secondarynext_$pmux_B_S_1 A[1]=vidoutinst.secondarynext_$pmux_B_2_S Y=$auto$rtlil.cc:2131:ReduceOr$673
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=vidoutinst.secondarynext_$pmux_B_S_1 A[1]=vidoutinst.secondarynext_$pmux_B_S A[2]=vidoutinst.secondarynext_$pmux_B_2_S Y=$auto$rtlil.cc:2131:ReduceOr$681
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=vidoutinst.secondarynext_$pmux_B_S A[1]=vidoutinst.secondarynext_$pmux_B_2_S Y=$auto$rtlil.cc:2131:ReduceOr$693
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=vidoutinst.secondarynext_$pmux_B_S_1 A[1]=vidoutinst.secondarynext_$pmux_B_S Y=$auto$rtlil.cc:2131:ReduceOr$701
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=vidoutinst.secondarynext_$pmux_B_S_1 A[1]=vidoutinst.secondarynext_$pmux_B_S A[2]=vidoutinst.secondarynext_$pmux_B_2_S Y=$auto$rtlil.cc:2131:ReduceOr$709
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=vidoutinst.secondarynext_$pmux_B_S A[1]=vidoutinst.secondarynext_$pmux_B_2_S Y=$auto$rtlil.cc:2131:ReduceOr$721
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_2 A[1]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_1 A[2]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S Y=$auto$rtlil.cc:2131:ReduceOr$729
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$645 Y=$auto$rtlil.cc:2127:Not$647
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$661 Y=$auto$rtlil.cc:2127:Not$663
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$673 Y=$auto$rtlil.cc:2127:Not$675
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$681 Y=$auto$rtlil.cc:2127:Not$683
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$693 Y=$auto$rtlil.cc:2127:Not$695
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$701 Y=$auto$rtlil.cc:2127:Not$703
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$709 Y=$auto$rtlil.cc:2127:Not$711
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$721 Y=$auto$rtlil.cc:2127:Not$723
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$729 Y=$auto$rtlil.cc:2127:Not$731
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=scanlinebuf.fbdatavalid_$pmux_B_2_S_1 B=scanlinebuf.fbdatavalid_$pmux_B_1_S_1 Y=$auto$rtlil.cc:2158:Or$629
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_1 B=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y=$auto$rtlil.cc:2158:Or$653
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_1 B=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y=$auto$rtlil.cc:2158:Or$669
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=vidoutinst.secondarynext_$pmux_B_S B=vidoutinst.secondarynext_$pmux_B_S_1 Y=$auto$rtlil.cc:2158:Or$689
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=vidoutinst.secondarynext_$pmux_B_S B=vidoutinst.secondarynext_$pmux_B_S_1 Y=$auto$rtlil.cc:2158:Or$717
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_1 B=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y=$auto$rtlil.cc:2158:Or$737
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $mux A=scanlinebuf.fbdatavalid B=$false S=scanlinebuf.fbdatavalid_$pmux_B_2_S Y=$auto$rtlil.cc:2224:Mux$623
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_1[0] A[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_1[1] B[0]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_2[0] B[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_2[1] S=scanlinebuf.fbdatavalid_$pmux_B_1_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$625[0] Y[1]=$auto$rtlil.cc:2224:Mux$625[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=scanlinebuf.startframe_$eq_A_Y_$and_B_Y_$mux_S_Y[0] A[1]=scanlinebuf.startframe_$eq_A_Y_$and_B_Y_$mux_S_Y[1] B[0]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B[0] B[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B[1] S=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$627[0] Y[1]=$auto$rtlil.cc:2224:Mux$627[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$627[0] A[1]=$auto$rtlil.cc:2224:Mux$627[1] B[0]=$auto$rtlil.cc:2224:Mux$625[0] B[1]=$auto$rtlil.cc:2224:Mux$625[1] S=$auto$rtlil.cc:2158:Or$629 Y[0]=$auto$rtlil.cc:2224:Mux$631[0] Y[1]=$auto$rtlil.cc:2224:Mux$631[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A=$false B=scanlinebuf.fbdatavalid S=scanlinebuf.fbdatavalid_$pmux_B_1_S_1 Y=$auto$rtlil.cc:2224:Mux$633
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=scanlinebuf.fbdatavalid B=$false S=scanlinebuf.fbdatavalid_$pmux_B_S_1 Y=$auto$rtlil.cc:2224:Mux$635
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=$true A[1]=$false B[0]=$false B[1]=$true S=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$637[0] Y[1]=$auto$rtlil.cc:2224:Mux$637[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$637[0] A[1]=$auto$rtlil.cc:2224:Mux$637[1] B[0]=$false B[1]=$false S=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$639[0] Y[1]=$auto$rtlil.cc:2224:Mux$639[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$true A[1]=$false B[0]=$false B[1]=$true S=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$641[0] Y[1]=$auto$rtlil.cc:2224:Mux$641[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$641[0] A[1]=$auto$rtlil.cc:2224:Mux$641[1] B[0]=$false B[1]=$false S=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$643[0] Y[1]=$auto$rtlil.cc:2224:Mux$643[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=scanlinebuf.scanlineB.mem2[21] A[1]=scanlinebuf.scanlineB.mem2[22] A[2]=scanlinebuf.scanlineB.mem2[23] A[3]=scanlinebuf.scanlineB.mem2[24] A[4]=scanlinebuf.scanlineB.mem2[25] A[5]=scanlinebuf.scanlineB.mem2[26] A[6]=scanlinebuf.scanlineB.mem2[27] A[7]=scanlinebuf.scanlineB.mem2[28] A[8]=scanlinebuf.scanlineB.mem2[29] A[9]=scanlinebuf.scanlineB.mem2[30] A[10]=scanlinebuf.scanlineB.mem2[31] A[11]=scanlinebuf.scanlineB.mem2[32] A[12]=scanlinebuf.scanlineB.mem2[33] A[13]=scanlinebuf.scanlineB.mem2[34] A[14]=scanlinebuf.scanlineB.mem2[35] A[15]=scanlinebuf.scanlineB.mem2[36] A[16]=scanlinebuf.scanlineB.mem2[37] A[17]=scanlinebuf.scanlineB.mem2[38] A[18]=scanlinebuf.scanlineB.mem2[39] A[19]=scanlinebuf.scanlineB.mem2[40] A[20]=scanlinebuf.scanlineB.mem2[41] B[0]=scanlinebuf.scanlineB.mem2[0] B[1]=scanlinebuf.scanlineB.mem2[1] B[2]=scanlinebuf.scanlineB.mem2[2] B[3]=scanlinebuf.scanlineB.mem2[3] B[4]=scanlinebuf.scanlineB.mem2[4] B[5]=scanlinebuf.scanlineB.mem2[5] B[6]=scanlinebuf.scanlineB.mem2[6] B[7]=scanlinebuf.scanlineB.mem2[7] B[8]=scanlinebuf.scanlineB.mem2[8] B[9]=scanlinebuf.scanlineB.mem2[9] B[10]=scanlinebuf.scanlineB.mem2[10] B[11]=scanlinebuf.scanlineB.mem2[11] B[12]=scanlinebuf.scanlineB.mem2[12] B[13]=scanlinebuf.scanlineB.mem2[13] B[14]=scanlinebuf.scanlineB.mem2[14] B[15]=scanlinebuf.scanlineB.mem2[15] B[16]=scanlinebuf.scanlineB.mem2[16] B[17]=scanlinebuf.scanlineB.mem2[17] B[18]=scanlinebuf.scanlineB.mem2[18] B[19]=scanlinebuf.scanlineB.mem2[19] B[20]=scanlinebuf.scanlineB.mem2[20] S=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$649[0] Y[1]=$auto$rtlil.cc:2224:Mux$649[1] Y[2]=$auto$rtlil.cc:2224:Mux$649[2] Y[3]=$auto$rtlil.cc:2224:Mux$649[3] Y[4]=$auto$rtlil.cc:2224:Mux$649[4] Y[5]=$auto$rtlil.cc:2224:Mux$649[5] Y[6]=$auto$rtlil.cc:2224:Mux$649[6] Y[7]=$auto$rtlil.cc:2224:Mux$649[7] Y[8]=$auto$rtlil.cc:2224:Mux$649[8] Y[9]=$auto$rtlil.cc:2224:Mux$649[9] Y[10]=$auto$rtlil.cc:2224:Mux$649[10] Y[11]=$auto$rtlil.cc:2224:Mux$649[11] Y[12]=$auto$rtlil.cc:2224:Mux$649[12] Y[13]=$auto$rtlil.cc:2224:Mux$649[13] Y[14]=$auto$rtlil.cc:2224:Mux$649[14] Y[15]=$auto$rtlil.cc:2224:Mux$649[15] Y[16]=$auto$rtlil.cc:2224:Mux$649[16] Y[17]=$auto$rtlil.cc:2224:Mux$649[17] Y[18]=$auto$rtlil.cc:2224:Mux$649[18] Y[19]=$auto$rtlil.cc:2224:Mux$649[19] Y[20]=$auto$rtlil.cc:2224:Mux$649[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=scanlinebuf.scanlineB.mem2[42] B[1]=scanlinebuf.scanlineB.mem2[43] B[2]=scanlinebuf.scanlineB.mem2[44] B[3]=scanlinebuf.scanlineB.mem2[45] B[4]=scanlinebuf.scanlineB.mem2[46] B[5]=scanlinebuf.scanlineB.mem2[47] B[6]=scanlinebuf.scanlineB.mem2[48] B[7]=scanlinebuf.scanlineB.mem2[49] B[8]=scanlinebuf.scanlineB.mem2[50] B[9]=scanlinebuf.scanlineB.mem2[51] B[10]=scanlinebuf.scanlineB.mem2[52] B[11]=scanlinebuf.scanlineB.mem2[53] B[12]=scanlinebuf.scanlineB.mem2[54] B[13]=scanlinebuf.scanlineB.mem2[55] B[14]=scanlinebuf.scanlineB.mem2[56] B[15]=scanlinebuf.scanlineB.mem2[57] B[16]=scanlinebuf.scanlineB.mem2[58] B[17]=scanlinebuf.scanlineB.mem2[59] B[18]=scanlinebuf.scanlineB.mem2[60] B[19]=scanlinebuf.scanlineB.mem2[61] B[20]=scanlinebuf.scanlineB.mem2[62] S=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=$auto$rtlil.cc:2224:Mux$651[0] Y[1]=$auto$rtlil.cc:2224:Mux$651[1] Y[2]=$auto$rtlil.cc:2224:Mux$651[2] Y[3]=$auto$rtlil.cc:2224:Mux$651[3] Y[4]=$auto$rtlil.cc:2224:Mux$651[4] Y[5]=$auto$rtlil.cc:2224:Mux$651[5] Y[6]=$auto$rtlil.cc:2224:Mux$651[6] Y[7]=$auto$rtlil.cc:2224:Mux$651[7] Y[8]=$auto$rtlil.cc:2224:Mux$651[8] Y[9]=$auto$rtlil.cc:2224:Mux$651[9] Y[10]=$auto$rtlil.cc:2224:Mux$651[10] Y[11]=$auto$rtlil.cc:2224:Mux$651[11] Y[12]=$auto$rtlil.cc:2224:Mux$651[12] Y[13]=$auto$rtlil.cc:2224:Mux$651[13] Y[14]=$auto$rtlil.cc:2224:Mux$651[14] Y[15]=$auto$rtlil.cc:2224:Mux$651[15] Y[16]=$auto$rtlil.cc:2224:Mux$651[16] Y[17]=$auto$rtlil.cc:2224:Mux$651[17] Y[18]=$auto$rtlil.cc:2224:Mux$651[18] Y[19]=$auto$rtlil.cc:2224:Mux$651[19] Y[20]=$auto$rtlil.cc:2224:Mux$651[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$651[0] A[1]=$auto$rtlil.cc:2224:Mux$651[1] A[2]=$auto$rtlil.cc:2224:Mux$651[2] A[3]=$auto$rtlil.cc:2224:Mux$651[3] A[4]=$auto$rtlil.cc:2224:Mux$651[4] A[5]=$auto$rtlil.cc:2224:Mux$651[5] A[6]=$auto$rtlil.cc:2224:Mux$651[6] A[7]=$auto$rtlil.cc:2224:Mux$651[7] A[8]=$auto$rtlil.cc:2224:Mux$651[8] A[9]=$auto$rtlil.cc:2224:Mux$651[9] A[10]=$auto$rtlil.cc:2224:Mux$651[10] A[11]=$auto$rtlil.cc:2224:Mux$651[11] A[12]=$auto$rtlil.cc:2224:Mux$651[12] A[13]=$auto$rtlil.cc:2224:Mux$651[13] A[14]=$auto$rtlil.cc:2224:Mux$651[14] A[15]=$auto$rtlil.cc:2224:Mux$651[15] A[16]=$auto$rtlil.cc:2224:Mux$651[16] A[17]=$auto$rtlil.cc:2224:Mux$651[17] A[18]=$auto$rtlil.cc:2224:Mux$651[18] A[19]=$auto$rtlil.cc:2224:Mux$651[19] A[20]=$auto$rtlil.cc:2224:Mux$651[20] B[0]=$auto$rtlil.cc:2224:Mux$649[0] B[1]=$auto$rtlil.cc:2224:Mux$649[1] B[2]=$auto$rtlil.cc:2224:Mux$649[2] B[3]=$auto$rtlil.cc:2224:Mux$649[3] B[4]=$auto$rtlil.cc:2224:Mux$649[4] B[5]=$auto$rtlil.cc:2224:Mux$649[5] B[6]=$auto$rtlil.cc:2224:Mux$649[6] B[7]=$auto$rtlil.cc:2224:Mux$649[7] B[8]=$auto$rtlil.cc:2224:Mux$649[8] B[9]=$auto$rtlil.cc:2224:Mux$649[9] B[10]=$auto$rtlil.cc:2224:Mux$649[10] B[11]=$auto$rtlil.cc:2224:Mux$649[11] B[12]=$auto$rtlil.cc:2224:Mux$649[12] B[13]=$auto$rtlil.cc:2224:Mux$649[13] B[14]=$auto$rtlil.cc:2224:Mux$649[14] B[15]=$auto$rtlil.cc:2224:Mux$649[15] B[16]=$auto$rtlil.cc:2224:Mux$649[16] B[17]=$auto$rtlil.cc:2224:Mux$649[17] B[18]=$auto$rtlil.cc:2224:Mux$649[18] B[19]=$auto$rtlil.cc:2224:Mux$649[19] B[20]=$auto$rtlil.cc:2224:Mux$649[20] S=$auto$rtlil.cc:2158:Or$653 Y[0]=$auto$rtlil.cc:2224:Mux$655[0] Y[1]=$auto$rtlil.cc:2224:Mux$655[1] Y[2]=$auto$rtlil.cc:2224:Mux$655[2] Y[3]=$auto$rtlil.cc:2224:Mux$655[3] Y[4]=$auto$rtlil.cc:2224:Mux$655[4] Y[5]=$auto$rtlil.cc:2224:Mux$655[5] Y[6]=$auto$rtlil.cc:2224:Mux$655[6] Y[7]=$auto$rtlil.cc:2224:Mux$655[7] Y[8]=$auto$rtlil.cc:2224:Mux$655[8] Y[9]=$auto$rtlil.cc:2224:Mux$655[9] Y[10]=$auto$rtlil.cc:2224:Mux$655[10] Y[11]=$auto$rtlil.cc:2224:Mux$655[11] Y[12]=$auto$rtlil.cc:2224:Mux$655[12] Y[13]=$auto$rtlil.cc:2224:Mux$655[13] Y[14]=$auto$rtlil.cc:2224:Mux$655[14] Y[15]=$auto$rtlil.cc:2224:Mux$655[15] Y[16]=$auto$rtlil.cc:2224:Mux$655[16] Y[17]=$auto$rtlil.cc:2224:Mux$655[17] Y[18]=$auto$rtlil.cc:2224:Mux$655[18] Y[19]=$auto$rtlil.cc:2224:Mux$655[19] Y[20]=$auto$rtlil.cc:2224:Mux$655[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$true A[1]=$false B[0]=$false B[1]=$true S=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$657[0] Y[1]=$auto$rtlil.cc:2224:Mux$657[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$657[0] A[1]=$auto$rtlil.cc:2224:Mux$657[1] B[0]=$false B[1]=$false S=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$659[0] Y[1]=$auto$rtlil.cc:2224:Mux$659[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=scanlinebuf.scanlineA.mem2[21] A[1]=scanlinebuf.scanlineA.mem2[22] A[2]=scanlinebuf.scanlineA.mem2[23] A[3]=scanlinebuf.scanlineA.mem2[24] A[4]=scanlinebuf.scanlineA.mem2[25] A[5]=scanlinebuf.scanlineA.mem2[26] A[6]=scanlinebuf.scanlineA.mem2[27] A[7]=scanlinebuf.scanlineA.mem2[28] A[8]=scanlinebuf.scanlineA.mem2[29] A[9]=scanlinebuf.scanlineA.mem2[30] A[10]=scanlinebuf.scanlineA.mem2[31] A[11]=scanlinebuf.scanlineA.mem2[32] A[12]=scanlinebuf.scanlineA.mem2[33] A[13]=scanlinebuf.scanlineA.mem2[34] A[14]=scanlinebuf.scanlineA.mem2[35] A[15]=scanlinebuf.scanlineA.mem2[36] A[16]=scanlinebuf.scanlineA.mem2[37] A[17]=scanlinebuf.scanlineA.mem2[38] A[18]=scanlinebuf.scanlineA.mem2[39] A[19]=scanlinebuf.scanlineA.mem2[40] A[20]=scanlinebuf.scanlineA.mem2[41] B[0]=scanlinebuf.scanlineA.mem2[0] B[1]=scanlinebuf.scanlineA.mem2[1] B[2]=scanlinebuf.scanlineA.mem2[2] B[3]=scanlinebuf.scanlineA.mem2[3] B[4]=scanlinebuf.scanlineA.mem2[4] B[5]=scanlinebuf.scanlineA.mem2[5] B[6]=scanlinebuf.scanlineA.mem2[6] B[7]=scanlinebuf.scanlineA.mem2[7] B[8]=scanlinebuf.scanlineA.mem2[8] B[9]=scanlinebuf.scanlineA.mem2[9] B[10]=scanlinebuf.scanlineA.mem2[10] B[11]=scanlinebuf.scanlineA.mem2[11] B[12]=scanlinebuf.scanlineA.mem2[12] B[13]=scanlinebuf.scanlineA.mem2[13] B[14]=scanlinebuf.scanlineA.mem2[14] B[15]=scanlinebuf.scanlineA.mem2[15] B[16]=scanlinebuf.scanlineA.mem2[16] B[17]=scanlinebuf.scanlineA.mem2[17] B[18]=scanlinebuf.scanlineA.mem2[18] B[19]=scanlinebuf.scanlineA.mem2[19] B[20]=scanlinebuf.scanlineA.mem2[20] S=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$665[0] Y[1]=$auto$rtlil.cc:2224:Mux$665[1] Y[2]=$auto$rtlil.cc:2224:Mux$665[2] Y[3]=$auto$rtlil.cc:2224:Mux$665[3] Y[4]=$auto$rtlil.cc:2224:Mux$665[4] Y[5]=$auto$rtlil.cc:2224:Mux$665[5] Y[6]=$auto$rtlil.cc:2224:Mux$665[6] Y[7]=$auto$rtlil.cc:2224:Mux$665[7] Y[8]=$auto$rtlil.cc:2224:Mux$665[8] Y[9]=$auto$rtlil.cc:2224:Mux$665[9] Y[10]=$auto$rtlil.cc:2224:Mux$665[10] Y[11]=$auto$rtlil.cc:2224:Mux$665[11] Y[12]=$auto$rtlil.cc:2224:Mux$665[12] Y[13]=$auto$rtlil.cc:2224:Mux$665[13] Y[14]=$auto$rtlil.cc:2224:Mux$665[14] Y[15]=$auto$rtlil.cc:2224:Mux$665[15] Y[16]=$auto$rtlil.cc:2224:Mux$665[16] Y[17]=$auto$rtlil.cc:2224:Mux$665[17] Y[18]=$auto$rtlil.cc:2224:Mux$665[18] Y[19]=$auto$rtlil.cc:2224:Mux$665[19] Y[20]=$auto$rtlil.cc:2224:Mux$665[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=scanlinebuf.scanlineA.mem2[42] B[1]=scanlinebuf.scanlineA.mem2[43] B[2]=scanlinebuf.scanlineA.mem2[44] B[3]=scanlinebuf.scanlineA.mem2[45] B[4]=scanlinebuf.scanlineA.mem2[46] B[5]=scanlinebuf.scanlineA.mem2[47] B[6]=scanlinebuf.scanlineA.mem2[48] B[7]=scanlinebuf.scanlineA.mem2[49] B[8]=scanlinebuf.scanlineA.mem2[50] B[9]=scanlinebuf.scanlineA.mem2[51] B[10]=scanlinebuf.scanlineA.mem2[52] B[11]=scanlinebuf.scanlineA.mem2[53] B[12]=scanlinebuf.scanlineA.mem2[54] B[13]=scanlinebuf.scanlineA.mem2[55] B[14]=scanlinebuf.scanlineA.mem2[56] B[15]=scanlinebuf.scanlineA.mem2[57] B[16]=scanlinebuf.scanlineA.mem2[58] B[17]=scanlinebuf.scanlineA.mem2[59] B[18]=scanlinebuf.scanlineA.mem2[60] B[19]=scanlinebuf.scanlineA.mem2[61] B[20]=scanlinebuf.scanlineA.mem2[62] S=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=$auto$rtlil.cc:2224:Mux$667[0] Y[1]=$auto$rtlil.cc:2224:Mux$667[1] Y[2]=$auto$rtlil.cc:2224:Mux$667[2] Y[3]=$auto$rtlil.cc:2224:Mux$667[3] Y[4]=$auto$rtlil.cc:2224:Mux$667[4] Y[5]=$auto$rtlil.cc:2224:Mux$667[5] Y[6]=$auto$rtlil.cc:2224:Mux$667[6] Y[7]=$auto$rtlil.cc:2224:Mux$667[7] Y[8]=$auto$rtlil.cc:2224:Mux$667[8] Y[9]=$auto$rtlil.cc:2224:Mux$667[9] Y[10]=$auto$rtlil.cc:2224:Mux$667[10] Y[11]=$auto$rtlil.cc:2224:Mux$667[11] Y[12]=$auto$rtlil.cc:2224:Mux$667[12] Y[13]=$auto$rtlil.cc:2224:Mux$667[13] Y[14]=$auto$rtlil.cc:2224:Mux$667[14] Y[15]=$auto$rtlil.cc:2224:Mux$667[15] Y[16]=$auto$rtlil.cc:2224:Mux$667[16] Y[17]=$auto$rtlil.cc:2224:Mux$667[17] Y[18]=$auto$rtlil.cc:2224:Mux$667[18] Y[19]=$auto$rtlil.cc:2224:Mux$667[19] Y[20]=$auto$rtlil.cc:2224:Mux$667[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$667[0] A[1]=$auto$rtlil.cc:2224:Mux$667[1] A[2]=$auto$rtlil.cc:2224:Mux$667[2] A[3]=$auto$rtlil.cc:2224:Mux$667[3] A[4]=$auto$rtlil.cc:2224:Mux$667[4] A[5]=$auto$rtlil.cc:2224:Mux$667[5] A[6]=$auto$rtlil.cc:2224:Mux$667[6] A[7]=$auto$rtlil.cc:2224:Mux$667[7] A[8]=$auto$rtlil.cc:2224:Mux$667[8] A[9]=$auto$rtlil.cc:2224:Mux$667[9] A[10]=$auto$rtlil.cc:2224:Mux$667[10] A[11]=$auto$rtlil.cc:2224:Mux$667[11] A[12]=$auto$rtlil.cc:2224:Mux$667[12] A[13]=$auto$rtlil.cc:2224:Mux$667[13] A[14]=$auto$rtlil.cc:2224:Mux$667[14] A[15]=$auto$rtlil.cc:2224:Mux$667[15] A[16]=$auto$rtlil.cc:2224:Mux$667[16] A[17]=$auto$rtlil.cc:2224:Mux$667[17] A[18]=$auto$rtlil.cc:2224:Mux$667[18] A[19]=$auto$rtlil.cc:2224:Mux$667[19] A[20]=$auto$rtlil.cc:2224:Mux$667[20] B[0]=$auto$rtlil.cc:2224:Mux$665[0] B[1]=$auto$rtlil.cc:2224:Mux$665[1] B[2]=$auto$rtlil.cc:2224:Mux$665[2] B[3]=$auto$rtlil.cc:2224:Mux$665[3] B[4]=$auto$rtlil.cc:2224:Mux$665[4] B[5]=$auto$rtlil.cc:2224:Mux$665[5] B[6]=$auto$rtlil.cc:2224:Mux$665[6] B[7]=$auto$rtlil.cc:2224:Mux$665[7] B[8]=$auto$rtlil.cc:2224:Mux$665[8] B[9]=$auto$rtlil.cc:2224:Mux$665[9] B[10]=$auto$rtlil.cc:2224:Mux$665[10] B[11]=$auto$rtlil.cc:2224:Mux$665[11] B[12]=$auto$rtlil.cc:2224:Mux$665[12] B[13]=$auto$rtlil.cc:2224:Mux$665[13] B[14]=$auto$rtlil.cc:2224:Mux$665[14] B[15]=$auto$rtlil.cc:2224:Mux$665[15] B[16]=$auto$rtlil.cc:2224:Mux$665[16] B[17]=$auto$rtlil.cc:2224:Mux$665[17] B[18]=$auto$rtlil.cc:2224:Mux$665[18] B[19]=$auto$rtlil.cc:2224:Mux$665[19] B[20]=$auto$rtlil.cc:2224:Mux$665[20] S=$auto$rtlil.cc:2158:Or$669 Y[0]=$auto$rtlil.cc:2224:Mux$671[0] Y[1]=$auto$rtlil.cc:2224:Mux$671[1] Y[2]=$auto$rtlil.cc:2224:Mux$671[2] Y[3]=$auto$rtlil.cc:2224:Mux$671[3] Y[4]=$auto$rtlil.cc:2224:Mux$671[4] Y[5]=$auto$rtlil.cc:2224:Mux$671[5] Y[6]=$auto$rtlil.cc:2224:Mux$671[6] Y[7]=$auto$rtlil.cc:2224:Mux$671[7] Y[8]=$auto$rtlil.cc:2224:Mux$671[8] Y[9]=$auto$rtlil.cc:2224:Mux$671[9] Y[10]=$auto$rtlil.cc:2224:Mux$671[10] Y[11]=$auto$rtlil.cc:2224:Mux$671[11] Y[12]=$auto$rtlil.cc:2224:Mux$671[12] Y[13]=$auto$rtlil.cc:2224:Mux$671[13] Y[14]=$auto$rtlil.cc:2224:Mux$671[14] Y[15]=$auto$rtlil.cc:2224:Mux$671[15] Y[16]=$auto$rtlil.cc:2224:Mux$671[16] Y[17]=$auto$rtlil.cc:2224:Mux$671[17] Y[18]=$auto$rtlil.cc:2224:Mux$671[18] Y[19]=$auto$rtlil.cc:2224:Mux$671[19] Y[20]=$auto$rtlil.cc:2224:Mux$671[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A=$false B=$true S=vidoutinst.secondarynext_$pmux_B_2_S Y=$auto$rtlil.cc:2224:Mux$677
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$677 B=vidoutinst.secondarynext S=vidoutinst.secondarynext_$pmux_B_S_1 Y=$auto$rtlil.cc:2224:Mux$679
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=vidoutinst.pixeldataC[0] A[1]=vidoutinst.pixeldataC[1] A[2]=vidoutinst.pixeldataC[2] A[3]=vidoutinst.pixeldataC[3] A[4]=vidoutinst.pixeldataC[4] A[5]=vidoutinst.pixeldataC[5] A[6]=vidoutinst.pixeldataC[6] A[7]=vidoutinst.pixeldataC[7] A[8]=vidoutinst.pixeldataC[8] A[9]=vidoutinst.pixeldataC[9] A[10]=vidoutinst.pixeldataC[10] A[11]=vidoutinst.pixeldataC[11] A[12]=vidoutinst.pixeldataC[12] A[13]=vidoutinst.pixeldataC[13] A[14]=vidoutinst.pixeldataC[14] A[15]=vidoutinst.pixeldataC[15] A[16]=vidoutinst.pixeldataC[16] A[17]=vidoutinst.pixeldataC[17] A[18]=vidoutinst.pixeldataC[18] A[19]=vidoutinst.pixeldataC[19] A[20]=vidoutinst.pixeldataC[20] B[0]=vidoutinst.pixeldataA[0] B[1]=vidoutinst.pixeldataA[1] B[2]=vidoutinst.pixeldataA[2] B[3]=vidoutinst.pixeldataA[3] B[4]=vidoutinst.pixeldataA[4] B[5]=vidoutinst.pixeldataA[5] B[6]=vidoutinst.pixeldataA[6] B[7]=vidoutinst.pixeldataA[7] B[8]=vidoutinst.pixeldataA[8] B[9]=vidoutinst.pixeldataA[9] B[10]=vidoutinst.pixeldataA[10] B[11]=vidoutinst.pixeldataA[11] B[12]=vidoutinst.pixeldataA[12] B[13]=vidoutinst.pixeldataA[13] B[14]=vidoutinst.pixeldataA[14] B[15]=vidoutinst.pixeldataA[15] B[16]=vidoutinst.pixeldataA[16] B[17]=vidoutinst.pixeldataA[17] B[18]=vidoutinst.pixeldataA[18] B[19]=vidoutinst.pixeldataA[19] B[20]=vidoutinst.pixeldataA[20] S=vidoutinst.secondarynext_$pmux_B_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$685[0] Y[1]=$auto$rtlil.cc:2224:Mux$685[1] Y[2]=$auto$rtlil.cc:2224:Mux$685[2] Y[3]=$auto$rtlil.cc:2224:Mux$685[3] Y[4]=$auto$rtlil.cc:2224:Mux$685[4] Y[5]=$auto$rtlil.cc:2224:Mux$685[5] Y[6]=$auto$rtlil.cc:2224:Mux$685[6] Y[7]=$auto$rtlil.cc:2224:Mux$685[7] Y[8]=$auto$rtlil.cc:2224:Mux$685[8] Y[9]=$auto$rtlil.cc:2224:Mux$685[9] Y[10]=$auto$rtlil.cc:2224:Mux$685[10] Y[11]=$auto$rtlil.cc:2224:Mux$685[11] Y[12]=$auto$rtlil.cc:2224:Mux$685[12] Y[13]=$auto$rtlil.cc:2224:Mux$685[13] Y[14]=$auto$rtlil.cc:2224:Mux$685[14] Y[15]=$auto$rtlil.cc:2224:Mux$685[15] Y[16]=$auto$rtlil.cc:2224:Mux$685[16] Y[17]=$auto$rtlil.cc:2224:Mux$685[17] Y[18]=$auto$rtlil.cc:2224:Mux$685[18] Y[19]=$auto$rtlil.cc:2224:Mux$685[19] Y[20]=$auto$rtlil.cc:2224:Mux$685[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=vidoutinst.pixeldataB[0] B[1]=vidoutinst.pixeldataB[1] B[2]=vidoutinst.pixeldataB[2] B[3]=vidoutinst.pixeldataB[3] B[4]=vidoutinst.pixeldataB[4] B[5]=vidoutinst.pixeldataB[5] B[6]=vidoutinst.pixeldataB[6] B[7]=vidoutinst.pixeldataB[7] B[8]=vidoutinst.pixeldataB[8] B[9]=vidoutinst.pixeldataB[9] B[10]=vidoutinst.pixeldataB[10] B[11]=vidoutinst.pixeldataB[11] B[12]=vidoutinst.pixeldataB[12] B[13]=vidoutinst.pixeldataB[13] B[14]=vidoutinst.pixeldataB[14] B[15]=vidoutinst.pixeldataB[15] B[16]=vidoutinst.pixeldataB[16] B[17]=vidoutinst.pixeldataB[17] B[18]=vidoutinst.pixeldataB[18] B[19]=vidoutinst.pixeldataB[19] B[20]=vidoutinst.pixeldataB[20] S=vidoutinst.secondarynext_$pmux_B_2_S Y[0]=$auto$rtlil.cc:2224:Mux$687[0] Y[1]=$auto$rtlil.cc:2224:Mux$687[1] Y[2]=$auto$rtlil.cc:2224:Mux$687[2] Y[3]=$auto$rtlil.cc:2224:Mux$687[3] Y[4]=$auto$rtlil.cc:2224:Mux$687[4] Y[5]=$auto$rtlil.cc:2224:Mux$687[5] Y[6]=$auto$rtlil.cc:2224:Mux$687[6] Y[7]=$auto$rtlil.cc:2224:Mux$687[7] Y[8]=$auto$rtlil.cc:2224:Mux$687[8] Y[9]=$auto$rtlil.cc:2224:Mux$687[9] Y[10]=$auto$rtlil.cc:2224:Mux$687[10] Y[11]=$auto$rtlil.cc:2224:Mux$687[11] Y[12]=$auto$rtlil.cc:2224:Mux$687[12] Y[13]=$auto$rtlil.cc:2224:Mux$687[13] Y[14]=$auto$rtlil.cc:2224:Mux$687[14] Y[15]=$auto$rtlil.cc:2224:Mux$687[15] Y[16]=$auto$rtlil.cc:2224:Mux$687[16] Y[17]=$auto$rtlil.cc:2224:Mux$687[17] Y[18]=$auto$rtlil.cc:2224:Mux$687[18] Y[19]=$auto$rtlil.cc:2224:Mux$687[19] Y[20]=$auto$rtlil.cc:2224:Mux$687[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$687[0] A[1]=$auto$rtlil.cc:2224:Mux$687[1] A[2]=$auto$rtlil.cc:2224:Mux$687[2] A[3]=$auto$rtlil.cc:2224:Mux$687[3] A[4]=$auto$rtlil.cc:2224:Mux$687[4] A[5]=$auto$rtlil.cc:2224:Mux$687[5] A[6]=$auto$rtlil.cc:2224:Mux$687[6] A[7]=$auto$rtlil.cc:2224:Mux$687[7] A[8]=$auto$rtlil.cc:2224:Mux$687[8] A[9]=$auto$rtlil.cc:2224:Mux$687[9] A[10]=$auto$rtlil.cc:2224:Mux$687[10] A[11]=$auto$rtlil.cc:2224:Mux$687[11] A[12]=$auto$rtlil.cc:2224:Mux$687[12] A[13]=$auto$rtlil.cc:2224:Mux$687[13] A[14]=$auto$rtlil.cc:2224:Mux$687[14] A[15]=$auto$rtlil.cc:2224:Mux$687[15] A[16]=$auto$rtlil.cc:2224:Mux$687[16] A[17]=$auto$rtlil.cc:2224:Mux$687[17] A[18]=$auto$rtlil.cc:2224:Mux$687[18] A[19]=$auto$rtlil.cc:2224:Mux$687[19] A[20]=$auto$rtlil.cc:2224:Mux$687[20] B[0]=$auto$rtlil.cc:2224:Mux$685[0] B[1]=$auto$rtlil.cc:2224:Mux$685[1] B[2]=$auto$rtlil.cc:2224:Mux$685[2] B[3]=$auto$rtlil.cc:2224:Mux$685[3] B[4]=$auto$rtlil.cc:2224:Mux$685[4] B[5]=$auto$rtlil.cc:2224:Mux$685[5] B[6]=$auto$rtlil.cc:2224:Mux$685[6] B[7]=$auto$rtlil.cc:2224:Mux$685[7] B[8]=$auto$rtlil.cc:2224:Mux$685[8] B[9]=$auto$rtlil.cc:2224:Mux$685[9] B[10]=$auto$rtlil.cc:2224:Mux$685[10] B[11]=$auto$rtlil.cc:2224:Mux$685[11] B[12]=$auto$rtlil.cc:2224:Mux$685[12] B[13]=$auto$rtlil.cc:2224:Mux$685[13] B[14]=$auto$rtlil.cc:2224:Mux$685[14] B[15]=$auto$rtlil.cc:2224:Mux$685[15] B[16]=$auto$rtlil.cc:2224:Mux$685[16] B[17]=$auto$rtlil.cc:2224:Mux$685[17] B[18]=$auto$rtlil.cc:2224:Mux$685[18] B[19]=$auto$rtlil.cc:2224:Mux$685[19] B[20]=$auto$rtlil.cc:2224:Mux$685[20] S=$auto$rtlil.cc:2158:Or$689 Y[0]=$auto$rtlil.cc:2224:Mux$691[0] Y[1]=$auto$rtlil.cc:2224:Mux$691[1] Y[2]=$auto$rtlil.cc:2224:Mux$691[2] Y[3]=$auto$rtlil.cc:2224:Mux$691[3] Y[4]=$auto$rtlil.cc:2224:Mux$691[4] Y[5]=$auto$rtlil.cc:2224:Mux$691[5] Y[6]=$auto$rtlil.cc:2224:Mux$691[6] Y[7]=$auto$rtlil.cc:2224:Mux$691[7] Y[8]=$auto$rtlil.cc:2224:Mux$691[8] Y[9]=$auto$rtlil.cc:2224:Mux$691[9] Y[10]=$auto$rtlil.cc:2224:Mux$691[10] Y[11]=$auto$rtlil.cc:2224:Mux$691[11] Y[12]=$auto$rtlil.cc:2224:Mux$691[12] Y[13]=$auto$rtlil.cc:2224:Mux$691[13] Y[14]=$auto$rtlil.cc:2224:Mux$691[14] Y[15]=$auto$rtlil.cc:2224:Mux$691[15] Y[16]=$auto$rtlil.cc:2224:Mux$691[16] Y[17]=$auto$rtlil.cc:2224:Mux$691[17] Y[18]=$auto$rtlil.cc:2224:Mux$691[18] Y[19]=$auto$rtlil.cc:2224:Mux$691[19] Y[20]=$auto$rtlil.cc:2224:Mux$691[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A=$false B=vidoutinst.secondarynext S=vidoutinst.secondarynext_$pmux_B_2_S Y=$auto$rtlil.cc:2224:Mux$697
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$697 B=$true S=vidoutinst.secondarynext_$pmux_B_S Y=$auto$rtlil.cc:2224:Mux$699
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$false B=vidoutinst.secondarynext S=vidoutinst.secondarynext_$pmux_B_S Y=$auto$rtlil.cc:2224:Mux$705
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$705 B=$true S=vidoutinst.secondarynext_$pmux_B_S_1 Y=$auto$rtlil.cc:2224:Mux$707
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=vidoutinst.pixeldataB[0] A[1]=vidoutinst.pixeldataB[1] A[2]=vidoutinst.pixeldataB[2] A[3]=vidoutinst.pixeldataB[3] A[4]=vidoutinst.pixeldataB[4] A[5]=vidoutinst.pixeldataB[5] A[6]=vidoutinst.pixeldataB[6] A[7]=vidoutinst.pixeldataB[7] A[8]=vidoutinst.pixeldataB[8] A[9]=vidoutinst.pixeldataB[9] A[10]=vidoutinst.pixeldataB[10] A[11]=vidoutinst.pixeldataB[11] A[12]=vidoutinst.pixeldataB[12] A[13]=vidoutinst.pixeldataB[13] A[14]=vidoutinst.pixeldataB[14] A[15]=vidoutinst.pixeldataB[15] A[16]=vidoutinst.pixeldataB[16] A[17]=vidoutinst.pixeldataB[17] A[18]=vidoutinst.pixeldataB[18] A[19]=vidoutinst.pixeldataB[19] A[20]=vidoutinst.pixeldataB[20] B[0]=vidoutinst.pixeldataC[0] B[1]=vidoutinst.pixeldataC[1] B[2]=vidoutinst.pixeldataC[2] B[3]=vidoutinst.pixeldataC[3] B[4]=vidoutinst.pixeldataC[4] B[5]=vidoutinst.pixeldataC[5] B[6]=vidoutinst.pixeldataC[6] B[7]=vidoutinst.pixeldataC[7] B[8]=vidoutinst.pixeldataC[8] B[9]=vidoutinst.pixeldataC[9] B[10]=vidoutinst.pixeldataC[10] B[11]=vidoutinst.pixeldataC[11] B[12]=vidoutinst.pixeldataC[12] B[13]=vidoutinst.pixeldataC[13] B[14]=vidoutinst.pixeldataC[14] B[15]=vidoutinst.pixeldataC[15] B[16]=vidoutinst.pixeldataC[16] B[17]=vidoutinst.pixeldataC[17] B[18]=vidoutinst.pixeldataC[18] B[19]=vidoutinst.pixeldataC[19] B[20]=vidoutinst.pixeldataC[20] S=vidoutinst.secondarynext_$pmux_B_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$713[0] Y[1]=$auto$rtlil.cc:2224:Mux$713[1] Y[2]=$auto$rtlil.cc:2224:Mux$713[2] Y[3]=$auto$rtlil.cc:2224:Mux$713[3] Y[4]=$auto$rtlil.cc:2224:Mux$713[4] Y[5]=$auto$rtlil.cc:2224:Mux$713[5] Y[6]=$auto$rtlil.cc:2224:Mux$713[6] Y[7]=$auto$rtlil.cc:2224:Mux$713[7] Y[8]=$auto$rtlil.cc:2224:Mux$713[8] Y[9]=$auto$rtlil.cc:2224:Mux$713[9] Y[10]=$auto$rtlil.cc:2224:Mux$713[10] Y[11]=$auto$rtlil.cc:2224:Mux$713[11] Y[12]=$auto$rtlil.cc:2224:Mux$713[12] Y[13]=$auto$rtlil.cc:2224:Mux$713[13] Y[14]=$auto$rtlil.cc:2224:Mux$713[14] Y[15]=$auto$rtlil.cc:2224:Mux$713[15] Y[16]=$auto$rtlil.cc:2224:Mux$713[16] Y[17]=$auto$rtlil.cc:2224:Mux$713[17] Y[18]=$auto$rtlil.cc:2224:Mux$713[18] Y[19]=$auto$rtlil.cc:2224:Mux$713[19] Y[20]=$auto$rtlil.cc:2224:Mux$713[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=vidoutinst.pixeldataA[0] B[1]=vidoutinst.pixeldataA[1] B[2]=vidoutinst.pixeldataA[2] B[3]=vidoutinst.pixeldataA[3] B[4]=vidoutinst.pixeldataA[4] B[5]=vidoutinst.pixeldataA[5] B[6]=vidoutinst.pixeldataA[6] B[7]=vidoutinst.pixeldataA[7] B[8]=vidoutinst.pixeldataA[8] B[9]=vidoutinst.pixeldataA[9] B[10]=vidoutinst.pixeldataA[10] B[11]=vidoutinst.pixeldataA[11] B[12]=vidoutinst.pixeldataA[12] B[13]=vidoutinst.pixeldataA[13] B[14]=vidoutinst.pixeldataA[14] B[15]=vidoutinst.pixeldataA[15] B[16]=vidoutinst.pixeldataA[16] B[17]=vidoutinst.pixeldataA[17] B[18]=vidoutinst.pixeldataA[18] B[19]=vidoutinst.pixeldataA[19] B[20]=vidoutinst.pixeldataA[20] S=vidoutinst.secondarynext_$pmux_B_2_S Y[0]=$auto$rtlil.cc:2224:Mux$715[0] Y[1]=$auto$rtlil.cc:2224:Mux$715[1] Y[2]=$auto$rtlil.cc:2224:Mux$715[2] Y[3]=$auto$rtlil.cc:2224:Mux$715[3] Y[4]=$auto$rtlil.cc:2224:Mux$715[4] Y[5]=$auto$rtlil.cc:2224:Mux$715[5] Y[6]=$auto$rtlil.cc:2224:Mux$715[6] Y[7]=$auto$rtlil.cc:2224:Mux$715[7] Y[8]=$auto$rtlil.cc:2224:Mux$715[8] Y[9]=$auto$rtlil.cc:2224:Mux$715[9] Y[10]=$auto$rtlil.cc:2224:Mux$715[10] Y[11]=$auto$rtlil.cc:2224:Mux$715[11] Y[12]=$auto$rtlil.cc:2224:Mux$715[12] Y[13]=$auto$rtlil.cc:2224:Mux$715[13] Y[14]=$auto$rtlil.cc:2224:Mux$715[14] Y[15]=$auto$rtlil.cc:2224:Mux$715[15] Y[16]=$auto$rtlil.cc:2224:Mux$715[16] Y[17]=$auto$rtlil.cc:2224:Mux$715[17] Y[18]=$auto$rtlil.cc:2224:Mux$715[18] Y[19]=$auto$rtlil.cc:2224:Mux$715[19] Y[20]=$auto$rtlil.cc:2224:Mux$715[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$715[0] A[1]=$auto$rtlil.cc:2224:Mux$715[1] A[2]=$auto$rtlil.cc:2224:Mux$715[2] A[3]=$auto$rtlil.cc:2224:Mux$715[3] A[4]=$auto$rtlil.cc:2224:Mux$715[4] A[5]=$auto$rtlil.cc:2224:Mux$715[5] A[6]=$auto$rtlil.cc:2224:Mux$715[6] A[7]=$auto$rtlil.cc:2224:Mux$715[7] A[8]=$auto$rtlil.cc:2224:Mux$715[8] A[9]=$auto$rtlil.cc:2224:Mux$715[9] A[10]=$auto$rtlil.cc:2224:Mux$715[10] A[11]=$auto$rtlil.cc:2224:Mux$715[11] A[12]=$auto$rtlil.cc:2224:Mux$715[12] A[13]=$auto$rtlil.cc:2224:Mux$715[13] A[14]=$auto$rtlil.cc:2224:Mux$715[14] A[15]=$auto$rtlil.cc:2224:Mux$715[15] A[16]=$auto$rtlil.cc:2224:Mux$715[16] A[17]=$auto$rtlil.cc:2224:Mux$715[17] A[18]=$auto$rtlil.cc:2224:Mux$715[18] A[19]=$auto$rtlil.cc:2224:Mux$715[19] A[20]=$auto$rtlil.cc:2224:Mux$715[20] B[0]=$auto$rtlil.cc:2224:Mux$713[0] B[1]=$auto$rtlil.cc:2224:Mux$713[1] B[2]=$auto$rtlil.cc:2224:Mux$713[2] B[3]=$auto$rtlil.cc:2224:Mux$713[3] B[4]=$auto$rtlil.cc:2224:Mux$713[4] B[5]=$auto$rtlil.cc:2224:Mux$713[5] B[6]=$auto$rtlil.cc:2224:Mux$713[6] B[7]=$auto$rtlil.cc:2224:Mux$713[7] B[8]=$auto$rtlil.cc:2224:Mux$713[8] B[9]=$auto$rtlil.cc:2224:Mux$713[9] B[10]=$auto$rtlil.cc:2224:Mux$713[10] B[11]=$auto$rtlil.cc:2224:Mux$713[11] B[12]=$auto$rtlil.cc:2224:Mux$713[12] B[13]=$auto$rtlil.cc:2224:Mux$713[13] B[14]=$auto$rtlil.cc:2224:Mux$713[14] B[15]=$auto$rtlil.cc:2224:Mux$713[15] B[16]=$auto$rtlil.cc:2224:Mux$713[16] B[17]=$auto$rtlil.cc:2224:Mux$713[17] B[18]=$auto$rtlil.cc:2224:Mux$713[18] B[19]=$auto$rtlil.cc:2224:Mux$713[19] B[20]=$auto$rtlil.cc:2224:Mux$713[20] S=$auto$rtlil.cc:2158:Or$717 Y[0]=$auto$rtlil.cc:2224:Mux$719[0] Y[1]=$auto$rtlil.cc:2224:Mux$719[1] Y[2]=$auto$rtlil.cc:2224:Mux$719[2] Y[3]=$auto$rtlil.cc:2224:Mux$719[3] Y[4]=$auto$rtlil.cc:2224:Mux$719[4] Y[5]=$auto$rtlil.cc:2224:Mux$719[5] Y[6]=$auto$rtlil.cc:2224:Mux$719[6] Y[7]=$auto$rtlil.cc:2224:Mux$719[7] Y[8]=$auto$rtlil.cc:2224:Mux$719[8] Y[9]=$auto$rtlil.cc:2224:Mux$719[9] Y[10]=$auto$rtlil.cc:2224:Mux$719[10] Y[11]=$auto$rtlil.cc:2224:Mux$719[11] Y[12]=$auto$rtlil.cc:2224:Mux$719[12] Y[13]=$auto$rtlil.cc:2224:Mux$719[13] Y[14]=$auto$rtlil.cc:2224:Mux$719[14] Y[15]=$auto$rtlil.cc:2224:Mux$719[15] Y[16]=$auto$rtlil.cc:2224:Mux$719[16] Y[17]=$auto$rtlil.cc:2224:Mux$719[17] Y[18]=$auto$rtlil.cc:2224:Mux$719[18] Y[19]=$auto$rtlil.cc:2224:Mux$719[19] Y[20]=$auto$rtlil.cc:2224:Mux$719[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$false A[1]=$false B[0]=$true B[1]=$false S=vidoutinst.secondarynext_$pmux_B_2_S Y[0]=$auto$rtlil.cc:2224:Mux$725[0] Y[1]=$auto$rtlil.cc:2224:Mux$725[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$725[0] A[1]=$auto$rtlil.cc:2224:Mux$725[1] B[0]=$false B[1]=$true S=vidoutinst.secondarynext_$pmux_B_S Y[0]=$auto$rtlil.cc:2224:Mux$727[0] Y[1]=$auto$rtlil.cc:2224:Mux$727[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=scanlinebuf.scanlineC.mem2[21] A[1]=scanlinebuf.scanlineC.mem2[22] A[2]=scanlinebuf.scanlineC.mem2[23] A[3]=scanlinebuf.scanlineC.mem2[24] A[4]=scanlinebuf.scanlineC.mem2[25] A[5]=scanlinebuf.scanlineC.mem2[26] A[6]=scanlinebuf.scanlineC.mem2[27] A[7]=scanlinebuf.scanlineC.mem2[28] A[8]=scanlinebuf.scanlineC.mem2[29] A[9]=scanlinebuf.scanlineC.mem2[30] A[10]=scanlinebuf.scanlineC.mem2[31] A[11]=scanlinebuf.scanlineC.mem2[32] A[12]=scanlinebuf.scanlineC.mem2[33] A[13]=scanlinebuf.scanlineC.mem2[34] A[14]=scanlinebuf.scanlineC.mem2[35] A[15]=scanlinebuf.scanlineC.mem2[36] A[16]=scanlinebuf.scanlineC.mem2[37] A[17]=scanlinebuf.scanlineC.mem2[38] A[18]=scanlinebuf.scanlineC.mem2[39] A[19]=scanlinebuf.scanlineC.mem2[40] A[20]=scanlinebuf.scanlineC.mem2[41] B[0]=scanlinebuf.scanlineC.mem2[0] B[1]=scanlinebuf.scanlineC.mem2[1] B[2]=scanlinebuf.scanlineC.mem2[2] B[3]=scanlinebuf.scanlineC.mem2[3] B[4]=scanlinebuf.scanlineC.mem2[4] B[5]=scanlinebuf.scanlineC.mem2[5] B[6]=scanlinebuf.scanlineC.mem2[6] B[7]=scanlinebuf.scanlineC.mem2[7] B[8]=scanlinebuf.scanlineC.mem2[8] B[9]=scanlinebuf.scanlineC.mem2[9] B[10]=scanlinebuf.scanlineC.mem2[10] B[11]=scanlinebuf.scanlineC.mem2[11] B[12]=scanlinebuf.scanlineC.mem2[12] B[13]=scanlinebuf.scanlineC.mem2[13] B[14]=scanlinebuf.scanlineC.mem2[14] B[15]=scanlinebuf.scanlineC.mem2[15] B[16]=scanlinebuf.scanlineC.mem2[16] B[17]=scanlinebuf.scanlineC.mem2[17] B[18]=scanlinebuf.scanlineC.mem2[18] B[19]=scanlinebuf.scanlineC.mem2[19] B[20]=scanlinebuf.scanlineC.mem2[20] S=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$733[0] Y[1]=$auto$rtlil.cc:2224:Mux$733[1] Y[2]=$auto$rtlil.cc:2224:Mux$733[2] Y[3]=$auto$rtlil.cc:2224:Mux$733[3] Y[4]=$auto$rtlil.cc:2224:Mux$733[4] Y[5]=$auto$rtlil.cc:2224:Mux$733[5] Y[6]=$auto$rtlil.cc:2224:Mux$733[6] Y[7]=$auto$rtlil.cc:2224:Mux$733[7] Y[8]=$auto$rtlil.cc:2224:Mux$733[8] Y[9]=$auto$rtlil.cc:2224:Mux$733[9] Y[10]=$auto$rtlil.cc:2224:Mux$733[10] Y[11]=$auto$rtlil.cc:2224:Mux$733[11] Y[12]=$auto$rtlil.cc:2224:Mux$733[12] Y[13]=$auto$rtlil.cc:2224:Mux$733[13] Y[14]=$auto$rtlil.cc:2224:Mux$733[14] Y[15]=$auto$rtlil.cc:2224:Mux$733[15] Y[16]=$auto$rtlil.cc:2224:Mux$733[16] Y[17]=$auto$rtlil.cc:2224:Mux$733[17] Y[18]=$auto$rtlil.cc:2224:Mux$733[18] Y[19]=$auto$rtlil.cc:2224:Mux$733[19] Y[20]=$auto$rtlil.cc:2224:Mux$733[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=scanlinebuf.scanlineC.mem2[42] B[1]=scanlinebuf.scanlineC.mem2[43] B[2]=scanlinebuf.scanlineC.mem2[44] B[3]=scanlinebuf.scanlineC.mem2[45] B[4]=scanlinebuf.scanlineC.mem2[46] B[5]=scanlinebuf.scanlineC.mem2[47] B[6]=scanlinebuf.scanlineC.mem2[48] B[7]=scanlinebuf.scanlineC.mem2[49] B[8]=scanlinebuf.scanlineC.mem2[50] B[9]=scanlinebuf.scanlineC.mem2[51] B[10]=scanlinebuf.scanlineC.mem2[52] B[11]=scanlinebuf.scanlineC.mem2[53] B[12]=scanlinebuf.scanlineC.mem2[54] B[13]=scanlinebuf.scanlineC.mem2[55] B[14]=scanlinebuf.scanlineC.mem2[56] B[15]=scanlinebuf.scanlineC.mem2[57] B[16]=scanlinebuf.scanlineC.mem2[58] B[17]=scanlinebuf.scanlineC.mem2[59] B[18]=scanlinebuf.scanlineC.mem2[60] B[19]=scanlinebuf.scanlineC.mem2[61] B[20]=scanlinebuf.scanlineC.mem2[62] S=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=$auto$rtlil.cc:2224:Mux$735[0] Y[1]=$auto$rtlil.cc:2224:Mux$735[1] Y[2]=$auto$rtlil.cc:2224:Mux$735[2] Y[3]=$auto$rtlil.cc:2224:Mux$735[3] Y[4]=$auto$rtlil.cc:2224:Mux$735[4] Y[5]=$auto$rtlil.cc:2224:Mux$735[5] Y[6]=$auto$rtlil.cc:2224:Mux$735[6] Y[7]=$auto$rtlil.cc:2224:Mux$735[7] Y[8]=$auto$rtlil.cc:2224:Mux$735[8] Y[9]=$auto$rtlil.cc:2224:Mux$735[9] Y[10]=$auto$rtlil.cc:2224:Mux$735[10] Y[11]=$auto$rtlil.cc:2224:Mux$735[11] Y[12]=$auto$rtlil.cc:2224:Mux$735[12] Y[13]=$auto$rtlil.cc:2224:Mux$735[13] Y[14]=$auto$rtlil.cc:2224:Mux$735[14] Y[15]=$auto$rtlil.cc:2224:Mux$735[15] Y[16]=$auto$rtlil.cc:2224:Mux$735[16] Y[17]=$auto$rtlil.cc:2224:Mux$735[17] Y[18]=$auto$rtlil.cc:2224:Mux$735[18] Y[19]=$auto$rtlil.cc:2224:Mux$735[19] Y[20]=$auto$rtlil.cc:2224:Mux$735[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$735[0] A[1]=$auto$rtlil.cc:2224:Mux$735[1] A[2]=$auto$rtlil.cc:2224:Mux$735[2] A[3]=$auto$rtlil.cc:2224:Mux$735[3] A[4]=$auto$rtlil.cc:2224:Mux$735[4] A[5]=$auto$rtlil.cc:2224:Mux$735[5] A[6]=$auto$rtlil.cc:2224:Mux$735[6] A[7]=$auto$rtlil.cc:2224:Mux$735[7] A[8]=$auto$rtlil.cc:2224:Mux$735[8] A[9]=$auto$rtlil.cc:2224:Mux$735[9] A[10]=$auto$rtlil.cc:2224:Mux$735[10] A[11]=$auto$rtlil.cc:2224:Mux$735[11] A[12]=$auto$rtlil.cc:2224:Mux$735[12] A[13]=$auto$rtlil.cc:2224:Mux$735[13] A[14]=$auto$rtlil.cc:2224:Mux$735[14] A[15]=$auto$rtlil.cc:2224:Mux$735[15] A[16]=$auto$rtlil.cc:2224:Mux$735[16] A[17]=$auto$rtlil.cc:2224:Mux$735[17] A[18]=$auto$rtlil.cc:2224:Mux$735[18] A[19]=$auto$rtlil.cc:2224:Mux$735[19] A[20]=$auto$rtlil.cc:2224:Mux$735[20] B[0]=$auto$rtlil.cc:2224:Mux$733[0] B[1]=$auto$rtlil.cc:2224:Mux$733[1] B[2]=$auto$rtlil.cc:2224:Mux$733[2] B[3]=$auto$rtlil.cc:2224:Mux$733[3] B[4]=$auto$rtlil.cc:2224:Mux$733[4] B[5]=$auto$rtlil.cc:2224:Mux$733[5] B[6]=$auto$rtlil.cc:2224:Mux$733[6] B[7]=$auto$rtlil.cc:2224:Mux$733[7] B[8]=$auto$rtlil.cc:2224:Mux$733[8] B[9]=$auto$rtlil.cc:2224:Mux$733[9] B[10]=$auto$rtlil.cc:2224:Mux$733[10] B[11]=$auto$rtlil.cc:2224:Mux$733[11] B[12]=$auto$rtlil.cc:2224:Mux$733[12] B[13]=$auto$rtlil.cc:2224:Mux$733[13] B[14]=$auto$rtlil.cc:2224:Mux$733[14] B[15]=$auto$rtlil.cc:2224:Mux$733[15] B[16]=$auto$rtlil.cc:2224:Mux$733[16] B[17]=$auto$rtlil.cc:2224:Mux$733[17] B[18]=$auto$rtlil.cc:2224:Mux$733[18] B[19]=$auto$rtlil.cc:2224:Mux$733[19] B[20]=$auto$rtlil.cc:2224:Mux$733[20] S=$auto$rtlil.cc:2158:Or$737 Y[0]=$auto$rtlil.cc:2224:Mux$739[0] Y[1]=$auto$rtlil.cc:2224:Mux$739[1] Y[2]=$auto$rtlil.cc:2224:Mux$739[2] Y[3]=$auto$rtlil.cc:2224:Mux$739[3] Y[4]=$auto$rtlil.cc:2224:Mux$739[4] Y[5]=$auto$rtlil.cc:2224:Mux$739[5] Y[6]=$auto$rtlil.cc:2224:Mux$739[6] Y[7]=$auto$rtlil.cc:2224:Mux$739[7] Y[8]=$auto$rtlil.cc:2224:Mux$739[8] Y[9]=$auto$rtlil.cc:2224:Mux$739[9] Y[10]=$auto$rtlil.cc:2224:Mux$739[10] Y[11]=$auto$rtlil.cc:2224:Mux$739[11] Y[12]=$auto$rtlil.cc:2224:Mux$739[12] Y[13]=$auto$rtlil.cc:2224:Mux$739[13] Y[14]=$auto$rtlil.cc:2224:Mux$739[14] Y[15]=$auto$rtlil.cc:2224:Mux$739[15] Y[16]=$auto$rtlil.cc:2224:Mux$739[16] Y[17]=$auto$rtlil.cc:2224:Mux$739[17] Y[18]=$auto$rtlil.cc:2224:Mux$739[18] Y[19]=$auto$rtlil.cc:2224:Mux$739[19] Y[20]=$auto$rtlil.cc:2224:Mux$739[20]
+.param WIDTH 00000000000000000000000000010101
+.subckt $mux A=scanlinebuf.startframe_$eq_A_Y_$and_B_Y_$mux_S_1_Y B=scanlinebuf.temp_fbnextscanline_$dffe_Q_D_$pmux_Y_B S=scanlinebuf.temp_fbnextscanline_$dffe_Q_D_$pmux_Y_S Y=$auto$rtlil.cc:2224:Mux$741
+.param WIDTH 00000000000000000000000000000001
 .subckt $and A=fbnextscanlineint B=oe Y=oe_$eq_A_Y_$and_B_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
@@ -11,19 +191,10 @@
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $mux A=$false B=$true S=oe_$eq_A_Y_$and_B_Y Y=oe_$eq_A_Y_$and_B_Y_$mux_S_Y
 .param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=scanlinebuf.fbdatavalid S[0]=scanlinebuf.fbdatavalid_$pmux_B_S_1 S[1]=scanlinebuf.fbdatavalid_$pmux_B_S Y=scanlinebuf.weA_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=scanlinebuf.fbdatavalid B[1]=$false S[0]=scanlinebuf.fbdatavalid_$pmux_B_1_S_1 S[1]=scanlinebuf.fbdatavalid_$pmux_B_1_S Y=scanlinebuf.weC_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $reduce_or A[0]=scanlinebuf.fbdatavalid_$pmux_B_2_S_1 A[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S_1 A[2]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S Y=scanlinebuf.fbdatavalid_$pmux_B_1_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=scanlinebuf.fbdatavalid S[0]=scanlinebuf.fbdatavalid_$pmux_B_2_S S[1]=scanlinebuf.fbdatavalid_$pmux_B_2_S_1 Y=scanlinebuf.weB_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $reduce_or A[0]=scanlinebuf.fbdatavalid_$pmux_B_1_S_1 A[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S_1 A[2]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S Y=scanlinebuf.fbdatavalid_$pmux_B_2_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -47,9 +218,6 @@
 .param Y_WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=scanlinebuf.clk D[0]=scanlinebuf.next_state_$dff_Q_D[0] D[1]=scanlinebuf.next_state_$dff_Q_D[1] Q[0]=scanlinebuf.next_state[0] Q[1]=scanlinebuf.next_state[1]
 .param CLK_POLARITY 1
-.param WIDTH 00000000000000000000000000000010
-.subckt $pmux A[0]=$undef A[1]=$undef B[0]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_2[0] B[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_2[1] B[2]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_1[0] B[3]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B_1[1] B[4]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B[0] B[5]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B[1] B[6]=scanlinebuf.startframe_$eq_A_Y_$and_B_Y_$mux_S_Y[0] B[7]=scanlinebuf.startframe_$eq_A_Y_$and_B_Y_$mux_S_Y[1] S[0]=scanlinebuf.fbdatavalid_$pmux_B_1_S_1 S[1]=scanlinebuf.fbdatavalid_$pmux_B_2_S_1 S[2]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S_1 S[3]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S Y[0]=scanlinebuf.next_state_$dff_Q_D[0] Y[1]=scanlinebuf.next_state_$dff_Q_D[1]
-.param S_WIDTH 00000000000000000000000000000100
 .param WIDTH 00000000000000000000000000000010
 .subckt $mux A[0]=$true A[1]=$false B[0]=$false B[1]=$true S=scanlinebuf.nextscanline Y[0]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B[0] Y[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_B[1]
 .param WIDTH 00000000000000000000000000000010
@@ -85,16 +253,10 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00
 .param WIDTH 00000000000000000000000000000010
-.subckt $pmux A[0]=$undef A[1]=$undef B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$true B[5]=$false S[0]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_2 S[1]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_1 S[2]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D[0] Y[1]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D[1]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000000010
 .subckt $logic_not A[0]=scanlinebuf.scanlineA.subitem[0] A[1]=scanlinebuf.scanlineA.subitem[1] Y=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=scanlinebuf.scanlineA.mem2[0] B[1]=scanlinebuf.scanlineA.mem2[1] B[2]=scanlinebuf.scanlineA.mem2[2] B[3]=scanlinebuf.scanlineA.mem2[3] B[4]=scanlinebuf.scanlineA.mem2[4] B[5]=scanlinebuf.scanlineA.mem2[5] B[6]=scanlinebuf.scanlineA.mem2[6] B[7]=scanlinebuf.scanlineA.mem2[7] B[8]=scanlinebuf.scanlineA.mem2[8] B[9]=scanlinebuf.scanlineA.mem2[9] B[10]=scanlinebuf.scanlineA.mem2[10] B[11]=scanlinebuf.scanlineA.mem2[11] B[12]=scanlinebuf.scanlineA.mem2[12] B[13]=scanlinebuf.scanlineA.mem2[13] B[14]=scanlinebuf.scanlineA.mem2[14] B[15]=scanlinebuf.scanlineA.mem2[15] B[16]=scanlinebuf.scanlineA.mem2[16] B[17]=scanlinebuf.scanlineA.mem2[17] B[18]=scanlinebuf.scanlineA.mem2[18] B[19]=scanlinebuf.scanlineA.mem2[19] B[20]=scanlinebuf.scanlineA.mem2[20] B[21]=scanlinebuf.scanlineA.mem2[21] B[22]=scanlinebuf.scanlineA.mem2[22] B[23]=scanlinebuf.scanlineA.mem2[23] B[24]=scanlinebuf.scanlineA.mem2[24] B[25]=scanlinebuf.scanlineA.mem2[25] B[26]=scanlinebuf.scanlineA.mem2[26] B[27]=scanlinebuf.scanlineA.mem2[27] B[28]=scanlinebuf.scanlineA.mem2[28] B[29]=scanlinebuf.scanlineA.mem2[29] B[30]=scanlinebuf.scanlineA.mem2[30] B[31]=scanlinebuf.scanlineA.mem2[31] B[32]=scanlinebuf.scanlineA.mem2[32] B[33]=scanlinebuf.scanlineA.mem2[33] B[34]=scanlinebuf.scanlineA.mem2[34] B[35]=scanlinebuf.scanlineA.mem2[35] B[36]=scanlinebuf.scanlineA.mem2[36] B[37]=scanlinebuf.scanlineA.mem2[37] B[38]=scanlinebuf.scanlineA.mem2[38] B[39]=scanlinebuf.scanlineA.mem2[39] B[40]=scanlinebuf.scanlineA.mem2[40] B[41]=scanlinebuf.scanlineA.mem2[41] B[42]=scanlinebuf.scanlineA.mem2[42] B[43]=scanlinebuf.scanlineA.mem2[43] B[44]=scanlinebuf.scanlineA.mem2[44] B[45]=scanlinebuf.scanlineA.mem2[45] B[46]=scanlinebuf.scanlineA.mem2[46] B[47]=scanlinebuf.scanlineA.mem2[47] B[48]=scanlinebuf.scanlineA.mem2[48] B[49]=scanlinebuf.scanlineA.mem2[49] B[50]=scanlinebuf.scanlineA.mem2[50] B[51]=scanlinebuf.scanlineA.mem2[51] B[52]=scanlinebuf.scanlineA.mem2[52] B[53]=scanlinebuf.scanlineA.mem2[53] B[54]=scanlinebuf.scanlineA.mem2[54] B[55]=scanlinebuf.scanlineA.mem2[55] B[56]=scanlinebuf.scanlineA.mem2[56] B[57]=scanlinebuf.scanlineA.mem2[57] B[58]=scanlinebuf.scanlineA.mem2[58] B[59]=scanlinebuf.scanlineA.mem2[59] B[60]=scanlinebuf.scanlineA.mem2[60] B[61]=scanlinebuf.scanlineA.mem2[61] B[62]=scanlinebuf.scanlineA.mem2[62] S[0]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_2 S[1]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_1 S[2]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[0] Y[1]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[1] Y[2]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[2] Y[3]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[3] Y[4]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[4] Y[5]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[5] Y[6]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[6] Y[7]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[7] Y[8]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[8] Y[9]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[9] Y[10]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[10] Y[11]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[11] Y[12]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[12] Y[13]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[13] Y[14]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[14] Y[15]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[15] Y[16]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[16] Y[17]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[17] Y[18]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[18] Y[19]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[19] Y[20]=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[20]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000010101
 .subckt $eq A[0]=scanlinebuf.scanlineA.subitem[0] A[1]=scanlinebuf.scanlineA.subitem[1] B[0]=$true B[1]=$false Y=scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
@@ -146,16 +308,10 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00
 .param WIDTH 00000000000000000000000000000010
-.subckt $pmux A[0]=$undef A[1]=$undef B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$true B[5]=$false S[0]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_2 S[1]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_1 S[2]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D[0] Y[1]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D[1]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000000010
 .subckt $logic_not A[0]=scanlinebuf.scanlineB.subitem[0] A[1]=scanlinebuf.scanlineB.subitem[1] Y=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=scanlinebuf.scanlineB.mem2[0] B[1]=scanlinebuf.scanlineB.mem2[1] B[2]=scanlinebuf.scanlineB.mem2[2] B[3]=scanlinebuf.scanlineB.mem2[3] B[4]=scanlinebuf.scanlineB.mem2[4] B[5]=scanlinebuf.scanlineB.mem2[5] B[6]=scanlinebuf.scanlineB.mem2[6] B[7]=scanlinebuf.scanlineB.mem2[7] B[8]=scanlinebuf.scanlineB.mem2[8] B[9]=scanlinebuf.scanlineB.mem2[9] B[10]=scanlinebuf.scanlineB.mem2[10] B[11]=scanlinebuf.scanlineB.mem2[11] B[12]=scanlinebuf.scanlineB.mem2[12] B[13]=scanlinebuf.scanlineB.mem2[13] B[14]=scanlinebuf.scanlineB.mem2[14] B[15]=scanlinebuf.scanlineB.mem2[15] B[16]=scanlinebuf.scanlineB.mem2[16] B[17]=scanlinebuf.scanlineB.mem2[17] B[18]=scanlinebuf.scanlineB.mem2[18] B[19]=scanlinebuf.scanlineB.mem2[19] B[20]=scanlinebuf.scanlineB.mem2[20] B[21]=scanlinebuf.scanlineB.mem2[21] B[22]=scanlinebuf.scanlineB.mem2[22] B[23]=scanlinebuf.scanlineB.mem2[23] B[24]=scanlinebuf.scanlineB.mem2[24] B[25]=scanlinebuf.scanlineB.mem2[25] B[26]=scanlinebuf.scanlineB.mem2[26] B[27]=scanlinebuf.scanlineB.mem2[27] B[28]=scanlinebuf.scanlineB.mem2[28] B[29]=scanlinebuf.scanlineB.mem2[29] B[30]=scanlinebuf.scanlineB.mem2[30] B[31]=scanlinebuf.scanlineB.mem2[31] B[32]=scanlinebuf.scanlineB.mem2[32] B[33]=scanlinebuf.scanlineB.mem2[33] B[34]=scanlinebuf.scanlineB.mem2[34] B[35]=scanlinebuf.scanlineB.mem2[35] B[36]=scanlinebuf.scanlineB.mem2[36] B[37]=scanlinebuf.scanlineB.mem2[37] B[38]=scanlinebuf.scanlineB.mem2[38] B[39]=scanlinebuf.scanlineB.mem2[39] B[40]=scanlinebuf.scanlineB.mem2[40] B[41]=scanlinebuf.scanlineB.mem2[41] B[42]=scanlinebuf.scanlineB.mem2[42] B[43]=scanlinebuf.scanlineB.mem2[43] B[44]=scanlinebuf.scanlineB.mem2[44] B[45]=scanlinebuf.scanlineB.mem2[45] B[46]=scanlinebuf.scanlineB.mem2[46] B[47]=scanlinebuf.scanlineB.mem2[47] B[48]=scanlinebuf.scanlineB.mem2[48] B[49]=scanlinebuf.scanlineB.mem2[49] B[50]=scanlinebuf.scanlineB.mem2[50] B[51]=scanlinebuf.scanlineB.mem2[51] B[52]=scanlinebuf.scanlineB.mem2[52] B[53]=scanlinebuf.scanlineB.mem2[53] B[54]=scanlinebuf.scanlineB.mem2[54] B[55]=scanlinebuf.scanlineB.mem2[55] B[56]=scanlinebuf.scanlineB.mem2[56] B[57]=scanlinebuf.scanlineB.mem2[57] B[58]=scanlinebuf.scanlineB.mem2[58] B[59]=scanlinebuf.scanlineB.mem2[59] B[60]=scanlinebuf.scanlineB.mem2[60] B[61]=scanlinebuf.scanlineB.mem2[61] B[62]=scanlinebuf.scanlineB.mem2[62] S[0]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_2 S[1]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_1 S[2]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[0] Y[1]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[1] Y[2]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[2] Y[3]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[3] Y[4]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[4] Y[5]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[5] Y[6]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[6] Y[7]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[7] Y[8]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[8] Y[9]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[9] Y[10]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[10] Y[11]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[11] Y[12]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[12] Y[13]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[13] Y[14]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[14] Y[15]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[15] Y[16]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[16] Y[17]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[17] Y[18]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[18] Y[19]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[19] Y[20]=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[20]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000010101
 .subckt $eq A[0]=scanlinebuf.scanlineB.subitem[0] A[1]=scanlinebuf.scanlineB.subitem[1] B[0]=$true B[1]=$false Y=scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
@@ -207,16 +363,10 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 00
 .param WIDTH 00000000000000000000000000000010
-.subckt $pmux A[0]=$undef A[1]=$undef B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$true B[5]=$false S[0]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_2 S[1]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_1 S[2]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D[0] Y[1]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D[1]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000000010
 .subckt $logic_not A[0]=scanlinebuf.scanlineC.subitem[0] A[1]=scanlinebuf.scanlineC.subitem[1] Y=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=scanlinebuf.scanlineC.mem2[0] B[1]=scanlinebuf.scanlineC.mem2[1] B[2]=scanlinebuf.scanlineC.mem2[2] B[3]=scanlinebuf.scanlineC.mem2[3] B[4]=scanlinebuf.scanlineC.mem2[4] B[5]=scanlinebuf.scanlineC.mem2[5] B[6]=scanlinebuf.scanlineC.mem2[6] B[7]=scanlinebuf.scanlineC.mem2[7] B[8]=scanlinebuf.scanlineC.mem2[8] B[9]=scanlinebuf.scanlineC.mem2[9] B[10]=scanlinebuf.scanlineC.mem2[10] B[11]=scanlinebuf.scanlineC.mem2[11] B[12]=scanlinebuf.scanlineC.mem2[12] B[13]=scanlinebuf.scanlineC.mem2[13] B[14]=scanlinebuf.scanlineC.mem2[14] B[15]=scanlinebuf.scanlineC.mem2[15] B[16]=scanlinebuf.scanlineC.mem2[16] B[17]=scanlinebuf.scanlineC.mem2[17] B[18]=scanlinebuf.scanlineC.mem2[18] B[19]=scanlinebuf.scanlineC.mem2[19] B[20]=scanlinebuf.scanlineC.mem2[20] B[21]=scanlinebuf.scanlineC.mem2[21] B[22]=scanlinebuf.scanlineC.mem2[22] B[23]=scanlinebuf.scanlineC.mem2[23] B[24]=scanlinebuf.scanlineC.mem2[24] B[25]=scanlinebuf.scanlineC.mem2[25] B[26]=scanlinebuf.scanlineC.mem2[26] B[27]=scanlinebuf.scanlineC.mem2[27] B[28]=scanlinebuf.scanlineC.mem2[28] B[29]=scanlinebuf.scanlineC.mem2[29] B[30]=scanlinebuf.scanlineC.mem2[30] B[31]=scanlinebuf.scanlineC.mem2[31] B[32]=scanlinebuf.scanlineC.mem2[32] B[33]=scanlinebuf.scanlineC.mem2[33] B[34]=scanlinebuf.scanlineC.mem2[34] B[35]=scanlinebuf.scanlineC.mem2[35] B[36]=scanlinebuf.scanlineC.mem2[36] B[37]=scanlinebuf.scanlineC.mem2[37] B[38]=scanlinebuf.scanlineC.mem2[38] B[39]=scanlinebuf.scanlineC.mem2[39] B[40]=scanlinebuf.scanlineC.mem2[40] B[41]=scanlinebuf.scanlineC.mem2[41] B[42]=scanlinebuf.scanlineC.mem2[42] B[43]=scanlinebuf.scanlineC.mem2[43] B[44]=scanlinebuf.scanlineC.mem2[44] B[45]=scanlinebuf.scanlineC.mem2[45] B[46]=scanlinebuf.scanlineC.mem2[46] B[47]=scanlinebuf.scanlineC.mem2[47] B[48]=scanlinebuf.scanlineC.mem2[48] B[49]=scanlinebuf.scanlineC.mem2[49] B[50]=scanlinebuf.scanlineC.mem2[50] B[51]=scanlinebuf.scanlineC.mem2[51] B[52]=scanlinebuf.scanlineC.mem2[52] B[53]=scanlinebuf.scanlineC.mem2[53] B[54]=scanlinebuf.scanlineC.mem2[54] B[55]=scanlinebuf.scanlineC.mem2[55] B[56]=scanlinebuf.scanlineC.mem2[56] B[57]=scanlinebuf.scanlineC.mem2[57] B[58]=scanlinebuf.scanlineC.mem2[58] B[59]=scanlinebuf.scanlineC.mem2[59] B[60]=scanlinebuf.scanlineC.mem2[60] B[61]=scanlinebuf.scanlineC.mem2[61] B[62]=scanlinebuf.scanlineC.mem2[62] S[0]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_2 S[1]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_1 S[2]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S Y[0]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[0] Y[1]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[1] Y[2]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[2] Y[3]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[3] Y[4]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[4] Y[5]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[5] Y[6]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[6] Y[7]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[7] Y[8]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[8] Y[9]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[9] Y[10]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[10] Y[11]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[11] Y[12]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[12] Y[13]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[13] Y[14]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[14] Y[15]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[15] Y[16]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[16] Y[17]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[17] Y[18]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[18] Y[19]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[19] Y[20]=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[20]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000010101
 .subckt $eq A[0]=scanlinebuf.scanlineC.subitem[0] A[1]=scanlinebuf.scanlineC.subitem[1] B[0]=$true B[1]=$false Y=scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
@@ -286,9 +436,6 @@
 .subckt $dffe CLK=scanlinebuf.clk D=scanlinebuf.temp_fbnextscanline_$dffe_Q_D EN=scanlinebuf.temp_fbnextscanline_$dffe_Q_EN Q=scanlinebuf.temp_fbnextscanline
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=scanlinebuf.temp_fbnextscanline_$dffe_Q_D_$pmux_Y_B B[1]=scanlinebuf.startframe_$eq_A_Y_$and_B_Y_$mux_S_1_Y S[0]=scanlinebuf.temp_fbnextscanline_$dffe_Q_D_$pmux_Y_S S[1]=scanlinebuf.next_state_$dff_Q_D_$pmux_Y_S Y=scanlinebuf.temp_fbnextscanline_$dffe_Q_D
-.param S_WIDTH 00000000000000000000000000000010
 .param WIDTH 00000000000000000000000000000001
 .subckt $mux A=$undef B=$true S=scanlinebuf.nextscanline Y=scanlinebuf.temp_fbnextscanline_$dffe_Q_D_$pmux_Y_B
 .param WIDTH 00000000000000000000000000000001
@@ -519,9 +666,6 @@
 .param WIDTH 00000000000000000000000000000010
 .subckt $mux A[0]=$undef A[1]=$undef B[0]=$false B[1]=$false S=vidoutinst.vert_$eq_A_4_Y Y[0]=vidoutinst.pselect_$sdffe_Q_D_$mux_Y_A[0] Y[1]=vidoutinst.pselect_$sdffe_Q_D_$mux_Y_A[1]
 .param WIDTH 00000000000000000000000000000010
-.subckt $pmux A[0]=$false A[1]=$false B[0]=$false B[1]=$true B[2]=$true B[3]=$false S[0]=vidoutinst.secondarynext_$pmux_B_S S[1]=vidoutinst.secondarynext_$pmux_B_2_S Y[0]=vidoutinst.pselect_$sdffe_Q_D_$mux_Y_B[0] Y[1]=vidoutinst.pselect_$sdffe_Q_D_$mux_Y_B[1]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000010
 .subckt $add A[0]=vidoutinst.primarybuffer_$add_B_5_Y[0] A[1]=vidoutinst.primarybuffer_$add_B_5_Y[1] A[2]=vidoutinst.primarybuffer_$add_B_5_Y[2] A[3]=vidoutinst.primarybuffer_$add_B_5_Y[3] A[4]=vidoutinst.primarybuffer_$add_B_5_Y[4] A[5]=vidoutinst.primarybuffer_$add_B_5_Y[5] A[6]=vidoutinst.primarybuffer_$add_B_5_Y[6] A[7]=vidoutinst.primarybuffer_$add_B_5_Y[7] A[8]=vidoutinst.primarybuffer_$add_B_5_Y[8] B[0]=vidoutinst.secondarybuffer[0] B[1]=vidoutinst.secondarybuffer[1] B[2]=vidoutinst.secondarybuffer[2] B[3]=vidoutinst.secondarybuffer[3] B[4]=vidoutinst.secondarybuffer[4] B[5]=vidoutinst.secondarybuffer[5] B[6]=vidoutinst.secondarybuffer[6] B[7]=$false B[8]=$false Y[0]=vidoutinst.secondarybuffer_$add_B_Y[0] Y[1]=vidoutinst.secondarybuffer_$add_B_Y[1] Y[2]=vidoutinst.secondarybuffer_$add_B_Y[2] Y[3]=vidoutinst.secondarybuffer_$add_B_Y[3] Y[4]=vidoutinst.secondarybuffer_$add_B_Y[4] Y[5]=vidoutinst.secondarybuffer_$add_B_Y[5] Y[6]=vidoutinst.secondarybuffer_$add_B_Y[6] Y[7]=vidoutinst.secondarybuffer_$add_B_Y[7] Y[8]=vidoutinst.secondarybuffer_$add_B_Y[8]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000001001
@@ -554,21 +698,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$false B[0]=$true B[1]=vidoutinst.secondarynext S[0]=vidoutinst.secondarynext_$pmux_B_S_1 S[1]=vidoutinst.secondarynext_$pmux_B_S Y=vidoutinst.nextpixelC_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$false B[0]=$true B[1]=vidoutinst.secondarynext S[0]=vidoutinst.secondarynext_$pmux_B_S S[1]=vidoutinst.secondarynext_$pmux_B_2_S Y=vidoutinst.nextpixelB_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$false B[0]=vidoutinst.secondarynext B[1]=$true S[0]=vidoutinst.secondarynext_$pmux_B_S_1 S[1]=vidoutinst.secondarynext_$pmux_B_2_S Y=vidoutinst.nextpixelA_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=vidoutinst.pixeldataA[0] B[1]=vidoutinst.pixeldataA[1] B[2]=vidoutinst.pixeldataA[2] B[3]=vidoutinst.pixeldataA[3] B[4]=vidoutinst.pixeldataA[4] B[5]=vidoutinst.pixeldataA[5] B[6]=vidoutinst.pixeldataA[6] B[7]=vidoutinst.pixeldataA[7] B[8]=vidoutinst.pixeldataA[8] B[9]=vidoutinst.pixeldataA[9] B[10]=vidoutinst.pixeldataA[10] B[11]=vidoutinst.pixeldataA[11] B[12]=vidoutinst.pixeldataA[12] B[13]=vidoutinst.pixeldataA[13] B[14]=vidoutinst.pixeldataA[14] B[15]=vidoutinst.pixeldataA[15] B[16]=vidoutinst.pixeldataA[16] B[17]=vidoutinst.pixeldataA[17] B[18]=vidoutinst.pixeldataA[18] B[19]=vidoutinst.pixeldataA[19] B[20]=vidoutinst.pixeldataA[20] B[21]=vidoutinst.pixeldataC[0] B[22]=vidoutinst.pixeldataC[1] B[23]=vidoutinst.pixeldataC[2] B[24]=vidoutinst.pixeldataC[3] B[25]=vidoutinst.pixeldataC[4] B[26]=vidoutinst.pixeldataC[5] B[27]=vidoutinst.pixeldataC[6] B[28]=vidoutinst.pixeldataC[7] B[29]=vidoutinst.pixeldataC[8] B[30]=vidoutinst.pixeldataC[9] B[31]=vidoutinst.pixeldataC[10] B[32]=vidoutinst.pixeldataC[11] B[33]=vidoutinst.pixeldataC[12] B[34]=vidoutinst.pixeldataC[13] B[35]=vidoutinst.pixeldataC[14] B[36]=vidoutinst.pixeldataC[15] B[37]=vidoutinst.pixeldataC[16] B[38]=vidoutinst.pixeldataC[17] B[39]=vidoutinst.pixeldataC[18] B[40]=vidoutinst.pixeldataC[19] B[41]=vidoutinst.pixeldataC[20] B[42]=vidoutinst.pixeldataB[0] B[43]=vidoutinst.pixeldataB[1] B[44]=vidoutinst.pixeldataB[2] B[45]=vidoutinst.pixeldataB[3] B[46]=vidoutinst.pixeldataB[4] B[47]=vidoutinst.pixeldataB[5] B[48]=vidoutinst.pixeldataB[6] B[49]=vidoutinst.pixeldataB[7] B[50]=vidoutinst.pixeldataB[8] B[51]=vidoutinst.pixeldataB[9] B[52]=vidoutinst.pixeldataB[10] B[53]=vidoutinst.pixeldataB[11] B[54]=vidoutinst.pixeldataB[12] B[55]=vidoutinst.pixeldataB[13] B[56]=vidoutinst.pixeldataB[14] B[57]=vidoutinst.pixeldataB[15] B[58]=vidoutinst.pixeldataB[16] B[59]=vidoutinst.pixeldataB[17] B[60]=vidoutinst.pixeldataB[18] B[61]=vidoutinst.pixeldataB[19] B[62]=vidoutinst.pixeldataB[20] S[0]=vidoutinst.secondarynext_$pmux_B_S_1 S[1]=vidoutinst.secondarynext_$pmux_B_S S[2]=vidoutinst.secondarynext_$pmux_B_2_S Y[0]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[0] Y[1]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[1] Y[2]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[2] Y[3]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[3] Y[4]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[4] Y[5]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[5] Y[6]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[6] Y[7]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[7] Y[8]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[8] Y[9]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[9] Y[10]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[10] Y[11]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[11] Y[12]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[12] Y[13]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[13] Y[14]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[14] Y[15]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[15] Y[16]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[16] Y[17]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[17] Y[18]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[18] Y[19]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[19] Y[20]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[20]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000010101
-.subckt $pmux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false A[5]=$false A[6]=$false A[7]=$false A[8]=$false A[9]=$false A[10]=$false A[11]=$false A[12]=$false A[13]=$false A[14]=$false A[15]=$false A[16]=$false A[17]=$false A[18]=$false A[19]=$false A[20]=$false B[0]=vidoutinst.pixeldataC[0] B[1]=vidoutinst.pixeldataC[1] B[2]=vidoutinst.pixeldataC[2] B[3]=vidoutinst.pixeldataC[3] B[4]=vidoutinst.pixeldataC[4] B[5]=vidoutinst.pixeldataC[5] B[6]=vidoutinst.pixeldataC[6] B[7]=vidoutinst.pixeldataC[7] B[8]=vidoutinst.pixeldataC[8] B[9]=vidoutinst.pixeldataC[9] B[10]=vidoutinst.pixeldataC[10] B[11]=vidoutinst.pixeldataC[11] B[12]=vidoutinst.pixeldataC[12] B[13]=vidoutinst.pixeldataC[13] B[14]=vidoutinst.pixeldataC[14] B[15]=vidoutinst.pixeldataC[15] B[16]=vidoutinst.pixeldataC[16] B[17]=vidoutinst.pixeldataC[17] B[18]=vidoutinst.pixeldataC[18] B[19]=vidoutinst.pixeldataC[19] B[20]=vidoutinst.pixeldataC[20] B[21]=vidoutinst.pixeldataB[0] B[22]=vidoutinst.pixeldataB[1] B[23]=vidoutinst.pixeldataB[2] B[24]=vidoutinst.pixeldataB[3] B[25]=vidoutinst.pixeldataB[4] B[26]=vidoutinst.pixeldataB[5] B[27]=vidoutinst.pixeldataB[6] B[28]=vidoutinst.pixeldataB[7] B[29]=vidoutinst.pixeldataB[8] B[30]=vidoutinst.pixeldataB[9] B[31]=vidoutinst.pixeldataB[10] B[32]=vidoutinst.pixeldataB[11] B[33]=vidoutinst.pixeldataB[12] B[34]=vidoutinst.pixeldataB[13] B[35]=vidoutinst.pixeldataB[14] B[36]=vidoutinst.pixeldataB[15] B[37]=vidoutinst.pixeldataB[16] B[38]=vidoutinst.pixeldataB[17] B[39]=vidoutinst.pixeldataB[18] B[40]=vidoutinst.pixeldataB[19] B[41]=vidoutinst.pixeldataB[20] B[42]=vidoutinst.pixeldataA[0] B[43]=vidoutinst.pixeldataA[1] B[44]=vidoutinst.pixeldataA[2] B[45]=vidoutinst.pixeldataA[3] B[46]=vidoutinst.pixeldataA[4] B[47]=vidoutinst.pixeldataA[5] B[48]=vidoutinst.pixeldataA[6] B[49]=vidoutinst.pixeldataA[7] B[50]=vidoutinst.pixeldataA[8] B[51]=vidoutinst.pixeldataA[9] B[52]=vidoutinst.pixeldataA[10] B[53]=vidoutinst.pixeldataA[11] B[54]=vidoutinst.pixeldataA[12] B[55]=vidoutinst.pixeldataA[13] B[56]=vidoutinst.pixeldataA[14] B[57]=vidoutinst.pixeldataA[15] B[58]=vidoutinst.pixeldataA[16] B[59]=vidoutinst.pixeldataA[17] B[60]=vidoutinst.pixeldataA[18] B[61]=vidoutinst.pixeldataA[19] B[62]=vidoutinst.pixeldataA[20] S[0]=vidoutinst.secondarynext_$pmux_B_S_1 S[1]=vidoutinst.secondarynext_$pmux_B_S S[2]=vidoutinst.secondarynext_$pmux_B_2_S Y[0]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[0] Y[1]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[1] Y[2]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[2] Y[3]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[3] Y[4]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[4] Y[5]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[5] Y[6]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[6] Y[7]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[7] Y[8]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[8] Y[9]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[9] Y[10]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[10] Y[11]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[11] Y[12]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[12] Y[13]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[13] Y[14]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[14] Y[15]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[15] Y[16]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[16] Y[17]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[17] Y[18]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[18] Y[19]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[19] Y[20]=vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[20]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000010101
 .subckt $sdffce CLK=vidoutinst.tm3_clk_v0 D=vidoutinst.secondarynext_$sdffce_Q_D EN=vidoutinst.secondarynext_$sdffce_Q_EN Q=vidoutinst.secondarynext SRST=vidoutinst.vert[0]
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
@@ -2285,5 +2414,249 @@
 .names scanlinebuf.pixeldataC[20] pixeldataC[20]
 1 1
 .names startframe scanlinebuf.startframe
+1 1
+.names $auto$rtlil.cc:2224:Mux$623 scanlinebuf.weB_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$631[0] scanlinebuf.next_state_$dff_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$631[1] scanlinebuf.next_state_$dff_Q_D[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$633 scanlinebuf.weC_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$635 scanlinebuf.weA_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$639[0] scanlinebuf.scanlineC.subitem_$sdffe_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$639[1] scanlinebuf.scanlineC.subitem_$sdffe_Q_D[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$643[0] scanlinebuf.scanlineB.subitem_$sdffe_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$643[1] scanlinebuf.scanlineB.subitem_$sdffe_Q_D[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[0] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[1] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[2] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[3] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[4] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[5] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[6] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[7] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[7]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[8] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[8]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[9] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[9]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[10] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[10]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[11] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[11]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[12] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[12]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[13] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[13]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[14] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[14]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[15] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[15]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[16] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[16]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[17] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[17]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[18] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[18]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[19] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[19]
+1 1
+.names $auto$rtlil.cc:2224:Mux$655[20] scanlinebuf.scanlineB.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[20]
+1 1
+.names $auto$rtlil.cc:2224:Mux$659[0] scanlinebuf.scanlineA.subitem_$sdffe_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$659[1] scanlinebuf.scanlineA.subitem_$sdffe_Q_D[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[0] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[1] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[2] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[3] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[4] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[5] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[6] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[7] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[7]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[8] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[8]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[9] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[9]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[10] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[10]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[11] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[11]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[12] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[12]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[13] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[13]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[14] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[14]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[15] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[15]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[16] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[16]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[17] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[17]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[18] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[18]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[19] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[19]
+1 1
+.names $auto$rtlil.cc:2224:Mux$671[20] scanlinebuf.scanlineA.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[20]
+1 1
+.names $auto$rtlil.cc:2224:Mux$679 vidoutinst.nextpixelA_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[0] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[1] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[2] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[3] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[4] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[5] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[6] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[7] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[7]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[8] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[8]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[9] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[9]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[10] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[10]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[11] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[11]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[12] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[12]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[13] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[13]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[14] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[14]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[15] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[15]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[16] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[16]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[17] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[17]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[18] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[18]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[19] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[19]
+1 1
+.names $auto$rtlil.cc:2224:Mux$691[20] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_Y[20]
+1 1
+.names $auto$rtlil.cc:2224:Mux$699 vidoutinst.nextpixelB_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$707 vidoutinst.nextpixelC_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[0] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[1] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[2] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[3] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[4] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[5] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[6] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[7] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[7]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[8] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[8]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[9] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[9]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[10] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[10]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[11] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[11]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[12] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[12]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[13] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[13]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[14] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[14]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[15] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[15]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[16] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[16]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[17] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[17]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[18] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[18]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[19] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[19]
+1 1
+.names $auto$rtlil.cc:2224:Mux$719[20] vidoutinst.secondarynext_$pmux_B_S_1_$pmux_S_1_Y[20]
+1 1
+.names $auto$rtlil.cc:2224:Mux$727[0] vidoutinst.pselect_$sdffe_Q_D_$mux_Y_B[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$727[1] vidoutinst.pselect_$sdffe_Q_D_$mux_Y_B[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[0] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[1] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[2] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[3] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[4] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[5] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[6] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[7] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[7]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[8] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[8]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[9] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[9]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[10] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[10]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[11] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[11]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[12] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[12]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[13] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[13]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[14] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[14]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[15] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[15]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[16] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[16]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[17] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[17]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[18] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[18]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[19] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[19]
+1 1
+.names $auto$rtlil.cc:2224:Mux$739[20] scanlinebuf.scanlineC.subitem_$sdffe_Q_D_$pmux_Y_S_$pmux_S_Y[20]
+1 1
+.names $auto$rtlil.cc:2224:Mux$741 scanlinebuf.temp_fbnextscanline_$dffe_Q_D
 1 1
 .end

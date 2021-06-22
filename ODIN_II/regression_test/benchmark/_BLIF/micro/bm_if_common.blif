@@ -3,6 +3,10 @@
 .model bm_if_common
 .inputs clock reset_n a_in[0] a_in[1] b_in[0] b_in[1] c_in d_in
 .outputs out0[0] out0[1] out2[0] out2[1] out1
+.subckt $mux A[0]=$false A[1]=$true B[0]=$true B[1]=$false S=top_a.out1_$dffe_Q_D_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$41[0] Y[1]=$auto$rtlil.cc:2224:Mux$41[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$41[0] A[1]=$auto$rtlil.cc:2224:Mux$41[1] B[0]=$false B[1]=$false S=top_a.out1_$dffe_Q_D_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$43[0] Y[1]=$auto$rtlil.cc:2224:Mux$43[1]
+.param WIDTH 00000000000000000000000000000010
 .subckt $and A[0]=a_in[0] A[1]=a_in[1] B[0]=b_in[0] B[1]=b_in[1] Y[0]=b_in_$and_B_Y[0] Y[1]=b_in_$and_B_Y[1]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
@@ -50,9 +54,6 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
 .param WIDTH 00000000000000000000000000000010
-.subckt $pmux A[0]=$undef A[1]=$undef B[0]=$false B[1]=$false B[2]=$true B[3]=$false B[4]=$false B[5]=$true S[0]=top_a.out1_$dffe_Q_D_$pmux_Y_S_2 S[1]=top_a.out1_$dffe_Q_D_$pmux_Y_S_1 S[2]=top_a.out1_$dffe_Q_D_$pmux_Y_S Y[0]=top_a.out1_$dffe_Q_D[0] Y[1]=top_a.out1_$dffe_Q_D[1]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000000010
 .subckt $reduce_bool A[0]=top_a.out1_$dffe_Q_D_$pmux_Y_S_2 A[1]=top_a.out1_$dffe_Q_D_$pmux_Y_S_1 A[2]=top_a.out1_$dffe_Q_D_$pmux_Y_S Y=top_a.out1_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -79,5 +80,9 @@
 .names top_a.out[0] temp_a[0]
 1 1
 .names top_a.out[1] temp_a[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$43[0] top_a.out1_$dffe_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$43[1] top_a.out1_$dffe_Q_D[1]
 1 1
 .end

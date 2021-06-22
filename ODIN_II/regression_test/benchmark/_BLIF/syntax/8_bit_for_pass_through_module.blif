@@ -3,8 +3,21 @@
 .model eight_bit_for_pass_through
 .inputs a[0] a[1] a[2] a[3] a[4] a[5] a[6] a[7] clk rst
 .outputs c[0] c[1] c[2] c[3] c[4] c[5] c[6] c[7]
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[0].pass_wire.a S[0]=genblk1[0].pass_wire.rst S[1]=genblk1[0].pass_wire.rst_$not_A_Y Y=genblk1[0].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
+.subckt $mux A=genblk1[0].pass_wire.a B=$false S=genblk1[0].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$13
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=genblk1[1].pass_wire.a B=$false S=genblk1[1].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$15
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=genblk1[2].pass_wire.a B=$false S=genblk1[2].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$17
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=genblk1[3].pass_wire.a B=$false S=genblk1[3].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$19
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=genblk1[4].pass_wire.a B=$false S=genblk1[4].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$21
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=genblk1[5].pass_wire.a B=$false S=genblk1[5].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$23
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=genblk1[6].pass_wire.a B=$false S=genblk1[6].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$25
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=genblk1[7].pass_wire.a B=$false S=genblk1[7].pass_wire.rst Y=$auto$rtlil.cc:2224:Mux$27
 .param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[0].pass_wire.clk D=genblk1[0].pass_wire.c_$dff_Q_D Q=genblk1[0].pass_wire.c
 .param CLK_POLARITY 1
@@ -13,9 +26,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[1].pass_wire.a S[0]=genblk1[1].pass_wire.rst S[1]=genblk1[1].pass_wire.rst_$not_A_Y Y=genblk1[1].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[1].pass_wire.clk D=genblk1[1].pass_wire.c_$dff_Q_D Q=genblk1[1].pass_wire.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -23,9 +33,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[2].pass_wire.a S[0]=genblk1[2].pass_wire.rst S[1]=genblk1[2].pass_wire.rst_$not_A_Y Y=genblk1[2].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[2].pass_wire.clk D=genblk1[2].pass_wire.c_$dff_Q_D Q=genblk1[2].pass_wire.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -33,9 +40,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[3].pass_wire.a S[0]=genblk1[3].pass_wire.rst S[1]=genblk1[3].pass_wire.rst_$not_A_Y Y=genblk1[3].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[3].pass_wire.clk D=genblk1[3].pass_wire.c_$dff_Q_D Q=genblk1[3].pass_wire.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -43,9 +47,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[4].pass_wire.a S[0]=genblk1[4].pass_wire.rst S[1]=genblk1[4].pass_wire.rst_$not_A_Y Y=genblk1[4].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[4].pass_wire.clk D=genblk1[4].pass_wire.c_$dff_Q_D Q=genblk1[4].pass_wire.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -53,9 +54,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[5].pass_wire.a S[0]=genblk1[5].pass_wire.rst S[1]=genblk1[5].pass_wire.rst_$not_A_Y Y=genblk1[5].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[5].pass_wire.clk D=genblk1[5].pass_wire.c_$dff_Q_D Q=genblk1[5].pass_wire.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -63,9 +61,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[6].pass_wire.a S[0]=genblk1[6].pass_wire.rst S[1]=genblk1[6].pass_wire.rst_$not_A_Y Y=genblk1[6].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[6].pass_wire.clk D=genblk1[6].pass_wire.c_$dff_Q_D Q=genblk1[6].pass_wire.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -73,9 +68,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=genblk1[7].pass_wire.a S[0]=genblk1[7].pass_wire.rst S[1]=genblk1[7].pass_wire.rst_$not_A_Y Y=genblk1[7].pass_wire.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=genblk1[7].pass_wire.clk D=genblk1[7].pass_wire.c_$dff_Q_D Q=genblk1[7].pass_wire.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -146,5 +138,21 @@
 .names clk genblk1[0].pass_wire.clk
 1 1
 .names rst genblk1[0].pass_wire.rst
+1 1
+.names $auto$rtlil.cc:2224:Mux$13 genblk1[0].pass_wire.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$15 genblk1[1].pass_wire.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$17 genblk1[2].pass_wire.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$19 genblk1[3].pass_wire.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$21 genblk1[4].pass_wire.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$23 genblk1[5].pass_wire.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$25 genblk1[6].pass_wire.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$27 genblk1[7].pass_wire.c_$dff_Q_D
 1 1
 .end

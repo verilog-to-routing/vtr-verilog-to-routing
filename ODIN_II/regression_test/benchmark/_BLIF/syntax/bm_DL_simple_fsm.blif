@@ -3,8 +3,17 @@
 .model bm_DL_simple_fsm
 .inputs Clock Resetn w
 .outputs z
-.subckt $pmux A[0]=$false A[1]=$false B[0]=Y_$pmux_Y_B_1[0] B[1]=Y_$pmux_Y_B_1[1] B[2]=Y_$pmux_Y_B[0] B[3]=Y_$pmux_Y_B[1] S[0]=Y_$pmux_Y_S_1 S[1]=Y_$pmux_Y_S Y[0]=Y[0] Y[1]=Y[1]
-.param S_WIDTH 00000000000000000000000000000010
+.subckt $reduce_or A[0]=Y_$pmux_Y_S_1 A[1]=Y_$pmux_Y_S Y=$auto$rtlil.cc:2131:ReduceOr$45
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$45 Y=$auto$rtlil.cc:2127:Not$47
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=$false A[1]=$false B[0]=Y_$pmux_Y_B[0] B[1]=Y_$pmux_Y_B[1] S=Y_$pmux_Y_S Y[0]=$auto$rtlil.cc:2224:Mux$49[0] Y[1]=$auto$rtlil.cc:2224:Mux$49[1]
+.param WIDTH 00000000000000000000000000000010
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$49[0] A[1]=$auto$rtlil.cc:2224:Mux$49[1] B[0]=Y_$pmux_Y_B_1[0] B[1]=Y_$pmux_Y_B_1[1] S=Y_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$51[0] Y[1]=$auto$rtlil.cc:2224:Mux$51[1]
 .param WIDTH 00000000000000000000000000000010
 .subckt $logic_not A[0]=y[0] A[1]=y[1] Y=Y_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
@@ -36,5 +45,9 @@
 .param B_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
 .names z y_$eq_A_Y
+1 1
+.names $auto$rtlil.cc:2224:Mux$51[0] Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$51[1] Y[1]
 1 1
 .end

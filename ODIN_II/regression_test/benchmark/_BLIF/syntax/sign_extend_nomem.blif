@@ -3,6 +3,346 @@
 .model cmd_module
 .inputs loaded_data[0] loaded_data[1] loaded_data[2] loaded_data[3] loaded_data[4] loaded_data[5] loaded_data[6] loaded_data[7] loaded_data[8] loaded_data[9] loaded_data[10] loaded_data[11] loaded_data[12] loaded_data[13] loaded_data[14] loaded_data[15] loaded_data[16] loaded_data[17] loaded_data[18] loaded_data[19] loaded_data[20] loaded_data[21] loaded_data[22] loaded_data[23] loaded_data[24] loaded_data[25] loaded_data[26] loaded_data[27] loaded_data[28] loaded_data[29] loaded_data[30] loaded_data[31] size[0] size[1] addr_key[0] addr_key[1] sign_ext en clk
 .outputs result[0] result[1] result[2] result[3] result[4] result[5] result[6] result[7] result[8] result[9] result[10] result[11] result[12] result[13] result[14] result[15] result[16] result[17] result[18] result[19] result[20] result[21] result[22] result[23] result[24] result[25] result[26] result[27] result[28] result[29] result[30] result[31]
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$191
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$199
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$207
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$215
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$223
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 A[1]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_1 A[2]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S Y=$auto$rtlil.cc:2131:ReduceOr$231
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$243
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 A[1]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_1 A[2]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S Y=$auto$rtlil.cc:2131:ReduceOr$251
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$263
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$271
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$279
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$287
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$295
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$303
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$311
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$319
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$327
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$335
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$343
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$351
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$359
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$367
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$375
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$383
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$391
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$399
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=instance1.load_size_$eq_A_Y A[1]=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2131:ReduceOr$407
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000010
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$191 Y=$auto$rtlil.cc:2127:Not$193
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$199 Y=$auto$rtlil.cc:2127:Not$201
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$207 Y=$auto$rtlil.cc:2127:Not$209
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$215 Y=$auto$rtlil.cc:2127:Not$217
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$223 Y=$auto$rtlil.cc:2127:Not$225
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$231 Y=$auto$rtlil.cc:2127:Not$233
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$243 Y=$auto$rtlil.cc:2127:Not$245
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$251 Y=$auto$rtlil.cc:2127:Not$253
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$263 Y=$auto$rtlil.cc:2127:Not$265
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$271 Y=$auto$rtlil.cc:2127:Not$273
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$279 Y=$auto$rtlil.cc:2127:Not$281
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$287 Y=$auto$rtlil.cc:2127:Not$289
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$295 Y=$auto$rtlil.cc:2127:Not$297
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$303 Y=$auto$rtlil.cc:2127:Not$305
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$311 Y=$auto$rtlil.cc:2127:Not$313
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$319 Y=$auto$rtlil.cc:2127:Not$321
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$327 Y=$auto$rtlil.cc:2127:Not$329
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$335 Y=$auto$rtlil.cc:2127:Not$337
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$343 Y=$auto$rtlil.cc:2127:Not$345
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$351 Y=$auto$rtlil.cc:2127:Not$353
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$359 Y=$auto$rtlil.cc:2127:Not$361
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$367 Y=$auto$rtlil.cc:2127:Not$369
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$375 Y=$auto$rtlil.cc:2127:Not$377
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$383 Y=$auto$rtlil.cc:2127:Not$385
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$391 Y=$auto$rtlil.cc:2127:Not$393
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$399 Y=$auto$rtlil.cc:2127:Not$401
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $not A=$auto$rtlil.cc:2131:ReduceOr$407 Y=$auto$rtlil.cc:2127:Not$409
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_1 B=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 Y=$auto$rtlil.cc:2158:Or$239
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_1 B=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 Y=$auto$rtlil.cc:2158:Or$259
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[10] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$195
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$195 B=instance1.d_address_$mux_S_Y[10] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$197
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[9] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$203
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$203 B=instance1.d_address_$mux_S_Y[9] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$205
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[8] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$211
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$211 B=instance1.d_address_$mux_S_Y[8] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$213
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=instance1.d_readdatain[0] A[1]=instance1.d_readdatain[1] A[2]=instance1.d_readdatain[2] A[3]=instance1.d_readdatain[3] A[4]=instance1.d_readdatain[4] A[5]=instance1.d_readdatain[5] A[6]=instance1.d_readdatain[6] A[7]=instance1.d_readdatain[7] B[0]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[0] B[1]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[1] B[2]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[2] B[3]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[3] B[4]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[4] B[5]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[5] B[6]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[6] B[7]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[7] S=instance1.load_size_$eq_A_1_Y Y[0]=$auto$rtlil.cc:2224:Mux$219[0] Y[1]=$auto$rtlil.cc:2224:Mux$219[1] Y[2]=$auto$rtlil.cc:2224:Mux$219[2] Y[3]=$auto$rtlil.cc:2224:Mux$219[3] Y[4]=$auto$rtlil.cc:2224:Mux$219[4] Y[5]=$auto$rtlil.cc:2224:Mux$219[5] Y[6]=$auto$rtlil.cc:2224:Mux$219[6] Y[7]=$auto$rtlil.cc:2224:Mux$219[7]
+.param WIDTH 00000000000000000000000000001000
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$219[0] A[1]=$auto$rtlil.cc:2224:Mux$219[1] A[2]=$auto$rtlil.cc:2224:Mux$219[2] A[3]=$auto$rtlil.cc:2224:Mux$219[3] A[4]=$auto$rtlil.cc:2224:Mux$219[4] A[5]=$auto$rtlil.cc:2224:Mux$219[5] A[6]=$auto$rtlil.cc:2224:Mux$219[6] A[7]=$auto$rtlil.cc:2224:Mux$219[7] B[0]=instance1.d_address_$mux_S_Y[0] B[1]=instance1.d_address_$mux_S_Y[1] B[2]=instance1.d_address_$mux_S_Y[2] B[3]=instance1.d_address_$mux_S_Y[3] B[4]=instance1.d_address_$mux_S_Y[4] B[5]=instance1.d_address_$mux_S_Y[5] B[6]=instance1.d_address_$mux_S_Y[6] B[7]=instance1.d_address_$mux_S_Y[7] S=instance1.load_size_$eq_A_Y Y[0]=$auto$rtlil.cc:2224:Mux$221[0] Y[1]=$auto$rtlil.cc:2224:Mux$221[1] Y[2]=$auto$rtlil.cc:2224:Mux$221[2] Y[3]=$auto$rtlil.cc:2224:Mux$221[3] Y[4]=$auto$rtlil.cc:2224:Mux$221[4] Y[5]=$auto$rtlil.cc:2224:Mux$221[5] Y[6]=$auto$rtlil.cc:2224:Mux$221[6] Y[7]=$auto$rtlil.cc:2224:Mux$221[7]
+.param WIDTH 00000000000000000000000000001000
+.subckt $mux A=instance1.d_readdatain[14] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$227
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$227 B=instance1.d_address_$mux_S_Y[14] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$229
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[23] B=instance1.d_readdatain[15] S=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 Y=$auto$rtlil.cc:2224:Mux$235
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[7] B=instance1.d_readdatain[31] S=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S Y=$auto$rtlil.cc:2224:Mux$237
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$237 B=$auto$rtlil.cc:2224:Mux$235 S=$auto$rtlil.cc:2158:Or$239 Y=$auto$rtlil.cc:2224:Mux$241
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[31] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$247
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$247 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$249
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=instance1.d_readdatain[16] A[1]=instance1.d_readdatain[17] A[2]=instance1.d_readdatain[18] A[3]=instance1.d_readdatain[19] A[4]=instance1.d_readdatain[20] A[5]=instance1.d_readdatain[21] A[6]=instance1.d_readdatain[22] A[7]=instance1.d_readdatain[23] B[0]=instance1.d_readdatain[8] B[1]=instance1.d_readdatain[9] B[2]=instance1.d_readdatain[10] B[3]=instance1.d_readdatain[11] B[4]=instance1.d_readdatain[12] B[5]=instance1.d_readdatain[13] B[6]=instance1.d_readdatain[14] B[7]=instance1.d_readdatain[15] S=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 Y[0]=$auto$rtlil.cc:2224:Mux$255[0] Y[1]=$auto$rtlil.cc:2224:Mux$255[1] Y[2]=$auto$rtlil.cc:2224:Mux$255[2] Y[3]=$auto$rtlil.cc:2224:Mux$255[3] Y[4]=$auto$rtlil.cc:2224:Mux$255[4] Y[5]=$auto$rtlil.cc:2224:Mux$255[5] Y[6]=$auto$rtlil.cc:2224:Mux$255[6] Y[7]=$auto$rtlil.cc:2224:Mux$255[7]
+.param WIDTH 00000000000000000000000000001000
+.subckt $mux A[0]=instance1.d_readdatain[0] A[1]=instance1.d_readdatain[1] A[2]=instance1.d_readdatain[2] A[3]=instance1.d_readdatain[3] A[4]=instance1.d_readdatain[4] A[5]=instance1.d_readdatain[5] A[6]=instance1.d_readdatain[6] A[7]=instance1.d_readdatain[7] B[0]=instance1.d_readdatain[24] B[1]=instance1.d_readdatain[25] B[2]=instance1.d_readdatain[26] B[3]=instance1.d_readdatain[27] B[4]=instance1.d_readdatain[28] B[5]=instance1.d_readdatain[29] B[6]=instance1.d_readdatain[30] B[7]=instance1.d_readdatain[31] S=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S Y[0]=$auto$rtlil.cc:2224:Mux$257[0] Y[1]=$auto$rtlil.cc:2224:Mux$257[1] Y[2]=$auto$rtlil.cc:2224:Mux$257[2] Y[3]=$auto$rtlil.cc:2224:Mux$257[3] Y[4]=$auto$rtlil.cc:2224:Mux$257[4] Y[5]=$auto$rtlil.cc:2224:Mux$257[5] Y[6]=$auto$rtlil.cc:2224:Mux$257[6] Y[7]=$auto$rtlil.cc:2224:Mux$257[7]
+.param WIDTH 00000000000000000000000000001000
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$257[0] A[1]=$auto$rtlil.cc:2224:Mux$257[1] A[2]=$auto$rtlil.cc:2224:Mux$257[2] A[3]=$auto$rtlil.cc:2224:Mux$257[3] A[4]=$auto$rtlil.cc:2224:Mux$257[4] A[5]=$auto$rtlil.cc:2224:Mux$257[5] A[6]=$auto$rtlil.cc:2224:Mux$257[6] A[7]=$auto$rtlil.cc:2224:Mux$257[7] B[0]=$auto$rtlil.cc:2224:Mux$255[0] B[1]=$auto$rtlil.cc:2224:Mux$255[1] B[2]=$auto$rtlil.cc:2224:Mux$255[2] B[3]=$auto$rtlil.cc:2224:Mux$255[3] B[4]=$auto$rtlil.cc:2224:Mux$255[4] B[5]=$auto$rtlil.cc:2224:Mux$255[5] B[6]=$auto$rtlil.cc:2224:Mux$255[6] B[7]=$auto$rtlil.cc:2224:Mux$255[7] S=$auto$rtlil.cc:2158:Or$259 Y[0]=$auto$rtlil.cc:2224:Mux$261[0] Y[1]=$auto$rtlil.cc:2224:Mux$261[1] Y[2]=$auto$rtlil.cc:2224:Mux$261[2] Y[3]=$auto$rtlil.cc:2224:Mux$261[3] Y[4]=$auto$rtlil.cc:2224:Mux$261[4] Y[5]=$auto$rtlil.cc:2224:Mux$261[5] Y[6]=$auto$rtlil.cc:2224:Mux$261[6] Y[7]=$auto$rtlil.cc:2224:Mux$261[7]
+.param WIDTH 00000000000000000000000000001000
+.subckt $mux A=instance1.d_readdatain[30] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$267
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$267 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$269
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[11] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$275
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$275 B=instance1.d_address_$mux_S_Y[11] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$277
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[29] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$283
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$283 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$285
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[28] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$291
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$291 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$293
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[27] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$299
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$299 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$301
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[26] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$307
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$307 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$309
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[25] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$315
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$315 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$317
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[24] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$323
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$323 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$325
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[23] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$331
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$331 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$333
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[22] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$339
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$339 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$341
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[21] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$347
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$347 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$349
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[20] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$355
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$355 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$357
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[19] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$363
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$363 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$365
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[18] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$371
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$371 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$373
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[17] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$379
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$379 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$381
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[16] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$387
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$387 B=instance1.load_sign_ext_$and_A_39_Y S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$389
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[15] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$395
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$395 B=instance1.d_address_$mux_S_Y[15] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$397
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[13] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$403
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$403 B=instance1.d_address_$mux_S_Y[13] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$405
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=instance1.d_readdatain[12] B=instance1.load_sign_ext_$and_A_23_Y S=instance1.load_size_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$411
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$411 B=instance1.d_address_$mux_S_Y[12] S=instance1.load_size_$eq_A_Y Y=$auto$rtlil.cc:2224:Mux$413
+.param WIDTH 00000000000000000000000000000001
 .subckt $adffe ARST=addr_latch.resetn CLK=addr_latch.clk D[0]=addr_latch.d[0] D[1]=addr_latch.d[1] EN=addr_latch.en Q[0]=addr_latch.q[0] Q[1]=addr_latch.q[1]
 .param ARST_POLARITY 00000000000000000000000000000000
 .param ARST_VALUE 00
@@ -11,81 +351,6 @@
 .param WIDTH 00000000000000000000000000000010
 .subckt $mux A[0]=instance1.d_readdatain[16] A[1]=instance1.d_readdatain[17] A[2]=instance1.d_readdatain[18] A[3]=instance1.d_readdatain[19] A[4]=instance1.d_readdatain[20] A[5]=instance1.d_readdatain[21] A[6]=instance1.d_readdatain[22] A[7]=instance1.d_readdatain[23] A[8]=instance1.d_readdatain[24] A[9]=instance1.d_readdatain[25] A[10]=instance1.d_readdatain[26] A[11]=instance1.d_readdatain[27] A[12]=instance1.d_readdatain[28] A[13]=instance1.d_readdatain[29] A[14]=instance1.d_readdatain[30] A[15]=instance1.d_readdatain[31] B[0]=instance1.d_readdatain[0] B[1]=instance1.d_readdatain[1] B[2]=instance1.d_readdatain[2] B[3]=instance1.d_readdatain[3] B[4]=instance1.d_readdatain[4] B[5]=instance1.d_readdatain[5] B[6]=instance1.d_readdatain[6] B[7]=instance1.d_readdatain[7] B[8]=instance1.d_readdatain[8] B[9]=instance1.d_readdatain[9] B[10]=instance1.d_readdatain[10] B[11]=instance1.d_readdatain[11] B[12]=instance1.d_readdatain[12] B[13]=instance1.d_readdatain[13] B[14]=instance1.d_readdatain[14] B[15]=instance1.d_readdatain[15] S=instance1.d_address[1] Y[0]=instance1.d_address_$mux_S_Y[0] Y[1]=instance1.d_address_$mux_S_Y[1] Y[2]=instance1.d_address_$mux_S_Y[2] Y[3]=instance1.d_address_$mux_S_Y[3] Y[4]=instance1.d_address_$mux_S_Y[4] Y[5]=instance1.d_address_$mux_S_Y[5] Y[6]=instance1.d_address_$mux_S_Y[6] Y[7]=instance1.d_address_$mux_S_Y[7] Y[8]=instance1.d_address_$mux_S_Y[8] Y[9]=instance1.d_address_$mux_S_Y[9] Y[10]=instance1.d_address_$mux_S_Y[10] Y[11]=instance1.d_address_$mux_S_Y[11] Y[12]=instance1.d_address_$mux_S_Y[12] Y[13]=instance1.d_address_$mux_S_Y[13] Y[14]=instance1.d_address_$mux_S_Y[14] Y[15]=instance1.d_address_$mux_S_Y[15]
 .param WIDTH 00000000000000000000000000010000
-.subckt $pmux A=instance1.d_readdatain[12] B[0]=instance1.d_address_$mux_S_Y[12] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[12]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[13] B[0]=instance1.d_address_$mux_S_Y[13] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[13]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[23] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[23]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[24] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[24]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[25] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[25]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[26] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[26]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[27] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[27]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[28] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[28]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[29] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[29]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[30] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[30]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[31] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[31]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[14] B[0]=instance1.d_address_$mux_S_Y[14] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[14]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[15] B[0]=instance1.d_address_$mux_S_Y[15] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[15]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=instance1.d_readdatain[0] A[1]=instance1.d_readdatain[1] A[2]=instance1.d_readdatain[2] A[3]=instance1.d_readdatain[3] A[4]=instance1.d_readdatain[4] A[5]=instance1.d_readdatain[5] A[6]=instance1.d_readdatain[6] A[7]=instance1.d_readdatain[7] B[0]=instance1.d_address_$mux_S_Y[0] B[1]=instance1.d_address_$mux_S_Y[1] B[2]=instance1.d_address_$mux_S_Y[2] B[3]=instance1.d_address_$mux_S_Y[3] B[4]=instance1.d_address_$mux_S_Y[4] B[5]=instance1.d_address_$mux_S_Y[5] B[6]=instance1.d_address_$mux_S_Y[6] B[7]=instance1.d_address_$mux_S_Y[7] B[8]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[0] B[9]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[1] B[10]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[2] B[11]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[3] B[12]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[4] B[13]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[5] B[14]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[6] B[15]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[7] S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y[0]=instance1.d_loadresult[0] Y[1]=instance1.d_loadresult[1] Y[2]=instance1.d_loadresult[2] Y[3]=instance1.d_loadresult[3] Y[4]=instance1.d_loadresult[4] Y[5]=instance1.d_loadresult[5] Y[6]=instance1.d_loadresult[6] Y[7]=instance1.d_loadresult[7]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000001000
-.subckt $pmux A=instance1.d_readdatain[8] B[0]=instance1.d_address_$mux_S_Y[8] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[8]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[9] B[0]=instance1.d_address_$mux_S_Y[9] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[9]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[10] B[0]=instance1.d_address_$mux_S_Y[10] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[10]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[11] B[0]=instance1.d_address_$mux_S_Y[11] B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[11]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[16] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[16]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[17] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[17]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[18] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[18]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[19] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[19]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[20] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[20]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[21] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[21]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[22] B[0]=instance1.load_sign_ext_$and_A_39_Y B[1]=instance1.load_sign_ext_$and_A_23_Y S[0]=instance1.load_size_$eq_A_Y S[1]=instance1.load_size_$eq_A_1_Y Y=instance1.d_loadresult[22]
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $and A=instance1.load_sign_ext B=instance1.load_sign_ext_$and_A_B Y=instance1.load_sign_ext_$and_A_23_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
@@ -104,16 +369,10 @@
 .param WIDTH 00000000000000000000000000000001
 .subckt $mux A=$undef B=instance1.load_sign_ext_$and_A_B_$mux_Y_B S=instance1.load_size_$eq_A_1_Y Y=instance1.load_sign_ext_$and_A_B
 .param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=instance1.d_readdatain[7] B[0]=instance1.d_readdatain[15] B[1]=instance1.d_readdatain[23] B[2]=instance1.d_readdatain[31] S[0]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 S[1]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_1 S[2]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S Y=instance1.load_sign_ext_$and_A_B_$mux_Y_B
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000000001
 .subckt $logic_not A[0]=instance1.d_address[0] A[1]=instance1.d_address[1] Y=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=instance1.d_readdatain[0] A[1]=instance1.d_readdatain[1] A[2]=instance1.d_readdatain[2] A[3]=instance1.d_readdatain[3] A[4]=instance1.d_readdatain[4] A[5]=instance1.d_readdatain[5] A[6]=instance1.d_readdatain[6] A[7]=instance1.d_readdatain[7] B[0]=instance1.d_readdatain[8] B[1]=instance1.d_readdatain[9] B[2]=instance1.d_readdatain[10] B[3]=instance1.d_readdatain[11] B[4]=instance1.d_readdatain[12] B[5]=instance1.d_readdatain[13] B[6]=instance1.d_readdatain[14] B[7]=instance1.d_readdatain[15] B[8]=instance1.d_readdatain[16] B[9]=instance1.d_readdatain[17] B[10]=instance1.d_readdatain[18] B[11]=instance1.d_readdatain[19] B[12]=instance1.d_readdatain[20] B[13]=instance1.d_readdatain[21] B[14]=instance1.d_readdatain[22] B[15]=instance1.d_readdatain[23] B[16]=instance1.d_readdatain[24] B[17]=instance1.d_readdatain[25] B[18]=instance1.d_readdatain[26] B[19]=instance1.d_readdatain[27] B[20]=instance1.d_readdatain[28] B[21]=instance1.d_readdatain[29] B[22]=instance1.d_readdatain[30] B[23]=instance1.d_readdatain[31] S[0]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_2 S[1]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_1 S[2]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S Y[0]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[0] Y[1]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[1] Y[2]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[2] Y[3]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[3] Y[4]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[4] Y[5]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[5] Y[6]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[6] Y[7]=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[7]
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000001000
 .subckt $eq A[0]=instance1.d_address[0] A[1]=instance1.d_address[1] B[0]=$true B[1]=$false Y=instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
@@ -369,5 +628,87 @@
 .names addr_latch.q[1] addr_latch_q
 1 1
 .names $true addr_latch.resetn
+1 1
+.names $auto$rtlil.cc:2224:Mux$197 instance1.d_loadresult[10]
+1 1
+.names $auto$rtlil.cc:2224:Mux$205 instance1.d_loadresult[9]
+1 1
+.names $auto$rtlil.cc:2224:Mux$213 instance1.d_loadresult[8]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[0] instance1.d_loadresult[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[1] instance1.d_loadresult[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[2] instance1.d_loadresult[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[3] instance1.d_loadresult[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[4] instance1.d_loadresult[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[5] instance1.d_loadresult[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[6] instance1.d_loadresult[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$221[7] instance1.d_loadresult[7]
+1 1
+.names $auto$rtlil.cc:2224:Mux$229 instance1.d_loadresult[14]
+1 1
+.names $auto$rtlil.cc:2224:Mux$241 instance1.load_sign_ext_$and_A_B_$mux_Y_B
+1 1
+.names $auto$rtlil.cc:2224:Mux$249 instance1.d_loadresult[31]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[0] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[1] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[2] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[3] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[4] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[5] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[6] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$261[7] instance1.load_sign_ext_$and_A_B_$mux_Y_B_$pmux_Y_S_$pmux_S_Y[7]
+1 1
+.names $auto$rtlil.cc:2224:Mux$269 instance1.d_loadresult[30]
+1 1
+.names $auto$rtlil.cc:2224:Mux$277 instance1.d_loadresult[11]
+1 1
+.names $auto$rtlil.cc:2224:Mux$285 instance1.d_loadresult[29]
+1 1
+.names $auto$rtlil.cc:2224:Mux$293 instance1.d_loadresult[28]
+1 1
+.names $auto$rtlil.cc:2224:Mux$301 instance1.d_loadresult[27]
+1 1
+.names $auto$rtlil.cc:2224:Mux$309 instance1.d_loadresult[26]
+1 1
+.names $auto$rtlil.cc:2224:Mux$317 instance1.d_loadresult[25]
+1 1
+.names $auto$rtlil.cc:2224:Mux$325 instance1.d_loadresult[24]
+1 1
+.names $auto$rtlil.cc:2224:Mux$333 instance1.d_loadresult[23]
+1 1
+.names $auto$rtlil.cc:2224:Mux$341 instance1.d_loadresult[22]
+1 1
+.names $auto$rtlil.cc:2224:Mux$349 instance1.d_loadresult[21]
+1 1
+.names $auto$rtlil.cc:2224:Mux$357 instance1.d_loadresult[20]
+1 1
+.names $auto$rtlil.cc:2224:Mux$365 instance1.d_loadresult[19]
+1 1
+.names $auto$rtlil.cc:2224:Mux$373 instance1.d_loadresult[18]
+1 1
+.names $auto$rtlil.cc:2224:Mux$381 instance1.d_loadresult[17]
+1 1
+.names $auto$rtlil.cc:2224:Mux$389 instance1.d_loadresult[16]
+1 1
+.names $auto$rtlil.cc:2224:Mux$397 instance1.d_loadresult[15]
+1 1
+.names $auto$rtlil.cc:2224:Mux$405 instance1.d_loadresult[13]
+1 1
+.names $auto$rtlil.cc:2224:Mux$413 instance1.d_loadresult[12]
 1 1
 .end

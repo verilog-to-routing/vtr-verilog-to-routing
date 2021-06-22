@@ -3,8 +3,21 @@
 .model eight_bit_for_pass_through
 .inputs a[0] a[1] a[2] a[3] a[4] a[5] a[6] a[7] clk rst
 .outputs c[0] c[1] c[2] c[3] c[4] c[5] c[6] c[7]
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_0.a S[0]=pass_wire_0.rst S[1]=pass_wire_0.rst_$not_A_Y Y=pass_wire_0.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
+.subckt $mux A=pass_wire_0.a B=$false S=pass_wire_0.rst Y=$auto$rtlil.cc:2224:Mux$13
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=pass_wire_1.a B=$false S=pass_wire_1.rst Y=$auto$rtlil.cc:2224:Mux$15
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=pass_wire_2.a B=$false S=pass_wire_2.rst Y=$auto$rtlil.cc:2224:Mux$17
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=pass_wire_3.a B=$false S=pass_wire_3.rst Y=$auto$rtlil.cc:2224:Mux$19
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=pass_wire_4.a B=$false S=pass_wire_4.rst Y=$auto$rtlil.cc:2224:Mux$21
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=pass_wire_5.a B=$false S=pass_wire_5.rst Y=$auto$rtlil.cc:2224:Mux$23
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=pass_wire_6.a B=$false S=pass_wire_6.rst Y=$auto$rtlil.cc:2224:Mux$25
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=pass_wire_7.a B=$false S=pass_wire_7.rst Y=$auto$rtlil.cc:2224:Mux$27
 .param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_0.clk D=pass_wire_0.c_$dff_Q_D Q=pass_wire_0.c
 .param CLK_POLARITY 1
@@ -13,9 +26,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_1.a S[0]=pass_wire_1.rst S[1]=pass_wire_1.rst_$not_A_Y Y=pass_wire_1.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_1.clk D=pass_wire_1.c_$dff_Q_D Q=pass_wire_1.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -23,9 +33,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_2.a S[0]=pass_wire_2.rst S[1]=pass_wire_2.rst_$not_A_Y Y=pass_wire_2.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_2.clk D=pass_wire_2.c_$dff_Q_D Q=pass_wire_2.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -33,9 +40,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_3.a S[0]=pass_wire_3.rst S[1]=pass_wire_3.rst_$not_A_Y Y=pass_wire_3.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_3.clk D=pass_wire_3.c_$dff_Q_D Q=pass_wire_3.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -43,9 +47,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_4.a S[0]=pass_wire_4.rst S[1]=pass_wire_4.rst_$not_A_Y Y=pass_wire_4.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_4.clk D=pass_wire_4.c_$dff_Q_D Q=pass_wire_4.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -53,9 +54,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_5.a S[0]=pass_wire_5.rst S[1]=pass_wire_5.rst_$not_A_Y Y=pass_wire_5.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_5.clk D=pass_wire_5.c_$dff_Q_D Q=pass_wire_5.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -63,9 +61,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_6.a S[0]=pass_wire_6.rst S[1]=pass_wire_6.rst_$not_A_Y Y=pass_wire_6.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_6.clk D=pass_wire_6.c_$dff_Q_D Q=pass_wire_6.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -73,9 +68,6 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=pass_wire_7.a S[0]=pass_wire_7.rst S[1]=pass_wire_7.rst_$not_A_Y Y=pass_wire_7.c_$dff_Q_D
-.param S_WIDTH 00000000000000000000000000000010
-.param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=pass_wire_7.clk D=pass_wire_7.c_$dff_Q_D Q=pass_wire_7.c
 .param CLK_POLARITY 1
 .param WIDTH 00000000000000000000000000000001
@@ -146,5 +138,21 @@
 .names clk pass_wire_0.clk
 1 1
 .names rst pass_wire_0.rst
+1 1
+.names $auto$rtlil.cc:2224:Mux$13 pass_wire_0.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$15 pass_wire_1.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$17 pass_wire_2.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$19 pass_wire_3.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$21 pass_wire_4.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$23 pass_wire_5.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$25 pass_wire_6.c_$dff_Q_D
+1 1
+.names $auto$rtlil.cc:2224:Mux$27 pass_wire_7.c_$dff_Q_D
 1 1
 .end

@@ -3,6 +3,42 @@
 .model iir
 .inputs clk reset start din[0] din[1] din[2] din[3] din[4] din[5] din[6] din[7] params[0] params[1] params[2] params[3] params[4] params[5] params[6] params[7] params[8] params[9] params[10] params[11] params[12] params[13] params[14] params[15] iir_start
 .outputs dout[0] dout[1] dout[2] dout[3] dout[4] dout[5] dout[6] dout[7] ready iir_done
+.subckt $reduce_or A[0]=temp_yk_$dffe_Q_EN A[1]=temp_yk1_$dffe_Q_EN A[2]=obf_next_state_$dffe_Q_EN_$reduce_bool_Y_A_1 Y=$auto$rtlil.cc:2131:ReduceOr$281
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=temp_b1_$dffe_Q_EN A[1]=temp_b2_$dffe_Q_EN A[2]=temp_uk_$dffe_Q_EN Y=$auto$rtlil.cc:2131:ReduceOr$293
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=obf_next_state_$dffe_Q_EN_$reduce_bool_Y_A A[1]=temp_ysum_$dffe_Q_EN A[2]=temp_utmp_$dffe_Q_EN A[3]=$auto$rtlil.cc:2131:ReduceOr$281 Y=$auto$rtlil.cc:2131:ReduceOr$297
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000100
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=$true A[1]=$true A[2]=$false A[3]=$true B[0]=wait_counter_$eq_A_Y_$mux_S_1_Y[0] B[1]=wait_counter_$eq_A_Y_$mux_S_1_Y[1] B[2]=wait_counter_$eq_A_Y_$mux_S_1_Y[2] B[3]=wait_counter_$eq_A_Y_$mux_S_1_Y[3] S=temp_yk1_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$273[0] Y[1]=$auto$rtlil.cc:2224:Mux$273[1] Y[2]=$auto$rtlil.cc:2224:Mux$273[2] Y[3]=$auto$rtlil.cc:2224:Mux$273[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$273[0] A[1]=$auto$rtlil.cc:2224:Mux$273[1] A[2]=$auto$rtlil.cc:2224:Mux$273[2] A[3]=$auto$rtlil.cc:2224:Mux$273[3] B[0]=count0_$mux_S_Y[0] B[1]=count0_$mux_S_Y[1] B[2]=count0_$mux_S_Y[2] B[3]=count0_$mux_S_Y[3] S=obf_next_state_$dffe_Q_EN_$reduce_bool_Y_A_1 Y[0]=$auto$rtlil.cc:2224:Mux$275[0] Y[1]=$auto$rtlil.cc:2224:Mux$275[1] Y[2]=$auto$rtlil.cc:2224:Mux$275[2] Y[3]=$auto$rtlil.cc:2224:Mux$275[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$false A[1]=$false A[2]=$false A[3]=$true B[0]=$true B[1]=$false B[2]=$false B[3]=$true S=temp_ysum_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$277[0] Y[1]=$auto$rtlil.cc:2224:Mux$277[1] Y[2]=$auto$rtlil.cc:2224:Mux$277[2] Y[3]=$auto$rtlil.cc:2224:Mux$277[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$277[0] A[1]=$auto$rtlil.cc:2224:Mux$277[1] A[2]=$auto$rtlil.cc:2224:Mux$277[2] A[3]=$auto$rtlil.cc:2224:Mux$277[3] B[0]=$false B[1]=$true B[2]=$false B[3]=$true S=temp_utmp_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$279[0] Y[1]=$auto$rtlil.cc:2224:Mux$279[1] Y[2]=$auto$rtlil.cc:2224:Mux$279[2] Y[3]=$auto$rtlil.cc:2224:Mux$279[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$279[0] A[1]=$auto$rtlil.cc:2224:Mux$279[1] A[2]=$auto$rtlil.cc:2224:Mux$279[2] A[3]=$auto$rtlil.cc:2224:Mux$279[3] B[0]=$auto$rtlil.cc:2224:Mux$275[0] B[1]=$auto$rtlil.cc:2224:Mux$275[1] B[2]=$auto$rtlil.cc:2224:Mux$275[2] B[3]=$auto$rtlil.cc:2224:Mux$275[3] S=$auto$rtlil.cc:2131:ReduceOr$281 Y[0]=$auto$rtlil.cc:2224:Mux$283[0] Y[1]=$auto$rtlil.cc:2224:Mux$283[1] Y[2]=$auto$rtlil.cc:2224:Mux$283[2] Y[3]=$auto$rtlil.cc:2224:Mux$283[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$true A[1]=$false A[2]=$true A[3]=$false B[0]=$false B[1]=$true B[2]=$true B[3]=$false S=temp_b2_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$285[0] Y[1]=$auto$rtlil.cc:2224:Mux$285[1] Y[2]=$auto$rtlil.cc:2224:Mux$285[2] Y[3]=$auto$rtlil.cc:2224:Mux$285[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$285[0] A[1]=$auto$rtlil.cc:2224:Mux$285[1] A[2]=$auto$rtlil.cc:2224:Mux$285[2] A[3]=$auto$rtlil.cc:2224:Mux$285[3] B[0]=start_$mux_S_Y[0] B[1]=start_$mux_S_Y[1] B[2]=start_$mux_S_Y[2] B[3]=start_$mux_S_Y[3] S=temp_uk_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$287[0] Y[1]=$auto$rtlil.cc:2224:Mux$287[1] Y[2]=$auto$rtlil.cc:2224:Mux$287[2] Y[3]=$auto$rtlil.cc:2224:Mux$287[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=iir_start_$mux_S_Y[0] A[1]=iir_start_$mux_S_Y[1] A[2]=iir_start_$mux_S_Y[2] A[3]=iir_start_$mux_S_Y[3] B[0]=$true B[1]=$true B[2]=$false B[3]=$false S=temp_a2_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$289[0] Y[1]=$auto$rtlil.cc:2224:Mux$289[1] Y[2]=$auto$rtlil.cc:2224:Mux$289[2] Y[3]=$auto$rtlil.cc:2224:Mux$289[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$289[0] A[1]=$auto$rtlil.cc:2224:Mux$289[1] A[2]=$auto$rtlil.cc:2224:Mux$289[2] A[3]=$auto$rtlil.cc:2224:Mux$289[3] B[0]=$false B[1]=$false B[2]=$true B[3]=$false S=temp_b0_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$291[0] Y[1]=$auto$rtlil.cc:2224:Mux$291[1] Y[2]=$auto$rtlil.cc:2224:Mux$291[2] Y[3]=$auto$rtlil.cc:2224:Mux$291[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$291[0] A[1]=$auto$rtlil.cc:2224:Mux$291[1] A[2]=$auto$rtlil.cc:2224:Mux$291[2] A[3]=$auto$rtlil.cc:2224:Mux$291[3] B[0]=$auto$rtlil.cc:2224:Mux$287[0] B[1]=$auto$rtlil.cc:2224:Mux$287[1] B[2]=$auto$rtlil.cc:2224:Mux$287[2] B[3]=$auto$rtlil.cc:2224:Mux$287[3] S=$auto$rtlil.cc:2131:ReduceOr$293 Y[0]=$auto$rtlil.cc:2224:Mux$295[0] Y[1]=$auto$rtlil.cc:2224:Mux$295[1] Y[2]=$auto$rtlil.cc:2224:Mux$295[2] Y[3]=$auto$rtlil.cc:2224:Mux$295[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$295[0] A[1]=$auto$rtlil.cc:2224:Mux$295[1] A[2]=$auto$rtlil.cc:2224:Mux$295[2] A[3]=$auto$rtlil.cc:2224:Mux$295[3] B[0]=$auto$rtlil.cc:2224:Mux$283[0] B[1]=$auto$rtlil.cc:2224:Mux$283[1] B[2]=$auto$rtlil.cc:2224:Mux$283[2] B[3]=$auto$rtlil.cc:2224:Mux$283[3] S=$auto$rtlil.cc:2131:ReduceOr$297 Y[0]=$auto$rtlil.cc:2224:Mux$299[0] Y[1]=$auto$rtlil.cc:2224:Mux$299[1] Y[2]=$auto$rtlil.cc:2224:Mux$299[2] Y[3]=$auto$rtlil.cc:2224:Mux$299[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$false A[1]=$false A[2]=$true A[3]=$false B[0]=wait_counter_$sub_A_Y[0] B[1]=wait_counter_$sub_A_Y[1] B[2]=wait_counter_$sub_A_Y[2] B[3]=wait_counter_$sub_A_Y[3] S=temp_yk1_$dffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$301[0] Y[1]=$auto$rtlil.cc:2224:Mux$301[1] Y[2]=$auto$rtlil.cc:2224:Mux$301[2] Y[3]=$auto$rtlil.cc:2224:Mux$301[3]
+.param WIDTH 00000000000000000000000000000100
 .subckt $mul A[0]=reset_$mux_S_3_Y[0] A[1]=reset_$mux_S_3_Y[1] A[2]=reset_$mux_S_3_Y[2] A[3]=reset_$mux_S_3_Y[3] A[4]=reset_$mux_S_3_Y[4] A[5]=reset_$mux_S_3_Y[5] A[6]=reset_$mux_S_3_Y[6] A[7]=reset_$mux_S_3_Y[7] A[8]=reset_$mux_S_3_Y[8] A[9]=reset_$mux_S_3_Y[9] A[10]=reset_$mux_S_3_Y[10] A[11]=reset_$mux_S_3_Y[11] A[12]=reset_$mux_S_3_Y[12] A[13]=reset_$mux_S_3_Y[13] A[14]=reset_$mux_S_3_Y[14] A[15]=reset_$mux_S_3_Y[15] B[0]=reset_$mux_S_8_Y[0] B[1]=reset_$mux_S_8_Y[1] B[2]=reset_$mux_S_8_Y[2] B[3]=reset_$mux_S_8_Y[3] B[4]=reset_$mux_S_8_Y[4] B[5]=reset_$mux_S_8_Y[5] B[6]=reset_$mux_S_8_Y[6] B[7]=reset_$mux_S_8_Y[7] B[8]=reset_$mux_S_8_Y[8] B[9]=reset_$mux_S_8_Y[9] B[10]=reset_$mux_S_8_Y[10] B[11]=reset_$mux_S_8_Y[11] B[12]=reset_$mux_S_8_Y[12] B[13]=reset_$mux_S_8_Y[13] B[14]=reset_$mux_S_8_Y[14] B[15]=reset_$mux_S_8_Y[15] Y[0]=a1_$mul_B_Y[0] Y[1]=a1_$mul_B_Y[1] Y[2]=a1_$mul_B_Y[2] Y[3]=a1_$mul_B_Y[3] Y[4]=a1_$mul_B_Y[4] Y[5]=a1_$mul_B_Y[5] Y[6]=a1_$mul_B_Y[6] Y[7]=a1_$mul_B_Y[7] Y[8]=a1_$mul_B_Y[8] Y[9]=a1_$mul_B_Y[9] Y[10]=a1_$mul_B_Y[10] Y[11]=a1_$mul_B_Y[11] Y[12]=a1_$mul_B_Y[12] Y[13]=a1_$mul_B_Y[13] Y[14]=a1_$mul_B_Y[14] Y[15]=a1_$mul_B_Y[15] Y[16]=a1_$mul_B_Y[16] Y[17]=a1_$mul_B_Y[17] Y[18]=a1_$mul_B_Y[18] Y[19]=a1_$mul_B_Y[19] Y[20]=a1_$mul_B_Y[20] Y[21]=a1_$mul_B_Y[21] Y[22]=a1_$mul_B_Y[22] Y[23]=a1_$mul_B_Y[23] Y[24]=a1_$mul_B_Y[24] Y[25]=a1_$mul_B_Y[25] Y[26]=a1_$mul_B_Y[26] Y[27]=a1_$mul_B_Y[27] Y[28]=a1_$mul_B_Y[28] Y[29]=a1_$mul_B_Y[29] Y[30]=a1_$mul_B_Y[30] Y[31]=a1_$mul_B_Y[31]
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000010000
@@ -186,9 +222,6 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000100
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef B[0]=count0_$mux_S_Y[0] B[1]=count0_$mux_S_Y[1] B[2]=count0_$mux_S_Y[2] B[3]=count0_$mux_S_Y[3] B[4]=wait_counter_$eq_A_Y_$mux_S_1_Y[0] B[5]=wait_counter_$eq_A_Y_$mux_S_1_Y[1] B[6]=wait_counter_$eq_A_Y_$mux_S_1_Y[2] B[7]=wait_counter_$eq_A_Y_$mux_S_1_Y[3] B[8]=$true B[9]=$true B[10]=$false B[11]=$true B[12]=$false B[13]=$true B[14]=$false B[15]=$true B[16]=$true B[17]=$false B[18]=$false B[19]=$true B[20]=$false B[21]=$false B[22]=$false B[23]=$true B[24]=start_$mux_S_Y[0] B[25]=start_$mux_S_Y[1] B[26]=start_$mux_S_Y[2] B[27]=start_$mux_S_Y[3] B[28]=$false B[29]=$true B[30]=$true B[31]=$false B[32]=$true B[33]=$false B[34]=$true B[35]=$false B[36]=$false B[37]=$false B[38]=$true B[39]=$false B[40]=$true B[41]=$true B[42]=$false B[43]=$false B[44]=iir_start_$mux_S_Y[0] B[45]=iir_start_$mux_S_Y[1] B[46]=iir_start_$mux_S_Y[2] B[47]=iir_start_$mux_S_Y[3] S[0]=obf_next_state_$dffe_Q_EN_$reduce_bool_Y_A_1 S[1]=temp_yk1_$dffe_Q_EN S[2]=temp_yk_$dffe_Q_EN S[3]=temp_utmp_$dffe_Q_EN S[4]=temp_ysum_$dffe_Q_EN S[5]=obf_next_state_$dffe_Q_EN_$reduce_bool_Y_A S[6]=temp_uk_$dffe_Q_EN S[7]=temp_b2_$dffe_Q_EN S[8]=temp_b1_$dffe_Q_EN S[9]=temp_b0_$dffe_Q_EN S[10]=temp_a2_$dffe_Q_EN S[11]=temp_a1_$dffe_Q_EN Y[0]=temp_uk_$dffe_Q_EN_$pmux_S_Y[0] Y[1]=temp_uk_$dffe_Q_EN_$pmux_S_Y[1] Y[2]=temp_uk_$dffe_Q_EN_$pmux_S_Y[2] Y[3]=temp_uk_$dffe_Q_EN_$pmux_S_Y[3]
-.param S_WIDTH 00000000000000000000000000001100
-.param WIDTH 00000000000000000000000000000100
 .subckt $dffe CLK=clk D[0]=b2t_$add_B_Y[0] D[1]=b2t_$add_B_Y[1] D[2]=b2t_$add_B_Y[2] D[3]=b2t_$add_B_Y[3] D[4]=b2t_$add_B_Y[4] D[5]=b2t_$add_B_Y[5] D[6]=b2t_$add_B_Y[6] D[7]=b2t_$add_B_Y[7] D[8]=b2t_$add_B_Y[8] D[9]=b2t_$add_B_Y[9] D[10]=b2t_$add_B_Y[10] D[11]=b2t_$add_B_Y[11] D[12]=b2t_$add_B_Y[12] D[13]=b2t_$add_B_Y[13] D[14]=b2t_$add_B_Y[14] D[15]=b2t_$add_B_Y[15] D[16]=b2t_$add_B_Y[16] D[17]=b2t_$add_B_Y[17] D[18]=b2t_$add_B_Y[18] D[19]=b2t_$add_B_Y[19] D[20]=b2t_$add_B_Y[20] D[21]=b2t_$add_B_Y[21] D[22]=b2t_$add_B_Y[22] EN=temp_utmp_$dffe_Q_EN Q[0]=temp_utmp[0] Q[1]=temp_utmp[1] Q[2]=temp_utmp[2] Q[3]=temp_utmp[3] Q[4]=temp_utmp[4] Q[5]=temp_utmp[5] Q[6]=temp_utmp[6] Q[7]=temp_utmp[7] Q[8]=temp_utmp[8] Q[9]=temp_utmp[9] Q[10]=temp_utmp[10] Q[11]=temp_utmp[11] Q[12]=temp_utmp[12] Q[13]=temp_utmp[13] Q[14]=temp_utmp[14] Q[15]=temp_utmp[15] Q[16]=temp_utmp[16] Q[17]=temp_utmp[17] Q[18]=temp_utmp[18] Q[19]=temp_utmp[19] Q[20]=temp_utmp[20] Q[21]=temp_utmp[21] Q[22]=temp_utmp[22]
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
@@ -202,9 +235,6 @@
 .subckt $dffe CLK=clk D[0]=temp_wait_counter_$dffe_Q_D[0] D[1]=temp_wait_counter_$dffe_Q_D[1] D[2]=temp_wait_counter_$dffe_Q_D[2] D[3]=temp_wait_counter_$dffe_Q_D[3] EN=temp_wait_counter_$dffe_Q_EN Q[0]=temp_wait_counter[0] Q[1]=temp_wait_counter[1] Q[2]=temp_wait_counter[2] Q[3]=temp_wait_counter[3]
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
-.param WIDTH 00000000000000000000000000000100
-.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef B[0]=wait_counter_$sub_A_Y[0] B[1]=wait_counter_$sub_A_Y[1] B[2]=wait_counter_$sub_A_Y[2] B[3]=wait_counter_$sub_A_Y[3] B[4]=$false B[5]=$false B[6]=$true B[7]=$false S[0]=temp_yk1_$dffe_Q_EN S[1]=temp_yk_$dffe_Q_EN Y[0]=temp_wait_counter_$dffe_Q_D[0] Y[1]=temp_wait_counter_$dffe_Q_D[1] Y[2]=temp_wait_counter_$dffe_Q_D[2] Y[3]=temp_wait_counter_$dffe_Q_D[3]
-.param S_WIDTH 00000000000000000000000000000010
 .param WIDTH 00000000000000000000000000000100
 .subckt $reduce_bool A[0]=temp_yk1_$dffe_Q_EN A[1]=temp_yk_$dffe_Q_EN Y=temp_wait_counter_$dffe_Q_EN
 .param A_SIGNED 00000000000000000000000000000000
@@ -2315,5 +2345,21 @@
 .names reset_$mux_S_6_Y[27] ysum[27]
 1 1
 .names reset_$mux_S_6_Y[28] ysum[28]
+1 1
+.names $auto$rtlil.cc:2224:Mux$299[0] temp_uk_$dffe_Q_EN_$pmux_S_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$299[1] temp_uk_$dffe_Q_EN_$pmux_S_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$299[2] temp_uk_$dffe_Q_EN_$pmux_S_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$299[3] temp_uk_$dffe_Q_EN_$pmux_S_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$301[0] temp_wait_counter_$dffe_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$301[1] temp_wait_counter_$dffe_Q_D[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$301[2] temp_wait_counter_$dffe_Q_D[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$301[3] temp_wait_counter_$dffe_Q_D[3]
 1 1
 .end

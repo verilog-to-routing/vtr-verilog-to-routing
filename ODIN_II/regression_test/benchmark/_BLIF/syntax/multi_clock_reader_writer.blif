@@ -3,6 +3,96 @@
 .model multiclock_reader_writer
 .inputs clock_reader_head clock_writer_head reset in[0] in[1] in[2] in[3]
 .outputs out[0] out[1] out[2] out[3]
+.subckt $or A=writer_head_$sdff_Q_D_$pmux_Y_S_6 B=writer_head_$sdff_Q_D_$pmux_Y_S_7 Y=$auto$rtlil.cc:2158:Or$138
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=writer_head_$sdff_Q_D_$pmux_Y_S_2 B=writer_head_$sdff_Q_D_$pmux_Y_S_3 Y=$auto$rtlil.cc:2158:Or$146
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=register_$sdffe_Q_7_EN B=register_$sdffe_Q_EN Y=$auto$rtlil.cc:2158:Or$158
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=register_$sdffe_Q_3_EN B=register_$sdffe_Q_4_EN Y=$auto$rtlil.cc:2158:Or$166
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=writer_head_$sdff_Q_D_$pmux_Y_S_6 B=writer_head_$sdff_Q_D_$pmux_Y_S_7 Y=$auto$rtlil.cc:2158:Or$178
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=writer_head_$sdff_Q_D_$pmux_Y_S_2 B=writer_head_$sdff_Q_D_$pmux_Y_S_3 Y=$auto$rtlil.cc:2158:Or$186
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=writer_head_$sdff_Q_D_$pmux_Y_S_4 A[1]=writer_head_$sdff_Q_D_$pmux_Y_S_5 A[2]=$auto$rtlil.cc:2158:Or$138 Y=$auto$rtlil.cc:2131:ReduceOr$150
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=register_$sdffe_Q_5_EN A[1]=register_$sdffe_Q_6_EN A[2]=$auto$rtlil.cc:2158:Or$158 Y=$auto$rtlil.cc:2131:ReduceOr$170
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=writer_head_$sdff_Q_D_$pmux_Y_S_4 A[1]=writer_head_$sdff_Q_D_$pmux_Y_S_5 A[2]=$auto$rtlil.cc:2158:Or$178 Y=$auto$rtlil.cc:2131:ReduceOr$190
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=register[18] A[1]=register[19] A[2]=register[20] A[3]=$false B[0]=register[21] B[1]=register[22] B[2]=register[23] B[3]=$false S=writer_head_$sdff_Q_D_$pmux_Y_S_7 Y[0]=$auto$rtlil.cc:2224:Mux$134[0] Y[1]=$auto$rtlil.cc:2224:Mux$134[1] Y[2]=$auto$rtlil.cc:2224:Mux$134[2] Y[3]=$auto$rtlil.cc:2224:Mux$134[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=register[12] A[1]=register[13] A[2]=register[14] A[3]=$false B[0]=register[15] B[1]=register[16] B[2]=register[17] B[3]=$false S=writer_head_$sdff_Q_D_$pmux_Y_S_5 Y[0]=$auto$rtlil.cc:2224:Mux$136[0] Y[1]=$auto$rtlil.cc:2224:Mux$136[1] Y[2]=$auto$rtlil.cc:2224:Mux$136[2] Y[3]=$auto$rtlil.cc:2224:Mux$136[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$136[0] A[1]=$auto$rtlil.cc:2224:Mux$136[1] A[2]=$auto$rtlil.cc:2224:Mux$136[2] A[3]=$auto$rtlil.cc:2224:Mux$136[3] B[0]=$auto$rtlil.cc:2224:Mux$134[0] B[1]=$auto$rtlil.cc:2224:Mux$134[1] B[2]=$auto$rtlil.cc:2224:Mux$134[2] B[3]=$auto$rtlil.cc:2224:Mux$134[3] S=$auto$rtlil.cc:2158:Or$138 Y[0]=$auto$rtlil.cc:2224:Mux$140[0] Y[1]=$auto$rtlil.cc:2224:Mux$140[1] Y[2]=$auto$rtlil.cc:2224:Mux$140[2] Y[3]=$auto$rtlil.cc:2224:Mux$140[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=register[6] A[1]=register[7] A[2]=register[8] A[3]=$false B[0]=register[9] B[1]=register[10] B[2]=register[11] B[3]=$false S=writer_head_$sdff_Q_D_$pmux_Y_S_3 Y[0]=$auto$rtlil.cc:2224:Mux$142[0] Y[1]=$auto$rtlil.cc:2224:Mux$142[1] Y[2]=$auto$rtlil.cc:2224:Mux$142[2] Y[3]=$auto$rtlil.cc:2224:Mux$142[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=register[0] A[1]=register[1] A[2]=register[2] A[3]=$false B[0]=register[3] B[1]=register[4] B[2]=register[5] B[3]=$false S=writer_head_$sdff_Q_D_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$144[0] Y[1]=$auto$rtlil.cc:2224:Mux$144[1] Y[2]=$auto$rtlil.cc:2224:Mux$144[2] Y[3]=$auto$rtlil.cc:2224:Mux$144[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$144[0] A[1]=$auto$rtlil.cc:2224:Mux$144[1] A[2]=$auto$rtlil.cc:2224:Mux$144[2] A[3]=$auto$rtlil.cc:2224:Mux$144[3] B[0]=$auto$rtlil.cc:2224:Mux$142[0] B[1]=$auto$rtlil.cc:2224:Mux$142[1] B[2]=$auto$rtlil.cc:2224:Mux$142[2] B[3]=$auto$rtlil.cc:2224:Mux$142[3] S=$auto$rtlil.cc:2158:Or$146 Y[0]=$auto$rtlil.cc:2224:Mux$148[0] Y[1]=$auto$rtlil.cc:2224:Mux$148[1] Y[2]=$auto$rtlil.cc:2224:Mux$148[2] Y[3]=$auto$rtlil.cc:2224:Mux$148[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$148[0] A[1]=$auto$rtlil.cc:2224:Mux$148[1] A[2]=$auto$rtlil.cc:2224:Mux$148[2] A[3]=$auto$rtlil.cc:2224:Mux$148[3] B[0]=$auto$rtlil.cc:2224:Mux$140[0] B[1]=$auto$rtlil.cc:2224:Mux$140[1] B[2]=$auto$rtlil.cc:2224:Mux$140[2] B[3]=$auto$rtlil.cc:2224:Mux$140[3] S=$auto$rtlil.cc:2131:ReduceOr$150 Y[0]=$auto$rtlil.cc:2224:Mux$152[0] Y[1]=$auto$rtlil.cc:2224:Mux$152[1] Y[2]=$auto$rtlil.cc:2224:Mux$152[2] Y[3]=$auto$rtlil.cc:2224:Mux$152[3]
+.param WIDTH 00000000000000000000000000000100
+.subckt $mux A[0]=$true A[1]=$true A[2]=$true B[0]=$false B[1]=$false B[2]=$false S=register_$sdffe_Q_EN Y[0]=$auto$rtlil.cc:2224:Mux$154[0] Y[1]=$auto$rtlil.cc:2224:Mux$154[1] Y[2]=$auto$rtlil.cc:2224:Mux$154[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$true A[1]=$false A[2]=$true B[0]=$false B[1]=$true B[2]=$true S=register_$sdffe_Q_6_EN Y[0]=$auto$rtlil.cc:2224:Mux$156[0] Y[1]=$auto$rtlil.cc:2224:Mux$156[1] Y[2]=$auto$rtlil.cc:2224:Mux$156[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$156[0] A[1]=$auto$rtlil.cc:2224:Mux$156[1] A[2]=$auto$rtlil.cc:2224:Mux$156[2] B[0]=$auto$rtlil.cc:2224:Mux$154[0] B[1]=$auto$rtlil.cc:2224:Mux$154[1] B[2]=$auto$rtlil.cc:2224:Mux$154[2] S=$auto$rtlil.cc:2158:Or$158 Y[0]=$auto$rtlil.cc:2224:Mux$160[0] Y[1]=$auto$rtlil.cc:2224:Mux$160[1] Y[2]=$auto$rtlil.cc:2224:Mux$160[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$true A[1]=$true A[2]=$false B[0]=$false B[1]=$false B[2]=$true S=register_$sdffe_Q_4_EN Y[0]=$auto$rtlil.cc:2224:Mux$162[0] Y[1]=$auto$rtlil.cc:2224:Mux$162[1] Y[2]=$auto$rtlil.cc:2224:Mux$162[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false B[0]=$false B[1]=$true B[2]=$false S=register_$sdffe_Q_2_EN Y[0]=$auto$rtlil.cc:2224:Mux$164[0] Y[1]=$auto$rtlil.cc:2224:Mux$164[1] Y[2]=$auto$rtlil.cc:2224:Mux$164[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$164[0] A[1]=$auto$rtlil.cc:2224:Mux$164[1] A[2]=$auto$rtlil.cc:2224:Mux$164[2] B[0]=$auto$rtlil.cc:2224:Mux$162[0] B[1]=$auto$rtlil.cc:2224:Mux$162[1] B[2]=$auto$rtlil.cc:2224:Mux$162[2] S=$auto$rtlil.cc:2158:Or$166 Y[0]=$auto$rtlil.cc:2224:Mux$168[0] Y[1]=$auto$rtlil.cc:2224:Mux$168[1] Y[2]=$auto$rtlil.cc:2224:Mux$168[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$168[0] A[1]=$auto$rtlil.cc:2224:Mux$168[1] A[2]=$auto$rtlil.cc:2224:Mux$168[2] B[0]=$auto$rtlil.cc:2224:Mux$160[0] B[1]=$auto$rtlil.cc:2224:Mux$160[1] B[2]=$auto$rtlil.cc:2224:Mux$160[2] S=$auto$rtlil.cc:2131:ReduceOr$170 Y[0]=$auto$rtlil.cc:2224:Mux$172[0] Y[1]=$auto$rtlil.cc:2224:Mux$172[1] Y[2]=$auto$rtlil.cc:2224:Mux$172[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$true A[1]=$true A[2]=$true B[0]=$false B[1]=$false B[2]=$false S=writer_head_$sdff_Q_D_$pmux_Y_S_7 Y[0]=$auto$rtlil.cc:2224:Mux$174[0] Y[1]=$auto$rtlil.cc:2224:Mux$174[1] Y[2]=$auto$rtlil.cc:2224:Mux$174[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$true A[1]=$false A[2]=$true B[0]=$false B[1]=$true B[2]=$true S=writer_head_$sdff_Q_D_$pmux_Y_S_5 Y[0]=$auto$rtlil.cc:2224:Mux$176[0] Y[1]=$auto$rtlil.cc:2224:Mux$176[1] Y[2]=$auto$rtlil.cc:2224:Mux$176[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$176[0] A[1]=$auto$rtlil.cc:2224:Mux$176[1] A[2]=$auto$rtlil.cc:2224:Mux$176[2] B[0]=$auto$rtlil.cc:2224:Mux$174[0] B[1]=$auto$rtlil.cc:2224:Mux$174[1] B[2]=$auto$rtlil.cc:2224:Mux$174[2] S=$auto$rtlil.cc:2158:Or$178 Y[0]=$auto$rtlil.cc:2224:Mux$180[0] Y[1]=$auto$rtlil.cc:2224:Mux$180[1] Y[2]=$auto$rtlil.cc:2224:Mux$180[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$true A[1]=$true A[2]=$false B[0]=$false B[1]=$false B[2]=$true S=writer_head_$sdff_Q_D_$pmux_Y_S_3 Y[0]=$auto$rtlil.cc:2224:Mux$182[0] Y[1]=$auto$rtlil.cc:2224:Mux$182[1] Y[2]=$auto$rtlil.cc:2224:Mux$182[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false B[0]=$false B[1]=$true B[2]=$false S=writer_head_$sdff_Q_D_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$184[0] Y[1]=$auto$rtlil.cc:2224:Mux$184[1] Y[2]=$auto$rtlil.cc:2224:Mux$184[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$184[0] A[1]=$auto$rtlil.cc:2224:Mux$184[1] A[2]=$auto$rtlil.cc:2224:Mux$184[2] B[0]=$auto$rtlil.cc:2224:Mux$182[0] B[1]=$auto$rtlil.cc:2224:Mux$182[1] B[2]=$auto$rtlil.cc:2224:Mux$182[2] S=$auto$rtlil.cc:2158:Or$186 Y[0]=$auto$rtlil.cc:2224:Mux$188[0] Y[1]=$auto$rtlil.cc:2224:Mux$188[1] Y[2]=$auto$rtlil.cc:2224:Mux$188[2]
+.param WIDTH 00000000000000000000000000000011
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$188[0] A[1]=$auto$rtlil.cc:2224:Mux$188[1] A[2]=$auto$rtlil.cc:2224:Mux$188[2] B[0]=$auto$rtlil.cc:2224:Mux$180[0] B[1]=$auto$rtlil.cc:2224:Mux$180[1] B[2]=$auto$rtlil.cc:2224:Mux$180[2] S=$auto$rtlil.cc:2131:ReduceOr$190 Y[0]=$auto$rtlil.cc:2224:Mux$192[0] Y[1]=$auto$rtlil.cc:2224:Mux$192[1] Y[2]=$auto$rtlil.cc:2224:Mux$192[2]
+.param WIDTH 00000000000000000000000000000011
 .subckt $sdff CLK=clock_writer_head D[0]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[0] D[1]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[1] D[2]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[2] D[3]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[3] Q[0]=out[0] Q[1]=out[1] Q[2]=out[2] Q[3]=out[3] SRST=reset
 .param CLK_POLARITY 00000000000000000000000000000001
 .param SRST_POLARITY 00000000000000000000000000000001
@@ -12,9 +102,6 @@
 .param CLK_POLARITY 00000000000000000000000000000001
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 000
-.param WIDTH 00000000000000000000000000000011
-.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$true B[5]=$true B[6]=$false B[7]=$true B[8]=$true B[9]=$true B[10]=$false B[11]=$true B[12]=$false B[13]=$false B[14]=$true B[15]=$true B[16]=$true B[17]=$false B[18]=$false B[19]=$true B[20]=$false B[21]=$true B[22]=$false B[23]=$false S[0]=register_$sdffe_Q_EN S[1]=register_$sdffe_Q_7_EN S[2]=register_$sdffe_Q_6_EN S[3]=register_$sdffe_Q_5_EN S[4]=register_$sdffe_Q_4_EN S[5]=register_$sdffe_Q_3_EN S[6]=register_$sdffe_Q_2_EN S[7]=register_$sdffe_Q_1_EN Y[0]=reader_head_$sdff_Q_D[0] Y[1]=reader_head_$sdff_Q_D[1] Y[2]=reader_head_$sdff_Q_D[2]
-.param S_WIDTH 00000000000000000000000000001000
 .param WIDTH 00000000000000000000000000000011
 .subckt $sdffe CLK=clock_reader_head D[0]=in[0] D[1]=in[1] D[2]=in[2] EN=register_$sdffe_Q_EN Q[0]=register[21] Q[1]=register[22] Q[2]=register[23] SRST=reset
 .param CLK_POLARITY 00000000000000000000000000000001
@@ -115,16 +202,10 @@
 .param SRST_POLARITY 00000000000000000000000000000001
 .param SRST_VALUE 000
 .param WIDTH 00000000000000000000000000000011
-.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef B[0]=$false B[1]=$false B[2]=$false B[3]=$true B[4]=$true B[5]=$true B[6]=$false B[7]=$true B[8]=$true B[9]=$true B[10]=$false B[11]=$true B[12]=$false B[13]=$false B[14]=$true B[15]=$true B[16]=$true B[17]=$false B[18]=$false B[19]=$true B[20]=$false B[21]=$true B[22]=$false B[23]=$false S[0]=writer_head_$sdff_Q_D_$pmux_Y_S_7 S[1]=writer_head_$sdff_Q_D_$pmux_Y_S_6 S[2]=writer_head_$sdff_Q_D_$pmux_Y_S_5 S[3]=writer_head_$sdff_Q_D_$pmux_Y_S_4 S[4]=writer_head_$sdff_Q_D_$pmux_Y_S_3 S[5]=writer_head_$sdff_Q_D_$pmux_Y_S_2 S[6]=writer_head_$sdff_Q_D_$pmux_Y_S_1 S[7]=writer_head_$sdff_Q_D_$pmux_Y_S Y[0]=writer_head_$sdff_Q_D[0] Y[1]=writer_head_$sdff_Q_D[1] Y[2]=writer_head_$sdff_Q_D[2]
-.param S_WIDTH 00000000000000000000000000001000
-.param WIDTH 00000000000000000000000000000011
 .subckt $logic_not A[0]=writer_head[0] A[1]=writer_head[1] A[2]=writer_head[2] Y=writer_head_$sdff_Q_D_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef B[0]=register[21] B[1]=register[22] B[2]=register[23] B[3]=$false B[4]=register[18] B[5]=register[19] B[6]=register[20] B[7]=$false B[8]=register[15] B[9]=register[16] B[10]=register[17] B[11]=$false B[12]=register[12] B[13]=register[13] B[14]=register[14] B[15]=$false B[16]=register[9] B[17]=register[10] B[18]=register[11] B[19]=$false B[20]=register[6] B[21]=register[7] B[22]=register[8] B[23]=$false B[24]=register[3] B[25]=register[4] B[26]=register[5] B[27]=$false B[28]=register[0] B[29]=register[1] B[30]=register[2] B[31]=$false S[0]=writer_head_$sdff_Q_D_$pmux_Y_S_7 S[1]=writer_head_$sdff_Q_D_$pmux_Y_S_6 S[2]=writer_head_$sdff_Q_D_$pmux_Y_S_5 S[3]=writer_head_$sdff_Q_D_$pmux_Y_S_4 S[4]=writer_head_$sdff_Q_D_$pmux_Y_S_3 S[5]=writer_head_$sdff_Q_D_$pmux_Y_S_2 S[6]=writer_head_$sdff_Q_D_$pmux_Y_S_1 S[7]=writer_head_$sdff_Q_D_$pmux_Y_S Y[0]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[0] Y[1]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[1] Y[2]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[2] Y[3]=writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[3]
-.param S_WIDTH 00000000000000000000000000001000
-.param WIDTH 00000000000000000000000000000100
 .subckt $eq A[0]=writer_head[0] A[1]=writer_head[1] A[2]=writer_head[2] B[0]=$true B[1]=$false B[2]=$false Y=writer_head_$sdff_Q_D_$pmux_Y_S_1
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000011
@@ -182,5 +263,25 @@
 .names $false register[30]
 1 1
 .names $false register[31]
+1 1
+.names $auto$rtlil.cc:2224:Mux$152[0] writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$152[1] writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$152[2] writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$152[3] writer_head_$sdff_Q_D_$pmux_Y_S_$pmux_S_Y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$172[0] reader_head_$sdff_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$172[1] reader_head_$sdff_Q_D[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$172[2] reader_head_$sdff_Q_D[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$192[0] writer_head_$sdff_Q_D[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$192[1] writer_head_$sdff_Q_D[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$192[2] writer_head_$sdff_Q_D[2]
 1 1
 .end

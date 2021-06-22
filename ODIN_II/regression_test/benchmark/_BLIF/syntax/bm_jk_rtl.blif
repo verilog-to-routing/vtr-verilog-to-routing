@@ -3,6 +3,10 @@
 .model bm_jk_rtl
 .inputs clk clr_n j k
 .outputs q q_n
+.subckt $mux A=$false B=$true S=k_$eq_A_1_Y Y=$auto$rtlil.cc:2224:Mux$20
+.param WIDTH 00000000000000000000000000000001
+.subckt $mux A=$auto$rtlil.cc:2224:Mux$20 B=q_$not_A_1_Y S=k_$eq_A_2_Y Y=$auto$rtlil.cc:2224:Mux$22
+.param WIDTH 00000000000000000000000000000001
 .subckt $eq A[0]=k A[1]=j B[0]=$true B[1]=$false Y=k_$eq_A_Y
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000010
@@ -35,11 +39,10 @@
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=q_$not_A_1_Y B[1]=$true B[2]=$false S[0]=k_$eq_A_2_Y S[1]=k_$eq_A_1_Y S[2]=k_$eq_A_Y Y=q_$adffe_Q_D
-.param S_WIDTH 00000000000000000000000000000011
-.param WIDTH 00000000000000000000000000000001
 .names q_$not_A_1_Y q_$not_A_Y
 1 1
 .names q_$not_A_1_Y q_n
+1 1
+.names $auto$rtlil.cc:2224:Mux$22 q_$adffe_Q_D
 1 1
 .end

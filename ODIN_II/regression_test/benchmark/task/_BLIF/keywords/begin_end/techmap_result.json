@@ -6,17 +6,17 @@
         "max_rss(MiB)": 12.2,
         "exec_time(ms)": 15,
         "techmap_time(ms)": 3,
-        "Pi": 7,
+        "Pi": 11,
         "Po": 3,
-        "logic element": 61,
+        "logic element": 38,
         "Adder": 0,
         "Multiplier": 0,
         "Memory": 0,
         "generic logic size": 4,
-        "Longest Path": 13,
-        "Average Path": 7,
-        "Estimated LUTs": 61,
-        "Total Node": 61
+        "Longest Path": 9,
+        "Average Path": 8,
+        "Estimated LUTs": 38,
+        "Total Node": 38
     },
     "begin_end/case_default/no_arch": {
         "test_name": "begin_end/case_default/no_arch",
@@ -24,13 +24,13 @@
         "max_rss(MiB)": 10.9,
         "exec_time(ms)": 3.6,
         "techmap_time(ms)": 2.8,
-        "Pi": 7,
+        "Pi": 11,
         "Po": 3,
-        "logic element": 61,
-        "Longest Path": 13,
-        "Average Path": 7,
-        "Estimated LUTs": 61,
-        "Total Node": 61
+        "logic element": 38,
+        "Longest Path": 9,
+        "Average Path": 8,
+        "Estimated LUTs": 38,
+        "Total Node": 38
     },
     "begin_end/negedge/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "begin_end/negedge/k6_frac_N10_frac_chain_mem32K_40nm",

@@ -3,6 +3,136 @@
 .model rs_decoder_1
 .inputs x[0] x[1] x[2] x[3] x[4] enable k[0] k[1] k[2] k[3] k[4] clk clrn
 .outputs error[0] error[1] error[2] error[3] error[4] with_error valid
+.subckt $or A=x3.y_$pmux_Y_S_26 B=x3.y_$pmux_Y_S_27 Y=$auto$rtlil.cc:2158:Or$2151
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=x3.y_$pmux_Y_S_22 B=x3.y_$pmux_Y_S_23 Y=$auto$rtlil.cc:2158:Or$2163
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=x3.y_$pmux_Y_S_18 B=x3.y_$pmux_Y_S_19 Y=$auto$rtlil.cc:2158:Or$2171
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=x3.y_$pmux_Y_S_14 B=x3.y_$pmux_Y_S_15 Y=$auto$rtlil.cc:2158:Or$2187
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=x3.y_$pmux_Y_S_10 B=x3.y_$pmux_Y_S_11 Y=$auto$rtlil.cc:2158:Or$2195
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=x3.y_$pmux_Y_S_6 B=x3.y_$pmux_Y_S_7 Y=$auto$rtlil.cc:2158:Or$2207
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $or A=x3.y_$pmux_Y_S_2 B=x3.y_$pmux_Y_S_3 Y=$auto$rtlil.cc:2158:Or$2215
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000001
+.param B_SIGNED 00000000000000000000000000000000
+.param B_WIDTH 00000000000000000000000000000001
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=x3.y_$pmux_Y_S_28 A[1]=x3.y_$pmux_Y_S_29 A[2]=x3.y_$pmux_Y_S_30 Y=$auto$rtlil.cc:2131:ReduceOr$2155
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=x3.y_$pmux_Y_S_20 A[1]=x3.y_$pmux_Y_S_21 A[2]=$auto$rtlil.cc:2158:Or$2163 Y=$auto$rtlil.cc:2131:ReduceOr$2175
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=x3.y_$pmux_Y_S_24 A[1]=x3.y_$pmux_Y_S_25 A[2]=$auto$rtlil.cc:2158:Or$2151 A[3]=$auto$rtlil.cc:2131:ReduceOr$2155 Y=$auto$rtlil.cc:2131:ReduceOr$2179
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000100
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=x3.y_$pmux_Y_S_12 A[1]=x3.y_$pmux_Y_S_13 A[2]=$auto$rtlil.cc:2158:Or$2187 Y=$auto$rtlil.cc:2131:ReduceOr$2199
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=x3.y_$pmux_Y_S_4 A[1]=x3.y_$pmux_Y_S_5 A[2]=$auto$rtlil.cc:2158:Or$2207 Y=$auto$rtlil.cc:2131:ReduceOr$2219
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000011
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=x3.y_$pmux_Y_S_8 A[1]=x3.y_$pmux_Y_S_9 A[2]=$auto$rtlil.cc:2158:Or$2195 A[3]=$auto$rtlil.cc:2131:ReduceOr$2199 Y=$auto$rtlil.cc:2131:ReduceOr$2223
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000100
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $reduce_or A[0]=x3.y_$pmux_Y_S_16 A[1]=x3.y_$pmux_Y_S_17 A[2]=$auto$rtlil.cc:2158:Or$2171 A[3]=$auto$rtlil.cc:2131:ReduceOr$2175 A[4]=$auto$rtlil.cc:2131:ReduceOr$2179 Y=$auto$rtlil.cc:2131:ReduceOr$2227
+.param A_SIGNED 00000000000000000000000000000000
+.param A_WIDTH 00000000000000000000000000000101
+.param Y_WIDTH 00000000000000000000000000000001
+.subckt $mux A[0]=$false A[1]=$false A[2]=$false A[3]=$true A[4]=$false B[0]=$false B[1]=$false B[2]=$true B[3]=$false B[4]=$false S=x3.y_$pmux_Y_S_29 Y[0]=$auto$rtlil.cc:2224:Mux$2143[0] Y[1]=$auto$rtlil.cc:2224:Mux$2143[1] Y[2]=$auto$rtlil.cc:2224:Mux$2143[2] Y[3]=$auto$rtlil.cc:2224:Mux$2143[3] Y[4]=$auto$rtlil.cc:2224:Mux$2143[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2143[0] A[1]=$auto$rtlil.cc:2224:Mux$2143[1] A[2]=$auto$rtlil.cc:2224:Mux$2143[2] A[3]=$auto$rtlil.cc:2224:Mux$2143[3] A[4]=$auto$rtlil.cc:2224:Mux$2143[4] B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$false S=x3.y_$pmux_Y_S_30 Y[0]=$auto$rtlil.cc:2224:Mux$2145[0] Y[1]=$auto$rtlil.cc:2224:Mux$2145[1] Y[2]=$auto$rtlil.cc:2224:Mux$2145[2] Y[3]=$auto$rtlil.cc:2224:Mux$2145[3] Y[4]=$auto$rtlil.cc:2224:Mux$2145[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$true A[3]=$false A[4]=$false B[0]=$false B[1]=$false B[2]=$false B[3]=$false B[4]=$true S=x3.y_$pmux_Y_S_27 Y[0]=$auto$rtlil.cc:2224:Mux$2147[0] Y[1]=$auto$rtlil.cc:2224:Mux$2147[1] Y[2]=$auto$rtlil.cc:2224:Mux$2147[2] Y[3]=$auto$rtlil.cc:2224:Mux$2147[3] Y[4]=$auto$rtlil.cc:2224:Mux$2147[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$false A[1]=$false A[2]=$true A[3]=$false A[4]=$true B[0]=$false B[1]=$true B[2]=$false B[3]=$true B[4]=$false S=x3.y_$pmux_Y_S_25 Y[0]=$auto$rtlil.cc:2224:Mux$2149[0] Y[1]=$auto$rtlil.cc:2224:Mux$2149[1] Y[2]=$auto$rtlil.cc:2224:Mux$2149[2] Y[3]=$auto$rtlil.cc:2224:Mux$2149[3] Y[4]=$auto$rtlil.cc:2224:Mux$2149[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2149[0] A[1]=$auto$rtlil.cc:2224:Mux$2149[1] A[2]=$auto$rtlil.cc:2224:Mux$2149[2] A[3]=$auto$rtlil.cc:2224:Mux$2149[3] A[4]=$auto$rtlil.cc:2224:Mux$2149[4] B[0]=$auto$rtlil.cc:2224:Mux$2147[0] B[1]=$auto$rtlil.cc:2224:Mux$2147[1] B[2]=$auto$rtlil.cc:2224:Mux$2147[2] B[3]=$auto$rtlil.cc:2224:Mux$2147[3] B[4]=$auto$rtlil.cc:2224:Mux$2147[4] S=$auto$rtlil.cc:2158:Or$2151 Y[0]=$auto$rtlil.cc:2224:Mux$2153[0] Y[1]=$auto$rtlil.cc:2224:Mux$2153[1] Y[2]=$auto$rtlil.cc:2224:Mux$2153[2] Y[3]=$auto$rtlil.cc:2224:Mux$2153[3] Y[4]=$auto$rtlil.cc:2224:Mux$2153[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2153[0] A[1]=$auto$rtlil.cc:2224:Mux$2153[1] A[2]=$auto$rtlil.cc:2224:Mux$2153[2] A[3]=$auto$rtlil.cc:2224:Mux$2153[3] A[4]=$auto$rtlil.cc:2224:Mux$2153[4] B[0]=$auto$rtlil.cc:2224:Mux$2145[0] B[1]=$auto$rtlil.cc:2224:Mux$2145[1] B[2]=$auto$rtlil.cc:2224:Mux$2145[2] B[3]=$auto$rtlil.cc:2224:Mux$2145[3] B[4]=$auto$rtlil.cc:2224:Mux$2145[4] S=$auto$rtlil.cc:2131:ReduceOr$2155 Y[0]=$auto$rtlil.cc:2224:Mux$2157[0] Y[1]=$auto$rtlil.cc:2224:Mux$2157[1] Y[2]=$auto$rtlil.cc:2224:Mux$2157[2] Y[3]=$auto$rtlil.cc:2224:Mux$2157[3] Y[4]=$auto$rtlil.cc:2224:Mux$2157[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$false A[1]=$true A[2]=$false A[3]=$true A[4]=$true B[0]=$true B[1]=$false B[2]=$true B[3]=$true B[4]=$false S=x3.y_$pmux_Y_S_23 Y[0]=$auto$rtlil.cc:2224:Mux$2159[0] Y[1]=$auto$rtlil.cc:2224:Mux$2159[1] Y[2]=$auto$rtlil.cc:2224:Mux$2159[2] Y[3]=$auto$rtlil.cc:2224:Mux$2159[3] Y[4]=$auto$rtlil.cc:2224:Mux$2159[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$true A[2]=$true A[3]=$false A[4]=$false B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$true S=x3.y_$pmux_Y_S_21 Y[0]=$auto$rtlil.cc:2224:Mux$2161[0] Y[1]=$auto$rtlil.cc:2224:Mux$2161[1] Y[2]=$auto$rtlil.cc:2224:Mux$2161[2] Y[3]=$auto$rtlil.cc:2224:Mux$2161[3] Y[4]=$auto$rtlil.cc:2224:Mux$2161[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2161[0] A[1]=$auto$rtlil.cc:2224:Mux$2161[1] A[2]=$auto$rtlil.cc:2224:Mux$2161[2] A[3]=$auto$rtlil.cc:2224:Mux$2161[3] A[4]=$auto$rtlil.cc:2224:Mux$2161[4] B[0]=$auto$rtlil.cc:2224:Mux$2159[0] B[1]=$auto$rtlil.cc:2224:Mux$2159[1] B[2]=$auto$rtlil.cc:2224:Mux$2159[2] B[3]=$auto$rtlil.cc:2224:Mux$2159[3] B[4]=$auto$rtlil.cc:2224:Mux$2159[4] S=$auto$rtlil.cc:2158:Or$2163 Y[0]=$auto$rtlil.cc:2224:Mux$2165[0] Y[1]=$auto$rtlil.cc:2224:Mux$2165[1] Y[2]=$auto$rtlil.cc:2224:Mux$2165[2] Y[3]=$auto$rtlil.cc:2224:Mux$2165[3] Y[4]=$auto$rtlil.cc:2224:Mux$2165[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$false A[1]=$false A[2]=$true A[3]=$true A[4]=$true B[0]=$false B[1]=$true B[2]=$true B[3]=$true B[4]=$false S=x3.y_$pmux_Y_S_19 Y[0]=$auto$rtlil.cc:2224:Mux$2167[0] Y[1]=$auto$rtlil.cc:2224:Mux$2167[1] Y[2]=$auto$rtlil.cc:2224:Mux$2167[2] Y[3]=$auto$rtlil.cc:2224:Mux$2167[3] Y[4]=$auto$rtlil.cc:2224:Mux$2167[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$true A[2]=$true A[3]=$true A[4]=$true B[0]=$true B[1]=$false B[2]=$true B[3]=$true B[4]=$true S=x3.y_$pmux_Y_S_17 Y[0]=$auto$rtlil.cc:2224:Mux$2169[0] Y[1]=$auto$rtlil.cc:2224:Mux$2169[1] Y[2]=$auto$rtlil.cc:2224:Mux$2169[2] Y[3]=$auto$rtlil.cc:2224:Mux$2169[3] Y[4]=$auto$rtlil.cc:2224:Mux$2169[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2169[0] A[1]=$auto$rtlil.cc:2224:Mux$2169[1] A[2]=$auto$rtlil.cc:2224:Mux$2169[2] A[3]=$auto$rtlil.cc:2224:Mux$2169[3] A[4]=$auto$rtlil.cc:2224:Mux$2169[4] B[0]=$auto$rtlil.cc:2224:Mux$2167[0] B[1]=$auto$rtlil.cc:2224:Mux$2167[1] B[2]=$auto$rtlil.cc:2224:Mux$2167[2] B[3]=$auto$rtlil.cc:2224:Mux$2167[3] B[4]=$auto$rtlil.cc:2224:Mux$2167[4] S=$auto$rtlil.cc:2158:Or$2171 Y[0]=$auto$rtlil.cc:2224:Mux$2173[0] Y[1]=$auto$rtlil.cc:2224:Mux$2173[1] Y[2]=$auto$rtlil.cc:2224:Mux$2173[2] Y[3]=$auto$rtlil.cc:2224:Mux$2173[3] Y[4]=$auto$rtlil.cc:2224:Mux$2173[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2173[0] A[1]=$auto$rtlil.cc:2224:Mux$2173[1] A[2]=$auto$rtlil.cc:2224:Mux$2173[2] A[3]=$auto$rtlil.cc:2224:Mux$2173[3] A[4]=$auto$rtlil.cc:2224:Mux$2173[4] B[0]=$auto$rtlil.cc:2224:Mux$2165[0] B[1]=$auto$rtlil.cc:2224:Mux$2165[1] B[2]=$auto$rtlil.cc:2224:Mux$2165[2] B[3]=$auto$rtlil.cc:2224:Mux$2165[3] B[4]=$auto$rtlil.cc:2224:Mux$2165[4] S=$auto$rtlil.cc:2131:ReduceOr$2175 Y[0]=$auto$rtlil.cc:2224:Mux$2177[0] Y[1]=$auto$rtlil.cc:2224:Mux$2177[1] Y[2]=$auto$rtlil.cc:2224:Mux$2177[2] Y[3]=$auto$rtlil.cc:2224:Mux$2177[3] Y[4]=$auto$rtlil.cc:2224:Mux$2177[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2177[0] A[1]=$auto$rtlil.cc:2224:Mux$2177[1] A[2]=$auto$rtlil.cc:2224:Mux$2177[2] A[3]=$auto$rtlil.cc:2224:Mux$2177[3] A[4]=$auto$rtlil.cc:2224:Mux$2177[4] B[0]=$auto$rtlil.cc:2224:Mux$2157[0] B[1]=$auto$rtlil.cc:2224:Mux$2157[1] B[2]=$auto$rtlil.cc:2224:Mux$2157[2] B[3]=$auto$rtlil.cc:2224:Mux$2157[3] B[4]=$auto$rtlil.cc:2224:Mux$2157[4] S=$auto$rtlil.cc:2131:ReduceOr$2179 Y[0]=$auto$rtlil.cc:2224:Mux$2181[0] Y[1]=$auto$rtlil.cc:2224:Mux$2181[1] Y[2]=$auto$rtlil.cc:2224:Mux$2181[2] Y[3]=$auto$rtlil.cc:2224:Mux$2181[3] Y[4]=$auto$rtlil.cc:2224:Mux$2181[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$true A[2]=$false A[3]=$false A[4]=$true B[0]=$true B[1]=$true B[2]=$false B[3]=$true B[4]=$true S=x3.y_$pmux_Y_S_15 Y[0]=$auto$rtlil.cc:2224:Mux$2183[0] Y[1]=$auto$rtlil.cc:2224:Mux$2183[1] Y[2]=$auto$rtlil.cc:2224:Mux$2183[2] Y[3]=$auto$rtlil.cc:2224:Mux$2183[3] Y[4]=$auto$rtlil.cc:2224:Mux$2183[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$false A[1]=$true A[2]=$true A[3]=$false A[4]=$false B[0]=$true B[1]=$true B[2]=$false B[3]=$false B[4]=$false S=x3.y_$pmux_Y_S_13 Y[0]=$auto$rtlil.cc:2224:Mux$2185[0] Y[1]=$auto$rtlil.cc:2224:Mux$2185[1] Y[2]=$auto$rtlil.cc:2224:Mux$2185[2] Y[3]=$auto$rtlil.cc:2224:Mux$2185[3] Y[4]=$auto$rtlil.cc:2224:Mux$2185[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2185[0] A[1]=$auto$rtlil.cc:2224:Mux$2185[1] A[2]=$auto$rtlil.cc:2224:Mux$2185[2] A[3]=$auto$rtlil.cc:2224:Mux$2185[3] A[4]=$auto$rtlil.cc:2224:Mux$2185[4] B[0]=$auto$rtlil.cc:2224:Mux$2183[0] B[1]=$auto$rtlil.cc:2224:Mux$2183[1] B[2]=$auto$rtlil.cc:2224:Mux$2183[2] B[3]=$auto$rtlil.cc:2224:Mux$2183[3] B[4]=$auto$rtlil.cc:2224:Mux$2183[4] S=$auto$rtlil.cc:2158:Or$2187 Y[0]=$auto$rtlil.cc:2224:Mux$2189[0] Y[1]=$auto$rtlil.cc:2224:Mux$2189[1] Y[2]=$auto$rtlil.cc:2224:Mux$2189[2] Y[3]=$auto$rtlil.cc:2224:Mux$2189[3] Y[4]=$auto$rtlil.cc:2224:Mux$2189[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$false A[1]=$false A[2]=$false A[3]=$true A[4]=$true B[0]=$false B[1]=$false B[2]=$true B[3]=$true B[4]=$false S=x3.y_$pmux_Y_S_11 Y[0]=$auto$rtlil.cc:2224:Mux$2191[0] Y[1]=$auto$rtlil.cc:2224:Mux$2191[1] Y[2]=$auto$rtlil.cc:2224:Mux$2191[2] Y[3]=$auto$rtlil.cc:2224:Mux$2191[3] Y[4]=$auto$rtlil.cc:2224:Mux$2191[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$true A[2]=$true A[3]=$true A[4]=$false B[0]=$true B[1]=$false B[2]=$true B[3]=$false B[4]=$true S=x3.y_$pmux_Y_S_9 Y[0]=$auto$rtlil.cc:2224:Mux$2193[0] Y[1]=$auto$rtlil.cc:2224:Mux$2193[1] Y[2]=$auto$rtlil.cc:2224:Mux$2193[2] Y[3]=$auto$rtlil.cc:2224:Mux$2193[3] Y[4]=$auto$rtlil.cc:2224:Mux$2193[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2193[0] A[1]=$auto$rtlil.cc:2224:Mux$2193[1] A[2]=$auto$rtlil.cc:2224:Mux$2193[2] A[3]=$auto$rtlil.cc:2224:Mux$2193[3] A[4]=$auto$rtlil.cc:2224:Mux$2193[4] B[0]=$auto$rtlil.cc:2224:Mux$2191[0] B[1]=$auto$rtlil.cc:2224:Mux$2191[1] B[2]=$auto$rtlil.cc:2224:Mux$2191[2] B[3]=$auto$rtlil.cc:2224:Mux$2191[3] B[4]=$auto$rtlil.cc:2224:Mux$2191[4] S=$auto$rtlil.cc:2158:Or$2195 Y[0]=$auto$rtlil.cc:2224:Mux$2197[0] Y[1]=$auto$rtlil.cc:2224:Mux$2197[1] Y[2]=$auto$rtlil.cc:2224:Mux$2197[2] Y[3]=$auto$rtlil.cc:2224:Mux$2197[3] Y[4]=$auto$rtlil.cc:2224:Mux$2197[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2197[0] A[1]=$auto$rtlil.cc:2224:Mux$2197[1] A[2]=$auto$rtlil.cc:2224:Mux$2197[2] A[3]=$auto$rtlil.cc:2224:Mux$2197[3] A[4]=$auto$rtlil.cc:2224:Mux$2197[4] B[0]=$auto$rtlil.cc:2224:Mux$2189[0] B[1]=$auto$rtlil.cc:2224:Mux$2189[1] B[2]=$auto$rtlil.cc:2224:Mux$2189[2] B[3]=$auto$rtlil.cc:2224:Mux$2189[3] B[4]=$auto$rtlil.cc:2224:Mux$2189[4] S=$auto$rtlil.cc:2131:ReduceOr$2199 Y[0]=$auto$rtlil.cc:2224:Mux$2201[0] Y[1]=$auto$rtlil.cc:2224:Mux$2201[1] Y[2]=$auto$rtlil.cc:2224:Mux$2201[2] Y[3]=$auto$rtlil.cc:2224:Mux$2201[3] Y[4]=$auto$rtlil.cc:2224:Mux$2201[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$true A[4]=$true B[0]=$false B[1]=$true B[2]=$true B[3]=$true B[4]=$true S=x3.y_$pmux_Y_S_7 Y[0]=$auto$rtlil.cc:2224:Mux$2203[0] Y[1]=$auto$rtlil.cc:2224:Mux$2203[1] Y[2]=$auto$rtlil.cc:2224:Mux$2203[2] Y[3]=$auto$rtlil.cc:2224:Mux$2203[3] Y[4]=$auto$rtlil.cc:2224:Mux$2203[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$true A[2]=$false A[3]=$true A[4]=$false B[0]=$true B[1]=$true B[2]=$true B[3]=$false B[4]=$true S=x3.y_$pmux_Y_S_5 Y[0]=$auto$rtlil.cc:2224:Mux$2205[0] Y[1]=$auto$rtlil.cc:2224:Mux$2205[1] Y[2]=$auto$rtlil.cc:2224:Mux$2205[2] Y[3]=$auto$rtlil.cc:2224:Mux$2205[3] Y[4]=$auto$rtlil.cc:2224:Mux$2205[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2205[0] A[1]=$auto$rtlil.cc:2224:Mux$2205[1] A[2]=$auto$rtlil.cc:2224:Mux$2205[2] A[3]=$auto$rtlil.cc:2224:Mux$2205[3] A[4]=$auto$rtlil.cc:2224:Mux$2205[4] B[0]=$auto$rtlil.cc:2224:Mux$2203[0] B[1]=$auto$rtlil.cc:2224:Mux$2203[1] B[2]=$auto$rtlil.cc:2224:Mux$2203[2] B[3]=$auto$rtlil.cc:2224:Mux$2203[3] B[4]=$auto$rtlil.cc:2224:Mux$2203[4] S=$auto$rtlil.cc:2158:Or$2207 Y[0]=$auto$rtlil.cc:2224:Mux$2209[0] Y[1]=$auto$rtlil.cc:2224:Mux$2209[1] Y[2]=$auto$rtlil.cc:2224:Mux$2209[2] Y[3]=$auto$rtlil.cc:2224:Mux$2209[3] Y[4]=$auto$rtlil.cc:2224:Mux$2209[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$true A[4]=$false B[0]=$false B[1]=$true B[2]=$true B[3]=$false B[4]=$true S=x3.y_$pmux_Y_S_3 Y[0]=$auto$rtlil.cc:2224:Mux$2211[0] Y[1]=$auto$rtlil.cc:2224:Mux$2211[1] Y[2]=$auto$rtlil.cc:2224:Mux$2211[2] Y[3]=$auto$rtlil.cc:2224:Mux$2211[3] Y[4]=$auto$rtlil.cc:2224:Mux$2211[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$true A[1]=$false A[2]=$false A[3]=$false A[4]=$false B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$true S=x3.y_$pmux_Y_S_1 Y[0]=$auto$rtlil.cc:2224:Mux$2213[0] Y[1]=$auto$rtlil.cc:2224:Mux$2213[1] Y[2]=$auto$rtlil.cc:2224:Mux$2213[2] Y[3]=$auto$rtlil.cc:2224:Mux$2213[3] Y[4]=$auto$rtlil.cc:2224:Mux$2213[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2213[0] A[1]=$auto$rtlil.cc:2224:Mux$2213[1] A[2]=$auto$rtlil.cc:2224:Mux$2213[2] A[3]=$auto$rtlil.cc:2224:Mux$2213[3] A[4]=$auto$rtlil.cc:2224:Mux$2213[4] B[0]=$auto$rtlil.cc:2224:Mux$2211[0] B[1]=$auto$rtlil.cc:2224:Mux$2211[1] B[2]=$auto$rtlil.cc:2224:Mux$2211[2] B[3]=$auto$rtlil.cc:2224:Mux$2211[3] B[4]=$auto$rtlil.cc:2224:Mux$2211[4] S=$auto$rtlil.cc:2158:Or$2215 Y[0]=$auto$rtlil.cc:2224:Mux$2217[0] Y[1]=$auto$rtlil.cc:2224:Mux$2217[1] Y[2]=$auto$rtlil.cc:2224:Mux$2217[2] Y[3]=$auto$rtlil.cc:2224:Mux$2217[3] Y[4]=$auto$rtlil.cc:2224:Mux$2217[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2217[0] A[1]=$auto$rtlil.cc:2224:Mux$2217[1] A[2]=$auto$rtlil.cc:2224:Mux$2217[2] A[3]=$auto$rtlil.cc:2224:Mux$2217[3] A[4]=$auto$rtlil.cc:2224:Mux$2217[4] B[0]=$auto$rtlil.cc:2224:Mux$2209[0] B[1]=$auto$rtlil.cc:2224:Mux$2209[1] B[2]=$auto$rtlil.cc:2224:Mux$2209[2] B[3]=$auto$rtlil.cc:2224:Mux$2209[3] B[4]=$auto$rtlil.cc:2224:Mux$2209[4] S=$auto$rtlil.cc:2131:ReduceOr$2219 Y[0]=$auto$rtlil.cc:2224:Mux$2221[0] Y[1]=$auto$rtlil.cc:2224:Mux$2221[1] Y[2]=$auto$rtlil.cc:2224:Mux$2221[2] Y[3]=$auto$rtlil.cc:2224:Mux$2221[3] Y[4]=$auto$rtlil.cc:2224:Mux$2221[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2221[0] A[1]=$auto$rtlil.cc:2224:Mux$2221[1] A[2]=$auto$rtlil.cc:2224:Mux$2221[2] A[3]=$auto$rtlil.cc:2224:Mux$2221[3] A[4]=$auto$rtlil.cc:2224:Mux$2221[4] B[0]=$auto$rtlil.cc:2224:Mux$2201[0] B[1]=$auto$rtlil.cc:2224:Mux$2201[1] B[2]=$auto$rtlil.cc:2224:Mux$2201[2] B[3]=$auto$rtlil.cc:2224:Mux$2201[3] B[4]=$auto$rtlil.cc:2224:Mux$2201[4] S=$auto$rtlil.cc:2131:ReduceOr$2223 Y[0]=$auto$rtlil.cc:2224:Mux$2225[0] Y[1]=$auto$rtlil.cc:2224:Mux$2225[1] Y[2]=$auto$rtlil.cc:2224:Mux$2225[2] Y[3]=$auto$rtlil.cc:2224:Mux$2225[3] Y[4]=$auto$rtlil.cc:2224:Mux$2225[4]
+.param WIDTH 00000000000000000000000000000101
+.subckt $mux A[0]=$auto$rtlil.cc:2224:Mux$2225[0] A[1]=$auto$rtlil.cc:2224:Mux$2225[1] A[2]=$auto$rtlil.cc:2224:Mux$2225[2] A[3]=$auto$rtlil.cc:2224:Mux$2225[3] A[4]=$auto$rtlil.cc:2224:Mux$2225[4] B[0]=$auto$rtlil.cc:2224:Mux$2181[0] B[1]=$auto$rtlil.cc:2224:Mux$2181[1] B[2]=$auto$rtlil.cc:2224:Mux$2181[2] B[3]=$auto$rtlil.cc:2224:Mux$2181[3] B[4]=$auto$rtlil.cc:2224:Mux$2181[4] S=$auto$rtlil.cc:2131:ReduceOr$2227 Y[0]=$auto$rtlil.cc:2224:Mux$2229[0] Y[1]=$auto$rtlil.cc:2224:Mux$2229[1] Y[2]=$auto$rtlil.cc:2224:Mux$2229[2] Y[3]=$auto$rtlil.cc:2224:Mux$2229[3] Y[4]=$auto$rtlil.cc:2224:Mux$2229[4]
+.param WIDTH 00000000000000000000000000000101
 .subckt $sdffe CLK=clk D=berl_enable_$sdffe_Q_D EN=berl_enable_$sdffe_Q_EN Q=berl_enable SRST=clrn
 .param CLK_POLARITY 00000000000000000000000000000001
 .param EN_POLARITY 00000000000000000000000000000001
@@ -3202,9 +3332,6 @@
 .param B_SIGNED 00000000000000000000000000000000
 .param B_WIDTH 00000000000000000000000000000001
 .param Y_WIDTH 00000000000000000000000000000001
-.subckt $pmux A[0]=$undef A[1]=$undef A[2]=$undef A[3]=$undef A[4]=$undef B[0]=$false B[1]=$true B[2]=$false B[3]=$false B[4]=$false B[5]=$false B[6]=$false B[7]=$true B[8]=$false B[9]=$false B[10]=$false B[11]=$false B[12]=$false B[13]=$true B[14]=$false B[15]=$false B[16]=$false B[17]=$false B[18]=$false B[19]=$true B[20]=$true B[21]=$false B[22]=$true B[23]=$false B[24]=$false B[25]=$false B[26]=$true B[27]=$false B[28]=$true B[29]=$false B[30]=$false B[31]=$false B[32]=$true B[33]=$false B[34]=$true B[35]=$true B[36]=$false B[37]=$true B[38]=$true B[39]=$false B[40]=$false B[41]=$true B[42]=$false B[43]=$true B[44]=$true B[45]=$true B[46]=$false B[47]=$false B[48]=$false B[49]=$true B[50]=$true B[51]=$true B[52]=$true B[53]=$false B[54]=$false B[55]=$false B[56]=$true B[57]=$true B[58]=$true B[59]=$false B[60]=$false B[61]=$false B[62]=$true B[63]=$true B[64]=$true B[65]=$true B[66]=$false B[67]=$true B[68]=$true B[69]=$true B[70]=$true B[71]=$true B[72]=$true B[73]=$true B[74]=$true B[75]=$true B[76]=$true B[77]=$false B[78]=$true B[79]=$true B[80]=$true B[81]=$true B[82]=$false B[83]=$false B[84]=$true B[85]=$true B[86]=$true B[87]=$false B[88]=$false B[89]=$false B[90]=$false B[91]=$true B[92]=$true B[93]=$false B[94]=$false B[95]=$false B[96]=$false B[97]=$true B[98]=$true B[99]=$false B[100]=$false B[101]=$false B[102]=$false B[103]=$true B[104]=$true B[105]=$true B[106]=$false B[107]=$true B[108]=$false B[109]=$true B[110]=$true B[111]=$true B[112]=$true B[113]=$true B[114]=$false B[115]=$false B[116]=$true B[117]=$true B[118]=$true B[119]=$true B[120]=$true B[121]=$false B[122]=$false B[123]=$true B[124]=$true B[125]=$true B[126]=$true B[127]=$true B[128]=$false B[129]=$true B[130]=$true B[131]=$true B[132]=$false B[133]=$true B[134]=$false B[135]=$false B[136]=$true B[137]=$true B[138]=$false B[139]=$true B[140]=$true B[141]=$false B[142]=$false B[143]=$true B[144]=$false B[145]=$false B[146]=$true B[147]=$false B[148]=$false B[149]=$true B[150]=$true B[151]=$false B[152]=$false B[153]=$false B[154]=$false S[0]=x3.y_$pmux_Y_S_30 S[1]=x3.y_$pmux_Y_S_29 S[2]=x3.y_$pmux_Y_S_28 S[3]=x3.y_$pmux_Y_S_27 S[4]=x3.y_$pmux_Y_S_26 S[5]=x3.y_$pmux_Y_S_25 S[6]=x3.y_$pmux_Y_S_24 S[7]=x3.y_$pmux_Y_S_23 S[8]=x3.y_$pmux_Y_S_22 S[9]=x3.y_$pmux_Y_S_21 S[10]=x3.y_$pmux_Y_S_20 S[11]=x3.y_$pmux_Y_S_19 S[12]=x3.y_$pmux_Y_S_18 S[13]=x3.y_$pmux_Y_S_17 S[14]=x3.y_$pmux_Y_S_16 S[15]=x3.y_$pmux_Y_S_15 S[16]=x3.y_$pmux_Y_S_14 S[17]=x3.y_$pmux_Y_S_13 S[18]=x3.y_$pmux_Y_S_12 S[19]=x3.y_$pmux_Y_S_11 S[20]=x3.y_$pmux_Y_S_10 S[21]=x3.y_$pmux_Y_S_9 S[22]=x3.y_$pmux_Y_S_8 S[23]=x3.y_$pmux_Y_S_7 S[24]=x3.y_$pmux_Y_S_6 S[25]=x3.y_$pmux_Y_S_5 S[26]=x3.y_$pmux_Y_S_4 S[27]=x3.y_$pmux_Y_S_3 S[28]=x3.y_$pmux_Y_S_2 S[29]=x3.y_$pmux_Y_S_1 S[30]=x3.y_$pmux_Y_S Y[0]=x3.y[0] Y[1]=x3.y[1] Y[2]=x3.y[2] Y[3]=x3.y[3] Y[4]=x3.y[4]
-.param S_WIDTH 00000000000000000000000000011111
-.param WIDTH 00000000000000000000000000000101
 .subckt $eq A[0]=x3.x[0] A[1]=x3.x[1] A[2]=x3.x[2] A[3]=x3.x[3] A[4]=x3.x[4] B[0]=$true B[1]=$false B[2]=$false B[3]=$false B[4]=$false Y=x3.y_$pmux_Y_S
 .param A_SIGNED 00000000000000000000000000000000
 .param A_WIDTH 00000000000000000000000000000101
@@ -5740,5 +5867,15 @@
 .names x0.y9[3] s9[3]
 1 1
 .names x0.y9[4] s9[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$2229[0] x3.y[0]
+1 1
+.names $auto$rtlil.cc:2224:Mux$2229[1] x3.y[1]
+1 1
+.names $auto$rtlil.cc:2224:Mux$2229[2] x3.y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$2229[3] x3.y[3]
+1 1
+.names $auto$rtlil.cc:2224:Mux$2229[4] x3.y[4]
 1 1
 .end

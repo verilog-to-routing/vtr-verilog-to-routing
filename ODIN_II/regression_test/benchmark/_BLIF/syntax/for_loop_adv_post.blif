@@ -3,17 +3,13 @@
 .model evens_of_eight_bit_for_pass_through
 .inputs a[0] a[1] a[2] a[3] a[4] a[5] a[6] a[7] clk rst
 .outputs c[0] c[1] c[2] c[3] c[4] c[5] c[6] c[7]
-.subckt $pmux A=$undef B[0]=$false B[1]=a[0] S[0]=rst S[1]=rst_$not_A_Y Y=a_$pmux_B_Y[0]
-.param S_WIDTH 00000000000000000000000000000010
+.subckt $mux A=a[6] B=$false S=rst Y=$auto$rtlil.cc:2224:Mux$45
 .param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[2] S[0]=rst S[1]=rst_$not_A_Y Y=a_$pmux_B_Y[2]
-.param S_WIDTH 00000000000000000000000000000010
+.subckt $mux A=a[4] B=$false S=rst Y=$auto$rtlil.cc:2224:Mux$47
 .param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[4] S[0]=rst S[1]=rst_$not_A_Y Y=a_$pmux_B_Y[4]
-.param S_WIDTH 00000000000000000000000000000010
+.subckt $mux A=a[2] B=$false S=rst Y=$auto$rtlil.cc:2224:Mux$49
 .param WIDTH 00000000000000000000000000000001
-.subckt $pmux A=$undef B[0]=$false B[1]=a[6] S[0]=rst S[1]=rst_$not_A_Y Y=a_$pmux_B_Y[6]
-.param S_WIDTH 00000000000000000000000000000010
+.subckt $mux A=a[0] B=$false S=rst Y=$auto$rtlil.cc:2224:Mux$51
 .param WIDTH 00000000000000000000000000000001
 .subckt $dff CLK=clk D[0]=a_$pmux_B_Y[0] D[1]=a_$pmux_B_Y[2] D[2]=a_$pmux_B_Y[4] D[3]=a_$pmux_B_Y[6] Q[0]=c[0] Q[1]=c[2] Q[2]=c[4] Q[3]=c[6]
 .param CLK_POLARITY 00000000000000000000000000000001
@@ -33,5 +29,13 @@
 .names a_$pmux_B_Y[7] a_$pmux_B_Y[3]
 1 1
 .names a_$pmux_B_Y[7] a_$pmux_B_Y[5]
+1 1
+.names $auto$rtlil.cc:2224:Mux$45 a_$pmux_B_Y[6]
+1 1
+.names $auto$rtlil.cc:2224:Mux$47 a_$pmux_B_Y[4]
+1 1
+.names $auto$rtlil.cc:2224:Mux$49 a_$pmux_B_Y[2]
+1 1
+.names $auto$rtlil.cc:2224:Mux$51 a_$pmux_B_Y[0]
 1 1
 .end

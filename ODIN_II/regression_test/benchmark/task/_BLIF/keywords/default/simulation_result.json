@@ -7,14 +7,14 @@
         "exec_time(ms)": 28.5,
         "simulation_time(ms)": 15,
         "test_coverage(%)": 100,
-        "Pi": 7,
+        "Pi": 11,
         "Po": 3,
-        "logic element": 61,
+        "logic element": 38,
         "generic logic size": 4,
-        "Longest Path": 13,
-        "Average Path": 7,
-        "Estimated LUTs": 61,
-        "Total Node": 61
+        "Longest Path": 9,
+        "Average Path": 8,
+        "Estimated LUTs": 38,
+        "Total Node": 38
     },
     "default/case_default/no_arch": {
         "test_name": "default/case_default/no_arch",
@@ -23,13 +23,13 @@
         "exec_time(ms)": 15.5,
         "simulation_time(ms)": 13.4,
         "test_coverage(%)": 100,
-        "Pi": 7,
+        "Pi": 11,
         "Po": 3,
-        "logic element": 61,
-        "Longest Path": 13,
-        "Average Path": 7,
-        "Estimated LUTs": 61,
-        "Total Node": 61
+        "logic element": 38,
+        "Longest Path": 9,
+        "Average Path": 8,
+        "Estimated LUTs": 38,
+        "Total Node": 38
     },
     "DEFAULT": {
         "test_name": "n/a",
