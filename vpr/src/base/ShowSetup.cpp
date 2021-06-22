@@ -30,7 +30,11 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile.c_str());
     VTR_LOG("Circuit routing file: %s\n", vpr_setup.FileNameOpts.RouteFile.c_str());
     VTR_LOG("Circuit SDC file: %s\n", vpr_setup.Timing.SDCFile.c_str());
-    VTR_LOG("Vpr floorplanning constraints file: %s\n", vpr_setup.FileNameOpts.read_vpr_constraints_file.c_str());
+    if (vpr_setup.FileNameOpts.read_vpr_constraints_file.empty()) {
+        VTR_LOG("Vpr floorplanning constraints file: not specified\n");
+    } else {
+        VTR_LOG("Vpr floorplanning constraints file: %s\n", vpr_setup.FileNameOpts.read_vpr_constraints_file.c_str());
+    }
     VTR_LOG("\n");
 
     VTR_LOG("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
