@@ -18,7 +18,7 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
 npin_t* get_zero_pin();
 npin_t* get_one_pin();
 
-signal_list_t* make_or_chain(signal_list_t* inputs, nnode_t* node);
+signal_list_t* make_chain(operation_list type, signal_list_t* inputs, nnode_t* node);
 
 char* node_name(nnode_t* node, char* instance_prefix_name);
 char* op_node_name(operation_list op, char* instance_prefix_name);
@@ -27,5 +27,7 @@ nnode_t* make_mult_block(nnode_t* node, short mark);
 
 edge_type_e edge_type_blif_enum(std::string edge_kind_str, loc_t loc);
 const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc);
+
+extern signal_list_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node);
 
 #endif

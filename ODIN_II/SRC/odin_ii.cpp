@@ -120,9 +120,9 @@ static ODIN_ERROR_CODE synthesize() {
         }
 
         if (read_only_memory_list || block_memory_list) {
-            /* Perform a hard block registration if an architecture is given */
-            iterate_block_memories();
-            free_block_memories(); 
+            /* Perform a hard block registration and splitting in width */
+            iterate_block_memories(verilog_netlist);
+            free_block_memories();
         }
 
         if (single_port_rams || dual_port_rams) {

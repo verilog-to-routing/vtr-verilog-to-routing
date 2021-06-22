@@ -2078,11 +2078,15 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
 
                     } else if (!strcmp(ptr, "RD_PORTS")) {
                         if (sensitivity > 0)
-                            attributes->RD_PORTS = sensitivity;
+                            attributes->RD_PORTS = std::bitset<2>(sensitivity).to_ulong();;
 
                     } else if (!strcmp(ptr, "WR_PORTS")) {
                         if (sensitivity > 0)
-                            attributes->WR_PORTS = sensitivity;
+                            attributes->WR_PORTS = std::bitset<2>(sensitivity).to_ulong();;
+
+                    } else if (!strcmp(ptr, "ABITS")) {
+                        if (sensitivity > 0)
+                            attributes->ABITS = std::bitset<2>(sensitivity).to_ulong();
                     }
                 }
             } else if (!strcmp(ptr, ".end") || !strcmp(ptr, ".subckt")) {

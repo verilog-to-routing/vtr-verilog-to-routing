@@ -229,44 +229,55 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
  * ---------------------------------------------------------------------------------------------
  * (function: make or chain)
  * 
- * @brief create a chain of OR gates that OR the given pins
+ * @brief create a chain of TYPE gates for the given pins
  * 
- * @param inputs signal list of pins need to be OR
+ * @param inputs signal list of pins
  * @param node netlist node that input pins come from it
  * 
  * @return the last output pin of the chain
  * -------------------------------------------------------------------------------------------
  */
-signal_list_t* make_or_chain(signal_list_t* inputs, nnode_t* node) {
+signal_list_t* make_chain(operation_list type, signal_list_t* inputs, nnode_t* node) {
     int i;
     int width = inputs->count;
+
+    if (width == 1)
+        return (inputs);
+
     signal_list_t* output = init_signal_list();
 
-    nnode_t** or_gates = (nnode_t**)vtr::calloc(width - 1, sizeof(nnode_t*));
+    /* detach pins from their node */
+    for (i = 0; i < width; i++) {
+        npin_t* pin = inputs->pins[i];
+        if (pin->node)
+            pin->node->input_pins[pin->pin_node_idx] = NULL;
+    }
+
+    nnode_t** gates = (nnode_t**)vtr::calloc(width - 1, sizeof(nnode_t*));
     signal_list_t* internal_outputs = init_signal_list();
 
     /* ending in (width - 1) since we take first two pins in the beginning */
     for (i = 0; i < width - 1; i++) {
-        or_gates[i] = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, node->traverse_visited);
+        gates[i] = make_2port_gate(type, 1, 1, 1, node, node->traverse_visited);
 
         if (i == 0) {
             /* taking the first two pins */
-            remap_pin_to_new_node(inputs->pins[0], or_gates[i], 0);
-            remap_pin_to_new_node(inputs->pins[1], or_gates[i], 1);
+            add_input_pin_to_node(gates[i], inputs->pins[0], 0);
+            add_input_pin_to_node(gates[i], inputs->pins[1], 1);
 
         } else {
             /* taking the first two pins */
-            remap_pin_to_new_node(inputs->pins[i + 1], or_gates[i], 0);
-            add_input_pin_to_node(or_gates[i], internal_outputs->pins[i - 1], 1);
+            add_input_pin_to_node(gates[i], inputs->pins[i + 1], 0);
+            add_input_pin_to_node(gates[i], internal_outputs->pins[i - 1], 1);
         }
 
         // specify the output pin
         npin_t* new_pin1 = allocate_npin();
         npin_t* new_pin2 = allocate_npin();
         nnet_t* new_net = allocate_nnet();
-        new_net->name = make_full_ref_name(NULL, NULL, NULL, or_gates[i]->name, 0);
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, gates[i]->name, 0);
         /* hook the output pin into the node */
-        add_output_pin_to_node(or_gates[i], new_pin1, 0);
+        add_output_pin_to_node(gates[i], new_pin1, 0);
         /* hook up new pin 1 into the new net */
         add_driver_pin_to_net(new_net, new_pin1);
         /* hook up the new pin 2 to this new net */
@@ -282,7 +293,7 @@ signal_list_t* make_or_chain(signal_list_t* inputs, nnode_t* node) {
     // CLEAN UP
     free_signal_list(inputs);
     free_signal_list(internal_outputs);
-    vtr::free(or_gates);
+    vtr::free(gates);
 
     return (output);
 }
@@ -385,4 +396,74 @@ nnode_t* make_mult_block(nnode_t* node, short mark) {
     allocate_more_output_pins(logic_node, node->num_output_pins);
 
     return logic_node;
+}
+
+/**
+ * (function: create_multiport_mux)
+ * 
+ * @brief create a multiport mux with given selector and signals lists
+ * 
+ * @param selector signal list of selector pins
+ * @param num_muxed_inputs num of inputs to be muxxed
+ * @param inputs list of input signal lists
+ * @param node pointing to a bram node
+ * 
+ * @return mux output signal list
+ */
+signal_list_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node) {
+    int i, j;
+    int offset = 0;
+    nnode_t* mux = allocate_nnode(node->loc);
+    signal_list_t* output_signal_list = init_signal_list();
+
+    mux->type = MULTIPORT_nBIT_MUX;
+    mux->name = node_name(mux, node->name);
+    mux->traverse_visited = node->traverse_visited;
+
+    /* add selector signal */
+    add_input_port_information(mux, selector->count);
+    allocate_more_input_pins(mux, selector->count);
+    for (i = 0; i < selector->count; i++) {
+        /* hook selector into mux node as first port */
+        add_input_pin_to_node(mux, selector->pins[i], i);
+    }
+    offset += selector->count;
+
+    int max_input_width = 0;
+
+    for (i = 0; i < num_muxed_inputs; i++) {
+        /* add input port data */
+        add_input_port_information(mux, inputs[i]->count);
+        allocate_more_input_pins(mux, inputs[i]->count);
+
+        for (j = 0; j < inputs[i]->count; j++) {
+            /* hook inputs into mux node */
+            add_input_pin_to_node(mux, inputs[i]->pins[j], offset + j);
+        }
+        /* keep the size of max input to allocate equal output */
+        if (inputs[i]->count > max_input_width)
+            max_input_width = inputs[i]->count;
+
+        /* record offset to have correct idx for adding pins */
+        offset += inputs[i]->count;
+    }
+
+    for (i = 0; i < max_input_width; i++) {
+        /* create the clk node's output pin */
+        npin_t* new_pin1 = allocate_npin();
+        npin_t* new_pin2 = allocate_npin();
+        nnet_t* new_net = allocate_nnet();
+        new_net->name = make_full_ref_name(NULL, NULL, NULL, mux->name, i);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(mux, new_pin1, i);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, new_pin2);
+
+        /* hook the output pin into the node */
+        add_pin_to_signal_list(output_signal_list, new_pin1);
+    }
+
+    return (output_signal_list);
 }

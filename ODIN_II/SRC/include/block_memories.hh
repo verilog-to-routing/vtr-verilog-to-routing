@@ -33,16 +33,20 @@ extern vtr::t_linked_vptr* read_only_memory_list;
  * information which is used in creating the block memory.
  */
 struct block_memory {
+    loc_t loc;
     nnode_t* node;
-    int read_addr_width;
-    int read_clk_width;
-    int read_data_width;
-    int read_en_width;
 
-    int write_addr_width;
-    int write_clk_width;
-    int write_data_width;
-    int write_en_width;
+    signal_list_t* read_addr;
+    signal_list_t* read_clk;
+    signal_list_t* read_data;
+    signal_list_t* read_en;
+
+    signal_list_t* write_addr;
+    signal_list_t* write_clk;
+    signal_list_t* write_data;
+    signal_list_t* write_en;
+
+    signal_list_t* clk;
 
     char* name;
     char* memory_id;
@@ -58,6 +62,6 @@ extern void free_block_memories();
 extern void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
-extern void iterate_block_memories();
+extern void iterate_block_memories(netlist_t* netlist);
 
 #endif // _BLOCK_MEMORIES_H_

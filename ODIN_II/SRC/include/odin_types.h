@@ -500,6 +500,7 @@ struct attr_t {
     edge_type_e WR_CLK_POLARITY; // write clock polarity
     long RD_PORTS;
     long WR_PORTS;
+    long ABITS;
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version

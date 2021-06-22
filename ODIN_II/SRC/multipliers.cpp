@@ -216,7 +216,7 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
             } else {
                 /* ELSE - the final outputs are straight from the outputs of the last adder */
                 remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width - 2], current_index);
-            }                
+            }
             current_index++;
         }
     }

@@ -698,6 +698,7 @@ attr_t* init_attribute() {
 
     attribute->RD_PORTS = 0;
     attribute->WR_PORTS = 0;
+    attribute->ABITS = 0;
 
     return attribute;
 }
@@ -731,7 +732,6 @@ signal_list_t* init_signal_list() {
  * @return is it constant or not
  *-------------------------------------------------------------------------------------------*/
 bool is_constant_signal(signal_list_t* signal, netlist_t* netlist) {
-
     int i;
     bool is_constant = true;
 
@@ -743,7 +743,7 @@ bool is_constant_signal(signal_list_t* signal, netlist_t* netlist) {
             break;
         }
     }
-    
+
     return (is_constant);
 }
 
@@ -760,7 +760,7 @@ bool is_constant_signal(signal_list_t* signal, netlist_t* netlist) {
  *-------------------------------------------------------------------------------------------*/
 long constant_signal_value(signal_list_t* signal, netlist_t* netlist) {
     oassert(is_constant_signal(signal, netlist));
-    
+
     long return_value = 0;
 
     int i;
@@ -771,7 +771,7 @@ long constant_signal_value(signal_list_t* signal, netlist_t* netlist) {
             return_value += shift_left_value_with_overflow_check(0X1, i, unknown_location);
         }
     }
-    
+
     return (return_value);
 }
 

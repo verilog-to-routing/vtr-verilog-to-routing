@@ -26,6 +26,7 @@
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "odin_util.h"
+#include "ast_util.h"
 
 #include "netlist_utils.h"
 #include "node_creation_library.h"
@@ -50,9 +51,6 @@ void pad_dp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_sp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_memory_output_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
 void pad_memory_input_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
-
-void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
-void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
 
 int get_sp_ram_split_width();
 int get_dp_ram_split_width();
@@ -237,8 +235,6 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     for (i = 0; i < signals->count; i++, j++) {
         npin_t* pin = signals->pins[i];
         if (pin->mapping) {
-            if (pin->mapping)
-                vtr::free(pin->mapping);
             vtr::free(pin->mapping);
         }
         pin->mapping = vtr::strdup(port_name);
@@ -1867,6 +1863,96 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
     return return_list;
 }
 
+/**
+ * (function: create_dual_port_rom)
+ * 
+ * @brief create a dual port ram with the given dpram signals
+ * 
+ * @param signals dpram signals
+ * @param loc netlist node location
+ * 
+ * @return a new dual port ram
+ */
+nnode_t* create_dual_port_rom(dp_ram_signals* signals, loc_t loc) {
+    /* sanity checks */
+    oassert((signals->addr1) && (signals->addr2));
+    oassert((signals->data1) && (signals->data1));
+    oassert((signals->out1) && (signals->out2));
+    oassert((signals->we1) && (signals->we2));
+    oassert(signals->clk);
+
+    oassert(signals->addr1->count >= 1 && signals->data1->count >= 1);
+    oassert(signals->addr2->count >= 1 && signals->data2->count >= 1);
+    oassert(signals->addr1->count == signals->addr2->count);
+    oassert(signals->data1->count == signals->data2->count);
+    oassert(signals->data1->count == signals->out1->count);
+    oassert(signals->data2->count == signals->out2->count);
+
+    /* create a dual port ram node */
+    nnode_t* dpram = allocate_nnode(loc);
+
+    dpram->type = MEMORY;
+    /* some information from ast node is needed in partial mapping */
+    char* hb_name = vtr::strdup(DUAL_PORT_RAM_string);
+    dpram->name = node_name(dpram, hb_name);
+
+    /* Create a fake ast node. */
+    dpram->related_ast_node = create_node_w_type(RAM, loc);
+    dpram->related_ast_node->identifier_node = create_tree_node_id(hb_name, loc);
+
+    /* INPUTS */
+    /* hook address portd into dpram */
+    add_input_port_to_memory(dpram, signals->addr1, "addr1");
+    add_input_port_to_memory(dpram, signals->addr2, "addr2");
+
+    /* hook data ports into dpram */
+    add_input_port_to_memory(dpram, signals->data1, "data1");
+    add_input_port_to_memory(dpram, signals->data2, "data2");
+
+    /* hook enable pins to dpram */
+    signal_list_t* we1 = init_signal_list();
+    add_pin_to_signal_list(we1, signals->we1);
+    add_input_port_to_memory(dpram, we1, "we1");
+
+    signal_list_t* we2 = init_signal_list();
+    add_pin_to_signal_list(we2, signals->we2);
+    add_input_port_to_memory(dpram, we2, "we2");
+
+    /* hook clk pin into dpram */
+    signal_list_t* clk = init_signal_list();
+    add_pin_to_signal_list(clk, signals->clk);
+    add_input_port_to_memory(dpram, clk, "clk");
+
+    /* OUTPUT */
+    add_output_port_to_memory(dpram, signals->out1, "out1");
+    add_output_port_to_memory(dpram, signals->out2, "out2");
+
+    // CLEAN YP
+    free_signal_list(we1);
+    free_signal_list(we2);
+    free_signal_list(clk);
+
+    return (dpram);
+}
+
+/**
+ * (function: free_block_memory_index_and_finalize_memories)
+ * 
+ * @brief Frees memory used for indexing block memories. Finalises each
+ * memory, making sure it has the right ports, and collapsing
+ * the memory if possible.
+ * 
+ * @param mem pointing to the memory node
+ */
+void register_memory_model(nnode_t* mem) {
+    /* See if the hard block declared is supported by FPGA architecture */
+    t_model* hb_model = find_hard_block(mem->related_ast_node->identifier_node->types.identifier);
+
+    if (hb_model) {
+        /* Declare the hard block as used for the blif generation */
+        hb_model->used = 1;
+    }
+}
 
 /**
  * (function: get_sp_ram_hb_ports_sizes)
@@ -1913,12 +1999,12 @@ int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                     ports_sizes[spram_ports_e::ADDR] = hb_ports->size;
 
                     if (ports_sizes[spram_ports_e::ADDR] < hb_instance_ports_sizes[spram_ports_e::ADDR])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "clk")) {
                     /* [1] clk size */
                     ports_sizes[spram_ports_e::CLK] = hb_ports->size;
                     if (ports_sizes[spram_ports_e::CLK] < hb_instance_ports_sizes[spram_ports_e::CLK])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "data")) {
                     /* [2] data size */
@@ -1928,12 +2014,12 @@ int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                     // if (ports_sizes[spram_ports_e::DATA] < hb_instance_ports_sizes[spram_ports_e::DATA])
                     //     throw;
                     if (ports_sizes[spram_ports_e::DATA] > 1)
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "we")) {
                     ports_sizes[spram_ports_e::WE] = hb_ports->size;
                     if (ports_sizes[spram_ports_e::WE] < hb_instance_ports_sizes[spram_ports_e::WE])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 }
                 hb_ports = hb_ports->next;
             }
@@ -1948,7 +2034,7 @@ int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                 // if (ports_sizes[spram_ports_e::OUT] < hb_instance_ports_sizes[spram_ports_e::OUT])
                 //     throw;
                 if (ports_sizes[spram_ports_e::DATA] > 1)
-                    throw (vtr::VtrError(hb_ports->name));
+                    throw(vtr::VtrError(hb_ports->name));
             }
 
         } catch (vtr::VtrError& vtr_error) {
@@ -2010,18 +2096,18 @@ int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                     ports_sizes[dpram_ports_e::ADDR1] = hb_ports->size;
 
                     if (ports_sizes[dpram_ports_e::ADDR1] < hb_instance_ports_sizes[dpram_ports_e::ADDR1])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "addr2")) {
                     /* [1] addr2 size */
                     ports_sizes[dpram_ports_e::ADDR2] = hb_ports->size;
 
                     if (ports_sizes[dpram_ports_e::ADDR2] < hb_instance_ports_sizes[dpram_ports_e::ADDR2])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "clk")) {
                     /* [2] clk size */
                     ports_sizes[dpram_ports_e::CLK] = hb_ports->size;
                     if (ports_sizes[dpram_ports_e::CLK] < hb_instance_ports_sizes[dpram_ports_e::CLK])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "data1")) {
                     /* [3] data1 size */
@@ -2031,7 +2117,7 @@ int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                     // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::DATA1] > 1)
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
 
                 } else if (!strcmp(hb_ports->name, "data2")) {
                     /* [4] data2 size */
@@ -2041,17 +2127,17 @@ int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                     // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::DATA2] > 1)
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "we1")) {
                     /* [5] we1 size */
                     ports_sizes[dpram_ports_e::WE1] = hb_ports->size;
                     if (ports_sizes[dpram_ports_e::WE1] < hb_instance_ports_sizes[dpram_ports_e::WE1])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "we2")) {
                     /* [6] we2 size */
                     ports_sizes[dpram_ports_e::WE2] = hb_ports->size;
                     if (ports_sizes[dpram_ports_e::WE2] < hb_instance_ports_sizes[dpram_ports_e::WE2])
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 }
                 hb_ports = hb_ports->next;
             }
@@ -2067,7 +2153,7 @@ int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                     // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::OUT1] > 1)
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 } else if (!strcmp(hb_ports->name, "out2")) {
                     /* [8] out2 size */
                     ports_sizes[dpram_ports_e::OUT2] = hb_ports->size;
@@ -2076,7 +2162,7 @@ int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
                     // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
                     //     throw;
                     if (ports_sizes[dpram_ports_e::OUT2] > 1)
-                        throw (vtr::VtrError(hb_ports->name));
+                        throw(vtr::VtrError(hb_ports->name));
                 }
                 hb_ports = hb_ports->next;
             }
@@ -2271,13 +2357,13 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
     int i, j, max_addr_width;
     int DP_ADDR1_width = node->input_port_sizes[0];
     int DP_ADDR2_width = node->input_port_sizes[1];
-    int DP_CLK_width   = node->input_port_sizes[2]; // should be 1
+    int DP_CLK_width = node->input_port_sizes[2]; // should be 1
     int DP_DATA1_width = node->input_port_sizes[3];
     int DP_DATA2_width = node->input_port_sizes[4];
-    int DP_WE1_width   = node->input_port_sizes[5]; // should be 1
-    int DP_WE2_width   = node->input_port_sizes[6]; // should be 1
-    int DP_OUT1_width  = node->output_port_sizes[0];
-    int DP_OUT2_width  = node->output_port_sizes[1];
+    int DP_WE1_width = node->input_port_sizes[5]; // should be 1
+    int DP_WE2_width = node->input_port_sizes[6]; // should be 1
+    int DP_OUT1_width = node->output_port_sizes[0];
+    int DP_OUT2_width = node->output_port_sizes[1];
 
     /* validate the port width */
     oassert((DP_CLK_width == 1) && (DP_WE1_width == 1) && (DP_WE2_width == 1));
@@ -2292,13 +2378,13 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
 
     int addr1_width = (hb_ports_sizes) ? hb_ports_sizes[0] : DP_ADDR1_width;
     int addr2_width = (hb_ports_sizes) ? hb_ports_sizes[1] : DP_ADDR2_width;
-    int clk_width   = (hb_ports_sizes) ? hb_ports_sizes[2] : DP_CLK_width;
+    int clk_width = (hb_ports_sizes) ? hb_ports_sizes[2] : DP_CLK_width;
     int data1_width = (hb_ports_sizes) ? hb_ports_sizes[3] : DP_DATA1_width;
     int data2_width = (hb_ports_sizes) ? hb_ports_sizes[4] : DP_DATA2_width;
-    int we1_width   = (hb_ports_sizes) ? hb_ports_sizes[5] : DP_WE1_width;
-    int we2_width   = (hb_ports_sizes) ? hb_ports_sizes[6] : DP_WE2_width;
-    int out1_width  = (hb_ports_sizes) ? hb_ports_sizes[7] : DP_OUT1_width;
-    int out2_width  = (hb_ports_sizes) ? hb_ports_sizes[8] : DP_OUT2_width;
+    int we1_width = (hb_ports_sizes) ? hb_ports_sizes[5] : DP_WE1_width;
+    int we2_width = (hb_ports_sizes) ? hb_ports_sizes[6] : DP_WE2_width;
+    int out1_width = (hb_ports_sizes) ? hb_ports_sizes[7] : DP_OUT1_width;
+    int out2_width = (hb_ports_sizes) ? hb_ports_sizes[8] : DP_OUT2_width;
 
     /* currently odin supports one bit data width for each spram */
     if (hb_ports_sizes) {
@@ -2437,10 +2523,8 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
         /* hook the data out pin to new node */
         remap_pin_to_new_node(out_pin2, dpram, 1);
 
-
         dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
     }
-
 
     // CLEAN UP
     free_nnode(node);
