@@ -41,16 +41,16 @@ void draw_manual_moves_window(std::string block_id) {
 		GtkWidget *calculate_cost_button = gtk_button_new_with_label("Calculate Costs");
 
 		//Add all to grid
-		gtk_grid_attach((GtkGrid*) grid, block_label, 0, 0, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, block_entry, 0, 1, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, to_label, 2, 0, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, x, 1, 1, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, x_position_entry, 2, 1, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, y, 1, 2, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, y_position_entry, 2, 2, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, subtile, 1, 3, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, subtile_position_entry, 2, 3, 1, 1);
-		gtk_grid_attach((GtkGrid*) grid, calculate_cost_button, 0, 4, 3, 1); //spans three columns
+		gtk_grid_attach((GtkGrid*)grid, block_label, 0, 0, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, block_entry, 0, 1, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, to_label, 2, 0, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, x, 1, 1, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, x_position_entry, 2, 1, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, y, 1, 2, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, y_position_entry, 2, 2, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, subtile, 1, 3, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, subtile_position_entry, 2, 3, 1, 1);
+		gtk_grid_attach((GtkGrid*)grid, calculate_cost_button, 0, 4, 3, 1); //spans three columns
 
 		//Set margins
 		gtk_widget_set_margin_bottom(grid, 20);
@@ -73,7 +73,7 @@ void draw_manual_moves_window(std::string block_id) {
 	}
 }
 
-void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget *grid) {
+void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 
 	int block_id;
 	int x_location;
@@ -92,9 +92,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget *grid) {
 	if (string_is_a_number(block_id_string)) { //for block ID
 		block_id = std::atoi(block_id_string.c_str());
 	} else { //for block name
-		block_id = size_t(
-				cluster_ctx.clb_nlist.find_block(
-						gtk_entry_get_text((GtkEntry*) block_entry)));
+		block_id = size_t(cluster_ctx.clb_nlist.find_block(gtk_entry_get_text((GtkEntry*) block_entry)));
 	}
 	//if the block is not found 
 	if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
@@ -104,8 +102,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget *grid) {
 
 	GtkWidget *x_position_entry = gtk_grid_get_child_at((GtkGrid*) grid, 2, 1);
 	GtkWidget *y_position_entry = gtk_grid_get_child_at((GtkGrid*) grid, 2, 2);
-	GtkWidget *subtile_position_entry = gtk_grid_get_child_at((GtkGrid*) grid,
-			2, 3);
+	GtkWidget *subtile_position_entry = gtk_grid_get_child_at((GtkGrid*) grid, 2, 3);
 
 	x_location = std::atoi(gtk_entry_get_text((GtkEntry*) x_position_entry));
 	y_location = std::atoi(gtk_entry_get_text((GtkEntry*) y_position_entry));
@@ -119,10 +116,8 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget *grid) {
 	//If the block requested is already in that location.
 	ClusterBlockId current_block = ClusterBlockId(block_id);
 	t_pl_loc current_block_loc = place_ctx.block_locs[current_block].loc;
-	if (x_location == current_block_loc.x && y_location == current_block_loc.y
-			&& subtile_location == current_block_loc.sub_tile) {
-		invalid_breakpoint_entry_window(
-				"The block is currently in this location");
+	if (x_location == current_block_loc.x && y_location == current_block_loc.y && subtile_location == current_block_loc.sub_tile) {
+		invalid_breakpoint_entry_window("The block is currently in this location");
 		valid_input = false;
 	}
 	//Checks if all fields from the user input window are complete.
@@ -162,9 +157,15 @@ bool string_is_a_number(std::string block_id) {
 	return true;
 }
 
+bool get_manual_move_flag() {
+	GObject *manual_moves = application.get_object("manualMove");
+	return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
+}
+
 ManualMovesGlobals* get_manual_moves_global() {
 	return &manual_moves_global;
 }
+
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(

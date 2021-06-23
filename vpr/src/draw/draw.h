@@ -103,9 +103,6 @@ void clear_colored_locations();
 // otherwise, the function returns false (the location isn't among the highlighted locations)
 bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color);
 
-//Returns if the option for manual moves has been activated or not. Useful for place.cpp file.
-bool get_manual_move_flag();
-
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

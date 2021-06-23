@@ -54,6 +54,7 @@ void draw_manual_moves_window(std::string block_id);
 void close_manual_moves_window();
 void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid);
 bool string_is_a_number(std::string block_id);
+bool get_manual_move_flag();
 void cost_summary_dialog();
 ManualMovesGlobals* get_manual_moves_global();
 void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome);
