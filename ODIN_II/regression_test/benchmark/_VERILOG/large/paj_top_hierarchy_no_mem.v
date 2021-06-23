@@ -363,7 +363,12 @@ module delay1x37 (datain, dataout, clk);
 
     assign data = mem2 ;
 
-    always @(posedge clk or posedge we)
+    /** 
+     * if (posedge we), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge we */)    
     begin
        dataout <= data ; 
        if (we == 1'b1)
@@ -389,7 +394,12 @@ module delay1x37 (datain, dataout, clk);
 
     assign data = mem2 ;
 
-    always @(posedge clk or posedge we)
+    /** 
+     * if (posedge we), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge we */)
     begin
        dataout <= data ; 
        if (we == 1'b1)
@@ -415,7 +425,12 @@ module delay1x37 (datain, dataout, clk);
 
     assign data = mem2 ;
 
-    always @(posedge clk or posedge we)
+    /** 
+     * if (posedge we), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge we */)
     begin
        dataout <= data ; 
        if (we == 1'b1)
@@ -503,7 +518,12 @@ module resultstate (commit, t1, t2, t3, u1, u2, u3, v1, v2, v3, id1, id2, id3, h
     reg temp_resultready;
     reg[31:0] temp_resultdata;
 
-    always @(posedge clk or posedge globalreset)
+    /** 
+     * if (posedge globalreset), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge globalreset */)
     begin
        if (globalreset == 1'b1)
        begin
@@ -736,7 +756,12 @@ module memoryinterface (want_addr, addr_ready, addrin, want_data, data_ready, da
 
     assign tm3_sram_data_out = tm3_sram_data_xhdl0;
 
-    always @(posedge clk or posedge globalreset)
+    /** 
+     * if (posedge globalreset), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge globalreset */)
     begin
        if (globalreset == 1'b1)
        begin
@@ -3508,7 +3533,12 @@ module nearcmp (tin, uin, vin, triIDin, hit, t, u, v, triID, anyhit, enable, res
 
 	assign anyhit = temp_anyhit;
 
-    always @(posedge clk or posedge globalreset)
+    /** 
+     * if (posedge globalreset), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge globalreset */)
     begin
        if (globalreset == 1'b1)
        begin
@@ -3621,8 +3651,13 @@ module nearcmp (tin, uin, vin, triIDin, hit, t, u, v, triID, anyhit, enable, res
 
 	assign anyhit = temp_anyhit;
 
-    always @(posedge clk or posedge globalreset)
-    begin
+    /** 
+     * if (posedge globalreset), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge globalreset */)
+       begin
        if (globalreset == 1'b1)
        begin
 

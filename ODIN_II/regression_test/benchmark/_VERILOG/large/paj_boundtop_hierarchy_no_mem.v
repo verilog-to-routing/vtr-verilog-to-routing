@@ -1654,7 +1654,12 @@ reg     temp_datavalid;
 
     assign dataout = mem_block2 ;
 
-    always @(posedge clk or posedge we)
+    /** 
+     * if (posedge we), yosys throws an multiple edge error:
+     
+     * ERROR: Multiple edge sensitive events found for this signal!
+     */
+    always @(posedge clk /* or posedge we */)
     begin
        raddr <= addr ; 
        if (we == 1'b1)
