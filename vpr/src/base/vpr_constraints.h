@@ -23,14 +23,14 @@
  * The following definitions are useful to understanding this class:
  *
  * Partition: a grouping of atoms that are constrained to a portion of an FPGA
- * See vpr/base/partition.h for more detail
+ * See vpr/src/base/partition.h for more detail
  *
  * Region: the x and y bounds of a rectangular region, optionally including a subtile value,
  * that atoms in a partition are constrained to
- * See vpr/base/region.h for more detail
+ * See vpr/src/base/region.h for more detail
  *
  * PartitionRegion: the union of regions that a partition can be placed in
- * See vpr/base/partition_region.h for more detail
+ * See vpr/src/base/partition_region.h for more detail
  *
  *
  */

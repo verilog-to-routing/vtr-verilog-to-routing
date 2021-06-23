@@ -69,7 +69,11 @@
 #include "cluster.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
+#include "place_constraints.h"
+#include "place_util.h"
+
 #include "vpr_constraints_writer.h"
+
 #include "pack_report.h"
 #include "overuse_report.h"
 
@@ -292,7 +296,8 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
              &vpr_setup->GraphicsCommands,
-             &vpr_setup->PowerOpts);
+             &vpr_setup->PowerOpts,
+             vpr_setup);
 
     /* Check inputs are reasonable */
     CheckArch(*arch);
@@ -354,8 +359,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     fflush(stdout);
-
-    ShowSetup(*vpr_setup);
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
@@ -517,6 +520,8 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
             //Load a previous packing from the .net file
             vpr_load_packing(vpr_setup, arch);
+            //Load cluster_constraints data structure here since loading pack file
+            load_cluster_constraints();
         }
 
         /* Sanity check the resulting netlist */
@@ -679,6 +684,9 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     const auto& filename_opts = vpr_setup.FileNameOpts;
+
+    //Initialize placement data structures, which will be filled when loading placement
+    init_placement_context();
 
     //Load an existing placement from a file
     read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid);
@@ -1135,7 +1143,8 @@ void vpr_setup_vpr(t_options* Options,
                    int* GraphPause,
                    bool* SaveGraphics,
                    std::string* GraphicsCommands,
-                   t_power_opts* PowerOpts) {
+                   t_power_opts* PowerOpts,
+                   t_vpr_setup* vpr_setup) {
     SetupVPR(Options,
              TimingEnabled,
              readArchFile,
@@ -1157,7 +1166,8 @@ void vpr_setup_vpr(t_options* Options,
              GraphPause,
              SaveGraphics,
              GraphicsCommands,
-             PowerOpts);
+             PowerOpts,
+             vpr_setup);
 }
 
 void vpr_check_arch(const t_arch& Arch) {

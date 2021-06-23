@@ -25,6 +25,8 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
+    const auto& rr_graph = device_ctx.rr_graph;
+
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
     rr_node_nets.resize(device_ctx.rr_nodes.size(), ClusterNetId::INVALID());
 
@@ -41,8 +43,8 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
         while (tptr != nullptr) {
             const RRNodeId& rr_node = RRNodeId(tptr->index);
             /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
-            if ((SOURCE != device_ctx.rr_nodes.node_type(rr_node))
-                && (SINK != device_ctx.rr_nodes.node_type(rr_node))) {
+            if ((SOURCE != rr_graph.node_type(rr_node))
+                && (SINK != rr_graph.node_type(rr_node))) {
                 /* Sanity check: ensure we do not revoke any net mapping
                  * In some routing architectures, node capacity is more than 1
                  * which allows a node to be mapped by multiple nets

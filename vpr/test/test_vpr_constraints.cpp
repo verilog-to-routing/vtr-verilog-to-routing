@@ -6,6 +6,7 @@
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "region.h"
+#include "place_constraints.h"
 
 /**
  * This file contains unit tests that check the functionality of all classes related to vpr constraints. These classes include
@@ -28,14 +29,14 @@ TEST_CASE("Region", "[vpr]") {
     REQUIRE(rect.ymax() == 4);
     REQUIRE(r1.get_sub_tile() == 2);
 
-    //checking that default constructor creates an empty rectangle (-1,-1,-1,-1)
+    //checking that default constructor creates an empty rectangle (999, 999,-1,-1)
     Region def_region;
     bool is_def_empty = false;
 
     vtr::Rect<int> def_rect = def_region.get_region_rect();
     is_def_empty = def_rect.empty();
     REQUIRE(is_def_empty == true);
-    REQUIRE(def_rect.xmin() == -1);
+    REQUIRE(def_rect.xmin() == 999);
     REQUIRE(def_region.get_sub_tile() == -1);
 }
 
@@ -393,36 +394,35 @@ TEST_CASE("PartRegionIntersect6", "[vpr]") {
     REQUIRE(regions[3].get_region_rect() == int_r2r4);
 }
 
-//Test the locked member function of the Region class
-TEST_CASE("RegionLocked", "[vpr]") {
-    Region r1;
-    bool is_r1_locked = false;
+//Test calculation of macro constraints
+/* Checks that the PartitionRegion of a macro member is updated properly according
+ * to the head member's PartitionRegion that is passed in.
+ */
+TEST_CASE("MacroConstraints", "[vpr]") {
+    t_pl_macro pl_macro;
+    PartitionRegion head_pr;
+    t_pl_offset offset(2, 1, 0);
 
-    //set the region to a specific x, y, subtile location - region is locked
-    r1.set_region_rect(2, 3, 2, 3); //point (2,3) to point (2,3) - locking to specific x, y location
-    r1.set_sub_tile(3);             //locking down to subtile 3
+    Region reg;
+    reg.set_region_rect(5, 2, 9, 6);
 
-    is_r1_locked = r1.locked();
+    head_pr.add_to_part_region(reg);
 
-    REQUIRE(is_r1_locked == true);
+    Region grid_reg;
+    grid_reg.set_region_rect(0, 0, 20, 20);
+    PartitionRegion grid_pr;
+    grid_pr.add_to_part_region(grid_reg);
 
-    //do not set region to specific x, y location - region is not locked even if a subtile is specified
-    r1.set_region_rect(2, 3, 5, 6); //point (2,3) to point (5,6) - not locking to specific x, y location
-    r1.set_sub_tile(3);             //locking down to subtile 3
+    PartitionRegion macro_pr = update_macro_member_pr(head_pr, offset, grid_pr, pl_macro);
 
-    is_r1_locked = r1.locked();
+    std::vector<Region> mac_regions = macro_pr.get_partition_region();
 
-    REQUIRE(is_r1_locked == false);
+    vtr::Rect<int> mac_rect = mac_regions[0].get_region_rect();
 
-    //do not specify a subtile for the region - region is not locked even if it is set at specific x, y location
-    Region r2;
-    bool is_r2_locked = true;
-
-    r2.set_region_rect(2, 3, 2, 3);
-
-    is_r2_locked = r2.locked();
-
-    REQUIRE(is_r2_locked == false);
+    REQUIRE(mac_rect.xmin() == 7);
+    REQUIRE(mac_rect.ymin() == 3);
+    REQUIRE(mac_rect.xmax() == 11);
+    REQUIRE(mac_rect.ymax() == 7);
 }
 
 static constexpr const char kArchFile[] = "test_read_arch_metadata.xml";

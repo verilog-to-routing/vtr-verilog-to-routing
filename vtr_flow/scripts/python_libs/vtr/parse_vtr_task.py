@@ -228,7 +228,7 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE):
 
 
 def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
-    """ Parse the result files from the give jobs """
+    """Parse the result files from the give jobs"""
     task_parse_results_filepath = str(PurePath(run_dir) / flow_metrics_basename)
     with open(task_parse_results_filepath, "w") as out_f:
 
@@ -262,7 +262,7 @@ def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
 
 
 def create_golden_results_for_tasks(configs):
-    """ Runs create_golden_results_for_task on all of the give configuration """
+    """Runs create_golden_results_for_task on all of the give configuration"""
 
     for config in configs:
         create_golden_results_for_task(config)
@@ -281,7 +281,7 @@ def create_golden_results_for_task(config):
 
 
 def check_golden_results_for_tasks(configs):
-    """ runs check_golden_results_for_task on all the input configurations """
+    """runs check_golden_results_for_task on all the input configurations"""
     num_qor_failures = 0
 
     print("\nCalculating QoR results...")
@@ -347,7 +347,7 @@ def check_two_files(
     first_name="task",
     second_name="golden",
 ):
-    """ Compare two files results """
+    """Compare two files results"""
     first_results = load_parse_results(first_results_filepath)
     second_results = load_parse_results(second_results_filepath)
     # Verify that the architecture and circuit are specified
@@ -461,7 +461,7 @@ def check_two_files(
 
 
 def summarize_qor(configs):
-    """ Summarize the Qor results """
+    """Summarize the Qor results"""
 
     first = True
     task_path = Path(configs[0].config_dir).parent
@@ -483,7 +483,7 @@ def summarize_qor(configs):
 
 
 def calc_geomean(args, configs):
-    """ caclulate and ouput the geomean values to the geomean file """
+    """caclulate and ouput the geomean values to the geomean file"""
     first = False
     task_path = Path(configs[0].config_dir).parent
     if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():
@@ -533,7 +533,7 @@ def calc_geomean(args, configs):
 
 
 def calculate_individual_geo_mean(lines, index, geo_mean, num):
-    """ Calculate an individual line of parse results goe_mean """
+    """Calculate an individual line of parse results goe_mean"""
     previous_value = None
     for line in lines:
         line = line.split("\t")[4:]
@@ -551,7 +551,7 @@ def calculate_individual_geo_mean(lines, index, geo_mean, num):
 
 
 def find_latest_run_dir(config):
-    """ Find the latest run directory for given configuration """
+    """Find the latest run directory for given configuration"""
     task_dir = find_task_dir(config)
 
     run_dir = get_latest_run_dir(task_dir)

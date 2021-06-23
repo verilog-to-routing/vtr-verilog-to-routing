@@ -49,10 +49,11 @@ inline float get_single_rr_cong_acc_cost(int inode) {
 /* Returns the present congestion cost of using this rr_node */
 inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     int occ = route_ctx.rr_node_route_inf[inode].occ();
-    int capacity = device_ctx.rr_nodes[inode].capacity();
+    int capacity = rr_graph.node_capacity(RRNodeId(inode));
 
     if (occ >= capacity) {
         return (1. + pres_fac * (occ + 1 - capacity));
@@ -65,10 +66,11 @@ inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
  * *ignoring* non-configurable edges */
 inline float get_single_rr_cong_cost(int inode, float pres_fac) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     float pres_cost;
-    int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+    int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(RRNodeId(inode));
 
     if (overuse >= 0) {
         pres_cost = (1. + pres_fac * (overuse + 1));

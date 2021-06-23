@@ -16,7 +16,7 @@ source $SCRIPT_DIR/steps/hostinfo.sh
 # Output git information
 source $SCRIPT_DIR/steps/git.sh
 
-if [ $VTR_TEST == "vtr_reg_strong" ]; then
+if [ $VTR_TEST == "vtr_reg_strong" ] || [ $VTR_TEST == "odin_reg_strong" ]; then
 	source $SCRIPT_DIR/steps/vtr-min-setup.sh
 else
 	source $SCRIPT_DIR/steps/vtr-full-setup.sh

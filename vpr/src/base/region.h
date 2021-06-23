@@ -13,6 +13,9 @@
  *
  */
 
+/// @brief sentinel value for indicating that a subtile has not been specified
+constexpr int NO_SUBTILE = -1;
+
 class Region {
   public:
     /**
@@ -23,7 +26,7 @@ class Region {
     /**
      * @brief Accessor for the region's rectangle
      */
-    vtr::Rect<int> get_region_rect();
+    vtr::Rect<int> get_region_rect() const;
 
     /**
      * @brief Mutator for the region's rectangle
@@ -33,7 +36,7 @@ class Region {
     /**
      * @brief Accessor for the region's subtile
      */
-    int get_sub_tile();
+    int get_sub_tile() const;
 
     /**
      * @brief Mutator for the region's subtile
@@ -41,14 +44,10 @@ class Region {
     void set_sub_tile(int _sub_tile);
 
     /**
-     * @brief Return whether the region is empty, based on whether the region rectangle is empty
+     * @brief Return whether the region is empty (i. e. the region bounds rectangle
+     * covers no area)
      */
     bool empty();
-
-    /**
-     * @brief Checks whether a block is locked down to a specific x, y, subtile location
-     */
-    bool locked();
 
     /**
      * @brief Check if the location is in the region (at a valid x, y, subtile location within the region bounds, inclusive)
@@ -84,7 +83,7 @@ bool do_regions_intersect(Region r1, Region r2);
  *   @param r2  One of the regions to intersect
  *
  */
-Region intersection(Region r1, Region r2);
+Region intersection(const Region& r1, const Region& r2);
 
 ///@brief Used to print data from a Region
 void print_region(FILE* fp, Region region);

@@ -1,0 +1,158 @@
+#ifndef RR_SPATIAL_LOOKUP_H
+#define RR_SPATIAL_LOOKUP_H
+
+#include "vtr_geometry.h"
+#include "vpr_types.h"
+
+/******************************************************************** 
+ * A data structure built to find the id of an routing resource node 
+ * (rr_node) given information about its physical position and type.
+ * The data structure is mostly needed during rr_graph building
+ *
+ * The data structure allows users to 
+ * - Update the look-up with new nodes
+ * - Find the id of a node with given information, e.g., x, y, type etc.
+ ********************************************************************/
+class RRSpatialLookup {
+    /* -- Constructors -- */
+  public:
+    /* Explicitly define the only way to create an object */
+    explicit RRSpatialLookup(t_rr_node_indices& rr_node_indices);
+
+    /* Disable copy constructors and copy assignment operator
+     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * memory footprint of the data structure could ~ Gb
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * by compiler
+     */
+    RRSpatialLookup(const RRSpatialLookup&) = delete;
+    void operator=(const RRSpatialLookup&) = delete;
+
+    /* -- Accessors -- */
+  public:
+    /**
+     * Returns the index of the specified routing resource node.  
+     * - (x, y) are the grid location within the FPGA
+     * - rr_type specifies the type of resource,
+     * - ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
+     *   All ptcs start at 0 and are positive.
+     *   Depending on what type of resource this is, ptc can be 
+     *     - the class number of a common SINK/SOURCE node of grid, 
+     *       starting at 0 and go up to class_inf size - 1 of SOURCEs + SINKs in a grid
+     *     - pin number of an input/output pin of a grid. They would normally start at 0
+     *       and go to the number of pins on a block at that (x, y) location
+     *     - track number of a routing wire in a channel. They would normally go from 0
+     *       to channel_width - 1 at that (x,y)
+     *
+     * An invalid id will be returned if the node does not exist
+     *
+     * Note that for segments (CHANX and CHANY) of length > 1, the segment is
+     * given an rr_index based on the (x,y) location at which it starts (i.e.
+     * lowest (x,y) location at which this segment exists).
+     *
+     * The 'side' argument only applies to IPIN/OPIN types, and specifies which
+     * side of the grid tile the node should be located on. The value is ignored
+     * for non-IPIN/OPIN types
+     *
+     * This routine also performs error checking to make sure the node in
+     * question exists.
+     */
+    RRNodeId find_node(int x,
+                       int y,
+                       t_rr_type type,
+                       int ptc,
+                       e_side side = NUM_SIDES) const;
+
+    /* -- Mutators -- */
+  public:
+    /**
+     * Register a node in the fast look-up 
+     * - You must have a valid node id to register the node in the lookup
+     * - (x, y) are the coordinate of the node to be indexable in the fast look-up
+     * - type is the type of a node
+     * - ptc is a feature number of a node, which can be
+     *   - the class number of a common SINK/SOURCE node of grid, 
+     *   - pin index in a tile when type is OPIN/IPIN
+     *   - track index in a routing channel when type is CHANX/CHANY
+     * - side is the side of node on the tile, applicable to OPIN/IPIN 
+     *
+     * Note that a node added with this call will not create a node in the rr_graph_storage node list
+     * You MUST add the node in the rr_graph_storage so that the node is valid  
+     *
+     * TODO: Consider to try to return a reference to *this so that we can do chain calls
+     *   - .add_node(...)
+     *   - .add_node(...)
+     *   - .add_node(...)
+     *   As such, multiple node addition could be efficiently implemented
+     */
+    void add_node(RRNodeId node,
+                  int x,
+                  int y,
+                  t_rr_type type,
+                  int ptc,
+                  e_side side);
+
+    /**
+     * Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+     * a destination coordinate.
+     * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
+     * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 
+     * SOURCE and SINK nodes are indexable in any location inside the boundry.
+     *
+     * An example of usage: 
+     * 
+     *   // Create a empty lookup
+     *   RRSpatialLookup rr_lookup;
+     *   // Adding other nodes ...
+     *   // Copy the nodes whose types are SOURCE at (1, 1) to (1, 2)
+     *   rr_lookup.mirror_nodes(vtr::Point<int>(1, 1),
+     *                          vtr::Point<int>(1, 2),
+     *                          SOURCE,
+     *                          TOP);
+     *
+     * Note: currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
+     * depending on needs
+     *
+     * TODO: Consider to make a high-level API to duplicate the nodes for large blocks. 
+     * Then this API can become a private one
+     * For example, 
+     *   expand_nodes(source_coordinate, bounding_box_coordinate, type, side);
+     * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y) 
+     * corner when dealing with large blocks. But this may require the data structure to be dependent 
+     * on DeviceGrid information (it needs to identify if a grid has height > 1 as well as width > 1)
+     */
+    void mirror_nodes(const vtr::Point<int>& src_coord,
+                      const vtr::Point<int>& des_coord,
+                      t_rr_type type,
+                      e_side side);
+
+    /**
+     * Resize the given 3 dimensions (x, y, side) of the RRSpatialLookup data structure for the given type
+     * This function will keep any existing data
+     *
+     * Strongly recommend to use when the sizes of dimensions are deterministic
+     *
+     * TODO: should have a reserve function but vtd::ndmatrix does not have such API
+     *       as a result, resize can be an internal one while reserve function is a public mutator
+     */
+    void resize_nodes(int x,
+                      int y,
+                      t_rr_type type,
+                      e_side side);
+
+    /* -- Internal data storage -- */
+  private:
+    /* TODO: When the refactoring effort finishes, 
+     * the data structure will be the owner of the data storages. 
+     * That is why the reference is used here.
+     * It can avoid a lot of code changes once the refactoring is finished 
+     * (there is no function get data directly through the rr_node_indices in DeviceContext).
+     * If pointers are used, it may cause many codes in client functions 
+     * or inside the data structures to be changed later.
+     * That explains why the reference is used here temporarily
+     */
+    /* Fast look-up */
+    t_rr_node_indices& rr_node_indices_;
+};
+
+#endif
