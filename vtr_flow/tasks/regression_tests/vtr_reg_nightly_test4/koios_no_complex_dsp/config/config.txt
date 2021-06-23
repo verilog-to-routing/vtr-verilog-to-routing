@@ -9,7 +9,12 @@ circuits_dir=benchmarks/verilog/koios
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
-# Add circuits to list to sweep
+# Add circuits to list to sweep.
+# Some of these benchmarks are designs with complex_dsp blocks 
+# but in this task, we're running them without enabling these
+# blocks (that is, the macro `complex_dsp` is not defined).
+# Equivalent functionality is obtained through behavioral logic 
+# that gets mapped to soft logic.
 circuit_list_add=tpu_like.small.v
 circuit_list_add=dla_like.small.v
 circuit_list_add=bnn.v
