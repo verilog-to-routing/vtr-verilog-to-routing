@@ -20,6 +20,7 @@ void draw_manual_moves_window(std::string block_id) {
 		manual_moves_global.manual_move_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		gtk_window_set_position((GtkWindow*) manual_moves_global.manual_move_window, GTK_WIN_POS_CENTER);
 		gtk_window_set_title((GtkWindow*) manual_moves_global.manual_move_window, "Manual Moves Generator");
+		gtk_widget_set_name(manual_moves_global.manual_move_window, "manual_move_window");
 
 		GtkWidget *grid = gtk_grid_new();
 		GtkWidget *block_entry = gtk_entry_new();
@@ -29,16 +30,16 @@ void draw_manual_moves_window(std::string block_id) {
 			manual_moves_global.user_highlighted_block = false;
 		}
 
-		GtkWidget *x_position_entry = gtk_entry_new();
-		GtkWidget *y_position_entry = gtk_entry_new();
-		GtkWidget *subtile_position_entry = gtk_entry_new();
-		GtkWidget *block_label = gtk_label_new("Block ID/Block Name:");
-		GtkWidget *to_label = gtk_label_new("To Location:");
-		GtkWidget *x = gtk_label_new("x:");
-		GtkWidget *y = gtk_label_new("y:");
-		GtkWidget *subtile = gtk_label_new("Subtile:");
+		GtkWidget* x_position_entry = gtk_entry_new();
+		GtkWidget* y_position_entry = gtk_entry_new();
+		GtkWidget* subtile_position_entry = gtk_entry_new();
+		GtkWidget* block_label = gtk_label_new("Block ID/Block Name:");
+		GtkWidget* to_label = gtk_label_new("To Location:");
+		GtkWidget* x = gtk_label_new("x:");
+		GtkWidget* y = gtk_label_new("y:");
+		GtkWidget* subtile = gtk_label_new("Subtile:");
 
-		GtkWidget *calculate_cost_button = gtk_button_new_with_label("Calculate Costs");
+		GtkWidget* calculate_cost_button = gtk_button_new_with_label("Calculate Costs");
 
 		//Add all to grid
 		gtk_grid_attach((GtkGrid*)grid, block_label, 0, 0, 1, 1);
@@ -65,8 +66,9 @@ void draw_manual_moves_window(std::string block_id) {
 		gtk_widget_set_halign(calculate_cost_button, GTK_ALIGN_CENTER);
 
 		//connect signals
-		g_signal_connect(G_OBJECT(manual_moves_global.manual_move_window), "destroy", G_CALLBACK(close_manual_moves_window), NULL);
 		g_signal_connect(calculate_cost_button, "clicked", G_CALLBACK(calculate_cost_callback), grid);
+		g_signal_connect(G_OBJECT(manual_moves_global.manual_move_window), "destroy", G_CALLBACK(close_manual_moves_window), NULL);
+
 
 		gtk_container_add(GTK_CONTAINER(manual_moves_global.manual_move_window), grid);
 		gtk_widget_show_all(manual_moves_global.manual_move_window);
@@ -201,12 +203,6 @@ e_create_move ManualMoveGenerator::propose_move(
 	if (std::find(compatible_subtiles.begin(), compatible_subtiles.end(), to.sub_tile) == compatible_subtiles.end()) {
 		return e_create_move::ABORT;
 	}
-
-	/*std::cout << "The to subtile: " << to.sub_tile << std::endl;
-	for(auto itr = compatible_subtiles.begin(); itr != compatible_subtiles.end(); itr++) {
-		std::cout << *itr << std::endl;
-	}*/
-
 
 	e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 	return create_move;
