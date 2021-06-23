@@ -1867,12 +1867,13 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
             model = create_model(name, ports, ports->count - 1, ports->count);
             break;
         }
-        case (SPRAM): //fallthrough
-        case (ROM):   //fallthrough
-        case (SDFF):  //fallthrough
-        case (SDFFE): //fallthrough
+        case (SETCLR): //fallthrough
+        case (SPRAM):  //fallthrough
+        case (ROM):    //fallthrough
+        case (SDFF):   //fallthrough
+        case (SDFFE):  //fallthrough
         case (SDFFCE): //fallthrough
-        case (DFFSR): //fallthrough
+        case (DFFSR):  //fallthrough
         case (DFFSRE): {
             // create a model with single output port, being read as the port [n-2] among [0...n-1]
             model = create_model(name, ports, ports->count - 2, ports->count - 1);
@@ -2120,6 +2121,7 @@ bool BLIF::Reader::need_params(operation_list type) {
         case (ASR):     //fallthrough
         case (DLATCH):  //fallthrough
         case (ADLATCH): //fallthrough
+        case (SETCLR):  //fallthrough
         case (ADFF):    //fallthrough
         case (SDFF):    //fallthrough
         case (DFFE):    //fallthrough

@@ -189,18 +189,18 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
  *--------------------------------------------------------------------*/
 void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlist) {
     switch (node->type) {
-        case GTE: //fallthrough
-        case LTE: //fallthrough
-        case GT:  //fallthrough
-        case LT:  //fallthrough
-        case LOGICAL_OR:
-        case LOGICAL_AND:
-        case LOGICAL_NOT:
-        case LOGICAL_NOR:
-        case LOGICAL_NAND:
-        case LOGICAL_XOR:
-        case LOGICAL_XNOR:
-        case LOGICAL_EQUAL:
+        case GTE:           //fallthrough
+        case LTE:           //fallthrough
+        case GT:            //fallthrough
+        case LT:            //fallthrough
+        case LOGICAL_OR:    //fallthrough
+        case LOGICAL_AND:   //fallthrough
+        case LOGICAL_NOT:   //fallthrough
+        case LOGICAL_NOR:   //fallthrough
+        case LOGICAL_NAND:  //fallthrough
+        case LOGICAL_XOR:   //fallthrough
+        case LOGICAL_XNOR:  //fallthrough
+        case LOGICAL_EQUAL: //fallthrough
         case NOT_EQUAL: {
             /** 
              * to make sure they have only one output pin for partial mapping phase 
@@ -239,6 +239,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_arithmetic_nodes(node, traverse_number, netlist);
             break;
         }
+        case SETCLR: //fallthorugh
         case DLATCH: //fallthorugh
         case ADLATCH: {
             /**
@@ -284,18 +285,18 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_memory_nodes(node, traverse_number, netlist);
             break;
         }
-        case GND_NODE:
-        case VCC_NODE:
-        case PAD_NODE:
-        case INPUT_NODE:
-        case OUTPUT_NODE:
-        case BUF_NODE:
-        case BITWISE_NOT:
-        case BITWISE_AND:
-        case BITWISE_OR:
-        case BITWISE_NAND:
-        case BITWISE_NOR:
-        case BITWISE_XNOR:
+        case GND_NODE:     //fallthrough
+        case VCC_NODE:     //fallthrough
+        case PAD_NODE:     //fallthrough
+        case INPUT_NODE:   //fallthrough
+        case OUTPUT_NODE:  //fallthrough
+        case BUF_NODE:     //fallthrough
+        case BITWISE_NOT:  //fallthrough
+        case BITWISE_AND:  //fallthrough
+        case BITWISE_OR:   //fallthrough
+        case BITWISE_NAND: //fallthrough
+        case BITWISE_NOR:  //fallthrough
+        case BITWISE_XNOR: //fallthrough
         case BITWISE_XOR: {
             /* some are already resolved for this phase */
             break;
@@ -613,6 +614,13 @@ static void resolve_latch_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
              * resolving the adlatch node
              */
             resolve_adlatch_node(node, traverse_mark_number, netlist);
+            break;
+        }
+        case SETCLR: {
+            /**
+             * resolving a sr node with set and reset
+            */
+            resolve_sr_node(node, traverse_mark_number, netlist);
             break;
         }
         default: {

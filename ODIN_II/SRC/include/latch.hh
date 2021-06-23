@@ -27,5 +27,6 @@
 
 extern void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist); 
+extern void resolve_sr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 #endif //__LATCH_H__

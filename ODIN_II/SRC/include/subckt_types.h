@@ -249,7 +249,7 @@ typemap yosys_subckt_str({
                              {"$specify2", operation_list_END},       // (EN, SRC, DST)
                              {"$specify3", operation_list_END},       // (EN, SRC, DST, DAT)
                              {"$specrule", operation_list_END},       // (EN_SRC, EN_DST, SRC, DST)
-                             {"$sr", operation_list_END},             // (SET, CLR, Q)
+                             {"$sr", SETCLR},                         // (SET, CLR, Q)
                              {"$sshl", ASL},                          // (A, B, Y)
                              {"$sshr", ASR},                          // (A, B, Y)
                              {"$sub", MINUS},                         // (A, B, Y)

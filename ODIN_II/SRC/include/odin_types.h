@@ -279,6 +279,7 @@ enum operation_list {
     DFFSRE,             // data, clear and set with enable to output port
     DLATCH,             // datato output port based on polarity without clk
     ADLATCH,            // datato output port based on polarity without clk
+    SETCLR,             // set or clear an input pins
     SPRAM,              // representing primitive single port ram
     DPRAM,              // representing primitive dual port ram
     BRAM,               // block of memry generated in yosys subcircuit formet blif file
