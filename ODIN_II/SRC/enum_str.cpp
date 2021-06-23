@@ -38,6 +38,7 @@ const char* ZERO_PAD_ZERO = _ZERO_PAD_ZERO[ODIN_STRING_TYPE];
 
 const char* SINGLE_PORT_RAM_string = "single_port_ram";
 const char* DUAL_PORT_RAM_string = "dual_port_ram";
+const char* LUTRAM_string = "lutram_ram";
 
 const char* operation_list_STR[][2] = {
     {"NO_OP", "nOP"},

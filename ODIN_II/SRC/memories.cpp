@@ -52,9 +52,45 @@ void pad_sp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_memory_output_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
 void pad_memory_input_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
 
+static int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
+static int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
+
 int get_sp_ram_split_width();
 int get_dp_ram_split_width();
 void filter_memories_by_soft_logic_cutoff();
+
+/**
+ * (function: init_sp_ram_signals)
+ * 
+ * @brief initialize sp ram signal lists
+ */
+sp_ram_signals* init_sp_ram_signals() {
+    sp_ram_signals* signals = (sp_ram_signals*)vtr::malloc(sizeof(sp_ram_signals));
+
+    signals->addr = init_signal_list();
+    signals->data = init_signal_list();
+    signals->out = init_signal_list();
+
+    return (signals);
+}
+
+/**
+ * (function: init_dp_ram_signals)
+ * 
+ * @brief initialize dp ram signal lists
+ */
+dp_ram_signals* init_dp_ram_signals() {
+    dp_ram_signals* signals = (dp_ram_signals*)vtr::malloc(sizeof(dp_ram_signals));
+
+    signals->addr1 = init_signal_list();
+    signals->addr2 = init_signal_list();
+    signals->data1 = init_signal_list();
+    signals->data2 = init_signal_list();
+    signals->out1 = init_signal_list();
+    signals->out2 = init_signal_list();
+
+    return (signals);
+}
 
 long get_sp_ram_depth(nnode_t* node) {
     sp_ram_signals* signals = get_sp_ram_signals(node);
@@ -1864,6 +1900,62 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
 }
 
 /**
+ * (function: create_single_port_rom)
+ * 
+ * @brief create a single
+ * @param signals spram signals
+ * @param loc netlist node location
+ * 
+ * @return a new single port ram
+ */
+nnode_t* create_single_port_rom(sp_ram_signals* signals, loc_t loc) {
+    /* sanity checks */
+    oassert(signals->clk != NULL);
+    oassert(signals->we != NULL);
+    oassert(signals->addr->count >= 1);
+    oassert(signals->data->count >= 1);
+    oassert(signals->data->count == signals->out->count);
+
+    /* create a single port ram node */
+    nnode_t* spram = allocate_nnode(loc);
+
+    spram->type = MEMORY;
+    /* some information from ast node is needed in partial mapping */
+    char* hb_name = vtr::strdup(SINGLE_PORT_RAM_string);
+    spram->name = node_name(spram, hb_name);
+
+    /* Create a fake ast node. */
+    spram->related_ast_node = create_node_w_type(RAM, loc);
+    spram->related_ast_node->identifier_node = create_tree_node_id(hb_name, loc);
+
+    /* INPUTS */
+    /* hook address portd into spram */
+    add_input_port_to_memory(spram, signals->addr, "addr");
+
+    /* hook data ports into spram */
+    add_input_port_to_memory(spram, signals->data, "data");
+
+    /* hook enable pins to spram */
+    signal_list_t* we = init_signal_list();
+    add_pin_to_signal_list(we, signals->we);
+    add_input_port_to_memory(spram, we, "we");
+
+    /* hook clk pin into spram */
+    signal_list_t* clk = init_signal_list();
+    add_pin_to_signal_list(clk, signals->clk);
+    add_input_port_to_memory(spram, clk, "clk");
+
+    /* OUTPUT */
+    add_output_port_to_memory(spram, signals->out, "out");
+
+    // CLEAN YP
+    free_signal_list(we);
+    free_signal_list(clk);
+
+    return (spram);
+}
+
+/**
  * (function: create_dual_port_rom)
  * 
  * @brief create a dual port ram with the given dpram signals
@@ -1963,7 +2055,7 @@ void register_memory_model(nnode_t* mem) {
  * @param hb_instance_ports_sizes ports sizes of the spram instance
  * @param hb_instance spram hard block instance
  */
-int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
+static int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
     /* return value */
     int* ports_sizes = NULL;
 
@@ -2056,7 +2148,7 @@ int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instan
  * @param hb_instance_ports_sizes ports sizes of the dpram instance
  * @param hb_instance dpram hard block instance
  */
-int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
+static int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
     /* return value */
     int* ports_sizes = NULL;
 

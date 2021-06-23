@@ -28,6 +28,11 @@
 extern vtr::t_linked_vptr* block_memory_list;
 extern vtr::t_linked_vptr* read_only_memory_list;
 
+const int REG_INFERRENCE_THRESHOLD_WIDTH = 32;
+const int REG_INFERRENCE_THRESHOLD_DEPTH = 20;
+const int LUTRAM_MAX_THRESHOLD_AREA = 2560;
+const int LUTRAM_MIN_THRESHOLD_AREA = 640;
+
 /*
  * Contains a pointer to the block memory node as well as other
  * information which is used in creating the block memory.

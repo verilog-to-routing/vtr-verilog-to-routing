@@ -698,6 +698,7 @@ attr_t* init_attribute() {
 
     attribute->RD_PORTS = 0;
     attribute->WR_PORTS = 0;
+    attribute->DBITS = 0;
     attribute->ABITS = 0;
 
     return attribute;
@@ -935,6 +936,7 @@ void free_signal_list(signal_list_t* list) {
         list->count = 0;
     }
     vtr::free(list);
+    list = NULL;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -962,6 +964,7 @@ void free_attribute(attr_t* attribute) {
     }
 
     vtr::free(attribute);
+    attribute = NULL;
 }
 
 /*---------------------------------------------------------------------------

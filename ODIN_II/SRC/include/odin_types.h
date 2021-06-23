@@ -167,6 +167,7 @@ extern const char* ZERO_PAD_ZERO;
 
 extern const char* SINGLE_PORT_RAM_string;
 extern const char* DUAL_PORT_RAM_string;
+extern const char* LUTRAM_string;
 
 extern const char* edge_type_e_STR[];
 extern const char* operation_list_STR[][2];
@@ -498,9 +499,10 @@ struct attr_t {
     edge_type_e WR_CLK_ENABLE;   // write clock enable
     edge_type_e RD_CLK_POLARITY; // read clock polarity
     edge_type_e WR_CLK_POLARITY; // write clock polarity
-    long RD_PORTS;
-    long WR_PORTS;
-    long ABITS;
+    long RD_PORTS;               // Numof read ports
+    long WR_PORTS;               // Num of Write ports
+    long DBITS;                  // Data width
+    long ABITS;                  // Addr width
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version

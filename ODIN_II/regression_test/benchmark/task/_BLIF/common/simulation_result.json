@@ -177,7 +177,7 @@
         "simulation_time(ms)": 61.4,
         "test_coverage(%)": 100,
         "Latch Drivers": 1,
-        "Pi": 15,
+        "Pi": 19,
         "Po": 8,
         "logic element": 122,
         "latch": 8,
@@ -196,14 +196,14 @@
         "simulation_time(ms)": 254.1,
         "test_coverage(%)": 100,
         "Latch Drivers": 2,
-        "Pi": 15,
+        "Pi": 19,
         "Po": 8,
-        "logic element": 601,
-        "latch": 136,
+        "logic element": 7569,
+        "latch": 2056,
         "Longest Path": 29,
         "Average Path": 6,
-        "Estimated LUTs": 601,
-        "Total Node": 739
+        "Estimated LUTs": 7569,
+        "Total Node": 9627
     },
     "common/const_exponentiation/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/const_exponentiation/k6_frac_N10_frac_chain_mem32K_40nm",

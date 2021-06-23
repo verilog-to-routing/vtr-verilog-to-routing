@@ -71,6 +71,9 @@ struct dp_ram_signals {
     npin_t* clk;
 };
 
+extern sp_ram_signals* init_sp_ram_signals();
+extern dp_ram_signals* init_dp_ram_signals();
+
 long get_sp_ram_split_depth();
 long get_dp_ram_split_depth();
 
@@ -121,7 +124,9 @@ extern void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar
 int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
 int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
 
+extern nnode_t* create_single_port_rom(sp_ram_signals* signals, loc_t loc);
 extern nnode_t* create_dual_port_rom(dp_ram_signals* signals, loc_t loc);
+
 extern void register_memory_model(nnode_t* mem);
 
 extern void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);

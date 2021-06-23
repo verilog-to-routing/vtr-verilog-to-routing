@@ -1994,7 +1994,20 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
                     attributes->depth = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
                 } else if (!strcmp(ptr, "WIDTH")) {
                     attributes->width = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
-                } else if (!strcmp(ptr, "MEMID")) {
+                    attributes->DBITS = std::bitset<2>(atoi(attributes->width)).to_ulong();
+                } else if (!strcmp(ptr, "RD_PORTS")) {
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->RD_PORTS = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
+                } else if (!strcmp(ptr, "WR_PORTS")) {
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->WR_PORTS = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
+                } else if (!strcmp(ptr, "ABITS")) {
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->ABITS = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
+                }else if (!strcmp(ptr, "MEMID")) {
                     std::string memory_id(vtr::strtok(NULL, TOKENS, file, buffer));
                     unsigned first_back_slash = memory_id.find_last_of(YOSYS_ID_FIRST_DELIMITER);
                     unsigned last_double_quote = memory_id.find_last_not_of(YOSYS_ID_LAST_DELIMITER);
@@ -2076,17 +2089,6 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
                         else if (sensitivity == 0)
                             attributes->WR_CLK_POLARITY = ACTIVE_LOW_SENSITIVITY;
 
-                    } else if (!strcmp(ptr, "RD_PORTS")) {
-                        if (sensitivity > 0)
-                            attributes->RD_PORTS = std::bitset<2>(sensitivity).to_ulong();;
-
-                    } else if (!strcmp(ptr, "WR_PORTS")) {
-                        if (sensitivity > 0)
-                            attributes->WR_PORTS = std::bitset<2>(sensitivity).to_ulong();;
-
-                    } else if (!strcmp(ptr, "ABITS")) {
-                        if (sensitivity > 0)
-                            attributes->ABITS = std::bitset<2>(sensitivity).to_ulong();
                     }
                 }
             } else if (!strcmp(ptr, ".end") || !strcmp(ptr, ".subckt")) {

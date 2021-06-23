@@ -596,7 +596,7 @@
         "input_blif": "matmul.blif",
         "exit": 134,
         "errors": [
-            "[NETLIST] Memory $mem~13^matrixA^MEM~29 of depth 2^32 exceeds ODIN bound of 2^10."
+            "[NETLIST] Memory dual_port_ram^MEM~30 of depth 2^32 exceeds ODIN bound of 2^10."
         ],
         "max_rss(MiB)": 7.3,
         "exec_time(ms)": 0.9,
