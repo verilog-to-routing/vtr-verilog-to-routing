@@ -21,30 +21,15 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __VERILOG_READER_H__
-#define __VERILOG_READER_H__
-
-#include "GenericReader.hh"
-#include "ast_util.h"
+#include "Verilog.hh"
 
 /**
- * @brief A class to provide the general object of an input Verilog file reader
-*/
-class VerilogReader : public GenericReader {
-    public:
-        /**
-         * @brief Construct the VerilogReader object
-         * required by compiler
-         */
-        VerilogReader();
-        /**
-         * @brief Destruct the VerilogReader object
-         * to avoid memory leakage
-         */
-        ~VerilogReader();
-
-        void* __read();
-
-};
-
-#endif
+ * @brief Construct the Verilog object
+ * required by compiler
+ */
+Verilog::Verilog() = default;
+/**
+ * @brief Destruct the Verilog object
+ * to avoid memory leakage
+ */
+Verilog::~Verilog() = default;

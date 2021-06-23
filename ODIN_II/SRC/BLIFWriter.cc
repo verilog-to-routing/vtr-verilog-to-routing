@@ -48,7 +48,6 @@
 #include "adders.h"
 #include "subtractions.h"
 
-#include "VerilogReader.hh"
 #include "BLIF.hh"
 
 /**

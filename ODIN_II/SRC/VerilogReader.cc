@@ -21,18 +21,18 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "VerilogReader.hh"
+#include "Verilog.hh"
 #include "ast_util.h"
 #include "odin_globals.h"
 #include "parse_making_ast.h"
 #include "netlist_create_from_ast.h"
 
-VerilogReader::VerilogReader()
+Verilog::Reader::Reader()
     : GenericReader() {}
 
-VerilogReader::~VerilogReader() = default;
+Verilog::Reader::~Reader() = default;
 
-void* VerilogReader::__read() {
+void* Verilog::Reader::__read() {
     /* parse to abstract syntax tree */
     printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
     verilog_ast = init_parser();

@@ -21,34 +21,6 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-
-#include "odin_ii.h"
-#include "odin_util.h"
-#include "odin_types.h"
-#include "odin_globals.h"
-
-#include "ast_util.h"
-#include "blif_elaborate.hh"
-#include "netlist_utils.h"
-#include "netlist_check.h"
-#include "simulate_blif.h"
-
-#include "vtr_util.h"
-#include "vtr_memory.h"
-
-#include "string_cache.h"
-#include "node_creation_library.h"
-
-#include "multipliers.h"
-#include "hard_blocks.h"
-#include "adders.h"
-#include "subtractions.h"
-
-#include "VerilogReader.hh"
 #include "BLIF.hh"
 
 /**

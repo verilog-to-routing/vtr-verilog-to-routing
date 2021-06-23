@@ -22,7 +22,7 @@
  */
 
 #include "GenericWriter.hh"
-#include "VerilogReader.hh"
+#include "Verilog.hh"
 #include "BLIF.hh"
 #include "config_t.h"
 #include "odin_ii.h"

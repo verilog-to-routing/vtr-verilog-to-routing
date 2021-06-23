@@ -587,4 +587,4 @@ class BLIF {
         };
 };
 
-#endif
+#endif //__BLIF_H__

@@ -22,7 +22,7 @@
  */
 
 #include "GenericReader.hh"
-#include "VerilogReader.hh"
+#include "Verilog.hh"
 #include "BLIF.hh"
 #include "config_t.h"
 #include "odin_ii.h"
@@ -68,7 +68,7 @@ inline void* GenericReader::__read() {
 }
 
 inline void* GenericReader::_read_verilog() {
-    this->verilog_reader = new VerilogReader();
+    this->verilog_reader = new Verilog::Reader();
     void* to_return = this->verilog_reader->__read();
 
     if (this->verilog_reader)
