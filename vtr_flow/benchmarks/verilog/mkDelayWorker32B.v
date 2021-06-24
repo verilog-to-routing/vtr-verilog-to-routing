@@ -4070,8 +4070,11 @@ parameter max_size = 1<<aw;
  `define awa 4
  
 module generic_fifo_sc_a(clk, rst, clr, din, we, dout, re,
-			 full_r, empty_r,
-			 full_n_r, empty_n_r);
+			 full, empty,
+             full_n, empty_n,
+             full_r, empty_r,
+			 full_n_r, empty_n_r,
+             level);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -4455,8 +4458,11 @@ parameter max_size = 1<<aw;
 
  
 module generic_fifo_sc_b(clk, rst, clr, din, we, dout, re,
-			 full_r, empty_r,
-			 full_n_r, empty_n_r);
+			 full, empty,
+             full_n, empty_n,
+             full_r, empty_r,
+			 full_n_r, empty_n_r,
+             level);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -4844,8 +4850,11 @@ parameter max_size = 1<<aw;
  `define awa 4
  
 module generic_fifo_sc_c(clk, rst, clr, din, we, dout, re,
-			 full_r, empty_r,
-			 full_n_r, empty_n_r);
+			 full, empty,
+             full_n, empty_n,
+             full_r, empty_r,
+			 full_n_r, empty_n_r,
+             level);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -5233,8 +5242,11 @@ parameter max_size = 1<<aw;
  `define dwd 128 
 
 module generic_fifo_sc_d(clk, rst, clr, din, we, dout, re,
-			 full_r, empty_r,
-			 full_n_r, empty_n_r);
+			 full, empty,
+             full_n, empty_n,
+             full_r, empty_r,
+			 full_n_r, empty_n_r,
+             level);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -5623,8 +5635,11 @@ parameter max_size = 1<<aw;
 `define awc 3
 
 module generic_fifo_sc_f(clk, rst, clr, din, we, dout, re,
-			 full_r, empty_r,
-			 full_n_r, empty_n_r);
+			 full, empty,
+             full_n, empty_n,
+             full_r, empty_r,
+			 full_n_r, empty_n_r,
+             level);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -6010,8 +6025,11 @@ parameter max_size = 1<<aw;
 `define awf 3
 
 module generic_fifo_sc_g(clk, rst, clr, din, we, dout, re,
-			 full_r, empty_r,
-			 full_n_r, empty_n_r);
+			 full, empty,
+             full_n, empty_n,
+             full_r, empty_r,
+			 full_n_r, empty_n_r,
+             level);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -6400,8 +6418,11 @@ parameter max_size = 1<<aw;
 `define awx 2
 
 module generic_fifo_sc_x(clk, rst, clr, din, we, dout, re,
-			 full_r, empty_r,
-			 full_n_r, empty_n_r);
+			 full, empty,
+             full_n, empty_n,
+             full_r, empty_r,
+			 full_n_r, empty_n_r,
+             level);
  /*
 parameter dw=8;
 parameter aw=8;
