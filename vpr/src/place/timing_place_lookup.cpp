@@ -962,6 +962,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
+    const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
     //Search the grid for an instance of from/to blocks which satisfy this direct connect offsets,
     //and which has the appropriate pins
@@ -979,10 +980,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool from_pin_found = false;
             if (direct->from_side != NUM_SIDES) {
-                RRNodeId from_pin_rr = device_ctx.rr_graph.node_lookup().find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
+                RRNodeId from_pin_rr = node_lookup.find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
                 from_pin_found = (from_pin_rr != RRNodeId::INVALID());
             } else {
-                (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(from_x, from_y, OPIN, from_pin);
+                (*scratch) = node_lookup.find_nodes_at_all_sides(from_x, from_y, OPIN, from_pin);
                 from_pin_found = !(*scratch).empty();
             }
             if (!from_pin_found) continue;
@@ -996,10 +997,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             //(with multi-width/height blocks pins may not exist at all locations)
             bool to_pin_found = false;
             if (direct->to_side != NUM_SIDES) {
-                RRNodeId to_pin_rr = device_ctx.rr_graph.node_lookup().find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
+                RRNodeId to_pin_rr = node_lookup.find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
                 to_pin_found = (to_pin_rr != RRNodeId::INVALID());
             } else {
-                (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(to_x, to_y, IPIN, to_pin);
+                (*scratch) = node_lookup.find_nodes_at_all_sides(to_x, to_y, IPIN, to_pin);
                 to_pin_found = !(*scratch).empty();
             }
             if (!to_pin_found) continue;
@@ -1037,13 +1038,13 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //
 
     {
-        (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(from_x, from_y, SOURCE, from_pin_class);
+        (*scratch) = node_lookup.find_nodes_at_all_sides(from_x, from_y, SOURCE, from_pin_class);
         VTR_ASSERT((*scratch).size() > 0);
         *src_rr = size_t((*scratch)[0]);
     }
 
     {
-        (*scratch) = device_ctx.rr_graph.node_lookup().find_nodes_at_all_sides(to_x, to_y, SINK, to_pin_class);
+        (*scratch) = node_lookup.find_nodes_at_all_sides(to_x, to_y, SINK, to_pin_class);
         VTR_ASSERT((*scratch).size() > 0);
         *sink_rr = size_t((*scratch)[0]);
     }

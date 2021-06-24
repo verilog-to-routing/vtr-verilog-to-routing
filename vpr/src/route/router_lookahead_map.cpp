@@ -546,6 +546,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     auto& device_ctx = g_vpr_ctx.device();
     const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the rr_graph below is unneeded
     auto& rr_graph = device_ctx.rr_nodes;
+    const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
     RRNodeId result = RRNodeId::INVALID();
 
@@ -563,7 +564,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     int start_lookup_y = start_y;
 
     /* find first node in channel that has specified segment index and goes in the desired direction */
-    for (const RRNodeId& node_id : device_ctx.rr_graph.node_lookup().find_channel_nodes(start_lookup_x, start_lookup_y, rr_type)) {
+    for (const RRNodeId& node_id : node_lookup.find_channel_nodes(start_lookup_x, start_lookup_y, rr_type)) {
         VTR_ASSERT(temp_rr_graph.node_type(node_id) == rr_type);
 
         e_direction node_direction = rr_graph.node_direction(node_id);

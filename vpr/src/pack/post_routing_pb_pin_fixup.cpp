@@ -55,6 +55,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                                                          const int& sub_tile_z,
                                                          size_t& num_mismatches,
                                                          const bool& verbose) {
+    const auto& node_lookup = device_ctx.rr_graph.node_lookup();
     /* Handle each pin */
     auto logical_block = clustering_ctx.clb_nlist.block_type(blk_id);
     auto physical_tile = device_ctx.grid[grid_coord.x()][grid_coord.y()].type;
@@ -152,7 +153,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
             /* Find the net mapped to this pin in routing results */
-            RRNodeId rr_node = device_ctx.rr_graph.node_lookup().find_node(grid_coord.x(), grid_coord.y(), rr_node_type, physical_pin, pin_side);
+            RRNodeId rr_node = node_lookup.find_node(grid_coord.x(), grid_coord.y(), rr_node_type, physical_pin, pin_side);
 
             /* Bypass invalid nodes, after that we must have a valid rr_node id */
             if (!rr_node) {
