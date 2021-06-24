@@ -217,10 +217,15 @@ function format_line() {
 		| sed 's/^\s*//g'	`# trim the front white space`
 }
 
+task_name_list=()
+
 function populate_arg_from_file() {
 
 	_circuits_dir=""
 	_circuit_list_add=()
+
+    TASK_PATH=$(dirname "${1}")
+    export TASK_DIR=( $(basename "${possible_test}") )
 
 	if [ "_$1" == "_" ] || [ ! -f "$1" ]
 	then
@@ -287,7 +292,6 @@ function populate_arg_from_file() {
 
 function run_task() {
     directory="$1"
-
     if [ "_${_CLEAN}" == "_on" ]; then
         find "${ODIN_DIR}/${directory/task\/}" -name "*.blif" -delete
     fi
@@ -299,8 +303,6 @@ function run_task() {
         CIRCUIT_DIR=${circuit/regression_test\/benchmark\/_VERILOG\/}
         CIRCUIT_FILE=$(basename "${circuit}")
 
-        export TASK_NAME=$(basename "${CIRCUIT_DIR}")
-        export TASK_DIR=$(dirname "${CIRCUIT_DIR}")
         export OUTPUT_BLIF_PATH="${BLIF_PATH}/${TASK_DIR}"
 
         # run yosys for the current circuit
