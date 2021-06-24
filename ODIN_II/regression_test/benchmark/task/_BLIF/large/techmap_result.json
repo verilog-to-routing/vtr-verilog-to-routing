@@ -3,18 +3,32 @@
         "test_name": "large/arm_core/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "arm_core.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin arm_core^u_execute.exec_load_rd_nxt~5: not available."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 132,
+        "Po": 179,
+        "logic element": 80113,
+        "latch": 4701,
+        "Adder": 471,
+        "Multiplier": 0,
+        "Memory": 1192,
+        "generic logic size": 4,
+        "Longest Path": 6016,
+        "Average Path": 7,
+        "Estimated LUTs": 80891,
+        "Total Node": 86478
     },
     "large/arm_core/no_arch": {
         "test_name": "large/arm_core/no_arch",
         "input_blif": "arm_core.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin arm_core^u_execute.exec_load_rd_nxt~5: not available."
-        ]
+        "Latch Drivers": 17,
+        "Pi": 132,
+        "Po": 179,
+        "logic element": 1018313,
+        "latch": 309853,
+        "Longest Path": 5968,
+        "Average Path": 7,
+        "Estimated LUTs": 1018313,
+        "Total Node": 1328183
     },
     "large/bgm/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/bgm/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -57,18 +71,32 @@
         "test_name": "large/boundtop/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "boundtop.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin paj_boundtop_hierarchy_no_mem^globalreset: not available."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 234,
+        "Po": 193,
+        "logic element": 15173,
+        "latch": 1278,
+        "Adder": 254,
+        "Multiplier": 0,
+        "Memory": 1,
+        "generic logic size": 4,
+        "Longest Path": 692,
+        "Average Path": 6,
+        "Estimated LUTs": 15507,
+        "Total Node": 16707
     },
     "large/boundtop/no_arch": {
         "test_name": "large/boundtop/no_arch",
         "input_blif": "boundtop.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin paj_boundtop_hierarchy_no_mem^globalreset: not available."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 234,
+        "Po": 193,
+        "logic element": 15675,
+        "latch": 1280,
+        "Longest Path": 717,
+        "Average Path": 6,
+        "Estimated LUTs": 15675,
+        "Total Node": 16956
     },
     "large/des_area/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/des_area/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -220,35 +248,67 @@
         "test_name": "large/LU32PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "LU32PEEng.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin LU32PEEng^compBlock.PE9.MUL.stilltiny_or_tiny_and_denormround: not available."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 25,
+        "Po": 102,
+        "logic element": 5516,
+        "latch": 348,
+        "Adder": 619,
+        "Multiplier": 0,
+        "Memory": 1,
+        "generic logic size": 4,
+        "Longest Path": 250,
+        "Average Path": 3,
+        "Estimated LUTs": 5878,
+        "Total Node": 6485
     },
     "large/LU32PEEng/no_arch": {
         "test_name": "large/LU32PEEng/no_arch",
         "input_blif": "LU32PEEng.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin LU32PEEng^compBlock.PE9.MUL.stilltiny_or_tiny_and_denormround: not available."
-        ]
+        "Latch Drivers": 1,
+        "Pi": 25,
+        "Po": 102,
+        "logic element": 6632,
+        "latch": 354,
+        "Longest Path": 387,
+        "Average Path": 3,
+        "Estimated LUTs": 6632,
+        "Total Node": 6987
     },
     "large/LU64PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/LU64PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "LU64PEEng.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin LU64PEEng^compBlock.PE9.MUL.stilltiny_or_tiny_and_denormround: not available."
-        ]
+        "exec_time(ms)": 136153,
+        "techmap_time(ms)": 136058.8,
+        "Latch Drivers": 1,
+        "Pi": 25,
+        "Po": 102,
+        "logic element": 5860,
+        "latch": 376,
+        "Adder": 654,
+        "Multiplier": 0,
+        "Memory": 1,
+        "generic logic size": 4,
+        "Longest Path": 251,
+        "Average Path": 3,
+        "Estimated LUTs": 6292,
+        "Total Node": 6892
     },
     "large/LU64PEEng/no_arch": {
         "test_name": "large/LU64PEEng/no_arch",
         "input_blif": "LU64PEEng.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] Error: Could not hook up the pin LU64PEEng^compBlock.PE9.MUL.stilltiny_or_tiny_and_denormround: not available."
-        ]
+        "exec_time(ms)": 156352.7,
+        "techmap_time(ms)": 156297.5,
+        "Latch Drivers": 1,
+        "Pi": 25,
+        "Po": 102,
+        "logic element": 7045,
+        "latch": 382,
+        "Longest Path": 398,
+        "Average Path": 3,
+        "Estimated LUTs": 7045,
+        "Total Node": 7428
     },
     "large/mac1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/mac1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -439,18 +499,32 @@
         "test_name": "large/paj_boundtop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "paj_boundtop_hierarchy_no_mem.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sr' with matching ports was not found."
-        ]
+        "Latch Drivers": 4,
+        "Pi": 263,
+        "Po": 193,
+        "logic element": 15829,
+        "latch": 2518,
+        "Adder": 248,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 704,
+        "Average Path": 7,
+        "Estimated LUTs": 16163,
+        "Total Node": 18599
     },
     "large/paj_boundtop_hierarchy_no_mem/no_arch": {
         "test_name": "large/paj_boundtop_hierarchy_no_mem/no_arch",
         "input_blif": "paj_boundtop_hierarchy_no_mem.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sr' with matching ports was not found."
-        ]
+        "Latch Drivers": 4,
+        "Pi": 263,
+        "Po": 193,
+        "logic element": 16318,
+        "latch": 2518,
+        "Longest Path": 729,
+        "Average Path": 7,
+        "Estimated LUTs": 16318,
+        "Total Node": 18840
     },
     "large/paj_framebuftop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/paj_framebuftop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -493,18 +567,32 @@
         "test_name": "large/paj_raygentop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "paj_raygentop_hierarchy_no_mem.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sr' with matching ports was not found."
-        ]
+        "Latch Drivers": 3,
+        "Pi": 237,
+        "Po": 305,
+        "logic element": 10911,
+        "latch": 2246,
+        "Adder": 447,
+        "Multiplier": 18,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 194,
+        "Average Path": 6,
+        "Estimated LUTs": 10944,
+        "Total Node": 13625
     },
     "large/paj_raygentop_hierarchy_no_mem/no_arch": {
         "test_name": "large/paj_raygentop_hierarchy_no_mem/no_arch",
         "input_blif": "paj_raygentop_hierarchy_no_mem.blif",
-        "exit": 134,
-        "errors": [
-            "[PARSE_BLIF] A subcircuit model for '$sr' with matching ports was not found."
-        ]
+        "Latch Drivers": 3,
+        "Pi": 237,
+        "Po": 305,
+        "logic element": 18819,
+        "latch": 2219,
+        "Longest Path": 336,
+        "Average Path": 6,
+        "Estimated LUTs": 18819,
+        "Total Node": 21041
     },
     "large/paj_top_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/paj_top_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",

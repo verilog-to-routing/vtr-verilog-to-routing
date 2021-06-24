@@ -286,6 +286,10 @@ assign raygroupout = raygroupout01 | raygroupout10 ;
     end 
 
     resultcounter rc (resultid, newresult, done, cntreset, pglobalreset, tm3_clk_v0); 
+
+    // global reset as an output is undriven!
+    assign globalreset = pglobalreset;
+    
  endmodule
 
 

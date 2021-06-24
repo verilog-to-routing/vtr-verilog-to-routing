@@ -4697,7 +4697,7 @@ module fpmul(clk, a, b, y_out, control, flags) ;
   
     flag		flager(invalid, overflow, inexact_or_shiftloss,  
 			shiftloss_or_inexact, 
-			/* tiny */ stilltiny_or_tiny_and_denormround,  
+			/* tiny */ still_tiny_or_tiny_and_denormround,  
 			specialcase, flags);  
 	  
  
