@@ -71,10 +71,11 @@ class RRSpatialLookup {
      *
      * Note: 
      * - Return an empty list if there are no routing channel at the given (x, y) location
-     * - The node list returned may contain some holes (invalid ids), which means that
-     *   the routing track does not exist at a specific location
-     *   For example, if the 2nd element is an invalid id, it means the 2nd routing track does not exist
-     *   in a routing channel at (x, y) location
+     * - The node list returned only contain valid ids
+     *   For example, if the 2nd routing track does not exist in a routing channel at (x, y) location,
+     *   while the 3rd routing track does exist in a routing channel at (x, y) location,
+     *   the node list will not contain the node for the 2nd routing track, but the 2nd element in the list
+     *   will be the node for the 3rd routing track
      */
     std::vector<RRNodeId> find_channel_nodes(int x,
                                              int y,

@@ -124,7 +124,9 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
     }
 
     for (const auto& node : rr_node_indices_[type][node_x][node_y][node_side]) {
-        channel_nodes.push_back(RRNodeId(node));
+        if (RRNodeId(node)) {
+            channel_nodes.push_back(RRNodeId(node));
+        }
     }
 
     return channel_nodes;

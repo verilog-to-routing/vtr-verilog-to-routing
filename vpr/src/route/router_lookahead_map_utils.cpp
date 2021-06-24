@@ -405,8 +405,6 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
             for (int iy = min_y; iy < max_y; iy++) {
                 for (auto rr_type : {CHANX, CHANY}) {
                     for (const RRNodeId& node_id : device_ctx.rr_graph.node_lookup().find_channel_nodes(ix, iy, rr_type)) {
-                        if (!node_id) continue;
-
                         //Find the IPINs which are reachable from the wires within the bounding box
                         //around the selected tile location
                         dijkstra_flood_to_ipins(node_id, chan_ipins_delays);
