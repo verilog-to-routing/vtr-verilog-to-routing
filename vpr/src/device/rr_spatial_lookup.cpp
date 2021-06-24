@@ -29,7 +29,7 @@ RRNodeId RRSpatialLookup::find_node(int x,
     }
 
     /* Pre-check: the x, y, side and ptc should be non negative numbers! Otherwise, return an invalid id */
-    if ((0 > x) || (0 > y) || (NUM_SIDES == node_side) || (0 > ptc)) {
+    if ((x < 0) || (y < 0) || (node_side == NUM_SIDES) || (ptc < 0)) {
         return RRNodeId::INVALID();
     }
 
@@ -41,7 +41,7 @@ RRNodeId RRSpatialLookup::find_node(int x,
      */
     size_t node_x = x;
     size_t node_y = y;
-    if (CHANX == type) {
+    if (type == CHANX) {
         std::swap(node_x, node_y);
     }
 
@@ -83,7 +83,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
     std::vector<RRNodeId> channel_nodes;
 
     /* Pre-check: the x, y, type are valid! Otherwise, return an empty vector */
-    if ((0 > x || 0 > y) && (CHANX == type || CHANY == type)) {
+    if ((x < 0 || y < 0) && (type == CHANX || type == CHANY)) {
         return channel_nodes;
     }
 
@@ -95,7 +95,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
      */
     size_t node_x = x;
     size_t node_y = y;
-    if (CHANX == type) {
+    if (type == CHANX) {
         std::swap(node_x, node_y);
     }
 
@@ -194,8 +194,8 @@ void RRSpatialLookup::resize_nodes(int x,
      * should ensure the fast look-up well organized  
      */
     VTR_ASSERT(type < rr_node_indices_.size());
-    VTR_ASSERT(0 <= x);
-    VTR_ASSERT(0 <= y);
+    VTR_ASSERT(x >= 0);
+    VTR_ASSERT(y >= 0);
 
     if ((x >= int(rr_node_indices_[type].dim_size(0)))
         || (y >= int(rr_node_indices_[type].dim_size(1)))
