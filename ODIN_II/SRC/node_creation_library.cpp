@@ -448,6 +448,9 @@ signal_list_t* create_multiport_mux(signal_list_t* selector, int num_muxed_input
         offset += inputs[i]->count;
     }
 
+    /* add output signal */
+    add_output_port_information(mux, max_input_width);
+    allocate_more_output_pins(mux, max_input_width);
     for (i = 0; i < max_input_width; i++) {
         /* create the clk node's output pin */
         npin_t* new_pin1 = allocate_npin();

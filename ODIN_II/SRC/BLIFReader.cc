@@ -1995,7 +1995,7 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
                     attributes->depth = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
                 } else if (!strcmp(ptr, "WIDTH")) {
                     attributes->width = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
-                    attributes->DBITS = std::bitset<2>(atoi(attributes->width)).to_ulong();
+                    attributes->DBITS = std::bitset<sizeof(long) * 8>(attributes->width).to_ulong();
                 } else if (!strcmp(ptr, "RD_PORTS")) {
                     ptr = vtr::strtok(NULL, TOKENS, file, buffer);
                     attributes->RD_PORTS = std::bitset<sizeof(long) * 8>(ptr).to_ulong();

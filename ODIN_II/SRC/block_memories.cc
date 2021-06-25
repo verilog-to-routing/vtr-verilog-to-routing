@@ -52,8 +52,9 @@ static nnode_t* map_to_single_port_ram(block_memory* rom, netlist_t* /* netlist 
 void split_bram_in_width(block_memory* bram, netlist_t* netlist);
 void split_rom_in_width(block_memory* rom, netlist_t* netlist);
 
-static nnode_t* create_encoder_with_dual_port_ram(block_memory* bram);
-static signal_list_t* create_encoder (signal_list_t** inputs, int size, nnode_t* node);
+static nnode_t* create_encoder_with_dual_port_ram(block_memory* bram, netlist_t* netlist);
+static signal_list_t* encode (signal_list_t** inputs, int size, nnode_t* node);
+static signal_list_t* decode (signal_list_t* input, signal_list_t* selectors, int width, nnode_t* node);
 static signal_list_t* merge_read_write_clks (signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist);
 
 static void cleanup_block_memory_old_node(nnode_t* old_node);
@@ -530,7 +531,8 @@ void split_bram_in_width(block_memory* bram, netlist_t* netlist) {
     int depth = shift_left_value_with_overflow_check(0X1, node->attributes->ABITS, bram->loc);
 
     /* since the data1_w + data2_w == data_out for DPRAM */
-    long split_num = node->attributes->WR_PORTS;
+    long rd_ports = node->attributes->RD_PORTS;
+    long wr_ports = node->attributes->WR_PORTS;
 
     /**
      * Potential place for checking block ram if their relative 
@@ -550,13 +552,13 @@ void split_bram_in_width(block_memory* bram, netlist_t* netlist) {
     } else {
         nnode_t* dpram = NULL;
         
-        if (split_num == 1) {
+        if (wr_ports == (rd_ports == 1)) {
             /* create the BRAM and allocate ports according to the DPRAM hard block */
             dpram = map_to_dual_port_ram(bram, netlist);
             
         } else {
             /* need to encode multiple wr data ports */
-            dpram = create_encoder_with_dual_port_ram(bram);
+            dpram = create_encoder_with_dual_port_ram(bram, netlist);
         }
         /* already compatible with DPRAM config so we leave it as is */
         dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
@@ -651,127 +653,127 @@ void iterate_block_memories(netlist_t* netlist) {
  * 
  * @return list of dpram signals 
  */
-static nnode_t* create_encoder_with_dual_port_ram(block_memory* bram) {
+static nnode_t* create_encoder_with_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     nnode_t* node = bram->node;
 
     int i, j;
-    int data_width = bram->read_data->count;
+    int data_width = bram->node->attributes->DBITS;
     int addr_width = bram->node->attributes->ABITS;
+    int num_rd_ports = node->attributes->RD_PORTS;
     int num_wr_ports = node->attributes->WR_PORTS;
     
     /* should have been resovled before this function */
+    oassert(num_rd_ports > 1);
     oassert(num_wr_ports > 1);
 
     /* create a list of dpram ram signals */
     dp_ram_signals* signals = (dp_ram_signals*)vtr::malloc(sizeof(dp_ram_signals));
 
-    
-    /* add read address as addr1 to dpram signal lists */
-    signals->addr1 = init_signal_list();
-    for (i = 0; i < bram->read_addr->count; i++) {
-        add_pin_to_signal_list(signals->addr1, bram->read_addr->pins[i]);
+
+    /*********************************************************************************************************
+     ******************************** create a multiplexer for read ports ************************************
+     *********************************************************************************************************/
+    /* encoder for rd_addr0, rd_addr1, ..., rd_addr(n-1) */
+    signal_list_t** rd_addrs = (signal_list_t**)vtr::calloc(num_rd_ports - 1, sizeof(signal_list_t*));
+    signal_list_t** rd_data_in = (signal_list_t**)vtr::calloc(num_rd_ports - 1, sizeof(signal_list_t*));
+    int offset_rd_addr = 0;
+
+    for (i = 0; i < num_rd_ports; i++) {
+        rd_addrs[i] = init_signal_list();
+        for (j = 0; j < addr_width; j++) {
+            add_pin_to_signal_list(rd_addrs[i], bram->read_addr->pins[offset_rd_addr + j]);
+        }
+        offset_rd_addr += addr_width;
+
+        rd_data_in[i] = init_signal_list();
+        for (j = 0; j < data_width; j++) {
+            add_pin_to_signal_list(rd_data_in[i], get_pad_pin(netlist));
+        }
     }
+
+    /* RD ADDRS */
+    signals->addr1 = create_multiport_mux(copy_input_signals(bram->read_en),
+                                          num_rd_ports,
+                                          rd_addrs,
+                                          node);
+
+    /* RD DATA IN */
+    signals->data1 = create_multiport_mux(copy_input_signals(bram->read_en),
+                                          num_rd_ports,
+                                          rd_data_in,
+                                          node);
+
 
     /* add read enable signals as we1 */
-    bram->read_en = make_chain(LOGICAL_OR, bram->read_en, node);
-    signals->we1 = bram->read_en->pins[0];
+    signal_list_t* rd_encode_signal = make_chain(LOGICAL_OR, copy_input_signals(bram->read_en), node);
+    signals->we1 = rd_encode_signal->pins[0];
 
-    /**
-     * the address of the LAST write data is always equal to read addr.
-     * As a result, the last write data will be mapped to data1 
-    */
-    int offset = bram->write_data->count - data_width;
-    signals->data1 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
-        add_pin_to_signal_list(signals->data1, bram->write_data->pins[offset + i]);
-    }
-    /* free last wr addr pins since they are as the same as read addr */
-    offset = bram->write_addr->count - addr_width;
-    for (i = 0; i < addr_width; i++) {
-        npin_t* pin = bram->write_addr->pins[offset + i];
-        pin->node->input_pins[pin->pin_node_idx] = NULL;
-        remove_fanout_pins_from_net(pin->net, pin, pin->pin_net_idx);
-        free_npin(pin);
+    /*********************************************************************************************************
+     ******************************* create a multiplexer for write ports ************************************
+     *********************************************************************************************************/
+    /* encoder for wr_addr0, wr_addr1, ..., wr_addr(n-1) */
+    signal_list_t** wr_addrs = (signal_list_t**)vtr::calloc(num_wr_ports, sizeof(signal_list_t*));
+    signal_list_t** wr_enables = (signal_list_t**)vtr::calloc(num_wr_ports, sizeof(signal_list_t*));
+    signal_list_t** wr_data_in = (signal_list_t**)vtr::calloc(num_wr_ports, sizeof(signal_list_t*));
+    int offset_wr_addr = 0;
+    int offset_wr_data = 0;
+
+    for (i = 0; i < num_wr_ports; i++) {
+        wr_addrs[i] = init_signal_list();
+        for (j = 0; j < addr_width; j++) {
+            add_pin_to_signal_list(wr_addrs[i], bram->write_addr->pins[offset_wr_addr + j]);
+        }
+        offset_wr_addr += addr_width;
+
+        wr_data_in[i] = init_signal_list();
+        wr_enables[i] = init_signal_list();
+        for (j = 0; j < data_width; j++) {
+            add_pin_to_signal_list(wr_data_in[i], bram->write_data->pins[offset_wr_data + j]);
+            add_pin_to_signal_list(wr_enables[i], bram->write_en->pins[offset_wr_data + j]);
+        }
+        offset_wr_data += data_width;
     }
 
+    /* encode all write addresses to use as selector for muxes */
+    signal_list_t* wr_encode_signal = encode(wr_enables, num_wr_ports, node);
+
+    /* WR ADDRS */
+    signals->addr2 = create_multiport_mux(copy_input_signals(wr_encode_signal),
+                                          num_wr_ports - 1,
+                                          wr_addrs,
+                                          node);
+
+    /* WR ADDRS */
+    signals->data2 = create_multiport_mux(copy_input_signals(wr_encode_signal),
+                                          num_wr_ports,
+                                          wr_data_in,
+                                          node);
+
+    /* add read enable signals as we1 */
+    wr_encode_signal = make_chain(LOGICAL_OR, wr_encode_signal, node);
+    signals->we2 = wr_encode_signal->pins[0];
 
 
     /* add merged clk signal as dpram clk signal */
     signals->clk = bram->clk->pins[0];
     
     
-    /* map read data to the out1 */
-    signals->out1 = init_signal_list();
+
+    /**
+     * detach read data and red en signals from 
+     * the current node since in decode they will 
+     * be adding insterd of remapping to decoder
+    */
+    for (i = 0; i < bram->read_en->count; i++) {
+        npin_t* pin = bram->read_en->pins[i];
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+    }
     for (i = 0; i < bram->read_data->count; i++) {
-        add_pin_to_signal_list(signals->out1, bram->read_data->pins[i]);
+        npin_t* pin = bram->read_data->pins[i];
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
     }
-
-
-    /* OTHER WR RELATED PORTS */
-
-    if (num_wr_ports == 2) {
-        /* no need for multiplexer, only map to the second ports */
-        /* addr2 for another write addr */
-        signals->addr2 = init_signal_list();
-        for (i = 0; i < addr_width; i++) {
-            add_pin_to_signal_list(signals->addr2, bram->write_addr->pins[i]);
-        }
-
-        /* merged enables will be connected to we2 */
-        bram->write_en = make_chain(LOGICAL_OR, bram->write_en, node);
-        signals->we2 = bram->write_en->pins[0];
-
-        /* the rest of write data pin is for data2 */
-        signals->data2 = init_signal_list();
-        for (i = 0; i < data_width; i++) {
-            add_pin_to_signal_list(signals->data2, bram->write_data->pins[i]);
-        }
-
-    } else {
-        /*********************************************************************************************************
-         **************************** create a multiplexer for other write ports *********************************
-        *********************************************************************************************************/
-        /* encoder for wr_addr0, wr_addr1, ..., wr_addr(n-1) */
-        signal_list_t** wr_addrs = (signal_list_t**)vtr::calloc(num_wr_ports - 1, sizeof(signal_list_t*));
-        signal_list_t** wr_enables = (signal_list_t**)vtr::calloc(num_wr_ports - 1, sizeof(signal_list_t*));
-        signal_list_t** wr_data = (signal_list_t**)vtr::calloc(num_wr_ports - 1, sizeof(signal_list_t*));
-        int offset_addr = 0;
-        int offset_data = 0;
-        /* -1 since last wr_addr is alredy connected */
-        for (i = 0; i < num_wr_ports - 1; i++) {
-            wr_addrs[i] = init_signal_list();
-            for (j = 0; j < addr_width; j++) {
-                add_pin_to_signal_list(wr_addrs[i], bram->write_addr->pins[offset_addr + j]);
-            }
-            offset_addr += addr_width;
-
-            wr_data[i] = init_signal_list();
-            wr_enables[i] = init_signal_list();
-            for (j = 0; j < data_width; j++) {
-                add_pin_to_signal_list(wr_data[i], bram->write_data->pins[offset_data + j]);
-                add_pin_to_signal_list(wr_enables[i], bram->write_en->pins[offset_data + j]);
-            }
-            offset_data += data_width;
-        }
-
-
-        
-        /* encode all write addresses (excluding last one) to use as selector for muxes */
-        signal_list_t* encode_signal = create_encoder(wr_enables, num_wr_ports - 1, node);
-
-
-        /* WR ADDRS */
-        signals->addr2 = create_multiport_mux(copy_input_signals(encode_signal),
-                                              num_wr_ports - 1,
-                                              wr_addrs,
-                                              node);
-
-        /* WR ADDRS */
-        signals->data2 = create_multiport_mux(encode_signal,
-                                              num_wr_ports - 1,
-                                              wr_data,
-                                              node);
-    }
+    /* add decoded read data to the out1 */
+    signals->out1 = decode(bram->read_data, bram->read_en, data_width, node);
 
     /* out2 will be unconnected */
     signals->out2 = init_signal_list();
@@ -794,13 +796,15 @@ static nnode_t* create_encoder_with_dual_port_ram(block_memory* bram) {
 
     // CLEAN UP
     cleanup_block_memory_old_node(node);
+    free_signal_list(rd_encode_signal);
+    free_signal_list(wr_encode_signal);
     free_dp_ram_signals(signals);
 
     return (dpram);
 }
 
 /**
- * (function: create_encoder)
+ * (function: encode)
  * 
  * @brief create an encoder with the given list of signal lists
  * 
@@ -810,7 +814,7 @@ static nnode_t* create_encoder_with_dual_port_ram(block_memory* bram) {
  * 
  * @return encoder output signal list
  */
-static signal_list_t* create_encoder (signal_list_t** inputs, int size, nnode_t* node) {
+static signal_list_t* encode (signal_list_t** inputs, int size, nnode_t* node) {
 
     int i;
     signal_list_t* encode_signal = init_signal_list();
@@ -827,6 +831,46 @@ static signal_list_t* create_encoder (signal_list_t** inputs, int size, nnode_t*
         
 
     return (encode_signal);
+}
+
+/**
+ * (function: decode)
+ * 
+ * @brief create an decoder with the given list of signal lists
+ * 
+ * @param input input signal list
+ * @param selectors selector signals for decoding process
+ * @param width output width
+ * @param node pointer to the current netlist node
+ * 
+ * @return decoded output signal list
+ */
+static signal_list_t* decode (signal_list_t* input, signal_list_t* selectors, int width, nnode_t* node) {
+
+    int i, j, offset;
+    int num_of_inputs = input->count / width;
+    signal_list_t* decoded_signal = init_signal_list();
+    signal_list_t** inputs = (signal_list_t**)vtr::calloc(num_of_inputs, sizeof(sizeof(signal_list_t*)));
+
+    offset = 0;
+    /* split the given input into small pieces with size equal to width */
+    for (i = 0; i < num_of_inputs; i++) {
+        /* initialize input[i] signal list */
+        inputs[i] = init_signal_list();
+        /* add to singal list */
+        for (j = 0; j < width; j++) {
+            add_pin_to_signal_list(inputs[i], input->pins[offset + j]);
+        }
+        offset += width;
+    }
+    
+
+    decoded_signal = create_multiport_mux(selectors, num_of_inputs, inputs, node);
+
+    // CLEAN UP
+    vtr::free(inputs);
+
+    return (decoded_signal);
 }
 
 
