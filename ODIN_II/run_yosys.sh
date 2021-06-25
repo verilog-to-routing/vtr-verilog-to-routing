@@ -224,7 +224,7 @@ function populate_arg_from_file() {
 	_circuits_dir=""
 	_circuit_list_add=()
 
-    TASK_PATH=$(dirname "${1}")
+    export TASK_PATH=$(dirname "${1}")
     export TASK_DIR=( $(basename "${possible_test}") )
 
 	if [ "_$1" == "_" ] || [ ! -f "$1" ]
@@ -303,7 +303,7 @@ function run_task() {
         CIRCUIT_DIR=${circuit/regression_test\/benchmark\/_VERILOG\/}
         CIRCUIT_FILE=$(basename "${circuit}")
 
-        export OUTPUT_BLIF_PATH="${BLIF_PATH}/${TASK_DIR}"
+        export OUTPUT_BLIF_PATH="${BLIF_PATH}/${TASK_PATH}"
 
         # run yosys for the current circuit
         CIRCUIT_NAME="${CIRCUIT_FILE%.*}"
