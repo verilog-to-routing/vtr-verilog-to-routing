@@ -52,9 +52,6 @@ void pad_sp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_memory_output_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
 void pad_memory_input_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
 
-static int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
-static int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
-
 int get_sp_ram_split_width();
 int get_dp_ram_split_width();
 void filter_memories_by_soft_logic_cutoff();
@@ -2047,229 +2044,6 @@ void register_memory_model(nnode_t* mem) {
 }
 
 /**
- * (function: get_sp_ram_hb_ports_sizes)
- * 
- * @brief getting the single port ram port 
- * sizes from the architecture file.
- * 
- * @param hb_instance_ports_sizes ports sizes of the spram instance
- * @param hb_instance spram hard block instance
- */
-static int* check_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
-    /* return value */
-    int* ports_sizes = NULL;
-
-    enum spram_ports_e {
-        ADDR,
-        CLK,
-        DATA,
-        WE,
-        OUT,
-        spram_ports_e_END
-    };
-
-    /* See if the hard block declared is supported by FPGA architecture */
-    t_model* hb_model = find_hard_block(hb_instance->related_ast_node->identifier_node->types.identifier);
-
-    if (hb_model) {
-        /* intialize the array */
-        ports_sizes = (int*)vtr::calloc(spram_ports_e::spram_ports_e_END, sizeof(int));
-
-        /* Declare the hard block as used for the blif generation */
-        hb_model->used = 1;
-
-        t_model_ports* hb_ports = hb_model->inputs;
-        /**
-         * need to validate the hb port size and hb instance port size
-         * cannot support larger ports than hard block has 
-         */
-        try {
-            /* INPUTS */
-            while (hb_ports) {
-                if (!strcmp(hb_ports->name, "addr")) {
-                    /* [0] addr size */
-                    ports_sizes[spram_ports_e::ADDR] = hb_ports->size;
-
-                    if (ports_sizes[spram_ports_e::ADDR] < hb_instance_ports_sizes[spram_ports_e::ADDR])
-                        throw(vtr::VtrError(hb_ports->name));
-                } else if (!strcmp(hb_ports->name, "clk")) {
-                    /* [1] clk size */
-                    ports_sizes[spram_ports_e::CLK] = hb_ports->size;
-                    if (ports_sizes[spram_ports_e::CLK] < hb_instance_ports_sizes[spram_ports_e::CLK])
-                        throw(vtr::VtrError(hb_ports->name));
-
-                } else if (!strcmp(hb_ports->name, "data")) {
-                    /* [2] data size */
-                    ports_sizes[spram_ports_e::DATA] = hb_ports->size;
-                    // [TODO]: the number of hard blocks need to change if we have more than
-                    // one data in pin connected to each hard block
-                    // if (ports_sizes[spram_ports_e::DATA] < hb_instance_ports_sizes[spram_ports_e::DATA])
-                    //     throw;
-                    if (ports_sizes[spram_ports_e::DATA] > 1)
-                        throw(vtr::VtrError(hb_ports->name));
-
-                } else if (!strcmp(hb_ports->name, "we")) {
-                    ports_sizes[spram_ports_e::WE] = hb_ports->size;
-                    if (ports_sizes[spram_ports_e::WE] < hb_instance_ports_sizes[spram_ports_e::WE])
-                        throw(vtr::VtrError(hb_ports->name));
-                }
-                hb_ports = hb_ports->next;
-            }
-
-            /* OUTOUT */
-            hb_ports = hb_model->outputs;
-            if (!strcmp(hb_ports->name, "out")) {
-                /* [5] out size */
-                ports_sizes[spram_ports_e::OUT] = hb_ports->size;
-                // [TODO]: the number of hard blocks need to change if we have more than
-                // one data in pin connected to each hard block
-                // if (ports_sizes[spram_ports_e::OUT] < hb_instance_ports_sizes[spram_ports_e::OUT])
-                //     throw;
-                if (ports_sizes[spram_ports_e::DATA] > 1)
-                    throw(vtr::VtrError(hb_ports->name));
-            }
-
-        } catch (vtr::VtrError& vtr_error) {
-            error_message(BLIF_ELBORATION, hb_instance->loc,
-                          "Hard Block (%s) Port (%s) size: Not match with FPGA Architecture Hard Block ports", hb_instance->name, vtr_error.what());
-            vtr::free(ports_sizes);
-        }
-    }
-
-    return (ports_sizes);
-}
-
-/**
- * (function: get_dp_ram_hb_ports_sizes)
- * 
- * @brief getting the dual port ram port 
- * sizes from the architecture file.
- * 
- * @param hb_instance_ports_sizes ports sizes of the dpram instance
- * @param hb_instance dpram hard block instance
- */
-static int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance) {
-    /* return value */
-    int* ports_sizes = NULL;
-
-    enum dpram_ports_e {
-        ADDR1,
-        ADDR2,
-        CLK,
-        DATA1,
-        DATA2,
-        WE1,
-        WE2,
-        OUT1,
-        OUT2,
-        dpram_ports_e_END
-    };
-
-    /* See if the hard block declared is supported by FPGA architecture */
-    t_model* hb_model = find_hard_block(hb_instance->related_ast_node->identifier_node->types.identifier);
-
-    if (hb_model) {
-        /* intialize the array */
-        ports_sizes = (int*)vtr::calloc(dpram_ports_e::dpram_ports_e_END, sizeof(int));
-
-        /* Declare the hard block as used for the blif generation */
-        hb_model->used = 1;
-
-        t_model_ports* hb_ports = hb_model->inputs;
-        /**
-         * need to validate the hb port size and hb instance port size
-         * cannot support larger ports than hard block has 
-         */
-        try {
-            /* INPUTS */
-            while (hb_ports) {
-                if (!strcmp(hb_ports->name, "addr1")) {
-                    /* [0] addr1 size */
-                    ports_sizes[dpram_ports_e::ADDR1] = hb_ports->size;
-
-                    if (ports_sizes[dpram_ports_e::ADDR1] < hb_instance_ports_sizes[dpram_ports_e::ADDR1])
-                        throw(vtr::VtrError(hb_ports->name));
-                } else if (!strcmp(hb_ports->name, "addr2")) {
-                    /* [1] addr2 size */
-                    ports_sizes[dpram_ports_e::ADDR2] = hb_ports->size;
-
-                    if (ports_sizes[dpram_ports_e::ADDR2] < hb_instance_ports_sizes[dpram_ports_e::ADDR2])
-                        throw(vtr::VtrError(hb_ports->name));
-                } else if (!strcmp(hb_ports->name, "clk")) {
-                    /* [2] clk size */
-                    ports_sizes[dpram_ports_e::CLK] = hb_ports->size;
-                    if (ports_sizes[dpram_ports_e::CLK] < hb_instance_ports_sizes[dpram_ports_e::CLK])
-                        throw(vtr::VtrError(hb_ports->name));
-
-                } else if (!strcmp(hb_ports->name, "data1")) {
-                    /* [3] data1 size */
-                    ports_sizes[dpram_ports_e::DATA1] = hb_ports->size;
-                    // [TODO]: the number of hard blocks need to change if we have more than
-                    // one data in pin connected to each hard block
-                    // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
-                    //     throw;
-                    if (ports_sizes[dpram_ports_e::DATA1] > 1)
-                        throw(vtr::VtrError(hb_ports->name));
-
-                } else if (!strcmp(hb_ports->name, "data2")) {
-                    /* [4] data2 size */
-                    ports_sizes[dpram_ports_e::DATA2] = hb_ports->size;
-                    // [TODO]: the number of hard blocks need to change if we have more than
-                    // one data in pin connected to each hard block
-                    // if (ports_sizes[dpram_ports_e::DATA] < hb_instance_ports_sizes[dpram_ports_e::DATA])
-                    //     throw;
-                    if (ports_sizes[dpram_ports_e::DATA2] > 1)
-                        throw(vtr::VtrError(hb_ports->name));
-                } else if (!strcmp(hb_ports->name, "we1")) {
-                    /* [5] we1 size */
-                    ports_sizes[dpram_ports_e::WE1] = hb_ports->size;
-                    if (ports_sizes[dpram_ports_e::WE1] < hb_instance_ports_sizes[dpram_ports_e::WE1])
-                        throw(vtr::VtrError(hb_ports->name));
-                } else if (!strcmp(hb_ports->name, "we2")) {
-                    /* [6] we2 size */
-                    ports_sizes[dpram_ports_e::WE2] = hb_ports->size;
-                    if (ports_sizes[dpram_ports_e::WE2] < hb_instance_ports_sizes[dpram_ports_e::WE2])
-                        throw(vtr::VtrError(hb_ports->name));
-                }
-                hb_ports = hb_ports->next;
-            }
-
-            /* OUTOUT */
-            hb_ports = hb_model->outputs;
-            while (hb_ports) {
-                if (!strcmp(hb_ports->name, "out1")) {
-                    /* [7] out1 size */
-                    ports_sizes[dpram_ports_e::OUT1] = hb_ports->size;
-                    // [TODO]: the number of hard blocks need to change if we have more than
-                    // one data in pin connected to each hard block
-                    // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
-                    //     throw;
-                    if (ports_sizes[dpram_ports_e::OUT1] > 1)
-                        throw(vtr::VtrError(hb_ports->name));
-                } else if (!strcmp(hb_ports->name, "out2")) {
-                    /* [8] out2 size */
-                    ports_sizes[dpram_ports_e::OUT2] = hb_ports->size;
-                    // [TODO]: the number of hard blocks need to change if we have more than
-                    // one data in pin connected to each hard block
-                    // if (ports_sizes[dpram_ports_e::OUT] < hb_instance_ports_sizes[dpram_ports_e::OUT])
-                    //     throw;
-                    if (ports_sizes[dpram_ports_e::OUT2] > 1)
-                        throw(vtr::VtrError(hb_ports->name));
-                }
-                hb_ports = hb_ports->next;
-            }
-
-        } catch (vtr::VtrError& vtr_error) {
-            error_message(BLIF_ELBORATION, hb_instance->loc,
-                          "Hard Block (%s) Port (%s) size: Not match with FPGA Architecture Hard Block ports", hb_instance->name, vtr_error.what());
-            vtr::free(ports_sizes);
-        }
-    }
-
-    return (ports_sizes);
-}
-
-/**
  * (function: resolve_single_port_ram)
  * 
  * @brief resolve the spram block by reordering the input signals 
@@ -2279,7 +2053,7 @@ static int* check_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
     oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_input_port_sizes == 4);
     oassert(node->num_output_port_sizes == 1);
@@ -2300,7 +2074,7 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
      * DATAOUT: output port [0] 
      */
 
-    int i, j;
+    int i;
     int SP_ADDR_width = node->input_port_sizes[0];
     int SP_CLK_width = node->input_port_sizes[1]; // should be 1
     int SP_DATA_width = node->input_port_sizes[2];
@@ -2308,108 +2082,74 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
     int SP_OUT_width = node->output_port_sizes[0];
 
     /* validate the data width */
+    oassert(SP_CLK_width == 1 && SP_WE_width == 1);
     oassert(SP_DATA_width == node->output_port_sizes[0]);
-    oassert(SP_CLK_width == 1);
 
-    int widths[5] = {SP_ADDR_width, SP_CLK_width, SP_DATA_width, SP_WE_width, SP_OUT_width};
+    /* creating dpram node for the range of data width */
+    int offset = 0;
+    /* creating a new node */
+    sp_ram_signals* signals = init_sp_ram_signals();
 
-    /* getting the hb ports sizes if any hb model exist */
-    int* hb_ports_sizes = check_spram_hb_ports_sizes(widths, node);
+    /* INPUTS */
+    /* adding the addr signals */
+    for (i = 0; i < SP_ADDR_width; i++) {
+        npin_t* pin = node->input_pins[offset + i];
+        /* detach from the main node, since it will be connected to a new dpram */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
 
-    int addr_width = (hb_ports_sizes) ? hb_ports_sizes[0] : SP_ADDR_width;
-    int clk_width = (hb_ports_sizes) ? hb_ports_sizes[1] : SP_CLK_width;
-    int data_width = (hb_ports_sizes) ? hb_ports_sizes[2] : SP_DATA_width;
-    int we_width = (hb_ports_sizes) ? hb_ports_sizes[3] : SP_WE_width;
-    int out_width = (hb_ports_sizes) ? hb_ports_sizes[4] : SP_OUT_width;
-
-    /* currently odin supports one bit data width for each spram */
-    if (hb_ports_sizes) {
-        oassert(data_width == 1);
-        oassert(data_width == out_width);
+        add_pin_to_signal_list(signals->addr, pin);
     }
+    offset += SP_ADDR_width;
+    
+    /* adding the clk signals */
+    npin_t* clk_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    clk_pin->node->input_pins[clk_pin->pin_node_idx] = NULL;
+    signals->clk = clk_pin;
+    /* increment offset */
+    offset += 1;
 
-    // clean up
-    vtr::free(hb_ports_sizes);
-
-    /* creating spram node for the range of data width */
+    /* adding the data signals */
     for (i = 0; i < SP_DATA_width; i++) {
-        /* creating a new node */
-        nnode_t* spram = allocate_nnode(node->loc);
-        spram->type = MEMORY;
-        spram->related_ast_node = node->related_ast_node;
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->input_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
 
-        char* hb_name = spram->related_ast_node->identifier_node->types.identifier;
-        spram->name = hard_node_name(spram,
-                                     netlist->identifier,
-                                     hb_name,
-                                     node->attributes->memory_id);
-
-        /* INPUTS */
-        /* adding the first input port as address */
-        add_input_port_information(spram, addr_width);
-        allocate_more_input_pins(spram, addr_width);
-        for (j = 0; j < addr_width; j++) {
-            /* container for address pin */
-            npin_t* addr_pin = NULL;
-
-            /* hook the addr pin to new node */
-            if (j < SP_ADDR_width) {
-                addr_pin = node->input_pins[j];
-                if (i != SP_DATA_width - 1)
-                    add_input_pin_to_node(spram, copy_input_npin(addr_pin), j);
-                else
-                    remap_pin_to_new_node(addr_pin, spram, j);
-            } else {
-                addr_pin = get_pad_pin(netlist);
-                addr_pin->mapping = vtr::strdup("addr");
-                add_input_pin_to_node(spram, addr_pin, j);
-            }
-        }
-
-        /* adding the second input port as clock */
-        add_input_port_information(spram, clk_width);
-        allocate_more_input_pins(spram, clk_width);
-        /* hook the clk pin to new node */
-        npin_t* clk_pin = node->input_pins[SP_ADDR_width];
-        if (i != SP_DATA_width - 1)
-            add_input_pin_to_node(spram, copy_input_npin(clk_pin), addr_width);
-        else
-            remap_pin_to_new_node(clk_pin, spram, addr_width);
-
-        /* adding the third input port as data */
-        add_input_port_information(spram, 1);
-        allocate_more_input_pins(spram, 1);
-        npin_t* data_pin = node->input_pins[SP_ADDR_width + SP_CLK_width + i];
-        /* hook the data in pin to new node */
-        remap_pin_to_new_node(data_pin,
-                              spram,
-                              addr_width + clk_width);
-
-        /* adding the forth input port as we */
-        add_input_port_information(spram, we_width);
-        allocate_more_input_pins(spram, we_width);
-        npin_t* we_pin = node->input_pins[SP_ADDR_width + SP_CLK_width + SP_DATA_width];
-        /* hook the we pin to new node */
-        if (i != SP_DATA_width - 1)
-            add_input_pin_to_node(spram,
-                                  copy_input_npin(we_pin),
-                                  addr_width + clk_width + 1);
-        else
-            remap_pin_to_new_node(we_pin,
-                                  spram,
-                                  addr_width + clk_width + 1);
-
-        /* OUTPUT */
-        /* adding the output port */
-        add_output_port_information(spram, 1);
-        allocate_more_output_pins(spram, 1);
-        npin_t* out_pin = node->output_pins[i];
-        /* hook the data out pin to new node */
-        remap_pin_to_new_node(out_pin, spram, 0);
+        add_pin_to_signal_list(signals->data, pin);
     }
+    offset += SP_DATA_width;
+
+    /* adding the we signals */
+    npin_t* we_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    we_pin->node->input_pins[we_pin->pin_node_idx] = NULL;
+    signals->we = we_pin;
+
+
+    /* OUTPUT */
+    /* adding the output signals */
+    offset = 0;
+    for (i = 0; i < SP_OUT_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->output_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->out, pin);
+    }
+    
+
+    /* creating a new spram with size modified input signals */
+    nnode_t* spram = create_single_port_rom(signals, node->loc);
+    /* adding new spram new dp memory list for future iterations and adjusments */
+    sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
+    /* register the single port ram in arch model to have the related model (SPRAM) in BLIF for simulation */
+    register_memory_model(spram);
 
     // CLEAN UP
     free_nnode(node);
+    free_sp_ram_signals(signals);
 }
 
 /**
@@ -2446,178 +2186,138 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
      * DATAOUT1: output port [0] 
      * DATAOUT2: output port [1] 
      */
-    int i, j, max_addr_width;
+    int i;
     int DP_ADDR1_width = node->input_port_sizes[0];
     int DP_ADDR2_width = node->input_port_sizes[1];
-    int DP_CLK_width = node->input_port_sizes[2]; // should be 1
+    int DP_CLK_width   = node->input_port_sizes[2]; // should be 1
     int DP_DATA1_width = node->input_port_sizes[3];
     int DP_DATA2_width = node->input_port_sizes[4];
-    int DP_WE1_width = node->input_port_sizes[5]; // should be 1
-    int DP_WE2_width = node->input_port_sizes[6]; // should be 1
-    int DP_OUT1_width = node->output_port_sizes[0];
-    int DP_OUT2_width = node->output_port_sizes[1];
+    int DP_WE1_width   = node->input_port_sizes[5]; // should be 1
+    int DP_WE2_width   = node->input_port_sizes[6]; // should be 1
+    int DP_OUT1_width  = node->output_port_sizes[0];
+    int DP_OUT2_width  = node->output_port_sizes[1];
 
     /* validate the port width */
     oassert((DP_CLK_width == 1) && (DP_WE1_width == 1) && (DP_WE2_width == 1));
-    // oassert(DP_ADDR1_width == DP_ADDR2_width);
     oassert(DP_DATA1_width == DP_DATA2_width);
-    oassert((DP_DATA1_width == node->output_port_sizes[0]) && (DP_DATA1_width == node->output_port_sizes[1]));
+    oassert(DP_DATA1_width == node->output_port_sizes[0]);
+    oassert(DP_DATA1_width == node->output_port_sizes[1]);
 
-    int widths[9] = {DP_ADDR1_width, DP_ADDR2_width, DP_CLK_width, DP_DATA1_width, DP_DATA2_width, DP_WE1_width, DP_WE2_width, DP_OUT1_width, DP_OUT2_width};
-
-    /* getting the hb ports sizes if any hb model exist */
-    int* hb_ports_sizes = check_dpram_hb_ports_sizes(widths, node);
-
-    int addr1_width = (hb_ports_sizes) ? hb_ports_sizes[0] : DP_ADDR1_width;
-    int addr2_width = (hb_ports_sizes) ? hb_ports_sizes[1] : DP_ADDR2_width;
-    int clk_width = (hb_ports_sizes) ? hb_ports_sizes[2] : DP_CLK_width;
-    int data1_width = (hb_ports_sizes) ? hb_ports_sizes[3] : DP_DATA1_width;
-    int data2_width = (hb_ports_sizes) ? hb_ports_sizes[4] : DP_DATA2_width;
-    int we1_width = (hb_ports_sizes) ? hb_ports_sizes[5] : DP_WE1_width;
-    int we2_width = (hb_ports_sizes) ? hb_ports_sizes[6] : DP_WE2_width;
-    int out1_width = (hb_ports_sizes) ? hb_ports_sizes[7] : DP_OUT1_width;
-    int out2_width = (hb_ports_sizes) ? hb_ports_sizes[8] : DP_OUT2_width;
-
-    /* currently odin supports one bit data width for each spram */
-    if (hb_ports_sizes) {
-        oassert(addr1_width == addr2_width);
-        oassert((we1_width == 1) && (we2_width == 1));
-        oassert((data1_width == 1) && (data2_width == 1));
-        oassert((data1_width == out1_width) && (data2_width == out2_width));
-        max_addr_width = addr1_width;
-    } else {
-        max_addr_width = std::max(addr1_width, addr2_width);
-    }
-
-    // clean up
-    vtr::free(hb_ports_sizes);
+    int max_addr_width = std::max(DP_ADDR1_width, DP_ADDR2_width);
 
     /* creating dpram node for the range of data width */
-    for (i = 0; i < DP_DATA1_width; i++) {
-        int offset = 0;
-        /* creating a new node */
-        nnode_t* dpram = allocate_nnode(node->loc);
-        dpram->type = MEMORY;
-        dpram->traverse_visited = traverse_mark_number;
-        dpram->related_ast_node = node->related_ast_node;
+    int offset = 0;
+    /* creating a new node */
+    dp_ram_signals* signals = init_dp_ram_signals();
 
-        char* hb_name = dpram->related_ast_node->identifier_node->types.identifier;
-        dpram->name = hard_node_name(dpram,
-                                     netlist->identifier,
-                                     hb_name,
-                                     node->attributes->memory_id);
+    /* INPUTS */
+    /* adding the addr1 signals */
+    for (i = 0; i < max_addr_width; i++) {
+        /* hook the addr1 pin to new node */
+        if (i < DP_ADDR1_width) {
+            npin_t* pin = node->input_pins[offset + i];
+            /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+            pin->node->input_pins[pin->pin_node_idx] = NULL;
 
-        /* INPUTS */
-        /* adding the first input ports as address1 */
-        add_input_port_information(dpram, max_addr_width);
-        allocate_more_input_pins(dpram, max_addr_width);
-        for (j = 0; j < max_addr_width; j++) {
-            /* container for address pin */
-            npin_t* addr1_pin = NULL;
-
-            /* hook the addr1 pin to new node */
-            if (j < DP_ADDR1_width) {
-                addr1_pin = node->input_pins[j];
-                if (i != DP_DATA1_width - 1)
-                    add_input_pin_to_node(dpram, copy_input_npin(addr1_pin), offset + j);
-                else
-                    remap_pin_to_new_node(addr1_pin, dpram, offset + j);
-            } else {
-                addr1_pin = get_pad_pin(netlist);
-                addr1_pin->mapping = vtr::strdup("addr1");
-                add_input_pin_to_node(dpram, addr1_pin, offset + j);
-            }
+            add_pin_to_signal_list(signals->addr1, pin);
+        } else {
+            add_pin_to_signal_list(signals->addr1, get_pad_pin(netlist));
         }
-        offset += max_addr_width;
-
-        /* adding the second input port as data1 */
-        add_input_port_information(dpram, 1);
-        allocate_more_input_pins(dpram, 1);
-        npin_t* data1_pin = node->input_pins[DP_ADDR1_width + DP_ADDR2_width + DP_CLK_width + i];
-        /* hook the data1 in pin to new node */
-        remap_pin_to_new_node(data1_pin, dpram, offset);
-        offset += 1;
-
-        /* adding the third input port as we1 */
-        add_input_port_information(dpram, 1);
-        allocate_more_input_pins(dpram, 1);
-        npin_t* we1_pin = node->input_pins[DP_ADDR1_width + DP_ADDR2_width + DP_CLK_width + DP_DATA1_width + DP_DATA2_width];
-        /* hook the we pin to new node */
-        if (i != DP_DATA1_width - 1)
-            add_input_pin_to_node(dpram, copy_input_npin(we1_pin), offset);
-        else
-            remap_pin_to_new_node(we1_pin, dpram, offset);
-        offset += 1;
-
-        /* adding the forth input port as address2 */
-        add_input_port_information(dpram, max_addr_width);
-        allocate_more_input_pins(dpram, max_addr_width);
-        for (j = 0; j < max_addr_width; j++) {
-            /* container for address pin */
-            npin_t* addr2_pin = NULL;
-
-            /* hook the addr2 pin to new node */
-            if (j < DP_ADDR2_width) {
-                addr2_pin = node->input_pins[DP_ADDR1_width + j];
-                if (i != DP_DATA2_width - 1)
-                    add_input_pin_to_node(dpram, copy_input_npin(addr2_pin), offset + j);
-                else
-                    remap_pin_to_new_node(addr2_pin, dpram, offset + j);
-            } else {
-                addr2_pin = get_pad_pin(netlist);
-                addr2_pin->mapping = vtr::strdup("addr2");
-                add_input_pin_to_node(dpram, addr2_pin, offset + j);
-            }
-        }
-        offset += max_addr_width;
-
-        /* adding the fifth input ports as data2 */
-        add_input_port_information(dpram, 1);
-        allocate_more_input_pins(dpram, 1);
-        npin_t* data2_pin = node->input_pins[DP_ADDR1_width + DP_ADDR2_width + DP_CLK_width + DP_DATA1_width + i];
-        /* hook the data2 in pin to new node */
-        remap_pin_to_new_node(data2_pin, dpram, offset);
-        offset += 1;
-
-        /* adding the sixth input ports as we2 */
-        add_input_port_information(dpram, 1);
-        allocate_more_input_pins(dpram, 1);
-        npin_t* we2_pin = node->input_pins[DP_ADDR1_width + DP_ADDR2_width + DP_CLK_width + DP_DATA1_width + DP_DATA2_width + DP_WE1_width];
-        /* hook the we pin to new node */
-        if (i != DP_DATA1_width - 1)
-            add_input_pin_to_node(dpram, copy_input_npin(we2_pin), offset);
-        else
-            remap_pin_to_new_node(we2_pin, dpram, offset);
-
-        offset += 1;
-
-        /* adding the second input port as clock */
-        add_input_port_information(dpram, clk_width);
-        allocate_more_input_pins(dpram, clk_width);
-        /* hook the clk pin to new node */
-        npin_t* clk_pin = node->input_pins[DP_ADDR1_width + DP_ADDR2_width];
-        if (i != DP_DATA1_width - 1)
-            add_input_pin_to_node(dpram, copy_input_npin(clk_pin), offset);
-        else
-            remap_pin_to_new_node(clk_pin, dpram, offset);
-
-        /* OUTPUT */
-        /* adding the output1 and output2 ports */
-        add_output_port_information(dpram, 1);
-        allocate_more_output_pins(dpram, 1);
-        npin_t* out_pin1 = node->output_pins[i];
-        /* hook the data out pin to new node */
-        remap_pin_to_new_node(out_pin1, dpram, 0);
-
-        add_output_port_information(dpram, 1);
-        allocate_more_output_pins(dpram, 1);
-        npin_t* out_pin2 = node->output_pins[DP_OUT1_width + i];
-        /* hook the data out pin to new node */
-        remap_pin_to_new_node(out_pin2, dpram, 1);
-
-        dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
     }
+    offset += DP_ADDR1_width;
+    
+    /* adding the addr2 signals */
+    for (i = 0; i < max_addr_width; i++) {
+        /* hook the addr1 pin to new node */
+        if (i < DP_ADDR2_width) {
+            npin_t* pin = node->input_pins[offset + i];
+            /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+            pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+            add_pin_to_signal_list(signals->addr2, pin);
+        } else {
+            add_pin_to_signal_list(signals->addr2, get_pad_pin(netlist));
+        }
+    }
+    offset += DP_ADDR2_width;
+
+    /* adding the clk signals */
+    npin_t* clk_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    clk_pin->node->input_pins[clk_pin->pin_node_idx] = NULL;
+    signals->clk = clk_pin;
+    /* increment offset */
+    offset += 1;
+
+    /* adding the data1 signals */
+    for (i = 0; i < DP_DATA1_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->input_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->data1, pin);
+    }
+    offset += DP_DATA1_width;
+    
+    /* adding the data2 signals */
+    for (i = 0; i < DP_DATA2_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->input_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->data2, pin);
+    }
+    offset += DP_DATA2_width;
+
+    /* adding the we1 signals */
+    npin_t* we1_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    we1_pin->node->input_pins[we1_pin->pin_node_idx] = NULL;
+    signals->we1 = we1_pin;
+    /* increment offset */
+    offset += 1;
+
+    /* adding the we2 signals */
+    npin_t* we2_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    we2_pin->node->input_pins[we2_pin->pin_node_idx] = NULL;
+    signals->we2 = we2_pin;
+
+
+    /* OUTPUT */
+    offset = 0;
+    /* adding the output1 signals */
+    for (i = 0; i < DP_OUT1_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->output_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->out1, pin);
+    }
+    offset += DP_OUT1_width;
+    
+    /* adding the output1 signals */
+    for (i = 0; i < DP_OUT2_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->output_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->out2, pin);
+    }
+
+
+    /* creating a new dpram with size modified input signals */
+    nnode_t* dpram = create_dual_port_rom(signals, node->loc);
+    /* adding new dpram new dp memory list for future iterations and adjusments */
+    dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
+    /* register the dual port ram in arch model to have the related model (DPRAM) in BLIF for simulation */
+    register_memory_model(dpram);
 
     // CLEAN UP
     free_nnode(node);
+    free_dp_ram_signals(signals);
 }
