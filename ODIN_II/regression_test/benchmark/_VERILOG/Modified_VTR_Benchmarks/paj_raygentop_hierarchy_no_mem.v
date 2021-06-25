@@ -160,7 +160,7 @@
 
     onlyonecycle onlyeonecycleinst (rgCont[0], go, globalreset, tm3_clk_v0); 
 
-    always @(posedge tm3_clk_v0)
+    always @(posedge tm3_clk_v0 or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -232,7 +232,7 @@ module delay1x3 (datain, dataout, clk);
     reg count; 
     reg temp_count; 
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -416,7 +416,7 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
     spram21x4 spraminst(we, texinfo, CfgData[20:0], clk); 
     assign we = ((CfgData_Ready == 1'b1) & (CfgAddr == 4'b1110)) ? 1'b1 : 1'b0 ;
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -551,32 +551,24 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
     input[21 - 1:0] datain; 
     input clk; 
 
-	reg [7:0] addr;
-	
-	always @ (posedge clk)
-	begin
-	 addr[0] <= we;
-	 addr [1] <= addr[0];
-	 addr [2] <= addr[1];
-	 addr [3] <= addr[2];
-	 addr [4] <= addr[3];
-	 addr [5] <= addr[4];
-	 addr [6] <= addr[5];
-	 addr [7] <= addr[6];
-	 end
-//changed to odin 2 ram specifications
+    reg[21 - 1:0] mem1; 
+    reg[21 - 1:0] mem2; 
 
-defparam new_ram.ADDR_WIDTH = 8;
-defparam new_ram.DATA_WIDTH = 21;
-single_port_ram new_ram(
-  .clk (clk),
-  .we(we),
-  .data(datain),
-  .out(dataout),
-  .addr(addr)
-  );
-  
-  
+    assign dataout = mem2 ;
+
+    always @(posedge clk or posedge we)
+    begin
+       if (we == 1'b1)
+       begin
+          mem1 <= datain; 
+          mem2 <= mem1;
+       end  
+       else
+       begin
+          mem1 <= mem1; 
+          mem2 <= mem2;
+       end  
+    end 
  endmodule
     
     
@@ -676,7 +668,7 @@ module rgsramcontroller (want_addr, addr_ready, addrin, want_data, data_ready, d
     assign shadedata = tm3_sram_data_in ;
     assign texel = tm3_sram_data_in ;
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -1074,7 +1066,7 @@ waddress <= temp_waddress;
     reg temp_ack;
     reg[3:0] temp_rgAddr; 
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -1333,7 +1325,7 @@ rgAddr <= temp_rgAddr;
 
     assign busy = {busy1, busy0} ;
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
 
        if (globalreset == 1'b1)
@@ -1356,17 +1348,17 @@ rgAddr <= temp_rgAddr;
        else
        begin
     	addr[3:2] <= (active == 1'b0) ? {1'b0, groupID[0]} : {1'b1, groupID[1]} ;
-	addr[1:0] <= temp_addr[1:0];
         state <= next_state ; 
 
-	dir <= temp_dir;
-	cycles <= temp_cycles;
-	loaded <= temp_loaded;	
-	groupID <= temp_groupID;
-	count <= temp_count;
-	active <= temp_active;
-	raygroupvalid0 <= temp_raygroupvalid0;
-	raygroupvalid1 <= temp_raygroupvalid1;
+        dir <= temp_dir;
+        cycles <= temp_cycles;
+        addr[1:0] <= temp_addr;
+        loaded <= temp_loaded;
+        groupID <= temp_groupID;
+        count <= temp_count;
+        active <= temp_active;
+        raygroupvalid0 <= temp_raygroupvalid0;
+        raygroupvalid1 <= temp_raygroupvalid1;
 
        end 
     end 
@@ -1716,7 +1708,7 @@ rgAddr <= temp_rgAddr;
     reg[2:0] state; 
     reg[2:0] next_state; 
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -2021,7 +2013,7 @@ hit10c <= temp_hit10c;
     assign write = temp_write;
 
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -2906,7 +2898,7 @@ module fifo3 (datain, writeen, dataout, shiften, globalreset, clk);
 
     assign dataout = data0 ;
 
-    always @(posedge clk)
+    always @(posedge clk or posedge globalreset)
     begin
        if (globalreset == 1'b1)
        begin
@@ -2976,41 +2968,3 @@ module fifo3 (datain, writeen, dataout, shiften, globalreset, clk);
     end 
  endmodule
 
-/**
- * Copying the modules Single Port RAM from vtr_flow/primitives.v 
- * to correct the hard block inferrence by Yosys 
-*/
-//single_port_ram module
-module single_port_ram #(
-    parameter ADDR_WIDTH = 1,
-    parameter DATA_WIDTH = 1
-) (
-    input clk,
-    input [ADDR_WIDTH-1:0] addr,
-    input [DATA_WIDTH-1:0] data,
-    input we,
-    output reg [DATA_WIDTH-1:0] out
-);
-
-    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
-
-    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
-
-    specify
-        (clk*>out)="";
-        $setup(addr, posedge clk, "");
-        $setup(data, posedge clk, "");
-        $setup(we, posedge clk, "");
-        $hold(posedge clk, addr, "");
-        $hold(posedge clk, data, "");
-        $hold(posedge clk, we, "");
-    endspecify
-   
-    always@(posedge clk) begin
-        if(we) begin
-            Mem[addr] = data;
-        end
-    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
-    end
-   
-endmodule // single_port_RAM

@@ -3448,7 +3448,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 60'b000000000000000000000000000000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awa;
+defparam ram1.DATA_WIDTH = `dwa;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -3840,7 +3842,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 34'b0000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awb;
+defparam ram1.DATA_WIDTH = `dwb;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -4234,7 +4238,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 61'b0000000000000000000000000000000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awc;
+defparam ram1.DATA_WIDTH = `dwc;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),

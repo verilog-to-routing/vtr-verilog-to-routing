@@ -1,3 +1,8 @@
+/* ******************************************************************
+* NOTE: This code has known bugs and is no longer being maintained. 
+*		This cannot be simulated.
+****************************************************************** */
+
 `define OR1200_DCFGR_NDP		3'h0	// Zero DVR/DCR pairs
 `define OR1200_DCFGR_WPCI		1'b0	// WP counters not impl.
 
@@ -3099,6 +3104,8 @@ assign const_zero_data = 32'b00000000000000000000000000000000;
 wire [31:0] dont_care_out;
 wire [31:0] dont_care_out2;
 
+defparam rf_a.ADDR_WIDTH = `OR1200_REGFILE_ADDR_WIDTH;
+defparam rf_a.DATA_WIDTH = `OR1200_OPERAND_WIDTH;
 dual_port_ram rf_a(	
 
   .clk (clk),
@@ -3140,6 +3147,8 @@ or1200_tpram_32x32 rf_a(
 // Instantiation of register file two-port RAM B
 //
 
+defparam rf_b.ADDR_WIDTH = `OR1200_REGFILE_ADDR_WIDTH;
+defparam rf_b.DATA_WIDTH = `OR1200_OPERAND_WIDTH;
 dual_port_ram rf_b(	
   .clk (clk),
   .we1(const_zero),
@@ -5234,3 +5243,61 @@ end
 wire[8:0] unused_signal;
 assign unused_signal = lsu_op;
 endmodule
+
+/**
+ * Copying the modules Dual Port RAM from vtr_flow/primitives.v 
+ * to correct the hard block inferrence by Yosys 
+*/
+//dual_port_ram module
+module dual_port_ram #(
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
+) (
+    input clk,
+
+    input [ADDR_WIDTH-1:0] addr1,
+    input [ADDR_WIDTH-1:0] addr2,
+    input [DATA_WIDTH-1:0] data1,
+    input [DATA_WIDTH-1:0] data2,
+    input we1,
+    input we2,
+    output reg [DATA_WIDTH-1:0] out1,
+    output reg [DATA_WIDTH-1:0] out2
+);
+
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
+
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
+
+    specify
+        (clk*>out1)="";
+        (clk*>out2)="";
+        $setup(addr1, posedge clk, "");
+        $setup(addr2, posedge clk, "");
+        $setup(data1, posedge clk, "");
+        $setup(data2, posedge clk, "");
+        $setup(we1, posedge clk, "");
+        $setup(we2, posedge clk, "");
+        $hold(posedge clk, addr1, "");
+        $hold(posedge clk, addr2, "");
+        $hold(posedge clk, data1, "");
+        $hold(posedge clk, data2, "");
+        $hold(posedge clk, we1, "");
+        $hold(posedge clk, we2, "");
+    endspecify
+   
+    always@(posedge clk) begin //Port 1
+        if(we1) begin
+            Mem[addr1] = data1;
+        end
+        out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+    end
+
+    always@(posedge clk) begin //Port 2
+        if(we2) begin
+            Mem[addr2] = data2;
+        end
+        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+    end
+   
+endmodule // dual_port_ram

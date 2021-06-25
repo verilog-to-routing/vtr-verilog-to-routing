@@ -3,23 +3,23 @@
 //by Wei Zhang
 
 `define NWIDTH 6'b010100
-`define BLOCKWIDTH 4'b0101
+`define BLOCKWIDTH 4'b0111
 `define DDRWIDTH 7'b0100000
 `define DDRNUMDQS 4'b0100
 `define DDRSIZEWIDTH 6'b011000
 `define BURSTLEN 3'b010
 `define MEMCONWIDTH 8'b01000000
 `define MEMCONNUMBYTES 5'b01000
-`define RAMWIDTH 10'b0100000000
-`define RAMNUMBYTES 7'b0100000
-`define RAMSIZEWIDTH 4'b0101
+`define RAMWIDTH 12'b010000000000
+`define RAMNUMBYTES 9'b010000000
+`define RAMSIZEWIDTH 4'b0111
 `define TOPWIDTH 7'b0100000
 `define rFIFOINPUTWIDTH 8'b01000000
-`define wFIFOINPUTWIDTH 10'b0100000000
+`define wFIFOINPUTWIDTH 12'b010000000000
 `define mFIFOWIDTH 6'b011100
-`define aFIFOWIDTH 4'b0101
+`define aFIFOWIDTH 4'b0111
 
-module LU8PEEng (clk, //ref_clk, global_reset_n,
+module LU32PEEng (clk, //ref_clk, global_reset_n,
  start, N, offset, done,
 		//mem_addr, mem_ba, mem_cas_n, mem_cke, mem_clk, mem_clk_n, mem_cs_n,
 burst_begin,
@@ -130,15 +130,15 @@ assign leftWriteAddrMem = ram_write_addr;
 assign leftWriteEnMem = ram_write_en && (left_sel == 1);
 assign ram_read_data = curReadDataMem;
 endmodule
-`define BLOCKM 6'b010000
-`define BLOCKN 6'b010000
+`define BLOCKM 8'b01000000
+`define BLOCKN 8'b01000000
 `define BLOCKMDIVK 3'b010
-`define MEMBLOCKM 5'b01000
-`define MEMBLOCKN 5'b01000
+`define MEMBLOCKM 7'b0100000
+`define MEMBLOCKN 7'b0100000
 `define NWIDTH 6'b010100
-`define BLOCKWIDTH 4'b0101
+`define BLOCKWIDTH 4'b0111
 `define DDRSIZEWIDTH 6'b011000
-`define RAMSIZEWIDTH 4'b0101
+`define RAMSIZEWIDTH 4'b0111
 `define START 1'b0 //0
 `define SETUP 2'b01 //1
 `define FIRST 3'b010 //2
@@ -302,7 +302,7 @@ always @ (posedge clk)
 begin
 	if (cur_mem_state == `MEM_DONE || cur_mem_state == `MEM_IDLE)
 	begin
-		ram_addr <= 5'b0;
+		ram_addr <= 7'b0;
 		mem_addr <= mem_write;
 		if (next_state == `LAST_WAIT || next_state == `FINAL_WAIT || next_state == `STALL)
 			mem_read <= 2'b00;
@@ -310,7 +310,7 @@ begin
 			mem_read <= 2'b01;
 		else
 			mem_read <= 2'b10;
-		mem_count <= 5'b0;
+		mem_count <= 7'b0;
 	end
 	else if (cur_mem_state == `MEM_CHECK_DONE)
 	begin
@@ -325,8 +325,8 @@ begin
 			read_n <= block_n;
 		end
 		mem_read <= mem_read - 2'b01;
-		mem_count <= 5'b0;
-		ram_addr <= 5'b0;
+		mem_count <= 7'b0;
+		ram_addr <= 7'b0;
 	end
 	else if (cur_mem_state == `MEM_WRITE || cur_mem_state == `MEM_READ)
 	begin
@@ -534,8 +534,8 @@ begin
 		comp_N <= comp_N - `BLOCKN;
 	end
 
-	Ndivk <= ((N+`BLOCKM-1)>>4)<<3;
-	mem_N <= Ndivk<<4;
+	Ndivk <= ((N+`BLOCKM-1)>>6)<<5;
+	mem_N <= Ndivk<<6;
 
 	if (start)
 	begin
@@ -650,7 +650,7 @@ endmodule
 //datapath for computating LU factorization
 //by Wei Zhang
 
-`define rRAMSIZEWIDTH 5
+`define rRAMSIZEWIDTH 7
 `define cSETUP 4'b0000
 `define cSTART 4'b0001
 `define cFETCH_COL 4'b0010
@@ -672,13 +672,13 @@ endmodule
 `define cLOAD_ROW_INC_J 2'b11
 
 `define PRECISION 7'b0100000
-`define NUMPE 5'b01000
-`define PEWIDTH 3'b011
-`define BLOCKWIDTH 4'b0101
-`define RAMWIDTH 10'b0100000000
-`define RAMNUMBYTES 7'b0100000
-`define RAMSIZEWIDTH 4'b0101
-`define TOPSIZEWIDTH 5'b01000
+`define NUMPE 7'b0100000
+`define PEWIDTH 4'b0101
+`define BLOCKWIDTH 4'b0111
+`define RAMWIDTH 12'b010000000000
+`define RAMNUMBYTES 9'b010000000
+`define RAMSIZEWIDTH 4'b0111
+`define TOPSIZEWIDTH 5'b01100
 `define TOPINPUTDELAY 3'b011
 `define TOPOUTPUTDELAY 2'b01
 `define MEMINPUTDELAY 3'b010
@@ -774,6 +774,30 @@ wire[`PRECISION-1:0] multA4;
 wire[`PRECISION-1:0] multA5;
 wire[`PRECISION-1:0] multA6;
 wire[`PRECISION-1:0] multA7;
+wire[`PRECISION-1:0] multA8;
+wire[`PRECISION-1:0] multA9;
+wire[`PRECISION-1:0] multA10;
+wire[`PRECISION-1:0] multA11;
+wire[`PRECISION-1:0] multA12;
+wire[`PRECISION-1:0] multA13;
+wire[`PRECISION-1:0] multA14;
+wire[`PRECISION-1:0] multA15;
+wire[`PRECISION-1:0] multA16;
+wire[`PRECISION-1:0] multA17;
+wire[`PRECISION-1:0] multA18;
+wire[`PRECISION-1:0] multA19;
+wire[`PRECISION-1:0] multA20;
+wire[`PRECISION-1:0] multA21;
+wire[`PRECISION-1:0] multA22;
+wire[`PRECISION-1:0] multA23;
+wire[`PRECISION-1:0] multA24;
+wire[`PRECISION-1:0] multA25;
+wire[`PRECISION-1:0] multA26;
+wire[`PRECISION-1:0] multA27;
+wire[`PRECISION-1:0] multA28;
+wire[`PRECISION-1:0] multA29;
+wire[`PRECISION-1:0] multA30;
+wire[`PRECISION-1:0] multA31;
 wire[`PRECISION-1:0] multResult0;
 wire[`PRECISION-1:0] multResult1;
 wire[`PRECISION-1:0] multResult2;
@@ -782,6 +806,30 @@ wire[`PRECISION-1:0] multResult4;
 wire[`PRECISION-1:0] multResult5;
 wire[`PRECISION-1:0] multResult6;
 wire[`PRECISION-1:0] multResult7;
+wire[`PRECISION-1:0] multResult8;
+wire[`PRECISION-1:0] multResult9;
+wire[`PRECISION-1:0] multResult10;
+wire[`PRECISION-1:0] multResult11;
+wire[`PRECISION-1:0] multResult12;
+wire[`PRECISION-1:0] multResult13;
+wire[`PRECISION-1:0] multResult14;
+wire[`PRECISION-1:0] multResult15;
+wire[`PRECISION-1:0] multResult16;
+wire[`PRECISION-1:0] multResult17;
+wire[`PRECISION-1:0] multResult18;
+wire[`PRECISION-1:0] multResult19;
+wire[`PRECISION-1:0] multResult20;
+wire[`PRECISION-1:0] multResult21;
+wire[`PRECISION-1:0] multResult22;
+wire[`PRECISION-1:0] multResult23;
+wire[`PRECISION-1:0] multResult24;
+wire[`PRECISION-1:0] multResult25;
+wire[`PRECISION-1:0] multResult26;
+wire[`PRECISION-1:0] multResult27;
+wire[`PRECISION-1:0] multResult28;
+wire[`PRECISION-1:0] multResult29;
+wire[`PRECISION-1:0] multResult30;
+wire[`PRECISION-1:0] multResult31;
 wire[`PRECISION-1:0] addA0;
 wire[`PRECISION-1:0] addA1;
 wire[`PRECISION-1:0] addA2;
@@ -790,6 +838,30 @@ wire[`PRECISION-1:0] addA4;
 wire[`PRECISION-1:0] addA5;
 wire[`PRECISION-1:0] addA6;
 wire[`PRECISION-1:0] addA7;
+wire[`PRECISION-1:0] addA8;
+wire[`PRECISION-1:0] addA9;
+wire[`PRECISION-1:0] addA10;
+wire[`PRECISION-1:0] addA11;
+wire[`PRECISION-1:0] addA12;
+wire[`PRECISION-1:0] addA13;
+wire[`PRECISION-1:0] addA14;
+wire[`PRECISION-1:0] addA15;
+wire[`PRECISION-1:0] addA16;
+wire[`PRECISION-1:0] addA17;
+wire[`PRECISION-1:0] addA18;
+wire[`PRECISION-1:0] addA19;
+wire[`PRECISION-1:0] addA20;
+wire[`PRECISION-1:0] addA21;
+wire[`PRECISION-1:0] addA22;
+wire[`PRECISION-1:0] addA23;
+wire[`PRECISION-1:0] addA24;
+wire[`PRECISION-1:0] addA25;
+wire[`PRECISION-1:0] addA26;
+wire[`PRECISION-1:0] addA27;
+wire[`PRECISION-1:0] addA28;
+wire[`PRECISION-1:0] addA29;
+wire[`PRECISION-1:0] addA30;
+wire[`PRECISION-1:0] addA31;
 wire[`PRECISION-1:0] addResult0;
 wire[`PRECISION-1:0] addResult1;
 wire[`PRECISION-1:0] addResult2;
@@ -798,6 +870,30 @@ wire[`PRECISION-1:0] addResult4;
 wire[`PRECISION-1:0] addResult5;
 wire[`PRECISION-1:0] addResult6;
 wire[`PRECISION-1:0] addResult7;
+wire[`PRECISION-1:0] addResult8;
+wire[`PRECISION-1:0] addResult9;
+wire[`PRECISION-1:0] addResult10;
+wire[`PRECISION-1:0] addResult11;
+wire[`PRECISION-1:0] addResult12;
+wire[`PRECISION-1:0] addResult13;
+wire[`PRECISION-1:0] addResult14;
+wire[`PRECISION-1:0] addResult15;
+wire[`PRECISION-1:0] addResult16;
+wire[`PRECISION-1:0] addResult17;
+wire[`PRECISION-1:0] addResult18;
+wire[`PRECISION-1:0] addResult19;
+wire[`PRECISION-1:0] addResult20;
+wire[`PRECISION-1:0] addResult21;
+wire[`PRECISION-1:0] addResult22;
+wire[`PRECISION-1:0] addResult23;
+wire[`PRECISION-1:0] addResult24;
+wire[`PRECISION-1:0] addResult25;
+wire[`PRECISION-1:0] addResult26;
+wire[`PRECISION-1:0] addResult27;
+wire[`PRECISION-1:0] addResult28;
+wire[`PRECISION-1:0] addResult29;
+wire[`PRECISION-1:0] addResult30;
+wire[`PRECISION-1:0] addResult31;
 wire[`RAMWIDTH-1:0] leftReadData0, leftReadData1, leftWriteData0, leftWriteData1;
 wire[`RAMSIZEWIDTH-1:0] leftWriteAddr0, leftWriteAddr1, leftReadAddr0, leftReadAddr1;
 wire[`RAMNUMBYTES-1:0] leftWriteByteEn0, leftWriteByteEn1;
@@ -864,6 +960,30 @@ mult_add PE4 (clk, multA4, multOperand, addA4, multResult4, addResult4);
 mult_add PE5 (clk, multA5, multOperand, addA5, multResult5, addResult5);
 mult_add PE6 (clk, multA6, multOperand, addA6, multResult6, addResult6);
 mult_add PE7 (clk, multA7, multOperand, addA7, multResult7, addResult7);
+mult_add PE8 (clk, multA8, multOperand, addA8, multResult8, addResult8);
+mult_add PE9 (clk, multA9, multOperand, addA9, multResult9, addResult9);
+mult_add PE10 (clk, multA10, multOperand, addA10, multResult10, addResult10);
+mult_add PE11 (clk, multA11, multOperand, addA11, multResult11, addResult11);
+mult_add PE12 (clk, multA12, multOperand, addA12, multResult12, addResult12);
+mult_add PE13 (clk, multA13, multOperand, addA13, multResult13, addResult13);
+mult_add PE14 (clk, multA14, multOperand, addA14, multResult14, addResult14);
+mult_add PE15 (clk, multA15, multOperand, addA15, multResult15, addResult15);
+mult_add PE16 (clk, multA16, multOperand, addA16, multResult16, addResult16);
+mult_add PE17 (clk, multA17, multOperand, addA17, multResult17, addResult17);
+mult_add PE18 (clk, multA18, multOperand, addA18, multResult18, addResult18);
+mult_add PE19 (clk, multA19, multOperand, addA19, multResult19, addResult19);
+mult_add PE20 (clk, multA20, multOperand, addA20, multResult20, addResult20);
+mult_add PE21 (clk, multA21, multOperand, addA21, multResult21, addResult21);
+mult_add PE22 (clk, multA22, multOperand, addA22, multResult22, addResult22);
+mult_add PE23 (clk, multA23, multOperand, addA23, multResult23, addResult23);
+mult_add PE24 (clk, multA24, multOperand, addA24, multResult24, addResult24);
+mult_add PE25 (clk, multA25, multOperand, addA25, multResult25, addResult25);
+mult_add PE26 (clk, multA26, multOperand, addA26, multResult26, addResult26);
+mult_add PE27 (clk, multA27, multOperand, addA27, multResult27, addResult27);
+mult_add PE28 (clk, multA28, multOperand, addA28, multResult28, addResult28);
+mult_add PE29 (clk, multA29, multOperand, addA29, multResult29, addResult29);
+mult_add PE30 (clk, multA30, multOperand, addA30, multResult30, addResult30);
+mult_add PE31 (clk, multA31, multOperand, addA31, multResult31, addResult31);
 
 // connect to ports of the left blocks
 assign leftWriteDataLU = (leftWriteSel == 1'b0) ? curReadDataLU : rcWriteData;
@@ -944,25 +1064,73 @@ begin
 end
 
 // connections to top block memory ports
-always @ (topSourceSel or topWriteSel or curReadDataLU or addResult7 or addResult6 or addResult5 or addResult4 or addResult3 or addResult2 or addResult1 or addResult0)
+always @ (topSourceSel or topWriteSel or curReadDataLU or addResult31 or addResult30 or addResult29 or addResult28 or addResult27 or addResult26 or addResult25 or addResult24 or addResult23 or addResult22 or addResult21 or addResult20 or addResult19 or addResult18 or addResult17 or addResult16 or addResult15 or addResult14 or addResult13 or addResult12 or addResult11 or addResult10 or addResult9 or addResult8 or addResult7 or addResult6 or addResult5 or addResult4 or addResult3 or addResult2 or addResult1 or addResult0)
 begin
 	if (topSourceSel == 1'b0)
 		case (topWriteSel)
 		0:
-			topWriteDataLU = curReadDataLU[255:224];
+			topWriteDataLU = curReadDataLU[1023:992];
 		1:
-			topWriteDataLU = curReadDataLU[223:192];
+			topWriteDataLU = curReadDataLU[991:960];
 		2:
-			topWriteDataLU = curReadDataLU[191:160];
+			topWriteDataLU = curReadDataLU[959:928];
 		3:
-			topWriteDataLU = curReadDataLU[159:128];
+			topWriteDataLU = curReadDataLU[927:896];
 		4:
-			topWriteDataLU = curReadDataLU[127:96];
+			topWriteDataLU = curReadDataLU[895:864];
 		5:
-			topWriteDataLU = curReadDataLU[95:64];
+			topWriteDataLU = curReadDataLU[863:832];
 		6:
-			topWriteDataLU = curReadDataLU[63:32];
+			topWriteDataLU = curReadDataLU[831:800];
 		7:
+			topWriteDataLU = curReadDataLU[799:768];
+		8:
+			topWriteDataLU = curReadDataLU[767:736];
+		9:
+			topWriteDataLU = curReadDataLU[735:704];
+		10:
+			topWriteDataLU = curReadDataLU[703:672];
+		11:
+			topWriteDataLU = curReadDataLU[671:640];
+		12:
+			topWriteDataLU = curReadDataLU[639:608];
+		13:
+			topWriteDataLU = curReadDataLU[607:576];
+		14:
+			topWriteDataLU = curReadDataLU[575:544];
+		15:
+			topWriteDataLU = curReadDataLU[543:512];
+		16:
+			topWriteDataLU = curReadDataLU[511:480];
+		17:
+			topWriteDataLU = curReadDataLU[479:448];
+		18:
+			topWriteDataLU = curReadDataLU[447:416];
+		19:
+			topWriteDataLU = curReadDataLU[415:384];
+		20:
+			topWriteDataLU = curReadDataLU[383:352];
+		21:
+			topWriteDataLU = curReadDataLU[351:320];
+		22:
+			topWriteDataLU = curReadDataLU[319:288];
+		23:
+			topWriteDataLU = curReadDataLU[287:256];
+		24:
+			topWriteDataLU = curReadDataLU[255:224];
+		25:
+			topWriteDataLU = curReadDataLU[223:192];
+		26:
+			topWriteDataLU = curReadDataLU[191:160];
+		27:
+			topWriteDataLU = curReadDataLU[159:128];
+		28:
+			topWriteDataLU = curReadDataLU[127:96];
+		29:
+			topWriteDataLU = curReadDataLU[95:64];
+		30:
+			topWriteDataLU = curReadDataLU[63:32];
+		31:
 			topWriteDataLU = curReadDataLU[31:0];
 		default:
 			topWriteDataLU = curReadDataLU[`PRECISION-1:0];
@@ -970,20 +1138,68 @@ begin
 	else
 		case (topWriteSel)
 		0:
-			topWriteDataLU = addResult7;
+			topWriteDataLU = addResult31;
 		1:
-			topWriteDataLU = addResult6;
+			topWriteDataLU = addResult30;
 		2:
-			topWriteDataLU = addResult5;
+			topWriteDataLU = addResult29;
 		3:
-			topWriteDataLU = addResult4;
+			topWriteDataLU = addResult28;
 		4:
-			topWriteDataLU = addResult3;
+			topWriteDataLU = addResult27;
 		5:
-			topWriteDataLU = addResult2;
+			topWriteDataLU = addResult26;
 		6:
-			topWriteDataLU = addResult1;
+			topWriteDataLU = addResult25;
 		7:
+			topWriteDataLU = addResult24;
+		8:
+			topWriteDataLU = addResult23;
+		9:
+			topWriteDataLU = addResult22;
+		10:
+			topWriteDataLU = addResult21;
+		11:
+			topWriteDataLU = addResult20;
+		12:
+			topWriteDataLU = addResult19;
+		13:
+			topWriteDataLU = addResult18;
+		14:
+			topWriteDataLU = addResult17;
+		15:
+			topWriteDataLU = addResult16;
+		16:
+			topWriteDataLU = addResult15;
+		17:
+			topWriteDataLU = addResult14;
+		18:
+			topWriteDataLU = addResult13;
+		19:
+			topWriteDataLU = addResult12;
+		20:
+			topWriteDataLU = addResult11;
+		21:
+			topWriteDataLU = addResult10;
+		22:
+			topWriteDataLU = addResult9;
+		23:
+			topWriteDataLU = addResult8;
+		24:
+			topWriteDataLU = addResult7;
+		25:
+			topWriteDataLU = addResult6;
+		26:
+			topWriteDataLU = addResult5;
+		27:
+			topWriteDataLU = addResult4;
+		28:
+			topWriteDataLU = addResult3;
+		29:
+			topWriteDataLU = addResult2;
+		30:
+			topWriteDataLU = addResult1;
+		31:
 			topWriteDataLU = addResult0;
 		default:
 			topWriteDataLU = addResult0;
@@ -1024,6 +1240,30 @@ assign multA4 = leftReadDataLU[159:128];
 assign multA5 = leftReadDataLU[191:160];
 assign multA6 = leftReadDataLU[223:192];
 assign multA7 = leftReadDataLU[255:224];
+assign multA8 = leftReadDataLU[287:256];
+assign multA9 = leftReadDataLU[319:288];
+assign multA10 = leftReadDataLU[351:320];
+assign multA11 = leftReadDataLU[383:352];
+assign multA12 = leftReadDataLU[415:384];
+assign multA13 = leftReadDataLU[447:416];
+assign multA14 = leftReadDataLU[479:448];
+assign multA15 = leftReadDataLU[511:480];
+assign multA16 = leftReadDataLU[543:512];
+assign multA17 = leftReadDataLU[575:544];
+assign multA18 = leftReadDataLU[607:576];
+assign multA19 = leftReadDataLU[639:608];
+assign multA20 = leftReadDataLU[671:640];
+assign multA21 = leftReadDataLU[703:672];
+assign multA22 = leftReadDataLU[735:704];
+assign multA23 = leftReadDataLU[767:736];
+assign multA24 = leftReadDataLU[799:768];
+assign multA25 = leftReadDataLU[831:800];
+assign multA26 = leftReadDataLU[863:832];
+assign multA27 = leftReadDataLU[895:864];
+assign multA28 = leftReadDataLU[927:896];
+assign multA29 = leftReadDataLU[959:928];
+assign multA30 = leftReadDataLU[991:960];
+assign multA31 = leftReadDataLU[1023:992];
 
 assign addA0 = curReadDataLU[31:0];
 assign addA1 = curReadDataLU[63:32];
@@ -1033,6 +1273,30 @@ assign addA4 = curReadDataLU[159:128];
 assign addA5 = curReadDataLU[191:160];
 assign addA6 = curReadDataLU[223:192];
 assign addA7 = curReadDataLU[255:224];
+assign addA8 = curReadDataLU[287:256];
+assign addA9 = curReadDataLU[319:288];
+assign addA10 = curReadDataLU[351:320];
+assign addA11 = curReadDataLU[383:352];
+assign addA12 = curReadDataLU[415:384];
+assign addA13 = curReadDataLU[447:416];
+assign addA14 = curReadDataLU[479:448];
+assign addA15 = curReadDataLU[511:480];
+assign addA16 = curReadDataLU[543:512];
+assign addA17 = curReadDataLU[575:544];
+assign addA18 = curReadDataLU[607:576];
+assign addA19 = curReadDataLU[639:608];
+assign addA20 = curReadDataLU[671:640];
+assign addA21 = curReadDataLU[703:672];
+assign addA22 = curReadDataLU[735:704];
+assign addA23 = curReadDataLU[767:736];
+assign addA24 = curReadDataLU[799:768];
+assign addA25 = curReadDataLU[831:800];
+assign addA26 = curReadDataLU[863:832];
+assign addA27 = curReadDataLU[895:864];
+assign addA28 = curReadDataLU[927:896];
+assign addA29 = curReadDataLU[959:928];
+assign addA30 = curReadDataLU[991:960];
+assign addA31 = curReadDataLU[1023:992];
 
 // connections to ports of the current blocks
 assign rcWriteData[31:0] = (curWriteSel == 0) ? multResult0 : addResult0;
@@ -1043,6 +1307,30 @@ assign rcWriteData[159:128] = (curWriteSel == 0) ? multResult4 : addResult4;
 assign rcWriteData[191:160] = (curWriteSel == 0) ? multResult5 : addResult5;
 assign rcWriteData[223:192] = (curWriteSel == 0) ? multResult6 : addResult6;
 assign rcWriteData[255:224] = (curWriteSel == 0) ? multResult7 : addResult7;
+assign rcWriteData[287:256] = (curWriteSel == 0) ? multResult8 : addResult8;
+assign rcWriteData[319:288] = (curWriteSel == 0) ? multResult9 : addResult9;
+assign rcWriteData[351:320] = (curWriteSel == 0) ? multResult10 : addResult10;
+assign rcWriteData[383:352] = (curWriteSel == 0) ? multResult11 : addResult11;
+assign rcWriteData[415:384] = (curWriteSel == 0) ? multResult12 : addResult12;
+assign rcWriteData[447:416] = (curWriteSel == 0) ? multResult13 : addResult13;
+assign rcWriteData[479:448] = (curWriteSel == 0) ? multResult14 : addResult14;
+assign rcWriteData[511:480] = (curWriteSel == 0) ? multResult15 : addResult15;
+assign rcWriteData[543:512] = (curWriteSel == 0) ? multResult16 : addResult16;
+assign rcWriteData[575:544] = (curWriteSel == 0) ? multResult17 : addResult17;
+assign rcWriteData[607:576] = (curWriteSel == 0) ? multResult18 : addResult18;
+assign rcWriteData[639:608] = (curWriteSel == 0) ? multResult19 : addResult19;
+assign rcWriteData[671:640] = (curWriteSel == 0) ? multResult20 : addResult20;
+assign rcWriteData[703:672] = (curWriteSel == 0) ? multResult21 : addResult21;
+assign rcWriteData[735:704] = (curWriteSel == 0) ? multResult22 : addResult22;
+assign rcWriteData[767:736] = (curWriteSel == 0) ? multResult23 : addResult23;
+assign rcWriteData[799:768] = (curWriteSel == 0) ? multResult24 : addResult24;
+assign rcWriteData[831:800] = (curWriteSel == 0) ? multResult25 : addResult25;
+assign rcWriteData[863:832] = (curWriteSel == 0) ? multResult26 : addResult26;
+assign rcWriteData[895:864] = (curWriteSel == 0) ? multResult27 : addResult27;
+assign rcWriteData[927:896] = (curWriteSel == 0) ? multResult28 : addResult28;
+assign rcWriteData[959:928] = (curWriteSel == 0) ? multResult29 : addResult29;
+assign rcWriteData[991:960] = (curWriteSel == 0) ? multResult30 : addResult30;
+assign rcWriteData[1023:992] = (curWriteSel == 0) ? multResult31 : addResult31;
 assign curWriteDataLU = rcWriteData;
 
 always @ (posedge clk)
@@ -1110,221 +1398,221 @@ module LUControl (clk, start_in, m_in, n_in, loop_in, mode_in, done,
 					topReadAddr, topWriteAddr, topWriteEn, topWriteSel, topSourceSel, diagEn, MOSel, MOEn);
 
 input clk, start_in;
-input[5-1:0] m_in, n_in, loop_in;
+input[7-1:0] m_in, n_in, loop_in;
 input[1:0] mode_in;
 output done;
 
-output[32-1:0] curWriteByteEn;
-output[5-1:0] curWriteAddr, curReadAddr;
+output[128-1:0] curWriteByteEn;
+output[7-1:0] curWriteAddr, curReadAddr;
 output curWriteEn;
 
-output[32-1:0] leftWriteByteEn;
-output[5-1:0] leftWriteAddr, leftReadAddr;
+output[128-1:0] leftWriteByteEn;
+output[7-1:0] leftWriteAddr, leftReadAddr;
 output leftWriteEn;
 
-output[8-1:0] topWriteAddr, topReadAddr;
+output[12-1:0] topWriteAddr, topReadAddr;
 output topWriteEn;
 
 output leftWriteSel, curWriteSel, topSourceSel, diagEn;
-output[3-1:0] topWriteSel;
+output[5-1:0] topWriteSel;
 
 output MOSel;
 output MOEn;
 
 reg start;
 reg[15:0]startDelay;
-reg[5-1:0] m, n, stop, stop2, loop;
+reg[7-1:0] m, n, stop, stop2, loop;
 reg[1:0] mode;
 reg[3:0] nextState, currentState;
 reg[1:0] nextRowState, currentRowState;
 reg startFetchRow, doneFetchRow, loadRow, writeRow;
 reg updateCounter;
 
-reg[5-1:0] i1, j;
-reg[8-1:0] nextTopIdx, nextTopIdx2, curTopIdx, nextTopIdxCounter;
+reg[7-1:0] i1, j;
+reg[12-1:0] nextTopIdx, nextTopIdx2, curTopIdx, nextTopIdxCounter;
 reg[2-1:0] topIdx, topIdxCounter, mdivk;
-reg[5-1:0] diagIdx, leftIdx, msIdx;
-reg[3-1:0] imodk, i1modk;
-reg[5-1:0] diagIdxCounter, leftIdxCounter, msIdxCounter, readRowCounter, topWriteCounter;
-reg[32-1:0] byteEn, i1modkByteEn;
+reg[7-1:0] diagIdx, leftIdx, msIdx;
+reg[5-1:0] imodk, i1modk;
+reg[7-1:0] diagIdxCounter, leftIdxCounter, msIdxCounter, readRowCounter, topWriteCounter;
+reg[128-1:0] byteEn, i1modkByteEn;
 
 reg done;
 
-reg[32-1:0] curWriteByteEn;
-reg[5-1:0] curWriteAddr, curReadAddr;
+reg[128-1:0] curWriteByteEn;
+reg[7-1:0] curWriteAddr, curReadAddr;
 reg curWriteEn;
 
-reg[32-1:0] leftWriteByteEn;
-reg[5-1:0] leftWriteAddr, leftReadAddr;
+reg[128-1:0] leftWriteByteEn;
+reg[7-1:0] leftWriteAddr, leftReadAddr;
 reg leftWriteEn;
 
-reg[8-1:0] topWriteAddr, topReadAddr;
+reg[12-1:0] topWriteAddr, topReadAddr;
 reg topWriteEn;
 
 reg leftWriteSel, curWriteSel, topSourceSel, diagEn;
-reg[3-1:0] topWriteSel;
+reg[5-1:0] topWriteSel;
 
 reg MOSel;
 reg MOEn;
 
-reg[5-1:0] counter;
+reg[7-1:0] counter;
 reg[6-1:0] divCounter;
 
-reg[32-1:0]writeByteEnDelay0; 
-reg[32-1:0]writeByteEnDelay1; 
-reg[32-1:0]writeByteEnDelay2; 
-reg[32-1:0]writeByteEnDelay3; 
-reg[32-1:0]writeByteEnDelay4; 
-reg[32-1:0]writeByteEnDelay5; 
-reg[32-1:0]writeByteEnDelay6; 
-reg[32-1:0]writeByteEnDelay7; 
-reg[32-1:0]writeByteEnDelay8; 
-reg[32-1:0]writeByteEnDelay9; 
-reg[32-1:0]writeByteEnDelay10; 
-reg[32-1:0]writeByteEnDelay11; 
-reg[32-1:0]writeByteEnDelay12; 
-reg[32-1:0]writeByteEnDelay13; 
-reg[32-1:0]writeByteEnDelay14; 
-reg[32-1:0]writeByteEnDelay15; 
-reg[32-1:0]writeByteEnDelay16; 
-reg[32-1:0]writeByteEnDelay17; 
-reg[32-1:0]writeByteEnDelay18; 
-reg[32-1:0]writeByteEnDelay19; 
-reg[32-1:0]writeByteEnDelay20; 
-reg[32-1:0]writeByteEnDelay21; 
-reg[32-1:0]writeByteEnDelay22; 
-reg[32-1:0]writeByteEnDelay23; 
-reg[32-1:0]writeByteEnDelay24; 
-reg[32-1:0]writeByteEnDelay25; 
-reg[32-1:0]writeByteEnDelay26; 
-reg[32-1:0]writeByteEnDelay27; 
-reg[32-1:0]writeByteEnDelay28; 
-reg[32-1:0]writeByteEnDelay29; 
-reg[32-1:0]writeByteEnDelay30; 
-reg[32-1:0]writeByteEnDelay31; 
+reg[128-1:0]writeByteEnDelay0; 
+reg[128-1:0]writeByteEnDelay1; 
+reg[128-1:0]writeByteEnDelay2; 
+reg[128-1:0]writeByteEnDelay3; 
+reg[128-1:0]writeByteEnDelay4; 
+reg[128-1:0]writeByteEnDelay5; 
+reg[128-1:0]writeByteEnDelay6; 
+reg[128-1:0]writeByteEnDelay7; 
+reg[128-1:0]writeByteEnDelay8; 
+reg[128-1:0]writeByteEnDelay9; 
+reg[128-1:0]writeByteEnDelay10; 
+reg[128-1:0]writeByteEnDelay11; 
+reg[128-1:0]writeByteEnDelay12; 
+reg[128-1:0]writeByteEnDelay13; 
+reg[128-1:0]writeByteEnDelay14; 
+reg[128-1:0]writeByteEnDelay15; 
+reg[128-1:0]writeByteEnDelay16; 
+reg[128-1:0]writeByteEnDelay17; 
+reg[128-1:0]writeByteEnDelay18; 
+reg[128-1:0]writeByteEnDelay19; 
+reg[128-1:0]writeByteEnDelay20; 
+reg[128-1:0]writeByteEnDelay21; 
+reg[128-1:0]writeByteEnDelay22; 
+reg[128-1:0]writeByteEnDelay23; 
+reg[128-1:0]writeByteEnDelay24; 
+reg[128-1:0]writeByteEnDelay25; 
+reg[128-1:0]writeByteEnDelay26; 
+reg[128-1:0]writeByteEnDelay27; 
+reg[128-1:0]writeByteEnDelay28; 
+reg[128-1:0]writeByteEnDelay29; 
+reg[128-1:0]writeByteEnDelay30; 
+reg[128-1:0]writeByteEnDelay31; 
 
-reg[5-1:0]curWriteAddrDelay0; 
-reg[5-1:0]curWriteAddrDelay1; 
-reg[5-1:0]curWriteAddrDelay2; 
-reg[5-1:0]curWriteAddrDelay3; 
-reg[5-1:0]curWriteAddrDelay4; 
-reg[5-1:0]curWriteAddrDelay5; 
-reg[5-1:0]curWriteAddrDelay6; 
-reg[5-1:0]curWriteAddrDelay7; 
-reg[5-1:0]curWriteAddrDelay8; 
-reg[5-1:0]curWriteAddrDelay9; 
-reg[5-1:0]curWriteAddrDelay10; 
-reg[5-1:0]curWriteAddrDelay11; 
-reg[5-1:0]curWriteAddrDelay12; 
-reg[5-1:0]curWriteAddrDelay13; 
-reg[5-1:0]curWriteAddrDelay14; 
-reg[5-1:0]curWriteAddrDelay15; 
-reg[5-1:0]curWriteAddrDelay16; 
-reg[5-1:0]curWriteAddrDelay17; 
-reg[5-1:0]curWriteAddrDelay18; 
-reg[5-1:0]curWriteAddrDelay19; 
-reg[5-1:0]curWriteAddrDelay20; 
-reg[5-1:0]curWriteAddrDelay21; 
-reg[5-1:0]curWriteAddrDelay22; 
-reg[5-1:0]curWriteAddrDelay23; 
-reg[5-1:0]curWriteAddrDelay24; 
-reg[5-1:0]curWriteAddrDelay25; 
-reg[5-1:0]curWriteAddrDelay26; 
-reg[5-1:0]curWriteAddrDelay27; 
-reg[5-1:0]curWriteAddrDelay28; 
-reg[5-1:0]curWriteAddrDelay29; 
-reg[5-1:0]curWriteAddrDelay30; 
-reg[5-1:0]curWriteAddrDelay31; 
+reg[7-1:0]curWriteAddrDelay0; 
+reg[7-1:0]curWriteAddrDelay1; 
+reg[7-1:0]curWriteAddrDelay2; 
+reg[7-1:0]curWriteAddrDelay3; 
+reg[7-1:0]curWriteAddrDelay4; 
+reg[7-1:0]curWriteAddrDelay5; 
+reg[7-1:0]curWriteAddrDelay6; 
+reg[7-1:0]curWriteAddrDelay7; 
+reg[7-1:0]curWriteAddrDelay8; 
+reg[7-1:0]curWriteAddrDelay9; 
+reg[7-1:0]curWriteAddrDelay10; 
+reg[7-1:0]curWriteAddrDelay11; 
+reg[7-1:0]curWriteAddrDelay12; 
+reg[7-1:0]curWriteAddrDelay13; 
+reg[7-1:0]curWriteAddrDelay14; 
+reg[7-1:0]curWriteAddrDelay15; 
+reg[7-1:0]curWriteAddrDelay16; 
+reg[7-1:0]curWriteAddrDelay17; 
+reg[7-1:0]curWriteAddrDelay18; 
+reg[7-1:0]curWriteAddrDelay19; 
+reg[7-1:0]curWriteAddrDelay20; 
+reg[7-1:0]curWriteAddrDelay21; 
+reg[7-1:0]curWriteAddrDelay22; 
+reg[7-1:0]curWriteAddrDelay23; 
+reg[7-1:0]curWriteAddrDelay24; 
+reg[7-1:0]curWriteAddrDelay25; 
+reg[7-1:0]curWriteAddrDelay26; 
+reg[7-1:0]curWriteAddrDelay27; 
+reg[7-1:0]curWriteAddrDelay28; 
+reg[7-1:0]curWriteAddrDelay29; 
+reg[7-1:0]curWriteAddrDelay30; 
+reg[7-1:0]curWriteAddrDelay31; 
 
-reg[5-1:0]curReadAddrDelay0; 
-reg[5-1:0]curReadAddrDelay1; 
-reg[5-1:0]curReadAddrDelay2; 
-reg[5-1:0]curReadAddrDelay3; 
-reg[5-1:0]curReadAddrDelay4; 
-reg[5-1:0]curReadAddrDelay5; 
-reg[5-1:0]curReadAddrDelay6; 
-reg[5-1:0]curReadAddrDelay7; 
-reg[5-1:0]curReadAddrDelay8; 
-reg[5-1:0]curReadAddrDelay9; 
-reg[5-1:0]curReadAddrDelay10; 
-reg[5-1:0]curReadAddrDelay11; 
+reg[7-1:0]curReadAddrDelay0; 
+reg[7-1:0]curReadAddrDelay1; 
+reg[7-1:0]curReadAddrDelay2; 
+reg[7-1:0]curReadAddrDelay3; 
+reg[7-1:0]curReadAddrDelay4; 
+reg[7-1:0]curReadAddrDelay5; 
+reg[7-1:0]curReadAddrDelay6; 
+reg[7-1:0]curReadAddrDelay7; 
+reg[7-1:0]curReadAddrDelay8; 
+reg[7-1:0]curReadAddrDelay9; 
+reg[7-1:0]curReadAddrDelay10; 
+reg[7-1:0]curReadAddrDelay11; 
 
 reg[32-1:0]leftWriteEnDelay; 
 reg[32-1:0]curWriteEnDelay; 
 reg[5-1:0]leftWriteSelDelay; 
 reg[16-1:0]curWriteSelDelay; 
-reg[5-1:0]leftReadAddrDelay0; 
-reg[8-1:0]topWriteAddrDelay0; 
-reg[8-1:0]topWriteAddrDelay1; 
-reg[8-1:0]topWriteAddrDelay2; 
-reg[8-1:0]topWriteAddrDelay3; 
-reg[8-1:0]topWriteAddrDelay4; 
-reg[8-1:0]topWriteAddrDelay5; 
-reg[8-1:0]topWriteAddrDelay6; 
-reg[8-1:0]topWriteAddrDelay7; 
-reg[8-1:0]topWriteAddrDelay8; 
-reg[8-1:0]topWriteAddrDelay9; 
-reg[8-1:0]topWriteAddrDelay10; 
-reg[8-1:0]topWriteAddrDelay11; 
-reg[8-1:0]topWriteAddrDelay12; 
-reg[8-1:0]topWriteAddrDelay13; 
-reg[8-1:0]topWriteAddrDelay14; 
-reg[8-1:0]topWriteAddrDelay15; 
-reg[8-1:0]topWriteAddrDelay16; 
-reg[8-1:0]topWriteAddrDelay17; 
-reg[8-1:0]topWriteAddrDelay18; 
-reg[8-1:0]topWriteAddrDelay19; 
-reg[8-1:0]topWriteAddrDelay20; 
-reg[8-1:0]topWriteAddrDelay21; 
-reg[8-1:0]topWriteAddrDelay22; 
-reg[8-1:0]topWriteAddrDelay23; 
-reg[8-1:0]topWriteAddrDelay24; 
-reg[8-1:0]topWriteAddrDelay25; 
-reg[8-1:0]topWriteAddrDelay26; 
-reg[8-1:0]topWriteAddrDelay27; 
-reg[8-1:0]topWriteAddrDelay28; 
-reg[8-1:0]topWriteAddrDelay29; 
-reg[8-1:0]topWriteAddrDelay30; 
-reg[8-1:0]topWriteAddrDelay31; 
+reg[7-1:0]leftReadAddrDelay0; 
+reg[12-1:0]topWriteAddrDelay0; 
+reg[12-1:0]topWriteAddrDelay1; 
+reg[12-1:0]topWriteAddrDelay2; 
+reg[12-1:0]topWriteAddrDelay3; 
+reg[12-1:0]topWriteAddrDelay4; 
+reg[12-1:0]topWriteAddrDelay5; 
+reg[12-1:0]topWriteAddrDelay6; 
+reg[12-1:0]topWriteAddrDelay7; 
+reg[12-1:0]topWriteAddrDelay8; 
+reg[12-1:0]topWriteAddrDelay9; 
+reg[12-1:0]topWriteAddrDelay10; 
+reg[12-1:0]topWriteAddrDelay11; 
+reg[12-1:0]topWriteAddrDelay12; 
+reg[12-1:0]topWriteAddrDelay13; 
+reg[12-1:0]topWriteAddrDelay14; 
+reg[12-1:0]topWriteAddrDelay15; 
+reg[12-1:0]topWriteAddrDelay16; 
+reg[12-1:0]topWriteAddrDelay17; 
+reg[12-1:0]topWriteAddrDelay18; 
+reg[12-1:0]topWriteAddrDelay19; 
+reg[12-1:0]topWriteAddrDelay20; 
+reg[12-1:0]topWriteAddrDelay21; 
+reg[12-1:0]topWriteAddrDelay22; 
+reg[12-1:0]topWriteAddrDelay23; 
+reg[12-1:0]topWriteAddrDelay24; 
+reg[12-1:0]topWriteAddrDelay25; 
+reg[12-1:0]topWriteAddrDelay26; 
+reg[12-1:0]topWriteAddrDelay27; 
+reg[12-1:0]topWriteAddrDelay28; 
+reg[12-1:0]topWriteAddrDelay29; 
+reg[12-1:0]topWriteAddrDelay30; 
+reg[12-1:0]topWriteAddrDelay31; 
 
 reg [32-1:0]topWriteEnDelay;
 reg [5-1:0]topSourceSelDelay;
-reg[3-1:0]topWriteSelDelay0; 
-reg[3-1:0]topWriteSelDelay1; 
-reg[3-1:0]topWriteSelDelay2; 
-reg[3-1:0]topWriteSelDelay3; 
-reg[3-1:0]topWriteSelDelay4; 
-reg[3-1:0]topWriteSelDelay5; 
-reg[3-1:0]topWriteSelDelay6; 
-reg[3-1:0]topWriteSelDelay7; 
-reg[3-1:0]topWriteSelDelay8; 
-reg[3-1:0]topWriteSelDelay9; 
-reg[3-1:0]topWriteSelDelay10; 
-reg[3-1:0]topWriteSelDelay11; 
-reg[3-1:0]topWriteSelDelay12; 
-reg[3-1:0]topWriteSelDelay13; 
-reg[3-1:0]topWriteSelDelay14; 
-reg[3-1:0]topWriteSelDelay15; 
-reg[3-1:0]topWriteSelDelay16; 
-reg[3-1:0]topWriteSelDelay17; 
-reg[3-1:0]topWriteSelDelay18; 
-reg[3-1:0]topWriteSelDelay19; 
-reg[3-1:0]topWriteSelDelay20; 
-reg[3-1:0]topWriteSelDelay21; 
-reg[3-1:0]topWriteSelDelay22; 
-reg[3-1:0]topWriteSelDelay23; 
-reg[3-1:0]topWriteSelDelay24; 
-reg[3-1:0]topWriteSelDelay25; 
-reg[3-1:0]topWriteSelDelay26; 
-reg[3-1:0]topWriteSelDelay27; 
-reg[3-1:0]topWriteSelDelay28; 
-reg[3-1:0]topWriteSelDelay29; 
-reg[3-1:0]topWriteSelDelay30; 
-reg[3-1:0]topWriteSelDelay31; 
+reg[5-1:0]topWriteSelDelay0; 
+reg[5-1:0]topWriteSelDelay1; 
+reg[5-1:0]topWriteSelDelay2; 
+reg[5-1:0]topWriteSelDelay3; 
+reg[5-1:0]topWriteSelDelay4; 
+reg[5-1:0]topWriteSelDelay5; 
+reg[5-1:0]topWriteSelDelay6; 
+reg[5-1:0]topWriteSelDelay7; 
+reg[5-1:0]topWriteSelDelay8; 
+reg[5-1:0]topWriteSelDelay9; 
+reg[5-1:0]topWriteSelDelay10; 
+reg[5-1:0]topWriteSelDelay11; 
+reg[5-1:0]topWriteSelDelay12; 
+reg[5-1:0]topWriteSelDelay13; 
+reg[5-1:0]topWriteSelDelay14; 
+reg[5-1:0]topWriteSelDelay15; 
+reg[5-1:0]topWriteSelDelay16; 
+reg[5-1:0]topWriteSelDelay17; 
+reg[5-1:0]topWriteSelDelay18; 
+reg[5-1:0]topWriteSelDelay19; 
+reg[5-1:0]topWriteSelDelay20; 
+reg[5-1:0]topWriteSelDelay21; 
+reg[5-1:0]topWriteSelDelay22; 
+reg[5-1:0]topWriteSelDelay23; 
+reg[5-1:0]topWriteSelDelay24; 
+reg[5-1:0]topWriteSelDelay25; 
+reg[5-1:0]topWriteSelDelay26; 
+reg[5-1:0]topWriteSelDelay27; 
+reg[5-1:0]topWriteSelDelay28; 
+reg[5-1:0]topWriteSelDelay29; 
+reg[5-1:0]topWriteSelDelay30; 
+reg[5-1:0]topWriteSelDelay31; 
 
 reg [6-1:0]diagEnDelay;
 reg[6-1:0]MOEnDelay;
-reg [5-1:0]waitCycles;
+reg [7-1:0]waitCycles;
 
 // register store m, n and mdivk value
 always @ (posedge clk)
@@ -1358,7 +1646,7 @@ begin
 	startDelay[14] <= startDelay[13];
 	startDelay[15] <= startDelay[14];
 	start <= startDelay[15];
-	mdivk <= (m+8-1)>>3;
+	mdivk <= (m+32-1)>>5;
 end
 
 // registers that store values that are used in FSM, dependent on i and/or j
@@ -1366,32 +1654,33 @@ always @ (posedge clk)
 begin
 	if (start == 1'b1)
 		topIdx <= 2'b00; //offset1divk;
-	else if (currentState == `cINCRE_I && i1modk == 8-1 && mode[0] == 1'b0)
+	else if (currentState == `cINCRE_I && i1modk == 32-1 && mode[0] == 1'b0)
 		topIdx <= topIdx + 1'b1;
 		
 	if (start == 1'b1)
-		diagIdx <= 5'b00000;
+		diagIdx <= 7'b0000000;
 	else if (currentState == `cSTORE_DIAG && mode == 2'b01)
-		diagIdx <= 2;	else if (currentState == `cINCRE_I)
+		diagIdx <= 2;	
+	else if (currentState == `cINCRE_I)	
 	begin
-		if ((imodk == 8-1 && mode == 2'b00) || (i1modk == 8-1 && mode == 2'b01))
+		if ((imodk == 32-1 && mode == 2'b00) || (i1modk == 32-1 && mode == 2'b01))
 			diagIdx <= diagIdx + 2 + 1;
 		else
 			diagIdx <= diagIdx + 2;
 	end
 	
 	if (start == 1'b1)
-		leftIdx <= 5'b00000;
+		leftIdx <= 7'b0000000;
 	else if (currentState == `cINCRE_I)
 	begin
-		if (i1modk == 8-1 && mode[0] == 1'b0)
+		if (i1modk == 32-1 && mode[0] == 1'b0)
 			leftIdx <= leftIdx + 2 + 1;
 		else
 			leftIdx <= leftIdx + 2;
 	end
 
 	if (start == 1'b1)
-		msIdx <= 5'b00000;
+		msIdx <= 7'b0000000;
 	else if (currentState == `cUPDATE_J)
 		if (mode[1] == 1'b0)
 			msIdx <= leftIdx + 2;
@@ -1401,27 +1690,27 @@ begin
 		msIdx <= msIdx + 2;
 
 	if (start == 1'b1)
-		imodk <= 3'b000;
+		imodk <= 5'b00000;
 	else if (currentState == `cINCRE_I)
 	begin
-		if (imodk == 8-1)
-		imodk <= 3'b000;
+		if (imodk == 32-1)
+			imodk <= 5'b00000;
 		else
 			imodk <= imodk + 1'b1;
 	end
 	
 	if (start == 1'b1)
-		i1modk <= 3'b001;
+		i1modk <= 5'b00001;
 	else if (currentState == `cINCRE_I)
 	begin
-		if (i1modk == 8-1)
-		i1modk <= 3'b000;
+		if (i1modk == 32-1)
+			i1modk <= 5'b00000;
 		else
 			i1modk <= i1modk + 1'b1;
 	end
-	
+		
 	if (start == 1'b1)
-		nextTopIdx <= 8'b00000000;
+		nextTopIdx <= 12'b000000000000;
 	else if (currentState == `cINCRE_I)
 		if (mode[1] == 0)
 			nextTopIdx <= nextTopIdx + n + 1;
@@ -1430,27 +1719,27 @@ begin
  nextTopIdx2 <= nextTopIdx + n + 1;
 
 	if (start == 1'b1)
-		curTopIdx <= 8'b00000001;
+		curTopIdx <= 12'b000000000001;
 	else if (currentState == `cUPDATE_J)
-   if (mode[1] == 1'b0)
-		  curTopIdx <= nextTopIdx+1;
-   else
+	   if (mode[1] == 1'b0)
+			  curTopIdx <= nextTopIdx+1;
+	   else
 		  curTopIdx <= nextTopIdx;
 	else if (nextRowState == `cLOAD_ROW_INC_J)
 		curTopIdx <= curTopIdx + 1;
 	
 	if (start == 1'b1)
-		i1 <= 5'b00001;
+		i1 <= 7'b0000001;
 	else if (currentState == `cINCRE_I)
 	   i1 <= i1 + 1;
 
 	if (start == 1'b1)
-		j <= 5'b00000;
+		j <= 7'b0000000;
 	else if (currentState == `cUPDATE_J)
 		if (mode[1] == 1'b0)
 			j <= i1;
 		else
-		j <= 5'b00000;
+		j <= 7'b0000000;
 	else if (currentRowState == `cLOAD_ROW_INC_J)
 		j <= j + 1;
 
@@ -1466,13 +1755,13 @@ begin
 				waitCycles <= waitCycles + 5 - 2;
 		else if (mode == 2'b01 && waitCycles < 32-1 - (16-1) - 4)
 			waitCycles <= 32-1 - (16-1) - 4;
-		else if (mode == 2'b10 && i1modk == 8-1)
+		else if (mode == 2'b10 && i1modk == 32-1)
 			waitCycles <= 32-1 + 6 - 3;
 		else if (mode == 2'b00)
 			waitCycles <= waitCycles + 6 ;
 	end
-else if (waitCycles >5'b00000)
-		waitCycles <= waitCycles - 1;
+	else if (waitCycles >7'b0000000)
+			waitCycles <= waitCycles - 1;
 
 end
 
@@ -1771,32 +2060,104 @@ begin
 		divCounter <= divCounter + 1;
 
 	case (i1modk) 
-		3'b000: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b000<<2'b10);
+		5'b00000: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00000<<2'b10);
 		end
-		3'b001: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b001<<2'b10);
+		5'b00001: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00001<<2'b10);
 		end
-		3'b010: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b010<<2'b10);
+		5'b00010: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00010<<2'b10);
 		end
-		3'b011: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b011<<2'b10);
+		5'b00011: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00011<<2'b10);
 		end
-		3'b100: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b100<<2'b10);
+		5'b00100: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00100<<2'b10);
 		end
-		3'b101: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b101<<2'b10);
+		5'b00101: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00101<<2'b10);
 		end
-		3'b110: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b110<<2'b10);
+		5'b00110: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00110<<2'b10);
 		end
-		3'b111: begin
-			i1modkByteEn <= ~(32'b0) >> (3'b111<<2'b10);
+		5'b00111: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b00111<<2'b10);
+		end
+		5'b01000: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01000<<2'b10);
+		end
+		5'b01001: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01001<<2'b10);
+		end
+		5'b01010: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01010<<2'b10);
+		end
+		5'b01011: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01011<<2'b10);
+		end
+		5'b01100: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01100<<2'b10);
+		end
+		5'b01101: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01101<<2'b10);
+		end
+		5'b01110: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01110<<2'b10);
+		end
+		5'b01111: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b01111<<2'b10);
+		end
+		5'b10000: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10000<<2'b10);
+		end
+		5'b10001: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10001<<2'b10);
+		end
+		5'b10010: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10010<<2'b10);
+		end
+		5'b10011: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10011<<2'b10);
+		end
+		5'b10100: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10100<<2'b10);
+		end
+		5'b10101: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10101<<2'b10);
+		end
+		5'b10110: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10110<<2'b10);
+		end
+		5'b10111: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b10111<<2'b10);
+		end
+		5'b11000: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11000<<2'b10);
+		end
+		5'b11001: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11001<<2'b10);
+		end
+		5'b11010: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11010<<2'b10);
+		end
+		5'b11011: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11011<<2'b10);
+		end
+		5'b11100: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11100<<2'b10);
+		end
+		5'b11101: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11101<<2'b10);
+		end
+		5'b11110: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11110<<2'b10);
+		end
+		5'b11111: begin
+			i1modkByteEn <= ~(128'b0) >> (5'b11111<<2'b10);
 		end
 		default: begin
-			i1modkByteEn <= ~(32'b0);
+			i1modkByteEn <= ~(128'b0);
 		end
 	endcase
 end
@@ -1807,7 +2168,7 @@ begin
 	if ((nextState == `cMULT_COL && currentState != `cMULT_COL) || (currentState == `cSTORE_MO) || currentRowState == `cLOAD_ROW_INC_J)
 		byteEn <= i1modkByteEn;
 	else
-		byteEn <= 32'b11111111111111111111111111111111;
+		byteEn <= 128'b11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111;
 end
 
 // update FSM state register
@@ -2237,13 +2598,19 @@ module ram (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
+	
 	wire [`RAMWIDTH-1:0] uselessdata;
- assign uselessdata = 256'b0;
+ assign uselessdata = 1024'b0;
 wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
- assign dummy = value_out & 256'b0;
+
+
+ assign q = subwire | dummy;
+ assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2277,13 +2644,19 @@ module ram1 (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
+	
 	wire [`RAMWIDTH-1:0] uselessdata;
- assign uselessdata = 256'b0;
-wire j;
-assign j = |byteena_a;
+ assign uselessdata = 1024'b0;
+ wire j;
+ assign j = |byteena_a;
+ 
  wire [`RAMWIDTH-1:0]dummy;
- assign dummy = value_out & 256'b0;
+
+ assign q = subwire | dummy;
+ assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2317,13 +2690,18 @@ module ram2 (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
+	
 	wire [`RAMWIDTH-1:0] uselessdata;
- assign uselessdata = 256'b0;
+ assign uselessdata = 1024'b0;
 wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
- assign dummy = value_out & 256'b0;
+
+ assign q = subwire | dummy;
+ assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2357,13 +2735,18 @@ module ram3 (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
+	
 	wire [`RAMWIDTH-1:0] uselessdata;
- assign uselessdata = 256'b0;
+ assign uselessdata = 1024'b0;
 wire j;
 assign j = |byteena_a;
+ 
  wire [`RAMWIDTH-1:0]dummy;
- assign dummy = value_out & 256'b0;
+ assign q = subwire | dummy;
+ assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2388,21 +2771,25 @@ module top_ram (
 	q
 	);
 
-	//parameter TOPSIZE = 256, TOPSIZEWIDTH = 8, TOPWIDTH = 32;
+	//parameter TOPSIZE = 4096, TOPSIZEWIDTH = 12, TOPWIDTH = 32;
 	
 	input	  clk;
 	input	[32-1:0]  data;
-	input	[8-1:0]  rdaddress;
-	input	[8-1:0]  wraddress;
+	input	[12-1:0]  rdaddress;
+	input	[12-1:0]  wraddress;
 	input	  wren;
 	output	[32-1:0]  q;
 
 	wire [32-1:0] sub_wire0;
 	wire [32-1:0] q;
 	wire [32-1:0] junk_output;
-	assign q = sub_wire0 | dummy;
+	
 	wire[32-1:0] dummy;
+	assign q = sub_wire0 | dummy;
 	assign dummy = junk_output & 32'b0;
+
+ defparam inst2.ADDR_WIDTH = 12;
+ defparam inst2.DATA_WIDTH = 32;
  dual_port_ram inst2(
  .clk (clk),
  .we1(wren),
@@ -2441,19 +2828,19 @@ endmodule
 
 
 //`define rFIFOINPUTWIDTH 64
-`define rFIFOSIZE 64
-`define rFIFOSIZEWIDTH 6
-`define rFIFOOUTPUTWIDTH 256
+`define rFIFOSIZE 256
+`define rFIFOSIZEWIDTH 8
+`define rFIFOOUTPUTWIDTH 1024
 `define rFIFORSIZEWIDTH 4
-	`define wFIFOINPUTWIDTH 10'b0100000000
+	`define wFIFOINPUTWIDTH 12'b010000000000
 	`define wFIFOSIZE 6'b010000
 	`define wFIFOSIZEWIDTH 4'b0100
 	`define wFIFOOUTPUTWIDTH 8'b01000000
-	`define wFIFORSIZEWIDTH 4'b0110
+	`define wFIFORSIZEWIDTH 5'b01000
  //for addr_fifo
 `define aFIFOSIZE 6'b010000
 `define aFIFOSIZEWIDTH 4'b0100
-`define aFIFOWIDTH 4'b0101
+`define aFIFOWIDTH 4'b0111
 //for memfifo
 `define mFIFOSIZE 16
 `define mFIFOSIZEWIDTH 4
@@ -2461,17 +2848,17 @@ endmodule
 
 `define BURSTLEN 3'b010
 `define BURSTWIDTH 3'b010
-`define DATAWIDTH 10'b0100000000
-`define DATANUMBYTES 7'b0100000
+`define DATAWIDTH 12'b010000000000
+`define DATANUMBYTES 9'b010000000
 `define MEMCONWIDTH 8'b01000000
 `define MEMCONNUMBYTES 5'b01000
 `define DDRSIZEWIDTH 6'b011000
 `define FIFOSIZE 6'b010000
 `define FIFOSIZEWIDTH 4'b0100
-`define RAMWIDTH 10'b0100000000
-`define RAMNUMBYTES 7'b0100000
-`define RAMSIZEWIDTH 4'b0101
-`define RATIO 4'b0100
+`define RAMWIDTH 12'b010000000000
+`define RAMNUMBYTES 9'b010000000
+`define RAMSIZEWIDTH 4'b0111
+`define RATIO 6'b010000
 `define RAMLAT 4'b0101
  
 `define dIDLE 0
@@ -2502,7 +2889,7 @@ input dtu_write_req;
 input dtu_read_req;
 input [`DDRSIZEWIDTH-1:0] dtu_mem_addr;
 input [`RAMSIZEWIDTH-1:0] dtu_ram_addr;
-input [4:0] dtu_size;
+input [6:0] dtu_size;
 output dtu_ack;
 output dtu_done;
 
@@ -2542,7 +2929,7 @@ reg [`RAMSIZEWIDTH-1:0]ram_addr2;
 reg [`RAMSIZEWIDTH-1:0]ram_addr3;
 reg [`RAMSIZEWIDTH-1:0]ram_addr4;
 
-reg [2:0] data_count;
+reg [4:0] data_count;
 reg ram_write_en_reg;
 
 wire read_req;
@@ -2621,16 +3008,40 @@ assign not_stall = (wfifo_count < `FIFOSIZE-5) && (rfull == 0) && (wrcmd_full ==
 assign dtu_ack = (state == `dIDLE);
 assign dtu_done = (state == `dIDLE) && wempty && rempty;
 
-assign ram_write_dataw[63:0] = rdata[255:192];
-assign mem_data[63:0] = ram_read_dataw[255:192];
-assign ram_write_dataw[127:64] = rdata[191:128];
-assign mem_data[127:64] = ram_read_dataw[191:128];
-assign ram_write_dataw[191:128] = rdata[127:64];
-assign mem_data[191:128] = ram_read_dataw[127:64];
-assign ram_write_dataw[255:192] = rdata[63:0];
-assign mem_data[255:192] = ram_read_dataw[63:0];
-assign ram_write_data = ram_write_dataw[255:0];
-assign ram_read_dataw[255:0] = ram_read_data;
+assign ram_write_dataw[63:0] = rdata[1023:960];
+assign mem_data[63:0] = ram_read_dataw[1023:960];
+assign ram_write_dataw[127:64] = rdata[959:896];
+assign mem_data[127:64] = ram_read_dataw[959:896];
+assign ram_write_dataw[191:128] = rdata[895:832];
+assign mem_data[191:128] = ram_read_dataw[895:832];
+assign ram_write_dataw[255:192] = rdata[831:768];
+assign mem_data[255:192] = ram_read_dataw[831:768];
+assign ram_write_dataw[319:256] = rdata[767:704];
+assign mem_data[319:256] = ram_read_dataw[767:704];
+assign ram_write_dataw[383:320] = rdata[703:640];
+assign mem_data[383:320] = ram_read_dataw[703:640];
+assign ram_write_dataw[447:384] = rdata[639:576];
+assign mem_data[447:384] = ram_read_dataw[639:576];
+assign ram_write_dataw[511:448] = rdata[575:512];
+assign mem_data[511:448] = ram_read_dataw[575:512];
+assign ram_write_dataw[575:512] = rdata[511:448];
+assign mem_data[575:512] = ram_read_dataw[511:448];
+assign ram_write_dataw[639:576] = rdata[447:384];
+assign mem_data[639:576] = ram_read_dataw[447:384];
+assign ram_write_dataw[703:640] = rdata[383:320];
+assign mem_data[703:640] = ram_read_dataw[383:320];
+assign ram_write_dataw[767:704] = rdata[319:256];
+assign mem_data[767:704] = ram_read_dataw[319:256];
+assign ram_write_dataw[831:768] = rdata[255:192];
+assign mem_data[831:768] = ram_read_dataw[255:192];
+assign ram_write_dataw[895:832] = rdata[191:128];
+assign mem_data[895:832] = ram_read_dataw[191:128];
+assign ram_write_dataw[959:896] = rdata[127:64];
+assign mem_data[959:896] = ram_read_dataw[127:64];
+assign ram_write_dataw[1023:960] = rdata[63:0];
+assign mem_data[1023:960] = ram_read_dataw[63:0];
+assign ram_write_data = ram_write_dataw[1023:0];
+assign ram_read_dataw[1023:0] = ram_read_data;
 assign ram_write_addr = rfifo_addr;
 assign ram_read_addr = ram_addr4;
 assign ram_write_byte_en = ~0;
@@ -2839,9 +3250,9 @@ module rfifo (
 	reg [`rFIFORSIZEWIDTH-1:0] rd_pointer;
 	reg [`rFIFORSIZEWIDTH:0] status_cnt;
 	reg [`rFIFOOUTPUTWIDTH-1:0] q ;
-	reg[1:0] counter;
+	reg[3:0] counter;
 	wire [`rFIFOINPUTWIDTH-1:0] data_ram;
-assign empty = (status_cnt == 7'b0000000);
+assign empty = (status_cnt == 9'b000000000);
 wire [`rFIFOINPUTWIDTH-1:0]junk_input;
 wire [`rFIFOINPUTWIDTH-1:0]junk_output;
 assign junk_input = 64'b0000000000000000000000000000000000000000000000000000000000000000;
@@ -2861,38 +3272,143 @@ begin  //READ_POINTER
 end
 always  @ (posedge clk )
 begin  //READ_DATA
-if (rdreq) 
-	counter <= 0;
-else 
-	counter <= counter + 2'b01;
-if(counter == 0)
-	q[`rFIFOINPUTWIDTH-1:0] <= data_ram;
-else if (counter == 1)
+	if (rdreq) 
+		counter <= 0;
+	else 
+		counter <= counter + 2'b01;
+	
+	if(counter == 0)
+	begin
+	q[`rFIFOINPUTWIDTH-1:0] <= data_ram;	
+	end
+	else
+	begin
+	if(counter == 1)
+	begin
 	q[127:64] <= data_ram;
-else if (counter == 2)
+	end
+	else
+	begin
+	if(counter == 2)
+	begin
 	q[191:128] <= data_ram;
-else if (counter == 3)
+	end
+	else
+	begin
+	if(counter == 3)
+	begin
 	q[255:192] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 4)
+	begin
+	q[319:256] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 5)
+	begin
+	q[383:320] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 6)
+	begin
+	q[447:384] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 7)
+	begin
+	q[511:448] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 8)
+	begin
+	q[575:512] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 9)
+	begin
+	q[639:576] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 10)
+	begin
+	q[703:640] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 11)
+	begin
+	q[767:704] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 12)
+	begin
+	q[831:768] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 13)
+	begin
+	q[895:832] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 14)
+	begin
+	q[959:896] <= data_ram;
+	end
+	else
+	begin
+	if(counter == 15)
+	begin
+	q[1023:960] <= data_ram;
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
+	end
 end
 always @ (posedge clk )
 begin // : STATUS_COUNTER
 	if ((rdreq) && (!wrreq) && (status_cnt != 0))
 		status_cnt <= status_cnt - 1'b1;
-// Write but no read.
+	// Write but no read.
 	else if ((wrreq) && (!rdreq) && (status_cnt != 64 ))
 		status_cnt <= status_cnt + 1'b1;
 end 
+
+  defparam ram_adder.ADDR_WIDTH = `rFIFORSIZEWIDTH;
+  defparam ram_adder.DATA_WIDTH = `rFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
-.we1      (wrreq)      , // write enable
- .we2      (rdreq)       , // Read enable
-.addr1 (wr_pointer) , // address_0 input 
-.addr2 (rd_pointer) , // address_q input  
-.data1    (data)    , // data_0 bi-directional
-.data2    (junk_input),   // data_1 bi-directional
-.clk(clk),
-.out1	(data_ram),
-.out2	(junk_output)
- ); 
+         (wrreq)      , // write enable
+    .we2      (rdreq)       , // Read enable
+    .addr1 (wr_pointer) , // address_0 input 
+    .addr2 (rd_pointer) , // address_q input  
+    .data1    (data)    , // data_0 bi-directional
+    .data2    (junk_input),   // data_1 bi-directional
+    .clk(clk),
+    .out1	(data_ram),
+    .out2	(junk_output)
+    ); 
 
 
 endmodule
@@ -2923,12 +3439,12 @@ reg [`wFIFOSIZEWIDTH-1:0] wr_pointer;
 reg [`wFIFOSIZEWIDTH-1:0] rd_pointer;
 reg [`wFIFOSIZEWIDTH:0] status_cnt;
 reg [`wFIFOOUTPUTWIDTH-1:0] q ;
-reg[1:0] counter;
+reg[3:0] counter;
 wire [`wFIFOINPUTWIDTH-1:0] data_ram ;
 assign empty = (status_cnt == 5'b00000);
 wire [`wFIFOINPUTWIDTH-1:0]junk_input;
 wire [`wFIFOINPUTWIDTH-1:0]junk_output;
-assign junk_input = 256'b0;
+assign junk_input = 1024'b0;
  always @ (posedge clk)
  begin  //WRITE_POINTER
 	if (wrreq) 
@@ -2940,33 +3456,101 @@ always @ (posedge clk)
 begin  //READ_POINTER
 	if (rdreq) 
 	begin
-	rd_pointer <= rd_pointer + 2'b01;
+		rd_pointer <= rd_pointer + 2'b01;
 	end
 end
+
 always  @ (posedge clk )
 begin  //READ_DATA
-if (rdreq) 
-	counter <= 0;
-else 
-	counter <= counter + 2'b01;
-if(counter == 0)
-	q <= data_ram[63:0];
-else if(counter == 1)
-	q <= data_ram[127:64];
-else if(counter == 2)
-	q <= data_ram[191:128];
-else if(counter == 3)
-	q <= data_ram[255:192];
+	if (rdreq) 
+	begin 
+		counter <= 0;
+	end 
+	else 
+	begin 
+		counter <= counter + 2'b01;
+	end 
+	
+	if(counter == 0)
+	begin
+		q <= data_ram[63:0];
+	end
+	else if(counter == 1)
+	begin
+		q <= data_ram[127:64];
+	end
+	else if(counter == 2)
+	begin
+		q <= data_ram[191:128];
+	end
+	else if(counter == 3)
+	begin
+		q <= data_ram[255:192];
+	end
+	else if(counter == 4)
+	begin
+		q <= data_ram[319:256];
+	end
+	else if(counter == 5)
+	begin
+		q <= data_ram[383:320];
+	end
+	else if(counter == 6)
+	begin
+		q <= data_ram[447:384];
+	end
+	else if(counter == 7)
+	begin
+		q <= data_ram[511:448];
+	end
+	else if(counter == 8)
+	begin
+		q <= data_ram[575:512];
+	end
+	else if(counter == 9)
+	begin
+		q <= data_ram[639:576];
+	end
+	else if(counter == 10)
+	begin
+		q <= data_ram[703:640];
+	end
+	else if(counter == 11)
+	begin
+		q <= data_ram[767:704];
+	end
+	else if(counter == 12)
+	begin
+		q <= data_ram[831:768];
+	end
+	else if(counter == 13)
+	begin
+		q <= data_ram[895:832];
+	end
+	else if(counter == 14)
+	begin
+		q <= data_ram[959:896];
+	end
+	else if(counter == 15)
+	begin
+		q <= data_ram[1023:960];
+	end	
 end
+
 always @ (posedge clk )
 begin // : STATUS_COUNTER
 	if ((rdreq) && (!wrreq) && (status_cnt != 5'b00000))
 		status_cnt <= status_cnt - 1'b1;
 	// Write but no read.
-	else if ((wrreq) && (!rdreq) && (status_cnt != 5'b10000 )) 
+	else if ((wrreq) && (!rdreq) && (status_cnt != 5'b10000 )) 			
 		status_cnt <= status_cnt + 1'b1;
 end 
+
 assign usedw = status_cnt[`wFIFOSIZEWIDTH-1:0];
+
+
+  defparam ram_adder.ADDR_WIDTH = `wFIFOSIZEWIDTH;
+  defparam ram_adder.DATA_WIDTH = `wFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -3012,7 +3596,7 @@ assign full = (status_cnt == 5'b01111);
 assign empty = (status_cnt == 5'b00000);
 wire [`aFIFOWIDTH-1:0]junk_input;
 wire [`aFIFOWIDTH-1:0]junk_output;
-assign junk_input = 5'b00000;
+assign junk_input = 7'b0000000;
 always @ (posedge clk)
 begin  //WRITE_POINTER
 if (wrreq) 
@@ -3041,6 +3625,9 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 5'b10000))
 		status_cnt <= status_cnt + 1;
 end
+
+  defparam ram_adder.ADDR_WIDTH = `aFIFOSIZEWIDTH;
+  defparam ram_adder.DATA_WIDTH = `aFIFOWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -3104,13 +3691,16 @@ module memcmd_fifo (
 			q <= data_ram;
 		end
 	end
-always @ (posedge clk )
-begin // : STATUS_COUNTER
-	if ((rdreq) && (!wrreq) && (status_cnt != 0))
-		status_cnt <= status_cnt - 1'b1;
-	else if ((wrreq) && (!rdreq) && (status_cnt != 16 ))
-		status_cnt <= status_cnt + 1'b1;
-end
+	always @ (posedge clk )
+	begin // : STATUS_COUNTER
+		if ((rdreq) && (!wrreq) && (status_cnt != 0))
+		   	status_cnt <= status_cnt - 1'b1;
+		else if ((wrreq) && (!rdreq) && (status_cnt != 16 ))
+			status_cnt <= status_cnt + 1'b1;
+	end
+
+    defparam ram_adder.ADDR_WIDTH = `mFIFOSIZEWIDTH;
+    defparam ram_adder.DATA_WIDTH = `mFIFOWIDTH;
 	dual_port_ram ram_addr(
 	.we1      (wrreq)      , // write enable
 	.we2      (rdreq)       , // Read enable
@@ -4133,7 +4723,7 @@ module fpmul(clk, a, b, y_out, control, flags) ;
   
     flag		flager(invalid, overflow, inexact_or_shiftloss,  
 			shiftloss_or_inexact, 
-			/* tiny */ stilltiny_or_tiny_and_denormround,  
+			/* tiny */ still_tiny_or_tiny_and_denormround,  
 			specialcase, flags);  
 	  
  
@@ -4999,3 +5589,61 @@ module assemble(roundprod, special, y, sign, specialsign,
 				rounded[`WIDTH-2:0]); 
  
 endmodule 
+
+/**
+ * Copying the modules Dual Port RAM from vtr_flow/primitives.v 
+ * to correct the hard block inferrence by Yosys 
+*/
+//dual_port_ram module
+module dual_port_ram #(
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
+) (
+    input clk,
+
+    input [ADDR_WIDTH-1:0] addr1,
+    input [ADDR_WIDTH-1:0] addr2,
+    input [DATA_WIDTH-1:0] data1,
+    input [DATA_WIDTH-1:0] data2,
+    input we1,
+    input we2,
+    output reg [DATA_WIDTH-1:0] out1,
+    output reg [DATA_WIDTH-1:0] out2
+);
+
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
+
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
+
+    specify
+        (clk*>out1)="";
+        (clk*>out2)="";
+        $setup(addr1, posedge clk, "");
+        $setup(addr2, posedge clk, "");
+        $setup(data1, posedge clk, "");
+        $setup(data2, posedge clk, "");
+        $setup(we1, posedge clk, "");
+        $setup(we2, posedge clk, "");
+        $hold(posedge clk, addr1, "");
+        $hold(posedge clk, addr2, "");
+        $hold(posedge clk, data1, "");
+        $hold(posedge clk, data2, "");
+        $hold(posedge clk, we1, "");
+        $hold(posedge clk, we2, "");
+    endspecify
+   
+    always@(posedge clk) begin //Port 1
+        if(we1) begin
+            Mem[addr1] = data1;
+        end
+        out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+    end
+
+    always@(posedge clk) begin //Port 2
+        if(we2) begin
+            Mem[addr2] = data2;
+        end
+        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+    end
+   
+endmodule // dual_port_ram

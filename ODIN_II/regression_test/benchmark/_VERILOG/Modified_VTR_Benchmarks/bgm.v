@@ -1,4 +1,3 @@
-// DEFINES
 `define BITS 32         // Bit width of the operands
 `define NumPath 34     
  

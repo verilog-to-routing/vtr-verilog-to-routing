@@ -1717,6 +1717,8 @@ assign a_readdataout = a_readdataout_temp;
 
 wire wren1;
 assign wren1 = (c_we & (|c_reg));
+defparam regfile1_replace.ADDR_WIDTH = 5;
+defparam regfile1_replace.DATA_WIDTH = 32;
 single_port_ram regfile1_replace (
 	.clk (clk),
 	.we(wren1),
@@ -1729,6 +1731,8 @@ single_port_ram regfile1_replace (
 //between 2 read and 1 write
 //MORE MEMORY
 
+defparam regfile2_replace.ADDR_WIDTH = 5;
+defparam regfile2_replace.DATA_WIDTH = 32;
 single_port_ram regfile2_replace(
 	.clk (clk),
 	.we(wren1),
@@ -1976,6 +1980,8 @@ assign next_pc_wire = next_pc [9:0];
 
 wire [31:0]dummyout2;
 
+defparam imem_replace.ADDR_WIDTH = 10;
+defparam imem_replace.DATA_WIDTH = `I_DATAWIDTH;
 dual_port_ram imem_replace(
 	.clk (clk),
 	.we1(wren1),
@@ -2146,6 +2152,9 @@ wire [9:0] memaddr_wrd;
 
 
 assign memaddr_wrd = d_address[`DM_ADDRESSWIDTH:2];
+
+defparam dmem_replace.ADDR_WIDTH = 10;
+defparam dmem_replace.DATA_WIDTH = `DM_DATAWIDTH;
 single_port_ram dmem_replace(
 	.clk (clk),
 	.we(will_be_wren1),

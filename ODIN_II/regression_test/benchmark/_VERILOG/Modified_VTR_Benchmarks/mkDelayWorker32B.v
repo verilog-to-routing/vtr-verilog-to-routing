@@ -1503,6 +1503,8 @@ module mkDelayWorker32B(wciS0_Clk,
 wire [255:0] dp_out_not_used1;
 wire [255:0] dp_out_not_used2;
 
+  defparam dpram1.ADDR_WIDTH = 10;
+  defparam dpram1.DATA_WIDTH = 256;
   dual_port_ram dpram1 (
 						.clk(wciS0_Clk),
 					    .addr1(mesgRF_memory__ADDRA),
@@ -1520,7 +1522,9 @@ wire [255:0] dp_out_not_used2;
 //	  .ADDR_WIDTH(32'b010),
 //	  .DATA_WIDTH(32'b1056),
 //	  .MEMSIZE(11'b1024)) mesgWF_memory(
-	  
+
+ defparam dpram1.ADDR_WIDTH = 10;
+ defparam dpram1.DATA_WIDTH = 256;  
  dual_port_ram dpram2   (
 						.clk(wciS0_Clk),
 					    .addr1(mesgWF_memory__ADDRA),
@@ -4122,7 +4126,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 32'b00000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awa;
+defparam ram1.DATA_WIDTH = `dwa;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -4510,7 +4516,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 32'b00000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awa;
+defparam ram1.DATA_WIDTH = `dwa;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -4902,7 +4910,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awa;
+defparam ram1.DATA_WIDTH = `dwc;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -5294,7 +5304,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awa;
+defparam ram1.DATA_WIDTH = `dwd;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -5687,7 +5699,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 60'b000000000000000000000000000000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awc;
+defparam ram1.DATA_WIDTH = `dwc;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -6077,7 +6091,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 313'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awf;
+defparam ram1.DATA_WIDTH = `dwf;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -6470,7 +6486,9 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 131'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
- 
+
+defparam ram1.ADDR_WIDTH = `awx;
+defparam ram1.DATA_WIDTH = `dwx;
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -6601,3 +6619,61 @@ always @(posedge clk )
 	if(re & (cnt <= (`max_size-`n+1)) & !we)	full_n_r <=  1'b0;
 
 endmodule
+
+/**
+ * Copying the modules Dual Port RAM from vtr_flow/primitives.v 
+ * to correct the hard block inferrence by Yosys 
+*/
+//dual_port_ram module
+module dual_port_ram #(
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
+) (
+    input clk,
+
+    input [ADDR_WIDTH-1:0] addr1,
+    input [ADDR_WIDTH-1:0] addr2,
+    input [DATA_WIDTH-1:0] data1,
+    input [DATA_WIDTH-1:0] data2,
+    input we1,
+    input we2,
+    output reg [DATA_WIDTH-1:0] out1,
+    output reg [DATA_WIDTH-1:0] out2
+);
+
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
+
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
+
+    specify
+        (clk*>out1)="";
+        (clk*>out2)="";
+        $setup(addr1, posedge clk, "");
+        $setup(addr2, posedge clk, "");
+        $setup(data1, posedge clk, "");
+        $setup(data2, posedge clk, "");
+        $setup(we1, posedge clk, "");
+        $setup(we2, posedge clk, "");
+        $hold(posedge clk, addr1, "");
+        $hold(posedge clk, addr2, "");
+        $hold(posedge clk, data1, "");
+        $hold(posedge clk, data2, "");
+        $hold(posedge clk, we1, "");
+        $hold(posedge clk, we2, "");
+    endspecify
+   
+    always@(posedge clk) begin //Port 1
+        if(we1) begin
+            Mem[addr1] = data1;
+        end
+        out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+    end
+
+    always@(posedge clk) begin //Port 2
+        if(we2) begin
+            Mem[addr2] = data2;
+        end
+        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+    end
+   
+endmodule // dual_port_ram
