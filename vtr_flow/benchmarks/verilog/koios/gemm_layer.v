@@ -19,7 +19,7 @@
 // with a simpler DSP (just a fixed point multiplier) like in the
 // flagship arch timing/k6_frac_N10_frac_chain_depop50_mem32K_40nm.xml
 /////////////////////////////////////////////////////////////////////////
-`define complex_dsp
+
 `define BFLOAT16 
 
 // IEEE Half Precision => EXPONENT = 5, MANTISSA = 10
