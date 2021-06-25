@@ -479,8 +479,8 @@ struct chain_information_t {
 /* DEFINTIONS netlist node attributes*/
 struct attr_t {
     edge_type_e clk_edge_type;   //
-    edge_type_e clr_edge_type;   //
-    edge_type_e set_edge_type;   //
+    edge_type_e clr_polarity;    //
+    edge_type_e set_polarity;    //
     edge_type_e enable_polarity; //
     edge_type_e areset_polarity; // asynchronous reset polarity
     edge_type_e sreset_polarity; // synchronous reset polarity

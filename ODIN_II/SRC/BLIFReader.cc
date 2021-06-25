@@ -2038,15 +2038,15 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
 
                     } else if (!strcmp(ptr, "CLR_POLARITY")) {
                         if (sensitivity == 1)
-                            attributes->clr_edge_type = RISING_EDGE_SENSITIVITY;
+                            attributes->clr_polarity = ACTIVE_HIGH_SENSITIVITY;
                         else if (sensitivity == 0)
-                            attributes->clr_edge_type = FALLING_EDGE_SENSITIVITY;
+                            attributes->clr_polarity = ACTIVE_LOW_SENSITIVITY;
 
                     } else if (!strcmp(ptr, "SET_POLARITY")) {
                         if (sensitivity == 1)
-                            attributes->set_edge_type = RISING_EDGE_SENSITIVITY;
+                            attributes->set_polarity = ACTIVE_HIGH_SENSITIVITY;
                         else if (sensitivity == 0)
-                            attributes->set_edge_type = FALLING_EDGE_SENSITIVITY;
+                            attributes->set_polarity = ACTIVE_LOW_SENSITIVITY;
 
                     } else if (!strcmp(ptr, "EN_POLARITY")) {
                         if (sensitivity == 1)

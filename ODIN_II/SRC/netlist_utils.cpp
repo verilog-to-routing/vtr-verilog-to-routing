@@ -673,8 +673,8 @@ attr_t* init_attribute() {
     attribute = (attr_t*)vtr::malloc(sizeof(attr_t));
 
     attribute->clk_edge_type = UNDEFINED_SENSITIVITY;
-    attribute->clr_edge_type = UNDEFINED_SENSITIVITY;
-    attribute->set_edge_type = UNDEFINED_SENSITIVITY;
+    attribute->clr_polarity = UNDEFINED_SENSITIVITY;
+    attribute->set_polarity = UNDEFINED_SENSITIVITY;
     attribute->areset_polarity = UNDEFINED_SENSITIVITY;
     attribute->sreset_polarity = UNDEFINED_SENSITIVITY;
     attribute->enable_polarity = UNDEFINED_SENSITIVITY;
