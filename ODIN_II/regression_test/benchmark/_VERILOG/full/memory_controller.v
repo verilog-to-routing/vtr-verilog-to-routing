@@ -1,74 +1,66 @@
-// DEFINES
-`define WIDTH 8         // Bit width 
-`define DEPTH 16         // Bit depth
+// A benchmark to test hard block single port memories. 
+`define MEMORY_CONTROLLER_ADDR_SIZE 4
+`define MEMORY_CONTROLLER_DATA_SIZE 4
 
-
-module  pram(
-  clock,
-  wren1,
-  wren2,
-  address,
-  address2,
-  value_in,
-  value_in2,
-  spram_out,
-  dpram_out,
-  dpram_out2,
-  dpram2_out,
-  dpram2_out2
+module memory_controller
+(
+	clk,
+	addr1,
+	addr2,
+	we1,
+	we2,
+	data1,
+	data2,
+	sp_out, 
+	dp_out1,
+	dp_out2
 );
 
-// SIGNAL DECLARATIONS
-input   clock;
-input wren1;
-input wren2;
+	input clk;
 
-input  [`WIDTH-1:0] value_in;
-input  [`WIDTH-1:0] value_in2;
+	input we1, we2; 
 
-output [`WIDTH-1:0] spram_out;
-output [`WIDTH-1:0] dpram_out;
-output [`WIDTH-1:0] dpram_out2;
-output [`WIDTH-1:0] dpram2_out;
-output [`WIDTH-1:0] dpram2_out2;
+	input  [`MEMORY_CONTROLLER_ADDR_SIZE-1:0] addr1,addr2; 
 
+	input  [`MEMORY_CONTROLLER_DATA_SIZE-1:0] data1,data2;
 
-input [`DEPTH-1:0] address;
-input [`DEPTH-1:0] address2;
+	output [`MEMORY_CONTROLLER_DATA_SIZE-1:0] sp_out,dp_out1,dp_out2;
+	reg    [`MEMORY_CONTROLLER_DATA_SIZE-1:0] sp_out,dp_out1,dp_out2;	
 
-dual_port_ram inst1(
-  .we1(wren1),
-  .we2(wren2),
-  .clk(clock),
-  .data1(value_in),
-  .data2(value_in2),
-  .out1(dpram_out),
-  .out2(dpram_out2),
-  .addr1(address),
-  .addr2(address2)
-);
+	
+	wire [`MEMORY_CONTROLLER_DATA_SIZE-1:0] spi_out,dpi_out1,dpi_out2;
 
-dual_port_ram inst2(
-  .we1(wren1),
-  .we2(1'b0),
-  .clk(clock),
-  .data1(value_in),
-  .data2(value_in2),
-  .out1(dpram2_out),
-  .out2(dpram2_out2),
-  .addr1(address),
-  .addr2(address2)
-);
+	defparam sp_ram.ADDR_WIDTH = `MEMORY_CONTROLLER_ADDR_SIZE;
+	defparam sp_ram.DATA_WIDTH = `MEMORY_CONTROLLER_DATA_SIZE;
+	single_port_ram sp_ram (		
+		.addr (addr1),
+		.data (data1),
+		.we   (we1),	
+		.clk  (clk),	
+		.out  (spi_out)
+	);
 
-single_port_ram inst3(
-  .we(wren1),
-  .clk(clock),
-  .data(value_in),
-  .out(spram_out),
-  .addr(address)
-);
+	defparam dp_ram.ADDR_WIDTH = `MEMORY_CONTROLLER_ADDR_SIZE;
+	defparam dp_ram.DATA_WIDTH = `MEMORY_CONTROLLER_DATA_SIZE;
+	dual_port_ram dp_ram (
+        .addr1 (addr1),
+        .addr2 (addr2),
+        .data1 (data1),
+        .data2 (data2),
+        .we1 (we1),
+        .we2 (we2),
+        .clk (clk),
+        .out1 (dpi_out1),
+        .out2 (dpi_out2)
+    );
 
-endmodule
+	always @ (posedge clk)
+	begin 
+		sp_out <= spi_out; 
+		dp_out1 <= dpi_out1; 
+		dp_out2 <= dpi_out2; 
+	end
+endmodule 
 
 /**
  * Copying the modules Single Port RAM and Dual Port RAM from vtr_flow/primitives.v 

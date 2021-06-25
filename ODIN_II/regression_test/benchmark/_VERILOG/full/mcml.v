@@ -1600,11 +1600,11 @@ module dual_port_mem_zz (clk, data, rdaddress, wraddress , wren, q);
 
 	wire const_zero;
 	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+	// wire [31:0] dont_care_out;
 
 	assign const_zero = 1'b0;
 	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
+	// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 	defparam dpram1.ADDR_WIDTH = 13;
 	defparam dpram1.DATA_WIDTH = 32;
@@ -1614,7 +1614,7 @@ module dual_port_mem_zz (clk, data, rdaddress, wraddress , wren, q);
 		.we2(const_zero),
 		.data1(data),
 		.data2(const_zero_data),
-		.out1(dont_care_out),
+		// .out1(dont_care_out),
 		.out2 (q),
 		.addr1(wraddress),
 		.addr2(rdaddress)
@@ -1633,11 +1633,11 @@ module dual_port_mem_yy (clk, data, rdaddress, wraddress , wren, q);
 
 	wire const_zero;
 	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+	// wire [31:0] dont_care_out;
 
 	assign const_zero = 1'b0;
 	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
+	// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 	defparam dpram1.ADDR_WIDTH = 13;
 	defparam dpram1.DATA_WIDTH = 32;
@@ -1647,7 +1647,7 @@ module dual_port_mem_yy (clk, data, rdaddress, wraddress , wren, q);
 		.we2(const_zero),
 		.data1(data),
 		.data2(const_zero_data),
-		.out1(dont_care_out),
+		// .out1(dont_care_out),
 		.out2 (q),
 		.addr1(wraddress),
 		.addr2(rdaddress)
@@ -1667,11 +1667,11 @@ module dual_port_mem_xx (clk, data, rdaddress, wraddress , wren, q);
 
 	wire const_zero;
 	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+	// wire [31:0] dont_care_out;
 
 	assign const_zero = 1'b0;
 	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
+	// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 	defparam dpram1.ADDR_WIDTH = 13;
 	defparam dpram1.DATA_WIDTH = 32;
@@ -1681,7 +1681,7 @@ module dual_port_mem_xx (clk, data, rdaddress, wraddress , wren, q);
 		.we2(const_zero),
 		.data1(data),
 		.data2(const_zero_data),
-		.out1(dont_care_out),
+		// .out1(dont_care_out),
 		.out2 (q),
 		.addr1(wraddress),
 		.addr2(rdaddress)
@@ -1701,11 +1701,11 @@ module dual_port_mem_ww (clk, data, rdaddress, wraddress , wren, q);
 
 	wire const_zero;
 	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+	// wire [31:0] dont_care_out;
 
 	assign const_zero = 1'b0;
 	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
+	// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 	defparam dpram1.ADDR_WIDTH = 13;
 	defparam dpram1.DATA_WIDTH = 32;
@@ -1715,7 +1715,7 @@ module dual_port_mem_ww (clk, data, rdaddress, wraddress , wren, q);
 		.we2(const_zero),
 		.data1(data),
 		.data2(const_zero_data),
-		.out1(dont_care_out),
+		// .out1(dont_care_out),
 		.out2 (q),
 		.addr1(wraddress),
 		.addr2(rdaddress)
@@ -1736,11 +1736,11 @@ module dual (clk, data, rdaddress, wraddress , wren, q);
 
 	wire const_zero;
 	wire [35:0] const_zero_data;
-	wire [35:0] dont_care_out;
+	// wire [35:0] dont_care_out;
 
 	assign const_zero = 1'b0;
 	assign const_zero_data = 36'b000000000000000000000000000000000000;
-	assign dont_care_out = 36'b000000000000000000000000000000000000;
+	// assign dont_care_out = 36'b000000000000000000000000000000000000;
 
 	defparam dpram1.ADDR_WIDTH = 16;
 	defparam dpram1.DATA_WIDTH = 36;
@@ -1750,7 +1750,7 @@ module dual (clk, data, rdaddress, wraddress , wren, q);
 		.we2(const_zero),
 		.data1(data),
 		.data2(const_zero_data),
-		.out1(dont_care_out),
+		// .out1(dont_care_out),
 		.out2 (q),
 		.addr1(wraddress),
 		.addr2(rdaddress)
@@ -1769,11 +1769,11 @@ module dual2 (clk, data, rdaddress, wraddress , wren, q);
 
 	wire const_zero;
 	wire [17:0] const_zero_data;
-	wire [17:0] dont_care_out;
+	// wire [17:0] dont_care_out;
 
 	assign const_zero = 1'b0;
 	assign const_zero_data = 18'b000000000000000000;
-	assign dont_care_out = 18'b000000000000000000;
+	// assign dont_care_out = 18'b000000000000000000;
 
 	defparam dpram1.ADDR_WIDTH = 16;
 	defparam dpram1.DATA_WIDTH = 18;
@@ -1783,7 +1783,7 @@ module dual2 (clk, data, rdaddress, wraddress , wren, q);
 		.we2(const_zero),
 		.data1(data),
 		.data2(const_zero_data),
-		.out1(dont_care_out),
+		// .out1(dont_care_out),
 		.out2 (q),
 		.addr1(wraddress),
 		.addr2(rdaddress)
@@ -1802,11 +1802,11 @@ module dual3 (clk, data, rdaddress, wraddress , wren, q);
 
 	wire const_zero;
 	wire [7:0] const_zero_data;
-	wire [7:0] dont_care_out;
+	// wire [7:0] dont_care_out;
 
 	assign const_zero = 1'b0;
 	assign const_zero_data = 8'b00000000;
-	assign dont_care_out = 8'b00000000;
+	// assign dont_care_out = 8'b00000000;
 
 	defparam dpram1.ADDR_WIDTH = 16;
 	defparam dpram1.DATA_WIDTH = 8;
@@ -1816,7 +1816,7 @@ module dual3 (clk, data, rdaddress, wraddress , wren, q);
 		.we2(const_zero),
 		.data1(data),
 		.data2(const_zero_data),
-		.out1(dont_care_out),
+		// .out1(dont_care_out),
 		.out2 (q),
 		.addr1(wraddress),
 		.addr2(rdaddress)
@@ -24635,3 +24635,95 @@ module Sqrt_64b (clk, num_, res);
 endmodule 	
 
 
+/**
+ * Copying the modules Single Port RAM and Dual Port RAM from vtr_flow/primitives.v 
+ * to correct the hard block inferrence by Yosys 
+*/
+//single_port_ram module
+module single_port_ram #(
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
+) (
+    input clk,
+    input [ADDR_WIDTH-1:0] addr,
+    input [DATA_WIDTH-1:0] data,
+    input we,
+    output reg [DATA_WIDTH-1:0] out
+);
+
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
+
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
+
+    specify
+        (clk*>out)="";
+        $setup(addr, posedge clk, "");
+        $setup(data, posedge clk, "");
+        $setup(we, posedge clk, "");
+        $hold(posedge clk, addr, "");
+        $hold(posedge clk, data, "");
+        $hold(posedge clk, we, "");
+    endspecify
+   
+    always@(posedge clk) begin
+        if(we) begin
+            Mem[addr] = data;
+        end
+    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
+    end
+   
+endmodule // single_port_RAM
+
+//dual_port_ram module
+module dual_port_ram #(
+    parameter ADDR_WIDTH = 1,
+    parameter DATA_WIDTH = 1
+) (
+    input clk,
+
+    input [ADDR_WIDTH-1:0] addr1,
+    input [ADDR_WIDTH-1:0] addr2,
+    input [DATA_WIDTH-1:0] data1,
+    input [DATA_WIDTH-1:0] data2,
+    input we1,
+    input we2,
+    output reg [DATA_WIDTH-1:0] out1,
+    output reg [DATA_WIDTH-1:0] out2
+);
+
+    localparam MEM_DEPTH = 2 ** ADDR_WIDTH;
+
+    reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
+
+    specify
+        (clk*>out1)="";
+        (clk*>out2)="";
+        $setup(addr1, posedge clk, "");
+        $setup(addr2, posedge clk, "");
+        $setup(data1, posedge clk, "");
+        $setup(data2, posedge clk, "");
+        $setup(we1, posedge clk, "");
+        $setup(we2, posedge clk, "");
+        $hold(posedge clk, addr1, "");
+        $hold(posedge clk, addr2, "");
+        $hold(posedge clk, data1, "");
+        $hold(posedge clk, data2, "");
+        $hold(posedge clk, we1, "");
+        $hold(posedge clk, we2, "");
+    endspecify
+   
+    always@(posedge clk) begin //Port 1
+        if(we1) begin
+            Mem[addr1] = data1;
+        end
+        out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+    end
+
+    always@(posedge clk) begin //Port 2
+        if(we2) begin
+            Mem[addr2] = data2;
+        end
+        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+    end
+   
+endmodule // dual_port_ram
