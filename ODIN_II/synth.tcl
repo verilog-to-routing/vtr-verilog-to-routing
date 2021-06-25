@@ -3,7 +3,7 @@ yosys -import
 # Read VTR baseline library first.
 read_verilog -lib $env(PRIMITIVES); 
 
-read_verilog $env(TCL_CIRCUIT); 
+read_verilog -nomem2reg $env(TCL_CIRCUIT); 
 hierarchy -check -auto-top
 
 autoname;
