@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+SHELL=$(type -P bash)
 
 # GLOBAL PATH VARIABLES
 THIS_SCRIPT_PATH=$(readlink -f "$0")
@@ -21,6 +22,7 @@ VTR_REG_DIR="${VTR_DIR}/vtr_flow/tasks/regression_tests"
 SUITE_DIR="${BENCHMARK_DIR}/suite"
 
 TASK_DIR="${BENCHMARK_DIR}/task"
+BLIF_TASK_DIR="${BENCHMARK_DIR}/task/_BLIF"
 
 RTL_REG_PREFIX="rtl_reg"
 
@@ -302,8 +304,9 @@ function run_task() {
 	do
         CIRCUIT_DIR=${circuit/regression_test\/benchmark\/_VERILOG\/}
         CIRCUIT_FILE=$(basename "${circuit}")
-
-        export OUTPUT_BLIF_PATH="${BLIF_PATH}/${TASK_PATH}"
+                            
+        RELAPATH_TASK_DIR=$(realpath --relative-to="${BLIF_TASK_DIR}" "${TASK_PATH}")
+        export OUTPUT_BLIF_PATH="${BLIF_PATH}/${RELAPATH_TASK_DIR}"
 
         # run yosys for the current circuit
         CIRCUIT_NAME="${CIRCUIT_FILE%.*}"
