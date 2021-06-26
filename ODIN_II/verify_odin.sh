@@ -199,9 +199,9 @@ function generate_blifs() {
     
     TASK="$1"
     if [ _${_GENERATE_BLIF} = "_on" ]; then
-        echo "Generating missed BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
+        echo "Generating missed BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${TASK_NAME}"
     else
-        echo "Regenerating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/blif/_VERILOGS/${TASK_NAME}"
+        echo "Regenerating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${TASK_NAME}"
     fi
 
     ${THIS_DIR}/run_yosys.sh  ${_RUN_YOSYS_ARGS} -t "${TASK}"

@@ -46,17 +46,20 @@ block_memory_hashtable read_only_memories;
 
 static block_memory* init_block_memory(nnode_t* node, netlist_t* netlist);
 
-static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
-static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
-static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
+void map_bram_to_mem_hardblocks(block_memory* bram, netlist_t* netlist);
+void map_rom_to_mem_hardblocks(block_memory* rom, netlist_t* netlist);
+
 static nnode_t* create_r_single_port_ram(block_memory* rom, netlist_t* /* netlist */);
 static nnode_t* create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist);
+static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
+static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
+static nnode_t* create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
+static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
 
-void split_bram_in_width(block_memory* bram, netlist_t* netlist);
-void split_rom_in_width(block_memory* rom, netlist_t* netlist);
-
+static bool check_same_addrs(block_memory* bram);
 static signal_list_t* merge_read_write_clks (signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist);
 static signal_list_t* create_single_clk_pin (signal_list_t* clks, nnode_t* node, netlist_t* netlist);
+
 
 static void cleanup_block_memory_old_node(nnode_t* old_node);
 
@@ -98,10 +101,9 @@ block_memory* lookup_block_memory(char* instance_name_prefix, char* identifier) 
 /**
  * (function: init_block_memory)
  * 
- * @brief: Remap an output port to the given block memory.
+ * @brief: initialize bram signals
  * 
- * @param node pointing to a spram node
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param node pointing to a bram node
  * @param netlist pointer to the current netlist file
  */
 static block_memory* init_block_memory(nnode_t* node, netlist_t* netlist) {
@@ -213,10 +215,9 @@ static block_memory* init_block_memory(nnode_t* node, netlist_t* netlist) {
 /**
  * (function: init_block_memory)
  * 
- * @brief: Remap an output port to the given block memory.
+ * @brief: initialize rom signals
  * 
- * @param node pointing to a spram node
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param node pointing to a rom node
  * @param netlist pointer to the current netlist file
  */
 static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
@@ -302,6 +303,142 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
 }  
 
 /**
+ * (function: create_r_single_port_ram)
+ * 
+ * @brief read_only_memory will be considered as single port ram
+ * this function reorders inputs and add data_in input to new node
+ * which is connected to pad node
+ * 
+ * @param rom pointing to a rom node node
+ * @param netlist pointer to the current netlist file
+ */
+static nnode_t* create_r_single_port_ram(block_memory* rom, netlist_t* /* netlist */) {
+    nnode_t* old_node = rom->node;
+    int num_rd_ports = old_node->attributes->RD_PORTS;
+    int num_wr_ports = old_node->attributes->WR_PORTS;
+
+    /* should have been resovled before this function */
+    oassert(num_rd_ports == 1);
+    oassert(num_wr_ports == 0);
+
+    /* single port ram signals */
+    sp_ram_signals* signals = (sp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
+
+    /* INPUTS */
+    /* adding the read addr input port as address1 */
+    signals->addr = rom->read_addr;
+
+    /** 
+     * handling multiple clock signals 
+     * using a clk resulted from ORing all read clocks
+    */
+    if (rom->read_clk->count > 1) {
+        rom->read_clk = make_chain(LOGICAL_OR, rom->read_clk, old_node);
+    }
+    signals->clk = rom->read_clk->pins[0];
+
+    /**
+     * we pad the data_in port using pad pins 
+     * rom->write_data is already filled with pad pins
+    */
+    signals->data = rom->write_data;
+
+    if (rom->read_en->count > 1) {
+        /* need to OR all read enable since we1 should be one bit in dual port ram */
+        rom->read_en = make_chain(LOGICAL_OR, rom->read_en, old_node);
+    }
+    signals->we = rom->read_en->pins[0];
+
+    /* OUTPUT */
+    /* adding the read data port as output1 */
+    signals->out = rom->read_data;
+
+    nnode_t* spram = create_single_port_ram(signals, old_node, rom->loc);
+    rom->node = spram;
+
+    // CLEAN UP rom src node
+    cleanup_block_memory_old_node(old_node);
+    
+    return (spram);  
+}
+
+/**
+ * (function: create_rw_single_port_ram)
+ * 
+ * @brief creates a single port ram for a block memory 
+ * with one read and one write port that has the addr 
+ * for both read and write
+ * 
+ * @param bram pointing to a bram node node
+ * @param netlist pointer to the current netlist file
+ */
+static nnode_t* create_rw_single_port_ram(block_memory* bram, netlist_t* netlist) {
+    int i;
+    nnode_t* old_node = bram->node;
+    int num_rd_ports = old_node->attributes->RD_PORTS;
+    int num_wr_ports = old_node->attributes->WR_PORTS;
+
+    /* should have been resovled before this function */
+    oassert(num_rd_ports == 1);
+    oassert(num_wr_ports == 1);
+
+    /* single port ram signals */
+    sp_ram_signals* signals = (sp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
+    
+    /* the wr addr will be deleted since we do not need it anymore */
+    for (i = 0; i < bram->write_addr->count; i++) {
+        npin_t* wr_addr_pin = bram->write_addr->pins[i];
+        /* delete pin */
+        delete_npin(wr_addr_pin);
+    }
+
+    /* INPUTS */
+    /* adding the read addr input port as address1 */
+    signals->addr = bram->read_addr;
+
+    /** 
+     * handling multiple clock signals 
+     * using a clk resulted fbram ORing all read clocks
+    */
+    /* handling multiple clock signals */
+    /* merge all read and write clock to a single clock pin */
+    bram->clk = merge_read_write_clks(bram->read_clk, bram->write_clk, bram->node, netlist);
+    signals->clk = bram->read_clk->pins[0];
+
+    /**
+     * we pad the data_in port using pad pins 
+     * bram->write_data is already filled with pad pins
+    */
+    signals->data = bram->write_data;
+
+    /* the rd enables will be deleted since we do not need it anymore */
+    for (i = 0; i < bram->read_en->count; i++) {
+        npin_t* rd_en_pin = bram->read_en->pins[i];
+        /* delete pin */
+        delete_npin(rd_en_pin);
+    }
+
+    /* merge all enables */
+    if (bram->write_en->count > 1) {
+        /* need to OR all write enable since we1 should be one bit in single port ram */
+        bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
+    }
+    signals->we = bram->write_en->pins[0];
+
+    /* OUTPUT */
+    /* adding the read data port as output1 */
+    signals->out = bram->read_data;
+
+    nnode_t* spram = create_single_port_ram(signals, old_node, bram->loc);
+    bram->node = spram;
+
+    // CLEAN UP bram src node
+    cleanup_block_memory_old_node(old_node);
+    
+    return (spram);  
+}
+
+/**
  * (function: create_rw_dual_port_ram)
  * 
  * @brief block_ram will be considered as dual port ram
@@ -309,13 +446,20 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
  * it also leaves the second output of the dual port ram unconnected
  * 
  * @param bram pointing to a block memory
- * @param loc netlist node location
  * @param netlist pointer to the current netlist file
  */
 static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     int i;
     nnode_t* old_node = bram->node;
+    int num_rd_ports = old_node->attributes->RD_PORTS;
+    int num_wr_ports = old_node->attributes->WR_PORTS;
+
+    /* should have been resovled before this function */
+    oassert(num_rd_ports == 1);
+    oassert(num_wr_ports == 1);
+
+    /* dual port ram signals */
     dp_ram_signals* signals = (dp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
 
     /* equalize the addr width with max */
@@ -402,7 +546,7 @@ static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) 
     }
     signals->out2 = out2_signals;
 
-    nnode_t* dpram = create_dual_port_rom(signals, old_node, bram->loc);
+    nnode_t* dpram = create_dual_port_ram(signals, old_node, bram->loc);
     bram->node = dpram;
 
     // CLEAN UP
@@ -410,254 +554,6 @@ static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) 
     vtr::free(signals);
 
     return (dpram);
-}
-
-/**
- * (function: create_r_single_port_ram)
- * 
- * @brief read_only_memory will be considered as single port ram
- * this function reorders inputs and add data_in input to new node
- * which is connected to pad node
- * 
- * @param node pointing to a rom node node
- * @param loc netlist node location
- * @param netlist pointer to the current netlist file
- */
-static nnode_t* create_r_single_port_ram(block_memory* rom, netlist_t* /* netlist */) {
-
-    nnode_t* old_node = rom->node;
-    sp_ram_signals* signals = (sp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
-
-    /* INPUTS */
-    /* adding the read addr input port as address1 */
-    signals->addr = rom->read_addr;
-
-    /** 
-     * handling multiple clock signals 
-     * using a clk resulted from ORing all read clocks
-    */
-    if (rom->read_clk->count > 1) {
-        rom->read_clk = make_chain(LOGICAL_OR, rom->read_clk, old_node);
-    }
-    signals->clk = rom->read_clk->pins[0];
-
-    /**
-     * we pad the data_in port using pad pins 
-     * rom->write_data is already filled with pad pins
-    */
-    signals->data = rom->write_data;
-
-    if (rom->read_en->count > 1) {
-        /* need to OR all read enable since we1 should be one bit in dual port ram */
-        rom->read_en = make_chain(LOGICAL_OR, rom->read_en, old_node);
-    }
-    signals->we = rom->read_en->pins[0];
-
-    /* OUTPUT */
-    /* adding the read data port as output1 */
-    signals->out = rom->read_data;
-
-    nnode_t* spram = create_single_port_rom(signals, old_node, rom->loc);
-    rom->node = spram;
-
-    // CLEAN UP rom src node
-    cleanup_block_memory_old_node(old_node);
-    
-    return (spram);  
-}
-
-/**
- * (function: split_rom_in_width)
- * 
- * @brief split the bram in width of input data if exceeded fromthe width of the output
- * 
- * @param rom pointer to the read only memory
- * @param netlist pointer to the current netlist file
- */
-void split_rom_in_width(block_memory* rom, netlist_t* netlist) {
-
-    nnode_t* node = rom->node;
-
-    int width = node->attributes->DBITS;
-    int depth = shift_left_value_with_overflow_check(0X1, node->attributes->ABITS, rom->loc);
-
-    int rd_ports = node->attributes->RD_PORTS;
-    int wr_ports = node->attributes->WR_PORTS;
-
-    /* Read Only Memory validateion */
-    oassert(wr_ports == 0);
-
-    int rom_relative_area = depth * width;
-    t_model* lutram_model = find_hard_block(LUTRAM_string);
-
-    if (lutram_model != NULL
-        && (LUTRAM_MIN_THRESHOLD_AREA <= rom_relative_area) 
-        && (rom_relative_area <= LUTRAM_MAX_THRESHOLD_AREA)) {
-        /* map to LUTRAM */
-        // nnode_t* lutram = NULL;
-        /* TODO */
-    } else {            
-        /* need to split the rom from the data width */
-        if (rd_ports == 1) {
-            /* create the ROM and allocate ports according to the SPRAM hard block */
-            nnode_t* spram = create_r_single_port_ram(rom, netlist);
-            /* already compatible with SPRAM config so we leave it as is */
-            sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
-            /* register the ROM in arch model to have the related model (SPRAM) in BLIF for simulation */
-            register_memory_model(spram);
-            
-        } else if (rd_ports == 2) {
-            /* create the ROM and allocate ports according to the DPRAM hard block */
-            nnode_t* dpram = create_2r_dual_port_ram(rom, netlist);
-            /* already compatible with SPRAM config so we leave it as is */
-            dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
-            /* register the ROM in arch model to have the related model (SPRAM) in BLIF for simulation */
-            register_memory_model(dpram);
-            
-        } else {
-            /* shoudln't happen since this should be only for read only memories */
-            error_message(NETLIST, rom->loc,
-                          "Cannot hook multiple write ports into a Read-Only Memory (%s)", rom->name);
-        }        
-    }
-    
-}
-
-/**
- * (function: split_bram_in_width)
- * 
- * @brief split the bram in width of input data if exceeded from the width of the output
- * 
- * @param bram pointer to the block memory
- * @param netlist pointer to the current netlist file
- */
-void split_bram_in_width(block_memory* bram, netlist_t* netlist) {
-
-    nnode_t* node = bram->node;
-
-    int width = node->attributes->DBITS;
-    int depth = shift_left_value_with_overflow_check(0X1, node->attributes->ABITS, bram->loc);
-
-    /* since the data1_w + data2_w == data_out for DPRAM */
-    long rd_ports = node->attributes->RD_PORTS;
-    long wr_ports = node->attributes->WR_PORTS;
-
-    /**
-     * Potential place for checking block ram if their relative 
-     * size is less than a threshold, they could be mapped on LUTRAM
-     *
-     */
-
-    int bram_relative_area = depth * width;
-    t_model* lutram_model = find_hard_block(LUTRAM_string);
-
-    if (lutram_model != NULL
-        && (LUTRAM_MIN_THRESHOLD_AREA <= bram_relative_area) 
-        && (bram_relative_area <= LUTRAM_MAX_THRESHOLD_AREA)) {
-        /* map to LUTRAM */
-        // nnode_t* lutram = NULL;
-        /* TODO */
-    } else {
-        nnode_t* dpram = NULL;
-        
-        if (wr_ports == (rd_ports == 1)) {
-            /* create the BRAM and allocate ports according to the DPRAM hard block */
-            dpram = create_rw_dual_port_ram(bram, netlist);
-            
-        } else if (rd_ports == 1 && wr_ports == 2) {
-            /* need to encode multiple wr data ports */
-            dpram = create_r2w_dual_port_ram(bram, netlist);
-
-        } else if (rd_ports == 2 && wr_ports == 2) {
-            /* need to encode multiple wr data ports */
-            dpram = create_2r2w_dual_port_ram(bram, netlist);
-        } else {
-            error_message(NETLIST, node->loc,
-                          "Invalid memory block (%s)! Odin does not support Memories with more than two write/read ports\n", node->attributes->memory_id);
-        }
-
-
-        /* already compatible with DPRAM config so we leave it as is */
-        dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
-        /* register the BRAM in arch model to have the related model (DPRAM) in BLIF for simulation */
-        register_memory_model(dpram);
-    }
-}
-/**
- * (function: resolve_bram_node)
- * 
- * @brief create, verify and shrink the bram node
- * 
- * @param node pointing to a bram node
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    /* validate bram port sizes */
-    oassert(node->num_input_port_sizes == 7);
-    oassert(node->num_output_port_sizes == 1);
-    
-    /* initializing a new block ram */
-    block_memory* bram = init_block_memory(node, netlist);    
-
-    block_memory_list = insert_in_vptr_list(block_memory_list, bram);
-}
-
-/**
- * (function: resolve_rom_node)
- * 
- * @brief read_only_memory will be considered as single port ram
- * this function reorders inputs and add data_in input to new node
- * which is connected to pad node
- * 
- * @param node pointing to a rom node node
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    /* validate port sizes */
-    oassert(node->num_input_port_sizes == 3);
-    oassert(node->num_output_port_sizes == 1);
-    
-    /* create the BRAM and allocate ports according to the DPRAM hard block */
-    block_memory* rom = init_read_only_memory(node, netlist);    
-
-    read_only_memory_list = insert_in_vptr_list(read_only_memory_list, rom);
-}
-
-/**
- * (function: resolve_bram_node)
- * 
- * @brief create, verify and shrink the bram node
- */
-void iterate_block_memories(netlist_t* netlist) {
-
-    t_linked_vptr* ptr = block_memory_list;
-    while (ptr != NULL) {
-        block_memory* bram = (block_memory*)ptr->data_vptr;
-
-        /* validation */
-        oassert(bram != NULL);
-
-        split_bram_in_width(bram, netlist);
-        ptr = ptr->next;
-    }
-
-
-    ptr = read_only_memory_list;
-    while (ptr != NULL) {
-        block_memory* rom = (block_memory*)ptr->data_vptr;
-
-        /* validation */
-        oassert(rom != NULL);
-
-        split_rom_in_width(rom, netlist);
-        ptr = ptr->next;
-    } 
 }
 
 /**
@@ -744,7 +640,7 @@ static nnode_t* create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist) {
     }
 
     /* create a new dual port ram */
-    nnode_t* dpram = create_dual_port_rom(signals, old_node, rom->loc);
+    nnode_t* dpram = create_dual_port_ram(signals, old_node, rom->loc);
 
     // CLEAN UP
     cleanup_block_memory_old_node(old_node);
@@ -866,7 +762,7 @@ static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netli
     }
 
     /* create a new dual port ram */
-    nnode_t* dpram = create_dual_port_rom(signals, old_node, bram->loc);
+    nnode_t* dpram = create_dual_port_ram(signals, old_node, bram->loc);
 
     // CLEAN UP
     cleanup_block_memory_old_node(old_node);
@@ -875,6 +771,125 @@ static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netli
     free_dp_ram_signals(signals);
 
     return (dpram);
+}
+
+/**
+ * (function: create_2rw_dual_port_ram)
+ * 
+ * @brief creates a dual port ram. The given bram should have
+ * a pair of read addr and write addr with the same addrs
+ * 
+ * @param bram pointer to the block memory
+ * @param netlist pointer to the current netlist file
+ * 
+ * @return dual port RAM
+ */
+static nnode_t* create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
+    nnode_t* old_node = bram->node;
+
+    int i, offset;
+    int data_width = bram->node->attributes->DBITS;
+    int addr_width = bram->node->attributes->ABITS;
+    int num_rd_ports = old_node->attributes->RD_PORTS;
+    int num_wr_ports = old_node->attributes->WR_PORTS;
+
+    /* should have been resovled before this function */
+    oassert(num_rd_ports == 2);
+    oassert(num_wr_ports == 1);
+    oassert(bram->read_addr->count == 2 * addr_width);
+    oassert(bram->read_data->count == data_width);
+    oassert(bram->write_data->count == data_width);
+
+    /* at this point wr_addr and rd_addr must be exactly the same */
+    oassert(bram->read_addr->count == bram->write_addr->count);
+    /* the wr addr will be deleted since we do not need it anymore */
+    for (i = 0; i < bram->write_addr->count; i++) {
+        npin_t* wr_addr_pin = bram->write_addr->pins[i];
+        /* delete pin */
+        delete_npin(wr_addr_pin);
+    }
+
+    /* create a list of dpram ram signals */
+    dp_ram_signals* signals = (dp_ram_signals*)vtr::malloc(sizeof(dp_ram_signals));
+    
+    /* split read addr and add the first half to the addr1 */
+    signals->addr1 = init_signal_list();
+    for (i = 0; i < addr_width; i++) {
+        add_pin_to_signal_list(signals->addr1, bram->read_addr->pins[i]);
+    }
+
+    /* add pad pins as data1 */
+    signals->data1 = init_signal_list();
+    for (i = 0; i < data_width; i++) {
+        add_pin_to_signal_list(signals->data1, bram->write_data->pins[i]);
+    }
+    
+    /* free read enables since there is no need to keep track of them */
+    delete_npin(bram->read_en->pins[0]);
+    /* add write enable signals as we1 */
+    bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
+    signals->we1 = bram->write_en->pins[0];
+    
+
+    /* add merged clk signal as dpram clk signal */
+    signals->clk = bram->clk->pins[0];
+    /* delete read clks since there is no need of them anymore */
+    for (i = 0; i < bram->read_clk->count; i++) {
+        delete_npin(bram->read_clk->pins[i]);
+    }
+    /* delete write clks since there is no need of them anymore */
+    for (i = 0; i < bram->write_clk->count; i++) {
+        delete_npin(bram->write_clk->pins[i]);
+    }
+    
+    /* hook read data into out1 */
+    signals->out1 = init_signal_list();
+    for (i = 0; i < data_width; i++) {
+        add_pin_to_signal_list(signals->out1, bram->read_data->pins[i]);
+    }
+
+
+    /* add the second half of the read addr to addr2 */
+    offset = addr_width;
+    signals->addr2 = init_signal_list();
+    for (i = 0; i < addr_width; i++) {
+        add_pin_to_signal_list(signals->addr2, bram->read_addr->pins[offset + i]);
+    }
+
+    /* add read enable signals for first read port as we2 */
+    signals->we2 = bram->read_en->pins[1];
+
+    /* add the second half of the write data to data2 */
+    signals->data2 = init_signal_list();
+    for (i = 0; i < data_width; i++) {
+        add_pin_to_signal_list(signals->data2, get_pad_pin(netlist));
+    }
+
+    /* out2 will be unconnected */
+    signals->out2 = init_signal_list();
+    for (i = 0; i < signals->out1->count; i++) {
+        /* create the clk node's output pin */
+        npin_t* new_pin1 = allocate_npin();
+        npin_t* new_pin2 = allocate_npin();
+        nnet_t* new_net = allocate_nnet();
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(new_net, new_pin1);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(new_net, new_pin2);
+
+        /* hook the output pin into the node */
+        add_pin_to_signal_list(signals->out2, new_pin1);
+    }
+
+    /* create a new dual port ram */
+    nnode_t* dpram = create_dual_port_ram(signals, old_node, bram->loc);
+
+    // CLEAN UP
+    cleanup_block_memory_old_node(old_node);
+    free_dp_ram_signals(signals);
+
+    return (dpram);
+
 }
 
 /**
@@ -912,8 +927,6 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
         /* delete pin */
         delete_npin(wr_addr_pin);
     }
-
-
 
     /* create a list of dpram ram signals */
     dp_ram_signals* signals = (dp_ram_signals*)vtr::malloc(sizeof(dp_ram_signals));
@@ -986,7 +999,7 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
     }
 
     /* create a new dual port ram */
-    nnode_t* dpram = create_dual_port_rom(signals, old_node, bram->loc);
+    nnode_t* dpram = create_dual_port_ram(signals, old_node, bram->loc);
 
     // CLEAN UP
     cleanup_block_memory_old_node(old_node);
@@ -995,6 +1008,257 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
     free_dp_ram_signals(signals);
 
     return (dpram);
+}
+
+/**
+ * (function: map_rom_to_mem_hardblocks)
+ * 
+ * @brief split the bram in width of input data if exceeded fromthe width of the output
+ * 
+ * @param rom pointer to the read only memory
+ * @param netlist pointer to the current netlist file
+ */
+void map_rom_to_mem_hardblocks(block_memory* rom, netlist_t* netlist) {
+
+    nnode_t* node = rom->node;
+
+    int width = node->attributes->DBITS;
+    int depth = shift_left_value_with_overflow_check(0X1, node->attributes->ABITS, rom->loc);
+
+    int rd_ports = node->attributes->RD_PORTS;
+    int wr_ports = node->attributes->WR_PORTS;
+
+    /* Read Only Memory validateion */
+    oassert(wr_ports == 0);
+
+    int rom_relative_area = depth * width;
+    t_model* lutram_model = find_hard_block(LUTRAM_string);
+
+    if (lutram_model != NULL
+        && (LUTRAM_MIN_THRESHOLD_AREA <= rom_relative_area) 
+        && (rom_relative_area <= LUTRAM_MAX_THRESHOLD_AREA)) {
+        /* map to LUTRAM */
+        // nnode_t* lutram = NULL;
+        /* TODO */
+    } else {            
+        /* need to split the rom from the data width */
+        if (rd_ports == 1) {
+            /* create the ROM and allocate ports according to the SPRAM hard block */
+            nnode_t* spram = create_r_single_port_ram(rom, netlist);
+            /* already compatible with SPRAM config so we leave it as is */
+            sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
+            /* register the ROM in arch model to have the related model (SPRAM) in BLIF for simulation */
+            register_memory_model(spram);
+            
+        } else if (rd_ports == 2) {
+            /* create the ROM and allocate ports according to the DPRAM hard block */
+            nnode_t* dpram = create_2r_dual_port_ram(rom, netlist);
+            /* already compatible with SPRAM config so we leave it as is */
+            dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
+            /* register the ROM in arch model to have the related model (SPRAM) in BLIF for simulation */
+            register_memory_model(dpram);
+            
+        } else {
+            /* shoudln't happen since this should be only for read only memories */
+            error_message(NETLIST, rom->loc,
+                          "Cannot hook multiple write ports into a Read-Only Memory (%s)", rom->name);
+        }        
+    }
+    
+}
+
+/**
+ * (function: map_bram_to_mem_hardblocks)
+ * 
+ * @brief split the bram in width of input data if exceeded from the width of the output
+ * 
+ * @param bram pointer to the block memory
+ * @param netlist pointer to the current netlist file
+ */
+void map_bram_to_mem_hardblocks(block_memory* bram, netlist_t* netlist) {
+
+    nnode_t* node = bram->node;
+
+    int width = node->attributes->DBITS;
+    int depth = shift_left_value_with_overflow_check(0X1, node->attributes->ABITS, bram->loc);
+
+    /* since the data1_w + data2_w == data_out for DPRAM */
+    long rd_ports = node->attributes->RD_PORTS;
+    long wr_ports = node->attributes->WR_PORTS;
+
+    /**
+     * Potential place for checking block ram if their relative 
+     * size is less than a threshold, they could be mapped on LUTRAM
+     *
+     */
+
+    int bram_relative_area = depth * width;
+    t_model* lutram_model = find_hard_block(LUTRAM_string);
+
+    if (lutram_model != NULL
+        && (LUTRAM_MIN_THRESHOLD_AREA <= bram_relative_area) 
+        && (bram_relative_area <= LUTRAM_MAX_THRESHOLD_AREA)) {
+        /* map to LUTRAM */
+        // nnode_t* lutram = NULL;
+        /* TODO */
+    } else {
+        nnode_t* spram = NULL;
+        nnode_t* dpram = NULL;
+        
+        if (wr_ports == (rd_ports == 1)) {
+            
+            if (check_same_addrs(bram)) {
+                /* create a single port ram and allocate ports according to the SPRAM hard block */
+                dpram = create_rw_single_port_ram(bram, netlist);
+
+            } else {
+                /* create a dual port ram and allocate ports according to the DPRAM hard block */
+                dpram = create_rw_dual_port_ram(bram, netlist);
+            }
+            
+        } else if (rd_ports == 1 && wr_ports == 2) {
+            /* create a dual port ram and allocate ports according to the DPRAM hard block */
+            dpram = create_r2w_dual_port_ram(bram, netlist);
+
+        } else if (rd_ports == 2 && wr_ports == 1) {
+            /* create a dual port ram and allocate ports according to the DPRAM hard block */
+            dpram = create_2rw_dual_port_ram(bram, netlist);
+
+        } else if (rd_ports == 2 && wr_ports == 2) {
+            /* create a dual port ram and allocate ports according to the DPRAM hard block */
+            dpram = create_2r2w_dual_port_ram(bram, netlist);
+
+        } else {
+            error_message(NETLIST, node->loc,
+                          "Invalid memory block (%s)! Odin does not support Memories with more than two write/read ports\n", node->attributes->memory_id);
+        }
+
+        if (spram){
+            /* already compatible with SPRAM config so we leave it as is */
+            sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
+            /* register the SPRAM in arch model to have the related model in BLIF for simulation */
+            register_memory_model(spram);
+        } else if (dpram) {
+            /* already compatible with DPRAM config so we leave it as is */
+            dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
+            /* register the DPRAM in arch model to have the related model in BLIF for simulation */
+            register_memory_model(dpram);
+        }
+    }
+}
+/**
+ * (function: resolve_bram_node)
+ * 
+ * @brief create, verify and shrink the bram node
+ * 
+ * @param node pointing to a bram node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /* validate bram port sizes */
+    oassert(node->num_input_port_sizes == 7);
+    oassert(node->num_output_port_sizes == 1);
+    
+    /* initializing a new block ram */
+    block_memory* bram = init_block_memory(node, netlist);    
+
+    block_memory_list = insert_in_vptr_list(block_memory_list, bram);
+}
+
+/**
+ * (function: resolve_rom_node)
+ * 
+ * @brief read_only_memory will be considered as single port ram
+ * this function reorders inputs and add data_in input to new node
+ * which is connected to pad node
+ * 
+ * @param node pointing to a rom node node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /* validate port sizes */
+    oassert(node->num_input_port_sizes == 3);
+    oassert(node->num_output_port_sizes == 1);
+    
+    /* create the BRAM and allocate ports according to the DPRAM hard block */
+    block_memory* rom = init_read_only_memory(node, netlist);    
+
+    read_only_memory_list = insert_in_vptr_list(read_only_memory_list, rom);
+}
+
+/**
+ * (function: resolve_bram_node)
+ * 
+ * @brief create, verify and shrink the bram node
+ * 
+ * @param netlist pointer to the current netlist file
+ */
+void iterate_block_memories(netlist_t* netlist) {
+
+    t_linked_vptr* ptr = block_memory_list;
+    while (ptr != NULL) {
+        block_memory* bram = (block_memory*)ptr->data_vptr;
+
+        /* validation */
+        oassert(bram != NULL);
+
+        map_bram_to_mem_hardblocks(bram, netlist);
+        ptr = ptr->next;
+    }
+
+
+    ptr = read_only_memory_list;
+    while (ptr != NULL) {
+        block_memory* rom = (block_memory*)ptr->data_vptr;
+
+        /* validation */
+        oassert(rom != NULL);
+
+        map_rom_to_mem_hardblocks(rom, netlist);
+        ptr = ptr->next;
+    } 
+}
+
+/**
+ * (function: create_dual_port_ram_signals)
+ * 
+ * @brief this function is to check if the read addr
+ *  and write addr is the same or not.
+ * 
+ * @param bram pointer to the block memory
+ * 
+ * @return read_addr == write_addr
+ */
+static bool check_same_addrs(block_memory* bram) {
+
+    int read_addr_width = bram->read_addr->count;
+    int write_addr_width = bram->write_addr->count;
+
+    /* first check is the width, if they have not the equal width return false */
+    if (read_addr_width != write_addr_width) {
+        return (false);
+    } 
+    /* if they have the equal width, here is to check their driver */
+    else {
+        int i;
+        int width = read_addr_width;
+        for (i = 0; i < width; i++) {
+            npin_t* read_addr_pin = bram->read_addr->pins[i];
+            npin_t* write_addr_pin = bram->write_addr->pins[i];
+
+            if (read_addr_pin->net != write_addr_pin->net)
+                return(false);
+        }
+        
+    }
+
+    return (true);
 }
 
 /**

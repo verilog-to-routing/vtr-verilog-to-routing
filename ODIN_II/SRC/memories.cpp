@@ -1906,7 +1906,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
  * 
  * @return a new single port ram
  */
-nnode_t* create_single_port_rom(sp_ram_signals* signals, nnode_t* node, loc_t loc) {
+nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node, loc_t loc) {
     /* sanity checks */
     oassert(signals->clk != NULL);
     oassert(signals->we != NULL);
@@ -1922,7 +1922,6 @@ nnode_t* create_single_port_rom(sp_ram_signals* signals, nnode_t* node, loc_t lo
     char* hb_name = vtr::strdup(SINGLE_PORT_RAM_string);
     spram->name = node_name(spram, hb_name);
     spram->attributes->memory_id = vtr::strdup(node->attributes->memory_id);
-
 
     /* Create a fake ast node. */
     spram->related_ast_node = create_node_w_type(RAM, loc);
@@ -1966,7 +1965,7 @@ nnode_t* create_single_port_rom(sp_ram_signals* signals, nnode_t* node, loc_t lo
  * 
  * @return a new dual port ram
  */
-nnode_t* create_dual_port_rom(dp_ram_signals* signals, nnode_t* node, loc_t loc) {
+nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node, loc_t loc) {
     /* sanity checks */
     oassert((signals->addr1) && (signals->addr2));
     oassert((signals->data1) && (signals->data1));
@@ -2144,7 +2143,7 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
     }
 
     /* creating a new spram with size modified input signals */
-    nnode_t* spram = create_single_port_rom(signals, node, node->loc);
+    nnode_t* spram = create_single_port_ram(signals, node, node->loc);
     /* adding new spram new dp memory list for future iterations and adjusments */
     sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
     /* register the single port ram in arch model to have the related model (SPRAM) in BLIF for simulation */
@@ -2312,7 +2311,7 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
     }
 
     /* creating a new dpram with size modified input signals */
-    nnode_t* dpram = create_dual_port_rom(signals, node, node->loc);
+    nnode_t* dpram = create_dual_port_ram(signals, node, node->loc);
     /* adding new dpram new dp memory list for future iterations and adjusments */
     dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
     /* register the dual port ram in arch model to have the related model (DPRAM) in BLIF for simulation */
