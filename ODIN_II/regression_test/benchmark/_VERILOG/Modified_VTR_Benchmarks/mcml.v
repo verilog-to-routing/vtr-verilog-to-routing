@@ -1745,11 +1745,11 @@ output [31:0] q;
 
 wire const_zero;
 wire [31:0] const_zero_data;
-wire [31:0] dont_care_out;
+// wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 defparam dpram1.ADDR_WIDTH = 12;
 defparam dpram1.DATA_WIDTH = 32;
@@ -1759,7 +1759,7 @@ dual_port_ram dpram1(
   .we2(const_zero),
   .data1(data),
   .data2(const_zero_data),
-  .out1(dont_care_out),
+//   .out1(dont_care_out),
   .out2 (q),
   .addr1(wraddress),
   .addr2(rdaddress));
@@ -1782,11 +1782,11 @@ output [31:0] q;
 
 wire const_zero;
 wire [31:0] const_zero_data;
-wire [31:0] dont_care_out;
+// wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 defparam dpram1.ADDR_WIDTH = 12;
 defparam dpram1.DATA_WIDTH = 32;	
@@ -1796,7 +1796,7 @@ dual_port_ram dpram1(
   .we2(const_zero),
   .data1(data),
   .data2(const_zero_data),
-  .out1(dont_care_out),
+//   .out1(dont_care_out),
   .out2 (q),
   .addr1(wraddress),
   .addr2(rdaddress));
@@ -1819,11 +1819,11 @@ output [31:0] q;
 
 wire const_zero;
 wire [31:0] const_zero_data;
-wire [31:0] dont_care_out;
+// wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 defparam dpram1.ADDR_WIDTH = 12;
 defparam dpram1.DATA_WIDTH = 32;	
@@ -1833,7 +1833,7 @@ dual_port_ram dpram1(
   .we2(const_zero),
   .data1(data),
   .data2(const_zero_data),
-  .out1(dont_care_out),
+//   .out1(dont_care_out),
   .out2 (q),
   .addr1(wraddress),
   .addr2(rdaddress));
@@ -1856,11 +1856,11 @@ output [31:0] q;
 
 wire const_zero;
 wire [31:0] const_zero_data;
-wire [31:0] dont_care_out;
+// wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 	
 defparam dpram1.ADDR_WIDTH = 12;
 defparam dpram1.DATA_WIDTH = 32;
@@ -1870,7 +1870,7 @@ dual_port_ram dpram1(
   .we2(const_zero),
   .data1(data),
   .data2(const_zero_data),
-  .out1(dont_care_out),
+//   .out1(dont_care_out),
   .out2 (q),
   .addr1(wraddress),
   .addr2(rdaddress));
@@ -1892,11 +1892,11 @@ output [35:0] q;
 
 wire const_zero;
 wire [35:0] const_zero_data;
-wire [35:0] dont_care_out;
+// wire [35:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 36'b000000000000000000000000000000000000;
-assign dont_care_out = 36'b000000000000000000000000000000000000;
+// assign dont_care_out = 36'b000000000000000000000000000000000000;
 
 defparam dpram1.ADDR_WIDTH = 16;
 defparam dpram1.DATA_WIDTH = 36;
@@ -1906,7 +1906,7 @@ dual_port_ram dpram1(
   .we2(const_zero),
   .data1(data),
   .data2(const_zero_data),
-  .out1(dont_care_out),
+//   .out1(dont_care_out),
   .out2 (q),
   .addr1(wraddress),
   .addr2(rdaddress));
@@ -1928,11 +1928,11 @@ output [17:0] q;
 
 wire const_zero;
 wire [17:0] const_zero_data;
-wire [17:0] dont_care_out;
+// wire [17:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 18'b000000000000000000;
-assign dont_care_out = 18'b000000000000000000;
+// assign dont_care_out = 18'b000000000000000000;
 
 defparam dpram1.ADDR_WIDTH = 16;
 defparam dpram1.DATA_WIDTH = 18;
@@ -1942,7 +1942,7 @@ dual_port_ram dpram1(
   .we2(const_zero),
   .data1(data),
   .data2(const_zero_data),
-  .out1(dont_care_out),
+//   .out1(dont_care_out),
   .out2 (q),
   .addr1(wraddress),
   .addr2(rdaddress));
@@ -1964,11 +1964,11 @@ output [7:0] q;
 
 wire const_zero;
 wire [7:0] const_zero_data;
-wire [7:0] dont_care_out;
+// wire [7:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 8'b00000000;
-assign dont_care_out = 8'b00000000;
+// assign dont_care_out = 8'b00000000;
 	
 defparam dpram1.ADDR_WIDTH = 16;
 defparam dpram1.DATA_WIDTH = 8;
@@ -1978,7 +1978,7 @@ dual_port_ram dpram1(
   .we2(const_zero),
   .data1(data),
   .data2(const_zero_data),
-  .out1(dont_care_out),
+//   .out1(dont_care_out),
   .out2 (q),
   .addr1(wraddress),
   .addr2(rdaddress));

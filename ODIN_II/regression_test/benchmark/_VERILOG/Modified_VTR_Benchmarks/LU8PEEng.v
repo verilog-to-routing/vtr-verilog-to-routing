@@ -2898,8 +2898,8 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1'b1;
 end 
   
-  defparam ram_adder.ADDR_WIDTH = `rFIFORSIZEWIDTH;
-  defparam ram_adder.DATA_WIDTH = `rFIFOINPUTWIDTH;
+  defparam ram_addr.ADDR_WIDTH = `rFIFORSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `rFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
     .we1      (wrreq)      , // write enable
     .we2      (rdreq)       , // Read enable
@@ -2986,8 +2986,8 @@ begin // : STATUS_COUNTER
 end 
 assign usedw = status_cnt[`wFIFOSIZEWIDTH-1:0];
 
-  defparam ram_adder.ADDR_WIDTH = `wFIFOSIZEWIDTH;
-  defparam ram_adder.DATA_WIDTH = `wFIFOINPUTWIDTH;
+  defparam ram_addr.ADDR_WIDTH = `wFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `wFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
     .we1      (wrreq)      , // write enable
     .we2      (rdreq)       , // Read enable
@@ -3063,8 +3063,8 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1;
 end
 
-  defparam ram_adder.ADDR_WIDTH = `aFIFOSIZEWIDTH;
-  defparam ram_adder.DATA_WIDTH = `aFIFOWIDTH;
+  defparam ram_addr.ADDR_WIDTH = `aFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `aFIFOWIDTH;
   dual_port_ram ram_addr(
     .we1      (wrreq)      , // write enable
     .we2      (rdreq)       , // Read enable

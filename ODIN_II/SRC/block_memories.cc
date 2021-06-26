@@ -51,7 +51,7 @@ void map_rom_to_mem_hardblocks(block_memory* rom, netlist_t* netlist);
 
 static nnode_t* create_r_single_port_ram(block_memory* rom, netlist_t* /* netlist */);
 static nnode_t* create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist);
-static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
+static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* /* netlist */);
 static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
 static nnode_t* create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
 static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
@@ -358,6 +358,7 @@ static nnode_t* create_r_single_port_ram(block_memory* rom, netlist_t* /* netlis
 
     // CLEAN UP rom src node
     cleanup_block_memory_old_node(old_node);
+    vtr::free(signals);
     
     return (spram);  
 }
@@ -372,7 +373,7 @@ static nnode_t* create_r_single_port_ram(block_memory* rom, netlist_t* /* netlis
  * @param bram pointing to a bram node node
  * @param netlist pointer to the current netlist file
  */
-static nnode_t* create_rw_single_port_ram(block_memory* bram, netlist_t* netlist) {
+static nnode_t* create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist */) {
     int i;
     nnode_t* old_node = bram->node;
     int num_rd_ports = old_node->attributes->RD_PORTS;
@@ -402,8 +403,7 @@ static nnode_t* create_rw_single_port_ram(block_memory* bram, netlist_t* netlist
     */
     /* handling multiple clock signals */
     /* merge all read and write clock to a single clock pin */
-    bram->clk = merge_read_write_clks(bram->read_clk, bram->write_clk, bram->node, netlist);
-    signals->clk = bram->read_clk->pins[0];
+    signals->clk = bram->clk->pins[0];
 
     /**
      * we pad the data_in port using pad pins 
@@ -434,6 +434,7 @@ static nnode_t* create_rw_single_port_ram(block_memory* bram, netlist_t* netlist
 
     // CLEAN UP bram src node
     cleanup_block_memory_old_node(old_node);
+    vtr::free(signals);
     
     return (spram);  
 }
@@ -833,14 +834,6 @@ static nnode_t* create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist)
 
     /* add merged clk signal as dpram clk signal */
     signals->clk = bram->clk->pins[0];
-    /* delete read clks since there is no need of them anymore */
-    for (i = 0; i < bram->read_clk->count; i++) {
-        delete_npin(bram->read_clk->pins[i]);
-    }
-    /* delete write clks since there is no need of them anymore */
-    for (i = 0; i < bram->write_clk->count; i++) {
-        delete_npin(bram->write_clk->pins[i]);
-    }
     
     /* hook read data into out1 */
     signals->out1 = init_signal_list();
