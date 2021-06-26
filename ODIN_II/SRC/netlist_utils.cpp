@@ -1308,6 +1308,15 @@ void remove_fanout_pins_from_net(nnet_t* net, npin_t* /*pin*/, int id) {
     net->num_fanout_pins--;
 }
 
+void delete_npin(npin_t* pin) {
+    /* detach from its node */
+    pin->node->input_pins[pin->pin_node_idx] = NULL;
+    /* detach from its net */
+    remove_fanout_pins_from_net(pin->net, pin, pin->pin_net_idx);
+    // CLEAN UP
+    free_npin(pin);
+}
+
 /**
  * TODO: these are unused in the code. is this functional and/or is it ripe to remove?
  */

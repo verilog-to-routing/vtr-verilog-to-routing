@@ -1,6 +1,6 @@
 `define WORD_SIZE 32
-`define DEPTH_LOG2 3
-`define RAM_DEPTH 2**3
+`define DEPTH_LOG2 4
+`define RAM_DEPTH 2**4
 
 module inferred_dpram(
 	clk,

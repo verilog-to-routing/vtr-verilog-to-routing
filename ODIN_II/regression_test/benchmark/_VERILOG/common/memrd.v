@@ -7,17 +7,13 @@
 module mem_read(
 		clock,
 		rd_addr,
-		wr_addr,
         rd_data,
-        wr_data,
         en
 		);
 
 	// INPUTS
 	input				   	clock;		// Clock input
 	input [`ADDR_WIDTH-1:0]	rd_addr;	// Read address
-	input [`ADDR_WIDTH-1:0]	wr_addr;	// write address
-	input [`DATA_WIDTH-1:0] wr_data; 	// write data
 	input					en;	 		// Read enable
 
 	// OUTPUTS
@@ -30,6 +26,6 @@ module mem_read(
 
 	always @(posedge clock) begin
 		rd_data <= block_mem[rd_addr];
-		block_mem[wr_addr] <= wr_data;	
+
 	end
 endmodule

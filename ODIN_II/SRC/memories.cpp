@@ -2100,7 +2100,7 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
         add_pin_to_signal_list(signals->addr, pin);
     }
     offset += SP_ADDR_width;
-    
+
     /* adding the clk signals */
     npin_t* clk_pin = node->input_pins[offset];
     /* detach from the main node, since it will be connected to a new dpram */
@@ -2126,7 +2126,6 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
     we_pin->node->input_pins[we_pin->pin_node_idx] = NULL;
     signals->we = we_pin;
 
-
     /* OUTPUT */
     /* adding the output signals */
     offset = 0;
@@ -2138,7 +2137,6 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
 
         add_pin_to_signal_list(signals->out, pin);
     }
-    
 
     /* creating a new spram with size modified input signals */
     nnode_t* spram = create_single_port_rom(signals, node->loc);
@@ -2189,13 +2187,13 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
     int i;
     int DP_ADDR1_width = node->input_port_sizes[0];
     int DP_ADDR2_width = node->input_port_sizes[1];
-    int DP_CLK_width   = node->input_port_sizes[2]; // should be 1
+    int DP_CLK_width = node->input_port_sizes[2]; // should be 1
     int DP_DATA1_width = node->input_port_sizes[3];
     int DP_DATA2_width = node->input_port_sizes[4];
-    int DP_WE1_width   = node->input_port_sizes[5]; // should be 1
-    int DP_WE2_width   = node->input_port_sizes[6]; // should be 1
-    int DP_OUT1_width  = node->output_port_sizes[0];
-    int DP_OUT2_width  = node->output_port_sizes[1];
+    int DP_WE1_width = node->input_port_sizes[5]; // should be 1
+    int DP_WE2_width = node->input_port_sizes[6]; // should be 1
+    int DP_OUT1_width = node->output_port_sizes[0];
+    int DP_OUT2_width = node->output_port_sizes[1];
 
     /* validate the port width */
     oassert((DP_CLK_width == 1) && (DP_WE1_width == 1) && (DP_WE2_width == 1));
@@ -2225,7 +2223,7 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
         }
     }
     offset += DP_ADDR1_width;
-    
+
     /* adding the addr2 signals */
     for (i = 0; i < max_addr_width; i++) {
         /* hook the addr1 pin to new node */
@@ -2259,7 +2257,7 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
         add_pin_to_signal_list(signals->data1, pin);
     }
     offset += DP_DATA1_width;
-    
+
     /* adding the data2 signals */
     for (i = 0; i < DP_DATA2_width; i++) {
         /* hook the data1 pin to new node */
@@ -2285,7 +2283,6 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
     we2_pin->node->input_pins[we2_pin->pin_node_idx] = NULL;
     signals->we2 = we2_pin;
 
-
     /* OUTPUT */
     offset = 0;
     /* adding the output1 signals */
@@ -2298,7 +2295,7 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
         add_pin_to_signal_list(signals->out1, pin);
     }
     offset += DP_OUT1_width;
-    
+
     /* adding the output1 signals */
     for (i = 0; i < DP_OUT2_width; i++) {
         /* hook the data1 pin to new node */
@@ -2308,7 +2305,6 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
 
         add_pin_to_signal_list(signals->out2, pin);
     }
-
 
     /* creating a new dpram with size modified input signals */
     nnode_t* dpram = create_dual_port_rom(signals, node->loc);
