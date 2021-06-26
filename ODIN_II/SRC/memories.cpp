@@ -1902,11 +1902,10 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
  * @brief create a single
  * @param signals spram signals
  * @param node corresponding netlist node
- * @param loc netlist node location
  * 
  * @return a new single port ram
  */
-nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node, loc_t loc) {
+nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node) {
     /* sanity checks */
     oassert(signals->clk != NULL);
     oassert(signals->we != NULL);
@@ -1914,8 +1913,9 @@ nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node, loc_t lo
     oassert(signals->data->count >= 1);
     oassert(signals->data->count == signals->out->count);
 
+    bool splitted = false;
     /* create a single port ram node */
-    nnode_t* spram = allocate_nnode(loc);
+    nnode_t* spram = allocate_nnode(node->loc);
 
     spram->type = MEMORY;
     /* some information from ast node is needed in partial mapping */
@@ -1924,8 +1924,8 @@ nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node, loc_t lo
     spram->attributes->memory_id = vtr::strdup(node->attributes->memory_id);
 
     /* Create a fake ast node. */
-    spram->related_ast_node = create_node_w_type(RAM, loc);
-    spram->related_ast_node->identifier_node = create_tree_node_id(hb_name, loc);
+    spram->related_ast_node = create_node_w_type(RAM, node->loc);
+    spram->related_ast_node->identifier_node = create_tree_node_id(hb_name, node->loc);
 
     /* INPUTS */
     /* hook address portd into spram */
@@ -1947,6 +1947,27 @@ nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node, loc_t lo
     /* OUTPUT */
     add_output_port_to_memory(spram, signals->out, "out");
 
+    /* check if hard block is available to so split if needed */
+    t_model* spram_model = find_hard_block(hb_name);
+
+    if (spram_model == NULL) {
+        /* hard block is not available */
+
+        /* check if spram needs split in depth (addr_width > ODIN_SOFT_ADDR_LIMIT) */
+        if (spram->input_port_sizes[0] > SOFT_RAM_ADDR_LIMIT) {
+            splitted = true;
+            split_sp_memory_depth(spram, SOFT_RAM_ADDR_LIMIT);
+        }
+    }
+
+    /* add to the single port ram list */
+    if (!splitted) {
+        /* already compatible with SPRAM config so we leave it as is */
+        sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
+        /* register the SPRAM in arch model to have the related model in BLIF for simulation */
+        register_memory_model(spram);
+    }
+
     // CLEAN YP
     free_signal_list(we);
     free_signal_list(clk);
@@ -1961,11 +1982,10 @@ nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node, loc_t lo
  * 
  * @param signals dpram signals
  * @param node corresponding netlist node
- * @param loc netlist node location
  * 
  * @return a new dual port ram
  */
-nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node, loc_t loc) {
+nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node) {
     /* sanity checks */
     oassert((signals->addr1) && (signals->addr2));
     oassert((signals->data1) && (signals->data1));
@@ -1980,8 +2000,9 @@ nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node, loc_t loc)
     oassert(signals->data1->count == signals->out1->count);
     oassert(signals->data2->count == signals->out2->count);
 
+    bool splitted = false;
     /* create a dual port ram node */
-    nnode_t* dpram = allocate_nnode(loc);
+    nnode_t* dpram = allocate_nnode(node->loc);
 
     dpram->type = MEMORY;
     /* some information from ast node is needed in partial mapping */
@@ -1990,8 +2011,8 @@ nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node, loc_t loc)
     dpram->attributes->memory_id = vtr::strdup(node->attributes->memory_id);
 
     /* Create a fake ast node. */
-    dpram->related_ast_node = create_node_w_type(RAM, loc);
-    dpram->related_ast_node->identifier_node = create_tree_node_id(hb_name, loc);
+    dpram->related_ast_node = create_node_w_type(RAM, node->loc);
+    dpram->related_ast_node->identifier_node = create_tree_node_id(hb_name, node->loc);
 
     /* INPUTS */
     /* hook address portd into dpram */
@@ -2019,6 +2040,27 @@ nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node, loc_t loc)
     /* OUTPUT */
     add_output_port_to_memory(dpram, signals->out1, "out1");
     add_output_port_to_memory(dpram, signals->out2, "out2");
+
+    /* check if hard block is available to so split if needed */
+    t_model* dpram_model = find_hard_block(hb_name);
+
+    if (dpram_model == NULL) {
+        /* hard block is not available */
+
+        /* check if spram needs split in depth (addr_width > ODIN_SOFT_ADDR_LIMIT) */
+        if (dpram->input_port_sizes[0] > SOFT_RAM_ADDR_LIMIT) {
+            splitted = true;
+            split_dp_memory_depth(dpram, SOFT_RAM_ADDR_LIMIT);
+        }
+    }
+
+    /* add to the single port ram list */
+    if (!splitted) {
+        /* already compatible with SPRAM config so we leave it as is */
+        dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
+        /* register the SPRAM in arch model to have the related model in BLIF for simulation */
+        register_memory_model(dpram);
+    }
 
     // CLEAN YP
     free_signal_list(we1);
@@ -2143,7 +2185,7 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
     }
 
     /* creating a new spram with size modified input signals */
-    nnode_t* spram = create_single_port_ram(signals, node, node->loc);
+    nnode_t* spram = create_single_port_ram(signals, node);
     /* adding new spram new dp memory list for future iterations and adjusments */
     sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
     /* register the single port ram in arch model to have the related model (SPRAM) in BLIF for simulation */
@@ -2311,7 +2353,7 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
     }
 
     /* creating a new dpram with size modified input signals */
-    nnode_t* dpram = create_dual_port_ram(signals, node, node->loc);
+    nnode_t* dpram = create_dual_port_ram(signals, node);
     /* adding new dpram new dp memory list for future iterations and adjusments */
     dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
     /* register the dual port ram in arch model to have the related model (DPRAM) in BLIF for simulation */
