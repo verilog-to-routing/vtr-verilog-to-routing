@@ -1102,7 +1102,7 @@ void map_bram_to_mem_hardblocks(block_memory* bram, netlist_t* netlist) {
             
             if (check_same_addrs(bram)) {
                 /* create a single port ram and allocate ports according to the SPRAM hard block */
-                dpram = create_rw_single_port_ram(bram, netlist);
+                spram = create_rw_single_port_ram(bram, netlist);
 
             } else {
                 /* create a dual port ram and allocate ports according to the DPRAM hard block */
