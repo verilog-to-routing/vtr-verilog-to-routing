@@ -63,6 +63,34 @@ class RRSpatialLookup {
                        int ptc,
                        e_side side = NUM_SIDES) const;
 
+    /**
+     * Returns the indices of the specified routing resource nodes,
+     * representing routing tracks in a channel.  
+     * - (x, y) are the coordinate of the routing channel within the FPGA
+     * - rr_type specifies the type of routing channel, either x-direction or y-direction
+     *
+     * Note: 
+     * - Return an empty list if there are no routing channel at the given (x, y) location
+     * - The node list returned only contain valid ids
+     *   For example, if the 2nd routing track does not exist in a routing channel at (x, y) location,
+     *   while the 3rd routing track does exist in a routing channel at (x, y) location,
+     *   the node list will not contain the node for the 2nd routing track, but the 2nd element in the list
+     *   will be the node for the 3rd routing track
+     */
+    std::vector<RRNodeId> find_channel_nodes(int x,
+                                             int y,
+                                             t_rr_type type) const;
+
+    /**
+     * Like find_node() but returns all matching nodes on all the sides.
+     * This is particularly useful for getting all instances
+     * of a specific IPIN/OPIN at a specific gird tile (x,y) location.
+     */
+    std::vector<RRNodeId> find_nodes_at_all_sides(int x,
+                                                  int y,
+                                                  t_rr_type rr_type,
+                                                  int ptc) const;
+
     /* -- Mutators -- */
   public:
     /**

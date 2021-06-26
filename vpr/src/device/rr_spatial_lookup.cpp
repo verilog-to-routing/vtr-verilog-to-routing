@@ -29,7 +29,7 @@ RRNodeId RRSpatialLookup::find_node(int x,
     }
 
     /* Pre-check: the x, y, side and ptc should be non negative numbers! Otherwise, return an invalid id */
-    if ((0 > x) || (0 > y) || (NUM_SIDES == node_side) || (0 > ptc)) {
+    if ((x < 0) || (y < 0) || (node_side == NUM_SIDES) || (ptc < 0)) {
         return RRNodeId::INVALID();
     }
 
@@ -41,7 +41,7 @@ RRNodeId RRSpatialLookup::find_node(int x,
      */
     size_t node_x = x;
     size_t node_y = y;
-    if (CHANX == type) {
+    if (type == CHANX) {
         std::swap(node_x, node_y);
     }
 
@@ -72,6 +72,90 @@ RRNodeId RRSpatialLookup::find_node(int x,
     }
 
     return RRNodeId(rr_node_indices_[type][node_x][node_y][node_side][ptc]);
+}
+
+std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
+                                                          int y,
+                                                          t_rr_type type) const {
+    /* TODO: The implementation of this API should be worked 
+     * when rr_node_indices adapts RRNodeId natively!
+     */
+    std::vector<RRNodeId> channel_nodes;
+
+    /* Pre-check: the x, y, type are valid! Otherwise, return an empty vector */
+    if ((x < 0 || y < 0) && (type == CHANX || type == CHANY)) {
+        return channel_nodes;
+    }
+
+    /* Currently need to swap x and y for CHANX because of chan, seg convention 
+     * This is due to that the fast look-up builders uses (y, x) coordinate when
+     * registering a CHANX node in the look-up
+     * TODO: Once the builders is reworked for use consistent (x, y) convention,
+     * the following swapping can be removed
+     */
+    size_t node_x = x;
+    size_t node_y = y;
+    if (type == CHANX) {
+        std::swap(node_x, node_y);
+    }
+
+    VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
+
+    /* Sanity check to ensure the x, y, side are in range 
+     * - Return a list of valid ids by searching in look-up when all the parameters are in range
+     * - Return an empty list if any out-of-range is detected
+     */
+    if (size_t(type) >= rr_node_indices_.size()) {
+        return channel_nodes;
+    }
+
+    if (node_x >= rr_node_indices_[type].dim_size(0)) {
+        return channel_nodes;
+    }
+
+    if (node_y >= rr_node_indices_[type].dim_size(1)) {
+        return channel_nodes;
+    }
+
+    /* By default, we always added the channel nodes to the TOP side (to save memory) */
+    e_side node_side = TOP;
+    if (node_side >= rr_node_indices_[type].dim_size(2)) {
+        return channel_nodes;
+    }
+
+    for (const auto& node : rr_node_indices_[type][node_x][node_y][node_side]) {
+        if (RRNodeId(node)) {
+            channel_nodes.push_back(RRNodeId(node));
+        }
+    }
+
+    return channel_nodes;
+}
+
+std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
+                                                               int y,
+                                                               t_rr_type rr_type,
+                                                               int ptc) const {
+    std::vector<RRNodeId> indices;
+
+    /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
+    if (rr_type == IPIN || rr_type == OPIN) {
+        //For pins we need to look at all the sides of the current grid tile
+        for (e_side side : SIDES) {
+            RRNodeId rr_node_index = find_node(x, y, rr_type, ptc, side);
+            if (rr_node_index) {
+                indices.push_back(rr_node_index);
+            }
+        }
+    } else {
+        //Sides do not effect non-pins so there should only be one per ptc
+        RRNodeId rr_node_index = find_node(x, y, rr_type, ptc);
+        if (rr_node_index) {
+            indices.push_back(rr_node_index);
+        }
+    }
+
+    return indices;
 }
 
 void RRSpatialLookup::add_node(RRNodeId node,
@@ -112,8 +196,8 @@ void RRSpatialLookup::resize_nodes(int x,
      * should ensure the fast look-up well organized  
      */
     VTR_ASSERT(type < rr_node_indices_.size());
-    VTR_ASSERT(0 <= x);
-    VTR_ASSERT(0 <= y);
+    VTR_ASSERT(x >= 0);
+    VTR_ASSERT(y >= 0);
 
     if ((x >= int(rr_node_indices_[type].dim_size(0)))
         || (y >= int(rr_node_indices_[type].dim_size(1)))
