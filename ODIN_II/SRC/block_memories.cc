@@ -56,6 +56,7 @@ void split_bram_in_width(block_memory* bram, netlist_t* netlist);
 void split_rom_in_width(block_memory* rom, netlist_t* netlist);
 
 static signal_list_t* merge_read_write_clks (signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist);
+static signal_list_t* create_single_clk_pin (signal_list_t* clks, nnode_t* node, netlist_t* netlist);
 
 static void cleanup_block_memory_old_node(nnode_t* old_node);
 
@@ -276,14 +277,14 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
     for (i = 0; i < WR_DATA_width; i++) {
         add_pin_to_signal_list(rom->write_data, get_pad_pin(netlist));
     }
-        
+
+    /* create single clk pin */
+    rom->clk = create_single_clk_pin(copy_input_signals(rom->read_clk), node, netlist);
 
     /* no need to these variables in rom */
     rom->write_addr = NULL;
     rom->write_clk = NULL;
     rom->write_en = NULL;
-    rom->clk = NULL;
-
 
     /* creating new node since we need to reorder some input port for each inferenece mode */
     rom->node = node;
@@ -706,8 +707,11 @@ static nnode_t* create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist) {
     
 
     /* add merged clk signal as dpram clk signal */
-    rom->read_clk = make_chain(LOGICAL_OR, rom->read_clk, node);
-    signals->clk = rom->read_clk->pins[0];
+    signals->clk = rom->clk->pins[0];
+    /* delete read clks since there is no need of them anymore */
+    for (i = 0; i < rom->read_clk->count; i++) {
+        delete_npin(rom->read_clk->pins[i]);
+    }
     
     /* split read data and add the first half to the out1 */
     signals->out1 = init_signal_list();
@@ -998,6 +1002,48 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
     return (dpram);
 }
 
+/**
+ * (function: create_single_clk_pin)
+ * 
+ * @brief ORing all given clks
+ * 
+ * @param clks signal list of clocks
+ * @param node pointing to a bram node
+ * @param netlist pointer to the current netlist file
+ * 
+ * @return single clock pin
+ */
+static signal_list_t* create_single_clk_pin (signal_list_t* clks, nnode_t* node, netlist_t* netlist) {
+
+    signal_list_t* return_signal = NULL;
+
+    /* or all clks */
+    signal_list_t* clk_chain = make_chain(LOGICAL_OR, clks, node);
+
+    /* create a new clk node */
+    nnode_t* nor_gate = make_2port_gate (LOGICAL_NOR, 1, 1, 1, node, node->traverse_visited);
+    /* add related inputs */
+    add_input_pin_to_node(nor_gate, get_zero_pin(netlist), 0);
+    add_input_pin_to_node(nor_gate, clk_chain->pins[0], 1);
+    /* creating output signal */
+    signal_list_t* not_clk = make_output_pins_for_existing_node(nor_gate, 1);
+
+    /* creating a single input/output node */
+    nnode_t* clk_node = make_not_gate(nor_gate, node->traverse_visited);
+    connect_nodes(nor_gate, 0, clk_node, 0);
+    return_signal = make_output_pins_for_existing_node(clk_node, 1);
+
+    // CLEAN UP
+    free_signal_list(clk_chain);
+    free_signal_list(not_clk);
+
+    /* adding the new clk node to netlist clocks */
+    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
+    netlist->clocks[netlist->num_clocks] = clk_node;
+    netlist->num_clocks++;
+
+    return (return_signal);
+}
 /**
  * (function: merge_read_write_clks)
  * 
