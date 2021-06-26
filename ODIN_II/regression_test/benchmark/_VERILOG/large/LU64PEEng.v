@@ -3257,7 +3257,7 @@ module top_ram (
 	assign dummy = junk_output & 32'b0;
 
     defparam inst2.ADDR_WIDTH = 14;
-    defparam inst2.DATA_WIDTH = `RAM32DTH;  
+    defparam inst2.DATA_WIDTH = 32;  
     dual_port_ram inst2(
     .clk (clk),
     .we1(wren),
@@ -4144,7 +4144,7 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1'b1;
 end
     defparam ram_addr.ADDR_WIDTH = `mFIFOSIZEWIDTH;
-    defparam ram_addr.DATA_WIDTH = `mFIFOSIZEWIDTH;
+    defparam ram_addr.DATA_WIDTH = `mFIFOWIDTH;
 	dual_port_ram ram_addr(
         .we1      (wrreq)      , // write enable
         .we2      (rdreq)       , // Read enable

@@ -2788,8 +2788,8 @@ module top_ram (
 	assign q = sub_wire0 | dummy;
 	assign dummy = junk_output & 32'b0;
 
-    defparam inst2.ADDR_WIDTH = 32;
-    defparam inst2.DATA_WIDTH = 12;        
+    defparam inst2.ADDR_WIDTH = 12;
+    defparam inst2.DATA_WIDTH = 32;        
     dual_port_ram inst2(
     .clk (clk),
     .we1(wren),

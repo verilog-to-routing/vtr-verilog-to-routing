@@ -402,7 +402,7 @@ static nnode_t* create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) 
     }
     signals->out2 = out2_signals;
 
-    nnode_t* dpram = create_dual_port_rom(signals, bram->loc);
+    nnode_t* dpram = create_dual_port_rom(signals, old_node, bram->loc);
     bram->node = dpram;
 
     // CLEAN UP
@@ -457,7 +457,7 @@ static nnode_t* create_r_single_port_ram(block_memory* rom, netlist_t* /* netlis
     /* adding the read data port as output1 */
     signals->out = rom->read_data;
 
-    nnode_t* spram = create_single_port_rom(signals, rom->loc);
+    nnode_t* spram = create_single_port_rom(signals, old_node, rom->loc);
     rom->node = spram;
 
     // CLEAN UP rom src node
@@ -673,13 +673,13 @@ void iterate_block_memories(netlist_t* netlist) {
  * @return dual port RAM
  */
 static nnode_t* create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist) {
-    nnode_t* node = rom->node;
+    nnode_t* old_node = rom->node;
 
     int i, offset;
     int data_width = rom->node->attributes->DBITS;
     int addr_width = rom->node->attributes->ABITS;
-    int num_rd_ports = node->attributes->RD_PORTS;
-    int num_wr_ports = node->attributes->WR_PORTS;
+    int num_rd_ports = old_node->attributes->RD_PORTS;
+    int num_wr_ports = old_node->attributes->WR_PORTS;
 
     /* should have been resovled before this function */
     oassert(num_rd_ports == 2);
@@ -744,10 +744,10 @@ static nnode_t* create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist) {
     }
 
     /* create a new dual port ram */
-    nnode_t* dpram = create_dual_port_rom(signals, rom->loc);
+    nnode_t* dpram = create_dual_port_rom(signals, old_node, rom->loc);
 
     // CLEAN UP
-    cleanup_block_memory_old_node(node);
+    cleanup_block_memory_old_node(old_node);
     free_dp_ram_signals(signals);
 
     return (dpram);
@@ -766,13 +766,13 @@ static nnode_t* create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist) {
  * @return dual port RAM
  */
 static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netlist */) {
-    nnode_t* node = bram->node;
+    nnode_t* old_node = bram->node;
 
     int i, offset;
     int data_width = bram->node->attributes->DBITS;
     int addr_width = bram->node->attributes->ABITS;
-    int num_rd_ports = node->attributes->RD_PORTS;
-    int num_wr_ports = node->attributes->WR_PORTS;
+    int num_rd_ports = old_node->attributes->RD_PORTS;
+    int num_wr_ports = old_node->attributes->WR_PORTS;
 
     /* should have been resovled before this function */
     oassert(num_rd_ports == 1);
@@ -813,7 +813,7 @@ static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netli
     for (i = 0; i < data_width; i++) {
         add_pin_to_signal_list(we1, bram->write_en->pins[offset + i]);
     }
-    we1 = make_chain(LOGICAL_OR, we1, node);
+    we1 = make_chain(LOGICAL_OR, we1, old_node);
     signals->we1 = we1->pins[0];
     
 
@@ -840,7 +840,7 @@ static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netli
         add_pin_to_signal_list(we2, bram->write_en->pins[i]);
     }
     /* merged enables will be connected to we2 */
-    we2 = make_chain(LOGICAL_OR, we2, node);
+    we2 = make_chain(LOGICAL_OR, we2, old_node);
     signals->we2 = we2->pins[0];
 
     /* the rest of write data pin is for data2 */
@@ -866,10 +866,10 @@ static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netli
     }
 
     /* create a new dual port ram */
-    nnode_t* dpram = create_dual_port_rom(signals, bram->loc);
+    nnode_t* dpram = create_dual_port_rom(signals, old_node, bram->loc);
 
     // CLEAN UP
-    cleanup_block_memory_old_node(node);
+    cleanup_block_memory_old_node(old_node);
     free_signal_list(we1);
     free_signal_list(we2);
     free_dp_ram_signals(signals);
@@ -890,13 +890,13 @@ static nnode_t* create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netli
  * @return dual port RAM
  */
 static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netlist */) {
-    nnode_t* node = bram->node;
+    nnode_t* old_node = bram->node;
 
     int i, offset;
     int data_width = bram->node->attributes->DBITS;
     int addr_width = bram->node->attributes->ABITS;
-    int num_rd_ports = node->attributes->RD_PORTS;
-    int num_wr_ports = node->attributes->WR_PORTS;
+    int num_rd_ports = old_node->attributes->RD_PORTS;
+    int num_wr_ports = old_node->attributes->WR_PORTS;
 
     /* should have been resovled before this function */
     oassert(num_rd_ports == 2);
@@ -908,12 +908,7 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
     oassert(bram->read_addr->count == bram->write_addr->count);
     /* the wr addr will be deleted since we do not need it anymore */
     for (i = 0; i < bram->write_addr->count; i++) {
-        npin_t* rd_addr_pin = bram->read_addr->pins[i];
         npin_t* wr_addr_pin = bram->write_addr->pins[i];
-
-        /* validate the equality of addr1 and addr2 */
-        oassert(!strcmp(rd_addr_pin->name, wr_addr_pin->name));
-
         /* delete pin */
         delete_npin(wr_addr_pin);
     }
@@ -945,7 +940,7 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
     for (i = 0; i < data_width; i++) {
         add_pin_to_signal_list(we1, bram->write_en->pins[i]);
     }
-    we1 = make_chain(LOGICAL_OR, we1, node);
+    we1 = make_chain(LOGICAL_OR, we1, old_node);
     signals->we1 = we1->pins[0];
     
 
@@ -974,7 +969,7 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
         add_pin_to_signal_list(we2, bram->write_en->pins[offset + i]);
     }
     /* merged enables will be connected to we2 */
-    we2 = make_chain(LOGICAL_OR, we2, node);
+    we2 = make_chain(LOGICAL_OR, we2, old_node);
     signals->we2 = we2->pins[0];
 
 
@@ -991,10 +986,10 @@ static nnode_t* create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netl
     }
 
     /* create a new dual port ram */
-    nnode_t* dpram = create_dual_port_rom(signals, bram->loc);
+    nnode_t* dpram = create_dual_port_rom(signals, old_node, bram->loc);
 
     // CLEAN UP
-    cleanup_block_memory_old_node(node);
+    cleanup_block_memory_old_node(old_node);
     free_signal_list(we1);
     free_signal_list(we2);
     free_dp_ram_signals(signals);
