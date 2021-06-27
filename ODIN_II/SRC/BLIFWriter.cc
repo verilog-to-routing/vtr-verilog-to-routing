@@ -32,7 +32,7 @@
 #include "odin_globals.h"
 
 #include "ast_util.h"
-#include "blif_elaborate.hh"
+#include "BLIFElaborate.hh"
 #include "netlist_utils.h"
 #include "netlist_check.h"
 #include "simulate_blif.h"

@@ -1,4 +1,6 @@
-/*
+/**
+ * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,11 +22,17 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __MODULO_H__
-#define __MODULO_H__
 
-#include "odin_types.h"
+#ifndef __FILE_TYPE_E_H__
+#define __FILE_TYPE_E_H__
 
-extern void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+enum class file_type_e {
+    _ILANG,         /* not supported yet */
+    _VERILOG,          
+    _BLIF,
+    _EBLIF,         /* not supported yet */
+    _UNDEFINED,     /* EROOR */
+    file_type_e_END
+};
 
-#endif //__MODULO_H__
+#endif

@@ -28,11 +28,11 @@
 #include "odin_ii.h"
 #include "odin_util.h"
 #include "odin_types.h"
-#include "subckt_types.h"
+#include "SubcktTypes.h"
 #include "odin_globals.h"
 
 #include "ast_util.h"
-#include "blif_elaborate.hh"
+#include "BLIFElaborate.hh"
 #include "netlist_utils.h"
 #include "netlist_check.h"
 #include "simulate_blif.h"

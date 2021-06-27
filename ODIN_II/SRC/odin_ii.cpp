@@ -44,14 +44,14 @@
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
-#include "blif_elaborate.hh"
+#include "BLIFElaborate.hh"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"
 
 #include "hard_blocks.h"
 #include "memories.h"
-#include "block_memories.hh"
+#include "BlockMemories.hh"
 #include "simulate_blif.h"
 
 #include "netlist_visualizer.h"

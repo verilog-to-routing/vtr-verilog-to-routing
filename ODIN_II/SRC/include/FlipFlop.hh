@@ -1,4 +1,6 @@
-/*
+/**
+ * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,12 +22,19 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __SHIFT_H__
-#define __SHIFT_H__
+#ifndef __FLIPFLOP_H__
+#define __FLIPFLOP_H__
 
 #include "odin_types.h"
 
-extern void equalize_shift_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-extern signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
+extern void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
-#endif //__SHIFT_H__
+#endif //__FLIPFLOP_H__

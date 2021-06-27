@@ -1,4 +1,6 @@
-/*
+/**
+ * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -35,21 +37,21 @@
 #include "odin_util.h"
 #include "simulate_blif.h"
 
-#include "blif_elaborate.hh"
+#include "BLIFElaborate.hh"
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "memories.h"
-#include "block_memories.hh"
+#include "BlockMemories.hh"
 #include "memories.h"
 #include "adders.h"
-#include "division.hh"
-#include "latch.hh"
-#include "power.hh"
-#include "flipflop.hh"
-#include "shift.hh"
-#include "modulo.hh"
-#include "case_equal.hh"
-#include "multiplexer.hh"
+#include "Division.hh"
+#include "Latch.hh"
+#include "Power.hh"
+#include "FlipFlop.hh"
+#include "Shift.hh"
+#include "Modulo.hh"
+#include "CaseEqual.hh"
+#include "Multiplexer.hh"
 #include "subtractions.h"
 
 #include "math.h"

@@ -1,4 +1,6 @@
-/*
+/**
+ * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -24,7 +26,7 @@
 #ifndef __GENERIC_IO_H__
 #define __GENERIC_IO_H__
 
-#include "file_types.hh"
+#include "FileTypes.hh"
 #include "odin_types.h"
 
 /**

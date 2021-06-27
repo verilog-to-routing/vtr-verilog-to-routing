@@ -1,6 +1,6 @@
 #include <vector>
 #include <string>
-#include "file_types.hh"
+#include "FileTypes.hh"
 
 #ifndef CONFIG_T_H
 #    define CONFIG_T_H

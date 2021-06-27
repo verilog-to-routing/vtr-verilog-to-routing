@@ -1,4 +1,6 @@
-/*
+/**
+ * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,11 +22,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __DIVISION_H__
-#define __DIVISION_H__
+#ifndef __LATCH_H__
+#define __LATCH_H__
 
 #include "odin_types.h"
 
-extern void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist); 
+extern void resolve_sr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
-#endif //__DIVISION_H__
+#endif //__LATCH_H__

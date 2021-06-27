@@ -1,4 +1,6 @@
-/*
+/**
+ * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,12 +22,32 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __CASE_EQUAL_H__
-#define __CASE_EQUAL_H__
 
-#include "odin_types.h"
+#include "Modulo.hh"
+#include "Division.hh"
+#include "node_creation_library.h"
+#include "odin_util.h"
+#include "netlist_utils.h"
+#include "vtr_memory.h"
 
-extern nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-extern nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+/**
+ * (function: resolve_modulo_node)
+ * 
+ * @brief resolving module node by 
+ * 
+ * @param node pointing to a mod node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
 
-#endif //__CASE_EQUAL_H__
+    /** 
+     * the process of calculating modulo is as the same as division. 
+     * However, the output pins connections would be different. 
+     * As a result, we calculate the division here and afterwards 
+     * the decision about output connection will happen 
+     * in connect_div_output function 
+    */
+    resolve_divide_node(node, traverse_mark_number, netlist);
+}

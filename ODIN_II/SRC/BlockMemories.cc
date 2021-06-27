@@ -1,4 +1,6 @@
-/*
+/**
+ * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -32,7 +34,7 @@
 #include "node_creation_library.h"
 #include "hard_blocks.h"
 #include "memories.h"
-#include "block_memories.hh"
+#include "BlockMemories.hh"
 #include "partial_map.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
