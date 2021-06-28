@@ -404,7 +404,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         new_pin->mapping = (new_node->type == BRAM || new_node->type == ROM || new_node->type == MEMORY)
                                ? get_hard_block_port_name(mapping)
                                : NULL;
-                               
+
         add_output_pin_to_node(new_node, new_pin, i);
 
         nnet_t* new_net = allocate_nnet();
@@ -452,15 +452,12 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
 void BLIF::Reader::create_internal_node_and_driver() {
     /* Storing the names of the input and the final output in array names */
     char* ptr = NULL;
-    char* resolved_name = NULL;
     char** names = NULL; // stores the names of the input and the output, last name stored would be of the output
     int input_count = 0;
     char buffer[READ_BLIF_BUFFER];
     while ((ptr = vtr::strtok(NULL, TOKENS, file, buffer))) {
         names = (char**)vtr::realloc(names, sizeof(char*) * (input_count + 1));
-        resolved_name = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
-        names[input_count++] = vtr::strdup(resolved_name);
-        vtr::free(resolved_name);
+        names[input_count++] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
     }
 
     /* assigning the new_node */

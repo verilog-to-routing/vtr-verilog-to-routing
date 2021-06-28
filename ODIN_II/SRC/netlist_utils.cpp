@@ -430,6 +430,8 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
         /* IF - there is a pin assigned to this net, then copy it */
         add_driver_pin_to_net(input_net, output_net->driver_pins[i]);
     }
+    /* keep initial value */
+    init_value_e output_initial_value = output_net->initial_value;
     /* in case there are any fanouts in output net (should only be zero and one nodes) */
     join_nets(input_net, output_net);
     /* mark that this is combined */
@@ -437,7 +439,7 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
 
     /* Need to keep the initial value data when we combine the nets */
     oassert(input_net->initial_value == init_value_e::undefined || input_net->initial_value == output_net->initial_value);
-    input_net->initial_value = output_net->initial_value;
+    input_net->initial_value = output_initial_value;
 
     /* special cases for global nets */
     if (output_net == netlist->zero_net) {
@@ -445,9 +447,6 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
     } else if (output_net == netlist->one_net) {
         netlist->one_net = input_net;
     }
-
-    /* free the driver net */
-    free_nnet(output_net);
 }
 
 /*---------------------------------------------------------------------------------------------
