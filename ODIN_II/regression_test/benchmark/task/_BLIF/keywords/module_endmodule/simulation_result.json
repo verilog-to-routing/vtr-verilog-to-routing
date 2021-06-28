@@ -1,28 +1,10 @@
 {
-    "module_endmodule/multiple_modules/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "module_endmodule/multiple_modules/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "generated_blif": "multiple_modules_generated.blif",
-        "max_rss(MiB)": 9.2,
-        "exec_time(ms)": 18.4,
-        "simulation_time(ms)": 5,
-        "test_coverage(%)": 100,
-        "Pi": 10,
-        "Po": 10,
-        "logic element": 10,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 10
-    },
     "module_endmodule/multiple_modules/no_arch": {
         "test_name": "module_endmodule/multiple_modules/no_arch",
         "generated_blif": "multiple_modules_generated.blif",
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 6.7,
         "simulation_time(ms)": 5,
-        "test_coverage(%)": 100,
         "Pi": 10,
         "Po": 10,
         "logic element": 10,
@@ -30,6 +12,18 @@
         "Average Path": 3,
         "Estimated LUTs": 10,
         "Total Node": 10
+    },
+    "module_endmodule/multiple_topmodules/no_arch": {
+        "test_name": "module_endmodule/multiple_topmodules/no_arch",
+        "generated_blif": "multiple_topmodules_generated.blif",
+        "max_rss(MiB)": 38.8,
+        "exec_time(ms)": 3.2,
+        "Po": 4,
+        "logic element": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "DEFAULT": {
         "test_name": "n/a",

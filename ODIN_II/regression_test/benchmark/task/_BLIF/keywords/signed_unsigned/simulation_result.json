@@ -1,28 +1,10 @@
 {
-    "signed_unsigned/signed_to_signed/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "signed_unsigned/signed_to_signed/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "generated_blif": "signed_to_signed_generated.blif",
-        "max_rss(MiB)": 9.2,
-        "exec_time(ms)": 15.7,
-        "simulation_time(ms)": 2.8,
-        "test_coverage(%)": 100,
-        "Pi": 4,
-        "Po": 6,
-        "logic element": 6,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 6
-    },
     "signed_unsigned/signed_to_signed/no_arch": {
         "test_name": "signed_unsigned/signed_to_signed/no_arch",
         "generated_blif": "signed_to_signed_generated.blif",
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 4.5,
         "simulation_time(ms)": 2.8,
-        "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 6,
         "logic element": 6,

@@ -1,25 +1,4 @@
 {
-    "negedge/negedge/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "negedge/negedge/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "negedge.blif",
-        "max_rss(MiB)": 12.2,
-        "exec_time(ms)": 13.6,
-        "techmap_time(ms)": 2,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "latch": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
-    },
     "negedge/negedge/no_arch": {
         "test_name": "negedge/negedge/no_arch",
         "input_blif": "negedge.blif",

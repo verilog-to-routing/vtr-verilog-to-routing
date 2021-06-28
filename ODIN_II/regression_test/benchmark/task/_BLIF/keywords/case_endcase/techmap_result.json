@@ -1,23 +1,4 @@
 {
-    "case_endcase/case/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "case_endcase/case/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "case.blif",
-        "max_rss(MiB)": 12.1,
-        "exec_time(ms)": 15.4,
-        "techmap_time(ms)": 3.2,
-        "Pi": 11,
-        "Po": 3,
-        "logic element": 40,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 9,
-        "Average Path": 8,
-        "Estimated LUTs": 40,
-        "Total Node": 40
-    },
     "case_endcase/case/no_arch": {
         "test_name": "case_endcase/case/no_arch",
         "input_blif": "case.blif",

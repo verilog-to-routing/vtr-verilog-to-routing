@@ -1,22 +1,4 @@
 {
-    "for/generate_for_int/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "for/generate_for_int/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "generate_for_int.blif",
-        "max_rss(MiB)": 9.3,
-        "exec_time(ms)": 13.2,
-        "techmap_time(ms)": 1.4,
-        "Po": 32,
-        "logic element": 32,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 32,
-        "Total Node": 32
-    },
     "for/generate_for_int/no_arch": {
         "test_name": "for/generate_for_int/no_arch",
         "input_blif": "generate_for_int.blif",
@@ -29,24 +11,6 @@
         "Average Path": 3,
         "Estimated LUTs": 32,
         "Total Node": 32
-    },
-    "for/generate_for_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "for/generate_for_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "generate_for_ultra_wide.blif",
-        "max_rss(MiB)": 10.1,
-        "exec_time(ms)": 18.1,
-        "techmap_time(ms)": 3.5,
-        "Po": 256,
-        "logic element": 256,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 256,
-        "Total Node": 256
     },
     "for/generate_for_ultra_wide/no_arch": {
         "test_name": "for/generate_for_ultra_wide/no_arch",
@@ -61,24 +25,6 @@
         "Estimated LUTs": 256,
         "Total Node": 256
     },
-    "for/generate_for_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "for/generate_for_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "generate_for_wide.blif",
-        "max_rss(MiB)": 9.3,
-        "exec_time(ms)": 12.6,
-        "techmap_time(ms)": 1,
-        "Po": 3,
-        "logic element": 3,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
-    },
     "for/generate_for_wide/no_arch": {
         "test_name": "for/generate_for_wide/no_arch",
         "input_blif": "generate_for_wide.blif",
@@ -91,6 +37,34 @@
         "Average Path": 3,
         "Estimated LUTs": 3,
         "Total Node": 3
+    },
+    "for/else_if/no_arch": {
+        "test_name": "for/else_if/no_arch",
+        "input_blif": "else_if.blif",
+        "max_rss(MiB)": 44.8,
+        "exec_time(ms)": 8.4,
+        "techmap_time(ms)": 5.9,
+        "Pi": 2,
+        "Po": 2,
+        "logic element": 18,
+        "Longest Path": 9,
+        "Average Path": 6,
+        "Estimated LUTs": 18,
+        "Total Node": 18
+    },
+    "for/if_else/no_arch": {
+        "test_name": "for/if_else/no_arch",
+        "input_blif": "if_else.blif",
+        "max_rss(MiB)": 43,
+        "exec_time(ms)": 5.6,
+        "techmap_time(ms)": 3.3,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "DEFAULT": {
         "test_name": "n/a",

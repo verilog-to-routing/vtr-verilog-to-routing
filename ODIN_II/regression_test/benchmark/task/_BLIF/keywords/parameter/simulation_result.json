@@ -1,28 +1,10 @@
 {
-    "parameter/multiple_parameter/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "parameter/multiple_parameter/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "generated_blif": "multiple_parameter_generated.blif",
-        "max_rss(MiB)": 9.3,
-        "exec_time(ms)": 15.6,
-        "simulation_time(ms)": 2.2,
-        "test_coverage(%)": 100,
-        "Pi": 3,
-        "Po": 3,
-        "logic element": 3,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
-    },
     "parameter/multiple_parameter/no_arch": {
         "test_name": "parameter/multiple_parameter/no_arch",
         "generated_blif": "multiple_parameter_generated.blif",
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 3.4,
         "simulation_time(ms)": 1.9,
-        "test_coverage(%)": 100,
         "Pi": 3,
         "Po": 3,
         "logic element": 3,
@@ -30,24 +12,6 @@
         "Average Path": 3,
         "Estimated LUTs": 3,
         "Total Node": 3
-    },
-    "parameter/parameter_override/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "parameter/parameter_override/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "generated_blif": "parameter_override_generated.blif",
-        "max_rss(MiB)": 11.2,
-        "exec_time(ms)": 19.5,
-        "simulation_time(ms)": 5.6,
-        "test_coverage(%)": 100,
-        "Pi": 10,
-        "Po": 7,
-        "logic element": 7,
-        "Adder": 4,
-        "generic logic size": 4,
-        "Longest Path": 7,
-        "Average Path": 4,
-        "Estimated LUTs": 7,
-        "Total Node": 11
     },
     "parameter/parameter_override/no_arch": {
         "test_name": "parameter/parameter_override/no_arch",
@@ -55,7 +19,6 @@
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 6.6,
         "simulation_time(ms)": 4.8,
-        "test_coverage(%)": 100,
         "Pi": 10,
         "Po": 7,
         "logic element": 12,
@@ -63,6 +26,18 @@
         "Average Path": 4,
         "Estimated LUTs": 12,
         "Total Node": 12
+    },
+    "parameter/parameter_define/no_arch": {
+        "test_name": "parameter/parameter_define/no_arch",
+        "generated_blif": "parameter_define_generated.blif",
+        "max_rss(MiB)": 38.7,
+        "exec_time(ms)": 3.2,
+        "Po": 5,
+        "logic element": 5,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 5,
+        "Total Node": 5
     },
     "DEFAULT": {
         "test_name": "n/a",

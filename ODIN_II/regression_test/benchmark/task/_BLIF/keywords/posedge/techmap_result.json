@@ -1,25 +1,4 @@
 {
-    "posedge/posedge/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "posedge/posedge/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "posedge.blif",
-        "max_rss(MiB)": 12,
-        "exec_time(ms)": 13.6,
-        "techmap_time(ms)": 2,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "latch": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
-    },
     "posedge/posedge/no_arch": {
         "test_name": "posedge/posedge/no_arch",
         "input_blif": "posedge.blif",
@@ -35,6 +14,47 @@
         "Average Path": 4,
         "Estimated LUTs": 1,
         "Total Node": 3
+    },
+    "posedge/multiple_parameter/no_arch": {
+        "test_name": "posedge/multiple_parameter/no_arch",
+        "input_blif": "multiple_parameter.blif",
+        "max_rss(MiB)": 39.5,
+        "exec_time(ms)": 70.4,
+        "techmap_time(ms)": 67.2,
+        "Pi": 3,
+        "Po": 3,
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
+    "posedge/parameter_define/no_arch": {
+        "test_name": "posedge/parameter_define/no_arch",
+        "input_blif": "parameter_define.blif",
+        "max_rss(MiB)": 39.6,
+        "exec_time(ms)": 6.1,
+        "techmap_time(ms)": 3.9,
+        "Po": 5,
+        "logic element": 5,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 5,
+        "Total Node": 5
+    },
+    "posedge/parameter_override/no_arch": {
+        "test_name": "posedge/parameter_override/no_arch",
+        "input_blif": "parameter_override.blif",
+        "max_rss(MiB)": 44,
+        "exec_time(ms)": 71.8,
+        "techmap_time(ms)": 69.1,
+        "Pi": 10,
+        "Po": 7,
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "DEFAULT": {
         "test_name": "n/a",

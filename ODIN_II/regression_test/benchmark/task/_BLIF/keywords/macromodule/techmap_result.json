@@ -1,27 +1,31 @@
 {
-    "module_endmodule/multiple_modules/no_arch": {
-        "test_name": "module_endmodule/multiple_modules/no_arch",
-        "input_blif": "multiple_modules.blif",
-        "max_rss(MiB)": 8.2,
-        "exec_time(ms)": 1.9,
-        "techmap_time(ms)": 1.4,
-        "Pi": 10,
-        "Po": 10,
-        "logic element": 10,
+    "macromodule/localparam/no_arch": {
+        "test_name": "macromodule/localparam/no_arch",
+        "input_blif": "localparam.blif",
+        "max_rss(MiB)": 39.6,
+        "exec_time(ms)": 3.8,
+        "techmap_time(ms)": 1.6,
+        "Pi": 3,
+        "Po": 3,
+        "logic element": 3,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 10
+        "Estimated LUTs": 3,
+        "Total Node": 3
     },
-    "module_endmodule/multiple_topmodules/no_arch": {
-        "test_name": "module_endmodule/multiple_topmodules/no_arch",
-        "input_blif": "multiple_topmodules.blif",
-        "Po": 4,
-        "logic element": 4,
+    "macromodule/parameter_define_localparam/no_arch": {
+        "test_name": "macromodule/parameter_define_localparam/no_arch",
+        "input_blif": "parameter_define_localparam.blif",
+        "max_rss(MiB)": 39.6,
+        "exec_time(ms)": 3.8,
+        "techmap_time(ms)": 1.6,
+        "Pi": 3,
+        "Po": 3,
+        "logic element": 3,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Estimated LUTs": 3,
+        "Total Node": 3
     },
     "DEFAULT": {
         "test_name": "n/a",

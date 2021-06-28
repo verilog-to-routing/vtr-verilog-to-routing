@@ -1,28 +1,10 @@
 {
-    "reg/reg/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "reg/reg/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "generated_blif": "reg_generated.blif",
-        "max_rss(MiB)": 9.2,
-        "exec_time(ms)": 13.9,
-        "simulation_time(ms)": 1,
-        "test_coverage(%)": 100,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
-    },
     "reg/reg/no_arch": {
         "test_name": "reg/reg/no_arch",
         "generated_blif": "reg_generated.blif",
         "max_rss(MiB)": 8.1,
         "exec_time(ms)": 2.4,
         "simulation_time(ms)": 1,
-        "test_coverage(%)": 100,
         "Pi": 1,
         "Po": 1,
         "logic element": 1,

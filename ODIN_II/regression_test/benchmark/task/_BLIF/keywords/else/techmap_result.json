@@ -1,23 +1,4 @@
 {
-    "else/else_if/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "else/else_if/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "else_if.blif",
-        "max_rss(MiB)": 12.2,
-        "exec_time(ms)": 14.3,
-        "techmap_time(ms)": 2.6,
-        "Pi": 2,
-        "Po": 2,
-        "logic element": 18,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 9,
-        "Average Path": 6,
-        "Estimated LUTs": 18,
-        "Total Node": 18
-    },
     "else/else_if/no_arch": {
         "test_name": "else/else_if/no_arch",
         "input_blif": "else_if.blif",
@@ -31,25 +12,6 @@
         "Average Path": 6,
         "Estimated LUTs": 18,
         "Total Node": 18
-    },
-    "else/if_else/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "else/if_else/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "if_else.blif",
-        "max_rss(MiB)": 12.1,
-        "exec_time(ms)": 14.1,
-        "techmap_time(ms)": 2.2,
-        "Pi": 2,
-        "Po": 1,
-        "logic element": 4,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
     },
     "else/if_else/no_arch": {
         "test_name": "else/if_else/no_arch",

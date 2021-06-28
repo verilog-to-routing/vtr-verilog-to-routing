@@ -1,23 +1,4 @@
 {
-    "integer/integer_failure/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "integer/integer_failure/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "integer_failure.blif",
-        "max_rss(MiB)": 12,
-        "exec_time(ms)": 18.7,
-        "techmap_time(ms)": 5.1,
-        "Pi": 64,
-        "Po": 32,
-        "logic element": 32,
-        "Adder": 33,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 36,
-        "Average Path": 4,
-        "Estimated LUTs": 32,
-        "Total Node": 65
-    },
     "integer/integer_failure/no_arch": {
         "test_name": "integer/integer_failure/no_arch",
         "input_blif": "integer_failure.blif",
@@ -31,25 +12,6 @@
         "Average Path": 4,
         "Estimated LUTs": 95,
         "Total Node": 95
-    },
-    "integer/integer_port/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "integer/integer_port/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "integer_port.blif",
-        "max_rss(MiB)": 12,
-        "exec_time(ms)": 17,
-        "techmap_time(ms)": 4.1,
-        "Pi": 32,
-        "Po": 32,
-        "logic element": 32,
-        "Adder": 18,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 21,
-        "Average Path": 4,
-        "Estimated LUTs": 32,
-        "Total Node": 50
     },
     "integer/integer_port/no_arch": {
         "test_name": "integer/integer_port/no_arch",

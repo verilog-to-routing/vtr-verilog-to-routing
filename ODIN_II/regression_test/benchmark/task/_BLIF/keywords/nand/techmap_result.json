@@ -1,23 +1,4 @@
 {
-    "nand/nand_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "nand/nand_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "nand_indexed_port.blif",
-        "max_rss(MiB)": 12.1,
-        "exec_time(ms)": 14.1,
-        "techmap_time(ms)": 2.4,
-        "Pi": 4,
-        "Po": 2,
-        "logic element": 6,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 6,
-        "Total Node": 6
-    },
     "nand/nand_indexed_port/no_arch": {
         "test_name": "nand/nand_indexed_port/no_arch",
         "input_blif": "nand_indexed_port.blif",
@@ -31,25 +12,6 @@
         "Average Path": 5,
         "Estimated LUTs": 6,
         "Total Node": 6
-    },
-    "nand/nand_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "nand/nand_wire/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "nand_wire.blif",
-        "max_rss(MiB)": 12.1,
-        "exec_time(ms)": 13.9,
-        "techmap_time(ms)": 2.3,
-        "Pi": 2,
-        "Po": 1,
-        "logic element": 3,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 3,
-        "Total Node": 3
     },
     "nand/nand_wire/no_arch": {
         "test_name": "nand/nand_wire/no_arch",
@@ -65,25 +27,6 @@
         "Estimated LUTs": 3,
         "Total Node": 3
     },
-    "nand/range_nand_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "nand/range_nand_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "range_nand_int_wide.blif",
-        "max_rss(MiB)": 12.2,
-        "exec_time(ms)": 19.3,
-        "techmap_time(ms)": 6.8,
-        "Pi": 64,
-        "Po": 32,
-        "logic element": 96,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 96,
-        "Total Node": 96
-    },
     "nand/range_nand_int_wide/no_arch": {
         "test_name": "nand/range_nand_int_wide/no_arch",
         "input_blif": "range_nand_int_wide.blif",
@@ -98,25 +41,6 @@
         "Estimated LUTs": 96,
         "Total Node": 96
     },
-    "nand/range_nand_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "nand/range_nand_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "range_nand_ultra_wide.blif",
-        "max_rss(MiB)": 14.5,
-        "exec_time(ms)": 58.5,
-        "techmap_time(ms)": 40.5,
-        "Pi": 512,
-        "Po": 256,
-        "logic element": 768,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 768,
-        "Total Node": 768
-    },
     "nand/range_nand_ultra_wide/no_arch": {
         "test_name": "nand/range_nand_ultra_wide/no_arch",
         "input_blif": "range_nand_ultra_wide.blif",
@@ -130,25 +54,6 @@
         "Average Path": 5,
         "Estimated LUTs": 768,
         "Total Node": 768
-    },
-    "nand/range_nand_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "nand/range_nand_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "range_nand_wide.blif",
-        "max_rss(MiB)": 12,
-        "exec_time(ms)": 14.2,
-        "techmap_time(ms)": 2.5,
-        "Pi": 6,
-        "Po": 3,
-        "logic element": 9,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 9,
-        "Total Node": 9
     },
     "nand/range_nand_wide/no_arch": {
         "test_name": "nand/range_nand_wide/no_arch",

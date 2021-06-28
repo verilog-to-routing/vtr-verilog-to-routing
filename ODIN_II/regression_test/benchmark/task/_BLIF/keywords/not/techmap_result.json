@@ -1,23 +1,4 @@
 {
-    "not/not_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "not/not_indexed_port/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "not_indexed_port.blif",
-        "max_rss(MiB)": 11.4,
-        "exec_time(ms)": 13.2,
-        "techmap_time(ms)": 1.8,
-        "Pi": 2,
-        "Po": 2,
-        "logic element": 4,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 4,
-        "Total Node": 4
-    },
     "not/not_indexed_port/no_arch": {
         "test_name": "not/not_indexed_port/no_arch",
         "input_blif": "not_indexed_port.blif",
@@ -31,25 +12,6 @@
         "Average Path": 4,
         "Estimated LUTs": 4,
         "Total Node": 4
-    },
-    "not/not_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "not/not_wire/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "not_wire.blif",
-        "max_rss(MiB)": 11.4,
-        "exec_time(ms)": 13.5,
-        "techmap_time(ms)": 1.7,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 2,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
     },
     "not/not_wire/no_arch": {
         "test_name": "not/not_wire/no_arch",
@@ -65,25 +27,6 @@
         "Estimated LUTs": 2,
         "Total Node": 2
     },
-    "not/range_not_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "not/range_not_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "range_not_int_wide.blif",
-        "max_rss(MiB)": 12,
-        "exec_time(ms)": 16.9,
-        "techmap_time(ms)": 4.7,
-        "Pi": 32,
-        "Po": 32,
-        "logic element": 64,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 64,
-        "Total Node": 64
-    },
     "not/range_not_int_wide/no_arch": {
         "test_name": "not/range_not_int_wide/no_arch",
         "input_blif": "range_not_int_wide.blif",
@@ -98,25 +41,6 @@
         "Estimated LUTs": 64,
         "Total Node": 64
     },
-    "not/range_not_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "not/range_not_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "range_not_ultra_wide.blif",
-        "max_rss(MiB)": 13.2,
-        "exec_time(ms)": 34.5,
-        "techmap_time(ms)": 17,
-        "Pi": 256,
-        "Po": 256,
-        "logic element": 512,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 512,
-        "Total Node": 512
-    },
     "not/range_not_ultra_wide/no_arch": {
         "test_name": "not/range_not_ultra_wide/no_arch",
         "input_blif": "range_not_ultra_wide.blif",
@@ -130,25 +54,6 @@
         "Average Path": 4,
         "Estimated LUTs": 512,
         "Total Node": 512
-    },
-    "not/range_not_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "not/range_not_wide/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "range_not_wide.blif",
-        "max_rss(MiB)": 12.1,
-        "exec_time(ms)": 13.7,
-        "techmap_time(ms)": 2.2,
-        "Pi": 3,
-        "Po": 3,
-        "logic element": 6,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 6,
-        "Total Node": 6
     },
     "not/range_not_wide/no_arch": {
         "test_name": "not/range_not_wide/no_arch",

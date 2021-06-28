@@ -1,23 +1,4 @@
 {
-    "wire/input_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "wire/input_wire/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "input_wire.blif",
-        "max_rss(MiB)": 9.3,
-        "exec_time(ms)": 12.7,
-        "techmap_time(ms)": 1.1,
-        "Pi": 5,
-        "Po": 5,
-        "logic element": 5,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 5,
-        "Total Node": 5
-    },
     "wire/input_wire/no_arch": {
         "test_name": "wire/input_wire/no_arch",
         "input_blif": "input_wire.blif",
@@ -32,25 +13,6 @@
         "Estimated LUTs": 5,
         "Total Node": 5
     },
-    "wire/wire_failure/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "wire/wire_failure/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "wire_failure.blif",
-        "max_rss(MiB)": 12.1,
-        "exec_time(ms)": 13.5,
-        "techmap_time(ms)": 2,
-        "Pi": 2,
-        "Po": 1,
-        "logic element": 2,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
-    },
     "wire/wire_failure/no_arch": {
         "test_name": "wire/wire_failure/no_arch",
         "input_blif": "wire_failure.blif",
@@ -64,25 +26,6 @@
         "Average Path": 4,
         "Estimated LUTs": 2,
         "Total Node": 2
-    },
-    "wire/wire/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "wire/wire/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "input_blif": "wire.blif",
-        "max_rss(MiB)": 9.1,
-        "exec_time(ms)": 12.7,
-        "techmap_time(ms)": 1,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
     },
     "wire/wire/no_arch": {
         "test_name": "wire/wire/no_arch",

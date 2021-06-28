@@ -1,10 +1,10 @@
 {
-    "task_endtask/inside_port/no_arch": {
-        "test_name": "task_endtask/inside_port/no_arch",
+    "while/inside_port/no_arch": {
+        "test_name": "while/inside_port/no_arch",
         "input_blif": "inside_port.blif",
-        "max_rss(MiB)": 8.2,
-        "exec_time(ms)": 2.2,
-        "techmap_time(ms)": 1.6,
+        "max_rss(MiB)": 40,
+        "exec_time(ms)": 22.1,
+        "techmap_time(ms)": 19.6,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,
@@ -13,12 +13,12 @@
         "Estimated LUTs": 16,
         "Total Node": 16
     },
-    "task_endtask/outside_port/no_arch": {
-        "test_name": "task_endtask/outside_port/no_arch",
+    "while/outside_port/no_arch": {
+        "test_name": "while/outside_port/no_arch",
         "input_blif": "outside_port.blif",
-        "max_rss(MiB)": 8.2,
-        "exec_time(ms)": 2.1,
-        "techmap_time(ms)": 1.6,
+        "max_rss(MiB)": 39.9,
+        "exec_time(ms)": 9.9,
+        "techmap_time(ms)": 7.3,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,
@@ -27,12 +27,12 @@
         "Estimated LUTs": 16,
         "Total Node": 16
     },
-    "task_endtask/task_call_function/no_arch": {
-        "test_name": "task_endtask/task_call_function/no_arch",
+    "while/task_call_function/no_arch": {
+        "test_name": "while/task_call_function/no_arch",
         "input_blif": "task_call_function.blif",
-        "max_rss(MiB)": 8.1,
-        "exec_time(ms)": 2.3,
-        "techmap_time(ms)": 1.7,
+        "max_rss(MiB)": 40,
+        "exec_time(ms)": 6,
+        "techmap_time(ms)": 3.5,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,
@@ -41,12 +41,12 @@
         "Estimated LUTs": 16,
         "Total Node": 16
     },
-    "task_endtask/task_call_task/no_arch": {
-        "test_name": "task_endtask/task_call_task/no_arch",
+    "while/task_call_task/no_arch": {
+        "test_name": "while/task_call_task/no_arch",
         "input_blif": "task_call_task.blif",
-        "max_rss(MiB)": 8.1,
-        "exec_time(ms)": 2.3,
-        "techmap_time(ms)": 1.8,
+        "max_rss(MiB)": 40.2,
+        "exec_time(ms)": 17.1,
+        "techmap_time(ms)": 14.5,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,
