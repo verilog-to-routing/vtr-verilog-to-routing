@@ -149,8 +149,7 @@ static bool should_apply_switch_override(int switch_override);
  * and end up with a result that uses fewer tracks than given. */
 std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
                                             const std::vector<t_segment_inf>& segment_inf,
-                                            const bool use_full_seg_groups,
-                                            const enum e_adjacency adjacency) {
+                                            const bool use_full_seg_groups) {
     std::unique_ptr<int[]> result;
     int imax, freq_sum, assigned, size;
     double scale, max, reduce;
@@ -207,16 +206,6 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
     return result;
 }
 
-int get_num_segments(const std::vector<t_segment_inf>& segment_inf, const enum e_adjacency adjacency) {
-    int total = 0;
-    for (unsigned int i = 0; i < segment_inf.size(); i++) {
-        if (segment_inf.adjacency == adjacency || segment_inf.adjacency == MANHATTAN_ADJ) {
-            total++;
-        }
-    }
-    return total;
-}
-
 t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                                           const int max_len,
                                           const std::vector<t_segment_inf>& segment_inf,
@@ -236,7 +225,6 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
     int cur_track, ntracks, itrack, length, j, index;
     int arch_wire_switch, arch_opin_switch, fac, num_sets, tmp;
     int group_start, first_track;
-    int num_seg_vert, num_seg_hori;
     std::unique_ptr<int[]> sets_per_seg_type;
     t_seg_details* seg_details = nullptr;
     bool longline;
@@ -253,14 +241,9 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Routing channel width must be divisible by %d (channel width was %d)", fac, *max_chan_width);
     }
 
-    num_seg_vert = get_num_segments(segment_info, VERTICAL_ADJ);
-    num_seg_hori = get_num_segments(segment_info, HORIZONTAL_ADJ);
-
     /* Map segment type fractions and groupings to counts of tracks */
-    sets_per_seg_type_vert = get_seg_track_counts((*max_chan_width / fac),
-                                                  segment_inf, use_full_seg_groups, VERTICAL_ADJ);
-    sets_per_seg_type_hori = get_seg_track_counts((*max_chan_width / fac),
-                                                  segment_inf, use_full_seg_groups, HORIZONTAL_ADJ);
+    sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
+                                             segment_inf, use_full_seg_groups);
 
     /* Count the number tracks actually assigned. */
     tmp = 0;
