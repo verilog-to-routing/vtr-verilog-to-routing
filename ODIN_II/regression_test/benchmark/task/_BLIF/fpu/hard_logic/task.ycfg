@@ -1,0 +1,16 @@
+########################
+# run yosys config
+########################
+
+# setup the circuits
+circuits_dir=../vtr_flow/benchmarks/fpu/hardlogic
+
+# Add circuits to list to sweep
+circuit_list_add=bfly.v
+circuit_list_add=bgm.v
+circuit_list_add=dscg.v
+circuit_list_add=fir.v
+circuit_list_add=mm3.v
+circuit_list_add=ode.v
+circuit_list_add=syn2.v
+circuit_list_add=syn7.v
