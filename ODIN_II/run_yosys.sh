@@ -227,7 +227,7 @@ function populate_arg_from_file() {
 	_circuit_list_add=()
 
     export TASK_PATH=$(dirname "${1}")
-    export TASK_DIR=( $(basename "${possible_test}") )
+    export TASK_DIR=( $(basename "${TASK_PATH}") )
 
 	if [ "_$1" == "_" ] || [ ! -f "$1" ]
 	then
