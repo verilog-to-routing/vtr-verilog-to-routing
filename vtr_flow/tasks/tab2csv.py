@@ -11,15 +11,15 @@ args = parser.parse_args()
 
 # handle the nameing of the new file
 if args.name is not None:
-    New_File = str(args.name + ".csv")
+    NEW_FILE = str(args.name + ".csv")
 else:
-    New_File = "parse_results.csv"
+    NEW_FILE = "parse_results.csv"
 
 # Handle overwriting the file in case one exists
 if args.overwrite:
-    CSV = open(New_File, "w")
+    CSV = open(NEW_FILE, "w")
 else:
-    CSV = open(New_File, "x")
+    CSV = open(NEW_FILE, "x")
 
 
 if args.verbose:
