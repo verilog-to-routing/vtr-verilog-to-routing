@@ -107,8 +107,6 @@ class t_rr_node {
 
     short cost_index() const;
     short rc_index() const;
-    //e_direction direction() const;
-    //const char* direction_string() const;
 
     bool is_node_on_specific_side(e_side side) const;
 
