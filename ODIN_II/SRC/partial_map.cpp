@@ -665,7 +665,7 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
     // CLEAN UP
     if (coarsen_cleanup)
         free_nnode(node);
-    else 
+    else
         free_attribute(node->attributes);
 
     return buffer_is_removed;

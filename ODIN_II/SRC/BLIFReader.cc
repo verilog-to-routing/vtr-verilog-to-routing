@@ -384,7 +384,9 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
         new_pin->type = INPUT;
-        new_pin->mapping = get_hard_block_port_name(mapping);
+        new_pin->mapping = (new_node->type == BRAM || new_node->type == ROM || new_node->type == MEMORY)
+                               ? get_hard_block_port_name(mapping)
+                               : NULL;
 
         add_input_pin_to_node(new_node, new_pin, i);
     }
@@ -399,8 +401,10 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         npin_t* new_pin = allocate_npin();
         new_pin->name = NULL; //vtr::strdup(name);
         new_pin->type = OUTPUT;
-        new_pin->mapping = get_hard_block_port_name(mapping);
-
+        new_pin->mapping = (new_node->type == BRAM || new_node->type == ROM || new_node->type == MEMORY)
+                               ? get_hard_block_port_name(mapping)
+                               : NULL;
+                               
         add_output_pin_to_node(new_node, new_pin, i);
 
         nnet_t* new_net = allocate_nnet();
