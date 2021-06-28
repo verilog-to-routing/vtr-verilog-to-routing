@@ -1905,13 +1905,13 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
  * 
  * @return a new single port ram
  */
-nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node) {
+nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node) {
     /* sanity checks */
-    oassert(signals->clk != NULL);
-    oassert(signals->we != NULL);
-    oassert(signals->addr->count >= 1);
-    oassert(signals->data->count >= 1);
-    oassert(signals->data->count == signals->out->count);
+    oassert(spram_signals->clk != NULL);
+    oassert(spram_signals->we != NULL);
+    oassert(spram_signals->addr->count >= 1);
+    oassert(spram_signals->data->count >= 1);
+    oassert(spram_signals->data->count == spram_signals->out->count);
 
     bool splitted = false;
     /* create a single port ram node */
@@ -1929,23 +1929,23 @@ nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node) {
 
     /* INPUTS */
     /* hook address portd into spram */
-    add_input_port_to_memory(spram, signals->addr, "addr");
+    add_input_port_to_memory(spram, spram_signals->addr, "addr");
 
     /* hook data ports into spram */
-    add_input_port_to_memory(spram, signals->data, "data");
+    add_input_port_to_memory(spram, spram_signals->data, "data");
 
     /* hook enable pins to spram */
     signal_list_t* we = init_signal_list();
-    add_pin_to_signal_list(we, signals->we);
+    add_pin_to_signal_list(we, spram_signals->we);
     add_input_port_to_memory(spram, we, "we");
 
     /* hook clk pin into spram */
     signal_list_t* clk = init_signal_list();
-    add_pin_to_signal_list(clk, signals->clk);
+    add_pin_to_signal_list(clk, spram_signals->clk);
     add_input_port_to_memory(spram, clk, "clk");
 
     /* OUTPUT */
-    add_output_port_to_memory(spram, signals->out, "out");
+    add_output_port_to_memory(spram, spram_signals->out, "out");
 
     /* check if hard block is available to so split if needed */
     t_model* spram_model = find_hard_block(hb_name);
@@ -1985,20 +1985,20 @@ nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node) {
  * 
  * @return a new dual port ram
  */
-nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node) {
+nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
     /* sanity checks */
-    oassert((signals->addr1) && (signals->addr2));
-    oassert((signals->data1) && (signals->data1));
-    oassert((signals->out1) && (signals->out2));
-    oassert((signals->we1) && (signals->we2));
-    oassert(signals->clk);
+    oassert((dpram_signals->addr1) && (dpram_signals->addr2));
+    oassert((dpram_signals->data1) && (dpram_signals->data1));
+    oassert((dpram_signals->out1) && (dpram_signals->out2));
+    oassert((dpram_signals->we1) && (dpram_signals->we2));
+    oassert(dpram_signals->clk);
 
-    oassert(signals->addr1->count >= 1 && signals->data1->count >= 1);
-    oassert(signals->addr2->count >= 1 && signals->data2->count >= 1);
-    oassert(signals->addr1->count == signals->addr2->count);
-    oassert(signals->data1->count == signals->data2->count);
-    oassert(signals->data1->count == signals->out1->count);
-    oassert(signals->data2->count == signals->out2->count);
+    oassert(dpram_signals->addr1->count >= 1 && dpram_signals->data1->count >= 1);
+    oassert(dpram_signals->addr2->count >= 1 && dpram_signals->data2->count >= 1);
+    oassert(dpram_signals->addr1->count == dpram_signals->addr2->count);
+    oassert(dpram_signals->data1->count == dpram_signals->data2->count);
+    oassert(dpram_signals->data1->count == dpram_signals->out1->count);
+    oassert(dpram_signals->data2->count == dpram_signals->out2->count);
 
     bool splitted = false;
     /* create a dual port ram node */
@@ -2016,30 +2016,30 @@ nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node) {
 
     /* INPUTS */
     /* hook address portd into dpram */
-    add_input_port_to_memory(dpram, signals->addr1, "addr1");
-    add_input_port_to_memory(dpram, signals->addr2, "addr2");
+    add_input_port_to_memory(dpram, dpram_signals->addr1, "addr1");
+    add_input_port_to_memory(dpram, dpram_signals->addr2, "addr2");
 
     /* hook data ports into dpram */
-    add_input_port_to_memory(dpram, signals->data1, "data1");
-    add_input_port_to_memory(dpram, signals->data2, "data2");
+    add_input_port_to_memory(dpram, dpram_signals->data1, "data1");
+    add_input_port_to_memory(dpram, dpram_signals->data2, "data2");
 
     /* hook enable pins to dpram */
     signal_list_t* we1 = init_signal_list();
-    add_pin_to_signal_list(we1, signals->we1);
+    add_pin_to_signal_list(we1, dpram_signals->we1);
     add_input_port_to_memory(dpram, we1, "we1");
 
     signal_list_t* we2 = init_signal_list();
-    add_pin_to_signal_list(we2, signals->we2);
+    add_pin_to_signal_list(we2, dpram_signals->we2);
     add_input_port_to_memory(dpram, we2, "we2");
 
     /* hook clk pin into dpram */
     signal_list_t* clk = init_signal_list();
-    add_pin_to_signal_list(clk, signals->clk);
+    add_pin_to_signal_list(clk, dpram_signals->clk);
     add_input_port_to_memory(dpram, clk, "clk");
 
     /* OUTPUT */
-    add_output_port_to_memory(dpram, signals->out1, "out1");
-    add_output_port_to_memory(dpram, signals->out2, "out2");
+    add_output_port_to_memory(dpram, dpram_signals->out1, "out1");
+    add_output_port_to_memory(dpram, dpram_signals->out2, "out2");
 
     /* check if hard block is available to so split if needed */
     t_model* dpram_model = find_hard_block(hb_name);

@@ -124,8 +124,8 @@ extern void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar
 int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
 int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
 
-extern nnode_t* create_single_port_ram(sp_ram_signals* signals, nnode_t* node);
-extern nnode_t* create_dual_port_ram(dp_ram_signals* signals, nnode_t* node);
+extern nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node);
+extern nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node);
 
 extern void register_memory_model(nnode_t* mem);
 
