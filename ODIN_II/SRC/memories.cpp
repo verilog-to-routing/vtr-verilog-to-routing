@@ -47,6 +47,8 @@ t_linked_vptr* split_list;
 t_linked_vptr* memory_instances = NULL;
 t_linked_vptr* memory_port_size_list = NULL;
 
+void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
+void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
 void pad_dp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_sp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_memory_output_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
@@ -131,14 +133,14 @@ long get_memory_port_size(const char* name) {
     return -1;
 }
 
-void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name) {
-    signal_list_t* temp = copy_input_signals(signals);
+void copy_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name) {
+    signal_list_t* temp = copy_input_signals(signalsvar);
     add_input_port_to_memory(node, temp, port_name);
     free_signal_list(temp);
 }
 
-void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name) {
-    signal_list_t* temp = copy_output_signals(signals);
+void copy_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name) {
+    signal_list_t* temp = copy_output_signals(signalsvar);
     add_output_port_to_memory(node, temp, port_name);
     free_signal_list(temp);
 }

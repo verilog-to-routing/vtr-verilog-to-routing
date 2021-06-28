@@ -116,8 +116,6 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
 
 extern void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 extern void add_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
-extern void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
-extern void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
 extern void remap_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 extern void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
 
