@@ -10,6 +10,7 @@
 
 #include "globals.h"
 #include "place_constraints.h"
+#include "place_util.h"
 
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
@@ -256,4 +257,159 @@ void load_cluster_constraints() {
             }
         }
     }
+}
+
+void mark_fixed_blocks() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        if (!is_cluster_constrained(blk_id)) {
+            continue;
+        }
+        PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
+        auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        t_pl_loc loc;
+
+        /*
+         * If the block can be placed in exactly one
+         * legal (x, y, subtile) location, place it now
+         * and mark it as fixed.
+         */
+        if (is_pr_size_one(pr, block_type, loc)) {
+            set_block_location(blk_id, loc);
+
+            place_ctx.block_locs[blk_id].is_fixed = true;
+        }
+    }
+}
+
+/*
+ * Returns 0, 1, or 2 depending on the number of tiles covered.
+ * Will not return a value above 2 because as soon as num_tiles is above 1,
+ * it is known that the block that is assigned to this region will not be fixed, and so
+ * num_tiles is immediately returned.
+ * Updates the location passed in because if num_tiles turns out to be 1 after checking the
+ * region, the location that was set will be used as the location to which the block
+ * will be fixed.
+ */
+int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
+    auto& device_ctx = g_vpr_ctx.device();
+    vtr::Rect<int> rb = reg.get_region_rect();
+    int num_tiles = 0;
+
+    for (int x = rb.xmin(); x <= rb.xmax(); x++) {
+        for (int y = rb.ymin(); y <= rb.ymax(); y++) {
+            auto& tile = device_ctx.grid[x][y].type;
+
+            /*
+             * If the tile at the grid location is not compatible with the cluster block
+             * type, do not count this tile for num_tiles
+             */
+            if (!is_tile_compatible(tile, block_type)) {
+                continue;
+            }
+
+            /*
+             * If the region passed has a specific subtile set, increment
+             * the number of tiles set the location using the x, y, subtile
+             * values if the subtile is compatible at this location
+             */
+            if (reg.get_sub_tile() != NO_SUBTILE) {
+                if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
+                    num_tiles++;
+                    loc.x = x;
+                    loc.y = y;
+                    loc.sub_tile = reg.get_sub_tile();
+                    if (num_tiles > 1) {
+                        return num_tiles;
+                    }
+                }
+
+                /*
+                 * If the region passed in does not have a subtile set, set the
+                 * subtile to the first possible slot found at this location.
+                 */
+            } else if (reg.get_sub_tile() == NO_SUBTILE) {
+                int num_compatible_st = 0;
+
+                for (int z = 0; z < tile->capacity; z++) {
+                    if (is_sub_tile_compatible(tile, block_type, z)) {
+                        num_tiles++;
+                        num_compatible_st++;
+                        if (num_compatible_st == 1) { //set loc.sub_tile to the first compatible subtile value found
+                            loc.x = x;
+                            loc.y = y;
+                            loc.sub_tile = z;
+                        }
+                        if (num_tiles > 1) {
+                            return num_tiles;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return num_tiles;
+}
+
+/*
+ * Used when marking fixed blocks to check whether the ParitionRegion associated with a block
+ * covers one tile. If it covers one tile, it is marked as fixed. If it covers 0 tiles or
+ * more than one tile, it will not be marked as fixed. As soon as it is known that the
+ * PartitionRegion covers more than one tile, there is no need to check further regions
+ * and the routine will return false.
+ */
+bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc) {
+    auto& device_ctx = g_vpr_ctx.device();
+    std::vector<Region> regions = pr.get_partition_region();
+    bool pr_size_one;
+    int pr_size = 0;
+    int reg_size;
+
+    Region intersect_reg;
+    intersect_reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+    Region current_reg;
+
+    for (unsigned int i = 0; i < regions.size(); i++) {
+        reg_size = region_tile_cover(regions[i], block_type, loc);
+
+        /*
+         * If multiple regions in the PartitionRegion all have size 1,
+         * the block may still be marked as locked, in the case that
+         * they all cover the exact same x, y, subtile location. To check whether this
+         * is the case, whenever there is a size 1 region, it is intersected
+         * with the previous size 1 regions to see whether it covers the same location.
+         * If there is an intersection, it does cover the same location, and so pr_size is
+         * not incremented (unless this is the first size 1 region encountered).
+         */
+        if (reg_size == 1) {
+            //get the exact x, y, subtile location covered by the current region (regions[i])
+            current_reg.set_region_rect(loc.x, loc.y, loc.x, loc.y);
+            current_reg.set_sub_tile(loc.sub_tile);
+            intersect_reg = intersection(intersect_reg, current_reg);
+
+            if (i == 0 || intersect_reg.empty()) {
+                pr_size = pr_size + reg_size;
+                if (pr_size > 1) {
+                    break;
+                }
+            }
+        } else {
+            pr_size = pr_size + reg_size;
+            if (pr_size > 1) {
+                break;
+            }
+        }
+    }
+
+    if (pr_size == 1) {
+        pr_size_one = true;
+    } else { //pr_size = 0 or pr_size > 1
+        pr_size_one = false;
+    }
+
+    return pr_size_one;
 }

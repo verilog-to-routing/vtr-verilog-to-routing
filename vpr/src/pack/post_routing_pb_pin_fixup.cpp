@@ -55,6 +55,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                                                          const int& sub_tile_z,
                                                          size_t& num_mismatches,
                                                          const bool& verbose) {
+    const auto& node_lookup = device_ctx.rr_graph.node_lookup();
     /* Handle each pin */
     auto logical_block = clustering_ctx.clb_nlist.block_type(blk_id);
     auto physical_tile = device_ctx.grid[grid_coord.x()][grid_coord.y()].type;
@@ -152,12 +153,10 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
             /* Find the net mapped to this pin in routing results */
-            const int& rr_node = get_rr_node_index(device_ctx.rr_node_indices,
-                                                   grid_coord.x(), grid_coord.y(),
-                                                   rr_node_type, physical_pin, pin_side);
+            RRNodeId rr_node = node_lookup.find_node(grid_coord.x(), grid_coord.y(), rr_node_type, physical_pin, pin_side);
 
             /* Bypass invalid nodes, after that we must have a valid rr_node id */
-            if (OPEN == rr_node) {
+            if (!rr_node) {
                 continue;
             }
             VTR_ASSERT((size_t)rr_node < device_ctx.rr_nodes.size());
@@ -179,19 +178,19 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
              * - A invalid net id (others should be all invalid as well)
              *   assume that this pin is not used by router
              */
-            if (rr_node_nets[RRNodeId(rr_node)]) {
+            if (rr_node_nets[rr_node]) {
                 if (routing_net_id) {
-                    if (routing_net_id != rr_node_nets[RRNodeId(rr_node)]) {
+                    if (routing_net_id != rr_node_nets[rr_node]) {
                         VTR_LOG_ERROR("Pin '%s' is mapped to two nets: '%s' and '%s'\n",
                                       pb_graph_pin->to_string().c_str(),
                                       clustering_ctx.clb_nlist.net_name(routing_net_id).c_str(),
-                                      clustering_ctx.clb_nlist.net_name(rr_node_nets[RRNodeId(rr_node)]).c_str());
+                                      clustering_ctx.clb_nlist.net_name(rr_node_nets[rr_node]).c_str());
                     }
-                    VTR_ASSERT(routing_net_id == rr_node_nets[RRNodeId(rr_node)]);
+                    VTR_ASSERT(routing_net_id == rr_node_nets[rr_node]);
                 }
-                routing_net_id = rr_node_nets[RRNodeId(rr_node)];
+                routing_net_id = rr_node_nets[rr_node];
                 valid_routing_net_cnt++;
-                visited_rr_nodes.push_back(RRNodeId(rr_node));
+                visited_rr_nodes.push_back(rr_node);
             }
         }
 

@@ -44,14 +44,10 @@ class Region {
     void set_sub_tile(int _sub_tile);
 
     /**
-     * @brief Return whether the region is empty, based on whether the region rectangle is empty
+     * @brief Return whether the region is empty (i. e. the region bounds rectangle
+     * covers no area)
      */
     bool empty();
-
-    /**
-     * @brief Checks whether a block is locked down to a specific x, y, subtile location
-     */
-    bool locked();
 
     /**
      * @brief Check if the location is in the region (at a valid x, y, subtile location within the region bounds, inclusive)

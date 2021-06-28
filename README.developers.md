@@ -183,7 +183,7 @@ Python files are automatically checked using `pylint` to ensure they follow esta
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
 
-There are 4 main regression tests:
+There are 4 main regression testing suites:
 
 * `vtr_reg_basic`: ~1 minute serial
 
@@ -216,24 +216,33 @@ There are 4 main regression tests:
 
     QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
     Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+    
+* `vtr_reg_nightly_test#, #:1-3`:
 
-* `vtr_reg_nightly`: ~6 hours with `-j3`
-
-    **Goal:** Basic QoR and Performance evaluation.
-
+    **Goal:** Basic QoR and Performance evaluation 
+  
     **Feature Coverage:** Medium
-
-    **Benchmarks:** Small-medium size, diverse. Includes:
-
-    * MCNC20 benchmarks
-    * VTR benchmarks
-    * Titan 'other' benchmarks (smaller than Titan23)
-
+    
     **Architectures:** A wider variety of architectures
+    
+    **Benchmarks:** Small-medium size, diverse. All include: 
+    
+    * VTR benchmarks
+    * Additional benchmarks for each suite. 
 
-   QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
+   QoR checks in these regression suites are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
-
+   
+   Note:
+   
+   These suites comproise a single large suite, `vtr_reg_nightly` and should be run together to test nightly level regression. They are mostly similar in benchmark coverage interms of size and diversity however each suite tests some unique benchmarks in addition to the VTR benchmarks.  
+    
+	| suite | wall-clock time| Additional benchmarks|
+	|-------|----------------|----------------------|
+	|vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
+	|vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
+	|vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
+	
 * `vtr_reg_weekly`: ~42 hours with `-j4`
 
     **Goal:** Full QoR and Performance evaluation.
@@ -265,7 +274,9 @@ make get_ispd_benchmarks
 ```
 They can then be run using `run_reg_test.py`:
 ```shell
-$ ./run_reg_test.py vtr_reg_nightly
+$ ./run_reg_test.py vtr_reg_nightly_test1 
+$ ./run_reg_test.py vtr_reg_nightly_test2 
+$ ./run_reg_test.py vtr_reg_nightly_test3 
 $ ./run_reg_test.py vtr_reg_weekly
 ```
 
@@ -564,15 +575,15 @@ A typical approach to evaluating an algorithm change would be to run `vtr_reg_qo
 $ cd vtr_flow/tasks
 
 #Run the VTR benchmarks
-$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_reg_qor_chain
 
 #Several hours later... they complete
 
 #Parse the results
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_reg_qor_chain
 
 #The run directory should now contain a summary parse_results.txt file
-$ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
+$ head -5 vtr_reg_nightly_test3/vtr_reg_qor_chain/latest/parse_results.txt
 arch                                  	circuit           	script_params	vpr_revision 	vpr_status	error	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_post_packed_blocks	device_width	device_height	num_clb	num_io	num_outputs	num_memoriesnum_mult	placed_wirelength_est	placed_CPD_est	placed_setup_TNS_est	placed_setup_WNS_est	min_chan_width	routed_wirelength	min_chan_width_route_success_iteration	crit_path_routed_wirelength	crit_path_route_success_iteration	critical_path_delay	setup_TNS	setup_WNS	hold_TNS	hold_WNS	logic_block_area_total	logic_block_area_used	min_chan_width_routing_area_total	min_chan_width_routing_area_per_tile	crit_path_routing_area_total	crit_path_routing_area_per_tile	odin_synth_time	abc_synth_time	abc_cec_time	abc_sec_time	ace_time	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	vtr_flow_elapsed_time	max_vpr_mem	max_odin_mem	max_abc_mem
 k6_frac_N10_frac_chain_mem32K_40nm.xml	bgm.v             	common       	9f591f6-dirty	success   	     	26431              	24575                	14738               	2258                  	53          	53           	1958   	257   	32         	0           11      	871090               	18.5121       	-13652.6            	-18.5121            	84            	328781           	32                                    	297718                     	18                               	20.4406            	-15027.8 	-20.4406 	0       	0       	1.70873e+08           	1.09883e+08          	1.63166e+07                      	5595.54                             	2.07456e+07                 	7114.41                        	11.16          	1.03          	-1          	-1          	-1      	141.53   	108.26    	142.42                   	15.63               	652.17               	1329712    	528868      	146796
 k6_frac_N10_frac_chain_mem32K_40nm.xml	blob_merge.v      	common       	9f591f6-dirty	success   	     	14163              	11407                	3445                	700                   	30          	30           	564    	36    	100        	0           0       	113369               	13.4111       	-2338.12            	-13.4111            	64            	80075            	18                                    	75615                      	23                               	15.3479            	-2659.17 	-15.3479 	0       	0       	4.8774e+07            	3.03962e+07          	3.87092e+06                      	4301.02                             	4.83441e+06                 	5371.56                        	0.46           	0.17          	-1          	-1          	-1      	67.89    	11.30     	47.60                    	3.48                	198.58               	307756     	48148       	58104
@@ -587,7 +598,7 @@ The are typically used as post-technology mapped netlists which have been pre-sy
 They are substantially larger and more realistic than the VTR benchmarks, but can only target specifically compatible architectures.
 They are used primarily to evaluate the optimization quality and scalability of VTR's CAD algorithms while targeting a fixed architecture (e.g. at a fixed channel width).
 
-A typical approach to evaluating an algorithm change would be to run `vtr_reg_titan` task from the weekly regression test:
+A typical approach to evaluating an algorithm change would be to run `titan_quick_qor` task from the nightly regression test:
 #### [Running and Integrating the Titan Benchmarks with VTR](https://docs.verilogtorouting.org/en/latest/tutorials/titan_benchmarks/)
 ```shell
 #From the VTR root
@@ -599,20 +610,62 @@ $ make get_titan_benchmarks
 $ cd vtr_flow/tasks
 
 #Run the VTR benchmarks
-$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/vtr_reg_titan
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test2/titan_quick_qor
 
 #Several days later... they complete
 
 #Parse the results
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/vtr_reg_titan
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test2/titan_quick_qor
 
 #The run directory should now contain a summary parse_results.txt file
-$ head -5 vtr_reg_nightly/vtr_reg_qor_chain/latest/parse_results.txt
+$ head -5 vtr_reg_nightly_test2/titan_quick_qor/latest/parse_results.txt
 arch                     	circuit                                 	vpr_revision	vpr_status	error	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_post_packed_blocks	device_width	device_height	num_clb	num_io	num_outputs	num_memoriesnum_mult	placed_wirelength_est	placed_CPD_est	placed_setup_TNS_est	placed_setup_WNS_est	routed_wirelength	crit_path_route_success_iteration	logic_block_area_total	logic_block_area_used	routing_area_total	routing_area_per_tile	critical_path_delay	setup_TNS   setup_WNS	hold_TNS	hold_WNS	pack_time	place_time	crit_path_route_time	max_vpr_mem	max_odin_mem	max_abc_mem
 stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif       	0208312     	success   	     	119888             	86875                	51408               	3370                  	128         	95           	-1     	42    	35         	-1          -1      	3985635              	8.70971       	-234032             	-8.70971            	1086419          	20                               	0                     	0                    	2.66512e+08       	21917.1              	9.64877            	-262034     -9.64877 	0       	0       	127.92   	218.48    	259.96              	5133800    	-1          	-1
 stratixiv_arch.timing.xml	sparcT1_core_stratixiv_arch_timing.blif 	0208312     	success   	     	92813              	91974                	54564               	4170                  	77          	57           	-1     	173   	137        	-1          -1      	3213593              	7.87734       	-534295             	-7.87734            	1527941          	43                               	0                     	0                    	9.64428e+07       	21973.8              	9.06977            	-625483     -9.06977 	0       	0       	327.38   	338.65    	364.46              	3690032    	-1          	-1
 stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	0208312     	success   	     	127088             	94088                	62912               	3776                  	128         	95           	-1     	326   	681        	-1          -1      	4875541              	8.77339       	-166097             	-8.77339            	998408           	16                               	0                     	0                    	2.66512e+08       	21917.1              	9.36528            	-187552     -9.36528 	0       	0       	110.03   	214.16    	189.83              	5048580    	-1          	-1
 stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif  	0208312     	success   	     	140214             	108592               	67410               	5444                  	121         	90           	-1     	111   	151        	-1          -1      	5221059              	8.16972       	-454610             	-8.16972            	1518597          	15                               	0                     	0                    	2.38657e+08       	21915.3              	9.34704            	-531231     -9.34704 	0       	0       	211.12   	364.32    	490.24              	6356252    	-1          	-1
+```
+
+### Example: Koios Benchmarks QoR Measurement
+
+The [Koios benchmarks](https://github.com/verilog-to-routing/vtr-verilog-to-routing/tree/master/vtr_flow/benchmarks/verilog/koios) are a group of Deep Learning benchmark circuits distributed with the VTR project.
+The are provided as synthesizable verilog and can be re-mapped to VTR supported architectures. They consist mostly of medium to large sized circuits from Deep Learning (DL).
+They can be used for FPGA architecture exploration for DL and also for tuning CAD tools.
+
+A typical approach to evaluating an algorithm change would be to run `koios` (or `koios_no_complex_dsp`) task from the nightly regression test (vtr_reg_nightly_test4) and the `koios` (or `koios_no_complex_dsp`) task from the weekly regression test (vtr_reg_weekly). The nightly test contains smaller benchmarks, whereas the large designs are in the weekly regression test. To measure QoR for the entire benchmark suite, both nightly and weekly tests should be run and the results should be concatenated.
+
+The `koios` regression task runs these benchmarks with complex_dsp functionality enabled, whereas `koios_no_complex_dsp` regression task runs these benchmarks without complex_dsp functionality. Normally, only the `koios` tasks should be enough for QoR.
+
+The following steps show a sequence of commands to run the `koios` tasks on the Koios benchmarks from both nightly and weekly regressions:
+
+```shell
+#From the VTR root
+$ cd vtr_flow/tasks
+
+#Run the VTR benchmarks
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test4/koios &
+$ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/koios &
+
+#Several hours later... they complete
+
+#Parse the results
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test4/koios
+$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios
+
+#The run directory should now contain a summary parse_results.txt file
+$ head -5 vtr_reg_nightly_test4/koios/<latest_run_dir>/parse_results.txt
+arch	  circuit	  script_params	  vtr_flow_elapsed_time	  error	  odin_synth_time	  max_odin_mem	  abc_depth	  abc_synth_time	  abc_cec_time	  abc_sec_time	  max_abc_mem	  ace_time	  max_ace_mem	  num_clb	  num_io	  num_memories	  num_mult	  vpr_status	  vpr_revision	  vpr_build_info	  vpr_compiler	  vpr_compiled	  hostname	  rundir	  max_vpr_mem	  num_primary_inputs	  num_primary_outputs	  num_pre_packed_nets	  num_pre_packed_blocks	  num_netlist_clocks	  num_post_packed_nets	  num_post_packed_blocks	  device_width	  device_height	  device_grid_tiles	  device_limiting_resources	  device_name	  pack_time	  placed_wirelength_est	  place_time	  place_quench_time	  placed_CPD_est	  placed_setup_TNS_est	  placed_setup_WNS_est	  placed_geomean_nonvirtual_intradomain_critical_path_delay_est	  place_delay_matrix_lookup_time	  place_quench_timing_analysis_time	  place_quench_sta_time	  place_total_timing_analysis_time	  place_total_sta_time	  min_chan_width	  routed_wirelength	  min_chan_width_route_success_iteration	  logic_block_area_total	  logic_block_area_used	  min_chan_width_routing_area_total	  min_chan_width_routing_area_per_tile	  min_chan_width_route_time	  min_chan_width_total_timing_analysis_time	  min_chan_width_total_sta_time	  crit_path_routed_wirelength	  crit_path_route_success_iteration	  crit_path_total_nets_routed	  crit_path_total_connections_routed	  crit_path_total_heap_pushes	  crit_path_total_heap_pops	  critical_path_delay	  geomean_nonvirtual_intradomain_critical_path_delay	  setup_TNS	  setup_WNS	  hold_TNS	  hold_WNS	  crit_path_routing_area_total	  crit_path_routing_area_per_tile	  router_lookahead_computation_time	  crit_path_route_time	  crit_path_total_timing_analysis_time	  crit_path_total_sta_time	 
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml	  tpu_like.small.v	  common	  2871.10	  	  9.36	  235096	  5	  619.21	  -1	  -1	  159760	  -1	  -1	  1119	  355	  14	  -1	  success	  v8.0.0-4161-g8f4b3e9ca	  release IPO VTR_ASSERT_LEVEL=2	  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64	  2021-05-28T23:09:34	  jupiter0	  /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks	  2568860	  355	  289	  50215	  41827	  2	  23224	  2053	  136	  136	  18496	  dsp_top	  auto	  1233.72	  457725	  91.70	  0.38	  7.24742	  -105267	  -7.24742	  2.59789	  14.13	  0.101267	  0.0738583	  24.91	  18.6865	  -1	  561916	  17	  5.92627e+08	  1.03195e+08	  4.09037e+08	  22114.9	  16.37	  32.3744	  25.1979	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	 
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml	  dla_like.small.v	  common	  7527.41	  	  42.24	  729876	  5	  3941.31	  -1	  -1	  630244	  -1	  -1	  5545	  194	  828	  -1	  success	  v8.0.0-4161-g8f4b3e9ca	  release IPO VTR_ASSERT_LEVEL=2	  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64	  2021-05-28T23:09:34	  jupiter0	  /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks	  4409476	  194	  13	  217044	  174718	  1	  91037	  6708	  164	  164	  26896	  memory	  auto	  1604.22	  969627	  663.41	  2.84	  5.61569	  -424718	  -5.61569	  5.61569	  21.49	  0.584073	  0.385993	  104.796	  73.1698	  -1	  1450542	  14	  8.6211e+08	  3.01197e+08	  5.93540e+08	  22068.0	  53.97	  132.203	  96.049	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	 
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml	  bnn.v	  common	  2028.52	  	  40.37	  577472	  3	  240.94	  -1	  -1	  513656	  -1	  -1	  5695	  260	  0	  -1	  success	  v8.0.0-4161-g8f4b3e9ca	  release IPO VTR_ASSERT_LEVEL=2	  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64	  2021-05-28T23:09:34	  jupiter0	  /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks	  2195980	  260	  122	  231647	  179602	  1	  86181	  6140	  83	  83	  6889	  clb	  auto	  613.32	  940951	  503.35	  2.87	  6.4402	  -131403	  -6.4402	  6.4402	  5.41	  0.753268	  0.564332	  85.331	  60.8639	  -1	  1224690	  16	  2.13666e+08	  1.74902e+08	  1.51359e+08	  21971.1	  50.49	  114.382	  84.8538	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	 
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml	  attention_layer.v	  common	  1330.99	  	  11.83	  1095592	  7	  59.16	  -1	  -1	  560612	  -1	  -1	  1248	  1058	  161	  -1	  success	  v8.0.0-4161-g8f4b3e9ca	  release IPO VTR_ASSERT_LEVEL=2	  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64	  2021-05-28T23:09:34	  jupiter0	  /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks	  1180420	  1058	  16	  47407	  39134	  1	  26605	  2588	  86	  86	  7396	  dsp_top	  auto	  728.70	  234151	  118.11	  0.71	  5.89837	  -78343.6	  -5.89837	  5.89837	  6.64	  0.181478	  0.146942	  31.9659	  24.5807	  -1	  366899	  17	  2.32446e+08	  8.36361e+07	  1.62201e+08	  21930.9	  16.25	  40.6352	  32.1556	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	  -1	 
+
+$ head -5 vtr_reg_weekly/koios/<latest_run_dir>/parse_results.txt
+arch    circuit script_params   vtr_flow_elapsed_time   error   odin_synth_time max_odin_mem    abc_depth       abc_synth_time  abc_cec_time   abc_sec_time     max_abc_mem     ace_time        max_ace_mem     num_clb num_io  num_memories    num_mult        vpr_status      vpr_revision   vpr_build_info   vpr_compiler    vpr_compiled    hostname        rundir  max_vpr_mem     num_primary_inputs      num_primary_outputs     num_pre_packed_nets     num_pre_packed_blocks   num_netlist_clocks      num_post_packed_nets    num_post_packed_blocks  device_width    device_height  device_grid_tiles        device_limiting_resources       device_name     pack_time       placed_wirelength_est   place_time      place_quench_time       placed_CPD_est  placed_setup_TNS_est    placed_setup_WNS_est    placed_geomean_nonvirtual_intradomain_critical_path_delay_est   place_delay_matrix_lookup_time  place_quench_timing_analysis_time       place_quench_sta_time   place_total_timing_analysis_time        place_total_sta_time    min_chan_width  routed_wirelength       min_chan_width_route_success_iteration  logic_block_area_total  logic_block_area_used   min_chan_width_routing_area_total       min_chan_width_routing_area_per_tile    min_chan_width_route_time       min_chan_width_total_timing_analysis_time       min_chan_width_total_sta_time   crit_path_routed_wirelength     crit_path_route_success_iteration       crit_path_total_nets_routed    crit_path_total_connections_routed       crit_path_total_heap_pushes     crit_path_total_heap_pops       critical_path_delay     geomean_nonvirtual_intradomain_critical_path_delay      setup_TNS       setup_WNS       hold_TNS        hold_WNS        crit_path_routing_area_total    crit_path_routing_area_per_tile router_lookahead_computation_time       crit_path_route_time    crit_path_total_timing_analysis_time    crit_path_total_sta_time
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml clstm_like.small.v      common  19316.21                162.86  2395612 3       15651.23       -1       -1      1337084 -1      -1      9309    293     407     -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks    4793656  293     290     374045  333664  1       99618   10661   152     152     23104   dsp_top auto    780.11  1482046 931.17  6.18    6.93257-474705  -6.93257        6.93257 27.96   1.30491 1.10886 193.621 147.02  -1      1762769 16      7.41832e+08     4.07655e+08     5.09972e+08    22072.9  106.48  263.016 205.56  -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1      -1
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml clstm_like.medium.v     common  66156.51                483.84  4490632 3       60586.75       -1       -1      2480684 -1      -1      17641   293     784     -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks    8819072  293     578     696105  624609  1       181497  19958   206     206     42436   dsp_top auto    1057.61 3181171 1581.42 7.89    8.18417-1.24303e+06     -8.18417        8.18417 38.05   1.40496 0.993779        233.672 173.509 -1      3532357 18      1.36407e+09     7.68183e+08    9.34572e+08      22023.1 165.78  317.679 246.098 -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1      -1      -1      -1
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml clstm_like.large.v      common  101695.32               717.44  6547568 3       94597.42       -1       -1      3590044 -1      -1      25995   293     1161    -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks    13040176 293     866     1018158 915547  1       263328  29277   248     248     61504   dsp_top auto    1503.62 5185716 1951.96 10.18   8.86387-1.97516e+06     -8.86387        8.86387 46.08   1.71937 1.21506 288.67  213.718 -1      5523775 18      1.98856e+09     1.12933e+09     1.35238e+09     21988.4 224.14  391.303 303.49  -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1      -1      -1
+k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml lstm.v  common  38901.96                35.76   651868  7       30532.88        -1      -1     606240   -1      -1      6626    17      305     -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks     6036204 17     19       252939  204226  1       121211  7577    200     200     40000   dsp_top auto    4576.24 1453809 1136.46 3.95    8.38544 -386636 -8.385448.38544 54.87   0.944433        0.763732        237.758 176.282 -1      1876011 15      1.28987e+09     3.81683e+08     8.80433e+08     22010.877.53    284.979 214.902 -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1
 ```
 
 ## Comparing QoR Measurements
@@ -744,24 +797,24 @@ will produce ratio tables and a summary table for the files parse_results1.txt, 
 ### Generating New QoR Golden Result
 There may be times when a regression test fails its QoR test because its golden_result needs to be changed due to known changes in code behaviour. In this case, a new golden result needs to be generated so that the test can be passed. To generate a new golden result, follow the steps outlined below.
 
-1. Move to the `vtr_flow/tasks` directory from the VTR root, and run the failing test. For example, if a test called `vtr_ex_test` in `vtr_reg_nightly` was failing:
+1. Move to the `vtr_flow/tasks` directory from the VTR root, and run the failing test. For example, if a test called `vtr_ex_test` in `vtr_reg_nightly_test3` was failing:
 
 	```shell
     #From the VTR root
     $ cd vtr_flow/tasks
-    $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test
+    $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test
 	```
 2. Next, generate new golden reference results using `parse_vtr_task.py` and the `-create_golden` option.
 
     ```shell
-    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test -create_golden
+    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test -create_golden
     ```
 3. Lastly, check that the results match with the `-check_golden` option
 
     ```shell
-    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly/vtr_ex_test -check_golden
+    $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test -check_golden
     ```
-Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly.
+Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly_test3.
 
 # Adding Tests
 
