@@ -35,6 +35,7 @@
 #include "BLIFElaborate.hh"
 #include "netlist_utils.h"
 #include "netlist_check.h"
+#include "netlist_cleanup.h"
 #include "simulate_blif.h"
 
 #include "vtr_util.h"
@@ -327,9 +328,12 @@ void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
 void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist) {
     int i;
 
-    netlist->gnd_node->name = vtr::strdup("gnd");
-    netlist->vcc_node->name = vtr::strdup("vcc");
-    netlist->pad_node->name = vtr::strdup("unconn");
+    /* if a coarsen BLIF is recieved, these variables are already created */
+    if(!coarsen_cleanup){    
+        netlist->gnd_node->name = vtr::strdup("gnd");
+        netlist->vcc_node->name = vtr::strdup("vcc");
+        netlist->pad_node->name = vtr::strdup("unconn");
+    }
 
     /* now traverse the ground, vcc, and unconn pins */
     depth_traverse_output_blif(netlist->gnd_node, marker_value, fp);
