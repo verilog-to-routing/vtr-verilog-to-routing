@@ -3,7 +3,7 @@
 ########################
 
 # setup the circuits
-circuits_dir=../vtr_flow/benchmarks/fpu/hardlogic
+circuits_dir=regression_test/benchmark/_VERILOG/fpu/hardlogic
 
 # Add circuits to list to sweep
 circuit_list_add=bfly.v
