@@ -1383,9 +1383,9 @@ enum e_directionality {
     BI_DIRECTIONAL
 };
 enum e_segment_adjacency {
-    MAHATTAN_SEGMENT,
-    VERTICAL_SEGMENT,
-    HORIZONTAL_SEGMENT
+    COL_ROW_SEGMENT,
+    COLLUMN_SEGMENT,
+    ROW_SEGMENT
 };
 enum e_switch_block_type {
     SUBSET,

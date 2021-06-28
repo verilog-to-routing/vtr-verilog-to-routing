@@ -1355,9 +1355,9 @@ enum e_direction : unsigned char {
 constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"}};
 
 enum e_adjacency {
-    MANHATTAN_ADJ = 0,
-    VERTICAL_ADJ = 1,
-    HORIZONTAL_ADJ = 2
+    COL_ROW_ADJ = 0,
+    COLLUMN_ADJ = 1,
+    ROW_ADJ = 2
 };
 
 /**
@@ -1406,7 +1406,7 @@ struct t_seg_details {
     int index = 0;
     float Cmetal_per_m = 0; ///<Used for power
     std::string type_name;
-    e_adjacency adjacency = MANHATTAN_ADJ;
+    e_adjacency adjacency = COL_ROW_ADJ;
 };
 
 class t_chan_seg_details {

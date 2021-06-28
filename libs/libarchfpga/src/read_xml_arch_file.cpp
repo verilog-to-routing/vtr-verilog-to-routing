@@ -3679,28 +3679,25 @@ static void ProcessSegments(pugi::xml_node Parent,
             Segs[i].frequency = (int)(atof(tmp) * MAX_CHANNEL_WIDTH);
         }
 
-        /* Determine if this segment is used in the Horizontal, Vertical or both channels*/
-        x_y_exclusivity = MAHATTAN_SEGMENT; /*DEFAULT - manhattan style, present in both horizontal and vertical channels*/
+        /* Determine if this segment is used in the Rows, Collumns or both channels*/
+        x_y_exclusivity = COL_ROW_SEGMENT; /*DEFAULT - collumns and rows style, present in both horizontal and vertical channels*/
         tmp = get_attribute(Node, "adjacency", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (tmp) {
-            if (0 == strcmp(tmp, "horizontal")) {
-                x_y_exclusivity = HORIZONTAL_SEGMENT;
-                VTR_LOG("Made it to HORIZONTAL segment #%d, length %d.\n", i, Segs[i].length);
-            } else if (0 == strcmp(tmp, "vertical")) {
-                x_y_exclusivity = VERTICAL_SEGMENT;
-                VTR_LOG("Made it to VERTICAL segment #%d, length %d.\n", i, Segs[i].length);
-            } else if (0 == strcmp(tmp, "manhattan")) {
-                x_y_exclusivity = MAHATTAN_SEGMENT;
-                VTR_LOG("Made it to MANHATTAN segment #%d, length %d.\n", i, Segs[i].length);
+            if (0 == strcmp(tmp, "row")) {
+                x_y_exclusivity = ROW_SEGMENT;
+                VTR_LOG("Made it to 'row' segment #%d, length %d.\n", i, Segs[i].length);
+            } else if (0 == strcmp(tmp, "collumn")) {
+                x_y_exclusivity = COLLUMN_SEGMENT;
+                VTR_LOG("Made it to 'collumn' segment #%d, length %d.\n", i, Segs[i].length);
+            } else if (0 == strcmp(tmp, "col_row")) {
+                x_y_exclusivity = COL_ROW_SEGMENT;
+                VTR_LOG("Made it to 'col_row' segment #%d, length %d.\n", i, Segs[i].length);
             } else {
-                /*TODO: If something else was input, throw an error and quit 
-                            Or at least throw a warning and build in manhattan style
-                */
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                               "Must use correct segment channel adjacency in segment #%d.\n\'horizontal\', \'vertical\', or DEFAULT->\'manhattan\'.\n", i);
+                               "Must use correct segment channel adjacency in segment #%d.\n\'row\', \'collums\', or DEFAULT->\'col_row\'. Omit parameter for default\n", i);
             }
         }
-        VTR_LOG("Final segment #%d adjacency: [%d] 0-Manhattan 1-Vertical 2-Horizontal\n", i, x_y_exclusivity);
+        VTR_LOG("Segment #%d, final adjacency: [%d] 0-Col_Row 1-Collumn 2-Row\n", i, x_y_exclusivity);
         Segs[i].channel_adjacency = x_y_exclusivity;
 
         /* Get timing info */
