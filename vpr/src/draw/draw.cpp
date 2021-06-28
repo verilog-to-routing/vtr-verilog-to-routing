@@ -197,7 +197,9 @@ static void set_block_text(GtkWidget *widget, gint /*response_id*/,
 		gpointer /*data*/);
 static void clip_routing_util(GtkWidget *widget, gint /*response_id*/,
 		gpointer /*data*/);
+
 static void run_graphics_commands(std::string commands);
+
 
 
 /************************** File Scope Variables ****************************/
@@ -4433,9 +4435,8 @@ static void highlight_blocks(double x, double y) {
 
 	//If manual moves is activated, then user can select block from the grid.
 	ManualMovesGlobals *manual_move_global = get_manual_moves_global();
-	manual_move_global->user_highlighted_block = true;
-	if (get_manual_move_flag()) {
-		if (!manual_move_global->mm_window_is_open) {
+	if(manual_move_global->manual_move_enabled) {
+		if(!manual_move_global->mm_window_is_open) {
 			draw_manual_moves_window(std::to_string(size_t(clb_index)));
 		}
 	}
