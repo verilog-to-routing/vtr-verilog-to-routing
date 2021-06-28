@@ -631,6 +631,11 @@ void get_options(int argc, char** argv) {
 
     if (global_args.coarsen.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.coarsen = global_args.coarsen;
+        coarsen_cleanup = true;
+    }
+
+    if (global_args.coarsen.provenance() == argparse::Provenance::UNSPECIFIED) {
+        coarsen_cleanup = false;
     }
 
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {

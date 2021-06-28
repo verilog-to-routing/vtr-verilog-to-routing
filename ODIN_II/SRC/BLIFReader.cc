@@ -208,7 +208,7 @@ void BLIF::Reader::find_top_module() {
 
         blif_netlist->identifier = vtr::strdup("top");
     } else {
-        blif_netlist->identifier = vtr::strdup(top_module);
+        blif_netlist->identifier = top_module;
     }
 
     my_location.line = last_line;

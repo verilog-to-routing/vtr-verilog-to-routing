@@ -2704,7 +2704,6 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
                 if ((net != (nnet_t*)input_nets_sc->data[sc_spot]) && net->combined) {
                     /* IF - the input and output nets don't match, then they need to be joined */
                     join_nets(net, (nnet_t*)input_nets_sc->data[sc_spot]);
-                    free_nnet((nnet_t*)input_nets_sc->data[sc_spot]);
                     /* since the driver net is deleted, copy the spot of the in_net over */
                     input_nets_sc->data[sc_spot] = (void*)net;
                 } else if ((net != (nnet_t*)input_nets_sc->data[sc_spot]) && !net->combined) {

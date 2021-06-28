@@ -524,6 +524,9 @@ void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
             add_fanout_pin_to_net(join_to_net, other_net->fanout_pins[i]);
         }
     }
+
+    // CLEAN UP
+    free_nnet(other_net);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -543,11 +546,9 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
     /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
     if (strstr(full_name, ONE_VCC_CNS)) {
         join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
         input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
     } else if (strstr(full_name, ZERO_GND_ZERO)) {
         join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        free_nnet((nnet_t*)input_nets_sc->data[sc_spot_input_old]);
         input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
     }
     /* check if the instantiation pin exists. */
@@ -566,7 +567,6 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
                 nnet_t* old_in_net = (nnet_t*)input_nets_sc->data[sc_spot_input_old];
                 join_nets((nnet_t*)input_nets_sc->data[sc_spot_input_new], old_in_net);
                 //net = NULL;
-                old_in_net = free_nnet(old_in_net);
                 input_nets_sc->data[sc_spot_input_old] = (void*)driver_net;
             }
         } else {
@@ -582,7 +582,6 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
         if ((out_net != in_net) && (out_net->combined == true)) {
             /* if they haven't been combined already, then join the inputs and output */
             join_nets(out_net, in_net);
-            in_net = free_nnet(in_net);
             /* since the driver net is deleted, copy the spot of the in_net over */
             input_nets_sc->data[sc_spot_input_old] = (void*)out_net;
         } else if ((out_net != in_net) && (out_net->combined == false)) {

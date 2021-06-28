@@ -30,6 +30,8 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+bool coarsen_cleanup;
+
 /* Used in the nnode_t.node_data field to mark if the node was already visited
  * during a forward or backward sweep traversal or the removal phase */
 int _visited_forward, _visited_backward, _visited_removal;

@@ -913,8 +913,6 @@ static void cleanup_sub_old_node(nnode_t* nodeo, netlist_t* netlist) {
                 zero_pin->net->fanout_pins[idx_2_buffer] = NULL;
             }
 
-            free_nnet(output_pin->net);
-
             free_npin(zero_pin);
             free_npin(output_pin);
 

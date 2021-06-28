@@ -29,6 +29,7 @@
 #include "odin_globals.h"
 
 #include "netlist_utils.h"
+#include "netlist_cleanup.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
 
@@ -662,7 +663,10 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
     }
 
     // CLEAN UP
-    free_attribute(node->attributes);
+    if (coarsen_cleanup)
+        free_nnode(node);
+    else 
+        free_attribute(node->attributes);
 
     return buffer_is_removed;
 }
