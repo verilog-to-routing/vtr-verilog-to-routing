@@ -13,7 +13,7 @@ const char* t_rr_node::type_string() const {
     return rr_node_typename[g_vpr_ctx.device().rr_graph.node_type(id_)];
 }
 
-const char* t_rr_node::direction_string() const {
+/*const char* t_rr_node::direction_string() const {
     if (direction() == INC_DIRECTION) {
         return "INC_DIR";
     } else if (direction() == DEC_DIRECTION) {
@@ -24,7 +24,7 @@ const char* t_rr_node::direction_string() const {
 
     VTR_ASSERT(direction() == NO_DIRECTION);
     return "NO_DIR";
-}
+}*/
 
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
