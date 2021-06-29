@@ -60,6 +60,7 @@ void pad_multiplier(nnode_t* node, netlist_t* netlist);
 void split_soft_multiplier(nnode_t* node, netlist_t* netlist);
 static mult_port_stat_e is_constant_multipication(nnode_t* node, netlist_t* netlist);
 static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e port_status, short mark, netlist_t* netlist);
+static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat, nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 // data structure representing a row of bits an adder tree
 struct AdderTreeRow {
@@ -1640,6 +1641,8 @@ bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number,
 
     /* checking multipication ports to specify whether it is constant or not */
     if ((is_const = is_constant_multipication(node, netlist)) != mult_port_stat_e::NOT_CONSTANT) {
+        /* performaing optimization on the constant multiplication ports */
+        node = perform_const_mult_optimization(is_const, node, traverse_mark_number, netlist);
         /* implementation of constant multipication which is actually cascading adders */
         signal_list_t* output_signals = implement_constant_multipication(node, is_const, static_cast<short>(traverse_mark_number), netlist);
 
@@ -1648,6 +1651,96 @@ bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number,
     }
 
     return (is_const != mult_port_stat_e::NOT_CONSTANT);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: perform_const_mult_optimization )
+ * 
+ * @brief checking for constant multipication constant port size. 
+ * if possible the extra unneccessary pins of constant port will 
+ * be reduced
+ * 
+ * @param node pointing to the mul node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat, nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    int i;
+    /* constatnt and variable port of the given multipication */
+    signal_list_t* const_port = init_signal_list();
+    signal_list_t* var_port = init_signal_list();
+
+    /* initialize const and var port signals */
+    if (mult_port_stat == mult_port_stat_e::MULTIPICAND_CONSTANT) {
+        /* adding var port pins to signal list */
+        for (i = 0; i < node->input_port_sizes[0]; i++) {
+            add_pin_to_signal_list(var_port, node->input_pins[i]);
+        }
+        /* adding const port pins to signal list */
+        for (i = node->input_port_sizes[0]; i < node->num_input_pins; i++) {
+            add_pin_to_signal_list(const_port, node->input_pins[i]);
+        }
+    } else if (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) {
+        /* adding var port pins to signal list */
+        for (i = 0; i < node->input_port_sizes[0]; i++) {
+            add_pin_to_signal_list(const_port, node->input_pins[i]);
+        }
+        /* adding const port pins to signal list */
+        for (i = node->input_port_sizes[0]; i < node->num_input_pins; i++) {
+            add_pin_to_signal_list(var_port, node->input_pins[i]);
+        }   
+    }
+
+    int idx = -1;
+    signal_list_t* new_const_port = init_signal_list();
+    /* iterating over const port to determine useless ports */
+    for (i = const_port->count; i > 0 ; i--) {
+        npin_t* pin = const_port->pins[i - 1];
+        /* starting from the end and prune pins connected to GND */
+        if (!strcmp(pin->net->name, netlist->one_net->name)) {
+            idx = i;
+            break;
+        } else {
+            /* detach from the old mult node and free pin */
+            delete_npin(pin);
+        }
+    }
+    /* initializing new const port */
+    for (i = 0; i < idx; i++) {
+        npin_t* pin = const_port->pins[i];
+        add_pin_to_signal_list(new_const_port, pin);
+    }
+    
+    signal_list_t* first_port = (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) ? new_const_port : var_port;
+    signal_list_t* second_port = (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) ? var_port : new_const_port;
+    /* creating new mult node */
+    int offset = 0;
+    nnode_t* new_node = make_2port_gate(node->type, first_port->count, second_port->count, node->num_output_pins, node, traverse_mark_number);
+    /* adding first port */
+    for (i = 0; i < first_port->count; i++) {
+        remap_pin_to_new_node(first_port->pins[i], new_node, offset + i);
+    }
+    offset += first_port->count;
+    /* adding second port */
+    for (i = 0; i < second_port->count; i++) {
+        remap_pin_to_new_node(second_port->pins[i], new_node, offset + i);
+    }
+    /* remap output ports */
+    for (i = 0; i < node->num_output_pins; i++) {
+        remap_pin_to_new_node(node->output_pins[i], new_node, i);
+    }
+
+    // CLEAN UP
+    free_signal_list(const_port);
+    free_signal_list(var_port);
+    free_signal_list(new_const_port);
+    free_nnode(node);
+    node = NULL;
+
+    return (new_node);    
 }
 
 bool is_ast_multiplier(ast_node_t* node) {
