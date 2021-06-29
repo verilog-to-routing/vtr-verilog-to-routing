@@ -485,16 +485,15 @@ struct attr_t {
     edge_type_e areset_polarity; // asynchronous reset polarity
     edge_type_e sreset_polarity; // synchronous reset polarity
 
-    char* areset_value; // asynchronous reset value
-    char* sreset_value; // synchronous reset value
+    long areset_value; // asynchronous reset value
+    long sreset_value; // synchronous reset value
 
     operation_list port_a_signed;
     operation_list port_b_signed;
 
     /* memory node attributes */
-    char* depth;                 // memory depth
-    char* width;                 // memory width
-    char* offset;                // ADDR offset
+    long size;                   // memory size
+    long offset;                 // ADDR offset
     char* memory_id;             // the id of memory in verilog file (different from name since for memory it is $mem~#)
     edge_type_e RD_CLK_ENABLE;   // read clock enable
     edge_type_e WR_CLK_ENABLE;   // write clock enable

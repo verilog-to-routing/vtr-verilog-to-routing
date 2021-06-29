@@ -48,7 +48,7 @@ void free_attribute(attr_t* attribute);
 signal_list_t* init_signal_list();
 bool is_constant_signal(signal_list_t* signal, netlist_t* netlist);
 long constant_signal_value(signal_list_t* signal, netlist_t* netlist);
-signal_list_t* create_constant_signal(const char* value, const size_t width, netlist_t* netlist);
+signal_list_t* create_constant_signal(const long value, const int desired_width, netlist_t* netlist);
 void add_pin_to_signal_list(signal_list_t* list, npin_t* pin);
 void sort_signal_list_alphabetically(signal_list_t* list);
 signal_list_t* combine_lists(signal_list_t** signal_lists, int num_signal_lists);

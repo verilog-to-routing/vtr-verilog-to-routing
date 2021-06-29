@@ -677,16 +677,15 @@ attr_t* init_attribute() {
     attribute->sreset_polarity = UNDEFINED_SENSITIVITY;
     attribute->enable_polarity = UNDEFINED_SENSITIVITY;
 
-    attribute->areset_value = NULL;
-    attribute->sreset_value = NULL;
+    attribute->areset_value = 0;
+    attribute->sreset_value = 0;
 
     attribute->port_a_signed = UNSIGNED;
     attribute->port_b_signed = UNSIGNED;
 
     /* memory node attributes */
-    attribute->depth = NULL;
-    attribute->width = NULL;
-    attribute->offset = NULL;
+    attribute->size  = 0;
+    attribute->offset = 0;
     attribute->memory_id = NULL;
 
     attribute->RD_CLK_ENABLE = UNDEFINED_SENSITIVITY;
@@ -780,17 +779,20 @@ long constant_signal_value(signal_list_t* signal, netlist_t* netlist) {
  *
  * @brief create the signal_list of the given constant value
  * 
- * @param value a string representing the value, e.g. 10010
- * @param width the length of the string 
+ * @param value a long value
+ * @param desired_width the size of return signal list
  * @param netlist pointer to the netlist
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_constant_signal(const char* value, const size_t width, netlist_t* netlist) {
+signal_list_t* create_constant_signal(const long value, const int desired_width, netlist_t* netlist) {
     signal_list_t* list = init_signal_list();
 
     int i;
+    std::string binary_value_str = std::bitset<sizeof(long) * 8>(value).to_string();
+    int width = binary_value_str.length();
+      
     /* create vcc/gnd signal pins */
-    for (i = width; i > 0; i--) {
-        if (value[i - 1] == '1') {
+    for (i = desired_width; i > 0; i--) {
+        if (i < width && binary_value_str[i - 1] == '1') {
             add_pin_to_signal_list(list, get_one_pin(netlist));
         } else {
             add_pin_to_signal_list(list, get_zero_pin(netlist));
@@ -942,21 +944,6 @@ void free_signal_list(signal_list_t* list) {
  *-------------------------------------------------------------------------------------------*/
 void free_attribute(attr_t* attribute) {
     if (attribute) {
-        vtr::free(attribute->areset_value);
-        attribute->areset_value = NULL;
-
-        vtr::free(attribute->sreset_value);
-        attribute->sreset_value = NULL;
-
-        vtr::free(attribute->depth);
-        attribute->depth = NULL;
-
-        vtr::free(attribute->width);
-        attribute->width = NULL;
-
-        vtr::free(attribute->offset);
-        attribute->offset = NULL;
-
         vtr::free(attribute->memory_id);
         attribute->memory_id = NULL;
     }

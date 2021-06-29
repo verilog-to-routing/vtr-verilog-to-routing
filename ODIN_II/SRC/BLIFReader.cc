@@ -1987,16 +1987,25 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
             if (!strcmp(ptr, ".param")) {
                 ptr = vtr::strtok(NULL, TOKENS, file, buffer);
                 if (!strcmp(ptr, "SRST_VALUE")) {
-                    attributes->sreset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->sreset_value = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
                 } else if (!strcmp(ptr, "ARST_VALUE")) {
-                    attributes->areset_value = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->areset_value = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
                 } else if (!strcmp(ptr, "OFFSET")) {
-                    attributes->offset = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->offset = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
                 } else if (!strcmp(ptr, "SIZE")) {
-                    attributes->depth = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->size = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
                 } else if (!strcmp(ptr, "WIDTH")) {
-                    attributes->width = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
-                    attributes->DBITS = std::bitset<sizeof(long) * 8>(attributes->width).to_ulong();
+                    ptr = vtr::strtok(NULL, TOKENS, file, buffer);
+                    attributes->DBITS = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
+
                 } else if (!strcmp(ptr, "RD_PORTS")) {
                     ptr = vtr::strtok(NULL, TOKENS, file, buffer);
                     attributes->RD_PORTS = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
