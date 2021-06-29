@@ -601,12 +601,13 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
 
 static void check_rr_edge(int from_node, int iedge, int to_node) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     //Check that to to_node's fan-in is correct, given the switch type
     int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
     auto switch_type = device_ctx.rr_switch_inf[iswitch].type();
 
-    int to_fanin = device_ctx.rr_nodes[to_node].fan_in();
+    int to_fanin = rr_graph.node_fan_in(RRNodeId(to_node));
     switch (switch_type) {
         case SwitchType::BUFFER:
             //Buffer switches are non-configurable, and uni-directional -- they must have only one driver

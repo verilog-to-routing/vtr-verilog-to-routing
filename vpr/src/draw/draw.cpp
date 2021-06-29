@@ -1499,11 +1499,11 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
             float sb_ymax = draw_coords->tile_y[k] + draw_coords->get_tile_height();
             arrow_loc_max = {start.x, sb_ymax - arrow_offset};
         }
-
+        
         if (switchpoint_min == 0) {
             if (dir != BI_DIRECTION) {
                 //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in(), g);
+                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_graph.node_fan_in(RRNodeId(inode)), g);
             }
         } else {
             //Draw arrows and label with switch point
@@ -1529,7 +1529,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
         if (switchpoint_max == 0) {
             if (dir != BI_DIRECTION) {
                 //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in(), g);
+                draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_graph.node_fan_in(RRNodeId(inode)), g);
             }
         } else {
             //Draw arrows and label with switch point

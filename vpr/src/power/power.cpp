@@ -831,17 +831,20 @@ static void power_usage_routing(t_power_usage* power_usage,
                         case CHANX:
                         case CHANY:
                         case IPIN:
-                            if (next_node_power->net_num == node_power->net_num) {
-                                next_node_power->selected_input = next_node_power->num_inputs;
-                            }
-                            next_node_power->in_dens[next_node_power->num_inputs] = clb_net_density(node_power->net_num);
-                            next_node_power->in_prob[next_node_power->num_inputs] = clb_net_prob(node_power->net_num);
-                            next_node_power->num_inputs++;
-                            if (next_node_power->num_inputs > next_node.fan_in()) {
-                                VTR_LOG("%d %d\n", next_node_power->num_inputs,
-                                        next_node.fan_in());
-                                fflush(nullptr);
-                                VTR_ASSERT(0);
+                            {
+                                if (next_node_power->net_num == node_power->net_num) {
+                                    next_node_power->selected_input = next_node_power->num_inputs;
+                                }
+                                next_node_power->in_dens[next_node_power->num_inputs] = clb_net_density(node_power->net_num);
+                                next_node_power->in_prob[next_node_power->num_inputs] = clb_net_prob(node_power->net_num);
+                                next_node_power->num_inputs++;
+                                const t_edge_size next_node_fan_in = rr_graph.node_fan_in(RRNodeId(next_node_id));
+                                if (next_node_power->num_inputs > next_node_fan_in) {
+                                    VTR_LOG("%d %d\n", next_node_power->num_inputs,
+                                            next_node_fan_in);
+                                    fflush(nullptr);
+                                    VTR_ASSERT(0);
+                                }
                             }
                             break;
                         default:
@@ -865,6 +868,7 @@ static void power_usage_routing(t_power_usage* power_usage,
         int switchbox_fanout;
         //float C_per_seg_split;
         int wire_length;
+        const t_edge_size node_fan_in = rr_graph.node_fan_in(RRNodeId(rr_node_idx));
 
         switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case SOURCE:
@@ -877,13 +881,13 @@ static void power_usage_routing(t_power_usage* power_usage,
                  *  - Driver (accounted for at end of CHANX/Y - see below)
                  *  - Multiplexor */
 
-                if (node.fan_in()) {
+                if (node_fan_in) {
                     VTR_ASSERT(node_power->in_dens);
                     VTR_ASSERT(node_power->in_prob);
 
                     /* Multiplexor */
                     power_usage_mux_multilevel(&sub_power_usage,
-                                               power_get_mux_arch(node.fan_in(),
+                                               power_get_mux_arch(node_fan_in,
                                                                   power_ctx.arch->mux_transistor_size),
                                                node_power->in_prob, node_power->in_dens,
                                                node_power->selected_input, true,
@@ -912,11 +916,11 @@ static void power_usage_routing(t_power_usage* power_usage,
                 int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
                 C_wire = wire_length * device_ctx.rr_segments[seg_index].Cmetal;
                 //(double)power_ctx.commonly_used->tile_length);
-                VTR_ASSERT(node_power->selected_input < node.fan_in());
+                VTR_ASSERT(node_power->selected_input < node_fan_in);
 
                 /* Multiplexor */
                 power_usage_mux_multilevel(&sub_power_usage,
-                                           power_get_mux_arch(node.fan_in(),
+                                           power_get_mux_arch(node_fan_in,
                                                               power_ctx.arch->mux_transistor_size),
                                            node_power->in_prob, node_power->in_dens,
                                            node_power->selected_input, true, power_ctx.solution_inf.T_crit);
@@ -1209,16 +1213,17 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
         int fanout_to_seg = 0;
         auto node = device_ctx.rr_nodes[rr_node_idx];
         t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
+        const t_edge_size node_fan_in = rr_graph.node_fan_in(RRNodeId(rr_node_idx));
 
         switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case IPIN:
                 max_IPIN_fanin = std::max(max_IPIN_fanin,
-                                          static_cast<int>(node.fan_in()));
-                max_fanin = std::max(max_fanin, static_cast<int>(node.fan_in()));
+                                          static_cast<int>(node_fan_in));
+                max_fanin = std::max(max_fanin, static_cast<int>(node_fan_in));
 
-                node_power->in_dens = (float*)vtr::calloc(node.fan_in(),
+                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
                                                           sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node.fan_in(),
+                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
                                                           sizeof(float));
                 break;
             case CHANX:
@@ -1233,11 +1238,11 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_seg_to_IPIN_fanout = std::max(max_seg_to_IPIN_fanout,
                                                   fanout_to_IPIN);
                 max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
-                max_fanin = std::max(max_fanin, static_cast<int>(node.fan_in()));
+                max_fanin = std::max(max_fanin, static_cast<int>(node_fan_in));
 
-                node_power->in_dens = (float*)vtr::calloc(node.fan_in(),
+                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
                                                           sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node.fan_in(),
+                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
                                                           sizeof(float));
                 break;
             default:
@@ -1368,7 +1373,7 @@ bool power_uninit() {
             case CHANX:
             case CHANY:
             case IPIN:
-                if (node.fan_in()) {
+                if (rr_graph.node_fan_in(RRNodeId(rr_node_idx))) {
                     free(node_power->in_dens);
                     free(node_power->in_prob);
                 }
