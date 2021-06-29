@@ -560,8 +560,8 @@ const char* t_rr_graph_storage::node_direction_string(RRNodeId id) const {
         return "BI_DIR";
     }
 
-    VTR_ASSERT(direction == e_direction::NO_DIRECTION);
-    return "NO_DIR";
+    VTR_ASSERT(direction == e_direction::INVALID_DIRECTION);
+    return "INVALID_DIR";
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {

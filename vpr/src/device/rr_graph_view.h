@@ -62,7 +62,12 @@ class RRGraphView {
         return node_storage_.node_capacity(node);
     }
 
-    /* Get the direction of a routing resource node. This function is inlined for runtime optimization. */
+    /* Get the direction of a routing resource node. This function is inlined for runtime optimization.
+     * INC_DIRECTION: wire driver is positioned at the low-coordinate end of the wire.
+     * DEC_DIRECTION: wire_driver is positioned at the high-coordinate end of the wire.
+     * BI_DIRECTION: wire has multiple drivers, so signals can travel either way along the wire
+     * INVALID_DIRECTION: wire does not have a valid direction set
+     */
     inline e_direction node_direction(RRNodeId node) const {
         return node_storage_.node_direction(node);
     }
