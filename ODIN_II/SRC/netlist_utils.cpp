@@ -802,6 +802,91 @@ signal_list_t* create_constant_signal(const long value, const int desired_width,
     return list;
 }
 
+/**
+ * (function: prune_signal)
+ * 
+ * @brief to prune extra pins. usually this happens when a memory 
+ * address (less than 32 bits) comes from an arithmetic operation 
+ * that makes it 32 bits (a lot useless pins).
+ * 
+ * @param signalsvar signal list of pins (may include one signal or two signals)
+ * @param signal_width the width of each signal in signalsvar
+ * @param prune_size the desired size of signal list
+ * @param num_of_signals showing the number of signals the signalsvar containing
+ * 
+ * @return pruned signal list
+ */
+signal_list_t* prune_signal (signal_list_t* signalsvar, long signal_width, long prune_size, int num_of_signals) {
+    int i, j;
+    /* new signal list */
+    signal_list_t* new_signals = NULL;
+    /* check if signalsvar exist */
+    if (signalsvar) {
+        if (num_of_signals == 1) {
+            /* check if the signalsvar size is greater than the needed width, we need to reduce it */
+            if (signalsvar->count > prune_size) {
+                new_signals = init_signal_list();
+                /* disconnect from its node */
+                for (i = 0; i < signalsvar->count; i++) {
+                    npin_t* pin = signalsvar->pins[i];
+                    /* adding pin to new signal list */
+                    if (i < prune_size) {
+                        add_pin_to_signal_list(new_signals, pin);
+                    } 
+                    /* pruning the extra pins */
+                    else {
+                        /* detach from the node, its net and free pin */
+                        delete_npin(pin);
+                    }
+                }
+                // CLEAN UP
+                free_signal_list(signalsvar);
+
+            } else {
+                /* no need to change anything */
+                new_signals = signalsvar;
+            }
+
+        } else if (num_of_signals == 2) {
+            /* validate the signalsvar size */
+            oassert(signalsvar->count == 2 * signal_width);
+            /* round up the needed addr width if it is odd */
+            prune_size = (prune_size % 2 != 0) ? (prune_size + 1) : prune_size;
+
+            /* check if the signalsvar size is greater than the prune size, need to reduce it */
+            if (signalsvar->count > 2 * prune_size) {
+                int offset = 0;
+                new_signals = init_signal_list();
+                /* disconnect from its node */
+                for (i = 0; i < 2; i++) {
+                    for (j = 0; j < signal_width; j++) {
+                        npin_t* pin = signalsvar->pins[offset + j];
+                        /* adding pin to new signal list */
+                        if (j < prune_size) {
+                            add_pin_to_signal_list(new_signals, pin);
+                        }
+                        /* pruning the extra addr pins */
+                        else {
+                            /* detach from its node, its net and free pin */
+                            delete_npin(pin);
+                        }
+                    }
+                    /* increase offset to pick the needed addr pins from the beginning of the second addr */
+                    offset += signal_width;
+                }
+                // CLEAN UP
+                free_signal_list(signalsvar);
+
+            } else {
+                /* no need to change anything */
+                new_signals = signalsvar;
+            }
+        }
+    }
+
+    return (new_signals);
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: add_inpin_to_signal_list)
  * 	Stores a pin in the signal list

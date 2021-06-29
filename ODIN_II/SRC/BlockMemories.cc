@@ -60,6 +60,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
 static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
 
 static bool check_same_addrs(block_memory* bram);
+static void perform_optimization(block_memory* memory);
 static signal_list_t* merge_read_write_clks (signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist);
 static signal_list_t* create_single_clk_pin (signal_list_t* clks, nnode_t* node, netlist_t* netlist);
 
@@ -1112,7 +1113,10 @@ void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     oassert(node->num_output_port_sizes == 1);
     
     /* initializing a new block ram */
-    block_memory* bram = init_block_memory(node, netlist);    
+    block_memory* bram = init_block_memory(node, netlist);
+
+    /* perform optimization on memory inference */
+    perform_optimization(bram);    
 
     block_memory_list = insert_in_vptr_list(block_memory_list, bram);
 }
@@ -1136,7 +1140,10 @@ void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
     oassert(node->num_output_port_sizes == 1);
     
     /* create the BRAM and allocate ports according to the DPRAM hard block */
-    block_memory* rom = init_read_only_memory(node, netlist);    
+    block_memory* rom = init_read_only_memory(node, netlist);
+
+    /* perform optimization on memory inference */
+    perform_optimization(rom);        
 
     read_only_memory_list = insert_in_vptr_list(read_only_memory_list, rom);
 }
@@ -1211,6 +1218,61 @@ static bool check_same_addrs(block_memory* bram) {
 }
 
 /**
+ * (function: perform_optimization)
+ * 
+ * @brief this function is to perform optimization on block 
+ * memories and roms. Optimization includes address width 
+ * reduction base on the mem size
+ * 
+ * @param bram pointer to the block memory
+ */
+static void perform_optimization(block_memory* memory) {
+
+    nnode_t* node = memory->node;
+    int depth = node->attributes->size;
+    int addr_width = node->attributes->ABITS;
+    int rd_ports = node->attributes->RD_PORTS;
+    int wr_ports = node->attributes->WR_PORTS;
+
+    int needed_addr_width = 0;
+    long shifted_value = 0;
+    /* calculate the needed address width */
+    while(shifted_value < depth) {
+        needed_addr_width++;
+        shifted_value = shift_left_value_with_overflow_check(0X1, needed_addr_width, node->loc);
+    }
+    
+    /**
+     * [NOTE]: At this point there is a need to take care of multiple read 
+     * or write address pins (like dual port ram) since in the case of having
+     * arithmetic operation in address pins (cause to extend addr to 32 bits), 
+     * yosys would NOT handle it before creting the mem subcircuit.
+     * e.g.:
+     * 
+     *      wire [3:0] read_addr;
+     *      read_data <= mem[read_addr / 3] 
+     *  
+     * the signal representing the read addr signal in $mem subcircuit is 32 bits. 
+     * However, we only need four bits
+     */
+
+    /* check if block memory has a read addr */
+    if (memory->read_addr) {
+        /* prune read address to reduce its width based on the needed addr width if needed */
+        memory->read_addr = prune_signal(memory->read_addr, addr_width, needed_addr_width, rd_ports);
+    }
+
+    /* check if block memory has a write addr */
+    if (memory->write_addr) {
+        /* prune write address to reduce its width based on the needed addr width if needed */
+        memory->write_addr = prune_signal(memory->write_addr, addr_width, needed_addr_width, wr_ports);
+    }    
+
+    /* update new read addr width */
+    node->attributes->ABITS = needed_addr_width;
+}
+
+/**
  * (function: create_single_clk_pin)
  * 
  * @brief ORing all given clks
@@ -1252,6 +1314,7 @@ static signal_list_t* create_single_clk_pin (signal_list_t* clks, nnode_t* node,
 
     return (return_signal);
 }
+
 /**
  * (function: merge_read_write_clks)
  * 
