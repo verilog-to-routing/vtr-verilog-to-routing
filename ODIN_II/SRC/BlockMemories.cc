@@ -548,6 +548,8 @@ static void create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     // CLEAN UP
     cleanup_block_memory_old_node(old_node);    
+    free_signal_list(pad_signals);
+    free_signal_list(out2_signals);
     vtr::free(signals);
 }
 

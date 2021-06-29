@@ -1027,6 +1027,7 @@
     "syntax/cf_fft_1024_16/no_arch": {
         "test_name": "syntax/cf_fft_1024_16/no_arch",
         "input_blif": "cf_fft_1024_16.blif",
+        "exec_time(ms)": 145205.1,
         "Latch Drivers": 1,
         "Pi": 67,
         "Po": 65,
