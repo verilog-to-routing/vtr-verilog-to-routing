@@ -411,11 +411,11 @@ static void connect_div_output_pins(nnode_t* node, signal_list_t** output_signal
             /* checking the adjusted width with actual one to connect properly */
             if (quotient_width >= new_quotient_width) {
                 for (i = 0; i < quotient_width; i++) {
-                    npin_t* quotient_pin = quotient_signal_list->pins[i];
                     /* creating a buf node to cionnect the calculated quotient to the main div node outputs */
                     nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
 
                     if (i < new_quotient_width) {
+                        npin_t* quotient_pin = quotient_signal_list->pins[i];
                         /* connect the calculatd quotient pin as buf node driver */
                         add_input_pin_to_node(buf_node, quotient_pin, 0);
                         /* remap the main div output pin to the buf node output pin */
