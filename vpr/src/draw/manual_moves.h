@@ -38,7 +38,7 @@ struct ManualMovesGlobals {
 	ManualMovesInfo manual_move_info;
 	GtkWidget* manual_move_window;
 	bool mm_window_is_open = false;
-	bool manual_move_enabled = false;
+	bool user_highlighted_block = false;
 };
 
 /** Manual Moves Generator, inherits from MoveGenerator class **/

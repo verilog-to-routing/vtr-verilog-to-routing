@@ -25,7 +25,11 @@ void draw_manual_moves_window(std::string block_id) {
 		GtkWidget *grid = gtk_grid_new();
 		GtkWidget *block_entry = gtk_entry_new();
 
-		gtk_entry_set_text((GtkEntry*) block_entry, block_id.c_str());
+		if (manual_moves_global.user_highlighted_block) {
+			gtk_entry_set_text((GtkEntry*) block_entry, block_id.c_str());
+			manual_moves_global.user_highlighted_block = false;
+		}
+
 		GtkWidget* x_position_entry = gtk_entry_new();
 		GtkWidget* y_position_entry = gtk_entry_new();
 		GtkWidget* subtile_position_entry = gtk_entry_new();
@@ -68,7 +72,6 @@ void draw_manual_moves_window(std::string block_id) {
 
 		gtk_container_add(GTK_CONTAINER(manual_moves_global.manual_move_window), grid);
 		gtk_widget_show_all(manual_moves_global.manual_move_window);
-
 	}
 }
 
@@ -158,13 +161,10 @@ bool string_is_a_number(std::string block_id) {
 
 bool get_manual_move_flag() {
 	GObject *manual_moves = application.get_object("manualMove");
-	manual_moves_global.manual_move_enabled = gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
-	return manual_moves_global.manual_move_enabled;
+	return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
 }
 
 ManualMovesGlobals* get_manual_moves_global() {
-	//Enables manual move flag when toggle button is active
-	get_manual_move_flag();
 	return &manual_moves_global;
 }
 
