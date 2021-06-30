@@ -1691,13 +1691,13 @@ static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat,
         /* adding const port pins to signal list */
         for (i = node->input_port_sizes[0]; i < node->num_input_pins; i++) {
             add_pin_to_signal_list(var_port, node->input_pins[i]);
-        }   
+        }
     }
 
     int idx = -1;
     signal_list_t* new_const_port = init_signal_list();
     /* iterating over const port to determine useless ports */
-    for (i = const_port->count; i > 0 ; i--) {
+    for (i = const_port->count; i > 0; i--) {
         npin_t* pin = const_port->pins[i - 1];
         /* starting from the end and prune pins connected to GND */
         if (!strcmp(pin->net->name, netlist->one_net->name)) {
@@ -1713,7 +1713,7 @@ static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat,
         npin_t* pin = const_port->pins[i];
         add_pin_to_signal_list(new_const_port, pin);
     }
-    
+
     signal_list_t* first_port = (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) ? new_const_port : var_port;
     signal_list_t* second_port = (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) ? var_port : new_const_port;
     /* creating new mult node */
@@ -1740,7 +1740,7 @@ static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat,
     free_nnode(node);
     node = NULL;
 
-    return (new_node);    
+    return (new_node);
 }
 
 bool is_ast_multiplier(ast_node_t* node) {

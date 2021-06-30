@@ -1307,7 +1307,7 @@ void instantiate_shift(nnode_t* node, short mark, netlist_t* netlist) {
     for (i = 0; i < shift_width; i++) {
         add_pin_to_signal_list(shift_signal, node->input_pins[operand_width + i]);
     }
-    
+
     /* check for constant and variable shift operation */
     if (is_constant_signal(shift_signal, netlist)) {
         /* the shift signal is constant, no need to implement the complex variable circuitry */
@@ -1357,7 +1357,6 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
 
     /* validate constant shift signal */
     oassert(is_constant_signal(shift_signal, netlist));
-
 
     /* shift the operand by shift_size*/
     signal_list_t* result = init_signal_list();
@@ -1431,25 +1430,21 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
         nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, mark);
         /* add result as inout pins */
         add_input_pin_to_node(buf_node, result->pins[i], 0);
-        
+
         /* remap output signals to buf node */
         remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
     }
-    
 
     // CLEAN UP
     for (i = 0; i < shift_signal->count; i++) {
         /* delete shift pins */
         delete_npin(shift_signal->pins[i]);
-    }   
+    }
     free_signal_list(operand_signal);
     free_signal_list(shift_signal);
     free_signal_list(result);
     free_nnode(node);
-
-    
 }
-
 
 /**
  *---------------------------------------------------------------------------------------------

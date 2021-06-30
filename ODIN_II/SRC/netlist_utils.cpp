@@ -684,7 +684,7 @@ attr_t* init_attribute() {
     attribute->port_b_signed = UNSIGNED;
 
     /* memory node attributes */
-    attribute->size  = 0;
+    attribute->size = 0;
     attribute->offset = 0;
     attribute->memory_id = NULL;
 
@@ -789,7 +789,7 @@ signal_list_t* create_constant_signal(const long value, const int desired_width,
     int i;
     std::string binary_value_str = std::bitset<sizeof(long) * 8>(value).to_string();
     int width = binary_value_str.length();
-      
+
     /* create vcc/gnd signal pins */
     for (i = desired_width; i > 0; i--) {
         if (i < width && binary_value_str[i - 1] == '1') {
@@ -816,7 +816,7 @@ signal_list_t* create_constant_signal(const long value, const int desired_width,
  * 
  * @return pruned signal list
  */
-signal_list_t* prune_signal (signal_list_t* signalsvar, long signal_width, long prune_size, int num_of_signals) {
+signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long prune_size, int num_of_signals) {
     int i, j;
     /* new signal list */
     signal_list_t* new_signals = NULL;
@@ -832,7 +832,7 @@ signal_list_t* prune_signal (signal_list_t* signalsvar, long signal_width, long 
                     /* adding pin to new signal list */
                     if (i < prune_size) {
                         add_pin_to_signal_list(new_signals, pin);
-                    } 
+                    }
                     /* pruning the extra pins */
                     else {
                         /* detach from the node, its net and free pin */
