@@ -996,15 +996,8 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
         remap_pin_to_new_node(node->output_pins[i + b0], addbig, i);
     }
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(node->name);
-    vtr::free(node->input_port_sizes);
-    vtr::free(node->output_port_sizes);
-
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(node->input_pins);
-    vtr::free(node->output_pins);
-    vtr::free(node);
+    // CLEAN UP
+    free_nnode(node);
 
     return;
 }
@@ -1070,15 +1063,9 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b) {
     for (i = 0; i < addsmall->num_output_pins; i++)
         remap_pin_to_new_node(node->output_pins[i + a0], addsmall, i);
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(node->name);
-    vtr::free(node->input_port_sizes);
-    vtr::free(node->output_port_sizes);
-
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(node->input_pins);
-    vtr::free(node->output_pins);
-    vtr::free(node);
+    // CLEAN UP
+    free_nnode(node);
+    
     return;
 }
 
@@ -1145,15 +1132,9 @@ void split_multiplier_b(nnode_t* node, int a, int b1, int b0) {
     for (i = b0; i < node->num_output_pins; i++)
         remap_pin_to_new_node(node->output_pins[i], addsmall, i - b0);
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(node->name);
-    vtr::free(node->input_port_sizes);
-    vtr::free(node->output_port_sizes);
+    // CLEAN UP
+    free_nnode(node);
 
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(node->input_pins);
-    vtr::free(node->output_pins);
-    vtr::free(node);
     return;
 }
 
