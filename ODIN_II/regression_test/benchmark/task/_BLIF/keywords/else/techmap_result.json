@@ -7,11 +7,11 @@
         "techmap_time(ms)": 2.7,
         "Pi": 2,
         "Po": 2,
-        "logic element": 18,
-        "Longest Path": 9,
+        "logic element": 13,
+        "Longest Path": 8,
         "Average Path": 6,
-        "Estimated LUTs": 18,
-        "Total Node": 18
+        "Estimated LUTs": 13,
+        "Total Node": 13
     },
     "else/if_else/no_arch": {
         "test_name": "else/if_else/no_arch",
@@ -21,11 +21,11 @@
         "techmap_time(ms)": 2.1,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "DEFAULT": {
         "test_name": "n/a",
