@@ -1285,32 +1285,20 @@ static e_move_result try_swap(const t_annealing_state *state,
 		rlim = state->rlim;
 	}
 
-#ifndef NO_GRAPHICS
-
-	bool manual_move_flag = false;
-	manual_move_flag = get_manual_move_flag();
+	bool manual_move_flag = get_manual_move_flag();
 	ManualMovesGlobals *manual_move_global = get_manual_moves_global();
-
-	if (manual_move_flag) {
-		draw_manual_moves_window("");
-		update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
-	}
-
-#endif /* NO_GRAPHICS */
 
 	e_create_move create_move_outcome;
 
-	if (manual_move_flag) {
-		create_move_outcome = manual_move_generator.propose_move(
-				blocks_affected, rlim);
-		if (create_move_outcome == e_create_move::VALID)
-			std::cout << "Propose move: VALID" << std::endl;
-		else if (create_move_outcome == e_create_move::ABORT)
-			std::cout << "Propose move: ABORT" << std::endl;
-	} else {
+	if(manual_move_flag) {
+		draw_manual_moves_window("");
+		update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+
+		create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+	}
+	else {
 		//Generate a new move (perturbation) used to explore the space of possible placements
-		create_move_outcome = move_generator.propose_move(blocks_affected,
-				move_type, rlim, placer_opts, criticalities);
+		create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
 	}
 
 	++move_type_stat.num_moves[(int) move_type];
@@ -1318,9 +1306,7 @@ static e_move_result try_swap(const t_annealing_state *state,
 
 	e_move_result move_outcome = ABORTED;
 
-	if (create_move_outcome == e_create_move::ABORT
-			|| (manual_move_flag
-					&& !manual_move_global->manual_move_info.valid_input)) {
+	if (create_move_outcome == e_create_move::ABORT) {
 		LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
 				std::numeric_limits<float>::quiet_NaN(),
 				std::numeric_limits<float>::quiet_NaN(), "ABORTED",
@@ -1399,10 +1385,9 @@ static e_move_result try_swap(const t_annealing_state *state,
 		/* 1 -> move accepted, 0 -> rejected. */
 		move_outcome = assess_swap(delta_c, state->t);
 
-		if (manual_move_flag && manual_move_global->manual_move_info.valid_input) {
+		if (manual_move_flag) {
 			update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
 			cost_summary_dialog();
-
 			//User accepts or rejects the move.
 			move_outcome = manual_move_global->manual_move_info.user_move_outcome;
 		}
@@ -1443,9 +1428,7 @@ static e_move_result try_swap(const t_annealing_state *state,
 			++move_type_stat.accepted_moves[(int) move_type];
 
 			//Highlights the new block when manual move is selected.
-			if (manual_move_flag) {
-				highlight_block_location();
-			}
+			highlight_new_block_location(manual_move_flag);
 
 		} else {
 			VTR_ASSERT_SAFE(move_outcome == REJECTED);
@@ -1515,10 +1498,6 @@ static e_move_result try_swap(const t_annealing_state *state,
     //Check that each accepted swap yields a valid placement
     check_place(*costs, delay_model, place_algorithm);
 #endif
-
-	if (manual_move_flag) {
-		manual_move_global->manual_move_info.valid_input = true;
-	}
 
 	return move_outcome;
 }

@@ -137,7 +137,10 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 		manual_moves_global.manual_move_info.to_location = to;
 
 		//Highlighting the block
-		highlight_block_location();
+		deselect_all();
+		ClusterBlockId clb_index = ClusterBlockId(manual_moves_global.manual_move_info.blockID);
+		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
+		application.refresh_drawing();
 
 		//Continues to move costs window.
 		GtkWidget *proceed = find_button("ProceedButton");
@@ -170,8 +173,7 @@ ManualMovesGlobals* get_manual_moves_global() {
 
 
 //Manual Move Generator function
-e_create_move ManualMoveGenerator::propose_move(
-		t_pl_blocks_to_be_moved &blocks_affected, float /*rlim*/) {
+e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved &blocks_affected, float /*rlim*/) {
 
 	int block_id = manual_moves_global.manual_move_info.blockID;
 	t_pl_loc to = manual_moves_global.manual_move_info.to_location;
@@ -283,14 +285,17 @@ void cost_summary_dialog() {
 
 }
 
-void highlight_block_location() {
-	auto& cluster_ctx = g_vpr_ctx.clustering();
-	//Unselects all blocks first
-	deselect_all();
-	//Highlighting the block
-	ClusterBlockId clb_index = ClusterBlockId(manual_moves_global.manual_move_info.blockID);
-	draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-	application.refresh_drawing();
+void highlight_new_block_location(bool manual_move_flag) {
+
+	if(manual_move_flag) {
+		auto& cluster_ctx = g_vpr_ctx.clustering();
+		//Unselects all blocks first
+		deselect_all();
+		//Highlighting the block
+		ClusterBlockId clb_index = ClusterBlockId(manual_moves_global.manual_move_info.blockID);
+		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
+		application.refresh_drawing();
+	}
 }
 
 //Updates ManualMovesInfo cost members
@@ -311,37 +316,5 @@ void deactivating_toggle_button() {
 	GObject *manual_move_toggle = application.get_object("manualMove");
 	gtk_toggle_button_set_active((GtkToggleButton*) manual_move_toggle, FALSE);
 }
-
-/*void dialog_callback(GtkDialog* dialog, gint response_id, gpointer user_data) {
-
-	//Update message if user accepts the move.
-	std::string msg = "Manual move accepted. Block #" + std::to_string(manual_moves_global.manual_move_info.blockID);
-	msg += " to location (" + std::to_string(manual_moves_global.manual_move_info.x_pos) + ", " + std::to_string(manual_moves_global.manual_move_info.y_pos) + ")";
-
-	switch(result) {
-	//If the user accepts the manual move
-		case GTK_RESPONSE_ACCEPT:
-			manual_moves_global.manual_move_info.user_move_outcome = ACCEPTED;
-			application.update_message(msg.c_str());
-			//close_manual_moves_window();
-			break;
-			//If the user rejects the manual move
-		case GTK_RESPONSE_REJECT:
-			manual_moves_global.manual_move_info.user_move_outcome = REJECTED;
-			application.update_message("Manual move was rejected");
-			//close_manual_moves_window();
-			break;
-		default:
-			manual_moves_global.manual_move_info.user_move_outcome = ABORTED;
-			break;
-
-	}
-
-	gtk_widget_destroy(GTK_WIDGET(dialog));
-
-
-}*/
-
-
 
 #endif

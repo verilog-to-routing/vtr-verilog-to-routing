@@ -58,9 +58,8 @@ bool get_manual_move_flag();
 void cost_summary_dialog();
 ManualMovesGlobals* get_manual_moves_global();
 void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome);
-void highlight_block_location();
+void highlight_new_block_location(bool manual_move_flag);
 
-//void dialog_callback(GtkDialog* dialog, gint response_id, gpointer user_data);
 void deactivating_toggle_button();
 
 

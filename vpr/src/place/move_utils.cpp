@@ -452,9 +452,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     //For manual moves feature
-    GObject* manual_move_toggle = application.get_object("manualMove");
-    bool activated = gtk_toggle_button_get_active((GtkToggleButton*)manual_move_toggle);
-
+    bool activated = get_manual_move_flag();
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
