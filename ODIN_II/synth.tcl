@@ -12,7 +12,7 @@ procs; opt;
 
 fsm; opt;
 
-memory_collect; memory_nordff; opt;
+memory_collect; opt;
 
 check;
 
@@ -22,7 +22,7 @@ autoname;
 
 pmuxtree;
 
-opt -undriven;
+opt -undriven -full;
 
 write_blif -param -impltf $env(OUTPUT_BLIF_PATH)/$env(TCL_BLIF_NAME);
 
