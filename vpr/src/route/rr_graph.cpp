@@ -2466,7 +2466,7 @@ std::string describe_rr_node(int inode) {
         int cost_index = rr_node.cost_index();
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-        const char* rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
+        std::string rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
 
         if (seg_index < (int)device_ctx.rr_segments.size()) {
             msg += vtr::string_fmt(" track: %d len: %d longline: %d seg_type: %s dir: %s",
@@ -2474,13 +2474,13 @@ std::string describe_rr_node(int inode) {
                                    rr_node.length(),
                                    device_ctx.rr_segments[seg_index].longline,
                                    device_ctx.rr_segments[seg_index].name.c_str(),
-                                   rr_node_direction_string);
+                                   rr_node_direction_string.c_str());
         } else {
             msg += vtr::string_fmt(" track: %d len: %d seg_type: ILLEGAL_SEG_INDEX %d dir: %s",
                                    rr_node.track_num(),
                                    rr_node.length(),
                                    seg_index,
-                                   rr_node_direction_string);
+                                   rr_node_direction_string.c_str());
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
         auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;

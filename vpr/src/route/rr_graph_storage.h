@@ -195,7 +195,7 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id);
     }
-    const char* node_direction_string(RRNodeId id) const;
+    std::string node_direction_string(RRNodeId id) const;
 
     /* Find if the given node appears on a specific side */
     bool is_node_on_specific_side(RRNodeId id, e_side side) const {

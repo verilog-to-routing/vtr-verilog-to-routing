@@ -549,7 +549,7 @@ const char* t_rr_graph_view::node_type_string(RRNodeId id) const {
     return rr_node_typename[node_type(id)];
 }
 
-const char* t_rr_graph_storage::node_direction_string(RRNodeId id) const {
+std::string t_rr_graph_storage::node_direction_string(RRNodeId id) const {
     e_direction direction = node_direction(id);
 
     if (direction == e_direction::INC_DIRECTION) {

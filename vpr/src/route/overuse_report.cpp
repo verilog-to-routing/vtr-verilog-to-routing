@@ -280,7 +280,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
 
     //Direction
     if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
-        VTR_LOG(" %12s", rr_graph.node_direction_string(node_id));
+        VTR_LOG(" %12s", rr_graph.node_direction_string(node_id).c_str());
     } else {
         VTR_LOG(" %12s", "N/A");
     }
