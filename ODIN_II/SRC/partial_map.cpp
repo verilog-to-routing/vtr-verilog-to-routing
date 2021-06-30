@@ -57,12 +57,15 @@ void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, net
 void instantiate_EQUAL(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 void instantiate_GE(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
-void instantiate_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
+void instantiate_shift(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_unary_sub(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_single_sub3(nnode_t* node, short mark, netlist_t* netlist);
 
 void instantiate_soft_logic_ram(nnode_t* node, short mark, netlist_t* netlist);
+
+static void instantiate_constant_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
+static void instantiate_variable_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 
 /*-------------------------------------------------------------------------
  * (function: partial_map_top)
@@ -222,7 +225,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case ASL:
         case SR:
         case ASR:
-            instantiate_shift(node, node->type, traverse_number, netlist);
+            instantiate_shift(node, traverse_number, netlist);
             break;
         case MULTI_PORT_MUX:
             instantiate_multi_port_mux(node, traverse_number, netlist);
@@ -522,6 +525,13 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
             muxes[i] = (nnode_t**)vtr::calloc(num_of_muxes, sizeof(nnode_t*));
             output_signals[i] = init_signal_list();
 
+            // connect related pin of second_input to related multiplexer as a selector
+            nnode_t* select = make_1port_gate(BUF_NODE, 1, 1, single_bit_mux, mark);
+            // single_bit_mux->input_pins[i] === selector[i]
+            remap_pin_to_new_node(single_bit_mux->input_pins[i], select, 0);
+
+            nnode_t* not_select = make_not_gate(select, mark);
+            connect_nodes(select, 0, not_select, 0);
             /* iterating over each single bit 2-mux to connect inputs */
             for (j = 0; j < num_of_muxes; j++) {
                 /**                                                                                      *
@@ -538,18 +548,8 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
                  *                                               |/                                      *
                  */
                 muxes[i][j] = make_2port_gate(MUX_2, 2, 2, 1, single_bit_mux, mark);
-                // connect related pin of second_input to related multiplexer as a selector
-                nnode_t* select = make_1port_gate(BUF_NODE, 1, 1, single_bit_mux, mark);
-                // single_bit_mux->input_pins[i] === selector[i]
-                if (j == 0)
-                    remap_pin_to_new_node(single_bit_mux->input_pins[i], select, 0);
-                else
-                    add_input_pin_to_node(select, copy_input_npin(muxes[i][0]->input_pins[1]), 0);
 
                 connect_nodes(select, 0, muxes[i][j], 1);
-
-                nnode_t* not_select = make_not_gate(select, mark);
-                connect_nodes(select, 0, not_select, 0);
                 connect_nodes(not_select, 0, muxes[i][j], 0);
 
                 /* connecting the single bit mux input pins into decoded 2-Muxes */
@@ -1281,15 +1281,190 @@ void instantiate_GE(nnode_t* node, operation_list type, short mark, netlist_t* n
     free_nnode(node);
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: instantiate_shift )
- *	Creates the hardware for a shift left or right operation by a variable size.
- *  Create mux 2:1
- *   data1 = SHIFT first_input
- *   data2 = SHIFT first_input shifted right or left by pow(2,i)
- *   selector = SHIFT second_input[i]
+/**
+ * --------------------------------------------------------------------------
+ * (function: instantiate_shift)
+ * 
+ * @brief instantiate shift node based on the type 
+ * of given shift varaible.
+ * 
+ * @note first_signal 'SHIFT_OP' second_signal
+ * 
+ * @param node pointer to the multipication netlist node
+ * 
+ * @return output signal
+ * -------------------------------------------------------------------------*/
+void instantiate_shift(nnode_t* node, short mark, netlist_t* netlist) {
+    /* validate number and size of input ports */
+    oassert(node->num_input_port_sizes == 2);
+    oassert(node->input_port_sizes[0] == node->input_port_sizes[1]);
+
+    int i;
+    int operand_width = node->input_port_sizes[0];
+    int shift_width = node->input_port_sizes[1];
+    /* shift signal */
+    signal_list_t* shift_signal = init_signal_list();
+    for (i = 0; i < shift_width; i++) {
+        add_pin_to_signal_list(shift_signal, node->input_pins[operand_width + i]);
+    }
+    
+    /* check for constant and variable shift operation */
+    if (is_constant_signal(shift_signal, netlist)) {
+        /* the shift signal is constant, no need to implement the complex variable circuitry */
+        instantiate_constant_shift(node, node->type, mark, netlist);
+    } else {
+        /* the shift signal is variable, variable shift will be instantiated */
+        instantiate_variable_shift(node, node->type, mark, netlist);
+    }
+
+    // CLEAN UP
+    free_signal_list(shift_signal);
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: instantiate_constant_shift )
+ *
+ * @brief instantiate shift node that the shift signals
+ * is a CONSTANT signals. The constant shift implements
+ * the shift operation using manual signal shift with add
+ * 
+ * @param node shift node
+ * @param type shift type [SL,SR, ASL, and ASR]
+ * @param mark traversal number
+ * @param netlist pointer to the current netlist
  *-------------------------------------------------------------------------------------------*/
-void instantiate_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist) {
+static void instantiate_constant_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist) {
+    /* validate number and size of input ports */
+    oassert(node->num_input_port_sizes == 2);
+    oassert(node->input_port_sizes[0] == node->input_port_sizes[1]);
+
+    int i;
+    int operand_width = node->input_port_sizes[0];
+    int shift_width = node->input_port_sizes[1];
+    int output_width = node->output_port_sizes[0];
+
+    /* operand signal */
+    signal_list_t* operand_signal = init_signal_list();
+    for (i = 0; i < operand_width; i++) {
+        add_pin_to_signal_list(operand_signal, node->input_pins[i]);
+    }
+    /* shift signal */
+    signal_list_t* shift_signal = init_signal_list();
+    for (i = 0; i < shift_width; i++) {
+        add_pin_to_signal_list(shift_signal, node->input_pins[operand_width + i]);
+    }
+
+    /* validate constant shift signal */
+    oassert(is_constant_signal(shift_signal, netlist));
+
+
+    /* shift the operand by shift_size*/
+    signal_list_t* result = init_signal_list();
+    /* record the size of the shift */
+    int pad_bit = operand_width - 1;
+    /* calculate the value of shift signal */
+    long shift_size = constant_signal_value(shift_signal, netlist);
+
+    switch (type) {
+        case SL:
+        case ASL: {
+            /* connect ZERO to outputs that don't have inputs connected */
+            for (i = 0; i < shift_size; i++) {
+                if (i < output_width) {
+                    // connect 0 to lower outputs
+                    add_pin_to_signal_list(result, get_zero_pin(netlist));
+                }
+            }
+
+            /* connect inputs to outputs */
+            for (i = 0; i < output_width - shift_size; i++) {
+                if (i < operand_width) {
+                    npin_t* pin = operand_signal->pins[i];
+                    // connect higher output pin to lower input pin
+                    add_pin_to_signal_list(result, pin);
+                    /* detach from the old node */
+                    pin->node->input_pins[pin->pin_node_idx] = NULL;
+                } else {
+                    /* pad with zero pins */
+                    npin_t* extension_pin = get_zero_pin(verilog_netlist);
+                    add_pin_to_signal_list(result, extension_pin);
+                }
+            }
+            break;
+        }
+        case SR: //fallthrough
+        case ASR: {
+            for (i = shift_size; i < operand_width; i++) {
+                npin_t* pin = operand_signal->pins[i];
+                // connect higher output pin to lower input pin
+                if (i - shift_size < output_width) {
+                    add_pin_to_signal_list(result, pin);
+                    pin->node->input_pins[pin->pin_node_idx] = NULL;
+                }
+            }
+
+            /* Extend pad_bit to outputs that don't have inputs connected */
+            for (i = output_width - 1; i >= operand_width - shift_size; i--) {
+                npin_t* extension_pin = NULL;
+                if (node->related_ast_node
+                    && node->related_ast_node->types.variable.signedness == SIGNED
+                    && node->type == ASR) {
+                    /* for signed values padding will be with last pin */
+                    extension_pin = copy_input_npin(operand_signal->pins[pad_bit]);
+                } else {
+                    /* otherwise result will be padded with zero pins */
+                    extension_pin = get_zero_pin(verilog_netlist);
+                }
+
+                add_pin_to_signal_list(result, extension_pin);
+            }
+            break;
+        }
+        default:
+            error_message(NETLIST, node->loc, "%s", "Operation not supported by Odin\n");
+            break;
+    }
+
+    for (i = 0; i < output_width; i++) {
+        /* create a buf node to drive output pins */
+        nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, mark);
+        /* add result as inout pins */
+        add_input_pin_to_node(buf_node, result->pins[i], 0);
+        
+        /* remap output signals to buf node */
+        remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+    }
+    
+
+    // CLEAN UP
+    for (i = 0; i < shift_signal->count; i++) {
+        /* delete shift pins */
+        delete_npin(shift_signal->pins[i]);
+    }   
+    free_signal_list(operand_signal);
+    free_signal_list(shift_signal);
+    free_signal_list(result);
+    free_nnode(node);
+
+    
+}
+
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: instantiate_shift )
+ *
+ * @brief instantiate shift node that the shift signals
+ * is not a CONSTANT signals. The variable shift implements
+ * the shift operation using Barrel Shift design
+ * 
+ * @param node shift node
+ * @param type shift type [SL,SR, ASL, and ASR]
+ * @param mark traversal number
+ * @param netlist pointer to the current netlist
+ *-------------------------------------------------------------------------------------------*/
+static void instantiate_variable_shift(nnode_t* node, operation_list type, short mark, netlist_t* netlist) {
     /*  
      *   Create mux 2:1
      *   data1 = SHIFT first_input
