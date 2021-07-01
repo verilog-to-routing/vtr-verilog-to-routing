@@ -77,6 +77,16 @@ class RRGraphView {
         return node_storage_.node_direction_string(node);
     }
 
+    /* Get the capacitance of a routing resource node. This function is inlined for runtime optimization. */
+    inline float node_C(RRNodeId node) const {
+        return node_storage_.node_C(node);
+    }
+
+    /* Get the resistance of a routing resource node. This function is inlined for runtime optimization. */
+    inline float node_R(RRNodeId node) const {
+        return node_storage_.node_R(node);
+    }
+
     /* Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;

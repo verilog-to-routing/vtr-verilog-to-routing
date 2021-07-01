@@ -110,9 +110,6 @@ class t_rr_node {
 
     bool is_node_on_specific_side(e_side side) const;
 
-    float R() const;
-    float C() const;
-
     bool validate() const;
 
   public: //Mutators

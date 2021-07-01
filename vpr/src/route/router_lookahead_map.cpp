@@ -151,7 +151,7 @@ class PQ_Entry {
         this->R_upstream = parent_R_upstream;
         if (!starting_node) {
             int cost_index = device_ctx.rr_nodes.node_cost_index(RRNodeId(set_rr_node));
-            //this->delay += g_rr_nodes[set_rr_node].C() * (g_rr_switch_inf[switch_ind].R + 0.5*g_rr_nodes[set_rr_node].R()) +
+            //this->delay += rr_graph.node_C(RRNodeId(set_rr_node)) * (g_rr_switch_inf[switch_ind].R + 0.5*rr_graph.node_R(RRNodeId(set_rr_node))) +
             //              g_rr_switch_inf[switch_ind].Tdel;
 
             //FIXME going to use the delay data that the VPR7 lookahead uses. For some reason the delay calculation above calculates
