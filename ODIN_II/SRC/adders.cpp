@@ -1380,7 +1380,6 @@ nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netl
 
         /* adding a cin connected to GND */
         npin_t* cin_pin = get_zero_pin(netlist);
-        cin_pin->name = make_full_ref_name(NULL, NULL, new_node->name, "cin", 0);
         cin_pin->type = INPUT;
         cin_pin->mapping = vtr::strdup("cin");
 

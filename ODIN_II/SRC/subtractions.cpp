@@ -347,11 +347,6 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
         oassert(nodeo->input_port_sizes[0] == b);
     }
 
-    /* free noeo input pins mapping since there is no need in the future and cause mem laeak */
-    for (i = 0; i < nodeo->num_input_pins; i++) {
-        vtr::free(nodeo->input_pins[i]->mapping);
-    }
-
     node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (count));
     not_node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (b));
 
@@ -359,9 +354,9 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
         not_node[i] = allocate_nnode(nodeo->loc);
         nnode_t* temp = not_node[i];
         if (nodeo->num_input_port_sizes == 2)
-            not_node[i] = make_not_gate_with_input(nodeo->input_pins[a + i], not_node[i], -1);
+            not_node[i] = make_not_gate_with_input(copy_input_npin(nodeo->input_pins[a + i]), not_node[i], -1);
         else
-            not_node[i] = make_not_gate_with_input(nodeo->input_pins[i], not_node[i], -1);
+            not_node[i] = make_not_gate_with_input(copy_input_npin(nodeo->input_pins[i]), not_node[i], -1);
         free_nnode(temp);
     }
 
@@ -892,6 +887,10 @@ static void cleanup_sub_old_node(nnode_t* nodeo, netlist_t* netlist) {
     int i;
     /* Disconnecting input pins from the old node side */
     for (i = 0; i < nodeo->num_input_pins; i++) {
+        npin_t* input_pin = nodeo->input_pins[i];
+        if (input_pin->node == nodeo)
+            delete_npin(input_pin);
+
         nodeo->input_pins[i] = NULL;
     }
 
