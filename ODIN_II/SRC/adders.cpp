@@ -40,6 +40,7 @@
 #include "subtractions.h"
 
 #include "vtr_memory.h"
+#include "vtr_util.h"
 
 #include "vtr_list.h"
 
@@ -1361,7 +1362,7 @@ nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netl
         int in_port2_size = node->input_port_sizes[1];
         int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
 
-        new_node = make_2port_gate(node->type, in_port1_size, in_port2_size,
+        new_node = make_3port_gate(node->type, in_port1_size, in_port2_size, 1,
                                    out_port_size,
                                    node, traverse_mark_number);
 
@@ -1376,6 +1377,14 @@ nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netl
                                   new_node,
                                   i + in_port1_size);
         }
+
+        /* adding a cin connected to GND */
+        npin_t* cin_pin = get_zero_pin(netlist);
+        cin_pin->name = make_full_ref_name(NULL, NULL, new_node->name, "cin", 0);
+        cin_pin->type = INPUT;
+        cin_pin->mapping = vtr::strdup("cin");
+
+        add_input_pin_to_node(new_node, cin_pin, new_node->num_input_pins - 1);
 
         // moving the output pins to the new node
         for (i = 0; i < out_port_size; i++) {
