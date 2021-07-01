@@ -22,7 +22,7 @@ autoname;
 
 pmuxtree;
 
-opt -undriven -full;
+opt -undriven -full; # -noff: potential option to remove all sdff, dffe and etc. Only dff will remain
 
 write_blif -param -impltf $env(OUTPUT_BLIF_PATH)/$env(TCL_BLIF_NAME);
 

@@ -129,6 +129,8 @@ void traverse_forward(nnode_t* node, int toplevel, int remove_me) {
                         /* If this child hasn't already been visited, visit it now */
                         if (child->node_data != VISITED_FORWARD) {
                             traverse_forward(child, false, remove_me);
+                            if (!child->name)
+                                std::cout << "here:" << child->type << std::endl;
                         }
                     }
                 }
@@ -171,7 +173,9 @@ void remove_unused_nodes(node_list_t* remove) {
         int i;
         for (i = 0; i < remove->node->num_input_pins; i++) {
             npin_t* input_pin = remove->node->input_pins[i];
-            input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL; // Remove the fanout pin from the net
+            /* Remove the fanout pin from the net */
+            if (input_pin)
+                input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL;
         }
         remove->node->node_data = VISITED_REMOVAL;
         remove = remove->next;

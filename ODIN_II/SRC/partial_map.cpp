@@ -663,13 +663,12 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
     }
 
     // CLEAN UP
-    if (!coarsen_cleanup) {
-        for (int i = 0; i < node->num_output_pins; i++) {
-            free_npin(node->output_pins[i]);
+    if (coarsen_cleanup) {
+        for (int i = 0; i < node->num_input_pins; i++) {
+            delete_npin(node->input_pins[i]);
         }
-        node->num_output_pins = 0;
+        free_nnode(node);
     }
-    free_nnode(node);
 
     return buffer_is_removed;
 }

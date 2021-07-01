@@ -1065,7 +1065,7 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b) {
 
     // CLEAN UP
     free_nnode(node);
-    
+
     return;
 }
 
