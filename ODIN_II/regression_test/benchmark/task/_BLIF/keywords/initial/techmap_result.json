@@ -6,11 +6,11 @@
         "exec_time(ms)": 1.6,
         "techmap_time(ms)": 1.2,
         "Po": 9,
-        "logic element": 9,
+        "logic element": 13,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 13,
+        "Total Node": 13
     },
     "initial/initial_multiple_blocks/no_arch": {
         "test_name": "initial/initial_multiple_blocks/no_arch",
@@ -20,11 +20,11 @@
         "techmap_time(ms)": 1.2,
         "Pi": 6,
         "Po": 15,
-        "logic element": 15,
+        "logic element": 19,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 15,
-        "Total Node": 15
+        "Estimated LUTs": 19,
+        "Total Node": 19
     },
     "initial/initial_multiple_statements/no_arch": {
         "test_name": "initial/initial_multiple_statements/no_arch",
@@ -34,11 +34,11 @@
         "techmap_time(ms)": 1.1,
         "Pi": 1,
         "Po": 9,
-        "logic element": 9,
+        "logic element": 13,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 13,
+        "Total Node": 13
     },
     "initial/if_statement/no_arch": {
         "test_name": "initial/if_statement/no_arch",

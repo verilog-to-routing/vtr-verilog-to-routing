@@ -17,11 +17,11 @@
         "test_name": "parameter/parameter_define/no_arch",
         "input_blif": "parameter_define.blif",
         "Po": 5,
-        "logic element": 5,
+        "logic element": 7,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 5,
-        "Total Node": 5
+        "Estimated LUTs": 7,
+        "Total Node": 7
     },
     "parameter/parameter_override/no_arch": {
         "test_name": "parameter/parameter_override/no_arch",
@@ -31,11 +31,11 @@
         "techmap_time(ms)": 2.5,
         "Pi": 10,
         "Po": 7,
-        "logic element": 12,
+        "logic element": 15,
         "Longest Path": 6,
-        "Average Path": 4,
-        "Estimated LUTs": 12,
-        "Total Node": 12
+        "Average Path": 3,
+        "Estimated LUTs": 15,
+        "Total Node": 15
     },
     "DEFAULT": {
         "test_name": "n/a",

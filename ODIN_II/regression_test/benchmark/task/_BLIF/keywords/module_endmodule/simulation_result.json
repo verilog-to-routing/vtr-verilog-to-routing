@@ -19,11 +19,11 @@
         "max_rss(MiB)": 38.8,
         "exec_time(ms)": 3.2,
         "Po": 4,
-        "logic element": 4,
+        "logic element": 6,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "DEFAULT": {
         "test_name": "n/a",

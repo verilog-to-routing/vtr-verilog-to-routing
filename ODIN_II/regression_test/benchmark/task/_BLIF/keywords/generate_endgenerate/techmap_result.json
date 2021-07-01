@@ -48,11 +48,11 @@
         "exec_time(ms)": 1.4,
         "techmap_time(ms)": 1,
         "Po": 3,
-        "logic element": 3,
+        "logic element": 4,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "generate_endgenerate/generate_else_if_0/no_arch": {
         "test_name": "generate_endgenerate/generate_else_if_0/no_arch",

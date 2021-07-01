@@ -36,11 +36,11 @@
         "exec_time(ms)": 6.1,
         "techmap_time(ms)": 3.9,
         "Po": 5,
-        "logic element": 5,
+        "logic element": 7,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 5,
-        "Total Node": 5
+        "Estimated LUTs": 7,
+        "Total Node": 7
     },
     "posedge/parameter_override/no_arch": {
         "test_name": "posedge/parameter_override/no_arch",
@@ -50,11 +50,11 @@
         "techmap_time(ms)": 69.1,
         "Pi": 10,
         "Po": 7,
-        "logic element": 12,
+        "logic element": 15,
         "Longest Path": 6,
-        "Average Path": 4,
-        "Estimated LUTs": 12,
-        "Total Node": 12
+        "Average Path": 3,
+        "Estimated LUTs": 15,
+        "Total Node": 15
     },
     "DEFAULT": {
         "test_name": "n/a",

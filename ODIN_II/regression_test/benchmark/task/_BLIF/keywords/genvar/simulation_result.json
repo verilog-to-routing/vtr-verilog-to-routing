@@ -6,11 +6,11 @@
         "exec_time(ms)": 2.8,
         "simulation_time(ms)": 1.3,
         "Po": 3,
-        "logic element": 3,
+        "logic element": 4,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "genvar/generate_case_00/no_arch": {
         "test_name": "genvar/generate_case_00/no_arch",
@@ -57,11 +57,11 @@
         "max_rss(MiB)": 39,
         "exec_time(ms)": 3.3,
         "Po": 3,
-        "logic element": 3,
+        "logic element": 4,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "genvar/generate_else_if_0/no_arch": {
         "test_name": "genvar/generate_else_if_0/no_arch",

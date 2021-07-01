@@ -6,11 +6,11 @@
         "exec_time(ms)": 2.1,
         "techmap_time(ms)": 1.4,
         "Po": 32,
-        "logic element": 32,
+        "logic element": 48,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 32,
-        "Total Node": 32
+        "Estimated LUTs": 48,
+        "Total Node": 48
     },
     "for/generate_for_ultra_wide/no_arch": {
         "test_name": "for/generate_for_ultra_wide/no_arch",
@@ -19,11 +19,11 @@
         "exec_time(ms)": 6.2,
         "techmap_time(ms)": 3.5,
         "Po": 256,
-        "logic element": 256,
+        "logic element": 384,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 256,
-        "Total Node": 256
+        "Estimated LUTs": 384,
+        "Total Node": 384
     },
     "for/generate_for_wide/no_arch": {
         "test_name": "for/generate_for_wide/no_arch",
@@ -32,11 +32,11 @@
         "exec_time(ms)": 1.6,
         "techmap_time(ms)": 1.2,
         "Po": 3,
-        "logic element": 3,
+        "logic element": 4,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "for/else_if/no_arch": {
         "test_name": "for/else_if/no_arch",
