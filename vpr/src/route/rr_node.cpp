@@ -28,17 +28,6 @@ bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
     return device_ctx.rr_switch_inf[iswitch].configurable();
 }
 
-float t_rr_node::R() const {
-    auto& device_ctx = g_vpr_ctx.device();
-    return device_ctx.rr_rc_data[rc_index()].R;
-}
-
-float t_rr_node::C() const {
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT(rc_index() < (short)device_ctx.rr_rc_data.size());
-    return device_ctx.rr_rc_data[rc_index()].C;
-}
-
 bool t_rr_node::validate() const {
     //Check internal assumptions about RR node are valid
     t_edge_size iedge = 0;
