@@ -421,13 +421,6 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
         new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
         new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
-    } else if (configuration.coarsen
-               && (new_node->type == SPRAM
-                   || new_node->type == DPRAM
-                   || new_node->type == BRAM
-                   || new_node->type == ROM)) {
-        new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
-        new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
     }
 
     /*add this node to blif_netlist as an internal node */
