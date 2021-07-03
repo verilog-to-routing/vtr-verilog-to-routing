@@ -3431,9 +3431,9 @@ int alias_output_assign_pins_to_inputs(char_list_t* output_list, signal_list_t* 
         if (i >= input_list->count) {
             if (global_args.all_warnings)
                 warning_message(NETLIST, node->loc,
-                                "More nets to drive than drivers, padding with ZEROs for driver %s\n", output_list->strings[i]);
+                                "More nets to drive than drivers, padding with PADs for driver %s\n", output_list->strings[i]);
 
-            add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
+            add_pin_to_signal_list(input_list, get_pad_pin(verilog_netlist));
         }
 
         if (input_list->pins[i]->name)
