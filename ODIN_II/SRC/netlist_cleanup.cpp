@@ -73,8 +73,11 @@ void traverse_backward(nnode_t* node) {
     node->node_data = VISITED_BACKWARD;              // Mark as visited
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
-        for (int j = 0; j < node->input_pins[i]->net->num_driver_pins; j++) {  // ensure this net has a driver (i.e. skip undriven outputs)
-            traverse_backward(node->input_pins[i]->net->driver_pins[j]->node); // Visit the drivers of this node
+        // ensure this net has a driver (i.e. skip undriven outputs)
+        for (int j = 0; j < node->input_pins[i]->net->num_driver_pins; j++) {  
+            if (node->input_pins[i]->net->driver_pins[j]->node)
+                // Visit the drivers of this node
+                traverse_backward(node->input_pins[i]->net->driver_pins[j]->node); 
         }
     }
 }
