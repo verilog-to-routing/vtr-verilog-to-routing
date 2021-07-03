@@ -550,6 +550,9 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
     } else if (strstr(full_name, ZERO_GND_ZERO)) {
         join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
         input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
+    } else if (strstr(full_name, ZERO_PAD_ZERO)) {
+        join_nets(verilog_netlist->pad_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->pad_net;
     }
     /* check if the instantiation pin exists. */
     else if ((sc_spot_output = sc_lookup_string(output_nets_sc, full_name)) == -1) {
