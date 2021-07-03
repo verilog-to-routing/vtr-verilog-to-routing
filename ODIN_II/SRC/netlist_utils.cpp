@@ -1398,12 +1398,12 @@ void delete_npin(npin_t* pin) {
         /* detach from its node */
         pin->node->input_pins[pin->pin_node_idx] = NULL;
         /* detach from its net */
-        remove_fanout_pins_from_net(pin->net, pin, pin->pin_net_idx);
+        pin->net->fanout_pins[pin->pin_net_idx] = NULL;
     } else if (pin->type == OUTPUT) {
         /* detach from its node */
         pin->node->output_pins[pin->pin_node_idx] = NULL;
         /* detach from its net */
-        remove_driver_pins_from_net(pin->net, pin, pin->pin_net_idx);
+        pin->net->driver_pins[pin->pin_net_idx] = NULL;
     }
     // CLEAN UP
     free_npin(pin);
