@@ -3,7 +3,7 @@
 ########################
 
 # setup the circuits
-circuits_dir=regression_test/benchmark/_VERILOG/Modified_VTR_Benchmarks/
+circuits_dir=regression_test/benchmark/_VERILOG/vtr/
 
 # circuit's name
 circuit_list_add=*.v

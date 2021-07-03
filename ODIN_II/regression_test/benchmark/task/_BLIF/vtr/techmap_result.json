@@ -1,6 +1,6 @@
 {
-    "Modified_VTR_Benchmarks/and_latch/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/and_latch/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/and_latch/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/and_latch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "and_latch.blif",
         "max_rss(MiB)": 63.5,
@@ -17,8 +17,8 @@
         "Estimated LUTs": 2,
         "Total Node": 4
     },
-    "Modified_VTR_Benchmarks/arm_core/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/arm_core/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/arm_core/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/arm_core/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "arm_core.blif",
         "max_rss(MiB)": 2084.8,
@@ -37,8 +37,8 @@
         "Estimated LUTs": 61115,
         "Total Node": 66670
     },
-    "Modified_VTR_Benchmarks/bgm/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/bgm/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/bgm/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/bgm/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "bgm.blif",
         "max_rss(MiB)": 2796.1,
@@ -57,8 +57,8 @@
         "Estimated LUTs": 215566,
         "Total Node": 210879
     },
-    "Modified_VTR_Benchmarks/blob_merge/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/blob_merge/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/blob_merge/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/blob_merge/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "blob_merge.blif",
         "max_rss(MiB)": 1898.1,
@@ -76,8 +76,8 @@
         "Estimated LUTs": 22719,
         "Total Node": 25551
     },
-    "Modified_VTR_Benchmarks/boundtop/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/boundtop/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/boundtop/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/boundtop/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "boundtop.blif",
         "max_rss(MiB)": 932.7,
@@ -96,8 +96,8 @@
         "Estimated LUTs": 11141,
         "Total Node": 12273
     },
-    "Modified_VTR_Benchmarks/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "ch_intrinsics.blif",
         "max_rss(MiB)": 118.1,
@@ -115,8 +115,8 @@
         "Estimated LUTs": 853,
         "Total Node": 1025
     },
-    "Modified_VTR_Benchmarks/des_area/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/des_area/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/des_area/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/des_area/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "des_area.blif",
         "max_rss(MiB)": 691.9,
@@ -133,8 +133,8 @@
         "Estimated LUTs": 10049,
         "Total Node": 8998
     },
-    "Modified_VTR_Benchmarks/des_perf/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/des_perf/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/des_perf/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/des_perf/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "des_perf.blif",
         "max_rss(MiB)": 2359.3,
@@ -151,8 +151,8 @@
         "Estimated LUTs": 90112,
         "Total Node": 74273
     },
-    "Modified_VTR_Benchmarks/diffeq1/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/diffeq1/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/diffeq1/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/diffeq1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "diffeq1.blif",
         "max_rss(MiB)": 122.7,
@@ -171,8 +171,8 @@
         "Estimated LUTs": 865,
         "Total Node": 1182
     },
-    "Modified_VTR_Benchmarks/diffeq2/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/diffeq2/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/diffeq2/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/diffeq2/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "diffeq2.blif",
         "max_rss(MiB)": 113.7,
@@ -191,8 +191,8 @@
         "Estimated LUTs": 465,
         "Total Node": 685
     },
-    "Modified_VTR_Benchmarks/iir/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/iir/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/iir/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/iir/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "iir.blif",
         "max_rss(MiB)": 103,
@@ -210,8 +210,8 @@
         "Estimated LUTs": 45,
         "Total Node": 60
     },
-    "Modified_VTR_Benchmarks/LargeRam/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/LargeRam/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/LargeRam/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/LargeRam/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "LargeRam.blif",
         "max_rss(MiB)": 75.8,
@@ -229,8 +229,8 @@
         "Estimated LUTs": 9,
         "Total Node": 14
     },
-    "Modified_VTR_Benchmarks/LU32PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/LU32PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/LU32PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/LU32PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "LU32PEEng.blif",
         "max_rss(MiB)": 4214.7,
@@ -250,8 +250,8 @@
         "Estimated LUTs": 498639,
         "Total Node": 532780
     },
-    "Modified_VTR_Benchmarks/LU64PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/LU64PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/LU64PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/LU64PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "LU64PEEng.blif",
         "max_rss(MiB)": 6628.7,
@@ -271,8 +271,8 @@
         "Estimated LUTs": 979856,
         "Total Node": 1044786
     },
-    "Modified_VTR_Benchmarks/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/LU8PEEng/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "LU8PEEng.blif",
         "max_rss(MiB)": 2350.3,
@@ -292,8 +292,8 @@
         "Estimated LUTs": 137661,
         "Total Node": 148271
     },
-    "Modified_VTR_Benchmarks/mac1/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/mac1/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/mac1/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/mac1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "mac1.blif",
         "max_rss(MiB)": 1218.2,
@@ -311,8 +311,8 @@
         "Estimated LUTs": 14750,
         "Total Node": 15099
     },
-    "Modified_VTR_Benchmarks/mac2/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/mac2/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/mac2/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/mac2/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "mac2.blif",
         "max_rss(MiB)": 1949.4,
@@ -330,14 +330,14 @@
         "Estimated LUTs": 53095,
         "Total Node": 53782
     },
-    "Modified_VTR_Benchmarks/mcml/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/mcml/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/mcml/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/mcml/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "mcml.blif",
         "exit": 1
     },
-    "Modified_VTR_Benchmarks/mkDelayWorker32B/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/mkDelayWorker32B/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/mkDelayWorker32B/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/mkDelayWorker32B/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "mkDelayWorker32B.blif",
         "Latch Drivers": 1,
@@ -353,8 +353,8 @@
         "Estimated LUTs": 34743,
         "Total Node": 39627
     },
-    "Modified_VTR_Benchmarks/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/mkPktMerge/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "mkPktMerge.blif",
         "max_rss(MiB)": 829.2,
@@ -373,8 +373,8 @@
         "Estimated LUTs": 3783,
         "Total Node": 4780
     },
-    "Modified_VTR_Benchmarks/mkSMAdapter4B/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/mkSMAdapter4B/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/mkSMAdapter4B/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/mkSMAdapter4B/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "mkSMAdapter4B.blif",
         "max_rss(MiB)": 1131.7,
@@ -393,8 +393,8 @@
         "Estimated LUTs": 12288,
         "Total Node": 13709
     },
-    "Modified_VTR_Benchmarks/multiclock_output_and_latch/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/multiclock_output_and_latch/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/multiclock_output_and_latch/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/multiclock_output_and_latch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "multiclock_output_and_latch.blif",
         "max_rss(MiB)": 74.6,
@@ -412,8 +412,8 @@
         "Estimated LUTs": 6,
         "Total Node": 13
     },
-    "Modified_VTR_Benchmarks/multiclock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/multiclock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/multiclock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/multiclock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "multiclock_reader_writer.blif",
         "max_rss(MiB)": 80.1,
@@ -431,8 +431,8 @@
         "Estimated LUTs": 71,
         "Total Node": 92
     },
-    "Modified_VTR_Benchmarks/multiclock_separate_and_latch/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/multiclock_separate_and_latch/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/multiclock_separate_and_latch/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/multiclock_separate_and_latch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "multiclock_separate_and_latch.blif",
         "max_rss(MiB)": 63.6,
@@ -449,8 +449,8 @@
         "Estimated LUTs": 4,
         "Total Node": 8
     },
-    "Modified_VTR_Benchmarks/or1200/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/or1200/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/or1200/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/or1200/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "or1200.blif",
         "max_rss(MiB)": 1515.1,
@@ -470,8 +470,8 @@
         "Estimated LUTs": 15538,
         "Total Node": 16521
     },
-    "Modified_VTR_Benchmarks/paj_boundtop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/paj_boundtop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/paj_boundtop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/paj_boundtop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "paj_boundtop_hierarchy_no_mem.blif",
         "max_rss(MiB)": 1040.9,
@@ -489,8 +489,8 @@
         "Estimated LUTs": 12119,
         "Total Node": 13130
     },
-    "Modified_VTR_Benchmarks/paj_framebuftop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/paj_framebuftop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/paj_framebuftop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/paj_framebuftop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "paj_framebuftop_hierarchy_no_mem.blif",
         "max_rss(MiB)": 231.4,
@@ -508,8 +508,8 @@
         "Estimated LUTs": 3425,
         "Total Node": 3978
     },
-    "Modified_VTR_Benchmarks/paj_raygentop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/paj_raygentop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/paj_raygentop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/paj_raygentop_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "paj_raygentop_hierarchy_no_mem.blif",
         "max_rss(MiB)": 800.5,
@@ -528,8 +528,8 @@
         "Estimated LUTs": 9494,
         "Total Node": 11236
     },
-    "Modified_VTR_Benchmarks/paj_top_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/paj_top_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/paj_top_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/paj_top_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "paj_top_hierarchy_no_mem.blif",
         "Latch Drivers": 1,
@@ -545,8 +545,8 @@
         "Estimated LUTs": 52487,
         "Total Node": 65802
     },
-    "Modified_VTR_Benchmarks/raygentop/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/raygentop/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/raygentop/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/raygentop/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "raygentop.blif",
         "max_rss(MiB)": 748.7,
@@ -566,8 +566,8 @@
         "Estimated LUTs": 9068,
         "Total Node": 10860
     },
-    "Modified_VTR_Benchmarks/sha/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/sha/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/sha/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/sha/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "sha.blif",
         "max_rss(MiB)": 446.5,
@@ -585,8 +585,8 @@
         "Estimated LUTs": 7245,
         "Total Node": 8082
     },
-    "Modified_VTR_Benchmarks/single_ff/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/single_ff/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/single_ff/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/single_ff/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "single_ff.blif",
         "max_rss(MiB)": 62.8,
@@ -603,8 +603,8 @@
         "Estimated LUTs": 1,
         "Total Node": 3
     },
-    "Modified_VTR_Benchmarks/single_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/single_wire/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/single_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/single_wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "single_wire.blif",
         "max_rss(MiB)": 60.1,
@@ -619,8 +619,8 @@
         "Estimated LUTs": 1,
         "Total Node": 1
     },
-    "Modified_VTR_Benchmarks/spree/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/spree/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/spree/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/spree/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "spree.blif",
         "max_rss(MiB)": 462.5,
@@ -640,8 +640,8 @@
         "Estimated LUTs": 5077,
         "Total Node": 5337
     },
-    "Modified_VTR_Benchmarks/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "stereovision0.blif",
         "max_rss(MiB)": 1714.5,
@@ -659,8 +659,8 @@
         "Estimated LUTs": 13023,
         "Total Node": 27768
     },
-    "Modified_VTR_Benchmarks/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "stereovision1.blif",
         "max_rss(MiB)": 2208.6,
@@ -679,8 +679,8 @@
         "Estimated LUTs": 15331,
         "Total Node": 29238
     },
-    "Modified_VTR_Benchmarks/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "stereovision2.blif",
         "max_rss(MiB)": 2124,
@@ -699,8 +699,8 @@
         "Estimated LUTs": 12432,
         "Total Node": 42041
     },
-    "Modified_VTR_Benchmarks/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "stereovision3.blif",
         "max_rss(MiB)": 135.5,
@@ -718,8 +718,8 @@
         "Estimated LUTs": 1864,
         "Total Node": 1697
     },
-    "Modified_VTR_Benchmarks/sv_chip0_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip0_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/sv_chip0_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/sv_chip0_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "sv_chip0_hierarchy_no_mem.blif",
         "max_rss(MiB)": 1613.2,
@@ -737,8 +737,8 @@
         "Estimated LUTs": 12337,
         "Total Node": 26488
     },
-    "Modified_VTR_Benchmarks/sv_chip1_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip1_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/sv_chip1_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/sv_chip1_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "sv_chip1_hierarchy_no_mem.blif",
         "max_rss(MiB)": 2038.4,
@@ -757,8 +757,8 @@
         "Estimated LUTs": 14294,
         "Total Node": 28224
     },
-    "Modified_VTR_Benchmarks/sv_chip2_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip2_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/sv_chip2_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/sv_chip2_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "sv_chip2_hierarchy_no_mem.blif",
         "max_rss(MiB)": 2127.9,
@@ -777,8 +777,8 @@
         "Estimated LUTs": 12372,
         "Total Node": 41981
     },
-    "Modified_VTR_Benchmarks/sv_chip3_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip3_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/sv_chip3_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/sv_chip3_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "sv_chip3_hierarchy_no_mem.blif",
         "max_rss(MiB)": 135.7,
@@ -796,8 +796,8 @@
         "Estimated LUTs": 1864,
         "Total Node": 1697
     },
-    "Modified_VTR_Benchmarks/tpu.16x16.int8/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/tpu.16x16.int8/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/tpu.16x16.int8/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/tpu.16x16.int8/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "tpu.16x16.int8.blif",
         "max_rss(MiB)": 2202.2,
@@ -817,8 +817,8 @@
         "Estimated LUTs": 77508,
         "Total Node": 99633
     },
-    "Modified_VTR_Benchmarks/tpu.32x32.int8/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "Modified_VTR_Benchmarks/tpu.32x32.int8/k6_frac_N10_frac_chain_mem32K_40nm",
+    "vtr/tpu.32x32.int8/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "vtr/tpu.32x32.int8/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "tpu.32x32.int8.blif",
         "max_rss(MiB)": 3329.6,
@@ -838,8 +838,8 @@
         "Estimated LUTs": 251754,
         "Total Node": 336351
     },
-    "Modified_VTR_Benchmarks/and_latch/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/and_latch/no_arch",
+    "vtr/and_latch/no_arch": {
+        "test_name": "vtr/and_latch/no_arch",
         "input_blif": "and_latch.blif",
         "max_rss(MiB)": 12.1,
         "exec_time(ms)": 2.8,
@@ -854,8 +854,8 @@
         "Estimated LUTs": 2,
         "Total Node": 4
     },
-    "Modified_VTR_Benchmarks/arm_core/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/arm_core/no_arch",
+    "vtr/arm_core/no_arch": {
+        "test_name": "vtr/arm_core/no_arch",
         "input_blif": "arm_core.blif",
         "max_rss(MiB)": 3044.4,
         "exec_time(ms)": 21204.6,
@@ -870,8 +870,8 @@
         "Estimated LUTs": 680858,
         "Total Node": 990719
     },
-    "Modified_VTR_Benchmarks/bgm/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/bgm/no_arch",
+    "vtr/bgm/no_arch": {
+        "test_name": "vtr/bgm/no_arch",
         "input_blif": "bgm.blif",
         "max_rss(MiB)": 935.9,
         "exec_time(ms)": 106592.4,
@@ -886,8 +886,8 @@
         "Estimated LUTs": 226422,
         "Total Node": 231563
     },
-    "Modified_VTR_Benchmarks/blob_merge/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/blob_merge/no_arch",
+    "vtr/blob_merge/no_arch": {
+        "test_name": "vtr/blob_merge/no_arch",
         "input_blif": "blob_merge.blif",
         "max_rss(MiB)": 94.4,
         "exec_time(ms)": 811,
@@ -902,8 +902,8 @@
         "Estimated LUTs": 27706,
         "Total Node": 28259
     },
-    "Modified_VTR_Benchmarks/boundtop/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/boundtop/no_arch",
+    "vtr/boundtop/no_arch": {
+        "test_name": "vtr/boundtop/no_arch",
         "input_blif": "boundtop.blif",
         "max_rss(MiB)": 363.7,
         "exec_time(ms)": 2909.6,
@@ -918,8 +918,8 @@
         "Estimated LUTs": 78957,
         "Total Node": 112924
     },
-    "Modified_VTR_Benchmarks/ch_intrinsics/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/ch_intrinsics/no_arch",
+    "vtr/ch_intrinsics/no_arch": {
+        "test_name": "vtr/ch_intrinsics/no_arch",
         "input_blif": "ch_intrinsics.blif",
         "max_rss(MiB)": 16.2,
         "exec_time(ms)": 48.3,
@@ -934,8 +934,8 @@
         "Estimated LUTs": 1396,
         "Total Node": 1862
     },
-    "Modified_VTR_Benchmarks/des_area/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/des_area/no_arch",
+    "vtr/des_area/no_arch": {
+        "test_name": "vtr/des_area/no_arch",
         "input_blif": "des_area.blif",
         "max_rss(MiB)": 36.6,
         "exec_time(ms)": 239.9,
@@ -950,8 +950,8 @@
         "Estimated LUTs": 8933,
         "Total Node": 8998
     },
-    "Modified_VTR_Benchmarks/des_perf/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/des_perf/no_arch",
+    "vtr/des_perf/no_arch": {
+        "test_name": "vtr/des_perf/no_arch",
         "input_blif": "des_perf.blif",
         "max_rss(MiB)": 238.3,
         "exec_time(ms)": 2022.9,
@@ -966,8 +966,8 @@
         "Estimated LUTs": 72288,
         "Total Node": 74273
     },
-    "Modified_VTR_Benchmarks/diffeq1/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/diffeq1/no_arch",
+    "vtr/diffeq1/no_arch": {
+        "test_name": "vtr/diffeq1/no_arch",
         "input_blif": "diffeq1.blif",
         "max_rss(MiB)": 34.5,
         "exec_time(ms)": 97.3,
@@ -982,8 +982,8 @@
         "Estimated LUTs": 5764,
         "Total Node": 5958
     },
-    "Modified_VTR_Benchmarks/diffeq2/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/diffeq2/no_arch",
+    "vtr/diffeq2/no_arch": {
+        "test_name": "vtr/diffeq2/no_arch",
         "input_blif": "diffeq2.blif",
         "max_rss(MiB)": 33,
         "exec_time(ms)": 80.6,
@@ -998,8 +998,8 @@
         "Estimated LUTs": 5364,
         "Total Node": 5461
     },
-    "Modified_VTR_Benchmarks/iir/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/iir/no_arch",
+    "vtr/iir/no_arch": {
+        "test_name": "vtr/iir/no_arch",
         "input_blif": "iir.blif",
         "max_rss(MiB)": 12.1,
         "exec_time(ms)": 18.4,
@@ -1014,8 +1014,8 @@
         "Estimated LUTs": 49,
         "Total Node": 58
     },
-    "Modified_VTR_Benchmarks/LargeRam/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/LargeRam/no_arch",
+    "vtr/LargeRam/no_arch": {
+        "test_name": "vtr/LargeRam/no_arch",
         "input_blif": "LargeRam.blif",
         "max_rss(MiB)": 12.1,
         "exec_time(ms)": 6.3,
@@ -1030,8 +1030,8 @@
         "Estimated LUTs": 23,
         "Total Node": 31
     },
-    "Modified_VTR_Benchmarks/LU32PEEng/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/LU32PEEng/no_arch",
+    "vtr/LU32PEEng/no_arch": {
+        "test_name": "vtr/LU32PEEng/no_arch",
         "input_blif": "LU32PEEng.blif",
         "max_rss(MiB)": 10859.7,
         "exec_time(ms)": 928064.9,
@@ -1046,13 +1046,13 @@
         "Estimated LUTs": 2609700,
         "Total Node": 3308931
     },
-    "Modified_VTR_Benchmarks/LU64PEEng/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/LU64PEEng/no_arch",
+    "vtr/LU64PEEng/no_arch": {
+        "test_name": "vtr/LU64PEEng/no_arch",
         "input_blif": "LU64PEEng.blif",
         "exit": 137
     },
-    "Modified_VTR_Benchmarks/LU8PEEng/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/LU8PEEng/no_arch",
+    "vtr/LU8PEEng/no_arch": {
+        "test_name": "vtr/LU8PEEng/no_arch",
         "input_blif": "LU8PEEng.blif",
         "max_rss(MiB)": 1168.3,
         "exec_time(ms)": 33734.9,
@@ -1067,8 +1067,8 @@
         "Estimated LUTs": 298043,
         "Total Node": 352538
     },
-    "Modified_VTR_Benchmarks/mac1/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/mac1/no_arch",
+    "vtr/mac1/no_arch": {
+        "test_name": "vtr/mac1/no_arch",
         "input_blif": "mac1.blif",
         "max_rss(MiB)": 55,
         "exec_time(ms)": 584.6,
@@ -1083,8 +1083,8 @@
         "Estimated LUTs": 14970,
         "Total Node": 15233
     },
-    "Modified_VTR_Benchmarks/mac2/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/mac2/no_arch",
+    "vtr/mac2/no_arch": {
+        "test_name": "vtr/mac2/no_arch",
         "input_blif": "mac2.blif",
         "max_rss(MiB)": 165.9,
         "exec_time(ms)": 2002.2,
@@ -1099,13 +1099,13 @@
         "Estimated LUTs": 53531,
         "Total Node": 54056
     },
-    "Modified_VTR_Benchmarks/mcml/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/mcml/no_arch",
+    "vtr/mcml/no_arch": {
+        "test_name": "vtr/mcml/no_arch",
         "input_blif": "mcml.blif",
         "exit": 6
     },
-    "Modified_VTR_Benchmarks/mkDelayWorker32B/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/mkDelayWorker32B/no_arch",
+    "vtr/mkDelayWorker32B/no_arch": {
+        "test_name": "vtr/mkDelayWorker32B/no_arch",
         "input_blif": "mkDelayWorker32B.blif",
         "max_rss(MiB)": 3643.4,
         "exec_time(ms)": 37316.5,
@@ -1120,8 +1120,8 @@
         "Estimated LUTs": 854572,
         "Total Node": 1128695
     },
-    "Modified_VTR_Benchmarks/mkPktMerge/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/mkPktMerge/no_arch",
+    "vtr/mkPktMerge/no_arch": {
+        "test_name": "vtr/mkPktMerge/no_arch",
         "input_blif": "mkPktMerge.blif",
         "max_rss(MiB)": 123.8,
         "exec_time(ms)": 635.2,
@@ -1136,8 +1136,8 @@
         "Estimated LUTs": 26592,
         "Total Node": 34435
     },
-    "Modified_VTR_Benchmarks/mkSMAdapter4B/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/mkSMAdapter4B/no_arch",
+    "vtr/mkSMAdapter4B/no_arch": {
+        "test_name": "vtr/mkSMAdapter4B/no_arch",
         "input_blif": "mkSMAdapter4B.blif",
         "max_rss(MiB)": 111.4,
         "exec_time(ms)": 888.5,
@@ -1152,8 +1152,8 @@
         "Estimated LUTs": 26665,
         "Total Node": 32179
     },
-    "Modified_VTR_Benchmarks/multiclock_output_and_latch/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/multiclock_output_and_latch/no_arch",
+    "vtr/multiclock_output_and_latch/no_arch": {
+        "test_name": "vtr/multiclock_output_and_latch/no_arch",
         "input_blif": "multiclock_output_and_latch.blif",
         "max_rss(MiB)": 12,
         "exec_time(ms)": 5.1,
@@ -1168,8 +1168,8 @@
         "Estimated LUTs": 7,
         "Total Node": 12
     },
-    "Modified_VTR_Benchmarks/multiclock_reader_writer/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/multiclock_reader_writer/no_arch",
+    "vtr/multiclock_reader_writer/no_arch": {
+        "test_name": "vtr/multiclock_reader_writer/no_arch",
         "input_blif": "multiclock_reader_writer.blif",
         "max_rss(MiB)": 12,
         "exec_time(ms)": 7.9,
@@ -1184,8 +1184,8 @@
         "Estimated LUTs": 81,
         "Total Node": 94
     },
-    "Modified_VTR_Benchmarks/multiclock_separate_and_latch/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/multiclock_separate_and_latch/no_arch",
+    "vtr/multiclock_separate_and_latch/no_arch": {
+        "test_name": "vtr/multiclock_separate_and_latch/no_arch",
         "input_blif": "multiclock_separate_and_latch.blif",
         "max_rss(MiB)": 12,
         "exec_time(ms)": 3,
@@ -1200,8 +1200,8 @@
         "Estimated LUTs": 4,
         "Total Node": 8
     },
-    "Modified_VTR_Benchmarks/or1200/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/or1200/no_arch",
+    "vtr/or1200/no_arch": {
+        "test_name": "vtr/or1200/no_arch",
         "input_blif": "or1200.blif",
         "max_rss(MiB)": 101.3,
         "exec_time(ms)": 1099.4,
@@ -1216,8 +1216,8 @@
         "Estimated LUTs": 25785,
         "Total Node": 28592
     },
-    "Modified_VTR_Benchmarks/paj_boundtop_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/paj_boundtop_hierarchy_no_mem/no_arch",
+    "vtr/paj_boundtop_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/paj_boundtop_hierarchy_no_mem/no_arch",
         "input_blif": "paj_boundtop_hierarchy_no_mem.blif",
         "max_rss(MiB)": 55.4,
         "exec_time(ms)": 837.5,
@@ -1232,8 +1232,8 @@
         "Estimated LUTs": 12291,
         "Total Node": 13411
     },
-    "Modified_VTR_Benchmarks/paj_framebuftop_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/paj_framebuftop_hierarchy_no_mem/no_arch",
+    "vtr/paj_framebuftop_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/paj_framebuftop_hierarchy_no_mem/no_arch",
         "input_blif": "paj_framebuftop_hierarchy_no_mem.blif",
         "max_rss(MiB)": 23.2,
         "exec_time(ms)": 103.8,
@@ -1248,8 +1248,8 @@
         "Estimated LUTs": 3520,
         "Total Node": 4069
     },
-    "Modified_VTR_Benchmarks/paj_raygentop_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/paj_raygentop_hierarchy_no_mem/no_arch",
+    "vtr/paj_raygentop_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/paj_raygentop_hierarchy_no_mem/no_arch",
         "input_blif": "paj_raygentop_hierarchy_no_mem.blif",
         "max_rss(MiB)": 70.1,
         "exec_time(ms)": 818.5,
@@ -1264,8 +1264,8 @@
         "Estimated LUTs": 17289,
         "Total Node": 18620
     },
-    "Modified_VTR_Benchmarks/paj_top_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/paj_top_hierarchy_no_mem/no_arch",
+    "vtr/paj_top_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/paj_top_hierarchy_no_mem/no_arch",
         "input_blif": "paj_top_hierarchy_no_mem.blif",
         "max_rss(MiB)": 336.9,
         "exec_time(ms)": 4235.4,
@@ -1280,8 +1280,8 @@
         "Estimated LUTs": 97594,
         "Total Node": 108945
     },
-    "Modified_VTR_Benchmarks/raygentop/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/raygentop/no_arch",
+    "vtr/raygentop/no_arch": {
+        "test_name": "vtr/raygentop/no_arch",
         "input_blif": "raygentop.blif",
         "max_rss(MiB)": 120.5,
         "exec_time(ms)": 1121.7,
@@ -1296,8 +1296,8 @@
         "Estimated LUTs": 28155,
         "Total Node": 34892
     },
-    "Modified_VTR_Benchmarks/sha/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/sha/no_arch",
+    "vtr/sha/no_arch": {
+        "test_name": "vtr/sha/no_arch",
         "input_blif": "sha.blif",
         "max_rss(MiB)": 35.1,
         "exec_time(ms)": 180.9,
@@ -1312,8 +1312,8 @@
         "Estimated LUTs": 7444,
         "Total Node": 8355
     },
-    "Modified_VTR_Benchmarks/single_ff/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/single_ff/no_arch",
+    "vtr/single_ff/no_arch": {
+        "test_name": "vtr/single_ff/no_arch",
         "input_blif": "single_ff.blif",
         "max_rss(MiB)": 11,
         "exec_time(ms)": 9.3,
@@ -1328,8 +1328,8 @@
         "Estimated LUTs": 1,
         "Total Node": 3
     },
-    "Modified_VTR_Benchmarks/single_wire/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/single_wire/no_arch",
+    "vtr/single_wire/no_arch": {
+        "test_name": "vtr/single_wire/no_arch",
         "input_blif": "single_wire.blif",
         "max_rss(MiB)": 8.2,
         "exec_time(ms)": 4,
@@ -1342,8 +1342,8 @@
         "Estimated LUTs": 1,
         "Total Node": 1
     },
-    "Modified_VTR_Benchmarks/spree/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/spree/no_arch",
+    "vtr/spree/no_arch": {
+        "test_name": "vtr/spree/no_arch",
         "input_blif": "spree.blif",
         "max_rss(MiB)": 805.4,
         "exec_time(ms)": 5489.9,
@@ -1358,8 +1358,8 @@
         "Estimated LUTs": 180620,
         "Total Node": 248561
     },
-    "Modified_VTR_Benchmarks/stereovision0/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision0/no_arch",
+    "vtr/stereovision0/no_arch": {
+        "test_name": "vtr/stereovision0/no_arch",
         "input_blif": "stereovision0.blif",
         "max_rss(MiB)": 106.7,
         "exec_time(ms)": 1374.8,
@@ -1374,8 +1374,8 @@
         "Estimated LUTs": 17492,
         "Total Node": 29708
     },
-    "Modified_VTR_Benchmarks/stereovision1/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision1/no_arch",
+    "vtr/stereovision1/no_arch": {
+        "test_name": "vtr/stereovision1/no_arch",
         "input_blif": "stereovision1.blif",
         "max_rss(MiB)": 214.6,
         "exec_time(ms)": 3426.2,
@@ -1390,8 +1390,8 @@
         "Estimated LUTs": 46810,
         "Total Node": 58260
     },
-    "Modified_VTR_Benchmarks/stereovision2/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision2/no_arch",
+    "vtr/stereovision2/no_arch": {
+        "test_name": "vtr/stereovision2/no_arch",
         "input_blif": "stereovision2.blif",
         "max_rss(MiB)": 430.7,
         "exec_time(ms)": 8835.9,
@@ -1406,8 +1406,8 @@
         "Estimated LUTs": 116776,
         "Total Node": 133058
     },
-    "Modified_VTR_Benchmarks/stereovision3/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/stereovision3/no_arch",
+    "vtr/stereovision3/no_arch": {
+        "test_name": "vtr/stereovision3/no_arch",
         "input_blif": "stereovision3.blif",
         "max_rss(MiB)": 16.1,
         "exec_time(ms)": 74.7,
@@ -1422,8 +1422,8 @@
         "Estimated LUTs": 1615,
         "Total Node": 1716
     },
-    "Modified_VTR_Benchmarks/sv_chip0_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip0_hierarchy_no_mem/no_arch",
+    "vtr/sv_chip0_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/sv_chip0_hierarchy_no_mem/no_arch",
         "input_blif": "sv_chip0_hierarchy_no_mem.blif",
         "max_rss(MiB)": 103.1,
         "exec_time(ms)": 1273.8,
@@ -1438,8 +1438,8 @@
         "Estimated LUTs": 16806,
         "Total Node": 28428
     },
-    "Modified_VTR_Benchmarks/sv_chip1_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip1_hierarchy_no_mem/no_arch",
+    "vtr/sv_chip1_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/sv_chip1_hierarchy_no_mem/no_arch",
         "input_blif": "sv_chip1_hierarchy_no_mem.blif",
         "max_rss(MiB)": 211.2,
         "exec_time(ms)": 2953.2,
@@ -1454,8 +1454,8 @@
         "Estimated LUTs": 45797,
         "Total Node": 57246
     },
-    "Modified_VTR_Benchmarks/sv_chip2_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip2_hierarchy_no_mem/no_arch",
+    "vtr/sv_chip2_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/sv_chip2_hierarchy_no_mem/no_arch",
         "input_blif": "sv_chip2_hierarchy_no_mem.blif",
         "max_rss(MiB)": 430.4,
         "exec_time(ms)": 8488.4,
@@ -1470,8 +1470,8 @@
         "Estimated LUTs": 116716,
         "Total Node": 132998
     },
-    "Modified_VTR_Benchmarks/sv_chip3_hierarchy_no_mem/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/sv_chip3_hierarchy_no_mem/no_arch",
+    "vtr/sv_chip3_hierarchy_no_mem/no_arch": {
+        "test_name": "vtr/sv_chip3_hierarchy_no_mem/no_arch",
         "input_blif": "sv_chip3_hierarchy_no_mem.blif",
         "max_rss(MiB)": 16,
         "exec_time(ms)": 74.8,
@@ -1486,8 +1486,8 @@
         "Estimated LUTs": 1615,
         "Total Node": 1716
     },
-    "Modified_VTR_Benchmarks/tpu.16x16.int8/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/tpu.16x16.int8/no_arch",
+    "vtr/tpu.16x16.int8/no_arch": {
+        "test_name": "vtr/tpu.16x16.int8/no_arch",
         "input_blif": "tpu.16x16.int8.blif",
         "max_rss(MiB)": 4006.8,
         "exec_time(ms)": 38049.3,
@@ -1502,8 +1502,8 @@
         "Estimated LUTs": 930919,
         "Total Node": 1212003
     },
-    "Modified_VTR_Benchmarks/tpu.32x32.int8/no_arch": {
-        "test_name": "Modified_VTR_Benchmarks/tpu.32x32.int8/no_arch",
+    "vtr/tpu.32x32.int8/no_arch": {
+        "test_name": "vtr/tpu.32x32.int8/no_arch",
         "input_blif": "tpu.32x32.int8.blif",
         "max_rss(MiB)": 8735.9,
         "exec_time(ms)": 97596.5,
