@@ -657,16 +657,17 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
 
             /* erase the pointer to this buffer */
             node->input_pins[i]->net->fanout_pins[idx_2_buffer] = NULL;
+            delete_npin(node->input_pins[i]);
         } else {
             buffer_is_removed = false;
         }
     }
 
     // CLEAN UP
-    if (coarsen_cleanup) {
-        for (int i = 0; i < node->num_input_pins; i++) {
-            delete_npin(node->input_pins[i]);
-        }
+    if (buffer_is_removed) {
+        /* detach output pins from the node */
+        for (int i = 0; i < node->num_output_pins; i++)
+            node->output_pins[i]->node = NULL;   
         free_nnode(node);
     }
 
