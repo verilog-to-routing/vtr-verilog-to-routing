@@ -324,11 +324,9 @@ function run_task() {
         
 
         run_yosys "${ODIN_DIR}/synth.tcl"
-
-        unset _circuit_list
-
     done
 
+    unset _circuit_list
 }
 
 task_list=()
