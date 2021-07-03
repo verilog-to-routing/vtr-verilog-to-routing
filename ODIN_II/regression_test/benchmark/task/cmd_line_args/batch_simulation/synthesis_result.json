@@ -12,7 +12,6 @@
         "logic element": 7,
         "latch": 4,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 7,
         "Average Path": 4,
