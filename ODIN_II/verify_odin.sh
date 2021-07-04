@@ -126,8 +126,8 @@ printf "Called program with $INPUT
 		--override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
 		--dry_run                       $(_prt_cur_arg ${_DRY_RUN}) performs a dry run to check the validity of the task and flow 
 		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
-		--generate_blifs                $(_prt_cur_arg ${_GENERATE_BLIF}) generate the missing blifs of verilog files located in benchmark/_BLIF
-		--regenerate_blifs              $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/_BLIF
+		--generate_blif                 $(_prt_cur_arg ${_GENERATE_BLIF}) generate the missing blifs of verilog files located in benchmark/_BLIF
+		--regenerate_blif               $(_prt_cur_arg ${_REGENERATE_BLIF}) regenerate the blifs of verilog files located in benchmark/_BLIF
 		--regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
 		--generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
 		--continue						$(_prt_cur_arg ${_CONTINUE}) continue running test in the same directory as the last run

@@ -35,9 +35,10 @@ RED=$'\033[31;1m'
 NC=$'\033[0m' # No Color
 
 # defaults
-_YOSYS_EXEC="/usr/local/bin/yosys"
+_YOSYS_EXEC="yosys"
 _TEST_INPUT_LIST=()
 _REGENERATE_BLIF="off"
+_SHOW_FAILURE="off"
 _CLEAN="off"
 
 ###############################################
@@ -94,6 +95,9 @@ function run_yosys() {
         rm ${LOG_FILE}
     else
         print_test_stat "F" "${START}"
+        if [ _${_SHOW_FAILURE} == "_on" ]; then
+            cat ${LOG_FILE}
+        fi
     fi
 }
 
@@ -199,6 +203,10 @@ function parse_args() {
 					_REGENERATE_BLIF="on"
 					echo "regenerating blifs of benchmark/_BLIF"
             
+            ;;--show_failure)
+                    _SHOW_FAILURE="on"
+                    echo "show yosys log if a benchmark fails"
+
             ;;--clean)
 					_CLEAN="on"
 					echo "deleting all blif file in the specified task"
