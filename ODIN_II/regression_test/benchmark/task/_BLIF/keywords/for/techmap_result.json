@@ -6,11 +6,11 @@
         "exec_time(ms)": 2.1,
         "techmap_time(ms)": 1.4,
         "Po": 32,
-        "logic element": 48,
+        "logic element": 32,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 48,
-        "Total Node": 48
+        "Estimated LUTs": 32,
+        "Total Node": 32
     },
     "for/generate_for_ultra_wide/no_arch": {
         "test_name": "for/generate_for_ultra_wide/no_arch",
@@ -19,11 +19,11 @@
         "exec_time(ms)": 6.2,
         "techmap_time(ms)": 3.5,
         "Po": 256,
-        "logic element": 384,
+        "logic element": 256,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 384,
-        "Total Node": 384
+        "Estimated LUTs": 256,
+        "Total Node": 256
     },
     "for/generate_for_wide/no_arch": {
         "test_name": "for/generate_for_wide/no_arch",
@@ -32,39 +32,11 @@
         "exec_time(ms)": 1.6,
         "techmap_time(ms)": 1.2,
         "Po": 3,
-        "logic element": 4,
+        "logic element": 3,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 4
-    },
-    "for/else_if/no_arch": {
-        "test_name": "for/else_if/no_arch",
-        "input_blif": "else_if.blif",
-        "max_rss(MiB)": 44.8,
-        "exec_time(ms)": 8.4,
-        "techmap_time(ms)": 5.9,
-        "Pi": 2,
-        "Po": 2,
-        "logic element": 18,
-        "Longest Path": 9,
-        "Average Path": 6,
-        "Estimated LUTs": 18,
-        "Total Node": 18
-    },
-    "for/if_else/no_arch": {
-        "test_name": "for/if_else/no_arch",
-        "input_blif": "if_else.blif",
-        "max_rss(MiB)": 43,
-        "exec_time(ms)": 5.6,
-        "techmap_time(ms)": 3.3,
-        "Pi": 2,
-        "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Estimated LUTs": 3,
+        "Total Node": 3
     },
     "DEFAULT": {
         "test_name": "n/a",

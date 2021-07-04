@@ -15,44 +15,6 @@
         "Estimated LUTs": 1,
         "Total Node": 3
     },
-    "posedge/multiple_parameter/no_arch": {
-        "test_name": "posedge/multiple_parameter/no_arch",
-        "generated_blif": "multiple_parameter_generated.blif",
-        "max_rss(MiB)": 39,
-        "exec_time(ms)": 3.2,
-        "Pi": 3,
-        "Po": 3,
-        "logic element": 3,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
-    },
-    "posedge/parameter_define/no_arch": {
-        "test_name": "posedge/parameter_define/no_arch",
-        "generated_blif": "parameter_define_generated.blif",
-        "max_rss(MiB)": 38.9,
-        "exec_time(ms)": 3.2,
-        "Po": 5,
-        "logic element": 7,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 7
-    },
-    "posedge/parameter_override/no_arch": {
-        "test_name": "posedge/parameter_override/no_arch",
-        "generated_blif": "parameter_override_generated.blif",
-        "max_rss(MiB)": 38.9,
-        "exec_time(ms)": 3.5,
-        "Pi": 10,
-        "Po": 7,
-        "logic element": 15,
-        "Longest Path": 6,
-        "Average Path": 3,
-        "Estimated LUTs": 15,
-        "Total Node": 15
-    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

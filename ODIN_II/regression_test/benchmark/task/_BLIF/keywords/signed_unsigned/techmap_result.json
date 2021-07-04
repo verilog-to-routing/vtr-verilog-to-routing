@@ -7,11 +7,11 @@
         "techmap_time(ms)": 1.2,
         "Pi": 4,
         "Po": 6,
-        "logic element": 7,
+        "logic element": 6,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 7
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "DEFAULT": {
         "test_name": "n/a",

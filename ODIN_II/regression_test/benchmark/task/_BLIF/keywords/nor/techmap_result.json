@@ -69,22 +69,6 @@
         "Estimated LUTs": 9,
         "Total Node": 9
     },
-    "nor/negedge/no_arch": {
-        "test_name": "nor/negedge/no_arch",
-        "input_blif": "negedge.blif",
-        "max_rss(MiB)": 42.6,
-        "exec_time(ms)": 59.5,
-        "techmap_time(ms)": 57.3,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "latch": 1,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
-    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

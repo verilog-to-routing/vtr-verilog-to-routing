@@ -69,45 +69,6 @@
         "Estimated LUTs": 5,
         "Total Node": 5
     },
-    "xnor/input_wire/no_arch": {
-        "test_name": "xnor/input_wire/no_arch",
-        "generated_blif": "input_wire_generated.blif",
-        "max_rss(MiB)": 38.8,
-        "exec_time(ms)": 3.2,
-        "Pi": 5,
-        "Po": 5,
-        "logic element": 5,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 5,
-        "Total Node": 5
-    },
-    "xnor/wire_failure/no_arch": {
-        "test_name": "xnor/wire_failure/no_arch",
-        "generated_blif": "wire_failure_generated.blif",
-        "max_rss(MiB)": 38.8,
-        "exec_time(ms)": 3.3,
-        "Pi": 2,
-        "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
-    },
-    "xnor/wire/no_arch": {
-        "test_name": "xnor/wire/no_arch",
-        "generated_blif": "wire_generated.blif",
-        "max_rss(MiB)": 39,
-        "exec_time(ms)": 3.8,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
-    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
