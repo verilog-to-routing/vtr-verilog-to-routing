@@ -667,7 +667,7 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
     if (buffer_is_removed) {
         /* detach output pins from the node */
         for (int i = 0; i < node->num_output_pins; i++)
-            node->output_pins[i]->node = NULL;   
+            node->output_pins[i]->node = NULL;
         free_nnode(node);
     }
 
