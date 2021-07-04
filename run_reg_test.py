@@ -3,6 +3,7 @@
     Module for running regression tests
 """
 from pathlib import Path
+import os
 import sys
 import argparse
 import textwrap
@@ -254,6 +255,9 @@ def run_odin_test(args, test_name):
     odin_reg_script = [
         str(paths.odin_verify_path),
         "--clean",
+        "--generate_blif" if not os.path.exists(
+            "{}/_BLIF".format(str(paths.odin_benchmark_path))) else "",
+        "--no_report" if not args.show_failures else "",
         "-C",
         str(paths.odin_output_on_error_path),
         "--nb_of_process",
@@ -271,10 +275,10 @@ def run_odin_test(args, test_name):
         odin_reg_script[-1] += "task/operators"
     elif test_name == "odin_reg":
         odin_reg_script[-1] += "task/full"
-    elif test_name == "odin_reg_techmap":
-        odin_reg_script[-1] += "suite/_BLIF/techmap_suite"
     elif test_name == "odin_reg_basic":
         odin_reg_script[-1] += "suite/light_suite"
+    elif test_name == "odin_reg_techmap":
+        odin_reg_script[-1] += "suite/_BLIF/techmap_suite"
     elif test_name == "odin_reg_strong":
         odin_reg_script[-1] += "suite/heavy_suite"
     else:

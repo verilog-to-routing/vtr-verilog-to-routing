@@ -204,7 +204,14 @@ function generate_blifs() {
         echo "Regenerating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${TASK_NAME}"
     fi
 
-    ${THIS_DIR}/run_yosys.sh  ${_RUN_YOSYS_ARGS} -t "${TASK}"
+    RUN_YOSYS_SCRIPT_PARAMS="${_RUN_YOSYS_ARGS}"
+    RUN_YOSYS_SCRIPT_PARAMS+= "-t ${TASK}"
+
+    if [ _${_REPORT} == "_on" ]; then
+        RUN_YOSYS_SCRIPT_PARAMS+="--show_failure"
+    fi
+
+    ${THIS_DIR}/run_yosys.sh  
 }
     
 
