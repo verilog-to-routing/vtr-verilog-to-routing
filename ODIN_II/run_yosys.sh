@@ -67,11 +67,11 @@ function print_test_stat() {
     START_TIME="$2"
 
     if [ _${STAT} == "_E" ]; then
-        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . _VERILOG/${TASK_DIR}/${TCL_BLIF_NAME}"
+        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . _BLIF/${TASK_DIR}/${TCL_BLIF_NAME}"
     elif [ _${STAT} == "_C" ]; then
-        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . _VERILOG/${TASK_DIR}/${TCL_BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
+        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . _BLIF/${TASK_DIR}/${TCL_BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
     elif [ _${STAT} == "_F" ]; then
-        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}_VERILOG/${TASK_DIR}/${TCL_BLIF_NAME}"
+        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}_BLIF/${TASK_DIR}/${TCL_BLIF_NAME}"
     fi
 }
 
@@ -209,7 +209,7 @@ function parse_args() {
 
             ;;--clean)
 					_CLEAN="on"
-					echo "deleting all blif file in the specified task"
+					echo "clean up yosys generated BLIFs directory if exist"
 
 			esac
 
@@ -303,7 +303,10 @@ function populate_arg_from_file() {
 function run_task() {
     directory="$1"
     if [ "_${_CLEAN}" == "_on" ]; then
-        find "${ODIN_DIR}/${directory/task\/}" -name "*.blif" -delete
+        BLIFs_DIR=${ODIN_DIR}/${directory/task\/}
+        if [ -d "${BLIFs_DIR}" ]; then
+            find "${BLIFs_DIR}" -name "*.blif" -delete
+        fi
     fi
 
     populate_arg_from_file "${directory}/task.ycfg"

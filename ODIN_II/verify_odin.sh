@@ -62,12 +62,14 @@ _DRY_RUN="off"
 _RANDOM_DRY_RUN="off"
 _GENERATE_BLIF="off"
 _REGENERATE_BLIF="off"
+_FORCE_GENERATE_BLIF="off"
 _REGENERATE_EXPECTATION="off"
 _GENERATE_EXPECTATION="off"
 _CONTINUE="off"
 _REPORT="on"
 _STATUS_ONLY="off"
 _RUN_YOSYS_ARGS=""
+_CLEAN_UP="off"
 
 ##############################################
 # Exit Functions
@@ -197,21 +199,25 @@ function find_in_bench() {
 # generate blif files of verilog files in benchmark/blif/_VERILOGS
 function generate_blifs() {
     
-    TASK="$1"
+    BENCHMARK="$1"
+    BENCH_NAME=$(echo ${BENCHMARK} | sed 's/.*\(_BLIF\)/\1/g' )
+
+    if [ "_${_CLEAN_UP}" == "_on" ]; then
+        _RUN_YOSYS_ARGS+=" --clean "
+    fi
+
     if [ _${_GENERATE_BLIF} = "_on" ]; then
-        echo "Generating missed BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${TASK_NAME}"
-    else
-        echo "Regenerating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${TASK_NAME}"
+        echo "Generating missed BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${BENCH_NAME}"
+    elif [ _${_REGENERATE_BLIF} = "_on" ]; then
+        _RUN_YOSYS_ARGS+=" --regenerate_blif "
+        echo "Regenerating BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${BENCH_NAME}"
     fi
 
-    RUN_YOSYS_SCRIPT_PARAMS="${_RUN_YOSYS_ARGS}"
-    RUN_YOSYS_SCRIPT_PARAMS+= "-t ${TASK}"
+    RUN_YOSYS_SCRIPT_PARAMS=" -t ${BENCHMARK} "
+    RUN_YOSYS_SCRIPT_PARAMS+="${_RUN_YOSYS_ARGS}"
 
-    if [ _${_REPORT} == "_on" ]; then
-        RUN_YOSYS_SCRIPT_PARAMS+="--show_failure"
-    fi
-
-    ${THIS_DIR}/run_yosys.sh  
+    ${THIS_DIR}/run_yosys.sh  ${RUN_YOSYS_SCRIPT_PARAMS}
+    _RUN_YOSYS_ARGS=""
 }
     
 
@@ -389,6 +395,7 @@ function parse_args() {
 
 				;;-c|--clean)				
 					echo "Cleaning temporary run in directory"
+                    _CLEAN_UP="on"
 					cleanup_temp
 
 				;;-f|--force_simulate)   
@@ -408,13 +415,12 @@ function parse_args() {
 					echo "random dry run"
 
 				;;--generate_blif)
-					_REGENERATE_BLIF="on"
+					_GENERATE_BLIF="on"
                     _RUN_YOSYS_ARGS+=""
 					echo "generating missed blifs of benchmark/_BLIF"
 				
                 ;;--regenerate_blif)
 					_REGENERATE_BLIF="on"
-                    _RUN_YOSYS_ARGS+="--regenerate_blif"
 					echo "regenerating blifs of benchmark/_BLIF"
 				
                 ;;--regenerate_expectation)
@@ -704,7 +710,12 @@ function populate_arg_from_file() {
 	do
 		if [ ! -f "${circuit_list_item}" ]
 		then
-			echo "file ${circuit_list_item} not found, skipping"
+            if [ "_${_local_techmap_params}" != "_" ]; then
+			    echo "file ${circuit_list_item} not found, will be generating.."
+                _FORCE_GENERATE_BLIF="on"
+	        else
+            	echo "file ${circuit_list_item} not found, skipping"
+            fi
 		else
 			_circuit_list+=( "${circuit_list_item}" )
 		fi
@@ -891,6 +902,18 @@ function sim() {
 				;;
 		esac
 	done
+
+    ####################################
+    # generate yosys BLIFs if needed
+    if [ "_${_techmap}" == "_on" ]; then
+        # check if blif generting flags are active
+        if [ "_${_CLEAN_UP}" == "_on" ] || \
+           [ "_${_GENERATE_BLIF}" == "_on" ] || \
+           [ "_${_REGENERATE_BLIF}" == "_on" ] || \
+           [ "_${_FORCE_GENERATE_BLIF}" == "_on" ]; then
+            generate_blifs "${benchmark_dir/${THIS_DIR}\/}"
+        fi
+    fi
 
 	##########################################
 	# setup defaults
@@ -1623,10 +1646,6 @@ function run_suite() {
 
 	for (( i = 0; i < ${#task_list[@]}; i++ ));
 	do
-        if [ _${_REGENERATE_BLIF} == "_on" ] || [ _${_GENERATE_BLIF} == "_on" ]; then
-            generate_blifs "${task_list[$i]}"
-            
-        fi
         run_task "${task_list[$i]}"
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
 	done
