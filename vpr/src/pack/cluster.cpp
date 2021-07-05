@@ -2418,6 +2418,8 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         }
     }
 
+    //Recalculate changes here and re-sort the molecules based on floorplan gain changes
+
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
     if (cur_pb->pb_stats->num_feasible_blocks > 0) {
