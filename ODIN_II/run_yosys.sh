@@ -7,6 +7,7 @@ THIS_DIR=$(dirname "${THIS_SCRIPT_PATH}")
 VTR_DIR=$(readlink -f "${THIS_DIR}/..")
 ODIN_DIR="${VTR_DIR}/ODIN_II"
 REGRESSION_DIR="${THIS_DIR}/regression_test"
+REG_LIB="${REGRESSION_DIR}/.library"
 
 ##############################################
 # grab the input args
@@ -15,17 +16,20 @@ INPUT="$*"
 # disable stdin
 exec 0<&-
 
+source "${REG_LIB}/handle_exit.sh"
+source "${REG_LIB}/helper.sh"
+
 BENCHMARK_DIR="${REGRESSION_DIR}/benchmark"
 
 VTR_REG_DIR="${VTR_DIR}/vtr_flow/tasks/regression_tests"
 
-SUITE_DIR="${BENCHMARK_DIR}/suite"
+SUITE_DIR="${BENCHMARK_DIR}/suite/"
+BLIF_SUITE_DIR="${SUITE_DIR}/_BLIF"
+RELAPATH_BLIF_SUITE_DIR=$(realapath_from "${BLIF_SUITE_DIR}" "${PWD}")
 
 TASK_DIR="${BENCHMARK_DIR}/task"
-BLIF_TASK_DIR="${BENCHMARK_DIR}/task/_BLIF"
-
-RTL_REG_PREFIX="rtl_reg"
-
+BLIF_TASK_DIR="${TASK_DIR}/_BLIF"
+RELAPATH_BLIF_TASK_DIR=$(realapath_from "${BLIF_TASK_DIR}" "${PWD}")
 
 
 # COLORS
@@ -123,6 +127,7 @@ function help() {
 	
     OPTIONS
             -h|--help                       $(_prt_cur_arg off) print this
+            -s|--show_failure               $(_prt_cur_arg off) show failures in yosys blif generating process
             -t|--test < test name >         A path to a single test file
             -T|--task                       Test name is either a absolute or relative path to 
                                             a directory containing a task.ycfg, task_list.conf 
@@ -130,17 +135,11 @@ function help() {
         AVAILABLE_TASK:
     "
 
-    printf "\n\t\t%s\n" "${RELAPATH_SUITE_DIR}/"
-    for bm in "${SUITE_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
+    printf "\n\t\t%s\n" "${RELAPATH_BLIF_SUITE_DIR}/"
+    for bm in "${BLIF_SUITE_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
 
-    printf "\n\t\t%s\n" "${RELAPATH_TASK_DIR}/"
-    for bm in "${TASK_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
-
-    printf "\n\t\t%s\n" "${VTR_REG_PREFIX}"
-    for bm in "${VTR_REG_DIR}/${VTR_REG_PREFIX}"*; do printf "\t\t\t%s\n" "$(basename "${bm}" | sed "s+${VTR_REG_PREFIX}++g")"; done
-
-    printf "\n\t\t%s\n" "${RTL_REG_PREFIX}"
-
+    printf "\n\t\t%s\n" "${RELAPATH_BLIF_TASK_DIR}/"
+    for bm in "${BLIF_TASK_DIR}"/*; do printf "\t\t\t%s\n" "$(basename "${bm}")"; done
 }
 
 # to check whether failure path exist or not
