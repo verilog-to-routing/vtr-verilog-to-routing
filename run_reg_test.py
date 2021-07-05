@@ -290,7 +290,7 @@ def run_odin_test(args, test_name):
             odin_reg_script[-1],
             "--generate_blif",
             # to avoid showing yosys logs
-            "--show_failure" if args.show_failures else ""
+            "--show_failure" if args.show_failures else "",
         ]
         subprocess.call(yosys_reg_script, cwd=odin_root)
 

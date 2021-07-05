@@ -62,14 +62,12 @@ _DRY_RUN="off"
 _RANDOM_DRY_RUN="off"
 _GENERATE_BLIF="off"
 _REGENERATE_BLIF="off"
-_FORCE_GENERATE_BLIF="off"
 _REGENERATE_EXPECTATION="off"
 _GENERATE_EXPECTATION="off"
 _CONTINUE="off"
 _REPORT="on"
 _STATUS_ONLY="off"
 _RUN_YOSYS_ARGS=""
-_CLEAN_UP="off"
 
 ##############################################
 # Exit Functions
@@ -201,10 +199,6 @@ function generate_blifs() {
     
     BENCHMARK="$1"
     BENCH_NAME=$(echo ${BENCHMARK} | sed 's/.*\(_BLIF\)/\1/g' )
-
-    if [ "_${_CLEAN_UP}" == "_on" ]; then
-        _RUN_YOSYS_ARGS+=" --clean "
-    fi
 
     if [ _${_GENERATE_BLIF} = "_on" ]; then
         echo "Generating missed BLIF files for benchmarks in ${REGRESSION_DIR}/benchmark/_VERILOG/${BENCH_NAME}"
@@ -395,7 +389,6 @@ function parse_args() {
 
 				;;-c|--clean)				
 					echo "Cleaning temporary run in directory"
-                    _CLEAN_UP="on"
 					cleanup_temp
 
 				;;-f|--force_simulate)   
@@ -577,7 +570,7 @@ function populate_arg_from_file() {
 
 					;;_circuit_list_add)
 						# glob the value
-						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
+						_circuit_list_add+=( "${_circuits_dir}"/${_value} )	    
 
 					;;_archs_dir)
 						if [ ! -d "${_value}" ]
@@ -710,12 +703,7 @@ function populate_arg_from_file() {
 	do
 		if [ ! -f "${circuit_list_item}" ]
 		then
-            if [ "_${_local_techmap_params}" != "_" ]; then
-			    echo "file ${circuit_list_item} not found, will be generating.."
-                _FORCE_GENERATE_BLIF="on"
-	        else
-            	echo "file ${circuit_list_item} not found, skipping"
-            fi
+            echo "file ${circuit_list_item} not found, skipping"
 		else
 			_circuit_list+=( "${circuit_list_item}" )
 		fi
@@ -902,18 +890,6 @@ function sim() {
 				;;
 		esac
 	done
-
-    ####################################
-    # generate yosys BLIFs if needed
-    if [ "_${_techmap}" == "_on" ]; then
-        # check if blif generting flags are active
-        if [ "_${_CLEAN_UP}" == "_on" ] || \
-           [ "_${_GENERATE_BLIF}" == "_on" ] || \
-           [ "_${_REGENERATE_BLIF}" == "_on" ] || \
-           [ "_${_FORCE_GENERATE_BLIF}" == "_on" ]; then
-            generate_blifs "${benchmark_dir/${THIS_DIR}\/}"
-        fi
-    fi
 
 	##########################################
 	# setup defaults
@@ -1646,6 +1622,10 @@ function run_suite() {
 
 	for (( i = 0; i < ${#task_list[@]}; i++ ));
 	do
+         # check if blif generting flags are active
+        if [ "_${_GENERATE_BLIF}" == "_on" ] || [ "_${_REGENERATE_BLIF}" == "_on" ]; then
+            generate_blifs "${task_list[$i]}"
+        fi
         run_task "${task_list[$i]}"
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
 	done
