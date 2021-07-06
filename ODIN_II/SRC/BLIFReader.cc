@@ -195,8 +195,11 @@ void BLIF::Reader::find_top_module() {
         my_location.line += 1;
 
         // not sure if this is needed
-        if (feof(file))
+        if (feof(file)) {
+            /* clean up */
+            vtr::free(buffer);
             break;
+        }
 
         char* token = vtr::strtok(buffer, TOKENS, file, buffer);
         if (token && !strcmp(token, ".model")) {

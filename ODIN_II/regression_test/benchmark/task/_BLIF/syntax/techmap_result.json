@@ -933,6 +933,7 @@
         "test_name": "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "input_blif": "cf_fft_1024_16.blif",
+        "exec_time(ms)": 156646.4,
         "Latch Drivers": 1,
         "Pi": 67,
         "Po": 65,
