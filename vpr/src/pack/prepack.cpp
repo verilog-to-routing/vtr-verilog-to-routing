@@ -29,6 +29,7 @@
 #include "prepack.h"
 #include "vpr_utils.h"
 #include "echo_files.h"
+#include "attraction_groups.h"
 
 /*****************************************/
 /*Local Function Declaration			 */
@@ -1683,4 +1684,37 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
     }
 
     VTR_LOG("\n");
+}
+
+void alloc_attraction_groups() {
+	auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+	auto& atom_ctx = g_vpr_ctx.atom();
+	int num_parts = floorplanning_ctx.constraints.get_num_partitions();
+
+	for (int i = 0; i < num_parts; i++) {
+		PartitionId part_id(i);
+		Partition part = floorplanning_ctx.constraints.get_partition(part_id);
+
+		AttractionGroup group_info;
+		group_info.group_atoms = floorplanning_ctx.constraints.get_part_atoms(part_id);
+
+		floorplanning_ctx.attraction_groups.add_attraction_group(group_info);
+	}
+
+	int num_att_grps = floorplanning_ctx.attraction_groups.num_attraction_groups();
+
+	floorplanning_ctx.attraction_groups.initialize_atom_attraction_groups(atom_ctx.nlist.blocks().size());
+
+	for (int j = 0; j < num_att_grps; j++) {
+		AttractGroupId group_id(j);
+
+		AttractionGroup att_group = floorplanning_ctx.attraction_groups.get_attraction_group_info(group_id);
+
+		for (unsigned int k = 0; k < att_group.group_atoms.size(); k++) {
+			floorplanning_ctx.attraction_groups.set_atom_attraction_group(att_group.group_atoms[k], group_id);
+		}
+
+	}
+
+	VTR_LOG("%d attraction groups created during prepacking. \n", num_att_grps);
 }

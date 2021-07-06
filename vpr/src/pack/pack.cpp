@@ -99,6 +99,9 @@ bool try_pack(t_packer_opts* packer_opts,
                                                                atom_molecules,
                                                                expected_lowest_cost_pb_gnode,
                                                                list_of_packing_patterns.size()));
+
+    alloc_attraction_groups();
+
     VTR_LOG("Finish prepacking.\n");
 
     if (packer_opts->auto_compute_inter_cluster_net_delay) {

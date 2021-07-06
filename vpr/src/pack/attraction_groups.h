@@ -20,11 +20,15 @@ typedef vtr::StrongId<attraction_id_tag> AttractGroupId;
 
 struct AttractionGroup {
     std::vector<AtomBlockId> group_atoms;
-    float gain;
+    float gain = 5; //give every attraction group an initial gain of 5
 };
+
+/// @brief sentinel value for indicating that an attraction group has not been specified
+constexpr AttractGroupId NO_ATTRACTION_GROUP(-1);
 
 class AttractionInfo {
   public:
+
     AttractGroupId get_atom_attraction_group(AtomBlockId atom_id);
 
     AttractionGroup get_attraction_group_info(AttractGroupId group_id);
@@ -32,6 +36,16 @@ class AttractionInfo {
     void set_atom_attraction_group(AtomBlockId atom_id, AttractGroupId group_id);
 
     void set_attraction_group_info(AttractGroupId group_id, AttractionGroup group_info);
+
+    void add_attraction_group(AttractionGroup group_info);
+
+    int num_attraction_groups();
+
+    float get_attraction_group_gain(AttractGroupId group_id);
+
+    void set_attraction_group_gain(AttractGroupId group_id, float new_gain);
+
+    void initialize_atom_attraction_groups(int num_atoms);
 
   private:
     //Store each atom's attraction group assuming each atom is in at most one attraction group
