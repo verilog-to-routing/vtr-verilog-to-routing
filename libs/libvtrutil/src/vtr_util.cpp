@@ -413,7 +413,7 @@ char* getline(char*& _lineptr, FILE* _stream) {
 
         /* getline was unsuccessful, so error */
         throw VtrError(string_fmt("Error -- %s\n",
-                                  error_msg),
+                                  error_msg.c_str()),
                        __FILE__, __LINE__);
         return nullptr;
     }
