@@ -33,6 +33,9 @@
 #include "odin_types.h"
 #include "Hashtable.hpp"
 
+#include "vtr_util.h"
+#include "vtr_memory.h"
+
 #define TOKENS " \t\n"
 #define YOSYS_TOKENS "[]"
 #define YOSYS_ID_FIRST_DELIMITER "\\\\"
@@ -87,6 +90,40 @@ extern bool skip_reading_bit_map;
 extern bool insert_global_clock;
 
 extern FILE* file;
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: getbline)
+ * 
+ * @brief reading blif file lines according to the blif file type.
+ * For instance, in yosys blif we must read lines since there is 
+ * no '\' usage. For arbitrary long lines fgets does not work due
+ * to size limit. However, the scenario in Odin is on the flipside
+ * and we ought to use fgets to pass '\' and the line length are 
+ * always fix and less than a const value
+ * 
+ * @param buf buffer pointer
+ * @param size buffer size (in the case of using fgets)
+ * @param fd file stream
+ * 
+ * @return null pointer if end of the file, otherwise the read line
+ *---------------------------------------------------------------------------------------------*/
+inline char* getbline(char* &buf, size_t size, FILE* fd)  {
+    char* retval = NULL;
+    if (buf) {
+        vtr::free(buf);
+        buf = NULL;
+    }
+    /* decide whether need to read line or using fgets */
+    if (configuration.coarsen) {
+        retval = vtr::getline(buf, fd);
+    } else {
+        buf = (char*)vtr::malloc(READ_BLIF_BUFFER * sizeof(char));
+        retval = vtr::fgets(buf, size, fd);
+    }
+
+    return (retval);
+}
 
 /**
  * @brief A class to provide the general object of an input BLIF file reader

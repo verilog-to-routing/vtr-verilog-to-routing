@@ -104,8 +104,8 @@ void* BLIF::Reader::__read() {
     // A cache of hard block models indexed by name. As each one is read, it's stored here to be used again.
     hard_block_models* models = create_hard_block_models();
     printf("\n");
-    char buffer[READ_BLIF_BUFFER];
-    while (vtr::fgets(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models)) { // Print a progress bar indicating completeness.
+    char* buffer = NULL;
+    while (getbline(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models)) { // Print a progress bar indicating completeness.
         position = print_progress_bar((++line_count) / (double)num_lines, position, 50, wall_time() - time);
     }
     free_hard_block_models(models);
@@ -121,8 +121,11 @@ void* BLIF::Reader::__read() {
     // delete output_nets_hash;
     fclose(file);
 
-    printf("Elaborating the netlist created from the input BLIF file to make it compatible with ODIN_II partial mapping\n");
+    printf("Elaborating the netlist created from the input BLIF file\n");
     blif_elaborate_top(blif_netlist);
+
+    /* clean up */
+    vtr::free(buffer);
 
     return static_cast<void*>(blif_netlist);
 }
@@ -187,8 +190,8 @@ void BLIF::Reader::find_top_module() {
 
     bool found = false;
     while (!found) {
-        char buffer[READ_BLIF_BUFFER];
-        vtr::fgets(buffer, READ_BLIF_BUFFER, file);
+        char* buffer = NULL;
+        getbline(buffer, READ_BLIF_BUFFER, file);
         my_location.line += 1;
 
         // not sure if this is needed
@@ -197,9 +200,12 @@ void BLIF::Reader::find_top_module() {
 
         char* token = vtr::strtok(buffer, TOKENS, file, buffer);
         if (token && !strcmp(token, ".model")) {
-            top_module = vtr::strtok(NULL, TOKENS, file, buffer);
+            top_module = vtr::strdup(vtr::strtok(NULL, TOKENS, file, buffer));
             found = true;
         }
+
+        /* clean up */
+        vtr::free(buffer);
     }
 
     if (!found) {
@@ -762,8 +768,8 @@ hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, operati
         model = NULL;
 
         // Search the file for .model followed buy the subcircuit name.
-        char buffer[READ_BLIF_BUFFER];
-        while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
+        char* buffer = NULL;
+        while (getbline(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             char* token = vtr::strtok(buffer, TOKENS, file, buffer);
             // match .model followed by the subcircuit name.
@@ -779,7 +785,7 @@ hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, operati
                 model->outputs->names = NULL;
 
                 // Read the inputs and outputs.
-                while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
+                while (getbline(buffer, READ_BLIF_BUFFER, file)) {
                     char* first_word = vtr::strtok(buffer, TOKENS, file, buffer);
                     if (first_word) {
                         if (!strcmp(first_word, ".inputs")) {
@@ -802,6 +808,9 @@ hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, operati
                 break;
             }
         }
+
+        /* clean up */
+        vtr::free(buffer);
 
         if (!model || feof(file)) {
             if (configuration.coarsen)
@@ -991,10 +1000,10 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
     char** bit_map = NULL;
     char* output_bit_map = NULL; // to distinguish whether for the bit_map output is 1 or 0
     int line_count_bitmap = 0;   //stores the number of lines in a particular bit map
-    char buffer[READ_BLIF_BUFFER];
+    char* buffer = NULL;
 
     if (!input_count) {
-        vtr::fgets(buffer, READ_BLIF_BUFFER, file);
+        getbline(buffer, READ_BLIF_BUFFER, file);
         my_location.line += 1;
 
         char* ptr = vtr::strtok(buffer, "\t\n", file, buffer);
@@ -1009,7 +1018,7 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
         }
     } else {
         while (1) {
-            vtr::fgets(buffer, READ_BLIF_BUFFER, file);
+            getbline(buffer, READ_BLIF_BUFFER, file);
             my_location.line += 1;
 
             if (!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
@@ -1209,6 +1218,9 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
             to_return = GENERIC;
         }
     }
+    /* clean up */
+    vtr::free(buffer);
+
     if (output_bit_map) {
         vtr::free(output_bit_map);
     }
@@ -1345,8 +1357,8 @@ char* BLIF::Reader::search_clock_name() {
     int input_names_count = 0;
     int found = 0;
     while (!found) {
-        char buffer[READ_BLIF_BUFFER];
-        vtr::fgets(buffer, READ_BLIF_BUFFER, file);
+        char* buffer = NULL;
+        getbline(buffer, READ_BLIF_BUFFER, file);
         my_location.line += 1;
 
         // not sure if this is needed
@@ -1378,6 +1390,9 @@ char* BLIF::Reader::search_clock_name() {
                 found = 1;
             }
         }
+
+        /* clean up */
+        vtr::free(buffer);
     }
     my_location.line = last_line;
     fsetpos(file, &pos);
@@ -1635,13 +1650,18 @@ hard_block_models* BLIF::Reader::create_hard_block_models() {
  */
 int BLIF::Reader::count_blif_lines() {
     int local_num_lines = 0;
-    char buffer[READ_BLIF_BUFFER];
-    while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
+    char* buffer = NULL;
+    while (getbline(buffer, READ_BLIF_BUFFER, file)) {
         if (strstr(buffer, ".end"))
             break;
         local_num_lines++;
     }
+
     rewind(file);
+    
+    /* clean up */
+    vtr::free(buffer);
+
     return local_num_lines;
 }
 
@@ -1969,11 +1989,11 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
     fgetpos(file, &pos);
 
     char* ptr;
-    char buffer[READ_BLIF_BUFFER];
+    char* buffer = NULL;
     attr_t* attributes = new_node->attributes;
 
     if (need_params(yosys_subckt_str[subckt_name])) {
-        while (vtr::fgets(buffer, READ_BLIF_BUFFER, file)) {
+        while (getbline(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             ptr = vtr::strtok(buffer, TOKENS, file, buffer);
 
@@ -2100,6 +2120,9 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
             }
         }
     }
+
+    /* clean up */
+    vtr::free(buffer);
 
     // Restore the original position in the file.
     my_location.line = last_line;
