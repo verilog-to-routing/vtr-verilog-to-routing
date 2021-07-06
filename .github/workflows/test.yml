@@ -194,8 +194,13 @@ jobs:
             suite: 'odin_reg_basic'
           },
           {
-            name: 'Odin Reg Techmap',
-            suite: 'odin_reg_techmap'
+            name: 'Odin Tech Basic',
+            suite: 'odin_tech_basic'
+          }
+          ,
+          {
+            name: 'Odin Tech Strong',
+            suite: 'odin_tech_strong'
           }
         ]
     name: 'R: ${{ matrix.name }}'
