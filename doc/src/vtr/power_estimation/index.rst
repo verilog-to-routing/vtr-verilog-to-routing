@@ -43,6 +43,16 @@ $VTR_ROOT/vtrflow/tech/*
 
 See :ref:`power_technology_properties` for information on how to generate an XML file for your own SPICE technology model.
 
+In this mode, the VTR will run ODIN->ABC->ACE->VPR. The ACE stage is additional and specific to this power estimation flow. Using run_vtr_flow.py will automatically run ACE 2.0 to generate activity information and a new BLIF file (see ::ref:`power_ace` for details).
+
+The final power estimates will be available in file named <circuit_name>.power in the result directory.
+
+Here is an example command:
+
+.. code-block:: 
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py ../benchmarks/verilog/diffeq1.v ../arch/timing/k6_frac_N10_frac_chain_depop50_mem32K_40nm.xml -power -cmos_tech ../tech/PTM_45nm/45nm.xml -temp_dir power_try_45nm
+
+
 VPR
 ~~~
 
@@ -133,7 +143,7 @@ where
     * ``<activities.act>``: Is the activity file to be created.
     * ``<new.blif>``: The new BLIF file.
 
-        This will be functionally identical in function to the ABC blif; however, since ABC does not maintain internal node names, a new BLIF must be produced with node names that match the activity file.
+        This will be functionally identical in function to the ABC blif; however, since ABC does not maintain internal node names, a new BLIF must be produced with node names that match the activity file. This blif file is fed to the subsequent parts of the flow (to VPR). If a user is using run_vtr_flow.py (which will run ACE 2.0 underneath if the options mentioned earlier like -power are used), then the flow will copy this ACE2 generated blif file (<circuit_name>.ace.blif) to <circuit_name>.pre-vpr.blif and then launch VPR with this new file.
 
 User’s may with to use their own activity estimation tool.
 The produced activity file must contain one line for each net in the BLIF file, in the following format::
@@ -202,7 +212,7 @@ Other methods of estimation:
 
 
 ``specify-size``
-~~~~~~~~~~~~~~~~
+""""""""""""""""
 This estimation method provides a detailed transistor level modelling of CLBs, and will provide the most accurate power estimations.
 For each ``pb_type``, power estimation accounts for the following components (see :numref:`fig_power_sample_block`).
 
@@ -257,13 +267,13 @@ If necessary, the user can seperate a port into multiple ports with different wi
 For all child ``pb_types``, the algorithm performs a recursive call.
 Eventually ``pb_types`` will be reached that have no children.
 These are primitives, such as flip-flops, LUTs, or other hard-blocks.
-The power model includes functions to perform transistor-level power estimation for flip-flops and LUTs.
+The power model includes functions to perform transistor-level power estimation for flip-flops and LUTs (Note: the power model doesn't, by default, include power estimation for single-bit adders that are commonly found in logic blocks of modern FPGAs).
 If the user wishes to use a design with other primitive types (memories, multipliers, etc), they must provide an equivalent function.
-If the user makes such a function, the ``power_calc_primitive`` function should be modified to call it.
+If the user makes such a function, the ``power_usage_primitive`` function should be modified to call it.
 Alternatively, these blocks can be configured to use higher-level power estimation methods.
 
 ``auto-size``
-~~~~~~~~~~~~~
+""""""""""""""""
 This estimation method also performs detailed transistor-level modelling.
 It is almost identical to the ``specify-size`` method described above.
 The only difference is that the local wire capacitance and buffers are automatically inserted for all pins, when necessary.
@@ -274,7 +284,7 @@ This is equivalent to using the ``specify-size`` method with the ``wire_length=a
 Although not as accurate as user-provided buffer and wire sizes, it is capable of automatically capturing trends in power dissipation as architectures are modified.
 
 ``pin-toggle``
-~~~~~~~~~~~~~~
+""""""""""""""""
 This method allows users to specify the dynamic power of a block in terms of the energy per toggle (in Joules) of each input, output or clock pin for the ``pb_type``.
 The static power is provided as an absolute (in Watts).
 This is done using the following construct:
@@ -304,7 +314,7 @@ It is assumed that the power usage specified here includes power of all child ``
 No further recursive power estimation will be performed.
 
 ``C-internal``
-~~~~~~~~~~~~~~
+""""""""""""""""
 This method allows the users to specify the dynamic power of a block in terms of the internal capacitance of the block.
 The activity will be averaged across all of the input pins, and will be supplied with the internal capacitance to the standard equation:
 
@@ -327,7 +337,7 @@ It is assumed that the power usage specified here includes power of all child ``
 No further recursive power estimation will be performed.
 
 ``absolute``
-~~~~~~~~~~~~
+""""""""""""""""
 This method is the most basic power estimation method, and allows users to specify both the dynamic and static power of a block as absolute
 values (in Watts).
 This is done using the following construct:
@@ -345,12 +355,12 @@ It is assumed that the power usage specified here includes power of all child ``
 No further recursive power estimation will be performed.
 
 Global Routing
---------------
+~~~~~~~~~~~~~~
 
 Global routing consists of switch boxes and input connection boxes.
 
 Switch Boxes
-~~~~~~~~~~~~
+""""""""""""""""
 
 Switch boxes are modelled as the following components (:numref:`fig_power_sb`):
 
@@ -389,7 +399,7 @@ The user may override this method by providing the buffer size as shown below:
 The size is the drive strength of the buffer, relative to a minimum-sized inverter.
 
 Input Connection Boxes
-~~~~~~~~~~~~~~~~~~~~~~
+""""""""""""""""
 
 Input connection boxes are modelled as the following components (:numref:`fig_power_cb`):
 
