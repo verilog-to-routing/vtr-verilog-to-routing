@@ -3625,6 +3625,8 @@ static void ProcessSegments(pugi::xml_node Parent,
     int i, j, length;
     const char* tmp;
 
+    enum e_segment_adjacency x_y_exclusivity;
+
     pugi::xml_node SubElem;
     pugi::xml_node Node;
 
@@ -3676,6 +3678,27 @@ static void ProcessSegments(pugi::xml_node Parent,
         if (tmp) {
             Segs[i].frequency = (int)(atof(tmp) * MAX_CHANNEL_WIDTH);
         }
+
+        /* Determine if this segment is used in the Rows, Collumns or both channels*/
+        x_y_exclusivity = COL_ROW_SEGMENT; /*DEFAULT - collumns and rows style, present in both horizontal and vertical channels*/
+        tmp = get_attribute(Node, "adjacency", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+        if (tmp) {
+            if (0 == strcmp(tmp, "row")) {
+                x_y_exclusivity = ROW_SEGMENT;
+                VTR_LOG("Made it to 'row' segment #%d, length %d.\n", i, Segs[i].length);
+            } else if (0 == strcmp(tmp, "collumn")) {
+                x_y_exclusivity = COLLUMN_SEGMENT;
+                VTR_LOG("Made it to 'collumn' segment #%d, length %d.\n", i, Segs[i].length);
+            } else if (0 == strcmp(tmp, "col_row")) {
+                x_y_exclusivity = COL_ROW_SEGMENT;
+                VTR_LOG("Made it to 'col_row' segment #%d, length %d.\n", i, Segs[i].length);
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               "Must use correct segment channel adjacency in segment #%d.\n\'row\', \'collums\', or DEFAULT->\'col_row\'. Omit parameter for default\n", i);
+            }
+        }
+        VTR_LOG("Segment #%d, final adjacency: [%d] 0-Col_Row 1-Collumn 2-Row\n", i, x_y_exclusivity);
+        Segs[i].channel_adjacency = x_y_exclusivity;
 
         /* Get timing info */
         ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);

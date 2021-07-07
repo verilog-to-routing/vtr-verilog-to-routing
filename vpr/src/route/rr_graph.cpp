@@ -457,7 +457,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* START SEG_DETAILS */
     device_ctx.rr_segments = segment_inf;
     int num_seg_details = 0;
+    int num_seg_details_x = 0;
+    int num_seg_details_y = 0;
     t_seg_details* seg_details = nullptr;
+    t_seg_details* seg_details_x = nullptr;
+    t_seg_details* seg_details_y = nullptr;
 
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
@@ -468,10 +472,10 @@ static void build_rr_graph(const t_graph_type graph_type,
          * changed. Warning should be singled to caller if this happens. */
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
-        seg_details = alloc_and_load_seg_details(&max_chan_width,
+        seg_details_x = alloc_and_load_seg_details(&max_chan_width,
                                                  max_dim, segment_inf,
                                                  use_full_seg_groups, is_global_graph, directionality,
-                                                 &num_seg_details);
+                                                 &num_seg_details_x, ROW_SEGMENT);
         if (nodes_per_chan.max != max_chan_width) {
             nodes_per_chan.max = max_chan_width;
             *Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
