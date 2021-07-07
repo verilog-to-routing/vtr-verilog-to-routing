@@ -149,7 +149,6 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 	} else {
 		manual_moves_global.manual_move_info.valid_input = false;
 	}
-
 }
 
 bool string_is_a_number(std::string block_id) {
@@ -208,7 +207,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved &blocks_
 
 	e_create_move create_move = ::create_move(blocks_affected, b_from, to);
 	return create_move;
-
 }
 
 void cost_summary_dialog() {
@@ -286,7 +284,6 @@ void cost_summary_dialog() {
 }
 
 void highlight_new_block_location(bool manual_move_flag) {
-
 	if(manual_move_flag) {
 		auto& cluster_ctx = g_vpr_ctx.clustering();
 		//Unselects all blocks first

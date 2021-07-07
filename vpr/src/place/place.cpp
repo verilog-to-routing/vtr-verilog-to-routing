@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <chrono>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -1286,15 +1287,16 @@ static e_move_result try_swap(const t_annealing_state *state,
 	}
 
 	bool manual_move_flag = get_manual_move_flag();
-	ManualMovesGlobals *manual_move_global = get_manual_moves_global();
+
 
 	e_create_move create_move_outcome;
 
-	if(manual_move_flag) {
-		draw_manual_moves_window("");
-		update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 
-		create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+	if(manual_move_flag) {
+			draw_manual_moves_window("");
+			update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+
+			create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
 	}
 	else {
 		//Generate a new move (perturbation) used to explore the space of possible placements
@@ -1386,11 +1388,14 @@ static e_move_result try_swap(const t_annealing_state *state,
 		move_outcome = assess_swap(delta_c, state->t);
 
 		if (manual_move_flag) {
+			ManualMovesGlobals *manual_move_global = get_manual_moves_global();
 			update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
 			cost_summary_dialog();
+
 			//User accepts or rejects the move.
 			move_outcome = manual_move_global->manual_move_info.user_move_outcome;
 		}
+
 
 		if (move_outcome == ACCEPTED) {
 			costs->cost += delta_c;
