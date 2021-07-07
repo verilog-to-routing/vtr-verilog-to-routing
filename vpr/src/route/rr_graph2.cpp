@@ -206,13 +206,49 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
     return result;
 }
 
+std::vector<t_segment_inf> split_segment_inf_x_and_y(const std::vector<t_segment_inf>& segment_inf,
+                                                     const enum e_segment_adjacency seg_details_type) {
+    std::vector<t_segment_inf> one_direction_segment_inf;
+    /*Count the number of tracks that are either in both X and Y directions    *
+     *  or are in the specified direction                                      */
+    int count = 0;
+    for (int i = 0; i < segment_inf.size(); i++) {
+        if (seg_details_type == segment_inf[i].channel_adjacency
+            || COL_ROW_SEGMENT == segment_inf[i].channel_adjacency) {
+            count++;
+        }
+    }
+    /* We now have the number of segments that fit the x/y direction we want.       *
+     * Now itterate through all the segments and pass the ones that we want into    *
+     * the new pointer. Use an external int to itterate through the new pointer.    *
+     * just 'continue' any segments that are not in the direction we want.          *
+     * throw an error if the count and num_segments_passed are not the same         */
+
+    int num_segments_passed = 0;
+
+    for (int i = 0; i < segment_inf.size(); i++) {
+        if (seg_details_type != segment_inf[i].channel_adjacency
+            && COL_ROW_SEGMENT != segment_inf[i].channel_adjacency) {
+            continue;
+        } else {
+            one_direction_segment_inf[num_segments_passed] = segment_inf[i];
+            num_segments_passed++;
+        }
+    }
+    if (count != num_segments_passed) {
+        VTR_LOG("ERROR!ERROR!\n\tSplitting the x and y segments failed.\n\tNum passed: %d\tNum counted: %d\n", num_segments_passed, count);
+    }
+    return one_direction_segment_inf;
+}
+
 t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                                           const int max_len,
                                           const std::vector<t_segment_inf>& segment_inf,
                                           const bool use_full_seg_groups,
                                           const bool is_global_graph,
                                           const enum e_directionality directionality,
-                                          int* num_seg_details) {
+                                          int* num_seg_details,
+                                          const enum e_segment_adjacency seg_details_type) {
     /* Allocates and loads the seg_details data structure.  Max_len gives the   *
      * maximum length of a segment (dimension of array).  The code below tries  *
      * to:                                                                      *
@@ -240,6 +276,15 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
     if (*max_chan_width % fac != 0) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Routing channel width must be divisible by %d (channel width was %d)", fac, *max_chan_width);
     }
+
+    /* Here we make a function call to a function that only returns a pointerized vector of      *
+     * the segment info of the direction we want. If we are looking for only segments that      *
+     * are in the rows, then we pass the segment_inf pointer and ROW_SEGMENT. This funtion      *
+     * then sorts through the different segments stored in the segment_inf pointer, and         *
+     * returns only the ones that are labeled to be in both directions or in the rows. We       *
+     * then use this new vector of segment info to create a segdetails of the same direction    */
+
+    std::vector<t_segment_inf> one_type_seg_inf = split_segment_inf_x_and_y(segment_inf, seg_details_type);
 
     /* Map segment type fractions and groupings to counts of tracks */
     sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
