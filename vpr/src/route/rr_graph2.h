@@ -81,7 +81,8 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                                           const bool use_full_seg_groups,
                                           const bool is_global_graph,
                                           const enum e_directionality directionality,
-                                          int* num_seg_details = nullptr);
+                                          int* num_seg_details = nullptr,
+                                          const enum e_segment_adjacency seg_details_type);
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  const t_chan_width* nodes_per_chan,
