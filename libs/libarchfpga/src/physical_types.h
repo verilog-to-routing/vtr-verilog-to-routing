@@ -1382,6 +1382,11 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+enum e_segment_adjacency {
+    COL_ROW_SEGMENT,
+    COLLUMN_SEGMENT,
+    ROW_SEGMENT
+};
 enum e_switch_block_type {
     SUBSET,
     WILTON,
@@ -1432,6 +1437,7 @@ struct t_segment_inf {
     float Rmetal;
     float Cmetal;
     enum e_directionality directionality;
+    enum e_segment_adjacency channel_adjacency;
     std::vector<bool> cb;
     std::vector<bool> sb;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
