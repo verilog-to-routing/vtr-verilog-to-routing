@@ -41,6 +41,7 @@ NC=$'\033[0m' # No Color
 # defaults
 _YOSYS_EXEC="yosys"
 _TEST_INPUT_LIST=()
+_VERILOG_INPUT_LIST=()
 _REGENERATE_BLIF="off"
 _SHOW_FAILURE="off"
 _CLEAN="off"
@@ -71,11 +72,11 @@ function print_test_stat() {
     START_TIME="$2"
 
     if [ _${STAT} == "_E" ]; then
-        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . _BLIF/${TASK_DIR}/${TCL_BLIF_NAME}"
+        echo "[${BLUE}EXIST${NC}] . . . . . . . . . . . . . . . . . . ${OUTPUT_REALPATH}"
     elif [ _${STAT} == "_C" ]; then
-        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . _BLIF/${TASK_DIR}/${TCL_BLIF_NAME} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
+        echo "[${GREEN}CREATED${NC}] . . . . . . . . . . . . . . . . . ${OUTPUT_REALPATH} - [${GREEN}$(print_time_since "${START_TIME}")${NC}]"
     elif [ _${STAT} == "_F" ]; then
-        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}_BLIF/${TASK_DIR}/${TCL_BLIF_NAME}"
+        echo "[${RED}FAILED${NC}]${RED}  . . . . . . . . . . . . . . . . . ${NC}${OUTPUT_REALPATH}"
     fi
 }
 
@@ -128,6 +129,7 @@ function help() {
     OPTIONS
             -h|--help                       $(_prt_cur_arg off) print this
             -s|--show_failure               $(_prt_cur_arg off) show failures in yosys blif generating process
+            -V|--verilog < test name >      A path to a single Verilog file
             -t|--test < test name >         A path to a single test file
             -T|--task                       Test name is either a absolute or relative path to 
                                             a directory containing a task.ycfg, task_list.conf 
@@ -198,17 +200,28 @@ function parse_args() {
 					_TEST_INPUT_LIST+=( "$2" )
 					shift
 
-            ;;--regenerate_blif)
-					_REGENERATE_BLIF="on"
-					echo "regenerating blifs of benchmark/_BLIF"
-            
-            ;;--show_failure)
-                    _SHOW_FAILURE="on"
-                    echo "show yosys log if a benchmark fails"
+                ;;-V|--verilog)
+					# this is handled down stream
+					if [ "_$2" == "_" ]
+					then 
+						echo "empty argument for $1"
+						_exit_with_code "-1"
+					fi
+					# concat tests
+					_VERILOG_INPUT_LIST+=( "$2" )
+					shift
 
-            ;;--clean)
-					_CLEAN="on"
-					echo "clean up yosys generated BLIFs directory if exist"
+                ;;--regenerate_blif)
+                        _REGENERATE_BLIF="on"
+                        echo "regenerating blifs of benchmark/_BLIF"
+                
+                ;;--show_failure)
+                        _SHOW_FAILURE="on"
+                        echo "show yosys log if a benchmark fails"
+
+                ;;--clean)
+                        _CLEAN="on"
+                        echo "clean up yosys generated BLIFs directory if exist"
 
 			esac
 
@@ -299,6 +312,40 @@ function populate_arg_from_file() {
 	fi
 }
 
+function run_single_files() {
+    for circuit in "${_VERILOG_INPUT_LIST[@]}"
+    do
+        # validate input file
+        if [ "${circuit: -2}" != ".v" ]; then
+            echo "Invalid input Verilog file (${circuit})"
+            _exit_with_code "-1"
+        fi
+
+        export OUTPUT_BLIF_PATH="${ODIN_DIR}/yosys"
+
+        # run yosys for the current circuit
+        CIRCUIT_FILE=$(basename "${circuit}")
+
+        CIRCUIT_NAME="${CIRCUIT_FILE%.*}"
+
+        # to check the required path and files
+        check "${OUTPUT_BLIF_PATH}" "${CIRCUIT_NAME}"
+
+        export TCL_CIRCUIT="${circuit}"
+        export TCL_BLIF_NAME="${CIRCUIT_NAME}.blif"
+        OUTPUT_REALPATH="${ODIN_DIR}/${TCL_BLIF_NAME}"
+
+        if [ -f "${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}" ]; then
+            print_test_stat "E"
+            continue
+        fi
+        
+        run_yosys "${ODIN_DIR}/synth.tcl"
+    done
+
+    unset _VERILOG_INPUT_LIST
+}
+
 function run_task() {
     directory="$1"
     if [ "_${_CLEAN}" == "_on" ]; then
@@ -326,12 +373,13 @@ function run_task() {
 
         export TCL_CIRCUIT="${circuit}"
         export TCL_BLIF_NAME="${CIRCUIT_NAME}.blif"
+        OUTPUT_REALPATH="_BLIF/${TASK_DIR}/${TCL_BLIF_NAME}"
 
         if [ -f "${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}" ]; then
             print_test_stat "E"
             continue
         fi
-        
+
 
         run_yosys "${ODIN_DIR}/synth.tcl"
     done
@@ -394,6 +442,17 @@ function run_suite() {
 	fi
 }
 
+function run() {
+    # run single verilog file
+    if [ ${#_VERILOG_INPUT_LIST[@]} -gt 0 ]; then
+        run_single_files
+    elif [ ${#_TEST_INPUT_LIST[@]} -gt 0 ]; then
+        run_suite
+    else 
+        echo "No test is passed it must pass a verilog file or test directory containing either a task_list.conf or a task.ycfg, see --help"
+		_exit_with_code "-1"
+    fi
+}
 
 ##############################################################################################
 ######################################### START HERE #########################################
@@ -403,4 +462,4 @@ init
 
 parse_args "$@"
 
-run_suite
+run
