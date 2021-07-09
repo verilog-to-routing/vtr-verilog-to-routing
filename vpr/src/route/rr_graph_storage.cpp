@@ -561,7 +561,7 @@ const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const 
     }
 
     VTR_ASSERT(direction == Direction::NONE);
-        return CONST_DIRECTION_STRING[static_cast<int>(direction)];
+    return CONST_DIRECTION_STRING[static_cast<int>(direction)];
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {

@@ -69,7 +69,7 @@ struct alignas(16) t_rr_node_data {
      *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
      */
     union {
-        Direction direction;     //Valid only for CHANX/CHANY
+        Direction direction;       //Valid only for CHANX/CHANY
         unsigned char sides = 0x0; //Valid only for IPINs/OPINs
     } dir_side_;
 
