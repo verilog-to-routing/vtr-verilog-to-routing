@@ -102,7 +102,7 @@ void t_rr_node::set_capacity(short new_capacity) {
     storage_->set_node_capacity(id_, new_capacity);
 }
 
-void t_rr_node::set_direction(e_direction new_direction) {
+void t_rr_node::set_direction(Direction new_direction) {
     storage_->set_node_direction(id_, new_direction);
 }
 
