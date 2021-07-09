@@ -1359,6 +1359,9 @@ enum class Direction : unsigned char {
 
 constexpr std::array<const char*, static_cast<int>(Direction::NUM_DIRECTIONS)> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NONE"}};
 
+//this array is used in rr_graph_storage.cpp so that node_direction_string() can return a const std::string&
+const std::array<std::string, static_cast<int>(Direction::NUM_DIRECTIONS)> CONST_DIRECTION_STRING = {{"INC_DIR", "DEC_DIR", "BI_DIR", "NONE"}};
+
 /**
  * @brief Lists detailed information about segmentation.  [0 .. W-1].
  *

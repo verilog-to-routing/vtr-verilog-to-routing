@@ -73,7 +73,7 @@ class RRGraphView {
     }
 
     /* Get the direction string of a routing resource node. This function is inlined for runtime optimization. */
-    inline std::string node_direction_string(RRNodeId node) const {
+    inline const std::string& node_direction_string(RRNodeId node) const {
         return node_storage_.node_direction_string(node);
     }
 
