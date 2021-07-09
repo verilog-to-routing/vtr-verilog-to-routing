@@ -552,16 +552,9 @@ const char* t_rr_graph_view::node_type_string(RRNodeId id) const {
 const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const {
     Direction direction = node_direction(id);
 
-    if (direction == Direction::INC) {
-        return CONST_DIRECTION_STRING[static_cast<int>(direction)];
-    } else if (direction == Direction::DEC) {
-        return CONST_DIRECTION_STRING[static_cast<int>(direction)];
-    } else if (direction == Direction::BIDIR) {
-        return CONST_DIRECTION_STRING[static_cast<int>(direction)];
-    }
-
-    VTR_ASSERT(direction == Direction::NONE);
-    return CONST_DIRECTION_STRING[static_cast<int>(direction)];
+    int int_direction = static_cast<int>(direction);
+    VTR_ASSERT(int_direction >= 0 && int_direction < static_cast<int>(Direction::NUM_DIRECTIONS));
+    return CONST_DIRECTION_STRING[int_direction];
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
