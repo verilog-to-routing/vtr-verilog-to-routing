@@ -62,6 +62,21 @@ class RRGraphView {
         return node_storage_.node_capacity(node);
     }
 
+    /* Get the direction of a routing resource node. This function is inlined for runtime optimization.
+     * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.
+     * Direction::DEC: wire_driver is positioned at the high-coordinate end of the wire.
+     * Direction::BIDIR: wire has multiple drivers, so signals can travel either way along the wire
+     * Direction::NONE: node does not have a direction, such as IPIN/OPIN
+     */
+    inline Direction node_direction(RRNodeId node) const {
+        return node_storage_.node_direction(node);
+    }
+
+    /* Get the direction string of a routing resource node. This function is inlined for runtime optimization. */
+    inline const std::string& node_direction_string(RRNodeId node) const {
+        return node_storage_.node_direction_string(node);
+    }
+
     /* Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;

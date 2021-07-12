@@ -549,19 +549,12 @@ const char* t_rr_graph_view::node_type_string(RRNodeId id) const {
     return rr_node_typename[node_type(id)];
 }
 
-const char* t_rr_graph_storage::node_direction_string(RRNodeId id) const {
-    e_direction direction = node_direction(id);
+const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const {
+    Direction direction = node_direction(id);
 
-    if (direction == e_direction::INC_DIRECTION) {
-        return "INC_DIR";
-    } else if (direction == e_direction::DEC_DIRECTION) {
-        return "DEC_DIR";
-    } else if (direction == e_direction::BI_DIRECTION) {
-        return "BI_DIR";
-    }
-
-    VTR_ASSERT(direction == e_direction::NO_DIRECTION);
-    return "NO_DIR";
+    int int_direction = static_cast<int>(direction);
+    VTR_ASSERT(int_direction >= 0 && int_direction < static_cast<int>(Direction::NUM_DIRECTIONS));
+    return CONST_DIRECTION_STRING[int_direction];
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
@@ -706,7 +699,7 @@ void t_rr_graph_storage::set_node_capacity(RRNodeId id, short new_capacity) {
     node_storage_[id].capacity_ = new_capacity;
 }
 
-void t_rr_graph_storage::set_node_direction(RRNodeId id, e_direction new_direction) {
+void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction) {
     if (node_type(id) != CHANX && node_type(id) != CHANY) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", node_type_string(id));
     }

@@ -1422,12 +1422,12 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
     VTR_ASSERT(type == CHANX || type == CHANY);
 
     ezgl::rectangle bound_box = draw_get_rr_chan_bbox(inode);
-    e_direction dir = device_ctx.rr_nodes[inode].direction();
+    Direction dir = rr_graph.node_direction(RRNodeId(inode));
 
     //We assume increasing direction, and swap if needed
     ezgl::point2d start = bound_box.bottom_left();
     ezgl::point2d end = bound_box.top_right();
-    if (dir == DEC_DIRECTION) {
+    if (dir == Direction::DEC) {
         std::swap(start, end);
     }
 
@@ -1450,7 +1450,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
     if (type == CHANX) {
         coord_min = device_ctx.rr_nodes[inode].xlow();
         coord_max = device_ctx.rr_nodes[inode].xhigh();
-        if (dir == INC_DIRECTION) {
+        if (dir == Direction::INC) {
             mux_dir = RIGHT;
         } else {
             mux_dir = LEFT;
@@ -1459,7 +1459,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
         VTR_ASSERT(type == CHANY);
         coord_min = device_ctx.rr_nodes[inode].ylow();
         coord_max = device_ctx.rr_nodes[inode].yhigh();
-        if (dir == INC_DIRECTION) {
+        if (dir == Direction::INC) {
             mux_dir = TOP;
         } else {
             mux_dir = BOTTOM;
@@ -1475,7 +1475,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
     for (int k = coord_min; k <= coord_max; ++k) {
         int switchpoint_min = -1;
         int switchpoint_max = -1;
-        if (dir == INC_DIRECTION) {
+        if (dir == Direction::INC) {
             switchpoint_min = k - coord_min;
             switchpoint_max = switchpoint_min + 1;
         } else {
@@ -1501,7 +1501,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
         }
 
         if (switchpoint_min == 0) {
-            if (dir != BI_DIRECTION) {
+            if (dir != Direction::BIDIR) {
                 //Draw a mux at the start of each wire, labelled with it's size (#inputs)
                 draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in(), g);
             }
@@ -1527,7 +1527,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
         }
 
         if (switchpoint_max == 0) {
-            if (dir != BI_DIRECTION) {
+            if (dir != Direction::BIDIR) {
                 //Draw a mux at the start of each wire, labelled with it's size (#inputs)
                 draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, device_ctx.rr_nodes[inode].fan_in(), g);
             }
@@ -1808,6 +1808,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     /* Draws an edge (SBOX connection) between an x-directed channel and a    *
      * y-directed channel.                                                    */
@@ -1835,7 +1836,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_
         /* Connection not at end of the CHANX segment. */
         x1 = draw_coords->tile_x[chany_x] + draw_coords->get_tile_width();
 
-        if (device_ctx.rr_nodes[chanx_node].direction() != BI_DIRECTION) {
+        if (rr_graph.node_direction(RRNodeId(chanx_node)) != Direction::BIDIR) {
             if (edge_dir == FROM_X_TO_Y) {
                 if ((chanx_track % 2) == 1) { /* If dec wire, then going left */
                     x1 = draw_coords->tile_x[chany_x + 1];
@@ -1851,7 +1852,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_
         /* Connection not at end of the CHANY segment. */
         y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width();
 
-        if (device_ctx.rr_nodes[chany_node].direction() != BI_DIRECTION) {
+        if (rr_graph.node_direction(RRNodeId(chany_node)) != Direction::BIDIR) {
             if (edge_dir == FROM_Y_TO_X) {
                 if ((chany_track % 2) == 1) { /* If dec wire, then going down */
                     y2 = draw_coords->tile_y[chanx_y + 1];
@@ -1882,6 +1883,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node, int to_track, s
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     float x1, x2, y1, y2;
     ezgl::rectangle from_chan;
@@ -1918,7 +1920,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node, int to_track, s
      * will be drawn on top of each other for bidirectional connections.        */
 
     else {
-        if (device_ctx.rr_nodes[to_node].direction() != BI_DIRECTION) {
+        if (rr_graph.node_direction(RRNodeId(to_node)) != Direction::BIDIR) {
             /* must connect to to_node's wire beginning at x2 */
             if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
                 VTR_ASSERT(from_xlow < to_xlow);
@@ -1963,6 +1965,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node, int to_track, s
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     /* Draws a connection between two y-channel segments.  Passing in the track *
      * numbers allows this routine to be used for both rr_graph and routing     *
@@ -2003,7 +2006,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node, int to_track, s
 
     /* UDSD Modification by WMF Begin */
     else {
-        if (device_ctx.rr_nodes[to_node].direction() != BI_DIRECTION) {
+        if (rr_graph.node_direction(RRNodeId(to_node)) != Direction::BIDIR) {
             if (to_track % 2 == 0) { /* INC wire starts at bottom edge */
 
                 y2 = to_chan.bottom();
@@ -3079,15 +3082,16 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     ezgl::rectangle chan_bbox = draw_get_rr_chan_bbox(chan_node);
 
     float x2 = 0, y2 = 0;
+    const Direction chan_rr_direction = rr_graph.node_direction(RRNodeId(chan_node));
     switch (channel_type) {
         case CHANX: {
             y1 += draw_pin_offset;
             y2 = chan_bbox.bottom();
             x2 = x1;
             if (is_opin(pin_rr.pin_num(), grid_type)) {
-                if (chan_rr.direction() == INC_DIRECTION) {
+                if (chan_rr_direction == Direction::INC) {
                     x2 = chan_bbox.left();
-                } else if (chan_rr.direction() == DEC_DIRECTION) {
+                } else if (chan_rr_direction == Direction::DEC) {
                     x2 = chan_bbox.right();
                 }
             }
@@ -3098,9 +3102,9 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
             x2 = chan_bbox.left();
             y2 = y1;
             if (is_opin(pin_rr.pin_num(), grid_type)) {
-                if (chan_rr.direction() == INC_DIRECTION) {
+                if (chan_rr_direction == Direction::INC) {
                     y2 = chan_bbox.bottom();
-                } else if (chan_rr.direction() == DEC_DIRECTION) {
+                } else if (chan_rr_direction == Direction::DEC) {
                     y2 = chan_bbox.top();
                 }
             }
@@ -3114,7 +3118,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     g->draw_line({x1, y1}, {x2, y2});
 
     //don't draw the ex, or triangle unless zoomed in really far
-    if (chan_rr.direction() == BI_DIRECTION || !is_opin(pin_rr.pin_num(), grid_type)) {
+    if (chan_rr_direction == Direction::BIDIR || !is_opin(pin_rr.pin_num(), grid_type)) {
         draw_x(x2, y2, 0.7 * draw_coords->pin_size, g);
     } else {
         float xend = x2 + (x1 - x2) / 10.;

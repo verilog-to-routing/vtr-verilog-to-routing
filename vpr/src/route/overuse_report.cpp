@@ -189,9 +189,10 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
 ///@brief Print out information specific to CHANX/CHANY type rr nodes
 static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id) {
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     os << "Track number = " << device_ctx.rr_nodes.node_track_num(node_id) << '\n';
-    os << "Direction = " << device_ctx.rr_nodes.node_direction_string(node_id) << "\n\n";
+    os << "Direction = " << rr_graph.node_direction_string(node_id) << "\n\n";
 
     //CHANX/CHANY rr nodes span across several grid locations.
     //Need to print out their starting and ending locations.
@@ -279,7 +280,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
 
     //Direction
     if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
-        VTR_LOG(" %12s", device_ctx.rr_nodes.node_direction_string(node_id));
+        VTR_LOG(" %12s", rr_graph.node_direction_string(node_id).c_str());
     } else {
         VTR_LOG(" %12s", "N/A");
     }

@@ -829,7 +829,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline uxsd::enum_node_direction get_node_direction(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
-            return to_uxsd_node_direction(node.direction());
+            return to_uxsd_node_direction(rr_graph.node_direction(node.id()));
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
         }
@@ -1797,27 +1797,27 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return side_map_[sides.to_ulong()];
     }
 
-    e_direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {
+    Direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {
         switch (direction) {
             case uxsd::enum_node_direction::INC_DIR:
-                return INC_DIRECTION;
+                return Direction::INC;
             case uxsd::enum_node_direction::DEC_DIR:
-                return DEC_DIRECTION;
+                return Direction::DEC;
             case uxsd::enum_node_direction::BI_DIR:
-                return BI_DIRECTION;
+                return Direction::BIDIR;
             default:
                 report_error(
                     "Invalid node direction %d", direction);
         }
     }
 
-    uxsd::enum_node_direction to_uxsd_node_direction(e_direction direction) {
+    uxsd::enum_node_direction to_uxsd_node_direction(Direction direction) {
         switch (direction) {
-            case INC_DIRECTION:
+            case Direction::INC:
                 return uxsd::enum_node_direction::INC_DIR;
-            case DEC_DIRECTION:
+            case Direction::DEC:
                 return uxsd::enum_node_direction::DEC_DIR;
-            case BI_DIRECTION:
+            case Direction::BIDIR:
                 return uxsd::enum_node_direction::BI_DIR;
             default:
                 report_error(
