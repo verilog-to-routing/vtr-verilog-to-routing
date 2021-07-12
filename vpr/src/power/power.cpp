@@ -824,7 +824,6 @@ static void power_usage_routing(t_power_usage* power_usage,
             for (t_edge_size edge_idx = 0; edge_idx < node.num_edges(); edge_idx++) {
                 const auto& next_node_id = node.edge_sink_node(edge_idx);
                 if (next_node_id != OPEN) {
-                    auto next_node = device_ctx.rr_nodes[next_node_id];
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
@@ -1364,7 +1363,6 @@ bool power_uninit() {
     bool error = false;
 
     for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        auto node = device_ctx.rr_nodes[rr_node_idx];
         t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
 
         switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
