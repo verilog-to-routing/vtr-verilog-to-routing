@@ -830,23 +830,21 @@ static void power_usage_routing(t_power_usage* power_usage,
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
                         case CHANX:
                         case CHANY:
-                        case IPIN:
-                            {
-                                if (next_node_power->net_num == node_power->net_num) {
-                                    next_node_power->selected_input = next_node_power->num_inputs;
-                                }
-                                next_node_power->in_dens[next_node_power->num_inputs] = clb_net_density(node_power->net_num);
-                                next_node_power->in_prob[next_node_power->num_inputs] = clb_net_prob(node_power->net_num);
-                                next_node_power->num_inputs++;
-                                const t_edge_size next_node_fan_in = rr_graph.node_fan_in(RRNodeId(next_node_id));
-                                if (next_node_power->num_inputs > next_node_fan_in) {
-                                    VTR_LOG("%d %d\n", next_node_power->num_inputs,
-                                            next_node_fan_in);
-                                    fflush(nullptr);
-                                    VTR_ASSERT(0);
-                                }
+                        case IPIN: {
+                            if (next_node_power->net_num == node_power->net_num) {
+                                next_node_power->selected_input = next_node_power->num_inputs;
                             }
-                            break;
+                            next_node_power->in_dens[next_node_power->num_inputs] = clb_net_density(node_power->net_num);
+                            next_node_power->in_prob[next_node_power->num_inputs] = clb_net_prob(node_power->net_num);
+                            next_node_power->num_inputs++;
+                            const t_edge_size next_node_fan_in = rr_graph.node_fan_in(RRNodeId(next_node_id));
+                            if (next_node_power->num_inputs > next_node_fan_in) {
+                                VTR_LOG("%d %d\n", next_node_power->num_inputs,
+                                        next_node_fan_in);
+                                fflush(nullptr);
+                                VTR_ASSERT(0);
+                            }
+                        } break;
                         default:
                             /* Do nothing */
                             break;

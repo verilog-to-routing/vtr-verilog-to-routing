@@ -1499,7 +1499,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
             float sb_ymax = draw_coords->tile_y[k] + draw_coords->get_tile_height();
             arrow_loc_max = {start.x, sb_ymax - arrow_offset};
         }
-        
+
         if (switchpoint_min == 0) {
             if (dir != Direction::BIDIR) {
                 //Draw a mux at the start of each wire, labelled with it's size (#inputs)
