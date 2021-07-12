@@ -39,8 +39,6 @@
 
 using vtr::t_linked_vptr;
 
-nnode_t** not_node;
-
 t_linked_vptr* sub_list = NULL;
 t_linked_vptr* sub_chain_list = NULL;
 int subchaintotal = 0;
@@ -328,6 +326,7 @@ void init_split_adder_for_sub(nnode_t* node, nnode_t* ptr, int a, int sizea, int
 
 void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t* netlist) {
     nnode_t** node;
+    nnode_t** not_node;
     int i, j;
     int num;
     int max_num = 0;

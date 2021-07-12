@@ -132,8 +132,6 @@ void traverse_forward(nnode_t* node, int toplevel, int remove_me) {
                         /* If this child hasn't already been visited, visit it now */
                         if (child->node_data != VISITED_FORWARD) {
                             traverse_forward(child, false, remove_me);
-                            if (!child->name)
-                                std::cout << "here:" << child->type << std::endl;
                         }
                     }
                 }

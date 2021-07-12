@@ -12,8 +12,6 @@ struct config_t {
     std::string output_type; // string name of the type of output file
 
     std::string debug_output_path; // path for where to output the debug outputs
-    // bool is_verilog_input;
-    // bool is_blif_input;
     file_type_e input_file_type;
     file_type_e output_file_type;
     bool coarsen;

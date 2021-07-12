@@ -163,7 +163,7 @@ static ODIN_ERROR_CODE synthesize() {
         printf("Outputting the netlist to the specified output format\n");
 
         generic_writer->__write(verilog_netlist);
-        // output_blif(output_blif_file, verilog_netlist);
+
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
         cleanup_parser();
