@@ -273,7 +273,7 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                                     drive_x,
                                                     y,
                                                     ptc_num,
-                                                    BI_DIRECTION,
+                                                    Direction::BIDIR,
                                                     rr_nodes,
                                                     rr_node_indices);
             clock_graph.add_switch_location(get_name(), drive.name, drive_x, y, drive_node_idx);
@@ -283,14 +283,14 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                                    drive_x - 1,
                                                    y,
                                                    ptc_num,
-                                                   DEC_DIRECTION,
+                                                   Direction::DEC,
                                                    rr_nodes,
                                                    rr_node_indices);
             auto right_node_idx = create_chanx_wire(drive_x + 1,
                                                     x_end,
                                                     y,
                                                     ptc_num,
-                                                    INC_DIRECTION,
+                                                    Direction::INC,
                                                     rr_nodes,
                                                     rr_node_indices);
             record_tap_locations(x_start + x_offset,
@@ -311,7 +311,7 @@ int ClockRib::create_chanx_wire(int x_start,
                                 int x_end,
                                 int y,
                                 int ptc_num,
-                                e_direction direction,
+                                Direction direction,
                                 t_rr_graph_storage* rr_nodes,
                                 t_rr_node_indices* rr_node_indices) {
     rr_nodes->emplace_back();
@@ -328,13 +328,13 @@ int ClockRib::create_chanx_wire(int x_start,
 
     short seg_index = 0;
     switch (direction) {
-        case BI_DIRECTION:
+        case Direction::BIDIR:
             seg_index = drive_seg_idx;
             break;
-        case DEC_DIRECTION:
+        case Direction::DEC:
             seg_index = left_seg_idx;
             break;
-        case INC_DIRECTION:
+        case Direction::INC:
             seg_index = right_seg_idx;
             break;
         default:
@@ -563,7 +563,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                     drive_y,
                                                     x,
                                                     ptc_num,
-                                                    BI_DIRECTION,
+                                                    Direction::BIDIR,
                                                     rr_nodes,
                                                     rr_node_indices,
                                                     num_segments);
@@ -574,7 +574,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                    drive_y - 1,
                                                    x,
                                                    ptc_num,
-                                                   DEC_DIRECTION,
+                                                   Direction::DEC,
                                                    rr_nodes,
                                                    rr_node_indices,
                                                    num_segments);
@@ -582,7 +582,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                     y_end,
                                                     x,
                                                     ptc_num,
-                                                    INC_DIRECTION,
+                                                    Direction::INC,
                                                     rr_nodes,
                                                     rr_node_indices,
                                                     num_segments);
@@ -607,7 +607,7 @@ int ClockSpine::create_chany_wire(int y_start,
                                   int y_end,
                                   int x,
                                   int ptc_num,
-                                  e_direction direction,
+                                  Direction direction,
                                   t_rr_graph_storage* rr_nodes,
                                   t_rr_node_indices* rr_node_indices,
                                   int num_segments) {
@@ -625,13 +625,13 @@ int ClockSpine::create_chany_wire(int y_start,
 
     short seg_index = 0;
     switch (direction) {
-        case BI_DIRECTION:
+        case Direction::BIDIR:
             seg_index = drive_seg_idx;
             break;
-        case DEC_DIRECTION:
+        case Direction::DEC:
             seg_index = left_seg_idx;
             break;
-        case INC_DIRECTION:
+        case Direction::INC:
             seg_index = right_seg_idx;
             break;
         default:

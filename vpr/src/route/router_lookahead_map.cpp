@@ -513,7 +513,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                     int sample_x = rr_graph.node_xlow(sample_node);
                     int sample_y = rr_graph.node_ylow(sample_node);
 
-                    if (rr_graph.node_direction(sample_node) == DEC_DIRECTION) {
+                    if (rr_graph.node_direction(sample_node) == Direction::DEC) {
                         sample_x = rr_graph.node_xhigh(sample_node);
                         sample_y = rr_graph.node_yhigh(sample_node);
                     }
@@ -555,9 +555,9 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     }
 
     /* determine which direction the wire should go in based on the start & target coordinates */
-    e_direction direction = INC_DIRECTION;
+    Direction direction = Direction::INC;
     if ((rr_type == CHANX && target_x < start_x) || (rr_type == CHANY && target_y < start_y)) {
-        direction = DEC_DIRECTION;
+        direction = Direction::DEC;
     }
 
     int start_lookup_x = start_x;
@@ -567,11 +567,11 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
     for (const RRNodeId& node_id : node_lookup.find_channel_nodes(start_lookup_x, start_lookup_y, rr_type)) {
         VTR_ASSERT(temp_rr_graph.node_type(node_id) == rr_type);
 
-        e_direction node_direction = rr_graph.node_direction(node_id);
+        Direction node_direction = rr_graph.node_direction(node_id);
         int node_cost_ind = rr_graph.node_cost_index(node_id);
         int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
 
-        if ((node_direction == direction || node_direction == BI_DIRECTION) && node_seg_ind == seg_index) {
+        if ((node_direction == direction || node_direction == Direction::BIDIR) && node_seg_ind == seg_index) {
             /* found first track that has the specified segment index and goes in the desired direction */
             result = node_id;
             if (track_offset == 0) {
@@ -936,9 +936,9 @@ static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int*
 
         /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
          * that are opposite of the wire direction, let's add 1 to delta_seg */
-        e_direction from_dir = rr_graph.node_direction(from_node);
+        Direction from_dir = rr_graph.node_direction(from_node);
         if (is_chan(from_type)
-            && ((to_seg < from_seg_low && from_dir == INC_DIRECTION) || (to_seg > from_seg_high && from_dir == DEC_DIRECTION))) {
+            && ((to_seg < from_seg_low && from_dir == Direction::INC) || (to_seg > from_seg_high && from_dir == Direction::DEC))) {
             delta_seg++;
         }
 
@@ -1046,16 +1046,16 @@ static void adjust_rr_wire_position(const RRNodeId rr, int& x, int& y) {
 
     VTR_ASSERT_SAFE(is_chan(temp_rr_graph.node_type(rr)));
 
-    e_direction rr_dir = rr_graph.node_direction(rr);
+    Direction rr_dir = rr_graph.node_direction(rr);
 
-    if (rr_dir == DEC_DIRECTION) {
+    if (rr_dir == Direction::DEC) {
         x = rr_graph.node_xhigh(rr);
         y = rr_graph.node_yhigh(rr);
-    } else if (rr_dir == INC_DIRECTION) {
+    } else if (rr_dir == Direction::INC) {
         x = rr_graph.node_xlow(rr);
         y = rr_graph.node_ylow(rr);
     } else {
-        VTR_ASSERT_SAFE(rr_dir == BI_DIRECTION);
+        VTR_ASSERT_SAFE(rr_dir == Direction::BIDIR);
         //Not sure what to do here...
         //Try average for now.
         x = vtr::nint((rr_graph.node_xlow(rr) + rr_graph.node_xhigh(rr)) / 2.);

@@ -69,7 +69,7 @@ struct alignas(16) t_rr_node_data {
      *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
      */
     union {
-        e_direction direction;     //Valid only for CHANX/CHANY
+        Direction direction;       //Valid only for CHANX/CHANY
         unsigned char sides = 0x0; //Valid only for IPINs/OPINs
     } dir_side_;
 
@@ -189,13 +189,13 @@ class t_rr_graph_storage {
         return node_storage_[id].cost_index_;
     }
 
-    e_direction node_direction(RRNodeId id) const {
+    Direction node_direction(RRNodeId id) const {
         return get_node_direction(
             vtr::array_view_id<RRNodeId, const t_rr_node_data>(
                 node_storage_.data(), node_storage_.size()),
             id);
     }
-    const char* node_direction_string(RRNodeId id) const;
+    const std::string& node_direction_string(RRNodeId id) const;
 
     /* Find if the given node appears on a specific side */
     bool is_node_on_specific_side(RRNodeId id, e_side side) const {
@@ -475,7 +475,7 @@ class t_rr_graph_storage {
     void set_node_cost_index(RRNodeId, size_t new_cost_index);
     void set_node_rc_index(RRNodeId, short new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
-    void set_node_direction(RRNodeId, e_direction new_direction);
+    void set_node_direction(RRNodeId, Direction new_direction);
 
     /* Add a side to the node abbributes
      * This is the function to use when you just add a new side WITHOUT reseting side attributes
@@ -588,7 +588,7 @@ class t_rr_graph_storage {
      * have a complete rr-graph and not called often.*/
     void init_fan_in();
 
-    static inline e_direction get_node_direction(
+    static inline Direction get_node_direction(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
         RRNodeId id) {
         auto& node_data = node_storage[id];
@@ -756,7 +756,7 @@ class t_rr_graph_view {
         return node_storage_[id].cost_index_;
     }
 
-    e_direction node_direction(RRNodeId id) const {
+    Direction node_direction(RRNodeId id) const {
         return t_rr_graph_storage::get_node_direction(node_storage_, id);
     }
 

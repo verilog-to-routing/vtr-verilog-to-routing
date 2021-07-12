@@ -268,32 +268,32 @@ class RRGraph {
      *   where the routing segment starts and ends.
      *   Note that our convention alway keeps
      *   xlow <= xhigh and ylow <= yhigh
-     *   Therefore, (xlow, ylow) is a starting point for a CHANX/CHANY in INC_DIRECTION
-     *   (xhigh, yhigh) is a starting point for a CHANX/CHANY in DEC_DIRECTION
+     *   Therefore, (xlow, ylow) is a starting point for a CHANX/CHANY in Direction::INC
+     *   (xhigh, yhigh) is a starting point for a CHANX/CHANY in Direction::DEC
      *
      *   Note: there is only a single drive point for each routing segment (track)
      *   in the context of uni-directional wires
      *                           
      *   Example :
-     *   CHANX in INC_DIRECTION  
+     *   CHANX in Direction::INC  
      *   (xlow, ylow)                (xhigh, yhigh)
      *        |                           |
      *       \|/                         \|/
      *        ---------------------------->
      *
-     *   CHANX in DEC_DIRECTION  
+     *   CHANX in Direction::DEC  
      *   (xlow, ylow)                (xhigh, yhigh)
      *        |                           |
      *       \|/                         \|/
      *        <----------------------------
      *
-     *   CHANY in INC_DIRECTION
+     *   CHANY in Direction::INC
      *       
      *      /|\ <-------(xhigh, yhigh)
      *       |
      *       |  <-------(xlow, ylow)
      *
-     *   CHANY in DEC_DIRECTION
+     *   CHANY in Direction::DEC
      *       
      *       |  <-------(xhigh, yhigh)
      *       |
@@ -320,15 +320,15 @@ class RRGraph {
 
     /* Get node starting and ending points in routing channels. 
      * See details in the figures for node_xlow(), node_ylow(), node_xhigh() and node_yhigh()
-     * For routing tracks in INC_DIRECTION:
+     * For routing tracks in Direction::INC:
      * node_start_coordinate() returns (xlow, ylow) as the starting point 
      * node_end_coordinate() returns (xhigh, yhigh) as the ending point 
      *
-     * For routing tracks in DEC_DIRECTION:
+     * For routing tracks in Direction::DEC:
      * node_start_coordinate() returns (xhigh, yhigh) as the starting point 
      * node_end_coordinate() returns (xlow, ylow) as the ending point 
      *
-     * For routing tracks in BI_DIRECTION:
+     * For routing tracks in Direction::BIDIR:
      * node_start_coordinate() returns (xlow, ylow) as the starting point 
      * node_end_coordinate() returns (xhigh, yhigh) as the ending point 
      *
@@ -416,7 +416,7 @@ class RRGraph {
      * see node coordinate for details 
      * only matters the routing track nodes (CHANX and CHANY) 
      */
-    e_direction node_direction(const RRNodeId& node) const;
+    Direction node_direction(const RRNodeId& node) const;
 
     /* Get the side where the node physically locates on a logic block. 
      * Mainly applicable to IPIN and OPIN nodes, which locates on the perimeter of logic block 
@@ -678,7 +678,7 @@ class RRGraph {
     void set_node_cost_index(const RRNodeId& node, const short& cost_index);
 
     /* Set the directionality for a node, only applicable to CHANX and CHANY */
-    void set_node_direction(const RRNodeId& node, const e_direction& direction);
+    void set_node_direction(const RRNodeId& node, const Direction& direction);
 
     /* Set the side for a node, only applicable to OPIN and IPIN */
     void set_node_side(const RRNodeId& node, const e_side& side);
@@ -795,7 +795,7 @@ class RRGraph {
     vtr::vector<RRNodeId, short> node_capacities_;
     vtr::vector<RRNodeId, short> node_ptc_nums_;
     vtr::vector<RRNodeId, short> node_cost_indices_;
-    vtr::vector<RRNodeId, e_direction> node_directions_;
+    vtr::vector<RRNodeId, Direction> node_directions_;
     vtr::vector<RRNodeId, e_side> node_sides_;
     vtr::vector<RRNodeId, float> node_Rs_;
     vtr::vector<RRNodeId, float> node_Cs_;

@@ -174,7 +174,7 @@ class ClockRib : public ClockNetwork {
                           int x_end,
                           int y,
                           int ptc_num,
-                          e_direction direction,
+                          Direction direction,
                           t_rr_graph_storage* rr_nodes,
                           t_rr_node_indices* rr_node_indices);
     void record_tap_locations(unsigned x_start,
@@ -235,7 +235,7 @@ class ClockSpine : public ClockNetwork {
                           int y_end,
                           int x,
                           int ptc_num,
-                          e_direction direction,
+                          Direction direction,
                           t_rr_graph_storage* rr_nodes,
                           t_rr_node_indices* rr_node_indices,
                           int num_segments);

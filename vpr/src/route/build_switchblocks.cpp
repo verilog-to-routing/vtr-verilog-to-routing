@@ -711,24 +711,24 @@ static void get_switchpoint_wires(
          */
         for (int valid_switchpoint : points) {
             for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++) {
-                e_direction seg_direction = chan_details[iwire].direction();
+                Direction seg_direction = chan_details[iwire].direction();
 
                 /* unidirectional wires going in the decreasing direction can have an outgoing edge
                  * only from the top or right switch block sides, and an incoming edge only if they are
                  * at the left or bottom sides (analogous for wires going in INC direction) */
                 if (side == TOP || side == RIGHT) {
-                    if (seg_direction == DEC_DIRECTION && is_dest) {
+                    if (seg_direction == Direction::DEC && is_dest) {
                         continue;
                     }
-                    if (seg_direction == INC_DIRECTION && !is_dest) {
+                    if (seg_direction == Direction::INC && !is_dest) {
                         continue;
                     }
                 } else {
                     VTR_ASSERT(side == LEFT || side == BOTTOM);
-                    if (seg_direction == DEC_DIRECTION && !is_dest) {
+                    if (seg_direction == Direction::DEC && !is_dest) {
                         continue;
                     }
-                    if (seg_direction == INC_DIRECTION && is_dest) {
+                    if (seg_direction == Direction::INC && is_dest) {
                         continue;
                     }
                 }
@@ -908,22 +908,22 @@ static void compute_wireconn_connections(
         int src_wire_ind = iconn % potential_src_wires.size();  //Index in src set
         int from_wire = potential_src_wires[src_wire_ind].wire; //Index in channel
 
-        e_direction from_wire_direction = from_chan_details[from_x][from_y][from_wire].direction();
-        if (from_wire_direction == INC_DIRECTION) {
+        Direction from_wire_direction = from_chan_details[from_x][from_y][from_wire].direction();
+        if (from_wire_direction == Direction::INC) {
             /* if this is a unidirectional wire headed in the increasing direction (relative to coordinate system)
              * then switch block source side should be BOTTOM or LEFT */
             if (sb_conn.from_side == TOP || sb_conn.from_side == RIGHT) {
                 continue;
             }
             VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT);
-        } else if (from_wire_direction == DEC_DIRECTION) {
+        } else if (from_wire_direction == Direction::DEC) {
             /* a wire heading in the decreasing direction can only connect from the TOP or RIGHT sides of a switch block */
             if (sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT) {
                 continue;
             }
             VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
         } else {
-            VTR_ASSERT(from_wire_direction == BI_DIRECTION);
+            VTR_ASSERT(from_wire_direction == Direction::BIDIR);
         }
 
         //Evaluate permutation functions for the from_wire
@@ -1068,7 +1068,7 @@ static int get_wire_subsegment_num(const DeviceGrid& grid, e_rr_type chan_type, 
     int subsegment_num;
     int seg_start = wire_details.seg_start();
     int seg_end = wire_details.seg_end();
-    e_direction direction = wire_details.direction();
+    Direction direction = wire_details.direction();
     int wire_length = get_wire_segment_length(grid, chan_type, wire_details);
     int min_seg;
 
@@ -1084,7 +1084,7 @@ static int get_wire_subsegment_num(const DeviceGrid& grid, e_rr_type chan_type, 
 
     /* if this wire is going in the decreasing direction, reverse the subsegment num */
     VTR_ASSERT(seg_end >= seg_start);
-    if (direction == DEC_DIRECTION) {
+    if (direction == Direction::DEC) {
         subsegment_num = wire_length - 1 - subsegment_num;
     }
 
@@ -1153,16 +1153,16 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, 
         int wire_length = get_wire_segment_length(grid, chan_type, wire_details);
         int subsegment_num = get_wire_subsegment_num(grid, chan_type, wire_details, seg_coord);
 
-        e_direction direction = wire_details.direction();
+        Direction direction = wire_details.direction();
         if (LEFT == sb_side || BOTTOM == sb_side) {
             switchpoint = (subsegment_num + 1) % wire_length;
-            if (direction == DEC_DIRECTION) {
+            if (direction == Direction::DEC) {
                 switchpoint = subsegment_num;
             }
         } else {
             VTR_ASSERT(RIGHT == sb_side || TOP == sb_side);
             switchpoint = subsegment_num;
-            if (direction == DEC_DIRECTION) {
+            if (direction == Direction::DEC) {
                 switchpoint = (subsegment_num + 1) % wire_length;
             }
         }
