@@ -21,58 +21,58 @@
 #    include <iostream>
 
 struct ManualMovesInfo {
-	int blockID = -1;
-	int x_pos = -1;
-	int y_pos = -1;
-	int subtile = 0;
-	double delta_cost = 0;
-	double delta_timing = 0;
-	double delta_bounding_box = 0;
-	bool valid_input = true;
-	t_pl_loc to_location;
-	e_move_result placer_move_outcome = ABORTED;
-	e_move_result user_move_outcome = ABORTED;
+    int blockID = -1;
+    int x_pos = -1;
+    int y_pos = -1;
+    int subtile = 0;
+    double delta_cost = 0;
+    double delta_timing = 0;
+    double delta_bounding_box = 0;
+    bool valid_input = true;
+    t_pl_loc to_location;
+    e_move_result placer_move_outcome = ABORTED;
+    e_move_result user_move_outcome = ABORTED;
 };
 
 struct ManualMovesGlobals {
-	ManualMovesInfo manual_move_info;
-	GtkWidget* manual_move_window;
-	bool mm_window_is_open = false;
-	bool user_highlighted_block = false;
-	bool manual_move_flag = false;
+    ManualMovesInfo manual_move_info;
+    GtkWidget* manual_move_window;
+    bool mm_window_is_open = false;
+    bool user_highlighted_block = false;
+    bool manual_move_flag = false;
 };
 
 /** Manual Moves Generator, inherits from MoveGenerator class **/
-class ManualMoveGenerator: public MoveGenerator {
-	public:
-		//Evaluates if move is successful and legal or unable to do. 
-		e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, float /*rlim*/);
+class ManualMoveGenerator : public MoveGenerator {
+  public:
+    //Evaluates if move is successful and legal or unable to do.
+    e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, float /*rlim*/);
 };
 
 class Timer {
-	public:
-		Timer() {
-			m_StartTimepoint = std::chrono::high_resolution_clock::now();
-		}
-		~Timer() {
-			Stop();
-		}
-		void Stop() {
-			auto endTimepoint = std::chrono::high_resolution_clock::now();
+  public:
+    Timer() {
+        m_StartTimepoint = std::chrono::high_resolution_clock::now();
+    }
+    ~Timer() {
+        Stop();
+    }
+    void Stop() {
+        auto endTimepoint = std::chrono::high_resolution_clock::now();
 
-			auto start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch().count();
-			auto end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
+        auto start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch().count();
+        auto end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
 
-			auto duration = end - start;
-			double ms = duration * 0.001;
-			double s = duration * 0.000001;
+        auto duration = end - start;
+        double ms = duration * 0.001;
+        double s = duration * 0.000001;
 
-			std::cout << duration << "us -- " << ms << "ms -- " << s << "s\n";
-		}
-	private:
-		std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimepoint;
+        std::cout << duration << "us -- " << ms << "ms -- " << s << "s\n";
+    }
+
+  private:
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimepoint;
 };
-
 
 /** manual moves functions **/
 void draw_manual_moves_window(std::string block_id);
@@ -87,8 +87,6 @@ void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_
 void highlight_new_block_location(bool manual_move_flag);
 
 void deactivating_toggle_button();
-
-
 
 #endif /*NO_GRAPHICS */
 
