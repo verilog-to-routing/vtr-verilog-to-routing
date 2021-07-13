@@ -170,7 +170,7 @@ ManualMovesGlobals* get_manual_moves_global() {
 }
 
 //Manual Move Generator function
-e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float /*rlim*/) {
+e_create_move ManualMoveGenerator::propose_move_mm(t_pl_blocks_to_be_moved& blocks_affected) {
     int block_id = manual_moves_global.manual_move_info.blockID;
     t_pl_loc to = manual_moves_global.manual_move_info.to_location;
     ClusterBlockId b_from = ClusterBlockId(block_id);

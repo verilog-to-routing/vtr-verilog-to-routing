@@ -1327,7 +1327,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 
-        create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+        create_move_outcome = manual_move_generator.propose_move_mm(blocks_affected);
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
