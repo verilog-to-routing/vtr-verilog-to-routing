@@ -161,9 +161,11 @@ bool string_is_a_number(std::string block_id) {
 	return true;
 }
 
-bool get_manual_move_flag() {
+void get_manual_move_flag() {
 	GObject *manual_moves = application.get_object("manualMove");
-	return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
+	//return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
+	manual_moves_global.manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_moves);
+	//return manual_moves_global.manual_move_flag;
 }
 
 ManualMovesGlobals* get_manual_moves_global() {

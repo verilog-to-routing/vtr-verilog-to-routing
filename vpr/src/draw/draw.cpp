@@ -4432,8 +4432,8 @@ static void highlight_blocks(double x, double y) {
 	}
 
 	//If manual moves is activated, then user can select block from the grid.
-	if (get_manual_move_flag()) {
-		ManualMovesGlobals *manual_move_global = get_manual_moves_global();
+	ManualMovesGlobals *manual_move_global = get_manual_moves_global();
+	if (manual_move_global->manual_move_flag) {
 		manual_move_global->user_highlighted_block = true;
 		if (!manual_move_global->mm_window_is_open) {
 			draw_manual_moves_window(std::to_string(size_t(clb_index)));

@@ -1152,7 +1152,12 @@ static float starting_t(const t_annealing_state *state, t_placer_costs *costs,
 	int move_lim = std::min(state->move_lim_max,
 			(int) cluster_ctx.clb_nlist.blocks().size());
 
+
 	for (int i = 0; i < move_lim; i++) {
+
+		//Checks manual move flag for manual move feature
+		get_manual_move_flag();
+
 		//Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
 		e_move_result swap_result = try_swap(state, costs, move_generator,
 				manual_move_generator, timing_info, pin_timing_invalidator,
@@ -1286,17 +1291,15 @@ static e_move_result try_swap(const t_annealing_state *state,
 		rlim = state->rlim;
 	}
 
-	bool manual_move_flag = get_manual_move_flag();
-
+	ManualMovesGlobals *manual_move_global = get_manual_moves_global();
 
 	e_create_move create_move_outcome;
 
+	if(manual_move_global->manual_move_flag) {
+		draw_manual_moves_window("");
+		update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 
-	if(manual_move_flag) {
-			draw_manual_moves_window("");
-			update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
-
-			create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+		create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
 	}
 	else {
 		//Generate a new move (perturbation) used to explore the space of possible placements
@@ -1387,15 +1390,13 @@ static e_move_result try_swap(const t_annealing_state *state,
 		/* 1 -> move accepted, 0 -> rejected. */
 		move_outcome = assess_swap(delta_c, state->t);
 
-		if (manual_move_flag) {
-			ManualMovesGlobals *manual_move_global = get_manual_moves_global();
+		if (manual_move_global->manual_move_flag) {
 			update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
 			cost_summary_dialog();
 
 			//User accepts or rejects the move.
 			move_outcome = manual_move_global->manual_move_info.user_move_outcome;
 		}
-
 
 		if (move_outcome == ACCEPTED) {
 			costs->cost += delta_c;
@@ -1433,7 +1434,7 @@ static e_move_result try_swap(const t_annealing_state *state,
 			++move_type_stat.accepted_moves[(int) move_type];
 
 			//Highlights the new block when manual move is selected.
-			highlight_new_block_location(manual_move_flag);
+			highlight_new_block_location(manual_move_global->manual_move_flag);
 
 		} else {
 			VTR_ASSERT_SAFE(move_outcome == REJECTED);
