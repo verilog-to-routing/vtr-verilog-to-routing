@@ -95,8 +95,8 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     }
     //if the block is not found
     if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
-        invalid_breakpoint_entry_window("Invalid block ID/Name");
         valid_input = false;
+        invalid_breakpoint_entry_window("Invalid block ID/Name");
     }
 
     GtkWidget* x_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 1);
@@ -112,17 +112,19 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     if (!is_legal_swap_to_location(ClusterBlockId(block_id), to)) {
         valid_input = false;
     }
+
     //If the block requested is already in that location.
     ClusterBlockId current_block = ClusterBlockId(block_id);
     t_pl_loc current_block_loc = place_ctx.block_locs[current_block].loc;
     if (x_location == current_block_loc.x && y_location == current_block_loc.y && subtile_location == current_block_loc.sub_tile) {
-        invalid_breakpoint_entry_window("The block is currently in this location");
         valid_input = false;
+        invalid_breakpoint_entry_window("The block is currently in this location");
     }
+
     //Checks if all fields from the user input window are complete.
     if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
-        invalid_breakpoint_entry_window("Not all fields are complete");
         valid_input = false;
+        invalid_breakpoint_entry_window("Not all fields are complete");
     }
 
     if (valid_input) {
@@ -219,7 +221,8 @@ void cost_summary_dialog() {
                                          GTK_RESPONSE_REJECT,
                                          NULL);
 
-    gtk_widget_set_halign(gtk_dialog_get_action_area((GtkDialog*)dialog), GTK_ALIGN_CENTER);
+    //Find function so substitute this one because it is deprecated
+    //gtk_widget_set_halign(gtk_dialog_get_action_area((GtkDialog*)dialog), GTK_ALIGN_CENTER);
 
     //Create elements for the dialog and printing costs to the user.
     GtkWidget* title_label = gtk_label_new(NULL);

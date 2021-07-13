@@ -2,7 +2,6 @@
 #define VPR_PLACE_H
 
 #include "vpr_types.h"
-#include "manual_moves.h"
 
 void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,

@@ -46,7 +46,7 @@ struct ManualMovesGlobals {
 class ManualMoveGenerator : public MoveGenerator {
   public:
     //Evaluates if move is successful and legal or unable to do.
-	e_create_move propose_move_mm(t_pl_blocks_to_be_moved& blocks_affected);
+    e_create_move propose_move_mm(t_pl_blocks_to_be_moved& blocks_affected);
 };
 
 class Timer {
