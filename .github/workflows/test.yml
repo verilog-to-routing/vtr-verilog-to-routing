@@ -197,11 +197,6 @@ jobs:
             name: 'Odin Tech Basic',
             suite: 'odin_tech_basic'
           }
-          ,
-          {
-            name: 'Odin Tech Strong',
-            suite: 'odin_tech_strong'
-          }
         ]
     name: 'R: ${{ matrix.name }}'
     steps:
