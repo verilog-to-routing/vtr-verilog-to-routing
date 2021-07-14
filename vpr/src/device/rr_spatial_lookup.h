@@ -82,6 +82,18 @@ class RRSpatialLookup {
                                              t_rr_type type) const;
 
     /**
+     * Returns the indices of the specified routing resource nodes,
+     * representing virtual sinks.  
+     * - (x, y) are the coordinate of the sink nodes within the FPGA
+     *
+     * Note: 
+     * - Return an empty list if there are no sinks at the given (x, y) location
+     * - The node list returned only contain valid ids
+     */
+    std::vector<RRNodeId> find_sink_nodes(int x,
+                                          int y) const;
+
+    /**
      * Like find_node() but returns all matching nodes on all the sides.
      * This is particularly useful for getting all instances
      * of a specific IPIN/OPIN at a specific gird tile (x,y) location.

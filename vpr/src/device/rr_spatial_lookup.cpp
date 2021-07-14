@@ -132,6 +132,51 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
     return channel_nodes;
 }
 
+std::vector<RRNodeId> RRSpatialLookup::find_sink_nodes(int x,
+                                                       int y) const {
+    /* TODO: The implementation of this API should be worked 
+     * when rr_node_indices adapts RRNodeId natively!
+     */
+    std::vector<RRNodeId> sink_nodes;
+
+    /* Pre-check: the x, y, type are valid! Otherwise, return an empty vector */
+    if (x < 0 || y < 0) {
+        return sink_nodes;
+    }
+
+    VTR_ASSERT_SAFE(3 == rr_node_indices_[SINK].ndims());
+
+    /* Sanity check to ensure the x, y, side are in range 
+     * - Return a list of valid ids by searching in look-up when all the parameters are in range
+     * - Return an empty list if any out-of-range is detected
+     */
+    if (size_t(SINK) >= rr_node_indices_.size()) {
+        return sink_nodes;
+    }
+
+    if (x >= rr_node_indices_[SINK].dim_size(0)) {
+        return sink_nodes;
+    }
+
+    if (y >= rr_node_indices_[SINK].dim_size(1)) {
+        return sink_nodes;
+    }
+
+    /* By default, we always added the channel nodes to the TOP side (to save memory) */
+    e_side node_side = TOP;
+    if (node_side >= rr_node_indices_[SINK].dim_size(2)) {
+        return sink_nodes;
+    }
+
+    for (const auto& node : rr_node_indices_[SINK][x][y][node_side]) {
+        if (RRNodeId(node)) {
+            sink_nodes.push_back(RRNodeId(node));
+        }
+    }
+
+    return sink_nodes;
+}
+
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
                                                                int y,
                                                                t_rr_type rr_type,
