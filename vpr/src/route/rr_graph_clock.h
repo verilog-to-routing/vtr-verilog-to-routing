@@ -8,7 +8,6 @@
 #include <set>
 #include <utility>
 
-
 #include "rr_graph_builder.h"
 #include "clock_fwd.h"
 
