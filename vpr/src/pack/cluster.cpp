@@ -2043,13 +2043,26 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
      *input sharing (sharinggain) and path_length minimization (timinggain)*/
     auto& atom_ctx = g_vpr_ctx.atom();
     t_pb* cur_pb = pb;
+
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& attraction_info = floorplanning_ctx.attraction_groups;
+    AttractGroupId cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
+
     while (cur_pb) {
+
         for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
             if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
                 cur_pb->pb_stats->connectiongain[blk_id] = 0;
             }
             if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
                 cur_pb->pb_stats->sharinggain[blk_id] = 0;
+            }
+
+            //Attraction Group stuff
+            AttractGroupId atom_grp_id = attraction_info.get_atom_attraction_group(blk_id);
+            if (atom_grp_id != NO_ATTRACTION_GROUP && atom_grp_id == cluster_att_grp_id) {
+            	//increase gain of atom by 1
+            	cur_pb->pb_stats->gain[blk_id]++;
             }
 
             /* Todo: This was used to explore different normalization options, can
@@ -2124,6 +2137,8 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
         if (!blk_id) {
             continue;
         }
+        //get atom name
+        auto atom_name = atom_ctx.nlist.block_name(blk_id);
 
         //Update atom netlist mapping
         atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
@@ -2145,6 +2160,7 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
             cur_pb->pb_stats->num_child_blocks_in_pb++;
 
     		if (atom_grp_id != NO_ATTRACTION_GROUP) {
+    			VTR_LOG("Updating attraction group for cluster %d based on atom %s \n", clb_index, atom_name.c_str());
     			cur_pb->pb_stats->has_attraction_group = true;
     			cur_pb->pb_stats->attraction_grp_id = atom_grp_id;
     		}
@@ -2432,22 +2448,22 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         }
     }
 
-    t_pack_molecule* molecule = nullptr;
+    //t_pack_molecule* molecule = nullptr;
 
     //Get highest gain molecule that also belongs to attraction group
-    if (cur_pb->pb_stats->num_feasible_blocks > 0) {
+    /*if (cur_pb->pb_stats->num_feasible_blocks > 0) {
     	molecule = sort_cluster_molecule_candidates_by_attraction(cur_pb);
-    }
+    }*/
 
     /* Grab highest gain molecule */
-    /*t_pack_molecule* molecule = nullptr;
+    t_pack_molecule* molecule = nullptr;
     if (cur_pb->pb_stats->num_feasible_blocks > 0) {
         cur_pb->pb_stats->num_feasible_blocks--;
         int index = cur_pb->pb_stats->num_feasible_blocks;
         molecule = cur_pb->pb_stats->feasible_blocks[index];
         VTR_ASSERT(molecule->valid == true);
         return molecule;
-    }*/
+    }
 
     return molecule;
 }

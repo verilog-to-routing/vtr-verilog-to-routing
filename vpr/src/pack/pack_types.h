@@ -43,6 +43,7 @@ struct t_pb_stats {
     std::map<AtomBlockId, float> connectiongain; /* Weighted sum of connections to attraction function */
     std::map<AtomBlockId, float> sharinggain;    /* How many nets on an atom cluster_ctx.blocks are already in the pb under consideration */
 
+
     /* This is the gain used for hill-climbing. It stores*
      * the reduction in the number of pins that adding this atom cluster_ctx.blocks to the the*
      * current pb will have. This reflects the fact that sometimes the *

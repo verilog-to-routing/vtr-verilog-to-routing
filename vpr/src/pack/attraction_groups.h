@@ -21,6 +21,7 @@ typedef vtr::StrongId<attraction_id_tag> AttractGroupId;
 struct AttractionGroup {
     std::vector<AtomBlockId> group_atoms;
     float gain = 5; //give every attraction group an initial gain of 5
+    bool region_size_one = false;
 };
 
 /// @brief sentinel value for indicating that an attraction group has not been specified
