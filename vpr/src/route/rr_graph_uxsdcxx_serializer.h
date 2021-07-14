@@ -1586,15 +1586,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     switch (rr_graph.node_type(node.id())) {
                         case SOURCE:
                         case SINK:
+                        case CHANY:
+                            rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
+                            break;
                         case CHANX:
                             /* Currently need to swap x and y for CHANX because of chan, seg convention 
                              * TODO: Once the builders is reworked for use consistent (x, y) convention,
                              * the following swapping can be removed
                              */
                             rr_graph_builder.node_lookup().add_node(node.id(), iy, ix, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
-                            break;
-                        case CHANY:
-                            rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
                             break;
                         case OPIN:
                         case IPIN:
