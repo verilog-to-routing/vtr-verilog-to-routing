@@ -308,6 +308,8 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 int transitive_fanout_threshold,
                                                                 const int feasible_block_array_size);
 
+t_pack_molecule* sort_cluster_molecule_candidates_by_attraction(t_pb* cur_pb);
+
 static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                  const bool allow_unrelated_clustering,
@@ -2115,6 +2117,8 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
     molecule_size = get_array_size_of_molecule(molecule);
     cb = nullptr;
 
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& attraction_info = floorplanning_ctx.attraction_groups;
     for (iblock = 0; iblock < molecule_size; iblock++) {
         auto blk_id = molecule->atom_block_ids[iblock];
         if (!blk_id) {
@@ -2128,6 +2132,10 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
         VTR_ASSERT(atom_pb);
 
         cur_pb = atom_pb->parent_pb;
+
+        //Update attraction group
+		AttractGroupId atom_grp_id = attraction_info.get_atom_attraction_group(blk_id);
+
         while (cur_pb) {
             /* reset list of feasible blocks */
             if (cur_pb->is_root()) {
@@ -2135,6 +2143,12 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
             }
             cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
             cur_pb->pb_stats->num_child_blocks_in_pb++;
+
+    		if (atom_grp_id != NO_ATTRACTION_GROUP) {
+    			cur_pb->pb_stats->has_attraction_group = true;
+    			cur_pb->pb_stats->attraction_grp_id = atom_grp_id;
+    		}
+
             cur_pb = cur_pb->parent_pb;
         }
 
@@ -2418,17 +2432,22 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         }
     }
 
-    //Recalculate changes here and re-sort the molecules based on floorplan gain changes
+    t_pack_molecule* molecule = nullptr;
+
+    //Get highest gain molecule that also belongs to attraction group
+    if (cur_pb->pb_stats->num_feasible_blocks > 0) {
+    	molecule = sort_cluster_molecule_candidates_by_attraction(cur_pb);
+    }
 
     /* Grab highest gain molecule */
-    t_pack_molecule* molecule = nullptr;
+    /*t_pack_molecule* molecule = nullptr;
     if (cur_pb->pb_stats->num_feasible_blocks > 0) {
         cur_pb->pb_stats->num_feasible_blocks--;
         int index = cur_pb->pb_stats->num_feasible_blocks;
         molecule = cur_pb->pb_stats->feasible_blocks[index];
         VTR_ASSERT(molecule->valid == true);
         return molecule;
-    }
+    }*/
 
     return molecule;
 }
@@ -2566,6 +2585,51 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
             }
         }
     }
+}
+
+t_pack_molecule* sort_cluster_molecule_candidates_by_attraction(t_pb* cur_pb) {
+
+	auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+	auto& attraction_info = floorplanning_ctx.attraction_groups;
+
+	t_pack_molecule* matching_molecule = nullptr;
+	bool found_matching_molecule = false;
+
+	//Store last matching_molecule (i.e. matching_molecule with highest gain) to return if no matching_molecule is found that matches the attraction group
+	int num_feas_blocks = cur_pb->pb_stats->num_feasible_blocks;
+	int last_molecule_index = num_feas_blocks - 1;
+	t_pack_molecule* last_molecule = cur_pb->pb_stats->feasible_blocks[last_molecule_index];
+
+	//get cluster attraction group (if any)
+	if(cur_pb->pb_stats->has_attraction_group) {
+		//get the molecule with the highest gain that belongs to the cluster's attraction group
+		//if no molecule belongs to the attraction group, just return the molecule with the highest gain
+		for (int i = cur_pb->pb_stats->num_feasible_blocks - 1; i >= 0; i--) {
+			matching_molecule = cur_pb->pb_stats->feasible_blocks[i];
+			for (int j = 0; j < get_array_size_of_molecule(matching_molecule); j++) {
+				if (matching_molecule->atom_block_ids[j]) {
+					auto blk_id = matching_molecule->atom_block_ids[j];
+					AttractGroupId atom_group_id = attraction_info.get_atom_attraction_group(blk_id);
+					if (cur_pb->pb_stats->attraction_grp_id == atom_group_id) {
+						//Found a matching_molecule that belongs to the same attraction group as the cluster
+						found_matching_molecule = true;
+						break;
+					}
+				}
+			}
+			if (found_matching_molecule) {
+				break;
+			}
+		}
+		//if no feasible blocks were found that matched the cluster's attraction group, return the last molecule (i.e.highest gain molecule)
+		if (!found_matching_molecule) {
+			return last_molecule;
+		}
+	} else {
+		return last_molecule;
+	}
+	return matching_molecule;
+
 }
 
 /*****************************************/

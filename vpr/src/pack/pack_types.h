@@ -74,6 +74,12 @@ struct t_pb_stats {
     std::vector<std::vector<AtomNetId>> lookahead_input_pins_used;  /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
     std::vector<std::vector<AtomNetId>> lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
 
+    /*
+     * Does the t_pb have associated attraction group? If so, store the group.
+     */
+    AttractGroupId attraction_grp_id;
+    bool has_attraction_group = false;
+
     /* Array of feasible blocks to select from [0..max_array_size-1]
      * Sorted in ascending gain order so that the last cluster_ctx.blocks is the most desirable (this makes it easy to pop blocks off the list
      */
