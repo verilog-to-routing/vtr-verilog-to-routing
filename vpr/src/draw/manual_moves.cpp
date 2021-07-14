@@ -82,7 +82,6 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 
     //Loading the context/data structures needed.
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     //Getting entry values
     GtkWidget* block_entry = gtk_grid_get_child_at((GtkGrid*)grid, 0, 1);
@@ -93,11 +92,6 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     } else { //for block name
         block_id = size_t(cluster_ctx.clb_nlist.find_block(gtk_entry_get_text((GtkEntry*)block_entry)));
     }
-    //if the block is not found
-    if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
-        valid_input = false;
-        invalid_breakpoint_entry_window("Invalid block ID/Name");
-    }
 
     GtkWidget* x_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 1);
     GtkWidget* y_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 2);
@@ -107,25 +101,13 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     y_location = std::atoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
     subtile_location = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
 
-    //Function in move_utils.cpp that returns true if the location swap is valid
+    if(std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
+       	invalid_breakpoint_entry_window("Not all fields are complete");
+       	valid_input = false;
+    }
+
     t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location);
-    if (!is_legal_swap_to_location(ClusterBlockId(block_id), to)) {
-        valid_input = false;
-    }
-
-    //If the block requested is already in that location.
-    ClusterBlockId current_block = ClusterBlockId(block_id);
-    t_pl_loc current_block_loc = place_ctx.block_locs[current_block].loc;
-    if (x_location == current_block_loc.x && y_location == current_block_loc.y && subtile_location == current_block_loc.sub_tile) {
-        valid_input = false;
-        invalid_breakpoint_entry_window("The block is currently in this location");
-    }
-
-    //Checks if all fields from the user input window are complete.
-    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
-        valid_input = false;
-        invalid_breakpoint_entry_window("Not all fields are complete");
-    }
+    valid_input = checking_legality_conditions(ClusterBlockId(block_id), to);
 
     if (valid_input) {
         manual_moves_global.manual_move_info.valid_input = true;
@@ -148,6 +130,52 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     } else {
         manual_moves_global.manual_move_info.valid_input = false;
     }
+}
+
+bool checking_legality_conditions(ClusterBlockId block_id, t_pl_loc to) {
+
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& place_ctx = g_vpr_ctx.placement();
+	auto& device_ctx = g_vpr_ctx.device();
+
+	 //if the block is not found
+	if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
+		invalid_breakpoint_entry_window("Invalid block ID/Name");
+		return false;
+	}
+
+	//If the dimensions are out of bounds
+	if (to.x < 0 || to.x >= int(device_ctx.grid.width())
+	        || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
+	    invalid_breakpoint_entry_window("Dimensions are out of bounds");
+	    return false;
+	}
+
+	//If the block s not compatible
+	auto physical_tile = device_ctx.grid[to.x][to.y].type;
+	auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
+	if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
+	    invalid_breakpoint_entry_window("Blocks are not compatible");
+	    return false;
+	}
+
+	//If the destination block is user constrained, abort this swap
+	auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
+	if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
+	   if (place_ctx.block_locs[b_to].is_fixed) {
+		   invalid_breakpoint_entry_window("Block is fixed");
+		   return false;
+	    }
+	}
+
+	//If the block requested is already in that location.
+	t_pl_loc current_block_loc = place_ctx.block_locs[block_id].loc;
+	if (to.x == current_block_loc.x && to.y == current_block_loc.y && to.sub_tile == current_block_loc.sub_tile) {
+		invalid_breakpoint_entry_window("The block is currently in this location");
+	    return false;
+	}
+
+	return true;
 }
 
 bool string_is_a_number(std::string block_id) {

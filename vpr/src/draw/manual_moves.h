@@ -78,8 +78,9 @@ class Timer {
 void draw_manual_moves_window(std::string block_id);
 void close_manual_moves_window();
 void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+//bool checking_legality_conditions(ClusterBlockId block_id, t_pl_loc to);
+bool checking_legality_conditions(ClusterBlockId block_id, t_pl_loc to);
 bool string_is_a_number(std::string block_id);
-//bool get_manual_move_flag();
 void get_manual_move_flag();
 void cost_summary_dialog();
 ManualMovesGlobals* get_manual_moves_global();
