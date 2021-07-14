@@ -1584,29 +1584,35 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     switch (rr_graph.node_type(node.id())) {
-                    case SOURCE:
-                    case SINK:
-                    case CHANX:
-                    case CHANY:
-                        rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
-                        break;
-                    case OPIN:
-                    case IPIN:
-                        for (const e_side& side : SIDES) {
-                            if (node.is_node_on_specific_side(side)) {
-                                rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), side);
+                        case SOURCE:
+                        case SINK:
+                        case CHANX:
+                            /* Currently need to swap x and y for CHANX because of chan, seg convention 
+                             * TODO: Once the builders is reworked for use consistent (x, y) convention,
+                             * the following swapping can be removed
+                             */
+                            rr_graph_builder.node_lookup().add_node(node.id(), iy, ix, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
+                            break;
+                        case CHANY:
+                            rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
+                            break;
+                        case OPIN:
+                        case IPIN:
+                            for (const e_side& side : SIDES) {
+                                if (node.is_node_on_specific_side(side)) {
+                                    rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), side);
+                                }
                             }
-                        }
-                        break;
-                    default:
-                        report_error("Invalid node type for node '%lu' in the routing resource graph file", size_t(node.id()));
-                        break;
+                            break;
+                        default:
+                            report_error("Invalid node type for node '%lu' in the routing resource graph file", size_t(node.id()));
+                            break;
                     }
                 }
             }
         }
 
-        // Xifan: The following codes may be redundant! The coordinates (xlow/ylow/xhigh/yhigh) are already 
+        // Xifan: The following codes may be redundant! The coordinates (xlow/ylow/xhigh/yhigh) are already
         // bounded to the grid bounding box if the rr_graph file follows the standards!
         //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
         // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
