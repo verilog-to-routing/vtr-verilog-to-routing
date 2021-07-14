@@ -1611,30 +1611,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 }
             }
         }
-
-        // Xifan: The following codes may be redundant! The coordinates (xlow/ylow/xhigh/yhigh) are already
-        // bounded to the grid bounding box if the rr_graph file follows the standards!
-        //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
-        // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
-        for (size_t x = 0; x < grid_.width(); x++) {
-            for (size_t y = 0; y < grid_.height(); y++) {
-                int width_offset = grid_[x][y].width_offset;
-                int height_offset = grid_[x][y].height_offset;
-                if (width_offset != 0 || height_offset != 0) {
-                    int root_x = x - width_offset;
-                    int root_y = y - height_offset;
-
-                    rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
-                                                                vtr::Point<int>(x, y),
-                                                                SOURCE,
-                                                                SIDES[0]);
-                    rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
-                                                                vtr::Point<int>(x, y),
-                                                                SINK,
-                                                                SIDES[0]);
-                }
-            }
-        }
     }
 
     // Enum converters from/to uxsd types
