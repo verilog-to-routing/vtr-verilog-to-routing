@@ -1266,7 +1266,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
     };
     if (clock_modeling == DEDICATED_NETWORK) {
-        ClockRRGraphBuilder builder(chan_width, grid, &L_rr_node, &L_rr_node_indices);
+        ClockRRGraphBuilder builder(chan_width, grid, &L_rr_node, &rr_graph_builder);
         builder.create_and_append_clock_rr_graph(num_seg_types, &rr_edges_to_create);
         uniquify_edges(rr_edges_to_create);
         alloc_and_load_edges(L_rr_node, rr_edges_to_create);
