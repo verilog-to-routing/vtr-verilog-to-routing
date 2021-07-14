@@ -154,11 +154,11 @@ std::vector<RRNodeId> RRSpatialLookup::find_sink_nodes(int x,
         return sink_nodes;
     }
 
-    if (x >= rr_node_indices_[SINK].dim_size(0)) {
+    if (size_t(x) >= rr_node_indices_[SINK].dim_size(0)) {
         return sink_nodes;
     }
 
-    if (y >= rr_node_indices_[SINK].dim_size(1)) {
+    if (size_t(y) >= rr_node_indices_[SINK].dim_size(1)) {
         return sink_nodes;
     }
 
