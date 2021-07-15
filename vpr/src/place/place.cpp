@@ -1319,14 +1319,17 @@ static e_move_result try_swap(const t_annealing_state* state,
         rlim = state->rlim;
     }
 
+#ifndef NO_GRAPHICS
     ManualMovesGlobals* manual_move_global = get_manual_moves_global();
-
-    e_create_move create_move_outcome;
-
     if (manual_move_global->manual_move_flag) {
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+    }
+#endif /*NO_GRAPHICS*/
 
+    e_create_move create_move_outcome;
+
+    if(manual_move_global->manual_move_flag) {
         create_move_outcome = manual_move_generator.propose_move_mm(blocks_affected);
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1417,6 +1420,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, state->t);
 
+#ifndef NO_GRAPHICS
         if (manual_move_global->manual_move_flag) {
             update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
             cost_summary_dialog();
@@ -1424,6 +1428,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             //User accepts or rejects the move.
             move_outcome = manual_move_global->manual_move_info.user_move_outcome;
         }
+#endif /*NO_GRAPHICS*/
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1461,7 +1466,9 @@ static e_move_result try_swap(const t_annealing_state* state,
             ++move_type_stat.accepted_moves[(int)move_type];
 
             //Highlights the new block when manual move is selected.
+#ifndef NO_GRAPHICS
             highlight_new_block_location(manual_move_global->manual_move_flag);
+#endif /*NO_GRPAHICS*/
 
         } else {
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
