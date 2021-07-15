@@ -4369,7 +4369,6 @@ static void highlight_blocks(double x, double y) {
                 place_ctx.block_locs[clb_index].loc.y);
     }
 
-#    ifndef NO_GRAPHICS
     //If manual moves is activated, then user can select block from the grid.
     ManualMovesGlobals* manual_move_global = get_manual_moves_global();
     if (manual_move_global->manual_move_flag) {
@@ -4378,7 +4377,6 @@ static void highlight_blocks(double x, double y) {
             draw_manual_moves_window(std::to_string(size_t(clb_index)));
         }
     }
-#    endif /*NO_GRAPHICS*/
 
     application.update_message(msg);
     application.refresh_drawing();
