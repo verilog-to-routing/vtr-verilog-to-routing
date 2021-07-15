@@ -80,10 +80,10 @@ static double power_count_transistors_connectionbox() {
 
     auto type = find_most_common_block_type(device_ctx.grid);
 
-    //For each port on the most common block, look at the number of 
-    //input pins this port has and estimate the transistor count based 
+    //For each port on the most common block, look at the number of
+    //input pins this port has and estimate the transistor count based
     //on the size muxes that drive these input pins.
-    for (int i=0; i < type->pb_graph_head->num_input_ports; i++) {
+    for (int i = 0; i < type->pb_graph_head->num_input_ports; i++) {
         inputs = type->pb_graph_head->num_input_pins[i];
 
         /* Buffers from Tracks */
