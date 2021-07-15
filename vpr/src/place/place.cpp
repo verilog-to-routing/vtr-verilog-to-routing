@@ -45,6 +45,7 @@
 
 #include "static_move_generator.h"
 #include "simpleRL_move_generator.h"
+#include "manual_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -1179,8 +1180,10 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
                             (int)cluster_ctx.clb_nlist.blocks().size());
 
     for (int i = 0; i < move_lim; i++) {
+#ifndef NO_GRAPHICS
         //Checks manual move flag for manual move feature
         get_manual_move_flag();
+#endif /*NO_GRAPHICS*/
 
         //Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
         e_move_result swap_result = try_swap(state, costs, move_generator,
@@ -1319,22 +1322,20 @@ static e_move_result try_swap(const t_annealing_state* state,
         rlim = state->rlim;
     }
 
+    e_create_move create_move_outcome;
+
 #ifndef NO_GRAPHICS
     ManualMovesGlobals* manual_move_global = get_manual_moves_global();
     if (manual_move_global->manual_move_flag) {
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
-    }
-#endif /*NO_GRAPHICS*/
 
-    e_create_move create_move_outcome;
-
-    if(manual_move_global->manual_move_flag) {
-        create_move_outcome = manual_move_generator.propose_move_mm(blocks_affected);
+        create_move_outcome = manual_move_generator.propose_move(blocks_affected);
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
     }
+#endif /*NO_GRAPHICS*/
 
     ++move_type_stat.num_moves[(int)move_type];
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);

@@ -101,9 +101,9 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     y_location = std::atoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
     subtile_location = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
 
-    if(std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
-       	invalid_breakpoint_entry_window("Not all fields are complete");
-       	valid_input = false;
+    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
+        invalid_breakpoint_entry_window("Not all fields are complete");
+        valid_input = false;
     }
 
     t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location);
@@ -133,49 +133,48 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 }
 
 bool checking_legality_conditions(ClusterBlockId block_id, t_pl_loc to) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
-	auto& cluster_ctx = g_vpr_ctx.clustering();
-	auto& place_ctx = g_vpr_ctx.placement();
-	auto& device_ctx = g_vpr_ctx.device();
+    //if the block is not found
+    if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
+        invalid_breakpoint_entry_window("Invalid block ID/Name");
+        return false;
+    }
 
-	 //if the block is not found
-	if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
-		invalid_breakpoint_entry_window("Invalid block ID/Name");
-		return false;
-	}
+    //If the dimensions are out of bounds
+    if (to.x < 0 || to.x >= int(device_ctx.grid.width())
+        || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
+        invalid_breakpoint_entry_window("Dimensions are out of bounds");
+        return false;
+    }
 
-	//If the dimensions are out of bounds
-	if (to.x < 0 || to.x >= int(device_ctx.grid.width())
-	        || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
-	    invalid_breakpoint_entry_window("Dimensions are out of bounds");
-	    return false;
-	}
+    //If the block s not compatible
+    auto physical_tile = device_ctx.grid[to.x][to.y].type;
+    auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
+    if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
+        invalid_breakpoint_entry_window("Blocks are not compatible");
+        return false;
+    }
 
-	//If the block s not compatible
-	auto physical_tile = device_ctx.grid[to.x][to.y].type;
-	auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
-	if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
-	    invalid_breakpoint_entry_window("Blocks are not compatible");
-	    return false;
-	}
+    //If the destination block is user constrained, abort this swap
+    auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
+    if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
+        if (place_ctx.block_locs[b_to].is_fixed) {
+            invalid_breakpoint_entry_window("Block is fixed");
+            return false;
+        }
+    }
 
-	//If the destination block is user constrained, abort this swap
-	auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
-	if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
-	   if (place_ctx.block_locs[b_to].is_fixed) {
-		   invalid_breakpoint_entry_window("Block is fixed");
-		   return false;
-	    }
-	}
+    //If the block requested is already in that location.
+    t_pl_loc current_block_loc = place_ctx.block_locs[block_id].loc;
+    if (to.x == current_block_loc.x && to.y == current_block_loc.y && to.sub_tile == current_block_loc.sub_tile) {
+        invalid_breakpoint_entry_window("The block is currently in this location");
+        return false;
+    }
 
-	//If the block requested is already in that location.
-	t_pl_loc current_block_loc = place_ctx.block_locs[block_id].loc;
-	if (to.x == current_block_loc.x && to.y == current_block_loc.y && to.sub_tile == current_block_loc.sub_tile) {
-		invalid_breakpoint_entry_window("The block is currently in this location");
-	    return false;
-	}
-
-	return true;
+    return true;
 }
 
 bool string_is_a_number(std::string block_id) {
@@ -192,47 +191,10 @@ void get_manual_move_flag() {
     GObject* manual_moves = application.get_object("manualMove");
     //return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
     manual_moves_global.manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_moves);
-    //return manual_moves_global.manual_move_flag;
 }
 
 ManualMovesGlobals* get_manual_moves_global() {
     return &manual_moves_global;
-}
-
-//Manual Move Generator function
-e_create_move ManualMoveGenerator::propose_move_mm(t_pl_blocks_to_be_moved& blocks_affected) {
-    int block_id = manual_moves_global.manual_move_info.blockID;
-    t_pl_loc to = manual_moves_global.manual_move_info.to_location;
-    ClusterBlockId b_from = ClusterBlockId(block_id);
-
-    //Checking if the block was found
-    if (!b_from) {
-        return e_create_move::ABORT; //No movable block was found
-    }
-
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    //Gets the current location of the block to move.
-    t_pl_loc from = place_ctx.block_locs[b_from].loc;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = device_ctx.grid[from.x][from.y].type;
-    VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
-
-    //Retrieving the compressed block grid for this block type
-    const auto& compressed_block_grid = place_ctx.compressed_block_grids[cluster_from_type->index];
-    //Checking if the block has a compatible subtile.
-    auto to_type = device_ctx.grid[to.x][to.y].type;
-    auto& compatible_subtiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
-
-    //No compatible subtile is found.
-    if (std::find(compatible_subtiles.begin(), compatible_subtiles.end(), to.sub_tile) == compatible_subtiles.end()) {
-        return e_create_move::ABORT;
-    }
-
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
-    return create_move;
 }
 
 void cost_summary_dialog() {
