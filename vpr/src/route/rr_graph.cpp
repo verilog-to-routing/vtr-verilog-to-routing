@@ -507,7 +507,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* get maximum number of pins across all blocks */
     int max_pins = types[0].num_pins;
     for (const auto& type : types) {
-
         if (is_empty_type(&type)) {
             continue;
         }
