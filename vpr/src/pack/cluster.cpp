@@ -2570,6 +2570,8 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& attraction_info = floorplanning_ctx.attraction_groups;
 
+    //If the current cluster belongs to an attraction group, add all of the atoms
+    //from that attraction group to the feasible blocks
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
     if (grp_id != NO_ATTRACTION_GROUP) {
         AttractionGroup group = attraction_info.get_attraction_group_info(grp_id);
