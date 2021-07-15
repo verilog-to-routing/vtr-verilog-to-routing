@@ -1174,10 +1174,10 @@ void power_pb_pins_uninit() {
 }
 
 void power_routing_init(const t_det_routing_arch* routing_arch) {
-    int max_fanin;
-    int max_IPIN_fanin;
-    int max_seg_to_IPIN_fanout;
-    int max_seg_to_seg_fanout;
+    t_edge_size max_fanin;
+    t_edge_size max_IPIN_fanin;
+    t_edge_size max_seg_to_IPIN_fanout;
+    t_edge_size max_seg_to_seg_fanout;
     auto& power_ctx = g_vpr_ctx.mutable_power();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -1206,17 +1206,16 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     max_seg_to_seg_fanout = 0;
     max_seg_to_IPIN_fanout = 0;
     for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        int fanout_to_IPIN = 0;
-        int fanout_to_seg = 0;
+        t_edge_size fanout_to_IPIN = 0;
+        t_edge_size fanout_to_seg = 0;
         auto node = device_ctx.rr_nodes[rr_node_idx];
         t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
         const t_edge_size node_fan_in = rr_graph.node_fan_in(RRNodeId(rr_node_idx));
 
         switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case IPIN:
-                max_IPIN_fanin = std::max(max_IPIN_fanin,
-                                          static_cast<int>(node_fan_in));
-                max_fanin = std::max(max_fanin, static_cast<int>(node_fan_in));
+                max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
+                max_fanin = std::max(max_fanin, node_fan_in);
 
                 node_power->in_dens = (float*)vtr::calloc(node_fan_in,
                                                           sizeof(float));
@@ -1235,7 +1234,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_seg_to_IPIN_fanout = std::max(max_seg_to_IPIN_fanout,
                                                   fanout_to_IPIN);
                 max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
-                max_fanin = std::max(max_fanin, static_cast<int>(node_fan_in));
+                max_fanin = std::max(max_fanin, node_fan_in);
 
                 node_power->in_dens = (float*)vtr::calloc(node_fan_in,
                                                           sizeof(float));
