@@ -29,7 +29,6 @@ constexpr AttractGroupId NO_ATTRACTION_GROUP(-1);
 
 class AttractionInfo {
   public:
-
     AttractGroupId get_atom_attraction_group(AtomBlockId atom_id);
 
     AttractionGroup get_attraction_group_info(AttractGroupId group_id);
