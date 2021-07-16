@@ -63,15 +63,13 @@
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
  */
 
-#ifndef NO_GRAPHICS
+#define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.4
 
-#    define REWARD_BB_TIMING_RELATIVE_WEIGHT 0.4
-
-#    ifdef VTR_ENABLE_DEBUG_LOGGING
-#        include "draw_types.h"
-#        include "draw_global.h"
-#        include "draw_color.h"
-#    endif
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+#    include "draw_types.h"
+#    include "draw_global.h"
+#    include "draw_color.h"
+#endif
 
 using std::max;
 using std::min;
@@ -80,18 +78,18 @@ using std::min;
 
 /* This defines the error tolerance for floating points variables used in *
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
-#    define ERROR_TOL .01
+#define ERROR_TOL .01
 
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
-#    define MAX_MOVES_BEFORE_RECOMPUTE 500000
+#define MAX_MOVES_BEFORE_RECOMPUTE 500000
 
 /* Flags for the states of the bounding box.                              *
  * Stored as char for memory efficiency.                                  */
-#    define NOT_UPDATED_YET 'N'
-#    define UPDATED_ONCE 'U'
-#    define GOT_FROM_SCRATCH 'S'
+#define NOT_UPDATED_YET 'N'
+#define UPDATED_ONCE 'U'
+#define GOT_FROM_SCRATCH 'S'
 
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
@@ -166,82 +164,82 @@ static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828,
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
                                                                 vtr::fclose);
 
-#    ifdef VTR_ENABLE_DEBUG_LOGGIING
-#        define LOG_MOVE_STATS_HEADER()                               \
-            do {                                                      \
-                if (f_move_stats_file) {                              \
-                    fprintf(f_move_stats_file.get(),                  \
-                            "temp,from_blk,to_blk,from_type,to_type," \
-                            "blk_count,"                              \
-                            "delta_cost,delta_bb_cost,delta_td_cost," \
-                            "outcome,reason\n");                      \
-                }                                                     \
-            } while (false)
+#ifdef VTR_ENABLE_DEBUG_LOGGIING
+#    define LOG_MOVE_STATS_HEADER()                               \
+        do {                                                      \
+            if (f_move_stats_file) {                              \
+                fprintf(f_move_stats_file.get(),                  \
+                        "temp,from_blk,to_blk,from_type,to_type," \
+                        "blk_count,"                              \
+                        "delta_cost,delta_bb_cost,delta_td_cost," \
+                        "outcome,reason\n");                      \
+            }                                                     \
+        } while (false)
 
-#        define LOG_MOVE_STATS_PROPOSED(t, affected_blocks)                                        \
-            do {                                                                                   \
-                if (f_move_stats_file) {                                                           \
-                    auto& place_ctx = g_vpr_ctx.placement();                                       \
-                    auto& cluster_ctx = g_vpr_ctx.clustering();                                    \
-                    ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
-                                                                                                   \
-                    t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
-                    ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];   \
-                                                                                                   \
-                    t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
-                    t_logical_block_type_ptr to_type = nullptr;                                    \
-                    if (b_to) {                                                                    \
-                        to_type = cluster_ctx.clb_nlist.block_type(b_to);                          \
-                    }                                                                              \
-                                                                                                   \
-                    fprintf(f_move_stats_file.get(),                                               \
-                            "%g,"                                                                  \
-                            "%d,%d,"                                                               \
-                            "%s,%s,"                                                               \
-                            "%d,",                                                                 \
-                            t,                                                                     \
-                            int(size_t(b_from)), int(size_t(b_to)),                                \
-                            from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
-                            affected_blocks.num_moved_blocks);                                     \
-                }                                                                                  \
-            } while (false)
+#    define LOG_MOVE_STATS_PROPOSED(t, affected_blocks)                                        \
+        do {                                                                                   \
+            if (f_move_stats_file) {                                                           \
+                auto& place_ctx = g_vpr_ctx.placement();                                       \
+                auto& cluster_ctx = g_vpr_ctx.clustering();                                    \
+                ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
+                                                                                               \
+                t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
+                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];   \
+                                                                                               \
+                t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
+                t_logical_block_type_ptr to_type = nullptr;                                    \
+                if (b_to) {                                                                    \
+                    to_type = cluster_ctx.clb_nlist.block_type(b_to);                          \
+                }                                                                              \
+                                                                                               \
+                fprintf(f_move_stats_file.get(),                                               \
+                        "%g,"                                                                  \
+                        "%d,%d,"                                                               \
+                        "%s,%s,"                                                               \
+                        "%d,",                                                                 \
+                        t,                                                                     \
+                        int(size_t(b_from)), int(size_t(b_to)),                                \
+                        from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
+                        affected_blocks.num_moved_blocks);                                     \
+            }                                                                                  \
+        } while (false)
 
-#        define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
-                                       outcome, reason)                          \
-            do {                                                                 \
-                if (f_move_stats_file) {                                         \
-                    fprintf(f_move_stats_file.get(),                             \
-                            "%g,%g,%g,"                                          \
-                            "%s,%s\n",                                           \
-                            delta_cost, delta_bb_cost, delta_td_cost,            \
-                            outcome, reason);                                    \
-                }                                                                \
-            } while (false)
+#    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
+                                   outcome, reason)                          \
+        do {                                                                 \
+            if (f_move_stats_file) {                                         \
+                fprintf(f_move_stats_file.get(),                             \
+                        "%g,%g,%g,"                                          \
+                        "%s,%s\n",                                           \
+                        delta_cost, delta_bb_cost, delta_td_cost,            \
+                        outcome, reason);                                    \
+            }                                                                \
+        } while (false)
 
-#    else
+#else
 
-#        define LOG_MOVE_STATS_HEADER()                      \
-            do {                                             \
-                fprintf(f_move_stats_file.get(),             \
-                        "VTR_ENABLE_DEBUG_LOGGING disabled " \
-                        "-- No move stats recorded\n");      \
-            } while (false)
+#    define LOG_MOVE_STATS_HEADER()                      \
+        do {                                             \
+            fprintf(f_move_stats_file.get(),             \
+                    "VTR_ENABLE_DEBUG_LOGGING disabled " \
+                    "-- No move stats recorded\n");      \
+        } while (false)
 
-#        define LOG_MOVE_STATS_PROPOSED(t, blocks_affected) \
-            do {                                            \
-            } while (false)
+#    define LOG_MOVE_STATS_PROPOSED(t, blocks_affected) \
+        do {                                            \
+        } while (false)
 
-#        define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
-                                       outcome, reason)                          \
-            do {                                                                 \
-            } while (false)
+#    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
+                                   outcome, reason)                          \
+        do {                                                                 \
+        } while (false)
 
-#    endif
+#endif
 
 /********************* Static subroutines local to place.c *******************/
-#    ifdef VERBOSE
+#ifdef VERBOSE
 static void print_clb_placement(const char* fname);
-#    endif
+#endif
 
 static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
@@ -491,7 +489,7 @@ void try_place(const t_placer_opts& placer_opts,
                      * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, placer_opts,
+    create_move_generators(move_generator, move_generator2, manual_move_generator, placer_opts,
                            move_lim);
 
     width_fac = placer_opts.place_chan_width;
@@ -506,7 +504,7 @@ void try_place(const t_placer_opts& placer_opts,
     initial_placement(placer_opts.pad_loc_type,
                       placer_opts.constraints_file.c_str());
 
-#    ifdef ENABLE_ANALYTIC_PLACE
+#ifdef ENABLE_ANALYTIC_PLACE
     /*
      * Analytic Placer:
      *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
@@ -516,7 +514,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.enable_analytic_placer) {
         AnalyticPlacer{}.ap_place();
     }
-#    endif /* ENABLE_ANALYTIC_PLACE */
+#endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
@@ -731,12 +729,12 @@ void try_place(const t_placer_opts& placer_opts,
 
     bool skip_anneal = false;
 
-#    ifdef ENABLE_ANALYTIC_PLACE
+#ifdef ENABLE_ANALYTIC_PLACE
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
     // TODO: refactor goto label.
     if (placer_opts.enable_analytic_placer)
         skip_anneal = true;
-#    endif /* ENABLE_ANALYTIC_PLACE */
+#endif /* ENABLE_ANALYTIC_PLACE */
 
     //RL agent state definition
     e_agent_state agent_state = EARLY_IN_THE_ANNEAL;
@@ -812,11 +810,11 @@ void try_place(const t_placer_opts& placer_opts,
             update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT,
                           timing_info);
 
-#    ifdef VERBOSE
+#ifdef VERBOSE
             if (getEchoEnabled()) {
                 print_clb_placement("first_iteration_clb_placement.echo");
             }
-#    endif
+#endif
         } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
                                          annealing_sched));
         /* Outer loop of the simmulated annealing ends */
@@ -899,11 +897,11 @@ void try_place(const t_placer_opts& placer_opts,
     // TODO:
     // 1. add some subroutine hierarchy!  Too big!
 
-#    ifdef VERBOSE
+#ifdef VERBOSE
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
         print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
     }
-#    endif
+#endif
 
     check_place(costs, place_delay_model.get(), placer_criticalities.get(),
                 placer_opts.place_algorithm);
@@ -989,9 +987,9 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
     /*for normalizing the tradeoff between timing and wirelength (bb)  */
     if (*outer_crit_iter_count >= placer_opts.recompute_crit_iter
         || placer_opts.inner_loop_recompute_divider != 0) {
-#    ifdef VERBOSE
+#ifdef VERBOSE
         VTR_LOG("Outer loop recompute criticalities\n");
-#    endif
+#endif
         num_connections = std::max(num_connections, 1); //Avoid division by zero
         VTR_ASSERT(num_connections > 0);
 
@@ -1062,9 +1060,9 @@ static void placement_inner_loop(const t_annealing_state* state,
                 && inner_iter != state->move_lim - 1) { /*on last iteration don't recompute */
 
                 inner_crit_iter_count = 0;
-#    ifdef VERBOSE
+#ifdef VERBOSE
                 VTR_LOG("Inner loop recompute criticalities\n");
-#    endif
+#endif
 
                 PlaceCritParams crit_params;
                 crit_params.crit_exponent = state->crit_exponent;
@@ -1077,13 +1075,13 @@ static void placement_inner_loop(const t_annealing_state* state,
             }
             inner_crit_iter_count++;
         }
-#    ifdef VERBOSE
+#ifdef VERBOSE
         VTR_LOG("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d\n",
                 t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
         if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
             VPR_ERROR(VPR_ERROR_PLACE,
                       "fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
-#    endif
+#endif
 
         /* Lines below prevent too much round-off error from accumulating
          * in the cost over many iterations (due to incremental updates).
@@ -1219,10 +1217,10 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
                      num_accepted, move_lim);
     }
 
-#    ifdef VERBOSE
+#ifdef VERBOSE
     /* Print stats related to finding the initital temp. */
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
-#    endif
+#endif
 
     /* Set the initial temperature to 20 times the standard of deviation */
     /* so that the initial temperature adjusts according to the circuit */
@@ -1327,18 +1325,18 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     e_create_move create_move_outcome;
 
-    //#ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
     ManualMovesGlobals* manual_move_global = get_manual_moves_global();
     if (manual_move_global->manual_move_flag) {
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 
-        create_move_outcome = manual_move_generator.propose_move(blocks_affected);
+        create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
     }
-    //#endif /*NO_GRAPHICS*/
+#endif /*NO_GRAPHICS*/
 
     ++move_type_stat.num_moves[(int)move_type];
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
@@ -1424,7 +1422,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, state->t);
 
-        //#ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
         if (manual_move_global->manual_move_flag) {
             update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
             cost_summary_dialog();
@@ -1432,7 +1430,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             //User accepts or rejects the move.
             move_outcome = manual_move_global->manual_move_info.user_move_outcome;
         }
-        //#endif /*NO_GRAPHICS*/
+#endif /*NO_GRAPHICS*/
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1470,9 +1468,9 @@ static e_move_result try_swap(const t_annealing_state* state,
             ++move_type_stat.accepted_moves[(int)move_type];
 
             //Highlights the new block when manual move is selected.
-            //#ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
             highlight_new_block_location(manual_move_global->manual_move_flag);
-            //#endif /*NO_GRPAHICS*/
+#endif /*NO_GRPAHICS*/
 
         } else {
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
@@ -1528,20 +1526,20 @@ static e_move_result try_swap(const t_annealing_state* state,
     calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                          delta_c, timing_bb_factor, move_generator);
 
-#    ifdef VTR_ENABLE_DEBUG_LOGGING
-#        ifndef NO_GRAPHICS
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+#    ifndef NO_GRAPHICS
     stop_placement_and_check_breakpoints(blocks_affected, move_outcome, delta_c, bb_delta_c, timing_delta_c);
-#        endif
 #    endif
+#endif
 
     /* Clear the data structure containing block move info */
     clear_move_blocks(blocks_affected);
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
-#    if 0
+#if 0
     //Check that each accepted swap yields a valid placement
     check_place(*costs, delay_model, place_algorithm);
-#    endif
+#endif
 
     return move_outcome;
 }
@@ -1899,9 +1897,9 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 //Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost based on
 //the move proposed in blocks_affected
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
-#    ifndef VTR_ASSERT_SAFE_ENABLED
+#ifndef VTR_ASSERT_SAFE_ENABLED
     static_cast<void>(blocks_affected);
-#    else
+#else
     //Invalidate temp delay & timing cost values to match sanity checks in
     //comp_td_connection_cost()
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1917,7 +1915,7 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
         proposed_connection_delay[net][ipin] = INVALID_DELAY;
         proposed_connection_timing_cost[net][ipin] = INVALID_DELAY;
     }
-#    endif
+#endif
 }
 
 /**
@@ -2823,7 +2821,7 @@ int check_macro_placement_consistency() {
     return error;
 }
 
-#    ifdef VERBOSE
+#ifdef VERBOSE
 static void print_clb_placement(const char* fname) {
     /* Prints out the clb placements to a file.  */
     FILE* fp;
@@ -2840,7 +2838,7 @@ static void print_clb_placement(const char* fname) {
 
     fclose(fp);
 }
-#    endif
+#endif
 
 static void free_try_swap_arrays() {
     g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
@@ -2865,7 +2863,7 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
         *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
 
-#    if 0
+#if 0
 static void update_screen_debug();
 
 //Performs a major (i.e. interactive) placement screen update.
@@ -2874,7 +2872,7 @@ static void update_screen_debug();
 static void update_screen_debug() {
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
 }
-#    endif
+#endif
 
 static void print_place_status_header() {
     VTR_LOG(
@@ -3035,5 +3033,3 @@ static void calculate_reward_and_process_outcome(
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven());
 }
-
-#endif /*NO_GRAPHICS*/

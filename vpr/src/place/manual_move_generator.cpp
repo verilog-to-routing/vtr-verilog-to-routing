@@ -3,8 +3,32 @@
 
 #ifndef NO_GRAPHICS
 
+ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
+    avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<CentroidMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<WeightedMedianMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<CriticalUniformMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<FeasibleRegionMoveGenerator>()));
+
+    karmed_bandit_agent = std::move(agent);
+}
+
+ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
+    avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<CentroidMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<WeightedMedianMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<CriticalUniformMoveGenerator>()));
+    avail_moves.push_back(std::move(std::make_unique<FeasibleRegionMoveGenerator>()));
+
+    karmed_bandit_agent = std::move(agent);
+}
+
 //Manual Move Generator function
-e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected) {
+e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float /*rlim*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     ManualMovesGlobals* manual_move_global = get_manual_moves_global();
     int block_id = manual_move_global->manual_move_info.blockID;
     t_pl_loc to = manual_move_global->manual_move_info.to_location;
