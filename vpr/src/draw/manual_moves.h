@@ -2,28 +2,23 @@
 #define MANUAL_MOVES_H
 
 /** This file contains all functions for manual moves **/
-#include "draw_global.h"
-#include "draw_global.h"
-#include "move_utils.h"
-#include "move_generator.h"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "median_move_generator.h"
-#include "weighted_median_move_generator.h"
-#include "weighted_centroid_move_generator.h"
-#include "feasible_region_move_generator.h"
-#include "uniform_move_generator.h"
-#include "critical_uniform_move_generator.h"
-#include "centroid_move_generator.h"
 
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
+#ifndef NO_GRAPHICS
+
+#    include "draw_global.h"
+#    include "draw_global.h"
+#    include "move_utils.h"
+#    include "ezgl/application.hpp"
+#    include "ezgl/graphics.hpp"
+
+#    include <cstdio>
+#    include <cfloat>
+#    include <cstring>
+#    include <cmath>
+#    include <algorithm>
+#    include <iostream>
+
+#endif /*NO_GRAPHICS*/
 
 struct ManualMovesInfo {
     int blockID = -1;
