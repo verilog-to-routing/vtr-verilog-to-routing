@@ -2,9 +2,7 @@
 #include "move_utils.h"
 #include "globals.h"
 #include "draw.h"
-#include "move_generator.h"
 #include "buttons.h"
-#include "move_utils.h"
 
 //Global Variables
 ManualMovesGlobals manual_moves_global;
@@ -273,7 +271,7 @@ void close_manual_moves_window() {
 
 #endif /*NO_GRAPHICS*/
 
-/*NO_GRAPHICS FUNCTIONS: */
+/**NO_GRAPHICS FUNCTIONS**/
 
 ManualMovesGlobals* get_manual_moves_global() {
     return &manual_moves_global;

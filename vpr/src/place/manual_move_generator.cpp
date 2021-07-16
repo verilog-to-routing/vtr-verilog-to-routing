@@ -30,7 +30,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     ManualMovesGlobals* manual_move_global = get_manual_moves_global();
     int block_id = manual_move_global->manual_move_info.blockID;
     t_pl_loc to = manual_move_global->manual_move_info.to_location;
-
     ClusterBlockId b_from = ClusterBlockId(block_id);
 
     //Checking if the block was found

@@ -2,23 +2,22 @@
 #define MANUAL_MOVES_H
 
 /** This file contains all functions for manual moves **/
-
 #ifndef NO_GRAPHICS
 
 #    include "draw_global.h"
 #    include "draw_global.h"
-#    include "move_utils.h"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-#    include <cstdio>
-#    include <cfloat>
-#    include <cstring>
-#    include <cmath>
-#    include <algorithm>
-#    include <iostream>
-
 #endif /*NO_GRAPHICS*/
+
+#include "move_utils.h"
+#include <cstdio>
+#include <cfloat>
+#include <cstring>
+#include <cmath>
+#include <algorithm>
+#include <iostream>
 
 struct ManualMovesInfo {
     int blockID = -1;
@@ -36,10 +35,12 @@ struct ManualMovesInfo {
 
 struct ManualMovesGlobals {
     ManualMovesInfo manual_move_info;
-    GtkWidget* manual_move_window;
     bool mm_window_is_open = false;
     bool user_highlighted_block = false;
     bool manual_move_flag = false;
+#ifndef NO_GRAPHICS
+    GtkWidget* manual_move_window;
+#endif /*NO_GRAPHICS*/
 };
 
 #ifndef NO_GRAPHICS
@@ -53,7 +54,7 @@ void get_manual_move_flag();
 void cost_summary_dialog();
 void highlight_new_block_location(bool manual_move_flag);
 
-#endif /*NO_GRAPHICS */
+#endif /*NO_GRAPHICS*/
 
 ManualMovesGlobals* get_manual_moves_global();
 void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome);
