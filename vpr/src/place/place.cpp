@@ -1181,10 +1181,10 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
                             (int)cluster_ctx.clb_nlist.blocks().size());
 
     for (int i = 0; i < move_lim; i++) {
-        //#ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
         //Checks manual move flag for manual move feature
         get_manual_move_flag();
-        //#endif /*NO_GRAPHICS*/
+#endif /*NO_GRAPHICS*/
 
         //Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
         e_move_result swap_result = try_swap(state, costs, move_generator,
