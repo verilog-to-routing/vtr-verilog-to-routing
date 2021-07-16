@@ -6,10 +6,10 @@
 #include "buttons.h"
 #include "move_utils.h"
 
-#ifndef NO_GRAPHICS
-
 //Global Variables
 ManualMovesGlobals manual_moves_global;
+
+#ifndef NO_GRAPHICS
 
 void draw_manual_moves_window(std::string block_id) {
     if (!manual_moves_global.mm_window_is_open) {
@@ -271,6 +271,10 @@ void close_manual_moves_window() {
     manual_moves_global.mm_window_is_open = false;
 }
 
+#endif /*NO_GRAPHICS*/
+
+/*NO_GRAPHICS FUNCTIONS: */
+
 ManualMovesGlobals* get_manual_moves_global() {
     return &manual_moves_global;
 }
@@ -292,5 +296,3 @@ bool string_is_a_number(std::string block_id) {
     }
     return true;
 }
-
-#endif /*NO_GRAPHICS*/
