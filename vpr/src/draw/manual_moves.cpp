@@ -6,10 +6,10 @@
 #include "buttons.h"
 #include "move_utils.h"
 
-#ifndef NO_GRAPHICS
-
 //Global Variables
 ManualMovesGlobals manual_moves_global;
+
+#ifndef NO_GRAPHICS
 
 void draw_manual_moves_window(std::string block_id) {
     if (!manual_moves_global.mm_window_is_open) {
@@ -177,24 +177,10 @@ bool checking_legality_conditions(ClusterBlockId block_id, t_pl_loc to) {
     return true;
 }
 
-bool string_is_a_number(std::string block_id) {
-    for (size_t i = 0; i < block_id.size(); i++) {
-        //Returns 0 if the string does not have characters from 0-9
-        if (isdigit(block_id[i]) == 0) {
-            return false;
-        }
-    }
-    return true;
-}
-
 void get_manual_move_flag() {
     GObject* manual_moves = application.get_object("manualMove");
     //return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
     manual_moves_global.manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_moves);
-}
-
-ManualMovesGlobals* get_manual_moves_global() {
-    return &manual_moves_global;
 }
 
 void cost_summary_dialog() {
@@ -280,6 +266,19 @@ void highlight_new_block_location(bool manual_move_flag) {
     }
 }
 
+//Manual move window turns false, the window is destroyed.
+void close_manual_moves_window() {
+    manual_moves_global.mm_window_is_open = false;
+}
+
+#endif /*NO_GRAPHICS*/
+
+/**** NO_GRAPHICS functions ****/
+
+ManualMovesGlobals* get_manual_moves_global() {
+    return &manual_moves_global;
+}
+
 //Updates ManualMovesInfo cost members
 void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome) {
     manual_moves_global.manual_move_info.delta_cost = d_cost;
@@ -288,15 +287,12 @@ void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_
     manual_moves_global.manual_move_info.placer_move_outcome = move_outcome;
 }
 
-//Manual move window turns false, the window is destroyed.
-void close_manual_moves_window() {
-    manual_moves_global.mm_window_is_open = false;
+bool string_is_a_number(std::string block_id) {
+    for (size_t i = 0; i < block_id.size(); i++) {
+        //Returns 0 if the string does not have characters from 0-9
+        if (isdigit(block_id[i]) == 0) {
+            return false;
+        }
+    }
+    return true;
 }
-
-//Deactivates the toggle button once the windows close.
-void deactivating_toggle_button() {
-    GObject* manual_move_toggle = application.get_object("manualMove");
-    gtk_toggle_button_set_active((GtkToggleButton*)manual_move_toggle, FALSE);
-}
-
-#endif

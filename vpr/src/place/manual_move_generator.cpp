@@ -1,8 +1,6 @@
 #include "manual_move_generator.h"
 #include "manual_moves.h"
 
-#ifndef NO_GRAPHICS
-
 ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
     avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
@@ -63,5 +61,3 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
     return create_move;
 }
-
-#endif

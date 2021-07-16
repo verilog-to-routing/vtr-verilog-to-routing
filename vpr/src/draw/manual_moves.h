@@ -49,31 +49,6 @@ struct ManualMovesGlobals {
     bool manual_move_flag = false;
 };
 
-class Timer {
-  public:
-    Timer() {
-        m_StartTimepoint = std::chrono::high_resolution_clock::now();
-    }
-    ~Timer() {
-        Stop();
-    }
-    void Stop() {
-        auto endTimepoint = std::chrono::high_resolution_clock::now();
-
-        auto start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch().count();
-        auto end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
-
-        auto duration = end - start;
-        double ms = duration * 0.001;
-        double s = duration * 0.000001;
-
-        std::cout << duration << "us -- " << ms << "ms -- " << s << "s\n";
-    }
-
-  private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimepoint;
-};
-
 /** manual moves functions **/
 void draw_manual_moves_window(std::string block_id);
 void close_manual_moves_window();
@@ -85,8 +60,6 @@ void cost_summary_dialog();
 ManualMovesGlobals* get_manual_moves_global();
 void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome);
 void highlight_new_block_location(bool manual_move_flag);
-
-void deactivating_toggle_button();
 
 #endif /*NO_GRAPHICS */
 
