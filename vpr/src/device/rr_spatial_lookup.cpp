@@ -162,12 +162,13 @@ std::vector<RRNodeId> RRSpatialLookup::find_sink_nodes(int x,
         return sink_nodes;
     }
 
-    /* By default, we always added the channel nodes to the TOP side (to save memory) */
+    /* By default, we always added the sink nodes to the TOP side (to save memory) */
     e_side node_side = TOP;
     if (node_side >= rr_node_indices_[SINK].dim_size(2)) {
         return sink_nodes;
     }
 
+    /* Only insert valid ids in the returned vector */
     for (const auto& node : rr_node_indices_[SINK][x][y][node_side]) {
         if (RRNodeId(node)) {
             sink_nodes.push_back(RRNodeId(node));
@@ -211,6 +212,11 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                e_side side) {
     VTR_ASSERT(node); /* Must have a valid node id to be added */
     VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
+
+    /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
+    if (type != IPIN && type != OPIN) {
+        VTR_ASSERT(side == SIDES[0]);
+    }
 
     resize_nodes(x, y, type, side);
 

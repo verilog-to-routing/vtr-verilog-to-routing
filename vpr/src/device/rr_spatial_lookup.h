@@ -88,7 +88,7 @@ class RRSpatialLookup {
      *
      * Note: 
      * - Return an empty list if there are no sinks at the given (x, y) location
-     * - The node list returned only contain valid ids
+     * - The node list returned only contains valid ids
      */
     std::vector<RRNodeId> find_sink_nodes(int x,
                                           int y) const;
@@ -130,7 +130,7 @@ class RRSpatialLookup {
                   int y,
                   t_rr_type type,
                   int ptc,
-                  e_side side);
+                  e_side side = SIDES[0]);
 
     /**
      * Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
@@ -191,7 +191,7 @@ class RRSpatialLookup {
      * or inside the data structures to be changed later.
      * That explains why the reference is used here temporarily
      */
-    /* Fast look-up */
+    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional arrqay mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices& rr_node_indices_;
 };
 

@@ -54,10 +54,10 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
-    int virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.x, switch_location.y);
+    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.x, switch_location.y);
     {
         auto& mut_device_ctx = g_vpr_ctx.mutable_device();
-        mut_device_ctx.virtual_clock_network_root_idx = virtual_clock_network_root_idx;
+        mut_device_ctx.virtual_clock_network_root_idx = size_t(virtual_clock_network_root_idx);
     }
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
@@ -85,13 +85,11 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
 
         // Connect to virtual clock sink node
         // used by the two stage router
-        clock_graph.add_edge(rr_edges_to_create, clock_index, virtual_clock_network_root_idx, arch_switch_idx);
+        clock_graph.add_edge(rr_edges_to_create, clock_index, size_t(virtual_clock_network_root_idx), arch_switch_idx);
     }
 }
 
-int RoutingToClockConnection::create_virtual_clock_network_sink_node(
-    int x,
-    int y) {
+RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x, int y) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_graph = device_ctx.rr_nodes;
     auto& node_lookup = device_ctx.rr_graph_builder.node_lookup();
@@ -120,11 +118,11 @@ int RoutingToClockConnection::create_virtual_clock_network_sink_node(
     // However, since the SINK node has the same xhigh/xlow as well as yhigh/ylow, we can probably use a shortcut
     for (int ix = rr_graph.node_xlow(node_index); ix <= rr_graph.node_xhigh(node_index); ++ix) {
         for (int iy = rr_graph.node_ylow(node_index); iy <= rr_graph.node_yhigh(node_index); ++iy) {
-            node_lookup.add_node(node_index, ix, iy, rr_graph.node_type(node_index), rr_graph.node_ptc_num(node_index), SIDES[0]);
+            node_lookup.add_node(node_index, ix, iy, rr_graph.node_type(node_index), rr_graph.node_ptc_num(node_index));
         }
     }
 
-    return size_t(node_index);
+    return node_index;
 }
 
 /*
