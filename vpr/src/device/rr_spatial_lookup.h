@@ -180,6 +180,18 @@ class RRSpatialLookup {
                       t_rr_type type,
                       e_side side);
 
+    /* -- Internal data queries -- */
+  private:
+    /* An internal API to find all the nodes in a specific location with a given type
+     * For OPIN/IPIN nodes that may exist on multiple sides, a specific side must be provided  
+     * This API is NOT public because its too powerful for developers with very limited sanity checks 
+     * But it is used to build the public APIs find_channel_nodes() etc., where sufficient sanity checks are applied
+     */
+    std::vector<RRNodeId> find_nodes(int x,
+                                     int y,
+                                     t_rr_type type,
+                                     e_side side = SIDES[0]) const;
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
