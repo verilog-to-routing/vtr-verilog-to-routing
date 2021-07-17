@@ -37,6 +37,15 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage();
     /* Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
+    /* Add an existing rr_node in the node storage to the node look-up
+     * This function requires a valid node which has already been allocated in the node storage, with
+     * - a valid node id
+     * - valid geometry information: xlow/ylow/xhigh/yhigh
+     * - a valid node type
+     * - a valid node ptc number
+     * - a valid side (applicable to OPIN and IPIN nodes only
+     */
+    void add_node_to_all_locs(RRNodeId node);
 
     /* -- Internal data storage -- */
   private:

@@ -1566,7 +1566,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     /*Allocates and load the rr_node look up table. SINK and SOURCE, IPIN and OPIN
      *share the same look up table. CHANX and CHANY have individual look ups */
     void process_rr_node_indices() {
-        const auto& rr_graph = (*rr_graph_);
         auto& rr_graph_builder = (*rr_graph_builder_);
 
         /* Alloc the lookup table */
@@ -1581,35 +1580,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         /* Add the correct node into the vector */
         for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
             auto node = (*rr_nodes_)[inode];
-            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    switch (rr_graph.node_type(node.id())) {
-                        case SOURCE:
-                        case SINK:
-                        case CHANY:
-                            rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
-                            break;
-                        case CHANX:
-                            /* Currently need to swap x and y for CHANX because of chan, seg convention 
-                             * TODO: Once the builders is reworked for use consistent (x, y) convention,
-                             * the following swapping can be removed
-                             */
-                            rr_graph_builder.node_lookup().add_node(node.id(), iy, ix, rr_graph.node_type(node.id()), node.ptc_num(), SIDES[0]);
-                            break;
-                        case OPIN:
-                        case IPIN:
-                            for (const e_side& side : SIDES) {
-                                if (node.is_node_on_specific_side(side)) {
-                                    rr_graph_builder.node_lookup().add_node(node.id(), ix, iy, rr_graph.node_type(node.id()), node.ptc_num(), side);
-                                }
-                            }
-                            break;
-                        default:
-                            report_error("Invalid node type for node '%lu' in the routing resource graph file", size_t(node.id()));
-                            break;
-                    }
-                }
-            }
+            rr_graph_builder.add_node_to_all_locs(node.id());
         }
     }
 
