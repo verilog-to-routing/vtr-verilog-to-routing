@@ -8,6 +8,7 @@
 #include <set>
 #include <utility>
 
+#include "rr_graph_builder.h"
 #include "clock_fwd.h"
 
 #include "clock_network_builders.h"
@@ -78,11 +79,11 @@ class ClockRRGraphBuilder {
         const t_chan_width& chan_width,
         const DeviceGrid& grid,
         t_rr_graph_storage* rr_nodes,
-        t_rr_node_indices* rr_node_indices)
+        RRGraphBuilder* rr_graph_builder)
         : chan_width_(chan_width)
         , grid_(grid)
         , rr_nodes_(rr_nodes)
-        , rr_node_indices_(rr_node_indices)
+        , rr_graph_builder_(rr_graph_builder)
         , chanx_ptc_idx_(0)
         , chany_ptc_idx_(0) {
     }
@@ -136,7 +137,7 @@ class ClockRRGraphBuilder {
     const t_chan_width& chan_width_;
     const DeviceGrid& grid_;
     t_rr_graph_storage* rr_nodes_;
-    t_rr_node_indices* rr_node_indices_;
+    RRGraphBuilder* rr_graph_builder_;
 
     int chanx_ptc_idx_;
     int chany_ptc_idx_;

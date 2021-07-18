@@ -74,17 +74,18 @@ RRNodeId RRSpatialLookup::find_node(int x,
     return RRNodeId(rr_node_indices_[type][node_x][node_y][node_side][ptc]);
 }
 
-std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
-                                                          int y,
-                                                          t_rr_type type) const {
+std::vector<RRNodeId> RRSpatialLookup::find_nodes(int x,
+                                                  int y,
+                                                  t_rr_type type,
+                                                  e_side side) const {
     /* TODO: The implementation of this API should be worked 
      * when rr_node_indices adapts RRNodeId natively!
      */
-    std::vector<RRNodeId> channel_nodes;
+    std::vector<RRNodeId> nodes;
 
     /* Pre-check: the x, y, type are valid! Otherwise, return an empty vector */
-    if ((x < 0 || y < 0) && (type == CHANX || type == CHANY)) {
-        return channel_nodes;
+    if (x < 0 || y < 0) {
+        return nodes;
     }
 
     /* Currently need to swap x and y for CHANX because of chan, seg convention 
@@ -106,30 +107,44 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
      * - Return an empty list if any out-of-range is detected
      */
     if (size_t(type) >= rr_node_indices_.size()) {
-        return channel_nodes;
+        return nodes;
     }
 
     if (node_x >= rr_node_indices_[type].dim_size(0)) {
-        return channel_nodes;
+        return nodes;
     }
 
     if (node_y >= rr_node_indices_[type].dim_size(1)) {
-        return channel_nodes;
+        return nodes;
     }
 
-    /* By default, we always added the channel nodes to the TOP side (to save memory) */
-    e_side node_side = TOP;
-    if (node_side >= rr_node_indices_[type].dim_size(2)) {
-        return channel_nodes;
+    if (side >= rr_node_indices_[type].dim_size(2)) {
+        return nodes;
     }
 
-    for (const auto& node : rr_node_indices_[type][node_x][node_y][node_side]) {
+    for (const auto& node : rr_node_indices_[type][node_x][node_y][side]) {
         if (RRNodeId(node)) {
-            channel_nodes.push_back(RRNodeId(node));
+            nodes.push_back(RRNodeId(node));
         }
     }
 
-    return channel_nodes;
+    return nodes;
+}
+
+std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
+                                                          int y,
+                                                          t_rr_type type) const {
+    /* Pre-check: node type should be routing tracks! */
+    if (type != CHANX && type != CHANY) {
+        return std::vector<RRNodeId>();
+    }
+
+    return find_nodes(x, y, type);
+}
+
+std::vector<RRNodeId> RRSpatialLookup::find_sink_nodes(int x,
+                                                       int y) const {
+    return find_nodes(x, y, SINK);
 }
 
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
@@ -166,6 +181,11 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                e_side side) {
     VTR_ASSERT(node); /* Must have a valid node id to be added */
     VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
+
+    /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
+    if (type != IPIN && type != OPIN) {
+        VTR_ASSERT(side == SIDES[0]);
+    }
 
     resize_nodes(x, y, type, side);
 
