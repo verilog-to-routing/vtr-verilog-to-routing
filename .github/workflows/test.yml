@@ -19,12 +19,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -44,12 +43,11 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       run: ./dev/${{ matrix.script }}
@@ -60,12 +58,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -78,12 +75,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -128,12 +124,11 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -154,12 +149,11 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -171,17 +165,17 @@ jobs:
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
 
+
   ODINII:
     name: 'ODIN-II Basic Tests'
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -209,12 +203,11 @@ jobs:
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -238,12 +231,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/scripts/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
