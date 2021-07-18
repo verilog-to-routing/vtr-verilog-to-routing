@@ -13,11 +13,6 @@ NC='\033[0m' # No Color
 
 SPACER="echo -e ${GRAY} - ${NC}"
 
-travis_nanoseconds() { true; }
-travis_fold() { true; }
-travis_time_start() { true; }
-travis_time_finish() { true; }
-
 function start_section() {
 	echo -e "${PURPLE}Verilog To Routing${NC}: - $2${NC}"
 	echo -e "${GRAY}-------------------------------------------------------------------${NC}"

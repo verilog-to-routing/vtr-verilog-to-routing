@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source $(dirname "$0")/../.github/scripts/common.sh
+
 clean=$(git status -s -uno | wc -l) #Short ignore untracked
 
 if [ $clean -ne 0 ]; then
