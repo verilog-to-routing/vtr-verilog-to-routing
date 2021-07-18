@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source .github/travis/common.sh
+source .github/scripts/common.sh
 set -e
 
 $SPACER
