@@ -76,6 +76,8 @@ int get_output_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_output_port_index_from_mapping(nnode_t* node, const char* name);
 int get_input_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_input_port_index_from_mapping(nnode_t* node, const char* name);
+extern void reduce_input_ports(nnode_t*& node, netlist_t* netlist);
+extern signal_list_t* reduce_signal_list(signal_list_t* signalvar, operation_list signedness, netlist_t* netlist);
 chain_information_t* allocate_chain_info();
 void remove_fanout_pins_from_net(nnet_t* net, npin_t* pin, int id);
 extern void remove_driver_pins_from_net(nnet_t* net, npin_t* pin, int id);

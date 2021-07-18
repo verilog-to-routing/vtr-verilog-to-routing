@@ -487,12 +487,9 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
         }
         case MINUS: {
             /** 
-             * check for missing ports such as carry-in/out in case of 
-             * dealing with generated netlist from Yosys blif file.
-             */
-            if (hard_adders) {
-                node = check_missing_ports(node, traverse_mark_number, netlist);
-            }
+             * equalize the size of input and output ports 
+            */
+            equalize_sub_ports(node, traverse_mark_number, netlist);
 
             /* Adding to sub_list for future checking on hard blocks */
             sub_list = insert_in_vptr_list(sub_list, node);
