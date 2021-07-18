@@ -29,9 +29,7 @@ jobs:
     - name: Test
       env:
         BUILD_TYPE: release
-      run: |
-        source .github/scripts/common.sh
-        ./.github/scripts/build.sh
+      run: ./.github/scripts/build.sh
 
 
   Format:
@@ -54,9 +52,7 @@ jobs:
     - run: pip install -r requirements.txt
 
     - name: Test
-      run: |
-        source .github/scripts/common.sh
-        ./dev/${{ matrix.script }}
+      run: ./dev/${{ matrix.script }}
 
 
   UniTests:
@@ -74,10 +70,7 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-      run: |
-        source .github/scripts/common.sh
-        ./.github/scripts/build.sh
-        ./.github/scripts/unittest.sh
+      run: ./.github/scripts/unittest.sh
 
 
   Warnings:
@@ -97,9 +90,7 @@ jobs:
         #In order to get compilation warnings produced per source file, we must do a non-IPO build
         #We also turn warnings into errors for this target by doing a strict compile
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
-      run: |
-        source .github/scripts/common.sh
-        ./.github/scripts/build.sh
+      run: ./.github/scripts/build.sh
 
 
   Regression:
@@ -148,7 +139,6 @@ jobs:
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
       run: |
-        source .github/scripts/common.sh
         ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
@@ -177,7 +167,6 @@ jobs:
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
-        source .github/scripts/common.sh
         ./.github/scripts/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
@@ -199,7 +188,6 @@ jobs:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
         BUILD_TYPE: debug
       run: |
-        source .github/scripts/common.sh
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
 
@@ -233,9 +221,7 @@ jobs:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         MATRIX_EVAL: ${{ matrix.eval }}
         BUILD_TYPE: ${{ matrix.build }}
-      run: |
-        source .github/scripts/common.sh
-        ./.github/scripts/build.sh
+      run: ./.github/scripts/build.sh
 
 
   Coverity:
@@ -264,6 +250,4 @@ jobs:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
         _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
         _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
-      run: |
-        source .github/scripts/common.sh
-        ./.github/scripts/build.sh
+      run: ./.github/scripts/build.sh

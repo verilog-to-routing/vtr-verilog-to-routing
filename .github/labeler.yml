@@ -54,7 +54,6 @@ docs:
  - tutorial
  - "*.rst"
 infra:
- - "*travis*"
  - .github/*
  - .github/**/*
  - Dockerfile

@@ -1,7 +1,8 @@
 #!/bin/bash
 
-source .github/scripts/common.sh
 set -e
+
+source $(dirname "$0")/common.sh
 
 $SPACER
 
