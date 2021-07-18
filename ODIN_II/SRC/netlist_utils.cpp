@@ -1360,6 +1360,128 @@ int get_input_port_index_from_mapping(nnode_t* node, const char* name) {
     return -1;
 }
 
+/**
+ * (function: reduce_input_ports)
+ * 
+ * @brief reduce the input ports size by removing extra pad pins
+ * 
+ * @param node pointer to node
+ * @param netlist pointer to the current netlist
+ * 
+ * @return nothing, but set the node to a new node with reduced equalized
+ * input port sizes (if more than one input port exist)
+ */
+void reduce_input_ports(nnode_t*& node, netlist_t* netlist) {
+    oassert(node->num_input_port_sizes == 1 || node->num_input_port_sizes == 2);
+
+    int i, j;
+    int offset = 0;
+    nnode_t* new_node;
+
+    signal_list_t** input_ports = (signal_list_t**)vtr::calloc(node->num_input_port_sizes, sizeof(signal_list_t*));
+    /* add pins to signals lists */
+    for (i = 0; i < node->num_input_port_sizes; i++) {
+        /* initialize signal list */
+        input_ports[i] = init_signal_list();
+        for (j = 0; j < node->input_port_sizes[i]; j++) {
+            add_pin_to_signal_list(input_ports[i], node->input_pins[j + offset]);
+        }
+        offset += node->input_port_sizes[i];
+    }
+
+    /* reduce the first port */
+    input_ports[0] = reduce_signal_list(input_ports[0], node->attributes->port_a_signed, netlist);
+    /* reduce the second port if exist */
+    if (node->num_input_port_sizes == 2) {
+        input_ports[1] = reduce_signal_list(input_ports[1], node->attributes->port_b_signed, netlist);
+
+        /* equalize port sizes */
+        int max = std::max(input_ports[0]->count, input_ports[1]->count);
+
+        while (input_ports[0]->count < max)
+            add_pin_to_signal_list(input_ports[0], get_pad_pin(netlist));
+        while (input_ports[1]->count < max)
+            add_pin_to_signal_list(input_ports[1], get_pad_pin(netlist));
+    }
+
+    /* creating a new node */
+    new_node = (node->num_input_port_sizes == 1)
+                   ? make_1port_gate(node->type, input_ports[0]->count, node->num_output_pins, node, node->traverse_visited)
+                   : make_2port_gate(node->type, input_ports[0]->count, input_ports[1]->count, node->num_output_pins, node, node->traverse_visited);
+
+    /* hook the input pins */
+    for (i = 0; i < input_ports[0]->count; i++) {
+        /* remap pins to new node */
+        remap_pin_to_new_node(input_ports[0]->pins[i], new_node, i);
+    }
+    offset = input_ports[0]->count;
+
+    if (node->num_input_port_sizes == 2) {
+        for (i = 0; i < input_ports[1]->count; i++) {
+            /* remap pins to new node */
+            remap_pin_to_new_node(input_ports[1]->pins[i], new_node, i + offset);
+        }
+    }
+
+    /* hook the output pins */
+    for (i = 0; i < node->num_output_pins; i++) {
+        remap_pin_to_new_node(node->output_pins[i], new_node, i);
+    }
+
+    // CLEAN UP
+    for (i = 0; i < node->num_input_port_sizes; i++) {
+        free_signal_list(input_ports[i]);
+    }
+    vtr::free(input_ports);
+    free_nnode(node);
+
+    node = new_node;
+}
+
+/**
+ * (function: reduce_signal_list)
+ * 
+ * @brief reduce the size of signal list by removing extra pad pins
+ * 
+ * @param signalvar list of signals
+ * @param signedness the signedness of a port corresponding to the signal list
+ * @param netlist pointer to the current netlist
+ * 
+ * @return a pruned signal list
+ */
+signal_list_t* reduce_signal_list(signal_list_t* signalvar, operation_list signedness, netlist_t* netlist) {
+    /* validate signedness */
+    oassert(signedness == operation_list::SIGNED || signedness == operation_list::UNSIGNED);
+
+    int i;
+    signal_list_t* return_value = init_signal_list();
+    /* specify the extension net */
+    nnet_t* extended_net = (signedness == operation_list::SIGNED) ? netlist->one_net : netlist->zero_net;
+
+    for (i = signalvar->count - 1; i > -1; i--) {
+        npin_t* pin = signalvar->pins[i];
+        if (pin->net == extended_net) {
+            delete_npin(pin);
+            signalvar->pins[i] = NULL;
+        } else {
+            /* reaching to valuable pins, so break the pruning process */
+            break;
+        }
+    }
+
+    /* adding valuable pins to new signals list */
+    for (i = 0; i < signalvar->count; i++) {
+        if (signalvar->pins[i]) {
+            add_pin_to_signal_list(return_value, signalvar->pins[i]);
+        }
+    }
+
+    //CLEAN UP
+    free_signal_list(signalvar);
+
+    return (return_value);
+}
+
 chain_information_t* allocate_chain_info() {
     chain_information_t* new_node;
 

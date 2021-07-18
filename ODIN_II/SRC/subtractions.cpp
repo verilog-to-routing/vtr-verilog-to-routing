@@ -853,6 +853,84 @@ void instantiate_single_bit_sub3(nnode_t* node, short traverse_mark_number, netl
     free_nnode(node);
 }
 
+/**
+ * (function: equalize_sub_ports)
+ * 
+ * @brief equalizing the input and output ports for MINUS node
+ * for minus node we won't need more than inputs width
+ * 
+ * @param node pointing to a shift node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void equalize_sub_ports(nnode_t*& node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /**
+     * (MINUS ports)
+     * INPUTS
+     *  A: (width_a)
+     *  B: (width_b) [optional]
+     * OUTPUT
+     *  Y: width_y
+     */
+    /* removing extra pad pins based on the signedness of ports */
+    reduce_input_ports(node, netlist);
+
+    int port_a_size = node->input_port_sizes[0];
+    int port_b_size = -1;
+    if (node->num_input_port_sizes == 2) {
+        port_b_size = node->input_port_sizes[1];
+        /* validate inputport sizes */
+        oassert(port_a_size == port_b_size);
+    }
+
+    int port_y_size = node->output_port_sizes[0];
+
+    /* no change is needed */
+    if (port_a_size == port_y_size)
+        return;
+
+    /* new port size */
+    int new_out_size = port_a_size;
+    if (port_y_size < new_out_size) {
+        error_message(BLIF_ELBORATION, node->loc,
+                      "Invlid output port size, the sub node(%s) output port should be greater than or equal input size", node->name);
+    }
+
+    /* creating the new node */
+    nnode_t* new_sub_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, new_out_size, node, traverse_mark_number)
+                                                : make_2port_gate(node->type, port_a_size, port_b_size, new_out_size, node, traverse_mark_number);
+    int i;
+    for (i = 0; i < node->num_input_pins; i++) {
+        /* remapping the a pins */
+        remap_pin_to_new_node(node->input_pins[i],
+                              new_sub_node,
+                              i);
+    }
+
+    /* Connecting output pins */
+    for (i = 0; i < port_y_size; i++) {
+        if (i < new_out_size) {
+            remap_pin_to_new_node(node->output_pins[i],
+                                  new_sub_node,
+                                  i);
+        } else {
+            /* need to drive extra output pins with PAD */
+            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+            /* hook a pin from PAD node into the buf node */
+            add_input_pin_to_node(buf_node, get_pad_pin(netlist), 0);
+            /* remap the extra output pin to buf node */
+            remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+        }
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+
+    node = new_sub_node;
+}
+
 /*-------------------------------------------------------------------------
  * (function: clean_adders)
  *
