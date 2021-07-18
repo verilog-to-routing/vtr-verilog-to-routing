@@ -790,20 +790,33 @@ long constant_signal_value(signal_list_t* signal, netlist_t* netlist) {
 signal_list_t* create_constant_signal(const long value, const int desired_width, netlist_t* netlist) {
     signal_list_t* list = init_signal_list();
 
-    int i;
+    long i;
     std::string binary_value_str = std::bitset<sizeof(long) * 8>(value).to_string();
-    int width = binary_value_str.length();
+    long width = binary_value_str.length();
+
+    long start = 0;
+    long end = 0;
+    bool extension = false;
+
+    if (desired_width > width) {
+        start = desired_width;
+        end = 0;
+        extension = true;
+    } else {
+        start = width;
+        end = width - desired_width;
+    }
 
     /* create vcc/gnd signal pins */
-    for (i = desired_width; i > 0; i--) {
-        if (i < width && binary_value_str[i - 1] == '1') {
+    for (i = start; i > end; i--) {
+        if (binary_value_str[i - 1] == '1') {
             add_pin_to_signal_list(list, get_one_pin(netlist));
         } else {
-            add_pin_to_signal_list(list, get_zero_pin(netlist));
+            add_pin_to_signal_list(list, (extension) ? get_pad_pin(netlist) : get_zero_pin(netlist));
         }
     }
 
-    return list;
+    return (list);
 }
 
 /**
@@ -1411,15 +1424,27 @@ void reduce_input_ports(nnode_t*& node, netlist_t* netlist) {
 
     /* hook the input pins */
     for (i = 0; i < input_ports[0]->count; i++) {
-        /* remap pins to new node */
-        remap_pin_to_new_node(input_ports[0]->pins[i], new_node, i);
+        npin_t* pin = input_ports[0]->pins[i];
+        if (pin->node) {
+            /* remap pins to new node */
+            remap_pin_to_new_node(input_ports[0]->pins[i], new_node, i);
+        } else {
+            /* add pins to new node */
+            add_input_pin_to_node(new_node, input_ports[0]->pins[i], i);
+        }
     }
     offset = input_ports[0]->count;
 
     if (node->num_input_port_sizes == 2) {
         for (i = 0; i < input_ports[1]->count; i++) {
-            /* remap pins to new node */
-            remap_pin_to_new_node(input_ports[1]->pins[i], new_node, i + offset);
+            npin_t* pin = input_ports[1]->pins[i];
+            if (pin->node) {
+                /* remap pins to new node */
+                remap_pin_to_new_node(input_ports[1]->pins[i], new_node, i + offset);
+            } else {
+                /* add pins to new node */
+                add_input_pin_to_node(new_node, input_ports[1]->pins[i], i + offset);
+            }
         }
     }
 
