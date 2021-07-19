@@ -76,6 +76,7 @@ int get_output_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_output_port_index_from_mapping(nnode_t* node, const char* name);
 int get_input_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_input_port_index_from_mapping(nnode_t* node, const char* name);
+extern npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, edge_type_e pin2_polarity, nnode_t* node, netlist_t* netlist);
 extern void reduce_input_ports(nnode_t*& node, netlist_t* netlist);
 extern signal_list_t* reduce_signal_list(signal_list_t* signalvar, operation_list signedness, netlist_t* netlist);
 chain_information_t* allocate_chain_info();
