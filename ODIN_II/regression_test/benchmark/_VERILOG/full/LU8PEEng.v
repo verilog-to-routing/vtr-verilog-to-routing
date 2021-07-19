@@ -19,8 +19,8 @@
 `define mFIFOWIDTH 6'b011100
 `define aFIFOWIDTH 4'b0101
 
-module LU8PEEng (clk, //ref_clk, global_reset_n,
- start, N, offset, done,
+module LU8PEEng ( //ref_clk, global_reset_n,
+ start, N, offset, clk, done,
 		//mem_addr, mem_ba, mem_cas_n, mem_cke, mem_clk, mem_clk_n, mem_cs_n,
 burst_begin,
 mem_local_be,
@@ -31,8 +31,8 @@ mem_local_write_req,
 mem_local_rdata,
 mem_local_rdata_valid,
 mem_local_ready,
-mem_local_wdata_req,
 reset_n,
+mem_local_wdata_req,
 mem_local_addr
 //Cong: dummy output
 //a_junk,

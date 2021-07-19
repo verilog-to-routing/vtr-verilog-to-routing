@@ -23,7 +23,7 @@ module spram_instance(
 	single_port_ram inst1 (
 		.addr	( address ),
 		.data	( value_in ),
-		.we		( clock ),
+		.we		( we ),
 		.clk    ( clock ),
 		.out	( value_out )
 	);

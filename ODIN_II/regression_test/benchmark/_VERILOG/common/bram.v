@@ -19,7 +19,7 @@ module block_ram(
 	input [`ADDR_WIDTH-1:0]	rd_addr;	// Read address
 	input [`DATA_WIDTH-1:0]	wr_data;	// Write data
 	input					rd_en;	 	// Read enable
-	input					wr_addr;	// Write address
+	input [`ADDR_WIDTH-1:0]	wr_addr;	// Write address
 	input					wr_en;		// Write enable
 
 	// OUTPUTS
