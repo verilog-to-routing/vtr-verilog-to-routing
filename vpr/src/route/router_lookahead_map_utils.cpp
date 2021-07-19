@@ -308,8 +308,6 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
 
     src_opin_delays.resize(device_ctx.physical_tile_types.size());
 
-    std::vector<int> rr_nodes_at_loc;
-
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
     for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
@@ -334,14 +332,8 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
 
                 //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
 
-                rr_nodes_at_loc.clear();
-
-                get_rr_node_indices(device_ctx.rr_node_indices, sample_loc.x(), sample_loc.y(), rr_type, &rr_nodes_at_loc);
-                for (int inode : rr_nodes_at_loc) {
-                    if (inode < 0) continue;
-
-                    RRNodeId node_id(inode);
-
+                std::vector<RRNodeId> rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.x(), sample_loc.y(), rr_type);
+                for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
 
                     if (ptc >= int(src_opin_delays[itile].size())) {
@@ -355,7 +347,7 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
                     if (src_opin_delays[itile][ptc].empty()) {
                         VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d)\n",
                                        rr_node_typename[rr_type],
-                                       rr_node_arch_name(inode).c_str(),
+                                       rr_node_arch_name(size_t(node_id)).c_str(),
                                        sample_loc.x(),
                                        sample_loc.y());
 

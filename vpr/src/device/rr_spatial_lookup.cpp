@@ -173,6 +173,21 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
     return indices;
 }
 
+std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int x,
+                                                                    int y,
+                                                                    t_rr_type rr_type) const {
+    VTR_ASSERT(rr_type == SOURCE || rr_type == OPIN || rr_type == IPIN || rr_type == SINK);
+    if (rr_type == SOURCE || rr_type == SINK) {
+        return find_nodes(x, y, rr_type);
+    } 
+    std::vector<RRNodeId> nodes;
+    for (e_side node_side : SIDES) {
+        std::vector<RRNodeId> temp_nodes = find_nodes(x, y, rr_type, node_side);
+        nodes.insert(nodes.end(), temp_nodes.begin(), temp_nodes.end());
+    }
+    return nodes;
+}
+
 void RRSpatialLookup::add_node(RRNodeId node,
                                int x,
                                int y,
