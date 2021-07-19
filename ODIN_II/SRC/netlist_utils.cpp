@@ -1374,6 +1374,98 @@ int get_input_port_index_from_mapping(nnode_t* node, const char* name) {
 }
 
 /**
+ * (function: merge_polarity)
+ * 
+ * @brief merge two pins based on their polarities
+ * 
+ * @param pin1 first pin
+ * @param pin1_polarity first pin polarity
+ * @param pin2 second pin
+ * @param pin2_polarity second pin polarity
+ * @param node pointer to pins node for tracking purpose
+ * @param netlist pointer to the current netlist file
+ * 
+ * @return a new pin with ACTIVE_HIGH_SENSITIVE polarity
+ */
+npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, edge_type_e pin2_polarity, nnode_t* node, netlist_t* netlist) {
+    /* validate pins */
+    oassert(pin1 && pin2 && node);
+
+    /* pin1 */
+    /* create an equal node for pin1 and its polarity */
+    nnode_t* eq1 = make_2port_gate(LOGICAL_EQUAL, 1, 1, 1, node, node->traverse_visited);
+    if (pin1->node)
+        /* remap the pin to eq1 node */
+        remap_pin_to_new_node(pin1, eq1, 0);
+    else
+        add_input_pin_to_node(eq1, pin1, 0);
+
+    /* hook the polarity corresponding pin into the eq1 node */
+    if (pin1_polarity == ACTIVE_HIGH_SENSITIVITY || pin1_polarity == RISING_EDGE_SENSITIVITY)
+        add_input_pin_to_node(eq1, get_one_pin(netlist), 1);
+    else
+        add_input_pin_to_node(eq1, get_zero_pin(netlist), 1);
+
+    /* specify eq1 output pin */
+    signal_list_t* eq1_outputs = make_output_pins_for_existing_node(eq1, 1);
+    npin_t* eq1_output_pin = eq1_outputs->pins[0];
+
+    /* pin2 */
+    /* create an equal node for pin2 and its polarity */
+    nnode_t* eq2 = make_2port_gate(LOGICAL_EQUAL, 1, 1, 1, node, node->traverse_visited);
+    if (pin2->node)
+        /* remap the pin to eq2 node */
+        remap_pin_to_new_node(pin2, eq2, 0);
+    else
+        add_input_pin_to_node(eq2, pin2, 0);
+
+    /* hook the polarity corresponding pin into the eq2 node */
+    if (pin2_polarity == ACTIVE_HIGH_SENSITIVITY || pin2_polarity == RISING_EDGE_SENSITIVITY)
+        add_input_pin_to_node(eq2, get_one_pin(netlist), 1);
+    else
+        add_input_pin_to_node(eq2, get_zero_pin(netlist), 1);
+
+    /* specify eq2 output pin */
+    signal_list_t* eq2_outputs = make_output_pins_for_existing_node(eq2, 1);
+    npin_t* eq2_output_pin = eq2_outputs->pins[0];
+
+    /* NOR both signals */
+    nnode_t* nor_node = make_2port_gate(LOGICAL_NOR, 1, 1, 1, node, node->traverse_visited);
+    /* hook eq outputs as input into OR node */
+    add_input_pin_to_node(nor_node, eq1_output_pin, 0);
+    add_input_pin_to_node(nor_node, eq2_output_pin, 1);
+
+    /* specify NOR output pin */
+    signal_list_t* or_outputs = make_output_pins_for_existing_node(nor_node, 1);
+
+    /**
+     * create a not node
+     * using a nor and not since in look for clock
+     * traversal clock driver nodes will change to
+     * clock, so logical node won't resolve
+     */
+    nnode_t* merged_clk = make_not_gate(nor_node, node->traverse_visited);
+    connect_nodes(nor_node, 0, merged_clk, 0);
+    /* specify NOR output pin */
+    signal_list_t* merged_clk_outputs = make_output_pins_for_existing_node(merged_clk, 1);
+    npin_t* merged_clk_output_pin = merged_clk_outputs->pins[0];
+    merged_clk_output_pin->sensitivity = RISING_EDGE_SENSITIVITY;
+
+    /* adding the new clk node to netlist clocks */
+    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
+    netlist->clocks[netlist->num_clocks] = merged_clk;
+    netlist->num_clocks++;
+
+    // CLEAN UP
+    free_signal_list(eq1_outputs);
+    free_signal_list(eq2_outputs);
+    free_signal_list(or_outputs);
+    free_signal_list(merged_clk_outputs);
+
+    return (merged_clk_output_pin);
+}
+
+/**
  * (function: reduce_input_ports)
  * 
  * @brief reduce the input ports size by removing extra pad pins
