@@ -1,3 +1,10 @@
+/*
+ * @file 	manual_move_generator.cpp
+ * @author	Paula Perdomo
+ * @date 	2021-07-19
+ * @brief 	Contains the ManualMoveGenerator class memeber definitions.
+ */
+
 #include "manual_move_generator.h"
 #include "manual_moves.h"
 

@@ -1325,6 +1325,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     e_create_move create_move_outcome;
 
+    //When manual move toggle button is active, the manual move window asks the user for input.
     ManualMovesGlobals* manual_move_global = get_manual_moves_global();
     if (manual_move_global->manual_move_flag) {
 #ifndef NO_GRAPHICS
@@ -1422,6 +1423,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, state->t);
 
+        //Updates the manaul_move_global members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
         if (manual_move_global->manual_move_flag) {
             update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
 #ifndef NO_GRAPHICS

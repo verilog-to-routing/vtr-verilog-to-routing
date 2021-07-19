@@ -1,3 +1,10 @@
+/*
+ * @file 	manual_move_generator.h
+ * @author	Paula Perdomo
+ * @date 	2021-07-19
+ * @brief 	Contains the ManualMoveGenerator class.
+ */
+
 #ifndef VPR_MANUAL_MOVE_GEN_H
 #define VPR_MANUAL_MOVE_GEN_H
 
@@ -12,14 +19,18 @@
 #include "simpleRL_move_generator.h"
 #include <numeric>
 
-/** Manual Moves Generator, inherits from MoveGenerator class **/
+/**
+ * @brief Manual Moves Generator, inherits from MoveGenerator class.
+ *
+ * Manual Move Generator, needed for swapping blocks requested by the user.
+*/
 class ManualMoveGenerator : public MoveGenerator {
   private:
     std::vector<std::unique_ptr<MoveGenerator>> avail_moves; // list of pointers to the available move generators (the different move types)
     std::unique_ptr<KArmedBanditAgent> karmed_bandit_agent;  // a pointer to the specific agent used (e.g. Softmax)
 
   public:
-    // constructors using a pointer to the agent used
+    //Constructors using a pointer to the agent used
     ManualMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
     ManualMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
 

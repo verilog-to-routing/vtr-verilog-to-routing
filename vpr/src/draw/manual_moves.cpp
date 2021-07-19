@@ -1,3 +1,12 @@
+/*
+ * @file 	manual_moves.cpp
+ * @author	Paula Perdomo
+ * @date 	2021-07-19
+ * @brief 	Contains the function definitions needed for manual moves feature.
+ *
+ * Includes the graphics/gtk function for manual moves. The Manual Move Generator class is defined  manual_move_generator.h/cpp.
+ */
+
 #include "manual_moves.h"
 #include "move_utils.h"
 #include "globals.h"
