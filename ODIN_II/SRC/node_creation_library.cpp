@@ -410,11 +410,10 @@ nnode_t* make_mult_block(nnode_t* node, short mark) {
  * 
  * @return mux output signal list
  */
-signal_list_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node) {
+nnode_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node) {
     int i, j;
     int offset = 0;
     nnode_t* mux = allocate_nnode(node->loc);
-    signal_list_t* output_signal_list = init_signal_list();
 
     mux->type = MULTIPORT_nBIT_MUX;
     mux->name = node_name(mux, node->name);
@@ -463,10 +462,7 @@ signal_list_t* create_multiport_mux(signal_list_t* selector, int num_muxed_input
         add_driver_pin_to_net(new_net, new_pin1);
         /* hook up the new pin 2 to this new net */
         add_fanout_pin_to_net(new_net, new_pin2);
-
-        /* hook the output pin into the node */
-        add_pin_to_signal_list(output_signal_list, new_pin1);
     }
 
-    return (output_signal_list);
+    return (mux);
 }
