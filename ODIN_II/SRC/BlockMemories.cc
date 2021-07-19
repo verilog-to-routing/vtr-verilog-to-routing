@@ -1327,7 +1327,7 @@ static signal_list_t* create_single_clk_pin (signal_list_t* clks, nnode_t* node,
  * 
  * @return single clock pin
  */
-static signal_list_t* merge_read_write_clks (signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist) {
+static signal_list_t* merge_read_write_clks (signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* /* netlist */) {
 
     int i;
     int rd_clks_width = rd_clks->count;
