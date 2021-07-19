@@ -6,7 +6,7 @@ assign b4 = (a * 4) + 3;
 
 defparam inst_2.d = 3;
 bottom inst_2(.a(a), .b(b2));
-defparam inst_2.d = 4;
+defparam inst_2.d = 4; // Yosys does not support parameter override
 
 bottom #(4) inst_1(.a(a), .b(b1));
 defparam inst_1.d = 3;
