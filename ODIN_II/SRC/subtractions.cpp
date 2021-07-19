@@ -893,10 +893,6 @@ void equalize_sub_ports(nnode_t*& node, uintptr_t traverse_mark_number, netlist_
 
     /* new port size */
     int new_out_size = port_a_size;
-    if (port_y_size < new_out_size) {
-        error_message(BLIF_ELBORATION, node->loc,
-                      "Invlid output port size, the sub node(%s) output port should be greater than or equal input size", node->name);
-    }
 
     /* creating the new node */
     nnode_t* new_sub_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, new_out_size, node, traverse_mark_number)
@@ -910,12 +906,28 @@ void equalize_sub_ports(nnode_t*& node, uintptr_t traverse_mark_number, netlist_
     }
 
     /* Connecting output pins */
-    for (i = 0; i < port_y_size; i++) {
-        if (i < new_out_size) {
+    for (i = 0; i < new_out_size; i++) {
+        if (i < port_y_size) {
             remap_pin_to_new_node(node->output_pins[i],
                                   new_sub_node,
                                   i);
         } else {
+            /* need create a new output pin */
+            npin_t* new_pin1 = allocate_npin();
+            npin_t* new_pin2 = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            new_net->name = make_full_ref_name(NULL, NULL, NULL, new_sub_node->name, i);
+            /* hook the output pin into the node */
+            add_output_pin_to_node(new_sub_node, new_pin1, i);
+            /* hook up new pin 1 into the new net */
+            add_driver_pin_to_net(new_net, new_pin1);
+            /* hook up the new pin 2 to this new net */
+            add_fanout_pin_to_net(new_net, new_pin2);
+        }
+    }
+
+    if (new_out_size < port_y_size) {
+        for (i = new_out_size; i < port_y_size; i++) {
             /* need to drive extra output pins with PAD */
             nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
             /* hook a pin from PAD node into the buf node */
