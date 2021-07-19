@@ -142,11 +142,6 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
     return find_nodes(x, y, type);
 }
 
-std::vector<RRNodeId> RRSpatialLookup::find_sink_nodes(int x,
-                                                       int y) const {
-    return find_nodes(x, y, SINK);
-}
-
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
                                                                int y,
                                                                t_rr_type rr_type,

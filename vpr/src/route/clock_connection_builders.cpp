@@ -97,7 +97,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     RRNodeId node_index = RRNodeId(rr_graph.size() - 1);
 
     //Determine the a valid PTC
-    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_sink_nodes(x, y);
+    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(x, y, SINK);
 
     int max_ptc = 0;
     for (RRNodeId inode : nodes_at_loc) {
