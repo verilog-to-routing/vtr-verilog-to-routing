@@ -215,12 +215,12 @@ static void profile_source(int source_rr_node,
     VTR_LOG("\n");
 }
 
-
 static t_chan_width setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
 
+    t_graph_type graph_directionality;
     int width_fac;
 
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
@@ -236,7 +236,13 @@ static t_chan_width setup_chan_width(t_router_opts router_opts,
         width_fac = router_opts.fixed_channel_width;
     }
 
-    return init_chan(width_fac, chan_width_dist);
+    if (router_opts.route_type == GLOBAL) {
+        graph_directionality = GRAPH_BIDIR;
+    } else {
+        graph_directionality = GRAPH_UNIDIR;
+    }
+
+    return init_chan(width_fac, chan_width_dist, graph_directionality);
 }
 
 t_route_util_options read_route_util_options(int argc, const char** argv) {
@@ -288,7 +294,6 @@ int main(int argc, const char **argv) {
         vpr_create_device_grid(vpr_setup, Arch);
 
         vpr_setup_clock_networks(vpr_setup, Arch);
-
 
         t_chan_width chan_width = setup_chan_width(
                 vpr_setup.RouterOpts,

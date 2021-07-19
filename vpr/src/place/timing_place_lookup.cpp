@@ -309,6 +309,7 @@ static t_chan_width setup_chan_width(const t_router_opts& router_opts,
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
 
+    t_graph_type graph_directionality;
     int width_fac;
 
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
@@ -324,7 +325,13 @@ static t_chan_width setup_chan_width(const t_router_opts& router_opts,
         width_fac = router_opts.fixed_channel_width;
     }
 
-    return init_chan(width_fac, chan_width_dist);
+    if (router_opts.route_type == GLOBAL) {
+        graph_directionality = GRAPH_BIDIR;
+    } else {
+        graph_directionality = GRAPH_UNIDIR;
+    }
+
+    return init_chan(width_fac, chan_width_dist, graph_directionality);
 }
 
 static float route_connection_delay(

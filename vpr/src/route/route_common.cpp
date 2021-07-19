@@ -207,14 +207,17 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     t_graph_type graph_type;
+    t_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
+        graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
     /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
+    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
 
     /* Free any old routing graph, if one exists. */
     free_rr_graph();
@@ -256,14 +259,17 @@ bool try_route(int width_fac,
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_graph_type graph_type;
+    t_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
+        graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
     /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
+    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
 
     /* Set up the routing resource graph defined by this FPGA architecture. */
     int warning_count;
