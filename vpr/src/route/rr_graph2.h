@@ -18,8 +18,14 @@ enum e_seg_details_type {
 
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
+/* The scratchpad has 8 dimensions which are divided into two groups
+ * Each group contains 4 sides, representing the 4 sides of a switch block
+ * - The first group denotes the output ports of a switch block
+ * - The second group denotes the input ports of a switch block
+ * It is mainly used to store the track indices (0 ... max_chan_width - 1) for a switch block
+ */
 struct t_opin_connections_scratchpad {
-    std::array<std::vector<RRNodeId>, 8> scratch;
+    std::array<std::vector<int>, 8> scratch;
 };
 
 /******************* Subroutines exported by rr_graph2.c *********************/
@@ -131,8 +137,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 vtr::NdMatrix<int, 3>& Fc_ofs,
                                 const int max_len,
                                 const int max_chan_width,
-                                bool* Fc_clipped,
-                                t_opin_connections_scratchpad* scratchpad);
+                                bool* Fc_clipped);
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       int seg,
@@ -167,8 +172,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        t_sb_connection_map* sb_conn_map,
-                        t_opin_connections_scratchpad* scratchpad);
+                        t_sb_connection_map* sb_conn_map);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const int max_chan_width);
@@ -181,8 +185,7 @@ void load_sblock_pattern_lookup(const int i,
                                 const t_chan_details& chan_details_y,
                                 const int Fs,
                                 const enum e_switch_block_type switch_block_type,
-                                t_sblock_pattern& sblock_pattern,
-                                t_opin_connections_scratchpad* scratchpad);
+                                t_sblock_pattern& sblock_pattern);
 
 std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
                                             const std::vector<t_segment_inf>& segment_inf,

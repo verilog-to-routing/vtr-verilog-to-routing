@@ -69,8 +69,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         const t_chan_seg_details* seg_details,
                                         bool* Fs_clipped,
                                         RRNodeId from_rr_node,
-                                        t_rr_edge_info_set& rr_edges_to_create,
-                                        t_opin_connections_scratchpad* scratchpad);
+                                        t_rr_edge_info_set& rr_edges_to_create);
 
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int from_track,
@@ -98,7 +97,7 @@ static void label_wire_muxes(const int chan_num,
                              const enum Direction dir,
                              const int max_chan_width,
                              const bool check_cb,
-                             std::vector<RRNodeId>* labels,
+                             std::vector<int>* labels,
                              int* num_wire_muxes,
                              int* num_wire_muxes_cb_restricted);
 
@@ -109,11 +108,11 @@ static void label_incoming_wires(const int chan_num,
                                  const int max_len,
                                  const enum Direction dir,
                                  const int max_chan_width,
-                                 std::vector<RRNodeId>* labels,
+                                 std::vector<int>* labels,
                                  int* num_incoming_wires,
                                  int* num_ending_wires);
 
-static int find_label_of_track(const std::vector<RRNodeId>& wire_mux_on_track,
+static int find_label_of_track(int* wire_mux_on_track,
                                int num_wire_muxes,
                                int from_track);
 
@@ -666,8 +665,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 vtr::NdMatrix<int, 3>& Fc_ofs,
                                 const int max_len,
                                 const int max_chan_width,
-                                bool* Fc_clipped,
-                                t_opin_connections_scratchpad* scratchpad) {
+                                bool* Fc_clipped) {
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
@@ -676,6 +674,8 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     int inc_track, dec_track;
     int x, y;
     int num_edges;
+
+    t_opin_connections_scratchpad scratchpad;
 
     *Fc_clipped = false;
 
@@ -688,8 +688,8 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
     /* Get the lists of possible muxes. */
     int dummy;
-    std::vector<RRNodeId>& inc_muxes = scratchpad->scratch[0];
-    std::vector<RRNodeId>& dec_muxes = scratchpad->scratch[1];
+    std::vector<int>& inc_muxes = scratchpad.scratch[0];
+    std::vector<int>& dec_muxes = scratchpad.scratch[1];
 
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
                      Direction::INC, max_chan_width, true, &inc_muxes, &num_inc_muxes, &dummy);
@@ -711,8 +711,8 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         ++Fc_ofs[chan][seg][seg_type_index];
 
         /* Figure out the track it corresponds to. */
-        inc_track = size_t(inc_muxes[inc_mux]);
-        dec_track = size_t(dec_muxes[dec_mux]);
+        inc_track = inc_muxes[inc_mux];
+        dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
         RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(x, y, chan_type, inc_track);
@@ -1437,8 +1437,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        t_sb_connection_map* sb_conn_map,
-                        t_opin_connections_scratchpad* scratchpad) {
+                        t_sb_connection_map* sb_conn_map) {
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
@@ -1593,7 +1592,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                                                                  sblock_pattern,
                                                                  switch_override,
                                                                  to_seg_details,
-                                                                 &Fs_clipped, from_rr_node, rr_edges_to_create, scratchpad);
+                                                                 &Fs_clipped, from_rr_node, rr_edges_to_create);
                     }
                 }
             }
@@ -1632,7 +1631,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                                                                  sblock_pattern,
                                                                  switch_override,
                                                                  to_seg_details,
-                                                                 &Fs_clipped, from_rr_node, rr_edges_to_create, scratchpad);
+                                                                 &Fs_clipped, from_rr_node, rr_edges_to_create);
                     }
                 }
             }
@@ -1800,10 +1799,10 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         const t_chan_seg_details* seg_details,
                                         bool* Fs_clipped,
                                         RRNodeId from_rr_node,
-                                        t_rr_edge_info_set& rr_edges_to_create,
-                                        t_opin_connections_scratchpad* scratchpad) {
+                                        t_rr_edge_info_set& rr_edges_to_create) {
     int num_labels = 0;
-    std::vector<RRNodeId>& mux_labels = scratchpad->scratch[0];
+    t_opin_connections_scratchpad scratchpad;
+    std::vector<int>& mux_labels = scratchpad.scratch[0];
 
     /* x, y coords for get_rr_node lookups */
     int to_x = (CHANX == to_type ? to_seg : to_chan);
@@ -1846,7 +1845,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
 
             int to_track = sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][j + 1];
             if (to_track == UN_SET) {
-                to_track = size_t(mux_labels[(to_mux + i) % num_labels]);
+                to_track = mux_labels[(to_mux + i) % num_labels];
                 sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][j + 1] = to_track;
             }
 
@@ -2059,8 +2058,7 @@ void load_sblock_pattern_lookup(const int i,
                                 const t_chan_details& chan_details_y,
                                 const int /*Fs*/,
                                 const enum e_switch_block_type switch_block_type,
-                                t_sblock_pattern& sblock_pattern,
-                                t_opin_connections_scratchpad* scratchpad) {
+                                t_sblock_pattern& sblock_pattern) {
     /* This routine loads a lookup table for sblock topology. The lookup table is huge
      * because the sblock varies from location to location. The i, j means the owning
      * location of the sblock under investigation. */
@@ -2106,10 +2104,11 @@ void load_sblock_pattern_lookup(const int i,
     /* SB's range from (0, 0) to (grid.width() - 2, grid.height() - 2) */
     /* First find all four sides' incoming wires */
 
+    t_opin_connections_scratchpad scratchpad;
     static_assert(NUM_SIDES == 4, "Should be 4 sides");
-    VTR_ASSERT(scratchpad->scratch.size() == NUM_SIDES * 2);
-    std::array<std::vector<RRNodeId>*, NUM_SIDES> wire_mux_on_track;
-    std::array<std::vector<RRNodeId>*, NUM_SIDES> incoming_wire_label;
+    VTR_ASSERT(scratchpad.scratch.size() == NUM_SIDES * 2);
+    std::array<std::vector<int>*, NUM_SIDES> wire_mux_on_track;
+    std::array<std::vector<int>*, NUM_SIDES> incoming_wire_label;
     int num_incoming_wires[NUM_SIDES];
     int num_ending_wires[NUM_SIDES];
     int num_wire_muxes[NUM_SIDES];
@@ -2173,7 +2172,7 @@ void load_sblock_pattern_lookup(const int i,
         /* Figure out all the tracks on a side that are ending and the
          * ones that are passing through and have a SB. */
         enum Direction end_dir = (pos_dir ? Direction::DEC : Direction::INC);
-        incoming_wire_label[side] = &scratchpad->scratch[NUM_SIDES + side];
+        incoming_wire_label[side] = &scratchpad.scratch[NUM_SIDES + side];
         label_incoming_wires(chan, seg, sb_seg,
                              seg_details, chan_len, end_dir, nodes_per_chan->max,
                              incoming_wire_label[side],
@@ -2183,7 +2182,7 @@ void load_sblock_pattern_lookup(const int i,
         /* Figure out all the tracks on a side that are starting. */
         int dummy;
         enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
-        wire_mux_on_track[side] = &scratchpad->scratch[side];
+        wire_mux_on_track[side] = &scratchpad.scratch[side];
         label_wire_muxes(chan, seg,
                          seg_details, UNDEFINED, chan_len, start_dir, nodes_per_chan->max,
                          false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy);
@@ -2220,10 +2219,10 @@ void load_sblock_pattern_lookup(const int i,
                     itrack = ichan % nodes_per_chan->x_list[j];
                 }
 
-                if ((*incoming_wire_label[side_cw])[itrack] != RRNodeId(UN_SET)) {
+                if ((*incoming_wire_label[side_cw])[itrack] != UN_SET) {
                     int mux = get_simple_switch_block_track((enum e_side)side_cw,
                                                             (enum e_side)to_side,
-                                                            size_t((*incoming_wire_label[side_cw])[ichan]),
+                                                            (*incoming_wire_label[side_cw])[ichan],
                                                             switch_block_type,
                                                             num_wire_muxes[to_side]);
 
@@ -2245,10 +2244,10 @@ void load_sblock_pattern_lookup(const int i,
                     itrack = ichan % nodes_per_chan->x_list[j];
                 }
 
-                if ((*incoming_wire_label[side_ccw])[itrack] != RRNodeId(UN_SET)) {
+                if ((*incoming_wire_label[side_ccw])[itrack] != UN_SET) {
                     int mux = get_simple_switch_block_track((enum e_side)side_ccw,
                                                             (enum e_side)to_side,
-                                                            size_t((*incoming_wire_label[side_ccw])[ichan]),
+                                                            (*incoming_wire_label[side_ccw])[ichan],
                                                             switch_block_type, num_wire_muxes[to_side]);
 
                     if (sblock_pattern[i][j][side_ccw][to_side][itrack][0] == UN_SET) {
@@ -2263,14 +2262,14 @@ void load_sblock_pattern_lookup(const int i,
         if (incoming_wire_label[side_opp]) {
             for (int itrack = 0; itrack < nodes_per_chan->max; itrack++) {
                 /* not ending wire nor passing wire with sblock */
-                if ((*incoming_wire_label[side_opp])[itrack] != RRNodeId(UN_SET)) {
+                if ((*incoming_wire_label[side_opp])[itrack] != UN_SET) {
                     /* corner sblocks for sure have no opposite channel segments so don't care about them */
-                    if ((*incoming_wire_label[side_opp])[itrack] < RRNodeId(num_ending_wires[side_opp])) {
+                    if ((*incoming_wire_label[side_opp])[itrack] < num_ending_wires[side_opp]) {
                         /* The ending wires in core sblocks form N-to-N assignment problem, so can
                          * use any pattern such as Wilton */
                         /* In the direct connect case, I know for sure the init mux is at the same track #
                          * as this ending wire, but still need to find the init mux label for Fs > 3 */
-                        int mux = find_label_of_track(*(wire_mux_on_track[to_side]),
+                        int mux = find_label_of_track(wire_mux_on_track[to_side]->data(),
                                                       num_wire_muxes[to_side], itrack);
                         sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
                     } else {
@@ -2297,7 +2296,7 @@ static void label_wire_muxes(const int chan_num,
                              const enum Direction dir,
                              const int max_chan_width,
                              const bool check_cb,
-                             std::vector<RRNodeId>* labels_ptr,
+                             std::vector<int>* labels_ptr,
                              int* num_wire_muxes,
                              int* num_wire_muxes_cb_restricted) {
     /* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
@@ -2306,7 +2305,7 @@ static void label_wire_muxes(const int chan_num,
      * If seg_type_index == UNDEFINED, all segments in the channel are considered. Otherwise this routine
      * only looks at segments that belong to the specified segment type. */
 
-    std::vector<RRNodeId>& labels = *labels_ptr;
+    std::vector<int>& labels = *labels_ptr;
     int itrack, start, end, num_labels, num_labels_restricted, pass;
     bool is_endpoint;
 
@@ -2317,7 +2316,7 @@ static void label_wire_muxes(const int chan_num,
         /* Alloc the list on LOAD pass */
         if (pass > 0) {
             labels.resize(num_labels);
-            std::fill(labels.begin(), labels.end(), RRNodeId(0));
+            std::fill(labels.begin(), labels.end(), 0);
             num_labels = 0;
         }
 
@@ -2360,7 +2359,7 @@ static void label_wire_muxes(const int chan_num,
                  */
                 if ((!check_cb) || (seg_details[itrack].cb(0) == true)) {
                     if (pass > 0) {
-                        labels[num_labels] = RRNodeId(itrack);
+                        labels[num_labels] = itrack;
                     }
                     ++num_labels;
                 }
@@ -2381,20 +2380,20 @@ static void label_incoming_wires(const int chan_num,
                                  const int max_len,
                                  const enum Direction dir,
                                  const int max_chan_width,
-                                 std::vector<RRNodeId>* labels_ptr,
+                                 std::vector<int>* labels_ptr,
                                  int* num_incoming_wires,
                                  int* num_ending_wires) {
     /* Labels the incoming wires on that side (seg_num, chan_num, direction).
      * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,
      * the labels 0,1,2,.. identify consecutive incoming wires that have sblock (passing wires with sblock and ending wires) */
 
-    std::vector<RRNodeId>& labels = *labels_ptr;
+    std::vector<int>& labels = *labels_ptr;
     int itrack, start, end, num_passing, num_ending, pass;
     bool sblock_exists, is_endpoint;
 
     /* Alloc the list of labels for the tracks */
     labels.resize(max_chan_width);
-    std::fill(labels.begin(), labels.end(), RRNodeId(UN_SET));
+    std::fill(labels.begin(), labels.end(), UN_SET);
 
     num_ending = 0;
     num_passing = 0;
@@ -2423,7 +2422,7 @@ static void label_incoming_wires(const int chan_num,
                         /* On first pass, only load ending wire labels. */
                     case 0:
                         if (is_endpoint) {
-                            labels[itrack] = RRNodeId(num_ending);
+                            labels[itrack] = num_ending;
                             ++num_ending;
                         }
                         break;
@@ -2432,7 +2431,7 @@ static void label_incoming_wires(const int chan_num,
                          * will follow after the ending wire labels. */
                     case 1:
                         if ((false == is_endpoint) && sblock_exists) {
-                            labels[itrack] = RRNodeId(num_ending + num_passing);
+                            labels[itrack] = num_ending + num_passing;
                             ++num_passing;
                         }
                         break;
@@ -2448,19 +2447,19 @@ static void label_incoming_wires(const int chan_num,
     *num_ending_wires = num_ending;
 }
 
-static int find_label_of_track(const std::vector<RRNodeId>& wire_mux_on_track,
+static int find_label_of_track(int* wire_mux_on_track,
                                int num_wire_muxes,
                                int from_track) {
     /* Returns the index/label in array wire_mux_on_track whose entry equals from_track. If none are
      * found, then returns the index of the entry whose value is the largest */
     int i_label = -1;
-    RRNodeId max_track = RRNodeId::INVALID();
+    int max_track = -1;
 
     for (int i = 0; i < num_wire_muxes; i++) {
-        if (wire_mux_on_track[i] == RRNodeId(from_track)) {
+        if (wire_mux_on_track[i] == from_track) {
             i_label = i;
             break;
-        } else if (wire_mux_on_track[i]) {
+        } else if (wire_mux_on_track[i] > max_track) {
             i_label = i;
             max_track = wire_mux_on_track[i];
         }
