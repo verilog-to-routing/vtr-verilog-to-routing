@@ -1385,11 +1385,6 @@ static signal_list_t* merge_read_write_clks (signal_list_t* rd_clks, signal_list
     add_fanout_pin_to_net(clk_node_new_net, clk_node_new_pin2);
     clk_node_new_pin2->mapping = vtr::strdup("clk");
 
-    /* adding the new clk node to netlist clocks */
-    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
-    netlist->clocks[netlist->num_clocks] = clk_node;
-    netlist->num_clocks++;
-
     signal_list_t* return_signal = init_signal_list();
     add_pin_to_signal_list(return_signal, clk_node_new_pin2);
 

@@ -1436,11 +1436,16 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
     }
 
     // CLEAN UP
+    for (i = 0; i < operand_signal->count; i++) {
+        /* delete unused operand pins */
+        if (operand_signal->pins[i]->node == node)
+            delete_npin(operand_signal->pins[i]);
+    }
+    free_signal_list(operand_signal);
     for (i = 0; i < shift_signal->count; i++) {
         /* delete shift pins */
         delete_npin(shift_signal->pins[i]);
     }
-    free_signal_list(operand_signal);
     free_signal_list(shift_signal);
     free_signal_list(result);
     free_nnode(node);

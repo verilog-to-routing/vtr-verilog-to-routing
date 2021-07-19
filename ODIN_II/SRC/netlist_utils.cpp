@@ -1451,11 +1451,6 @@ npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, ed
     npin_t* merged_clk_output_pin = merged_clk_outputs->pins[0];
     merged_clk_output_pin->sensitivity = RISING_EDGE_SENSITIVITY;
 
-    /* adding the new clk node to netlist clocks */
-    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
-    netlist->clocks[netlist->num_clocks] = merged_clk;
-    netlist->num_clocks++;
-
     // CLEAN UP
     free_signal_list(eq1_outputs);
     free_signal_list(eq2_outputs);
