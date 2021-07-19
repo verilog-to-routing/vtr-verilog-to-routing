@@ -33,27 +33,6 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes);
 
-int get_rr_node_index(int x,
-                      int y,
-                      t_rr_type rr_type,
-                      int ptc,
-                      const t_rr_node_indices& L_rr_node_indices);
-
-//Returns all the rr nodes associated with the specified coordinate (i.e. accross sides)
-void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
-                         int x,
-                         int y,
-                         t_rr_type rr_type,
-                         int ptc,
-                         std::vector<int>* indices);
-
-void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
-                         int x,
-                         int y,
-                         t_rr_type rr_type,
-                         std::vector<int>* indices,
-                         e_side side = NUM_SIDES);
-
 //Returns all x-channel or y-channel wires at the specified location
 std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
                                                     t_rr_type rr_type,
