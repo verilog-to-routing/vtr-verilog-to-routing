@@ -19,7 +19,7 @@ enum e_seg_details_type {
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
 struct t_opin_connections_scratchpad {
-    std::array<std::vector<int>, 8> scratch;
+    std::array<std::vector<RRNodeId>, 8> scratch;
 };
 
 /******************* Subroutines exported by rr_graph2.c *********************/

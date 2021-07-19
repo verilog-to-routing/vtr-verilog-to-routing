@@ -74,18 +74,18 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
         // Connect to x-channel wires
         unsigned num_wires_x = x_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_x; i++) {
-            clock_graph.add_edge(rr_edges_to_create, size_t(x_wire_indices[i]), clock_index, arch_switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, x_wire_indices[i], RRNodeId(clock_index), arch_switch_idx);
         }
 
         // Connect to y-channel wires
         unsigned num_wires_y = y_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_y; i++) {
-            clock_graph.add_edge(rr_edges_to_create, size_t(y_wire_indices[i]), clock_index, arch_switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, y_wire_indices[i], RRNodeId(clock_index), arch_switch_idx);
         }
 
         // Connect to virtual clock sink node
         // used by the two stage router
-        clock_graph.add_edge(rr_edges_to_create, clock_index, size_t(virtual_clock_network_root_idx), arch_switch_idx);
+        clock_graph.add_edge(rr_edges_to_create, RRNodeId(clock_index), virtual_clock_network_root_idx, arch_switch_idx);
     }
 }
 
@@ -204,7 +204,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
                 if (from_itter == from_rr_node_indices.end()) {
                     from_itter = from_rr_node_indices.begin();
                 }
-                clock_graph.add_edge(rr_edges_to_create, *from_itter, to_index, arch_switch_idx);
+                clock_graph.add_edge(rr_edges_to_create, RRNodeId(*from_itter), RRNodeId(to_index), arch_switch_idx);
                 from_itter++;
             }
         }
@@ -317,7 +317,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
                     //Create edges depending on Fc
                     for (size_t i = 0; i < clock_network_indices.size() * fc; i++) {
-                        clock_graph.add_edge(rr_edges_to_create, clock_network_indices[i], size_t(clock_pin_node_idx), arch_switch_idx);
+                        clock_graph.add_edge(rr_edges_to_create, RRNodeId(clock_network_indices[i]), RRNodeId(clock_pin_node_idx), arch_switch_idx);
                     }
                 }
             }

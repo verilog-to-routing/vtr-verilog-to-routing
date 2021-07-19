@@ -43,8 +43,8 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 
     for (const auto& new_edge : *rr_edges_to_create) {
         emplace_back_edge(
-            RRNodeId(new_edge.from_node),
-            RRNodeId(new_edge.to_node),
+            new_edge.from_node,
+            new_edge.to_node,
             new_edge.switch_type);
     }
 }
@@ -96,8 +96,8 @@ struct edge_swapper {
     operator t_rr_edge_info() const {
         VTR_ASSERT(idx_ < storage_->edge_src_node_.size());
         t_rr_edge_info info(
-            size_t(storage_->edge_src_node_[RREdgeId(idx_)]),
-            size_t(storage_->edge_dest_node_[RREdgeId(idx_)]),
+            storage_->edge_src_node_[RREdgeId(idx_)],
+            storage_->edge_dest_node_[RREdgeId(idx_)],
             storage_->edge_switch_[RREdgeId(idx_)]);
 
         return info;
