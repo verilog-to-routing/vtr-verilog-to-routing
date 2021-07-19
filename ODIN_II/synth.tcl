@@ -25,7 +25,7 @@ autoname;
 # Transforms pmux into trees of regular multiplexers
 pmuxtree;
 # undirven to ensure there is no wire without drive
-opt -undriven;# -noff;
+opt -undriven;# -noff; potential option to remove all sdff and etc. Only dff will remain
 
 # param is to print non-standard cells attributes
 # impltf is also used not to show the definition of primary netlist ports, i.e. VCC, GND and PAD, in the output.

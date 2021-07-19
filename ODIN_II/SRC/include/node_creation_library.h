@@ -28,6 +28,6 @@ nnode_t* make_mult_block(nnode_t* node, short mark);
 edge_type_e edge_type_blif_enum(std::string edge_kind_str, loc_t loc);
 const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc);
 
-extern signal_list_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node);
+extern nnode_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node);
 
 #endif
