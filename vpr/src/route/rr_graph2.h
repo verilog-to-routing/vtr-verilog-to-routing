@@ -18,16 +18,6 @@ enum e_seg_details_type {
 
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
-/* The scratchpad has 8 dimensions which are divided into two groups
- * Each group contains 4 sides, representing the 4 sides of a switch block
- * - The first group denotes the output ports of a switch block
- * - The second group denotes the input ports of a switch block
- * It is mainly used to store the track indices (0 ... max_chan_width - 1) for a switch block
- */
-struct t_opin_connections_scratchpad {
-    std::array<std::vector<int>, 8> scratch;
-};
-
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
