@@ -97,7 +97,7 @@ static void label_wire_muxes(const int chan_num,
                              const enum Direction dir,
                              const int max_chan_width,
                              const bool check_cb,
-                             std::vector<int>* labels,
+                             std::vector<int>& labels,
                              int* num_wire_muxes,
                              int* num_wire_muxes_cb_restricted);
 
@@ -108,11 +108,11 @@ static void label_incoming_wires(const int chan_num,
                                  const int max_len,
                                  const enum Direction dir,
                                  const int max_chan_width,
-                                 std::vector<int>* labels,
+                                 std::vector<int>& labels,
                                  int* num_incoming_wires,
                                  int* num_ending_wires);
 
-static int find_label_of_track(int* wire_mux_on_track,
+static int find_label_of_track(const std::vector<int>& wire_mux_on_track,
                                int num_wire_muxes,
                                int from_track);
 
@@ -690,9 +690,9 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     std::vector<int> dec_muxes;
 
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     Direction::INC, max_chan_width, true, &inc_muxes, &num_inc_muxes, &dummy);
+                     Direction::INC, max_chan_width, true, inc_muxes, &num_inc_muxes, &dummy);
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     Direction::DEC, max_chan_width, true, &dec_muxes, &num_dec_muxes, &dummy);
+                     Direction::DEC, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy);
 
     /* Clip Fc to the number of muxes. */
     if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
@@ -1818,7 +1818,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     /* get list of muxes to which we can connect */
     int dummy;
     label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
-                     to_dir, max_chan_width, false, &mux_labels, &num_labels, &dummy);
+                     to_dir, max_chan_width, false, mux_labels, &num_labels, &dummy);
 
     /* Can't connect if no muxes. */
     if (num_labels < 1) {
@@ -2166,7 +2166,7 @@ void load_sblock_pattern_lookup(const int i,
         enum Direction end_dir = (pos_dir ? Direction::DEC : Direction::INC);
         label_incoming_wires(chan, seg, sb_seg,
                              seg_details, chan_len, end_dir, nodes_per_chan->max,
-                             &incoming_wire_label[side],
+                             incoming_wire_label[side],
                              &num_incoming_wires[side],
                              &num_ending_wires[side]);
 
@@ -2175,7 +2175,7 @@ void load_sblock_pattern_lookup(const int i,
         enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
         label_wire_muxes(chan, seg,
                          seg_details, UNDEFINED, chan_len, start_dir, nodes_per_chan->max,
-                         false, &wire_mux_on_track[side], &num_wire_muxes[side], &dummy);
+                         false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy);
     }
 
     for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
@@ -2259,7 +2259,7 @@ void load_sblock_pattern_lookup(const int i,
                          * use any pattern such as Wilton */
                         /* In the direct connect case, I know for sure the init mux is at the same track #
                          * as this ending wire, but still need to find the init mux label for Fs > 3 */
-                        int mux = find_label_of_track(wire_mux_on_track[to_side].data(),
+                        int mux = find_label_of_track(wire_mux_on_track[to_side],
                                                       num_wire_muxes[to_side], itrack);
                         sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
                     } else {
@@ -2286,7 +2286,7 @@ static void label_wire_muxes(const int chan_num,
                              const enum Direction dir,
                              const int max_chan_width,
                              const bool check_cb,
-                             std::vector<int>* labels_ptr,
+                             std::vector<int>& labels,
                              int* num_wire_muxes,
                              int* num_wire_muxes_cb_restricted) {
     /* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
@@ -2294,8 +2294,6 @@ static void label_wire_muxes(const int chan_num,
      * This routine orders wire muxes by their natural order, i.e. track #
      * If seg_type_index == UNDEFINED, all segments in the channel are considered. Otherwise this routine
      * only looks at segments that belong to the specified segment type. */
-
-    std::vector<int>& labels = *labels_ptr;
     int itrack, start, end, num_labels, num_labels_restricted, pass;
     bool is_endpoint;
 
@@ -2370,14 +2368,13 @@ static void label_incoming_wires(const int chan_num,
                                  const int max_len,
                                  const enum Direction dir,
                                  const int max_chan_width,
-                                 std::vector<int>* labels_ptr,
+                                 std::vector<int>& labels,
                                  int* num_incoming_wires,
                                  int* num_ending_wires) {
     /* Labels the incoming wires on that side (seg_num, chan_num, direction).
      * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,
      * the labels 0,1,2,.. identify consecutive incoming wires that have sblock (passing wires with sblock and ending wires) */
 
-    std::vector<int>& labels = *labels_ptr;
     int itrack, start, end, num_passing, num_ending, pass;
     bool sblock_exists, is_endpoint;
 
@@ -2437,7 +2434,7 @@ static void label_incoming_wires(const int chan_num,
     *num_ending_wires = num_ending;
 }
 
-static int find_label_of_track(int* wire_mux_on_track,
+static int find_label_of_track(const std::vector<int>& wire_mux_on_track,
                                int num_wire_muxes,
                                int from_track) {
     /* Returns the index/label in array wire_mux_on_track whose entry equals from_track. If none are
