@@ -68,18 +68,10 @@ struct ManualMovesGlobals {
 
 /** manual moves functions **/
 
-
 /**
  * @brief Gets the state of the manual moves togle button and assigns it to the manual_move_flag in the ManualMovesGlobal struct.
  */
 void get_manual_move_flag();
-
-/**
- * @brief Gets the manual_moves_global variables in manual_move.cpp.
- *
- * @return The manual_moves_global variable.
- */
-ManualMovesGlobals* get_manual_moves_global();
 
 /**
  * @brief Draws the manual move window.
@@ -130,6 +122,13 @@ void highlight_new_block_location(bool manual_move_flag);
 void close_manual_moves_window();
 
 #endif /*NO_GRAPHICS*/
+
+/**
+ * @brief Gets the manual_moves_global variables in manual_move.cpp.
+ *
+ * @return The manual_moves_global variable.
+ */
+ManualMovesGlobals* get_manual_moves_global();
 
 /**
  * @brief Updates the ManualMovesGlobals global veriable members.

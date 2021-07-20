@@ -23,7 +23,7 @@
  * @brief Manual Moves Generator, inherits from MoveGenerator class.
  *
  * Manual Move Generator, needed for swapping blocks requested by the user.
-*/
+ */
 class ManualMoveGenerator : public MoveGenerator {
   private:
     std::vector<std::unique_ptr<MoveGenerator>> avail_moves; // list of pointers to the available move generators (the different move types)
