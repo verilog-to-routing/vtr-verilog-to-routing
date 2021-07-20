@@ -40,8 +40,8 @@ ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& ag
 }
 
 //Manual Move Generator function
-#ifndef NO_GRAPHICS
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float /*rlim*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
+#ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
     int block_id = draw_state->manual_moves_global.manual_move_info.blockID;
     t_pl_loc to = draw_state->manual_moves_global.manual_move_info.to_location;
@@ -75,5 +75,5 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
     return create_move;
-}
 #endif /*NO_GRAPHICS*/
+}
