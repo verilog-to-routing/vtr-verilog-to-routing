@@ -1326,12 +1326,11 @@ static e_move_result try_swap(const t_annealing_state* state,
     e_create_move create_move_outcome;
 
     //When manual move toggle button is active, the manual move window asks the user for input.
-#ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->manual_moves_global.manual_move_flag) {
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
-#endif /*NO_GRAPHICS*/
+
         create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
 
     } else {
