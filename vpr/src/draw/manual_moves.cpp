@@ -8,32 +8,30 @@
  */
 
 #include "manual_moves.h"
-#include "move_utils.h"
 #include "globals.h"
 #include "draw.h"
 #include "buttons.h"
 
-//Global Variables
-ManualMovesGlobals manual_moves_global;
-
 #ifndef NO_GRAPHICS
 
 void draw_manual_moves_window(std::string block_id) {
-    if (!manual_moves_global.mm_window_is_open) {
-        manual_moves_global.mm_window_is_open = true;
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if (!draw_state->manual_moves_global.mm_window_is_open) {
+        draw_state->manual_moves_global.mm_window_is_open = true;
 
         //Window settings-
-        manual_moves_global.manual_move_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-        gtk_window_set_position((GtkWindow*)manual_moves_global.manual_move_window, GTK_WIN_POS_CENTER);
-        gtk_window_set_title((GtkWindow*)manual_moves_global.manual_move_window, "Manual Moves Generator");
-        gtk_widget_set_name(manual_moves_global.manual_move_window, "manual_move_window");
+        draw_state->manual_moves_global.manual_move_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+        gtk_window_set_position((GtkWindow*)draw_state->manual_moves_global.manual_move_window, GTK_WIN_POS_CENTER);
+        gtk_window_set_title((GtkWindow*)draw_state->manual_moves_global.manual_move_window, "Manual Moves Generator");
+        gtk_widget_set_name(draw_state->manual_moves_global.manual_move_window, "manual_move_window");
 
         GtkWidget* grid = gtk_grid_new();
         GtkWidget* block_entry = gtk_entry_new();
 
-        if (manual_moves_global.user_highlighted_block) {
+        if (draw_state->manual_moves_global.user_highlighted_block) {
             gtk_entry_set_text((GtkEntry*)block_entry, block_id.c_str());
-            manual_moves_global.user_highlighted_block = false;
+            draw_state->manual_moves_global.user_highlighted_block = false;
         }
 
         GtkWidget* x_position_entry = gtk_entry_new();
@@ -73,14 +71,16 @@ void draw_manual_moves_window(std::string block_id) {
 
         //connect signals
         g_signal_connect(calculate_cost_button, "clicked", G_CALLBACK(calculate_cost_callback), grid);
-        g_signal_connect(G_OBJECT(manual_moves_global.manual_move_window), "destroy", G_CALLBACK(close_manual_moves_window), NULL);
+        g_signal_connect(G_OBJECT(draw_state->manual_moves_global.manual_move_window), "destroy", G_CALLBACK(close_manual_moves_window), NULL);
 
-        gtk_container_add(GTK_CONTAINER(manual_moves_global.manual_move_window), grid);
-        gtk_widget_show_all(manual_moves_global.manual_move_window);
+        gtk_container_add(GTK_CONTAINER(draw_state->manual_moves_global.manual_move_window), grid);
+        gtk_widget_show_all(draw_state->manual_moves_global.manual_move_window);
     }
 }
 
 void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
     int block_id;
     int x_location;
     int y_location;
@@ -117,16 +117,16 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     valid_input = checking_legality_conditions(ClusterBlockId(block_id), to);
 
     if (valid_input) {
-        manual_moves_global.manual_move_info.valid_input = true;
-        manual_moves_global.manual_move_info.blockID = block_id;
-        manual_moves_global.manual_move_info.x_pos = x_location;
-        manual_moves_global.manual_move_info.y_pos = y_location;
-        manual_moves_global.manual_move_info.subtile = subtile_location;
-        manual_moves_global.manual_move_info.to_location = to;
+        draw_state->manual_moves_global.manual_move_info.valid_input = true;
+        draw_state->manual_moves_global.manual_move_info.blockID = block_id;
+        draw_state->manual_moves_global.manual_move_info.x_pos = x_location;
+        draw_state->manual_moves_global.manual_move_info.y_pos = y_location;
+        draw_state->manual_moves_global.manual_move_info.subtile = subtile_location;
+        draw_state->manual_moves_global.manual_move_info.to_location = to;
 
         //Highlighting the block
         deselect_all();
-        ClusterBlockId clb_index = ClusterBlockId(manual_moves_global.manual_move_info.blockID);
+        ClusterBlockId clb_index = ClusterBlockId(draw_state->manual_moves_global.manual_move_info.blockID);
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
         application.refresh_drawing();
 
@@ -135,7 +135,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
         ezgl::press_proceed(proceed, &application);
 
     } else {
-        manual_moves_global.manual_move_info.valid_input = false;
+        draw_state->manual_moves_global.manual_move_info.valid_input = false;
     }
 }
 
@@ -185,18 +185,21 @@ bool checking_legality_conditions(ClusterBlockId block_id, t_pl_loc to) {
 }
 
 void get_manual_move_flag() {
+    t_draw_state* draw_state = get_draw_state_vars();
     GObject* manual_moves = application.get_object("manualMove");
     //return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
-    manual_moves_global.manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_moves);
+    draw_state->manual_moves_global.manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_moves);
 }
 
 void cost_summary_dialog() {
+    t_draw_state* draw_state = get_draw_state_vars();
+
     GtkWidget* dialog;
     GtkWidget* content_area;
 
     //Creating the dialog window
     dialog = gtk_dialog_new_with_buttons("Move Costs",
-                                         (GtkWindow*)manual_moves_global.manual_move_window,
+                                         (GtkWindow*)draw_state->manual_moves_global.manual_move_window,
                                          GTK_DIALOG_DESTROY_WITH_PARENT,
                                          ("Accept"),
                                          GTK_RESPONSE_ACCEPT,
@@ -210,13 +213,13 @@ void cost_summary_dialog() {
     //Create elements for the dialog and printing costs to the user.
     GtkWidget* title_label = gtk_label_new(NULL);
     gtk_label_set_markup((GtkLabel*)title_label, "<b>Move Costs and Outcomes</b>");
-    std::string delta_cost = "Delta Cost: " + std::to_string(manual_moves_global.manual_move_info.delta_cost) + "   ";
+    std::string delta_cost = "Delta Cost: " + std::to_string(draw_state->manual_moves_global.manual_move_info.delta_cost) + "   ";
     GtkWidget* delta_cost_label = gtk_label_new(delta_cost.c_str());
-    std::string delta_timing = "   Delta Timing: " + std::to_string(manual_moves_global.manual_move_info.delta_timing) + "   ";
+    std::string delta_timing = "   Delta Timing: " + std::to_string(draw_state->manual_moves_global.manual_move_info.delta_timing) + "   ";
     GtkWidget* delta_timing_label = gtk_label_new(delta_timing.c_str());
-    std::string delta_bounding_box = "  Delta Bounding Box Cost: " + std::to_string(manual_moves_global.manual_move_info.delta_bounding_box) + "   ";
+    std::string delta_bounding_box = "  Delta Bounding Box Cost: " + std::to_string(draw_state->manual_moves_global.manual_move_info.delta_bounding_box) + "   ";
     GtkWidget* delta_bounding_box_label = gtk_label_new(delta_bounding_box.c_str());
-    std::string outcome = e_move_result_to_string(manual_moves_global.manual_move_info.placer_move_outcome);
+    std::string outcome = e_move_result_to_string(draw_state->manual_moves_global.manual_move_info.placer_move_outcome);
     std::string move_outcome = "  Annealing Decision: " + outcome + "   ";
     GtkWidget* move_outcome_label = gtk_label_new(move_outcome.c_str());
     GtkWidget* space_label1 = gtk_label_new("    ");
@@ -236,24 +239,24 @@ void cost_summary_dialog() {
     gtk_widget_show_all(dialog);
 
     //Update message if user accepts the move.
-    std::string msg = "Manual move accepted. Block #" + std::to_string(manual_moves_global.manual_move_info.blockID);
-    msg += " to location (" + std::to_string(manual_moves_global.manual_move_info.x_pos) + ", " + std::to_string(manual_moves_global.manual_move_info.y_pos) + ")";
+    std::string msg = "Manual move accepted. Block #" + std::to_string(draw_state->manual_moves_global.manual_move_info.blockID);
+    msg += " to location (" + std::to_string(draw_state->manual_moves_global.manual_move_info.x_pos) + ", " + std::to_string(draw_state->manual_moves_global.manual_move_info.y_pos) + ")";
 
     //Waiting for the user to respond to return to try_swa function.
     int result = gtk_dialog_run(GTK_DIALOG(dialog));
     switch (result) {
         //If the user accepts the manual move
         case GTK_RESPONSE_ACCEPT:
-            manual_moves_global.manual_move_info.user_move_outcome = ACCEPTED;
+            draw_state->manual_moves_global.manual_move_info.user_move_outcome = ACCEPTED;
             application.update_message(msg.c_str());
             break;
         //If the user rejects the manual move
         case GTK_RESPONSE_REJECT:
-            manual_moves_global.manual_move_info.user_move_outcome = REJECTED;
+            draw_state->manual_moves_global.manual_move_info.user_move_outcome = REJECTED;
             application.update_message("Manual move was rejected");
             break;
         default:
-            manual_moves_global.manual_move_info.user_move_outcome = ABORTED;
+            draw_state->manual_moves_global.manual_move_info.user_move_outcome = ABORTED;
             break;
     }
 
@@ -262,12 +265,14 @@ void cost_summary_dialog() {
 }
 
 void highlight_new_block_location(bool manual_move_flag) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
     if (manual_move_flag) {
         auto& cluster_ctx = g_vpr_ctx.clustering();
         //Unselects all blocks first
         deselect_all();
         //Highlighting the block
-        ClusterBlockId clb_index = ClusterBlockId(manual_moves_global.manual_move_info.blockID);
+        ClusterBlockId clb_index = ClusterBlockId(draw_state->manual_moves_global.manual_move_info.blockID);
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
         application.refresh_drawing();
     }
@@ -275,23 +280,22 @@ void highlight_new_block_location(bool manual_move_flag) {
 
 //Manual move window turns false, the window is destroyed.
 void close_manual_moves_window() {
-    manual_moves_global.mm_window_is_open = false;
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->manual_moves_global.mm_window_is_open = false;
 }
 
-#endif /*NO_GRAPHICS*/
-
-/**NO_GRAPHICS FUNCTIONS**/
-
 ManualMovesGlobals* get_manual_moves_global() {
-    return &manual_moves_global;
+    t_draw_state* draw_state = get_draw_state_vars();
+    return &draw_state->manual_moves_global;
 }
 
 //Updates ManualMovesInfo cost members
 void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome) {
-    manual_moves_global.manual_move_info.delta_cost = d_cost;
-    manual_moves_global.manual_move_info.delta_timing = d_timing;
-    manual_moves_global.manual_move_info.delta_bounding_box = d_bounding_box;
-    manual_moves_global.manual_move_info.placer_move_outcome = move_outcome;
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->manual_moves_global.manual_move_info.delta_cost = d_cost;
+    draw_state->manual_moves_global.manual_move_info.delta_timing = d_timing;
+    draw_state->manual_moves_global.manual_move_info.delta_bounding_box = d_bounding_box;
+    draw_state->manual_moves_global.manual_move_info.placer_move_outcome = move_outcome;
 }
 
 bool string_is_a_number(std::string block_id) {
@@ -303,3 +307,5 @@ bool string_is_a_number(std::string block_id) {
     }
     return true;
 }
+
+#endif /*NO_GRAPHICS*/

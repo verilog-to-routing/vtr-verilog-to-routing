@@ -13,20 +13,15 @@
 /** This file contains all functions for manual moves **/
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
-#    include "draw_global.h"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
-
-#endif /*NO_GRAPHICS*/
-
-#include "move_utils.h"
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <iostream>
+#    include "move_utils.h"
+#    include <cstdio>
+#    include <cfloat>
+#    include <cstring>
+#    include <cmath>
+#    include <algorithm>
+#    include <iostream>
 
 /**
  * @brief ManualMovesInfo struct
@@ -59,15 +54,10 @@ struct ManualMovesGlobals {
     bool mm_window_is_open = false;
     bool user_highlighted_block = false;
     bool manual_move_flag = false;
-#ifndef NO_GRAPHICS
     GtkWidget* manual_move_window;
-#endif /*NO_GRAPHICS*/
 };
 
-#ifndef NO_GRAPHICS
-
 /** manual moves functions **/
-
 
 /**
  * @brief Gets the state of the manual moves togle button and assigns it to the manual_move_flag in the ManualMovesGlobal struct.
@@ -129,8 +119,6 @@ void highlight_new_block_location(bool manual_move_flag);
  */
 void close_manual_moves_window();
 
-#endif /*NO_GRAPHICS*/
-
 /**
  * @brief Updates the ManualMovesGlobals global veriable members.
  *
@@ -147,5 +135,12 @@ void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_
  * @return True if the string only contains numbers, false otherwise.
  */
 bool string_is_a_number(std::string block_id);
+
+/**
+ * @brief Used to assign the to location and block location in differen files.
+ */
+void get_manual_moves_globals_block_and_location(int block_id, t_pl_loc to);
+
+#endif /*NO_GRAPHICS*/
 
 #endif /* MANUAL_MOVES_H */
