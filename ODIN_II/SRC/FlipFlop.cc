@@ -326,7 +326,7 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  */
-void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_input_port_sizes == 3);
     oassert(node->num_output_port_sizes == 1);
@@ -382,7 +382,7 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
 
         /* connecting the pad node to the 0: input of the mux pin */
         add_input_pin_to_node(EN_muxes[i],
-                              copy_output_npin(node->output_pins[i]),
+                              get_pad_pin(netlist),
                               2);
 
         /* remapping the D[i] pin to 0: mux input */
@@ -532,7 +532,7 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
 
         /* hook a copy of Q into the buf node */
         add_input_pin_to_node(EN_muxes[i],
-                              copy_output_npin(node->output_pins[i]),
+                              get_pad_pin(netlist),
                               2);
 
         /* remapping the D[i] pin to 0: mux input */
@@ -696,7 +696,7 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
 
         /* connecting the pad node to the 0: input of the mux pin */
         add_input_pin_to_node(EN_muxes[i],
-                              copy_output_npin(node->output_pins[i]),
+                              get_pad_pin(netlist),
                               2);
 
         /* remapping the D[i] pin to 0: mux input */
@@ -907,7 +907,7 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
 
         /* connecting the pad node to the 0: input of the mux pin */
         add_input_pin_to_node(EN_muxes[i],
-                              copy_output_npin(node->output_pins[i]),
+                              get_pad_pin(netlist),
                               3);
 
         // specify EN_muxes[i] output pin
@@ -1191,7 +1191,7 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
 
         /* connecting the pad node to the 0: input of the mux pin */
         add_input_pin_to_node(EN_muxes[i],
-                              copy_output_npin(node->output_pins[i]),
+                              get_pad_pin(netlist),
                               2);
 
         /* remapping the D[i] pin to 0: mux input */

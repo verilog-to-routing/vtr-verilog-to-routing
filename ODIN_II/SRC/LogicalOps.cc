@@ -151,9 +151,8 @@ void split_in_single_bit_logic(nnode_t* node, uintptr_t traverse_mark_number, ne
         }
 
         /* handle output pins */
-        npin_t* output_pin = node->output_pins[i];
-
         if (i < node->num_output_pins) {
+            npin_t* output_pin = node->output_pins[i];
             /* remap the first output (will show the logic node result) to the new node */
             remap_pin_to_new_node(output_pin, new_node, 0);
         } else {
@@ -168,6 +167,17 @@ void split_in_single_bit_logic(nnode_t* node, uintptr_t traverse_mark_number, ne
             /* hook up the new pin 2 to this new net */
             add_fanout_pin_to_net(new_net, new_pin2);
         }
+    }
+
+    /* handle output pins indexed over input max width  */
+    if (node->num_output_pins > max_width) {
+        for (i = max_width; i < node->num_output_pins; i++) {
+            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+            /* hook a pin from PAD node into the buf node */
+            add_input_pin_to_node(buf_node, get_pad_pin(netlist), 0);
+            /* remap the extra output pin to buf node */
+            remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+        }        
     }
 
     // CLEAN UP

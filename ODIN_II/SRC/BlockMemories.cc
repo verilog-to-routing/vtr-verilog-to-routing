@@ -64,7 +64,7 @@ static void perform_optimization(block_memory* memory);
 static signal_list_t* merge_read_write_clks(signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist);
 static signal_list_t* create_single_clk_pin(signal_list_t* clks, nnode_t* node, netlist_t* netlist);
 
-static bool check_match_ports(signal_list_t* sig, signal_list_t* be_checked);
+static bool check_match_ports(signal_list_t* sig, signal_list_t* be_checked, netlist_t* netlist);
 static void cleanup_block_memory_old_node(nnode_t* old_node);
 
 static void free_block_memory_index(block_memory_hashtable to_free);
@@ -642,7 +642,7 @@ static void create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist) {
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
  */
-static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netlist */) {
+static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     nnode_t* old_node = bram->node;
 
     int i, offset;
@@ -691,12 +691,12 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* /* netlist *
      * we only assume that the multiple write or read ports are connected 
      * to memory block themselves OR at max by a multiplexer for checking enable
     */
-    bool first_match = check_match_ports(wr_addr1, bram->read_addr);
-    bool second_match = check_match_ports(wr_addr2, bram->read_addr);
+    bool first_match = check_match_ports(wr_addr1, bram->read_addr, netlist);
+    bool second_match = check_match_ports(wr_addr2, bram->read_addr, netlist);
 
     if (!first_match && !second_match) {
-        first_match = check_match_ports(bram->read_addr, wr_addr1);
-        second_match = check_match_ports(bram->read_addr, wr_addr2);
+        first_match = check_match_ports(bram->read_addr, wr_addr1, netlist);
+        second_match = check_match_ports(bram->read_addr, wr_addr2, netlist);
         if (!first_match && !second_match) {
             error_message(NETLIST, bram->loc,
                           "Cannot map memory block(%s) with more than two distinct ports!", old_node->name);
@@ -848,12 +848,12 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
      * we only assume that the multiple write or read ports are connected 
      * to memory block themselves OR at max by a multiplexer for checking enable
     */
-    bool first_match = check_match_ports(bram->write_addr, rd_addr1);
-    bool second_match = check_match_ports(bram->write_addr, rd_addr2);
+    bool first_match = check_match_ports(bram->write_addr, rd_addr1, netlist);
+    bool second_match = check_match_ports(bram->write_addr, rd_addr2, netlist);
 
     if (!first_match && !second_match) {
-        first_match = check_match_ports(rd_addr1, bram->write_addr);
-        second_match = check_match_ports(rd_addr2, bram->write_addr);
+        first_match = check_match_ports(rd_addr1, bram->write_addr, netlist);
+        second_match = check_match_ports(rd_addr2, bram->write_addr, netlist);
         if (!first_match && !second_match) {
             error_message(NETLIST, bram->loc,
                           "Cannot map memory block(%s) with more than two distinct ports!", old_node->name);
@@ -909,7 +909,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
  */
-static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netlist */) {
+static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     nnode_t* old_node = bram->node;
 
     int i, offset;
@@ -988,18 +988,18 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netlist 
      * we only assume that the multiple write or read ports are connected 
      * to memory block themselves OR at max by a multiplexer for checking enable
     */
-    bool first_match_read1 = check_match_ports(wr_addr1, rd_addr1);
-    bool second_match_read1 = check_match_ports(wr_addr2, rd_addr1);
+    bool first_match_read1 = check_match_ports(wr_addr1, rd_addr1, netlist);
+    bool second_match_read1 = check_match_ports(wr_addr2, rd_addr1, netlist);
     if (!first_match_read1 && !second_match_read1) {
-        first_match_read1 = check_match_ports(rd_addr1, wr_addr1);
-        second_match_read1 = check_match_ports(rd_addr1, wr_addr2);
+        first_match_read1 = check_match_ports(rd_addr1, wr_addr1, netlist);
+        second_match_read1 = check_match_ports(rd_addr1, wr_addr2, netlist);
     }
 
-    bool first_match_read2 = check_match_ports(wr_addr1, rd_addr2);
-    bool second_match_read2 = check_match_ports(wr_addr2, rd_addr2);
+    bool first_match_read2 = check_match_ports(wr_addr1, rd_addr2, netlist);
+    bool second_match_read2 = check_match_ports(wr_addr2, rd_addr2, netlist);
     if (!first_match_read2 && !second_match_read2) {
-        first_match_read2 = check_match_ports(rd_addr2, wr_addr1);
-        second_match_read2 = check_match_ports(rd_addr2, wr_addr2);
+        first_match_read2 = check_match_ports(rd_addr2, wr_addr1, netlist);
+        second_match_read2 = check_match_ports(rd_addr2, wr_addr2, netlist);
     }
 
     if (!first_match_read1 && !second_match_read1 && !first_match_read2 && !second_match_read2) {
@@ -1008,7 +1008,7 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* /* netlist 
     }
 
     /* validate the matching results */
-    oassert(first_match_read1 != first_match_read2);
+    oassert((first_match_read1 != first_match_read2) || second_match_read1 != second_match_read2);
 
     /* split write data and add the first half to the data1 */
     signals->data1 = (first_match_read1) ? wr_data1 : wr_data2;
@@ -1456,8 +1456,9 @@ static signal_list_t* merge_read_write_clks(signal_list_t* rd_clks, signal_list_
  * 
  * @param sig first signals
  * @param be_checked second signals
+ * @param netlist to the netlist second signals
  */
-static bool check_match_ports(signal_list_t* sig, signal_list_t* be_checked) {
+static bool check_match_ports(signal_list_t* sig, signal_list_t* be_checked, netlist_t* netlist) {
     npin_t* possible_rd_pin1 = sig->pins[0];
     nnode_t* en_mux_node = sig->pins[0]->net->driver_pins[0]->node;
     npin_t* possible_rd_pin2 = (en_mux_node && en_mux_node->input_pins) ? en_mux_node->input_pins[1] : NULL;
@@ -1476,6 +1477,9 @@ static bool check_match_ports(signal_list_t* sig, signal_list_t* be_checked) {
             }
         }
     }
+
+    if (!strcmp(netlist->pad_node->name, be_checked->pins[0]->name))
+        return(true);
 
     return (false);
 }
