@@ -1325,6 +1325,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     e_create_move create_move_outcome;
 
+#ifndef NO_GRAPHICS
     //When manual move toggle button is active, the manual move window asks the user for input.
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->manual_moves_global.manual_move_flag) {
@@ -1337,6 +1338,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         //Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
     }
+#endif /*NO_GRAPHICS*/
 
     ++move_type_stat.num_moves[(int)move_type];
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
