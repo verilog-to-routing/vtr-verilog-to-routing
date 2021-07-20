@@ -1,7 +1,7 @@
 #ifndef NO_GRAPHICS
 
-#    include "draw_types.h"
 #    include "draw_global.h"
+#    include "draw_types.h"
 #    include "globals.h"
 #    include "vpr_utils.h"
 #    include "draw.h"

@@ -8,13 +8,6 @@
 #include "manual_move_generator.h"
 #include "manual_moves.h"
 
-#ifndef NO_GRAPHICS
-
-#    include "draw_types.h"
-#    include "draw_global.h"
-
-#endif /*NO_GRAPHICS*/
-
 ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
     avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
     avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
@@ -41,10 +34,9 @@ ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& ag
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float /*rlim*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
-#ifndef NO_GRAPHICS
-    t_draw_state* draw_state = get_draw_state_vars();
-    int block_id = draw_state->manual_moves_global.manual_move_info.blockID;
-    t_pl_loc to = draw_state->manual_moves_global.manual_move_info.to_location;
+    ManualMovesGlobals* manual_move_global = get_manual_moves_global();
+    int block_id = manual_move_global->manual_move_info.blockID;
+    t_pl_loc to = manual_move_global->manual_move_info.to_location;
     ClusterBlockId b_from = ClusterBlockId(block_id);
 
     //Checking if the block was found
@@ -75,5 +67,4 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     e_create_move create_move = ::create_move(blocks_affected, b_from, to);
     return create_move;
-#endif /*NO_GRAPHICS*/
 }

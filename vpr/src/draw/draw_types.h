@@ -27,7 +27,6 @@
 #    include "vtr_color_map.h"
 #    include "vtr_vector.h"
 #    include "breakpoint.h"
-#    include "manual_moves.h"
 
 #    include "ezgl/point.hpp"
 #    include "ezgl/rectangle.hpp"
@@ -197,7 +196,6 @@ struct t_draw_state {
     int sequence_number = 0;
     float net_alpha = 0.1;
     float pres_fac = 1.;
-    ManualMovesGlobals manual_moves_global;
 
     std::vector<Breakpoint> list_of_breakpoints;
 
