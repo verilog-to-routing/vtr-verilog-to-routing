@@ -263,6 +263,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case ADDER_FUNC:
         case CARRY_FUNC:
         case MUX_2:
+        case SMUX_2:
         case INPUT_NODE:
         case CLOCK_NODE:
         case OUTPUT_NODE:
@@ -525,52 +526,50 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
             muxes[i] = (nnode_t**)vtr::calloc(num_of_muxes, sizeof(nnode_t*));
             output_signals[i] = init_signal_list();
 
-            // connect related pin of second_input to related multiplexer as a selector
-            nnode_t* select = make_1port_gate(BUF_NODE, 1, 1, single_bit_mux, mark);
             // single_bit_mux->input_pins[i] === selector[i]
-            remap_pin_to_new_node(single_bit_mux->input_pins[i], select, 0);
+            npin_t* selector_pin = single_bit_mux->input_pins[i];
 
-            nnode_t* not_select = make_not_gate(select, mark);
-            connect_nodes(select, 0, not_select, 0);
             /* iterating over each single bit 2-mux to connect inputs */
             for (j = 0; j < num_of_muxes; j++) {
                 /**                                                                                      *
-                 * <MUX_2>                                                                               *
+                 * <SMUX_2>                                                                              *
                  *                                              SEL PORT                                 *
                  *                                                 |                                     *
-                 *  Port 1                                         / 2 bits (sel, not sel)               *
-                 *      0: not select                            |\|                                     *
-                 *      1: select                         1 bit  | \                                     *
-                 *  Port 2                            in1 --'--> |  |  1 bit                             *
-                 *      2: in1                                   |  |---'--->                            *
-                 *      3: in2                        in2 --'--> |  |                                    *
+                 *  Port 1                                         / 1 bits (sel)                        *
+                 *      0: in1                                   |\|                                     *
+                 *      1: in2                            1 bit  | \                                     *
+                 *  Port 2                            in1 --'--> |0 |  1 bit                             *
+                 *      2: sel                                   |  |---'--->                            *
+                 *                                    in2 --'--> |1 |                                    *
                  *                                               | /                                     *
                  *                                               |/                                      *
                  */
-                muxes[i][j] = make_2port_gate(MUX_2, 2, 2, 1, single_bit_mux, mark);
+                muxes[i][j] = make_2port_gate(SMUX_2, 2, 1, 1, single_bit_mux, mark);
 
-                connect_nodes(select, 0, muxes[i][j], 1);
-                connect_nodes(not_select, 0, muxes[i][j], 0);
+                if (j != num_of_muxes - 1)
+                    add_input_pin_to_node(muxes[i][j], copy_input_npin(selector_pin), 2);
+                else
+                    remap_pin_to_new_node(selector_pin, muxes[i][j], 2);
 
                 /* connecting the single bit mux input pins into decoded 2-Muxes */
                 if (i == 0) {
                     remap_pin_to_new_node(single_bit_mux->input_pins[port_offset + j],
                                           muxes[i][j],
-                                          2);
+                                          0);
 
                     remap_pin_to_new_node(single_bit_mux->input_pins[port_offset + j + (num_expressions / 2)],
                                           muxes[i][j],
-                                          3);
+                                          1);
                 }
                 /* connecting the outputs of internal 2-muxes to next level 2-muxes as input */
                 else {
                     add_input_pin_to_node(muxes[i][j],
                                           output_signals[i - 1]->pins[j],
-                                          2);
+                                          0);
 
                     add_input_pin_to_node(muxes[i][j],
                                           output_signals[i - 1]->pins[j + num_of_muxes],
-                                          3);
+                                          1);
                 }
 
                 // Connect output pin to related input pin
