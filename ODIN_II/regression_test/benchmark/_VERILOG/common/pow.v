@@ -4,7 +4,7 @@ module pow (A, B, Y);
     parameter B_SIGNED = 0;
     parameter A_WIDTH = 2;
     parameter B_WIDTH = 3;
-    parameter Y_WIDTH = 4;
+    parameter Y_WIDTH = 8;
     
     input [A_WIDTH-1:0] A;
     input [B_WIDTH-1:0] B;

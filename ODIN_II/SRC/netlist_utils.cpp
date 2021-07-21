@@ -20,6 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <math.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -787,7 +788,7 @@ long constant_signal_value(signal_list_t* signal, netlist_t* netlist) {
  * @param desired_width the size of return signal list
  * @param netlist pointer to the netlist
  *-------------------------------------------------------------------------------------------*/
-signal_list_t* create_constant_signal(const long value, const int desired_width, netlist_t* netlist) {
+signal_list_t* create_constant_signal(const long long value, const int desired_width, netlist_t* netlist) {
     signal_list_t* list = init_signal_list();
 
     long i;
@@ -1603,6 +1604,159 @@ chain_information_t* allocate_chain_info() {
     new_node->count = 0;
 
     return new_node;
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: pure_const_biops )
+ * 
+ * @brief perform the node type operation for two const value
+ * 
+ * @param node pointing to the pow node 
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+void pure_const_biops(nnode_t* node, netlist_t* netlist) {
+    /* ports validation */
+    oassert(node->num_input_port_sizes == 2);
+
+    int i, j;
+    int offset;
+    signal_list_t** ports = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
+    for (i = 0; i < 2; i++) {
+        ports[i] = init_signal_list();
+        for (j = 0; j < node->input_port_sizes[i]; j++) {
+            add_pin_to_signal_list(ports[i], node->input_pins[i + offset]);
+        }
+        offset += node->input_port_sizes[i];
+    }
+
+    /* validate input ports */
+    oassert(is_constant_signal(ports[0], netlist));
+    oassert(is_constant_signal(ports[1], netlist));
+
+    long port1_value = constant_signal_value(ports[0], netlist);
+    long port2_value = constant_signal_value(ports[1], netlist);
+
+    long long result;
+    switch (node->type) {
+        case ADD: {
+            result = port1_value + port2_value;
+            break;
+        }
+        case MINUS: {
+            result = port1_value - port2_value;
+            break;
+        }
+        case MULTIPLY: {
+            result = port1_value * port2_value;
+            break;
+        }
+        case MODULO: {
+            /* only return whole number, not fraction */
+            result = port1_value % port2_value;
+            break;
+        }
+        case DIVIDE: {
+            /* only return whole number, not fraction */
+            result = port1_value / port2_value;
+            break;
+        }
+        case POWER: {
+            result = std::pow(port1_value, port2_value);
+            break;
+        }
+        default:
+            error_message(NETLIST, node->loc,
+                          "Unsupported binary operation (%s)!", operation_list_STR[node->type][0]);
+    }
+
+    int output_width = node->num_output_pins;
+    signal_list_t* result_signal = create_constant_signal(result, output_width, netlist);
+
+    nnode_t* buf_node = make_1port_gate(BUF_NODE, output_width, output_width, node, node->traverse_visited);
+    /* hook result signals and remap outputs into buf node */
+    for (i = 0; i < output_width; i++) {
+        /* input */
+        add_input_pin_to_node(buf_node, result_signal->pins[i], i);
+        /* output */
+        remap_pin_to_new_node(node->output_pins[i], buf_node, i);
+    }
+
+    // CLEAN UP
+    for (i = 0; i < node->num_input_pins; i++) {
+        delete_npin(node->input_pins[i]);
+    }
+    free_signal_list(ports[0]);
+    free_signal_list(ports[1]);
+    free_nnode(node);
+    vtr::free(ports);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: swap_in_ports )
+ * 
+ * @brief swap the position of given ports
+ * 
+ * @param node pointing to the pow node 
+ * @param idx1 port1 index
+ * @param idx2 port2 index
+ *-----------------------------------------------------------------------------------------*/
+void swap_ports(nnode_t*& node, int idx1, int idx2) {
+    /* validation */
+    oassert(idx1 >= 0);
+    oassert(idx2 >= 0);
+    oassert(idx1 < node->num_input_port_sizes);
+    oassert(idx2 < node->num_input_port_sizes);
+
+    int i, j;
+    int offset = 0;
+    signal_list_t** signals = (signal_list_t**)vtr::calloc(node->num_input_port_sizes, sizeof(signal_list_t*));
+
+    /* store ports in signal list */
+    for (i = 0; i < node->num_input_port_sizes; i++) {
+        signals[i] = init_signal_list();
+        add_pin_to_signal_list(signals[i], node->input_pins[i + offset]);
+        offset += node->input_port_sizes[i];
+    }
+
+    offset = 0;
+    /* allocating new node */
+    nnode_t* new_node = allocate_nnode(node->loc);
+    for (i = 0; i < node->num_input_port_sizes; i++) {
+        int port_idx = -1;
+        port_idx = (i == idx1) ? idx2 : (i == idx2) ? idx1 : i;
+
+        /* add ports information */
+        add_input_port_information(new_node, signals[port_idx]->count);
+        allocate_more_input_pins(new_node, signals[port_idx]->count);
+        /* hook pins into related port in new node */
+        for (j = 0; j < signals[port_idx]->count; j++) {
+            remap_pin_to_new_node(signals[port_idx]->pins[j], new_node, j + offset);
+        }
+        offset += signals[port_idx]->count;
+    }
+
+    /* remap output pins */
+    for (i = 0; i < node->num_output_pins; i++) {
+        /* hook input pinjs into new node */
+        remap_pin_to_new_node(node->output_pins[i], new_node, i);
+    }
+
+    /* check for signedness if possible */
+    if ((std::abs(idx1 - idx2) == 1) && (node->num_input_port_sizes == 2)) {
+        new_node->attributes->port_a_signed = node->attributes->port_b_signed;
+        new_node->attributes->port_b_signed = node->attributes->port_a_signed;
+    }
+
+    // CLEAN UP
+    for (i = 0; i < node->num_input_port_sizes; i++) {
+        free_signal_list(signals[i]);
+    }
+    vtr::free(signals);
+    free_nnode(node);
+
+    node = new_node;
 }
 
 void remove_fanout_pins_from_net(nnet_t* net, npin_t* /*pin*/, int id) {
