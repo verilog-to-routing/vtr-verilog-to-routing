@@ -1075,6 +1075,76 @@ struct ParseTimingUpdateType {
     }
 };
 
+struct ParsePostSynthNetlistUnconnInputHandling {
+    ConvertedValue<e_post_synth_netlist_unconn_handling> from_str(std::string str) {
+        ConvertedValue<e_post_synth_netlist_unconn_handling> conv_value;
+        if (str == "unconnected")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::UNCONNECTED);
+        else if (str == "nets")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::NETS);
+        else if (str == "gnd")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::GND);
+        else if (str == "vcc")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::VCC);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_post_synth_netlist_unconn_handling (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_post_synth_netlist_unconn_handling val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_post_synth_netlist_unconn_handling::NETS)
+            conv_value.set_value("nets");
+        else if (val == e_post_synth_netlist_unconn_handling::GND)
+            conv_value.set_value("gnd");
+        else if (val == e_post_synth_netlist_unconn_handling::VCC)
+            conv_value.set_value("vcc");
+        else {
+            VTR_ASSERT(val == e_post_synth_netlist_unconn_handling::UNCONNECTED);
+            conv_value.set_value("unconnected");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"unconnected", "nets", "gnd", "vcc"};
+    }
+};
+
+struct ParsePostSynthNetlistUnconnOutputHandling {
+    ConvertedValue<e_post_synth_netlist_unconn_handling> from_str(std::string str) {
+        ConvertedValue<e_post_synth_netlist_unconn_handling> conv_value;
+        if (str == "unconnected")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::UNCONNECTED);
+        else if (str == "nets")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::NETS);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_post_synth_netlist_unconn_handling (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_post_synth_netlist_unconn_handling val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_post_synth_netlist_unconn_handling::NETS)
+            conv_value.set_value("nets");
+        else {
+            VTR_ASSERT(val == e_post_synth_netlist_unconn_handling::UNCONNECTED);
+            conv_value.set_value("unconnected");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"unconnected", "nets"};
+    }
+};
+
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -2417,6 +2487,26 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
             " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
         .default_value("-1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<e_post_synth_netlist_unconn_handling, ParsePostSynthNetlistUnconnInputHandling>(args.post_synth_netlist_unconn_input_handling, "--post_synth_netlist_unconn_inputs")
+        .help(
+            "Controls how unconnected input cell ports are handled in the post-synthesis netlist\n"
+            " * unconnected: leave unconnected\n"
+            " * nets: connect each unconnected input pin to its own separate\n"
+            "         undriven net\n"
+            " * gnd: tie all to ground (1'b0)\n"
+            " * vcc: tie all to VCC (1'b1)\n")
+        .default_value("unconnected")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<e_post_synth_netlist_unconn_handling, ParsePostSynthNetlistUnconnOutputHandling>(args.post_synth_netlist_unconn_output_handling, "--post_synth_netlist_unconn_outputs")
+        .help(
+            "Controls how unconnected output cell ports are handled in the post-synthesis netlist\n"
+            " * unconnected: leave unconnected\n"
+            " * nets: connect each unconnected input pin to its own separate\n"
+            "         undriven net\n")
+        .default_value("unconnected")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");

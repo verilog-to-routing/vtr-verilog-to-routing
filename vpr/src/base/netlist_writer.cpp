@@ -18,6 +18,7 @@
 #include "vtr_version.h"
 
 #include "vpr_error.h"
+#include "vpr_types.h"
 
 #include "netlist_walker.h"
 #include "netlist_writer.h"
@@ -110,7 +111,7 @@ std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
 
 void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth);
-void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth);
+void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth, struct t_analysis_opts& opts);
 
 std::string create_unconn_net(size_t& unconn_count);
 std::string escape_verilog_identifier(const std::string id);
@@ -187,7 +188,7 @@ class Instance {
     virtual void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) = 0;
 
     ///@brief Print the current instanse in Verilog, see print_blif() for argument descriptions
-    virtual void print_verilog(std::ostream& os, int depth = 0) = 0;
+    virtual void print_verilog(std::ostream& os, size_t& unconn_count, int depth = 0) = 0;
 
     ///@brief Print the current instanse in SDF, see print_blif() for argument descriptions
     virtual void print_sdf(std::ostream& os, int depth = 0) = 0;
@@ -200,13 +201,15 @@ class LutInst : public Instance {
             LogicVec lut_mask,                                          ///<The LUT mask representing the logic function
             std::string inst_name,                                      ///<The name of this instance
             std::map<std::string, std::vector<std::string>> port_conns, ///<The port connections of this instance. Key: port name, Value: connected nets
-            std::vector<Arc> timing_arc_values)                         ///<The timing arcs of this instance
+            std::vector<Arc> timing_arc_values,                         ///<The timing arcs of this instance
+            struct t_analysis_opts opts)
         : type_("LUT_K")
         , lut_size_(lut_size)
         , lut_mask_(lut_mask)
         , inst_name_(inst_name)
         , port_conns_(port_conns)
-        , timing_arcs_(timing_arc_values) {
+        , timing_arcs_(timing_arc_values)
+        , opts_(opts) {
     }
 
     //Accessors
@@ -215,7 +218,7 @@ class LutInst : public Instance {
     std::string type() { return type_; }
 
   public: //Instance interface method implementations
-    void print_verilog(std::ostream& os, int depth) override {
+    void print_verilog(std::ostream& os, size_t& unconn_count, int depth) override {
         //Instantiate the lut
         os << indent(depth) << type_ << " #(\n";
 
@@ -231,10 +234,10 @@ class LutInst : public Instance {
         VTR_ASSERT(port_conns_.count("out"));
         VTR_ASSERT(port_conns_.size() == 2);
 
-        print_verilog_port(os, "in", port_conns_["in"], PortType::INPUT, depth + 1);
+        print_verilog_port(os, unconn_count, "in", port_conns_["in"], PortType::INPUT, depth + 1, opts_);
         os << ","
            << "\n";
-        print_verilog_port(os, "out", port_conns_["out"], PortType::OUTPUT, depth + 1);
+        print_verilog_port(os, unconn_count, "out", port_conns_["out"], PortType::OUTPUT, depth + 1, opts_);
         os << "\n";
 
         os << indent(depth) << ");\n\n";
@@ -376,6 +379,7 @@ class LutInst : public Instance {
     std::string inst_name_;
     std::map<std::string, std::vector<std::string>> port_conns_;
     std::vector<Arc> timing_arcs_;
+    struct t_analysis_opts opts_;
 };
 
 class LatchInst : public Instance {
@@ -462,7 +466,7 @@ class LatchInst : public Instance {
         os << "\n";
     }
 
-    void print_verilog(std::ostream& os, int depth = 0) override {
+    void print_verilog(std::ostream& os, size_t& /*unconn_count*/, int depth = 0) override {
         //Currently assume a standard DFF
         VTR_ASSERT(type_ == Type::RISING_EDGE);
 
@@ -560,7 +564,8 @@ class BlackBoxInst : public Instance {
                  std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
                  std::map<std::string, sequential_port_delay_pair> ports_tsu,       ///<Port setup checks
                  std::map<std::string, sequential_port_delay_pair> ports_thld,      ///<Port hold checks
-                 std::map<std::string, sequential_port_delay_pair> ports_tcq)       ///<Port clock-to-q delays
+                 std::map<std::string, sequential_port_delay_pair> ports_tcq,       ///<Port clock-to-q delays
+                 struct t_analysis_opts opts)
         : type_name_(type_name)
         , inst_name_(inst_name)
         , params_(params)
@@ -570,7 +575,8 @@ class BlackBoxInst : public Instance {
         , timing_arcs_(timing_arcs)
         , ports_tsu_(ports_tsu)
         , ports_thld_(ports_thld)
-        , ports_tcq_(ports_tcq) {}
+        , ports_tcq_(ports_tcq)
+        , opts_(opts) {}
 
     void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) override {
         os << indent(depth) << ".subckt " << type_name_ << " \\"
@@ -613,7 +619,7 @@ class BlackBoxInst : public Instance {
         os << "\n";
     }
 
-    void print_verilog(std::ostream& os, int depth = 0) override {
+    void print_verilog(std::ostream& os, size_t& unconn_count, int depth = 0) override {
         //Instance type
         os << indent(depth) << type_name_ << " #(\n";
 
@@ -633,7 +639,7 @@ class BlackBoxInst : public Instance {
         for (auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
             auto& port_name = iter->first;
             auto& nets = iter->second;
-            print_verilog_port(os, port_name, nets, PortType::INPUT, depth + 1);
+            print_verilog_port(os, unconn_count, port_name, nets, PortType::INPUT, depth + 1, opts_);
             if (!(iter == --input_port_conns_.end() && output_port_conns_.empty())) {
                 os << ",";
             }
@@ -644,7 +650,7 @@ class BlackBoxInst : public Instance {
         for (auto iter = output_port_conns_.begin(); iter != output_port_conns_.end(); ++iter) {
             auto& port_name = iter->first;
             auto& nets = iter->second;
-            print_verilog_port(os, port_name, nets, PortType::OUTPUT, depth + 1);
+            print_verilog_port(os, unconn_count, port_name, nets, PortType::OUTPUT, depth + 1, opts_);
             if (!(iter == --output_port_conns_.end())) {
                 os << ",";
             }
@@ -755,6 +761,7 @@ class BlackBoxInst : public Instance {
     std::map<std::string, sequential_port_delay_pair> ports_tsu_;
     std::map<std::string, sequential_port_delay_pair> ports_thld_;
     std::map<std::string, sequential_port_delay_pair> ports_tcq_;
+    struct t_analysis_opts opts_;
 };
 
 /**
@@ -793,11 +800,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
     NetlistWriterVisitor(std::ostream& verilog_os, ///<Output stream for verilog netlist
                          std::ostream& blif_os,    ///<Output stream for blif netlist
                          std::ostream& sdf_os,     ///<Output stream for SDF
-                         std::shared_ptr<const AnalysisDelayCalculator> delay_calc)
+                         std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                         struct t_analysis_opts opts)
         : verilog_os_(verilog_os)
         , blif_os_(blif_os)
         , sdf_os_(sdf_os)
-        , delay_calc_(delay_calc) {
+        , delay_calc_(delay_calc)
+        , opts_(opts) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
         //Initialize the pin to tnode look-up
@@ -931,10 +940,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         //All the cell instances
+        size_t unconn_count = 0;
         verilog_os_ << "\n";
         verilog_os_ << indent(depth + 1) << "//Cell instances\n";
         for (auto& inst : cell_instances_) {
-            inst->print_verilog(verilog_os_, depth + 1);
+            inst->print_verilog(verilog_os_, unconn_count, depth + 1);
         }
 
         verilog_os_ << "\n";
@@ -1213,7 +1223,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             port_conns["out"].push_back(net);
         }
 
-        auto inst = std::make_shared<LutInst>(lut_size, lut_mask, inst_name, port_conns, timing_arcs);
+        auto inst = std::make_shared<LutInst>(lut_size, lut_mask, inst_name, port_conns, timing_arcs, opts_);
 
         return inst;
     }
@@ -1413,7 +1423,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     ///@brief Returns an Instance object representing a Multiplier
@@ -1509,7 +1519,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_graph_node->num_clock_ports == 0); //No clocks
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     ///@brief Returns an Instance object representing an Adder
@@ -1609,7 +1619,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom) {
@@ -1747,7 +1757,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             attrs[attr.first] = attr.second;
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
     }
 
     ///@brief Returns the top level pb_route associated with the given pb
@@ -2067,6 +2077,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
     std::map<std::pair<ClusterBlockId, int>, tatum::NodeId> pin_id_to_tnode_lookup_;
 
     std::shared_ptr<const AnalysisDelayCalculator> delay_calc_;
+    struct t_analysis_opts opts_;
 };
 
 //
@@ -2074,7 +2085,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 //
 
 ///@brief Main routing for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc) {
+void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
@@ -2087,7 +2098,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
 
-    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc);
+    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
 
     NetlistWalker nl_walker(visitor);
 
@@ -2159,7 +2170,7 @@ void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& 
  *
  * Handles special cases like multi-bit and disconnected ports
  */
-void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth) {
+void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth, struct t_analysis_opts& opts) {
     //Port name
     os << indent(depth) << "." << port_name << "(";
 
@@ -2169,10 +2180,26 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
         if (nets[0].empty()) {
             //Disconnected
             if (type == PortType::INPUT || type == PortType::CLOCK) {
-                os << "1'b0";
+                switch (opts.post_synth_netlist_unconn_input_handling) {
+                    case e_post_synth_netlist_unconn_handling::GND:
+                        os << "1'b0"; break;
+                    case e_post_synth_netlist_unconn_handling::VCC:
+                        os << "1'b1"; break;
+                    case e_post_synth_netlist_unconn_handling::NETS:
+                        os << create_unconn_net(unconn_count); break;
+                    case e_post_synth_netlist_unconn_handling::UNCONNECTED:
+                    default:
+                        os << "1'bX";;
+                }
             } else {
                 VTR_ASSERT(type == PortType::OUTPUT);
-                os << "DummyOut";
+                switch (opts.post_synth_netlist_unconn_output_handling) {
+                    case e_post_synth_netlist_unconn_handling::NETS:
+                        os << create_unconn_net(unconn_count); break;
+                    case e_post_synth_netlist_unconn_handling::UNCONNECTED:
+                    default:
+                        os << "1'bX";;
+                }
             }
         } else {
             //Connected

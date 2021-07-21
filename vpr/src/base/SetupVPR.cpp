@@ -607,6 +607,9 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.timing_report_skew = Options.timing_report_skew;
     analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
 
+    analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
+    analysis_opts.post_synth_netlist_unconn_output_handling = Options.post_synth_netlist_unconn_output_handling;
+
     analysis_opts.timing_update_type = Options.timing_update_type;
 }
 
