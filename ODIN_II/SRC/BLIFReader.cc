@@ -496,6 +496,9 @@ void BLIF::Reader::create_internal_node_and_driver() {
             if (new_node->type == MUX_2) {
                 add_input_port_information(new_node, (input_count - 1) / 2);
                 add_input_port_information(new_node, (input_count - 1) / 2);
+            } else if (new_node->type == SMUX_2) {
+                add_input_port_information(new_node, input_count - 2);
+                add_input_port_information(new_node, 1);
             } else {
                 int i;
                 for (i = 0; i < input_count - 1; i++)
@@ -1096,6 +1099,10 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
                 /* LOGICAL_XNOR */
                 else if ((strcmp(bit_map[0], "00") == 0) && (strcmp(bit_map[1], "11") == 0)) {
                     to_return = LOGICAL_XNOR;
+                }
+                /* SMUX_2 */
+                else if ((strcmp(bit_map[0], "1-1") == 0) && (strcmp(bit_map[1], "-11") == 0)) {
+                    to_return = SMUX_2;
                 }
             } else if (line_count_bitmap == 4) {
                 /* ADDER_FUNC */

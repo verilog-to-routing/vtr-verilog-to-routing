@@ -268,6 +268,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         }
         case PMUX:            //fallthrough
         case MUX_2:           //fallthrough
+        case SMUX_2:          //fallthrough
         case MULTI_PORT_MUX:  //fallthrough
         case MULTI_BIT_MUX_2: //fallthorugh
         case MULTIPORT_nBIT_MUX: {
@@ -551,6 +552,7 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
             break;
         }
         case MUX_2: //fallthrough
+        case SMUX_2: //fallthrough
         case MULTI_PORT_MUX: {
             error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;

@@ -148,9 +148,14 @@ static void count_node_type(operation_list op, nnode_t* node, netlist_t* netlist
         case LOGICAL_NAND:
         case LOGICAL_XOR:
         case LOGICAL_XNOR:
-        case LOGICAL_NOT:
-        case MUX_2: {
+        case LOGICAL_NOT: {
             increment_type_count(op, netlist);
+            count_node_type(GENERIC, node, netlist);
+            break;
+        }
+        case MUX_2: //fallthrough
+        case SMUX_2: {
+            increment_type_count(MUX_2, netlist);
             count_node_type(GENERIC, node, netlist);
             break;
         }

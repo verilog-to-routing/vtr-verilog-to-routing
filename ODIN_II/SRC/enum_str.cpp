@@ -85,6 +85,7 @@ const char* operation_list_STR[][2] = {
     {"ADDER_FUNC", "ADDER"},
     {"CARRY_FUNC", "CARRY"},
     {"MUX_2", "MUX_2"},
+    {"SMUX_2", "SMUX_2"}, // MUX_2 with single bit selector (no need to add not selector as the second pin)
     {"BLIF_FUNCTION", "BLIFf"},
     {"NETLIST_FUNCTION", "NETf"},
     {"MEMORY", "MEM"},
