@@ -952,16 +952,16 @@ static void load_chan_rr_indices(const int max_chan_width,
 
                 /* If the start of the wire doesn't have a inode,
                  * assign one to it. */
-                RRNodeId inode = rr_graph_builder.node_lookup().find_node(node_x, node_y, type, track, SIDES[0]);
+                RRNodeId inode = rr_graph_builder.node_lookup().find_node(node_x, node_y, type, track);
                 if (!inode) {
                     inode = RRNodeId(*index);
                     ++(*index);
 
-                    rr_graph_builder.node_lookup().add_node(inode, chan, start, type, track, SIDES[0]);
+                    rr_graph_builder.node_lookup().add_node(inode, chan, start, type, track);
                 }
 
                 /* Assign inode of start of wire to current position */
-                rr_graph_builder.node_lookup().add_node(inode, chan, seg, type, track, SIDES[0]);
+                rr_graph_builder.node_lookup().add_node(inode, chan, seg, type, track);
             }
         }
     }
