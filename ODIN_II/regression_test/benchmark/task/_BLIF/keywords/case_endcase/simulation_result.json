@@ -7,11 +7,11 @@
         "simulation_time(ms)": 17.8,
         "Pi": 11,
         "Po": 3,
-        "logic element": 40,
-        "Longest Path": 9,
-        "Average Path": 8,
-        "Estimated LUTs": 40,
-        "Total Node": 40
+        "logic element": 22,
+        "Longest Path": 7,
+        "Average Path": 6,
+        "Estimated LUTs": 22,
+        "Total Node": 22
     },
     "DEFAULT": {
         "test_name": "n/a",
