@@ -934,7 +934,7 @@ static void load_chan_rr_indices(const int max_chan_width,
             const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
             /* Reserve nodes in lookup to save memory */
-            rr_graph_builder.node_lookup().reserve_nodes(x, y, type, max_chan_width);
+            rr_graph_builder.node_lookup().reserve_nodes(chan, seg, type, max_chan_width);
 
             for (int track = 0; track < max_chan_width; ++track) {
                 /* TODO: May let the length() == 0 case go through, to model muxes */
@@ -1053,12 +1053,12 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                         for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                             int y_tile = y + height_offset;
                             rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN, type->num_pins, side);
+                            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN, type->num_pins, side);
                         }
                     }
                 }
 
                 //Assign indices for IPINs and OPINs at all offsets from root
-                rr_graph_builder.node_lookup().reserve_nodes(x, y, SOURCE, type->class_inf.size());
                 for (int ipin = 0; ipin < type->num_pins; ++ipin) {
                     bool assigned_to_rr_node = false;
                     for (e_side side : wanted_sides) {
