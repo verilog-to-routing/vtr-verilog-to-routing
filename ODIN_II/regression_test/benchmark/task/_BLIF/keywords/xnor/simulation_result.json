@@ -7,11 +7,11 @@
         "simulation_time(ms)": 27.6,
         "Pi": 64,
         "Po": 32,
-        "logic element": 67,
+        "logic element": 160,
         "Longest Path": 6,
-        "Average Path": 4,
-        "Estimated LUTs": 67,
-        "Total Node": 67
+        "Average Path": 6,
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "xnor/range_xnor_ultra_wide/no_arch": {
         "test_name": "xnor/range_xnor_ultra_wide/no_arch",
@@ -21,11 +21,11 @@
         "simulation_time(ms)": 216.3,
         "Pi": 512,
         "Po": 256,
-        "logic element": 515,
+        "logic element": 1280,
         "Longest Path": 6,
-        "Average Path": 4,
-        "Estimated LUTs": 515,
-        "Total Node": 515
+        "Average Path": 6,
+        "Estimated LUTs": 1280,
+        "Total Node": 1280
     },
     "xnor/range_xnor_wide/no_arch": {
         "test_name": "xnor/range_xnor_wide/no_arch",
@@ -35,11 +35,11 @@
         "simulation_time(ms)": 3.7,
         "Pi": 6,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 15,
         "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Average Path": 6,
+        "Estimated LUTs": 15,
+        "Total Node": 15
     },
     "xnor/xnor_indexed_port/no_arch": {
         "test_name": "xnor/xnor_indexed_port/no_arch",
