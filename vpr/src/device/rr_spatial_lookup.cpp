@@ -130,7 +130,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int x,
         }
     }
 
-    nodes.reserve(num_nodes); 
+    nodes.reserve(num_nodes);
     for (const auto& node : rr_node_indices_[type][node_x][node_y][side]) {
         if (RRNodeId(node)) {
             nodes.push_back(RRNodeId(node));
@@ -193,6 +193,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int x,
     for (e_side node_side : SIDES) {
         num_nodes += find_nodes(x, y, rr_type, node_side).size();
     }
+
     nodes.reserve(num_nodes);
     for (e_side node_side : SIDES) {
         std::vector<RRNodeId> temp_nodes = find_nodes(x, y, rr_type, node_side);
