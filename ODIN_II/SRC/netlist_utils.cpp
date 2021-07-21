@@ -1620,7 +1620,7 @@ void pure_const_biops(nnode_t* node, netlist_t* netlist) {
     oassert(node->num_input_port_sizes == 2);
 
     int i, j;
-    int offset;
+    int offset = 0;
     signal_list_t** ports = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
     for (i = 0; i < 2; i++) {
         ports[i] = init_signal_list();
@@ -1637,7 +1637,7 @@ void pure_const_biops(nnode_t* node, netlist_t* netlist) {
     long port1_value = constant_signal_value(ports[0], netlist);
     long port2_value = constant_signal_value(ports[1], netlist);
 
-    long long result;
+    long long result = 0;
     switch (node->type) {
         case ADD: {
             result = port1_value + port2_value;
