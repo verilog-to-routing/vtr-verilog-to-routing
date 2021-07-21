@@ -92,6 +92,7 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     }
 
     // CLEAN UP
+    free_signal_list(base);
     free_signal_list(exponent);
 }
 

@@ -414,7 +414,10 @@ static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist 
     /* merge all enables */
     if (bram->write_en->count > 1) {
         /* need to OR all write enable since we1 should be one bit in single port ram */
-        bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
+        // bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
+        for (i = 1; i < bram->write_en->count; i++) {
+            delete_npin(bram->write_en->pins[i]);
+        }
     }
     signals->we = bram->write_en->pins[0];
 
@@ -507,7 +510,10 @@ static void create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     if (bram->write_en->count > 1) {
         /* need to OR all write enable since we2 should be one bit in dual port ram */
-        bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
+        // bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
+        for (i = 1; i < bram->write_en->count; i++) {
+            delete_npin(bram->write_en->pins[i]);
+        }
     }
     signals->we2 = bram->write_en->pins[0];
 
@@ -713,8 +719,11 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     delete_npin(bram->read_en->pins[0]);
     /* add write enable signals for matched wr port as we1 */
     signal_list_t* we1 = (first_match) ? wr_en1 : wr_en2;
-    we1 = make_chain(LOGICAL_OR, we1, old_node);
+    // we1 = make_chain(LOGICAL_OR, we1, old_node);
     signals->we1 = we1->pins[0];
+    for (i = 1; i < we1->count; i++) {
+        delete_npin(we1->pins[i]);
+    }
 
     /* add merged clk signal as dpram clk signal */
     signals->clk = bram->clk->pins[0];
@@ -732,8 +741,11 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     /* add write enable signals for first wr port as we1 */
     signal_list_t* we2 = (first_match) ? wr_en2 : wr_en1;
     /* merged enables will be connected to we2 */
-    we2 = make_chain(LOGICAL_OR, we2, old_node);
+    // we2 = make_chain(LOGICAL_OR, we2, old_node);
     signals->we2 = we2->pins[0];
+    for (i = 1; i < we2->count; i++) {
+        delete_npin(we2->pins[i]);
+    }
 
     /* the rest of write data pin is for data2 */
     signals->data2 = (first_match) ? wr_data2 : wr_data1;
@@ -817,8 +829,11 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     for (i = 0; i < data_width; i++) {
         add_pin_to_signal_list(we1, bram->write_en->pins[i]);
     }
-    we1 = make_chain(LOGICAL_OR, we1, old_node);
+    // we1 = make_chain(LOGICAL_OR, we1, old_node);
     signals->we1 = we1->pins[0];
+    for (i = 1; i < we1->count; i++) {
+        delete_npin(we1->pins[i]);
+    }
 
     /* split rd_addr, rd_data ports */
     offset = addr_width;
@@ -1017,15 +1032,22 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     signals->data2 = (first_match_read2) ? wr_data1 : wr_data2;
 
     /* add write enable signals for first wr port as we1 */
-    wr_en1 = make_chain(LOGICAL_OR, wr_en1, old_node);
+    // wr_en1 = make_chain(LOGICAL_OR, wr_en1, old_node);
     signals->we1 = wr_en1->pins[0];
+    for (i = 1; i < wr_en1->count; i++) {
+        delete_npin(wr_en1->pins[i]);
+    }
 
     /* add merged clk signal as dpram clk signal */
     signals->clk = bram->clk->pins[0];
 
     /* add write enable signals for the second wr port as we2 */
-    wr_en2 = make_chain(LOGICAL_OR, wr_en2, old_node);
+    //wr_en2 = make_chain(LOGICAL_OR, wr_en2, old_node);
     signals->we2 = wr_en2->pins[0];
+    for (i = 1; i < wr_en2->count; i++) {
+        delete_npin(wr_en2->pins[i]);
+    }
+    
 
     /* create a new dual port ram */
     create_dual_port_ram(signals, old_node);
