@@ -20,7 +20,7 @@ AttractionInfo::AttractionInfo() {
     int num_atoms = atom_ctx.nlist.blocks().size();
 
     atom_attraction_group.resize(num_atoms);
-    fill(atom_attraction_group.begin(), atom_attraction_group.end(), NO_ATTRACTION_GROUP);
+    fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
 
     //Then, fill in the group id for the atoms that do have an attraction group
     int num_att_grps = attraction_groups.size();

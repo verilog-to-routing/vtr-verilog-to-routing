@@ -2061,6 +2061,8 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
 
     while (cur_pb) {
         for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
+            //Initialize connectiongain and sharinggain if
+            //they have not previously been updated for the block
             if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
                 cur_pb->pb_stats->connectiongain[blk_id] = 0;
             }
@@ -2068,10 +2070,14 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
                 cur_pb->pb_stats->sharinggain[blk_id] = 0;
             }
 
+            /* Todo: Right now we update the gain multiple times for each block.
+             * Eventually want to move this out of the while loop and only update it
+             * for the top-level block in each cluster.*/
             AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
-            if (atom_grp_id != NO_ATTRACTION_GROUP && atom_grp_id == cluster_att_grp_id) {
-                //increase gain of atom by 1
-                cur_pb->pb_stats->gain[blk_id]++;
+            float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
+            if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
+                //increase gain of atom based on attraction group gain
+                cur_pb->pb_stats->gain[blk_id] += att_grp_gain;
             }
 
             /* Todo: This was used to explore different normalization options, can
@@ -2118,23 +2124,12 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
                                  const int high_fanout_net_threshold,
                                  const SetupTimingInfo& timing_info,
                                  AttractionInfo& attraction_groups) {
-    /* Updates cluster stats such as gain, used pins, and clock structures.  */
+    /* Updates cluster stats such as gain, used pins, and clock structures. Also
+     * keeps track of which attraction group the cluster belongs to. */
 
     int molecule_size;
     int iblock;
     t_pb *cur_pb, *cb;
-
-    /* TODO: what a scary comment from Vaughn, we'll have to watch out for this causing problems */
-
-    /* Output can be open so the check is necessary.  I don't change    *
-     * the gain for clock outputs when clocks are globally distributed  *
-     * because I assume there is no real need to pack similarly clocked *
-     * FFs together then.  Note that by updating the gain when the      *
-     * clock driver is placed in a cluster implies that the output of   *
-     * LUTs can be connected to clock inputs internally.  Probably not  *
-     * true, but it doesn't make much difference, since it will still   *
-     * make local routing of this clock very short, and none of my      *
-     * benchmarks actually generate local clocks (all come from pads).  */
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     molecule_size = get_array_size_of_molecule(molecule);
@@ -2165,8 +2160,7 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
             cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
             cur_pb->pb_stats->num_child_blocks_in_pb++;
 
-            if (atom_grp_id != NO_ATTRACTION_GROUP) {
-                cur_pb->pb_stats->has_attraction_group = true;
+            if (atom_grp_id != AttractGroupId::INVALID()) {
                 cur_pb->pb_stats->attraction_grp_id = atom_grp_id;
             }
 
@@ -2456,13 +2450,6 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
     add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups, feasible_block_array_size);
 
-    //t_pack_molecule* molecule = nullptr;
-
-    //Get highest gain molecule that also belongs to attraction group
-    /*if (cur_pb->pb_stats->num_feasible_blocks > 0) {
-     * molecule = sort_cluster_molecule_candidates_by_attraction(cur_pb);
-     * }*/
-
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
     if (cur_pb->pb_stats->num_feasible_blocks > 0) {
@@ -2577,7 +2564,7 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     //If the current cluster belongs to an attraction group, add all of the atoms
     //from that attraction group to the feasible blocks
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
-    if (grp_id != NO_ATTRACTION_GROUP) {
+    if (grp_id != AttractGroupId::INVALID()) {
         AttractionGroup group = attraction_groups.get_attraction_group_info(grp_id);
 
         for (AtomBlockId blk_id : group.group_atoms) {
@@ -2587,10 +2574,10 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                     t_pack_molecule* molecule = kv.second;
                     if (molecule->valid) {
                         bool success = true;
-                        for (int j = 0; j < get_array_size_of_molecule(molecule); j++) {
-                            if (molecule->atom_block_ids[j]) {
-                                VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-                                auto blk_id2 = molecule->atom_block_ids[j];
+                        for (int i_atom = 0; i_atom < get_array_size_of_molecule(molecule); i_atom++) {
+                            if (molecule->atom_block_ids[i_atom]) {
+                                VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[i_atom]) == ClusterBlockId::INVALID());
+                                auto blk_id2 = molecule->atom_block_ids[i_atom];
                                 if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) {
                                     /* TODO: debating whether to check if placement exists for molecule
                                      * (more robust) or individual atom blocks (faster) */

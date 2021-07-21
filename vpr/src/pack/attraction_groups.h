@@ -39,7 +39,7 @@ struct AttractionGroup {
      * Atoms belonging to this attraction group will receive this gain if they
      * are potential candidates to be put in a cluster with the same attraction group.
      */
-    float gain = 5;
+    float gain = 3;
 
     /*
      * If the group is made up from a partition of atoms that are confined to a size one spot
@@ -49,9 +49,6 @@ struct AttractionGroup {
     /* TODO: Add the code in the clusterer that will do the above steps. */
     bool region_size_one = false;
 };
-
-/// @brief sentinel value for indicating that an attraction group has not been specified
-constexpr AttractGroupId NO_ATTRACTION_GROUP(-1);
 
 class AttractionInfo {
   public:
