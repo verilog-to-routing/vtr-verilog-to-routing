@@ -410,6 +410,61 @@ nnode_t* make_mult_block(nnode_t* node, short mark) {
  * 
  * @return mux output signal list
  */
+nnode_t* create_single_bit_smux(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t* node) {
+    /* validation */
+    oassert(sel->sensitivity == ACTIVE_HIGH_SENSITIVITY || sel->sensitivity == ACTIVE_LOW_SENSITIVITY);
+
+    int idx1 = 0, idx2 = 0;
+    nnode_t* smux = make_2port_gate(SMUX_2, 2, 1, 1, node, node->traverse_visited);
+
+    /* to check the polarity and connect the correspondence signal */
+    if (sel->sensitivity == ACTIVE_HIGH_SENSITIVITY) {
+        idx1 = 0;
+        idx2 = 1;
+
+    } else if (sel->sensitivity == ACTIVE_LOW_SENSITIVITY) {
+        idx1 = 1;
+        idx2 = 0;
+    }
+
+    /* connecting the first input pin to 0: smux input */
+    if (pin1->node)
+        remap_pin_to_new_node(pin1, smux, idx1);
+    else
+        add_input_pin_to_node(smux, pin1, idx1);
+
+    /* connecting the second pin to 1: mux input  */
+    if (pin2->node)
+        remap_pin_to_new_node(pin2, smux, idx2);
+    else
+        add_input_pin_to_node(smux, pin2, idx2);
+
+    /* hook selector pin into SMUX_2 */
+    if (sel->node)
+        remap_pin_to_new_node(sel, smux, 2);
+    else
+        add_input_pin_to_node(smux, sel, 2);
+
+    // specify  output pin
+    signal_list_t* outputs = make_output_pins_for_existing_node(smux, 1);
+
+    // CLEAN UP
+    free_signal_list(outputs);
+
+    return (smux);
+}
+/**
+ * (function: create_multiport_mux)
+ * 
+ * @brief create a multiport mux with given selector and signals lists
+ * 
+ * @param selector signal list of selector pins
+ * @param num_muxed_inputs num of inputs to be muxxed
+ * @param inputs list of input signal lists
+ * @param node pointing to a bram node
+ * 
+ * @return mux output signal list
+ */
 nnode_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node) {
     int i, j;
     int offset = 0;

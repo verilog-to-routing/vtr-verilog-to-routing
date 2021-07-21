@@ -249,6 +249,7 @@ static npin_t* copy_npin(npin_t* copy_pin) {
     new_pin->type = copy_pin->type;
     new_pin->mapping = copy_pin->mapping ? vtr::strdup(copy_pin->mapping) : NULL;
     new_pin->is_default = copy_pin->is_default;
+    new_pin->sensitivity = copy_pin->sensitivity;
 
     return new_pin;
 }
