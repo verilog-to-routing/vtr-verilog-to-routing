@@ -489,8 +489,8 @@ void try_place(const t_placer_opts& placer_opts,
                      * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2, manual_move_generator, placer_opts,
-                           move_lim);
+    create_move_generators(move_generator, move_generator2,
+                           manual_move_generator, placer_opts, move_lim);
 
     width_fac = placer_opts.place_chan_width;
 
@@ -1183,7 +1183,9 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     for (int i = 0; i < move_lim; i++) {
 #ifndef NO_GRAPHICS
         //Checks manual move flag for manual move feature
-        get_manual_move_flag();
+        t_draw_state* draw_state = get_draw_state_vars();
+        if (draw_state->show_graphics)
+            get_manual_move_flag();
 #endif /*NO_GRAPHICS*/
 
         //Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
@@ -1333,10 +1335,12 @@ static e_move_result try_swap(const t_annealing_state* state,
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 #endif /*NO_GRAPHICS*/
 
-        create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+        create_move_outcome = manual_move_generator.propose_move(
+            blocks_affected, move_type, rlim, placer_opts, criticalities);
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+        create_move_outcome = move_generator.propose_move(blocks_affected,
+                                                          move_type, rlim, placer_opts, criticalities);
     }
 
     ++move_type_stat.num_moves[(int)move_type];
@@ -1425,7 +1429,8 @@ static e_move_result try_swap(const t_annealing_state* state,
 
         //Updates the manaul_move_global members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
         if (manual_move_global->manual_move_flag) {
-            update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
+            update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c,
+                                     move_outcome);
 #ifndef NO_GRAPHICS
             cost_summary_dialog();
 #endif /*NO_GRAPHICS*/
@@ -2730,14 +2735,18 @@ static int check_block_placement_consistency() {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    vtr::vector<ClusterBlockId, int> bdone(cluster_ctx.clb_nlist.blocks().size(), 0);
+    vtr::vector<ClusterBlockId, int> bdone(
+        cluster_ctx.clb_nlist.blocks().size(), 0);
 
     /* Step through device grid and placement. Check it against blocks */
     for (size_t i = 0; i < device_ctx.grid.width(); i++)
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            if (place_ctx.grid_blocks[i][j].usage > device_ctx.grid[i][j].type->capacity) {
-                VTR_LOG_ERROR("%d blocks were placed at grid location (%zu,%zu), but location capacity is %d.\n",
-                              place_ctx.grid_blocks[i][j].usage, i, j, device_ctx.grid[i][j].type->capacity);
+            if (place_ctx.grid_blocks[i][j].usage
+                > device_ctx.grid[i][j].type->capacity) {
+                VTR_LOG_ERROR(
+                    "%d blocks were placed at grid location (%zu,%zu), but location capacity is %d.\n",
+                    place_ctx.grid_blocks[i][j].usage, i, j,
+                    device_ctx.grid[i][j].type->capacity);
                 error++;
             }
             int usage_check = 0;
@@ -2750,24 +2759,29 @@ static int check_block_placement_consistency() {
                 auto physical_tile = device_ctx.grid[i][j].type;
 
                 if (physical_tile_type(bnum) != physical_tile) {
-                    VTR_LOG_ERROR("Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
-                                  size_t(bnum), logical_block->name, i, j, physical_tile->name);
+                    VTR_LOG_ERROR(
+                        "Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
+                        size_t(bnum), logical_block->name, i, j,
+                        physical_tile->name);
                     error++;
                 }
 
                 auto& loc = place_ctx.block_locs[bnum].loc;
-                if (loc.x != int(i) || loc.y != int(j) || !is_sub_tile_compatible(physical_tile, logical_block, loc.sub_tile)) {
-                    VTR_LOG_ERROR("Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-                                  size_t(bnum), loc.x, loc.y, loc.sub_tile,
-                                  i, j, k);
+                if (loc.x != int(i) || loc.y != int(j)
+                    || !is_sub_tile_compatible(physical_tile, logical_block,
+                                               loc.sub_tile)) {
+                    VTR_LOG_ERROR(
+                        "Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
+                        size_t(bnum), loc.x, loc.y, loc.sub_tile, i, j, k);
                     error++;
                 }
                 ++usage_check;
                 bdone[bnum]++;
             }
             if (usage_check != place_ctx.grid_blocks[i][j].usage) {
-                VTR_LOG_ERROR("%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
-                              place_ctx.grid_blocks[i][j].usage, i, j, usage_check);
+                VTR_LOG_ERROR(
+                    "%d block(s) were placed at location (%zu,%zu), but location contains %d block(s).\n",
+                    place_ctx.grid_blocks[i][j].usage, i, j, usage_check);
                 error++;
             }
         }
