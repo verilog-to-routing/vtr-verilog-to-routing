@@ -693,9 +693,7 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /**
      * [NOTE]:
-     * currently, there is a limited support for yosys mem block in Odin.
-     * we only assume that the multiple write or read ports are connected 
-     * to memory block themselves OR at max by a multiplexer for checking enable
+     * Odin-II does not handle memory block with more than two distint address ports
     */
     bool first_match = check_match_ports(wr_addr1, bram->read_addr, netlist);
     bool second_match = check_match_ports(wr_addr2, bram->read_addr, netlist);
@@ -825,14 +823,9 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     }
 
     /* add write enable signals for matched wr port as we1 */
-    signal_list_t* we1 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
-        add_pin_to_signal_list(we1, bram->write_en->pins[i]);
-    }
-    // we1 = make_chain(LOGICAL_OR, we1, old_node);
-    signals->we1 = we1->pins[0];
-    for (i = 1; i < we1->count; i++) {
-        delete_npin(we1->pins[i]);
+    signals->we1 = bram->write_en->pins[0];
+    for (i = 1; i < bram->write_en->count; i++) {
+        delete_npin(bram->write_en->pins[i]);
     }
 
     /* split rd_addr, rd_data ports */
@@ -859,9 +852,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /**
      * [NOTE]:
-     * currently, there is a limited support for yosys mem block in Odin.
-     * we only assume that the multiple write or read ports are connected 
-     * to memory block themselves OR at max by a multiplexer for checking enable
+     * Odin-II does not handle memory block with more than two distint address ports
     */
     bool first_match = check_match_ports(bram->write_addr, rd_addr1, netlist);
     bool second_match = check_match_ports(bram->write_addr, rd_addr2, netlist);
@@ -871,7 +862,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
         second_match = check_match_ports(rd_addr2, bram->write_addr, netlist);
         if (!first_match && !second_match) {
             error_message(NETLIST, bram->loc,
-                          "Cannot map memory block(%s) with more than two distinct ports!", old_node->name);
+                          "Cannot map memory block(%s) with more than two distinct address ports!", old_node->name);
         }
     }
 
@@ -908,7 +899,6 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
         delete_npin(pin);
     }
     free_signal_list((first_match) ? rd_addr1 : rd_addr2);
-    free_signal_list(we1);
 
     cleanup_block_memory_old_node(old_node);
     free_dp_ram_signals(signals);
@@ -999,9 +989,7 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /**
      * [NOTE]:
-     * currently, there is a limited support for yosys mem block in Odin.
-     * we only assume that the multiple write or read ports are connected 
-     * to memory block themselves OR at max by a multiplexer for checking enable
+     * Odin-II does not handle memory block with more than two distint address ports
     */
     bool first_match_read1 = check_match_ports(wr_addr1, rd_addr1, netlist);
     bool second_match_read1 = check_match_ports(wr_addr2, rd_addr1, netlist);
@@ -1482,23 +1470,11 @@ static signal_list_t* merge_read_write_clks(signal_list_t* rd_clks, signal_list_
  */
 static bool check_match_ports(signal_list_t* sig, signal_list_t* be_checked, netlist_t* netlist) {
     npin_t* possible_rd_pin1 = sig->pins[0];
-    nnode_t* en_mux_node = sig->pins[0]->net->driver_pins[0]->node;
-    npin_t* possible_rd_pin2 = (en_mux_node && en_mux_node->input_pins) ? en_mux_node->input_pins[1] : NULL;
-    npin_t* possible_rd_pin3 = (en_mux_node && en_mux_node->input_pins) ? en_mux_node->input_pins[1 + en_mux_node->input_port_sizes[1]] : NULL;
 
     /* [TODO] CANNOT MAP MORE THAN TWO PORTS, DPRAM IS LIMITED */
     if (!strcmp(possible_rd_pin1->name, be_checked->pins[0]->name)) {
         return (true);
-    } else {
-        if (en_mux_node) {
-            if (possible_rd_pin2 && !strcmp(possible_rd_pin2->name, be_checked->pins[0]->name)) {
-                return (true);
-            }
-            if (possible_rd_pin3 && !strcmp(possible_rd_pin3->name, be_checked->pins[0]->name)) {
-                return (true);
-            }
-        }
-    }
+    } 
 
     if (!strcmp(netlist->pad_node->name, be_checked->pins[0]->name))
         return(true);
