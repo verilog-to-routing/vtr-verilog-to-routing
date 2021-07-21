@@ -1,0 +1,10 @@
+########################
+# run yosys config
+########################
+
+# setup the circuits
+circuits_dir=regression_test/benchmark/_VERILOG/FIR/
+
+# circuits' name
+circuit_list_add=*.v
+

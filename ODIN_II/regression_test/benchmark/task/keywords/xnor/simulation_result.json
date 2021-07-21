@@ -1,7 +1,7 @@
 {
     "xnor/xnor_indexed_port/no_arch": {
         "test_name": "xnor/xnor_indexed_port/no_arch",
-        "blif": "xnor_indexed_port.blif",
+        "generated_blif": "xnor_indexed_port_generated.blif",
         "max_rss(MiB)": 29.7,
         "exec_time(ms)": 12.5,
         "simulation_time(ms)": 4.4,
@@ -16,7 +16,7 @@
     },
     "xnor/xnor_wire/no_arch": {
         "test_name": "xnor/xnor_wire/no_arch",
-        "blif": "xnor_wire.blif",
+        "generated_blif": "xnor_wire_generated.blif",
         "max_rss(MiB)": 29.7,
         "exec_time(ms)": 7.5,
         "simulation_time(ms)": 1.5,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

@@ -2,7 +2,7 @@
     "best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm": {
         "test_name": "best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "multi_clock_reader_writer.blif",
+        "generated_blif": "multi_clock_reader_writer_generated.blif",
         "max_rss(MiB)": 43.3,
         "exec_time(ms)": 111.8,
         "simulation_time(ms)": 83,
@@ -21,7 +21,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

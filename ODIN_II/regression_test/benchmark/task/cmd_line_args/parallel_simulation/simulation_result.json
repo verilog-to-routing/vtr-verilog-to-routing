@@ -2,7 +2,7 @@
     "parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm": {
         "test_name": "parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "max_rss(MiB)": 32.9,
         "exec_time(ms)": 96.5,
         "simulation_time(ms)": 69.4,
@@ -22,7 +22,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

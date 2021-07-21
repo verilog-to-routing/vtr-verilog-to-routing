@@ -1,7 +1,7 @@
 {
     "output/multiple_declarations/no_arch": {
         "test_name": "output/multiple_declarations/no_arch",
-        "blif": "multiple_declarations.blif",
+        "generated_blif": "multiple_declarations_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] More lines (8) than values (7)."
@@ -10,7 +10,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

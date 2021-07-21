@@ -1,7 +1,7 @@
 {
     "else/else_if/no_arch": {
         "test_name": "else/else_if/no_arch",
-        "blif": "else_if.blif",
+        "generated_blif": "else_if_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 4.4,
         "simulation_time(ms)": 1,
@@ -16,7 +16,7 @@
     },
     "else/if_else/no_arch": {
         "test_name": "else/if_else/no_arch",
-        "blif": "if_else.blif",
+        "generated_blif": "if_else_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 3.6,
         "simulation_time(ms)": 0.6,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

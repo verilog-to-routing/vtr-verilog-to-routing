@@ -55,6 +55,7 @@ int is_dont_care_string(char* string);
 
 char* get_pin_name(char* name);
 char* get_port_name(char* name);
+char* get_hard_block_node_name(char* name);
 int get_pin_number(char* name);
 short get_bit(char in);
 short get_bit(short in);
@@ -71,5 +72,7 @@ int odin_sprintf(char* s, const char* format, ...);
 char* str_collate(char* str1, char* str2);
 
 void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src);
+
+void print_input_files_info();
 
 #endif

@@ -18,12 +18,17 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
 npin_t* get_zero_pin();
 npin_t* get_one_pin();
 
+signal_list_t* make_chain(operation_list type, signal_list_t* inputs, nnode_t* node);
+
 char* node_name(nnode_t* node, char* instance_prefix_name);
 char* op_node_name(operation_list op, char* instance_prefix_name);
 char* hard_node_name(nnode_t* node, char* instance_name_prefix, char* hb_name, char* hb_inst);
 nnode_t* make_mult_block(nnode_t* node, short mark);
 
 edge_type_e edge_type_blif_enum(std::string edge_kind_str, loc_t loc);
-const char* edge_type_blif_str(nnode_t* node);
+const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc);
+
+extern nnode_t* create_single_bit_smux(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t* node);
+extern nnode_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node);
 
 #endif

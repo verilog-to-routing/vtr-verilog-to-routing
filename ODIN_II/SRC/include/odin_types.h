@@ -65,6 +65,11 @@
 #define STATS 18
 #define SEQUENTIAL_LEVELIZE 19
 
+#define SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE 30
+
+/* the width of Odin's base value */
+#define ODIN_BITSET_BASE_VALUE 32
+
 /* unique numbers for using void *data entries in some of the datastructures */
 #define RESET -1
 #define LEVELIZE 12
@@ -98,6 +103,8 @@ struct global_args_t {
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
+
+    argparse::ArgValue<bool> coarsen;
 
     argparse::ArgValue<std::string> adder_def; //DEPRECATED
 
@@ -160,6 +167,7 @@ extern const char* ZERO_PAD_ZERO;
 
 extern const char* SINGLE_PORT_RAM_string;
 extern const char* DUAL_PORT_RAM_string;
+extern const char* LUTRAM_string;
 
 extern const char* edge_type_e_STR[];
 extern const char* operation_list_STR[][2];
@@ -246,17 +254,41 @@ enum operation_list {
     ADDER_FUNC,
     CARRY_FUNC,
     MUX_2,
+    SMUX_2, // MUX_2 with single bit selector (no need to add not selector as the second pin) => [IN1, IN2] [SEL] [OUT]
     BLIF_FUNCTION,
     NETLIST_FUNCTION,
     MEMORY,
     PAD_NODE,
     HARD_IP,
-    GENERIC,  /*added for the unknown node type */
-    CLOG2,    // $clog2
-    UNSIGNED, // $unsigned
-    SIGNED,   // $signed
+    GENERIC,            /*added for the unknown node type */
+    CLOG2,              // $clog2
+    UNSIGNED,           // $unsigned
+    SIGNED,             // $signed
+                        // [START] operations to cover yosys subckt
+    MULTI_BIT_MUX_2,    // like MUX_2 but with n-bit input/output
+    MULTIPORT_nBIT_MUX, // n-bit input/output in multiple ports
+    HARD_ADD,           // VTR Adder hard block
+    HARD_MULTIPLY,      // VTR Multiply hard block
+    PMUX,               // Multiplexer with many inputs using one-hot select signal
+    ADFF,               // data, A to areset value and output port
+    SDFF,               // data, S to reset value and output port
+    DFFE,               // data, enable to output port
+    ADFFE,              // data, asynchronous reset value and enable to output port
+    SDFFE,              // data, synchronous reset value and enable to output port
+    SDFFCE,             // data, synchronous reset value and enable to reset value and output port
+    DFFSR,              // data, clear and set to output port
+    DFFSRE,             // data, clear and set with enable to output port
+    DLATCH,             // datato output port based on polarity without clk
+    ADLATCH,            // datato output port based on polarity without clk
+    SETCLR,             // set or clear an input pins
+    SPRAM,              // representing primitive single port ram
+    DPRAM,              // representing primitive dual port ram
+    BRAM,               // block of memry generated in yosys subcircuit formet blif file
+    ROM,                // single port block of memry generated in yosys subcircuit formet blif file (READ ACCESs)
+                        // [END] operations to cover yosys subckt
     operation_list_END
 };
+typedef std::unordered_map<std::string, operation_list> typemap;
 
 enum ids {
     NO_ID,
@@ -443,6 +475,37 @@ struct chain_information_t {
     int num_bits;
 };
 
+//-----------------------------------------------------------------------------------------------------
+
+/* DEFINTIONS netlist node attributes*/
+struct attr_t {
+    edge_type_e clk_edge_type;   //
+    edge_type_e clr_polarity;    //
+    edge_type_e set_polarity;    //
+    edge_type_e enable_polarity; //
+    edge_type_e areset_polarity; // asynchronous reset polarity
+    edge_type_e sreset_polarity; // synchronous reset polarity
+
+    long areset_value; // asynchronous reset value
+    long sreset_value; // synchronous reset value
+
+    operation_list port_a_signed;
+    operation_list port_b_signed;
+
+    /* memory node attributes */
+    long size;                   // memory size
+    long offset;                 // ADDR offset
+    char* memory_id;             // the id of memory in verilog file (different from name since for memory it is $mem~#)
+    edge_type_e RD_CLK_ENABLE;   // read clock enable
+    edge_type_e WR_CLK_ENABLE;   // write clock enable
+    edge_type_e RD_CLK_POLARITY; // read clock polarity
+    edge_type_e WR_CLK_POLARITY; // write clock polarity
+    long RD_PORTS;               // Numof read ports
+    long WR_PORTS;               // Num of Write ports
+    long DBITS;                  // Data width
+    long ABITS;                  // Addr width
+};
+
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
 struct nnode_t {
@@ -494,7 +557,9 @@ struct nnode_t {
     int ratio;                  //clock ratio for clock nodes
     init_value_e initial_value; // initial net value
     bool internal_clk_warn = false;
-    edge_type_e edge_type; //
+
+    attr_t* attributes;
+
     bool covered = false;
 
     // For mixing soft and hard logic optimizations

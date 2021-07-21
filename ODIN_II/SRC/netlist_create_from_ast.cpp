@@ -2704,7 +2704,6 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
                 if ((net != (nnet_t*)input_nets_sc->data[sc_spot]) && net->combined) {
                     /* IF - the input and output nets don't match, then they need to be joined */
                     join_nets(net, (nnet_t*)input_nets_sc->data[sc_spot]);
-                    free_nnet((nnet_t*)input_nets_sc->data[sc_spot]);
                     /* since the driver net is deleted, copy the spot of the in_net over */
                     input_nets_sc->data[sc_spot] = (void*)net;
                 } else if ((net != (nnet_t*)input_nets_sc->data[sc_spot]) && !net->combined) {
@@ -3242,7 +3241,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             ff_node->related_ast_node = always_node;
 
             ff_node->type = FF_NODE;
-            ff_node->edge_type = potential_clocks->pins[local_clock_idx]->sensitivity;
+            ff_node->attributes->clk_edge_type = potential_clocks->pins[local_clock_idx]->sensitivity;
             /* create the unique name for this gate */
             //ff_node->name = node_name(ff_node, instance_name_prefix);
             /* Name the flipflop based on the name of its output pin */
@@ -3713,6 +3712,9 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
 
     if ((operation_node->type == SR) || (operation_node->type == ASL) || (operation_node->type == SL) || (operation_node->type == ASR)) {
         if (op->children[1]->type != NUMBERS) {
+            /* to keep the record of first input signedness */
+            operation_node->attributes->port_a_signed = op->children[0]->types.variable.signedness;
+
             for (int k = 0; k < list_size; k++) {
                 /* allocate the pins needed */
                 allocate_more_input_pins(operation_node, input_port_width);

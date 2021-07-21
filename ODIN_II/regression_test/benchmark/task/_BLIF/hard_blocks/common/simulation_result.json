@@ -1,0 +1,70 @@
+{
+    "common/dpram/no_arch": {
+        "test_name": "common/dpram/no_arch",
+        "generated_blif": "dpram_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 39.2,
+        "exec_time(ms)": 3920.1,
+        "simulation_time(ms)": 3717.3,
+        "test_coverage(%)": 99.8,
+        "Latch Drivers": 1,
+        "Pi": 48,
+        "Po": 32,
+        "logic element": 13648,
+        "latch": 4096,
+        "Longest Path": 11,
+        "Average Path": 6,
+        "Estimated LUTs": 13648,
+        "Total Node": 17745
+    },
+    "common/spram/no_arch": {
+        "test_name": "common/spram/no_arch",
+        "generated_blif": "spram_generated.blif",
+        "warnings": [
+            "[OUTPUT_BLIF] clock(GLOBAL_SIM_BASE_CLK) is internally driven, verify your circuit"
+        ],
+        "max_rss(MiB)": 29.2,
+        "exec_time(ms)": 2813.2,
+        "simulation_time(ms)": 2687.5,
+        "test_coverage(%)": 99.9,
+        "Latch Drivers": 1,
+        "Pi": 24,
+        "Po": 16,
+        "logic element": 8744,
+        "latch": 4096,
+        "Longest Path": 10,
+        "Average Path": 6,
+        "Estimated LUTs": 8744,
+        "Total Node": 12841
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "generated_blif": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "simulation_time(ms)": -1,
+        "test_coverage(%)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

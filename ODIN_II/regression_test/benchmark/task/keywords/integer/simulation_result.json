@@ -1,7 +1,7 @@
 {
     "integer/integer_outside/no_arch": {
         "test_name": "integer/integer_outside/no_arch",
-        "blif": "integer_outside.blif",
+        "generated_blif": "integer_outside_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -17,7 +17,7 @@
     },
     "integer/integer_port/no_arch": {
         "test_name": "integer/integer_port/no_arch",
-        "blif": "integer_port.blif",
+        "generated_blif": "integer_port_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -33,7 +33,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

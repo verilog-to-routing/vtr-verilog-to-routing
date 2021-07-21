@@ -3,6 +3,7 @@
 
 #include "odin_types.h"
 #include "string_cache.h"
+#include "Hashtable.hpp"
 #include "read_xml_arch_file.h"
 #include "HardSoftLogicMixer.hpp"
 
@@ -51,5 +52,8 @@ extern netlist_t* read_blif_netlist;
  * and pass as member variable
  */
 extern HardSoftLogicMixer* mixer;
+
+extern typemap odin_subckt_str;
+extern typemap yosys_subckt_str;
 
 #endif

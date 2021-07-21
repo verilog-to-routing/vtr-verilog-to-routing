@@ -1,7 +1,7 @@
 {
     "nor/nor_indexed_port/no_arch": {
         "test_name": "nor/nor_indexed_port/no_arch",
-        "blif": "nor_indexed_port.blif",
+        "generated_blif": "nor_indexed_port_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 6,
         "simulation_time(ms)": 1.3,
@@ -16,7 +16,7 @@
     },
     "nor/nor_wire/no_arch": {
         "test_name": "nor/nor_wire/no_arch",
-        "blif": "nor_wire.blif",
+        "generated_blif": "nor_wire_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 5.2,
         "simulation_time(ms)": 1,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

@@ -36,6 +36,7 @@
 
 #include "odin_util.h"
 #include "vtr_util.h"
+#include "vtr_path.h"
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
@@ -581,6 +582,25 @@ char* get_port_name(char* name) {
     return port_name;
 }
 
+/**
+ * (function: get_node_name)
+ * 
+ * @brief Removing the hard block unique number from its name 
+ * and gets the node name (everything before the ~).
+ *  
+ * @param name the given hard block name
+ * 
+ * @return pure hard block name
+ */
+char* get_hard_block_node_name(char* name) {
+    char* port_name = vtr::strdup(name);
+    // Find out if there is a ~ and remove everything after it.
+    char* tilde = strchr(port_name, '~');
+    if (tilde)
+        *tilde = '\0';
+    return (port_name);
+}
+
 /*
  * Gets the pin number (the number after the ~)
  * from the given name.
@@ -1032,4 +1052,21 @@ char* str_collate(char* str1, char* str2) {
         vtr::free(str2);
     }
     return buffer;
+}
+
+/**
+ * (function: print_input_files_info)
+ * 
+ * @brief This shows the name of niput file, whether Verilog or BLIF
+ */
+void print_input_files_info() {
+    if (configuration.input_file_type == file_type_e::_VERILOG) {
+        for (std::string v_file : global_args.verilog_files.value())
+            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
+
+    } else if (configuration.input_file_type == file_type_e::_BLIF) {
+        printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+    }
+
+    fflush(stdout);
 }

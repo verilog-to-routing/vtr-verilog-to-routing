@@ -28,6 +28,9 @@ sudo apt install -y \
   libx11-dev \
   libxft-dev \
   libxml++2.6-dev \
+  libreadline-dev \
+  tcl-dev \
+  libffi-dev \
   perl \
   texinfo \
   time \

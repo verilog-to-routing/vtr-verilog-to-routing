@@ -1,7 +1,7 @@
 {
     "posedge/posedge/no_arch": {
         "test_name": "posedge/posedge/no_arch",
-        "blif": "posedge.blif",
+        "generated_blif": "posedge_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 4,
         "simulation_time(ms)": 0.8,
@@ -19,7 +19,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

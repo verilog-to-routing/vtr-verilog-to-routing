@@ -56,6 +56,17 @@ sudo apt-get install -y \
         python3-yaml \
         qt5-default \
         virtualenv \
+        clang \
+	    libreadline-dev \
+        gawk \
+        tcl-dev \
+        libffi-dev \
+        xdot \
+        pkg-config \
+        libboost-system-dev \
+	    libboost-python-dev \
+        libboost-filesystem-dev \
+        zlib1g-dev \
         #Don't include libtbb-dev since it may increase memory usage
         #libtbb-dev \
 

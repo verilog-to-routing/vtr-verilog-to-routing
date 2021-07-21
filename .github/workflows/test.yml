@@ -182,13 +182,28 @@ jobs:
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
 
+
   ODINII:
-    name: 'ODIN-II Basic Tests'
     runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          {
+            name: 'Odin Reg Basic',
+            suite: 'odin_reg_basic'
+          },
+          {
+            name: 'Odin Tech Basic',
+            suite: 'odin_tech_basic'
+          }
+        ]
+    name: 'R: ${{ matrix.name }}'
     steps:
 
     - uses: actions/checkout@v2
     - run: ./.github/gha/install_dependencies.sh
+    - run: ./.github/gha/install_yosys.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
@@ -201,7 +216,7 @@ jobs:
       run: |
         source .github/travis/common.sh
         ./.github/travis/build.sh
-        ./run_reg_test.py odin_reg_basic -show_failures -j2
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
 
   Compatibility:

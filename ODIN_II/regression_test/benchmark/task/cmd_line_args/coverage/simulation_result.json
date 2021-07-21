@@ -2,7 +2,7 @@
     "coverage/multi_clock_reader_writer/k6_N10_40nm": {
         "test_name": "coverage/multi_clock_reader_writer/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "multi_clock_reader_writer.blif",
+        "generated_blif": "multi_clock_reader_writer_generated.blif",
         "max_rss(MiB)": 23.1,
         "exec_time(ms)": 32,
         "simulation_time(ms)": 23,
@@ -21,7 +21,7 @@
     "coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm": {
         "test_name": "coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "multi_clock_reader_writer.blif",
+        "generated_blif": "multi_clock_reader_writer_generated.blif",
         "max_rss(MiB)": 32.9,
         "exec_time(ms)": 52.6,
         "simulation_time(ms)": 23.6,
@@ -39,7 +39,7 @@
     },
     "coverage/multi_clock_reader_writer/no_arch": {
         "test_name": "coverage/multi_clock_reader_writer/no_arch",
-        "blif": "multi_clock_reader_writer.blif",
+        "generated_blif": "multi_clock_reader_writer_generated.blif",
         "max_rss(MiB)": 20.3,
         "exec_time(ms)": 28.8,
         "simulation_time(ms)": 22.5,
@@ -57,7 +57,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

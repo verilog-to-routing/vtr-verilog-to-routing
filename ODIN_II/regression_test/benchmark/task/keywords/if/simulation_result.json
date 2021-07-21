@@ -1,7 +1,7 @@
 {
     "if/if_statement/no_arch": {
         "test_name": "if/if_statement/no_arch",
-        "blif": "if_statement.blif",
+        "generated_blif": "if_statement_generated.blif",
         "warnings": [
             "[OUTPUT_BLIF] Vector 5 equivalent but output vector has bits set when expecting don't care :",
             "[OUTPUT_BLIF] Vector 8 equivalent but output vector has bits set when expecting don't care :",
@@ -37,7 +37,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

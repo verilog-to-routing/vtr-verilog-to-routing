@@ -44,14 +44,14 @@
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
+#include "BLIFElaborate.hh"
 #include "multipliers.h"
 #include "netlist_check.h"
-#include "read_blif.h"
-#include "output_blif.h"
 #include "netlist_cleanup.h"
 
 #include "hard_blocks.h"
 #include "memories.h"
+#include "BlockMemories.hh"
 #include "simulate_blif.h"
 
 #include "netlist_visualizer.h"
@@ -62,6 +62,9 @@
 #include "vtr_path.h"
 #include "vtr_memory.h"
 #include "HardSoftLogicMixer.hpp"
+
+#include "GenericReader.hh"
+#include "BLIF.hh"
 
 #define DEFAULT_OUTPUT "."
 
@@ -74,30 +77,22 @@ std::vector<t_logical_block_type> logical_block_types;
 short physical_lut_size = -1;
 int block_tag = -1;
 ids default_net_type = WIRE;
+GenericReader* generic_reader;
+GenericWriter* generic_writer;
 HardSoftLogicMixer* mixer;
-
-enum ODIN_ERROR_CODE {
-    SUCCESS,
-    ERROR_INITIALIZATION,
-    ERROR_PARSE_CONFIG,
-    ERROR_PARSE_ARGS,
-    ERROR_PARSE_ARCH,
-    ERROR_SYNTHESIS,
-    ERROR_PARSE_BLIF,
-
-};
 
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
+static void cleanup_odin();
 
-static ODIN_ERROR_CODE synthesize_verilog() {
+static ODIN_ERROR_CODE synthesize() {
     double elaboration_time = wall_time();
 
     printf("--------------------------------------------------------------------\n");
     printf("High-level synthesis Begin\n");
 
-    FILE* output_blif_file = create_blif(global_args.output_file.value().c_str());
+    generic_writer->__create_file(configuration.output_file_type);
 
     /* Perform any initialization routines here */
     find_hard_multipliers();
@@ -107,25 +102,8 @@ static ODIN_ERROR_CODE synthesize_verilog() {
 
     module_names_to_idx = sc_new_string_cache();
 
-    /* parse to abstract syntax tree */
-    printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using GraphViz (see documentation)\n");
-    verilog_ast = init_parser();
-    parse_to_ast();
-    /**
-     *  Note that the entry point for ast optimzations is done per module with the
-     * function void next_parsed_verilog_file(ast_node_t *file_items_list)
-     */
+    verilog_netlist = static_cast<netlist_t*>(generic_reader->__read());
 
-    /* after the ast is made potentially do tagging for downstream links to verilog */
-    if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
-        add_tag_data(verilog_ast);
-
-    /**
-     *  Now that we have a parse tree (abstract syntax tree [ast]) of
-     *	the Verilog we want to make into a netlist.
-     */
-    printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
-    create_netlist(verilog_ast);
     if (verilog_netlist) {
         // Can't levelize yet since the large muxes can look like combinational loops when they're not
         check_netlist(verilog_netlist);
@@ -139,6 +117,12 @@ static ODIN_ERROR_CODE synthesize_verilog() {
             reduce_operations(verilog_netlist, MULTIPLY);
             iterate_multipliers(verilog_netlist);
             clean_multipliers();
+        }
+
+        if (read_only_memory_list || block_memory_list) {
+            /* Perform a hard block registration and splitting in width */
+            iterate_block_memories(verilog_netlist);
+            free_block_memories();
         }
 
         if (single_port_rams || dual_port_rams) {
@@ -178,7 +162,8 @@ static ODIN_ERROR_CODE synthesize_verilog() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        output_blif(output_blif_file, verilog_netlist);
+        generic_writer->__write(verilog_netlist);
+
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
         cleanup_parser();
@@ -191,13 +176,11 @@ static ODIN_ERROR_CODE synthesize_verilog() {
         compute_statistics(verilog_netlist, true);
 
         deregister_hard_blocks();
-
         //cleanup netlist
         free_netlist(verilog_netlist);
     } else {
         printf("Empty blif generated, Empty input or no module declared\n");
     }
-    fclose(output_blif_file);
 
     elaboration_time = wall_time() - elaboration_time;
     printf("Elaboration Time: ");
@@ -224,6 +207,10 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     try {
         /* Set up the global arguments to their default. */
         set_default_config();
+
+        /* Intantiating the generic reader and writer */
+        generic_reader = new GenericReader();
+        generic_writer = new GenericWriter();
 
         /* get the command line options */
         get_options(argc, argv);
@@ -266,16 +253,19 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     printf("Using Lut input width of: %d\n", physical_lut_size);
 
     /* do High level Synthesis */
-    if (!configuration.list_of_file_names.empty() && configuration.is_verilog_input) {
-        for (std::string v_file : global_args.verilog_files.value()) {
-            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
-        }
-        fflush(stdout);
+    if (!configuration.list_of_file_names.empty()) {
+        ODIN_ERROR_CODE error_code;
 
-        ODIN_ERROR_CODE error_code = synthesize_verilog();
-        if (error_code) {
-            printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
-            exit(error_code);
+        print_input_files_info();
+
+        if (configuration.input_file_type == file_type_e::_VERILOG || configuration.coarsen) {
+            try {
+                error_code = synthesize();
+                printf("Odin_II synthesis has finished with code: %d\n", error_code);
+            } catch (vtr::VtrError& vtr_error) {
+                printf("Odin Failed to parse Verilog / load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
+                exit(ERROR_PARSE_BLIF);
+            }
         }
 
         printf("\n");
@@ -289,18 +279,36 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
-        // if we started with a verilog file read the output that was made since
-        // the simulator can only simulate blifs
-        if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
+        configuration.input_file_type = file_type_e::_BLIF;
+
+        if (global_args.coarsen.provenance() != argparse::Provenance::SPECIFIED) {
+            // if we started with a verilog file read the output that was made since
+            // the simulator can only simulate blifs
+            if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
+                configuration.list_of_file_names = {global_args.output_file};
+                my_location.file = 0;
+            } else {
+                printf("Blif: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+                fflush(stdout);
+            }
+
+        } else {
+            /*
+             * Considering the output blif file (whether specified or default one)
+             * as the blif for simulation process. This is because the input blif 
+             * from other tools are not compatible with Odin simulation process, 
+             * so they need to be processed first.
+             */
             configuration.list_of_file_names = {global_args.output_file};
             my_location.file = 0;
-        } else {
-            printf("Blif: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
-            fflush(stdout);
         }
 
         try {
-            odin_netlist = read_blif();
+            /**
+             * The blif file for simulation should follow odin_ii blif style 
+             * So, here we call odin_ii's read_blif
+             */
+            odin_netlist = static_cast<netlist_t*>(generic_reader->__read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);
@@ -336,6 +344,8 @@ int terminate_odin_ii(netlist_t* odin_netlist) {
     free_arch(&Arch);
     free_type_descriptors(logical_block_types);
     free_type_descriptors(physical_tile_types);
+
+    cleanup_odin();
 
     return 0;
 }
@@ -415,6 +425,12 @@ void get_options(int argc, char** argv) {
         .default_value("false")
         .action(argparse::Action::STORE_TRUE)
         .metavar("PRINT_PARSE_TOKEN");
+
+    other_grp.add_argument(global_args.coarsen, "--coarsen")
+        .help("specify the input blif is flatten or coarsen")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("INPUT_BLIF_FLATNESS");
 
     other_grp.add_argument(global_args.permissive, "--permissive")
         .help("Turn possible_error_messages into warning_messages ... unexpected behaviour may occur")
@@ -586,9 +602,11 @@ void get_options(int argc, char** argv) {
     if (!global_args.verilog_files.value().empty()) {
         //parse comma separated list of verilog files
         configuration.list_of_file_names = global_args.verilog_files.value();
-        configuration.is_verilog_input = true;
+        configuration.input_file_type = file_type_e::_VERILOG;
+
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
+        configuration.input_file_type = file_type_e::_BLIF;
     }
 
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
@@ -609,6 +627,15 @@ void get_options(int argc, char** argv) {
 
     if (global_args.print_parse_tokens.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.print_parse_tokens = global_args.print_parse_tokens;
+    }
+
+    if (global_args.coarsen.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.coarsen = global_args.coarsen;
+        coarsen_cleanup = true;
+    }
+
+    if (global_args.coarsen.provenance() == argparse::Provenance::UNSPECIFIED) {
+        coarsen_cleanup = false;
     }
 
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {
@@ -637,6 +664,8 @@ void get_options(int argc, char** argv) {
 void set_default_config() {
     /* Set up the global configuration. */
     configuration.output_type = std::string("blif");
+    configuration.coarsen = false;
+    configuration.output_file_type = file_type_e::_BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;
     configuration.print_parse_tokens = 0;
@@ -693,4 +722,20 @@ static void set_physical_lut_size() {
             }
         }
     }
+}
+
+/**
+ * (function: cleanup odin)
+ * to destruct global variables
+ */
+static void cleanup_odin() {
+    if (one_string)
+        vtr::free(one_string);
+    if (zero_string)
+        vtr::free(zero_string);
+    if (pad_string)
+        vtr::free(pad_string);
+
+    delete generic_writer;
+    delete generic_reader;
 }

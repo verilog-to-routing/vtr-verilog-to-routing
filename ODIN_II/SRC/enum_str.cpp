@@ -38,6 +38,7 @@ const char* ZERO_PAD_ZERO = _ZERO_PAD_ZERO[ODIN_STRING_TYPE];
 
 const char* SINGLE_PORT_RAM_string = "single_port_ram";
 const char* DUAL_PORT_RAM_string = "dual_port_ram";
+const char* LUTRAM_string = "lutram_ram";
 
 const char* operation_list_STR[][2] = {
     {"NO_OP", "nOP"},
@@ -84,16 +85,39 @@ const char* operation_list_STR[][2] = {
     {"ADDER_FUNC", "ADDER"},
     {"CARRY_FUNC", "CARRY"},
     {"MUX_2", "MUX_2"},
+    {"SMUX_2", "SMUX_2"}, // MUX_2 with single bit selector (no need to add not selector as the second pin)
     {"BLIF_FUNCTION", "BLIFf"},
     {"NETLIST_FUNCTION", "NETf"},
     {"MEMORY", "MEM"},
     {"PAD_NODE", "PAD"},
     {"HARD_IP", "HARD"},
-    {"GENERIC", "GEN"},   /*added for the unknown node type */
-    {"CLOG2", "CL2"},     // $clog2
-    {"UNSIGNED", "UNSG"}, // $unsigned
-    {"SIGNED", "SG"},     // $signed
-    {"ERROR OOB", "OOB"}  // should not reach this
+    {"GENERIC", "GEN"},               /*added for the unknown node type */
+    {"CLOG2", "CL2"},                 // $clog2
+    {"UNSIGNED", "UNSG"},             // $unsigned
+    {"SIGNED", "SG"},                 // $signed
+                                      // [START] operations to cover yosys subckt
+    {"MULTI_BIT_MUX_2", "nbMUX"},     // like MUX_2 but with n-bit input/output
+    {"MULTIPORT_nBIT_MUX", "npbMUX"}, // n-bit input/output in multi port mux
+    {"HARD_ADD", "hADD"},             // VTR Adder hard block
+    {"HARD_MULTIPLY", "hMUL"},        // VTR Multiply hard block
+    {"PMUX", "pMUX"},                 // Multiplexer with many inputs using one-hot select signal
+    {"ADFF", "aDFF"},                 // data, A to areset value and output port
+    {"SDFF", "sDFF"},                 // data, S to reset value and output port
+    {"DFFE", "DFFe"},                 // data, enable to output port
+    {"ADFFE", "aDFFe"},               // data, asynchronous reset value and enable to output port
+    {"SDFFE", "sDFFe"},               // data, synchronous reset value and enable to output port
+    {"SDFFCE", "sDFFce"},             // data, synchronous reset value and enable to reset value and output port
+    {"DFFSR", "DFFsr"},               // data, clear and set to output port
+    {"DFFSRE", "DFFsre"},             // data, clear and set with enable to output port
+    {"DLATCH", "Dlatch"},             // datato output port based on polarity without clk
+    {"ADLATCH", "aDlatch"},           // datato output port based on polarity without clk
+    {"SETCLR", "setclr"},             // set or clear an input pins
+    {"SPRAM", "spRAM"},               // representing primitive single port ram
+    {"DPRAM", "dpRAM"},               // representing primitive dual port ram
+    {"BRAM", "bRAM"},                 // block of memry generated in yosys subcircuit formet blif file
+    {"ROM", "ROM"},
+    // [END] operations to cover yosys subckt
+    {"ERROR OOB", "OOB"} // should not reach this
 };
 
 const char* ids_STR[] = {

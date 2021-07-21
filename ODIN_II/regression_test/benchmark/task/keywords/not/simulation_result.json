@@ -1,7 +1,7 @@
 {
     "not/not_indexed_port/no_arch": {
         "test_name": "not/not_indexed_port/no_arch",
-        "blif": "not_indexed_port.blif",
+        "generated_blif": "not_indexed_port_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 6.2,
         "simulation_time(ms)": 1.3,
@@ -16,7 +16,7 @@
     },
     "not/not_wire/no_arch": {
         "test_name": "not/not_wire/no_arch",
-        "blif": "not_wire.blif",
+        "generated_blif": "not_wire_generated.blif",
         "max_rss(MiB)": 14.4,
         "exec_time(ms)": 4.6,
         "simulation_time(ms)": 0.5,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

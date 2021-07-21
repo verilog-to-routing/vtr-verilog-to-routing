@@ -1,0 +1,15 @@
+########################
+# run yosys config
+########################
+
+# setup the circuits
+circuits_dir=regression_test/benchmark/_VERILOG
+
+# unit test
+circuit_list_add=operators/twobits_arithmetic_multiply.v
+# simple wide multiplication
+circuit_list_add=micro/bm_base_multiply.v
+# harblock mul
+circuit_list_add=micro/multiply_hard_block.v
+# complex mutliplication
+circuit_list_add=micro/bm_match[012345]_str_arch.v

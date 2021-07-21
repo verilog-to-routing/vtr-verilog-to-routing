@@ -1,7 +1,7 @@
 {
     "preprocessor/default_net/no_arch": {
         "test_name": "preprocessor/default_net/no_arch",
-        "blif": "default_net.blif",
+        "generated_blif": "default_net_generated.blif",
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 4.1,
         "simulation_time(ms)": 0.2,
@@ -16,7 +16,7 @@
     },
     "preprocessor/elsif_defined/no_arch": {
         "test_name": "preprocessor/elsif_defined/no_arch",
-        "blif": "elsif_defined.blif",
+        "generated_blif": "elsif_defined_generated.blif",
         "max_rss(MiB)": 14.7,
         "exec_time(ms)": 5.4,
         "simulation_time(ms)": 0.4,
@@ -31,7 +31,7 @@
     },
     "preprocessor/ifdef_defined/no_arch": {
         "test_name": "preprocessor/ifdef_defined/no_arch",
-        "blif": "ifdef_defined.blif",
+        "generated_blif": "ifdef_defined_generated.blif",
         "max_rss(MiB)": 14.4,
         "exec_time(ms)": 5.5,
         "simulation_time(ms)": 0.2,
@@ -46,7 +46,7 @@
     },
     "preprocessor/ifdef_else_defined/no_arch": {
         "test_name": "preprocessor/ifdef_else_defined/no_arch",
-        "blif": "ifdef_else_defined.blif",
+        "generated_blif": "ifdef_else_defined_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 4,
         "simulation_time(ms)": 0.2,
@@ -61,7 +61,7 @@
     },
     "preprocessor/ifdef_else_undefined/no_arch": {
         "test_name": "preprocessor/ifdef_else_undefined/no_arch",
-        "blif": "ifdef_else_undefined.blif",
+        "generated_blif": "ifdef_else_undefined_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 3.6,
         "simulation_time(ms)": 0.2,
@@ -76,7 +76,7 @@
     },
     "preprocessor/ifndef_else_defined/no_arch": {
         "test_name": "preprocessor/ifndef_else_defined/no_arch",
-        "blif": "ifndef_else_defined.blif",
+        "generated_blif": "ifndef_else_defined_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 4.8,
         "simulation_time(ms)": 0.2,
@@ -91,7 +91,7 @@
     },
     "preprocessor/ifndef_else_undefined/no_arch": {
         "test_name": "preprocessor/ifndef_else_undefined/no_arch",
-        "blif": "ifndef_else_undefined.blif",
+        "generated_blif": "ifndef_else_undefined_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 4.4,
         "simulation_time(ms)": 0.2,
@@ -106,7 +106,7 @@
     },
     "preprocessor/ifndef_undefined/no_arch": {
         "test_name": "preprocessor/ifndef_undefined/no_arch",
-        "blif": "ifndef_undefined.blif",
+        "generated_blif": "ifndef_undefined_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 4,
         "simulation_time(ms)": 0.2,
@@ -121,7 +121,7 @@
     },
     "preprocessor/multiple_nested_define/no_arch": {
         "test_name": "preprocessor/multiple_nested_define/no_arch",
-        "blif": "multiple_nested_define.blif",
+        "generated_blif": "multiple_nested_define_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 4.4,
         "simulation_time(ms)": 0.4,
@@ -136,7 +136,7 @@
     },
     "preprocessor/nested_define/no_arch": {
         "test_name": "preprocessor/nested_define/no_arch",
-        "blif": "nested_define.blif",
+        "generated_blif": "nested_define_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 4.2,
         "simulation_time(ms)": 0.4,
@@ -151,7 +151,7 @@
     },
     "preprocessor/operation_define/no_arch": {
         "test_name": "preprocessor/operation_define/no_arch",
-        "blif": "operation_define.blif",
+        "generated_blif": "operation_define_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 3.2,
         "simulation_time(ms)": 0.1,
@@ -166,7 +166,7 @@
     },
     "preprocessor/ifdef_undefined/no_arch": {
         "test_name": "preprocessor/ifdef_undefined/no_arch",
-        "blif": "ifdef_undefined.blif",
+        "generated_blif": "ifdef_undefined_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -177,7 +177,7 @@
     },
     "preprocessor/ifndef_defined/no_arch": {
         "test_name": "preprocessor/ifndef_defined/no_arch",
-        "blif": "ifndef_defined.blif",
+        "generated_blif": "ifndef_defined_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -188,7 +188,7 @@
     },
     "preprocessor/undef/no_arch": {
         "test_name": "preprocessor/undef/no_arch",
-        "blif": "undef.blif",
+        "generated_blif": "undef_generated.blif",
         "max_rss(MiB)": 29.9,
         "exec_time(ms)": 4.1,
         "simulation_time(ms)": 0.4,
@@ -203,7 +203,7 @@
     },
     "preprocessor/elsif_both_defined/no_arch": {
         "test_name": "preprocessor/elsif_both_defined/no_arch",
-        "blif": "elsif_both_defined.blif",
+        "generated_blif": "elsif_both_defined_generated.blif",
         "max_rss(MiB)": 35.6,
         "exec_time(ms)": 6.4,
         "simulation_time(ms)": 0.6,
@@ -218,7 +218,7 @@
     },
     "preprocessor/nested_ifdef_alldef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_alldef/no_arch",
-        "blif": "nested_ifdef_alldef.blif",
+        "generated_blif": "nested_ifdef_alldef_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -231,7 +231,7 @@
     },
     "preprocessor/nested_ifdef_middef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_middef/no_arch",
-        "blif": "nested_ifdef_middef.blif",
+        "generated_blif": "nested_ifdef_middef_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -244,7 +244,7 @@
     },
     "preprocessor/nested_ifdef_nonedef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_nonedef/no_arch",
-        "blif": "nested_ifdef_nonedef.blif",
+        "generated_blif": "nested_ifdef_nonedef_generated.blif",
         "max_rss(MiB)": 35.6,
         "exec_time(ms)": 6.3,
         "simulation_time(ms)": 0.6,
@@ -258,7 +258,7 @@
     },
     "preprocessor/nested_ifdef_outsidedef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_outsidedef/no_arch",
-        "blif": "nested_ifdef_outsidedef.blif",
+        "generated_blif": "nested_ifdef_outsidedef_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -271,7 +271,7 @@
     },
     "preprocessor/nested_ifdef_twodef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_twodef/no_arch",
-        "blif": "nested_ifdef_twodef.blif",
+        "generated_blif": "nested_ifdef_twodef_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -285,7 +285,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],
