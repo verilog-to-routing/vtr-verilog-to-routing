@@ -465,7 +465,7 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
             /** 
              * equalize the size of input and output ports 
             */
-            equalize_sub_ports(node, traverse_mark_number, netlist);
+            equalize_ports_size(node, traverse_mark_number, netlist);
 
             /* Adding to sub_list for future checking on hard blocks */
             sub_list = insert_in_vptr_list(sub_list, node);
