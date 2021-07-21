@@ -11,6 +11,7 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "atom_netlist.h"
+#include "globals.h"
 
 /// @brief Type tag for AttractGroupId
 struct attraction_id_tag;
@@ -29,6 +30,8 @@ constexpr AttractGroupId NO_ATTRACTION_GROUP(-1);
 
 class AttractionInfo {
   public:
+    AttractionInfo();
+
     AttractGroupId get_atom_attraction_group(AtomBlockId atom_id);
 
     AttractionGroup get_attraction_group_info(AttractGroupId group_id);

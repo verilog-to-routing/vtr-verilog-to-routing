@@ -244,7 +244,7 @@ static void update_timing_gain_values(const AtomNetId net_id,
 
 static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_update gain_flag, const AtomBlockId clustered_blk_id, bool timing_driven, bool connection_driven, enum e_net_relation_to_clustered_block net_relation_to_clustered_block, const SetupTimingInfo& timing_info, const std::unordered_set<AtomNetId>& is_global, const int high_fanout_net_threshold);
 
-static void update_total_gain(float alpha, float beta, bool timing_driven, bool connection_driven, t_pb* pb);
+static void update_total_gain(float alpha, float beta, bool timing_driven, bool connection_driven, t_pb* pb, AttractionInfo& attraction_groups);
 
 static void update_cluster_stats(const t_pack_molecule* molecule,
                                  const ClusterBlockId clb_index,
@@ -256,7 +256,8 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
                                  const bool timing_driven,
                                  const bool connection_driven,
                                  const int high_fanout_net_threshold,
-                                 const SetupTimingInfo& timing_info);
+                                 const SetupTimingInfo& timing_info,
+                                 AttractionInfo& attraction_groups);
 
 static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
                               t_pb_graph_node** primitives_list,
@@ -282,6 +283,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 
 static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                  AttractionInfo& attraction_groups,
                                                   const enum e_gain_type gain_mode,
                                                   t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -303,6 +305,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                          t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                         AttractionInfo& attraction_groups,
                                                          const int feasible_block_array_size);
 
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
@@ -313,10 +316,9 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 int transitive_fanout_threshold,
                                                                 const int feasible_block_array_size);
 
-t_pack_molecule* sort_cluster_molecule_candidates_by_attraction(t_pb* cur_pb);
-
 static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                 AttractionInfo& attraction_groups,
                                                  const bool allow_unrelated_clustering,
                                                  const bool prioritize_transitive_connectivity,
                                                  const int transitive_fanout_threshold,
@@ -398,7 +400,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          bool balance_block_type_utilization,
                                                          std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                                                          const t_ext_pin_util_targets& ext_pin_util_targets,
-                                                         const t_pack_high_fanout_thresholds& high_fanout_thresholds) {
+                                                         const t_pack_high_fanout_thresholds& high_fanout_thresholds,
+                                                         AttractionInfo& attraction_groups) {
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
 
@@ -628,7 +631,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  packer_opts.alpha, packer_opts.beta,
                                  packer_opts.timing_driven, packer_opts.connection_driven,
                                  high_fanout_threshold,
-                                 *timing_info);
+                                 *timing_info,
+                                 attraction_groups);
             num_clb++;
 
             if (packer_opts.timing_driven) {
@@ -640,6 +644,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      atom_molecules,
+                                                     attraction_groups,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
                                                      packer_opts.transitive_fanout_threshold,
@@ -696,6 +701,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
                     next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                              atom_molecules,
+                                                             attraction_groups,
                                                              allow_unrelated_clustering,
                                                              packer_opts.prioritize_transitive_connectivity,
                                                              packer_opts.transitive_fanout_threshold,
@@ -732,7 +738,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                      packer_opts.global_clocks, packer_opts.alpha, packer_opts.beta, packer_opts.timing_driven,
                                      packer_opts.connection_driven,
                                      high_fanout_threshold,
-                                     *timing_info);
+                                     *timing_info,
+                                     attraction_groups);
                 num_unrelated_clustering_attempts = 0;
 
                 if (packer_opts.timing_driven) {
@@ -740,6 +747,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 }
                 next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                          atom_molecules,
+                                                         attraction_groups,
                                                          allow_unrelated_clustering,
                                                          packer_opts.prioritize_transitive_connectivity,
                                                          packer_opts.transitive_fanout_threshold,
@@ -2043,14 +2051,12 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 }
 
 /*****************************************/
-static void update_total_gain(float alpha, float beta, bool timing_driven, bool connection_driven, t_pb* pb) {
+static void update_total_gain(float alpha, float beta, bool timing_driven, bool connection_driven, t_pb* pb, AttractionInfo& attraction_groups) {
     /*Updates the total  gain array to reflect the desired tradeoff between*
      *input sharing (sharinggain) and path_length minimization (timinggain)*/
     auto& atom_ctx = g_vpr_ctx.atom();
     t_pb* cur_pb = pb;
 
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& attraction_info = floorplanning_ctx.attraction_groups;
     AttractGroupId cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
 
     while (cur_pb) {
@@ -2062,8 +2068,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
                 cur_pb->pb_stats->sharinggain[blk_id] = 0;
             }
 
-            //Attraction Group stuff
-            AttractGroupId atom_grp_id = attraction_info.get_atom_attraction_group(blk_id);
+            AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
             if (atom_grp_id != NO_ATTRACTION_GROUP && atom_grp_id == cluster_att_grp_id) {
                 //increase gain of atom by 1
                 cur_pb->pb_stats->gain[blk_id]++;
@@ -2111,7 +2116,8 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
                                  const bool timing_driven,
                                  const bool connection_driven,
                                  const int high_fanout_net_threshold,
-                                 const SetupTimingInfo& timing_info) {
+                                 const SetupTimingInfo& timing_info,
+                                 AttractionInfo& attraction_groups) {
     /* Updates cluster stats such as gain, used pins, and clock structures.  */
 
     int molecule_size;
@@ -2134,8 +2140,6 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
     molecule_size = get_array_size_of_molecule(molecule);
     cb = nullptr;
 
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& attraction_info = floorplanning_ctx.attraction_groups;
     for (iblock = 0; iblock < molecule_size; iblock++) {
         auto blk_id = molecule->atom_block_ids[iblock];
         if (!blk_id) {
@@ -2151,7 +2155,7 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
         cur_pb = atom_pb->parent_pb;
 
         //Update attraction group
-        AttractGroupId atom_grp_id = attraction_info.get_atom_attraction_group(blk_id);
+        AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
 
         while (cur_pb) {
             /* reset list of feasible blocks */
@@ -2219,7 +2223,7 @@ static void update_cluster_stats(const t_pack_molecule* molecule,
         }
 
         update_total_gain(alpha, beta, timing_driven, connection_driven,
-                          atom_pb->parent_pb);
+                          atom_pb->parent_pb, attraction_groups);
 
         commit_lookahead_pins_used(cb);
     }
@@ -2403,6 +2407,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
  */
 static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                  AttractionInfo& attraction_groups,
                                                   const enum e_gain_type gain_mode,
                                                   t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
@@ -2449,7 +2454,7 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         }
     }
 
-    add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, feasible_block_array_size);
+    add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups, feasible_block_array_size);
 
     //t_pack_molecule* molecule = nullptr;
 
@@ -2565,16 +2570,15 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                          t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                          const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                         AttractionInfo& attraction_groups,
                                                          const int feasible_block_array_size) {
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& attraction_info = floorplanning_ctx.attraction_groups;
 
     //If the current cluster belongs to an attraction group, add all of the atoms
     //from that attraction group to the feasible blocks
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
     if (grp_id != NO_ATTRACTION_GROUP) {
-        AttractionGroup group = attraction_info.get_attraction_group_info(grp_id);
+        AttractionGroup group = attraction_groups.get_attraction_group_info(grp_id);
 
         for (AtomBlockId blk_id : group.group_atoms) {
             if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
@@ -2650,52 +2654,10 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
     }
 }
 
-t_pack_molecule* sort_cluster_molecule_candidates_by_attraction(t_pb* cur_pb) {
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& attraction_info = floorplanning_ctx.attraction_groups;
-
-    t_pack_molecule* matching_molecule = nullptr;
-    bool found_matching_molecule = false;
-
-    //Store last matching_molecule (i.e. matching_molecule with highest gain) to return if no matching_molecule is found that matches the attraction group
-    int num_feas_blocks = cur_pb->pb_stats->num_feasible_blocks;
-    int last_molecule_index = num_feas_blocks - 1;
-    t_pack_molecule* last_molecule = cur_pb->pb_stats->feasible_blocks[last_molecule_index];
-
-    //get cluster attraction group (if any)
-    if (cur_pb->pb_stats->has_attraction_group) {
-        //get the molecule with the highest gain that belongs to the cluster's attraction group
-        //if no molecule belongs to the attraction group, just return the molecule with the highest gain
-        for (int i = cur_pb->pb_stats->num_feasible_blocks - 1; i >= 0; i--) {
-            matching_molecule = cur_pb->pb_stats->feasible_blocks[i];
-            for (int j = 0; j < get_array_size_of_molecule(matching_molecule); j++) {
-                if (matching_molecule->atom_block_ids[j]) {
-                    auto blk_id = matching_molecule->atom_block_ids[j];
-                    AttractGroupId atom_group_id = attraction_info.get_atom_attraction_group(blk_id);
-                    if (cur_pb->pb_stats->attraction_grp_id == atom_group_id) {
-                        //Found a matching_molecule that belongs to the same attraction group as the cluster
-                        found_matching_molecule = true;
-                        break;
-                    }
-                }
-            }
-            if (found_matching_molecule) {
-                break;
-            }
-        }
-        //if no feasible blocks were found that matched the cluster's attraction group, return the last molecule (i.e.highest gain molecule)
-        if (!found_matching_molecule) {
-            return last_molecule;
-        }
-    } else {
-        return last_molecule;
-    }
-    return matching_molecule;
-}
-
 /*****************************************/
 static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                 AttractionInfo& attraction_groups,
                                                  const bool allow_unrelated_clustering,
                                                  const bool prioritize_transitive_connectivity,
                                                  const int transitive_fanout_threshold,
@@ -2714,7 +2676,7 @@ static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
 
     /* If cannot pack into primitive, try packing into cluster */
 
-    auto best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules,
+    auto best_molecule = get_highest_gain_molecule(cur_pb, atom_molecules, attraction_groups,
                                                    NOT_HILL_CLIMBING, cluster_placement_stats_ptr, clb_inter_blk_nets,
                                                    cluster_index, prioritize_transitive_connectivity,
                                                    transitive_fanout_threshold, feasible_block_array_size);

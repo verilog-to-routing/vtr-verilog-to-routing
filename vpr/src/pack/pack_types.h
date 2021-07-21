@@ -12,6 +12,7 @@
 
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+#include "attraction_groups.h"
 
 /**************************************************************************
  * Packing Algorithm Enumerations

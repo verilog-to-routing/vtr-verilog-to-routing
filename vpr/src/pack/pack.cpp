@@ -100,8 +100,8 @@ bool try_pack(t_packer_opts* packer_opts,
                                                                expected_lowest_cost_pb_gnode,
                                                                list_of_packing_patterns.size()));
 
-    alloc_attraction_groups();
-
+    AttractionInfo attraction_groups;
+    VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
     VTR_LOG("Finish prepacking.\n");
 
     if (packer_opts->auto_compute_inter_cluster_net_delay) {
@@ -144,7 +144,8 @@ bool try_pack(t_packer_opts* packer_opts,
             balance_block_type_util,
             lb_type_rr_graphs,
             target_external_pin_util,
-            high_fanout_thresholds);
+            high_fanout_thresholds,
+            attraction_groups);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);

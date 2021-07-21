@@ -27,7 +27,6 @@
 #include "compressed_grid.h"
 #include "metadata_storage.h"
 #include "vpr_constraints.h"
-#include "attraction_groups.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -417,8 +416,6 @@ struct FloorplanningContext : public Context {
      * The constraints on each cluster are computed during the clustering process and can change.
      */
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
-
-    AttractionInfo attraction_groups;
 };
 
 /**

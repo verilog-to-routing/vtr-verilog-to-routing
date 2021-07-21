@@ -22,6 +22,4 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
 
 void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
 
-void alloc_attraction_groups();
-
 #endif
