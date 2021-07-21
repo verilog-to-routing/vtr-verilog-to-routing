@@ -38,6 +38,8 @@ class RRGraphBuilder {
     /* Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
     /* Add an existing rr_node in the node storage to the node look-up
+     * The node will be added to the lookup for every side it is on (for OPINs and IPINs) 
+     * and for every (x,y) location at which it exists (for wires that span more than one (x,y)).
      * This function requires a valid node which has already been allocated in the node storage, with
      * - a valid node id
      * - valid geometry information: xlow/ylow/xhigh/yhigh

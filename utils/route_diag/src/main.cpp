@@ -170,7 +170,7 @@ static void profile_source(int source_rr_node,
             for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
 
-                int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc));
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists

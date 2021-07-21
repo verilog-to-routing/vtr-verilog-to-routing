@@ -181,8 +181,8 @@ size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {
 }
 
 void ClockRRGraphBuilder::add_edge(t_rr_edge_info_set* rr_edges_to_create,
-                                   int src_node,
-                                   int sink_node,
+                                   RRNodeId src_node,
+                                   RRNodeId sink_node,
                                    int arch_switch_idx) const {
     const auto& device_ctx = g_vpr_ctx.device();
     VTR_ASSERT(arch_switch_idx < device_ctx.num_arch_switches);

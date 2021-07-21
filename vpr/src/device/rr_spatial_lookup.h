@@ -82,29 +82,34 @@ class RRSpatialLookup {
                                              t_rr_type type) const;
 
     /**
-     * Returns the indices of the specified routing resource nodes,
-     * representing virtual sinks.  
-     * - (x, y) are the coordinate of the sink nodes within the FPGA
-     *
-     * Note: 
-     * - Return an empty list if there are no sinks at the given (x, y) location
-     * - The node list returned only contains valid ids
-     */
-    std::vector<RRNodeId> find_sink_nodes(int x,
-                                          int y) const;
-
-    /**
      * Like find_node() but returns all matching nodes on all the sides.
      * This is particularly useful for getting all instances
-     * of a specific IPIN/OPIN at a specific gird tile (x,y) location.
+     * of a specific IPIN/OPIN at a specific grid tile (x,y) location.
      */
     std::vector<RRNodeId> find_nodes_at_all_sides(int x,
                                                   int y,
                                                   t_rr_type rr_type,
                                                   int ptc) const;
 
+    /**
+     * Returns all matching nodes on all the sides at a specific grid tile (x,y) location.
+     * As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN
+     */
+    std::vector<RRNodeId> find_grid_nodes_at_all_sides(int x,
+                                                       int y,
+                                                       t_rr_type rr_type) const;
+
     /* -- Mutators -- */
   public:
+    /**
+     * Reserve the memory for a list of nodes at (x, y) location with given type and side
+     */
+    void reserve_nodes(int x,
+                       int y,
+                       t_rr_type type,
+                       int num_nodes,
+                       e_side side = SIDES[0]);
+
     /**
      * Register a node in the fast look-up 
      * - You must have a valid node id to register the node in the lookup
