@@ -44,6 +44,12 @@ void prune_logical_node_outputs(nnode_t* node, uintptr_t traverse_mark_number, n
     oassert(node->num_input_port_sizes > 0);
     oassert(node->num_output_port_sizes == 1);
 
+    /* no need to split. just return the node with equalized input ports size */
+    if (node->num_output_pins == 1) {
+        equalize_input_ports_size(node, traverse_mark_number, netlist);
+        return;
+    }
+
     int i, j;
     /* keep the recors of input widths */
     int width_a = node->input_port_sizes[0];
@@ -119,6 +125,12 @@ void split_in_single_bit_logic(nnode_t* node, uintptr_t traverse_mark_number, ne
     oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_input_port_sizes > 0);
     oassert(node->num_output_port_sizes == 1);
+
+    /* no need to split. just return the node with equalized input ports size */
+    if (node->num_output_pins == 1) {
+        equalize_input_ports_size(node, traverse_mark_number, netlist);
+        return;
+    }
 
     int i;
     /* keep the records of input widths */

@@ -1759,6 +1759,160 @@ void swap_ports(nnode_t*& node, int idx1, int idx2) {
     node = new_node;
 }
 
+/**
+ * (function: equalize_input_ports_size)
+ * 
+ * @brief equalizing the input ports for the given node
+ * 
+ * NOTE: at max TWO input ports is supported
+ * 
+ * @param node pointing to a shift node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void equalize_input_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes > 0 && node->num_input_port_sizes <= 2);
+
+    /**
+     * INPUTS
+     *  A: (width_a)
+     *  B: (width_b) [optional]
+     * OUTPUT
+     *  Y: width_y
+     */
+    /* removing extra pad pins based on the signedness of ports */
+    reduce_input_ports(node, netlist);
+
+    int port_a_size = node->input_port_sizes[0];
+    int port_b_size = -1;
+    if (node->num_input_port_sizes == 2) {
+        port_b_size = node->input_port_sizes[1];
+        /* validate inputport sizes */
+        oassert(port_a_size == port_b_size);
+    }
+
+    int port_y_size = node->output_port_sizes[0];
+
+    /* no change is needed */
+    if (port_a_size == port_y_size)
+        return;
+
+    /* creating the new node */
+    nnode_t* new_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, port_y_size, node, traverse_mark_number)
+                                            : make_2port_gate(node->type, port_a_size, port_b_size, port_y_size, node, traverse_mark_number);
+    int i;
+    for (i = 0; i < node->num_input_pins; i++) {
+        /* remapping the a pins */
+        remap_pin_to_new_node(node->input_pins[i],
+                              new_node,
+                              i);
+    }
+
+    /* Connecting output pins */
+    for (i = 0; i < port_y_size; i++) {
+        remap_pin_to_new_node(node->output_pins[i],
+                              new_node,
+                              i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+
+    node = new_node;
+}
+
+/**
+ * (function: equalize_port_sizes)
+ * 
+ * @brief equalizing the input and output ports for the given node
+ * 
+ * NOTE: at max TWO input ports is supported
+ * 
+ * @param node pointing to a shift node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void equalize_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes > 0 && node->num_input_port_sizes <= 2);
+
+    /**
+     * INPUTS
+     *  A: (width_a)
+     *  B: (width_b) [optional]
+     * OUTPUT
+     *  Y: width_y
+     */
+    /* removing extra pad pins based on the signedness of ports */
+    reduce_input_ports(node, netlist);
+
+    int port_a_size = node->input_port_sizes[0];
+    int port_b_size = -1;
+    if (node->num_input_port_sizes == 2) {
+        port_b_size = node->input_port_sizes[1];
+        /* validate inputport sizes */
+        oassert(port_a_size == port_b_size);
+    }
+
+    int port_y_size = node->output_port_sizes[0];
+
+    /* no change is needed */
+    if (port_a_size == port_y_size)
+        return;
+
+    /* new port size */
+    int new_out_size = port_a_size;
+
+    /* creating the new node */
+    nnode_t* new_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, new_out_size, node, traverse_mark_number)
+                                            : make_2port_gate(node->type, port_a_size, port_b_size, new_out_size, node, traverse_mark_number);
+    int i;
+    for (i = 0; i < node->num_input_pins; i++) {
+        /* remapping the a pins */
+        remap_pin_to_new_node(node->input_pins[i],
+                              new_node,
+                              i);
+    }
+
+    /* Connecting output pins */
+    for (i = 0; i < new_out_size; i++) {
+        if (i < port_y_size) {
+            remap_pin_to_new_node(node->output_pins[i],
+                                  new_node,
+                                  i);
+        } else {
+            /* need create a new output pin */
+            npin_t* new_pin1 = allocate_npin();
+            npin_t* new_pin2 = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
+            /* hook the output pin into the node */
+            add_output_pin_to_node(new_node, new_pin1, i);
+            /* hook up new pin 1 into the new net */
+            add_driver_pin_to_net(new_net, new_pin1);
+            /* hook up the new pin 2 to this new net */
+            add_fanout_pin_to_net(new_net, new_pin2);
+        }
+    }
+
+    if (new_out_size < port_y_size) {
+        for (i = new_out_size; i < port_y_size; i++) {
+            /* need to drive extra output pins with PAD */
+            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+            /* hook a pin from PAD node into the buf node */
+            add_input_pin_to_node(buf_node, get_pad_pin(netlist), 0);
+            /* remap the extra output pin to buf node */
+            remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+        }
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+
+    node = new_node;
+}
+
 void remove_fanout_pins_from_net(nnet_t* net, npin_t* /*pin*/, int id) {
     int i;
     for (i = id; i < net->num_fanout_pins - 1; i++) {

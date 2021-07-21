@@ -81,8 +81,11 @@ extern void reduce_input_ports(nnode_t*& node, netlist_t* netlist);
 extern signal_list_t* reduce_signal_list(signal_list_t* signalvar, operation_list signedness, netlist_t* netlist);
 chain_information_t* allocate_chain_info();
 void remove_fanout_pins_from_net(nnet_t* net, npin_t* pin, int id);
+
 extern void pure_const_biops(nnode_t* node, netlist_t* netlist);
 extern void swap_ports(nnode_t*& node, int idx1, int idx2);
+extern void equalize_input_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void equalize_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void remove_driver_pins_from_net(nnet_t* net, npin_t* pin, int id);
 extern void delete_npin(npin_t* pin);
 
