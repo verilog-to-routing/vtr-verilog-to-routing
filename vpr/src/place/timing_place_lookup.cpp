@@ -142,8 +142,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  int to_pin,
                                                  int to_pin_class,
                                                  int* src_rr,
-                                                 int* sink_rr,
-                                                 std::vector<RRNodeId>* scratch);
+                                                 int* sink_rr);
 
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
 
@@ -955,8 +954,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  int to_pin,
                                                  int to_pin_class,
                                                  int* src_rr,
-                                                 int* sink_rr,
-                                                 std::vector<RRNodeId>* scratch) {
+                                                 int* sink_rr) {
     VTR_ASSERT(from_type != nullptr);
     VTR_ASSERT(to_type != nullptr);
 
@@ -983,8 +981,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 RRNodeId from_pin_rr = node_lookup.find_node(from_x, from_y, OPIN, from_pin, direct->from_side);
                 from_pin_found = (from_pin_rr != RRNodeId::INVALID());
             } else {
-                (*scratch) = node_lookup.find_nodes_at_all_sides(from_x, from_y, OPIN, from_pin);
-                from_pin_found = !(*scratch).empty();
+                from_pin_found = !(node_lookup.find_nodes_at_all_sides(from_x, from_y, OPIN, from_pin).empty());
             }
             if (!from_pin_found) continue;
 
@@ -1000,8 +997,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 RRNodeId to_pin_rr = node_lookup.find_node(to_x, to_y, IPIN, to_pin, direct->to_side);
                 to_pin_found = (to_pin_rr != RRNodeId::INVALID());
             } else {
-                (*scratch) = node_lookup.find_nodes_at_all_sides(to_x, to_y, IPIN, to_pin);
-                to_pin_found = !(*scratch).empty();
+                to_pin_found = !(node_lookup.find_nodes_at_all_sides(to_x, to_y, IPIN, to_pin).empty());
             }
             if (!to_pin_found) continue;
 
@@ -1038,15 +1034,15 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //
 
     {
-        (*scratch) = node_lookup.find_nodes_at_all_sides(from_x, from_y, SOURCE, from_pin_class);
-        VTR_ASSERT((*scratch).size() > 0);
-        *src_rr = size_t((*scratch)[0]);
+        RRNodeId src_rr_candidate = node_lookup.find_node(from_x, from_y, SOURCE, from_pin_class);
+        VTR_ASSERT(src_rr_candidate);
+        *src_rr = size_t(src_rr_candidate);
     }
 
     {
-        (*scratch) = node_lookup.find_nodes_at_all_sides(to_x, to_y, SINK, to_pin_class);
-        VTR_ASSERT((*scratch).size() > 0);
-        *sink_rr = size_t((*scratch)[0]);
+        RRNodeId sink_rr_candidate = node_lookup.find_node(to_x, to_y, SINK, to_pin_class);
+        VTR_ASSERT(sink_rr_candidate);
+        *sink_rr = size_t(sink_rr_candidate);
     }
 
     return true;
@@ -1079,7 +1075,6 @@ void OverrideDelayModel::compute_override_delay_model(
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();
-    std::vector<RRNodeId> scratch;
     for (int idirect = 0; idirect < device_ctx.arch->num_directs; ++idirect) {
         const t_direct_inf* direct = &device_ctx.arch->Directs[idirect];
 
@@ -1120,7 +1115,7 @@ void OverrideDelayModel::compute_override_delay_model(
 
             int src_rr = OPEN;
             int sink_rr = OPEN;
-            bool found_sample_points = find_direct_connect_sample_locations(direct, from_type, from_pin, from_pin_class, to_type, to_pin, to_pin_class, &src_rr, &sink_rr, &scratch);
+            bool found_sample_points = find_direct_connect_sample_locations(direct, from_type, from_pin, from_pin_class, to_type, to_pin, to_pin_class, &src_rr, &sink_rr);
 
             if (!found_sample_points) {
                 ++missing_instances;
