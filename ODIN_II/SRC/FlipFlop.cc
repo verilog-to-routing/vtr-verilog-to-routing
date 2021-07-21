@@ -104,7 +104,6 @@ void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
      * Q:    output port 0
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int ARST_width = node->input_port_sizes[0]; // == 1
     int CLK_width = node->input_port_sizes[1];  // == 1
     int D_width = node->input_port_sizes[2];
@@ -112,13 +111,11 @@ void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     /*****************************************************************************************/
     /*************************************** ARST_CHECK **************************************/
     /*****************************************************************************************/
+    /* store reset sensitivity in rst pin */
+    node->input_pins[0]->sensitivity = node->attributes->areset_polarity;
     /* keep record of reset pin */
     npin_t* select_reset = copy_input_npin(node->input_pins[0]);
     signal_list_t* areset_value = create_constant_signal(node->attributes->areset_value, D_width, netlist);
-
-    /* creating a internal nodes to initialize the value of D register */
-    nnode_t** ARST_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** FF_nodes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
 
     /* merge clk and arst pins as a new ff clk */
     npin_t* FF_merged_clk_arst = merge_polarity(node->input_pins[ARST_width],      // CLK
@@ -128,69 +125,37 @@ void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
                                                 node,                              // NODE
                                                 netlist);
 
+    /* creating a internal nodes to initialize the value of D register */
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /************************************** ARST_MUX *****************************************/
         /*****************************************************************************************/
-        ARST_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-        
-        // connect mux_set selector based on the SET polarity
-        if (node->attributes->areset_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            idx1 = 0;
-            idx2 = 1;
+        nnode_t* ARST_mux = create_single_bit_smux(node->input_pins[ARST_width + CLK_width + i], // D[i]
+                                                   areset_value->pins[i],                        // reset value
+                                                   copy_input_npin(select_reset),                // reset selector
+                                                   node                                          // node
+        );
 
-        } else if (node->attributes->areset_polarity == ACTIVE_LOW_SENSITIVITY) {
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* connecting the D[i] pin to 1: mux input */
-        remap_pin_to_new_node(node->input_pins[ARST_width + CLK_width + i],
-                              ARST_muxes[i],
-                              idx1);
-
-        /* connecting th reset value as the D of the RST_ff_node */
-        add_input_pin_to_node(ARST_muxes[i],
-                              areset_value->pins[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(ARST_muxes[i],
-                              copy_input_npin(select_reset),
-                              2);
-
-        /* Specifying the level_muxes outputs */
-        signal_list_t* ARST_mux_output = make_output_pins_for_existing_node(ARST_muxes[i], 1);
-        npin_t* ARST_mux_output_pin = ARST_mux_output->pins[0];
+        npin_t* ARST_mux_output_pin = ARST_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** FF_NODE *****************************************/
         /*****************************************************************************************/
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-       
-        add_input_pin_to_node(FF_nodes[i],
-                              ARST_mux_output_pin,
-                              0);
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+
+        add_input_pin_to_node(FF_node, ARST_mux_output_pin, 0);
 
         /* hook new clk pin into FF node */
-        add_input_pin_to_node(FF_nodes[i], copy_input_npin(FF_merged_clk_arst), 1);
-        FF_nodes[i]->attributes->clk_edge_type = FF_merged_clk_arst->sensitivity;
+        add_input_pin_to_node(FF_node, copy_input_npin(FF_merged_clk_arst), 1);
+        FF_node->attributes->clk_edge_type = FF_merged_clk_arst->sensitivity;
 
         /* connectiong the dffe output pin to the RST_ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              0);
-
-        // CLEAN UP
-        free_signal_list(ARST_mux_output);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
     }
 
     // CLEAN UP
     free_signal_list(areset_value);
     free_nnode(node);
-
-    vtr::free(ARST_muxes);
-    vtr::free(FF_nodes);
 }
 
 /**
@@ -218,13 +183,14 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
      * Q:    output port 3
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
 
     /*****************************************************************************************/
     /*************************************** SRST_CHECK **************************************/
     /*****************************************************************************************/
+    /* store reset sensitivity in rst pin */
+    node->input_pins[CLK_width + D_width]->sensitivity = node->attributes->sreset_polarity;
     /* keep record of reset pin */
     npin_t* select_reset = copy_input_npin(node->input_pins[CLK_width + D_width]);
     /* delete to avoid mem leaks */
@@ -232,84 +198,45 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     signal_list_t* sreset_value = create_constant_signal(node->attributes->sreset_value, D_width, netlist);
 
     /* creating a internal nodes to initialize the value of D register */
-    nnode_t** SRST_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** FF_nodes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /*************************************** SRST_MUX ****************************************/
         /*****************************************************************************************/
-        SRST_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
+        nnode_t* SRST_mux = create_single_bit_smux(node->input_pins[i + CLK_width], // D[i]
+                                                   sreset_value->pins[i],           // sreset value
+                                                   copy_input_npin(select_reset),   // sreset selector
+                                                   node                             // node
+        );
 
-        // connect mux rst selector based on the SRST polarity
-        if (node->attributes->sreset_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->sreset_polarity == ACTIVE_LOW_SENSITIVITY) {
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* remapping the D[i] pin to 0: mux input */
-        remap_pin_to_new_node(node->input_pins[i + CLK_width],
-                              SRST_muxes[i],
-                              idx1);
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(SRST_muxes[i],
-                              sreset_value->pins[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(SRST_muxes[i],
-                              copy_input_npin(select_reset),
-                              2);
-        
-        // specify mux_set[i] output pin
-        signal_list_t* SRST_mux_outputs = make_output_pins_for_existing_node(SRST_muxes[i], 1);
-        npin_t* SRST_mux_output_pin = SRST_mux_outputs->pins[0];
+        npin_t* SRST_mux_output_pin = SRST_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
 
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_nodes[i]->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
 
         /**
          * connecting the data input of 
          * Q = (SRST) ? reset_value : D
          */
-        add_input_pin_to_node(FF_nodes[i],
-                              SRST_mux_output_pin,
-                              0);
+        add_input_pin_to_node(FF_node, SRST_mux_output_pin, 0);
 
         /* connecting the clk pin */
         if (i != D_width - 1) {
-            add_input_pin_to_node(FF_nodes[i],
-                                  copy_input_npin(node->input_pins[0]),
-                                  1);
+            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
         } else {
-            remap_pin_to_new_node(node->input_pins[0],
-                                  FF_nodes[i],
-                                  1);
+            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
         }
 
         /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              0);
-        // CLEAN UP
-        free_signal_list(SRST_mux_outputs);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
     }
 
     // CLEAN UP
     free_signal_list(sreset_value);
     free_nnode(node);
-
-    vtr::free(SRST_muxes);
-    vtr::free(FF_nodes);
 }
 
 /**
@@ -337,98 +264,58 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
      * Q:   output port 3
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
 
     /*****************************************************************************************/
     /**************************************** EN_CHECK ***************************************/
     /*****************************************************************************************/
+    /* store enable sensitivity in enable pin */
+    node->input_pins[CLK_width + D_width]->sensitivity = node->attributes->enable_polarity;
     /* keep record of enable pin */
     npin_t* select_enable = copy_input_npin(node->input_pins[CLK_width + D_width]);
     /* delete to avoid mem leaks */
     delete_npin(node->input_pins[CLK_width + D_width]);
 
     /* creating a internal nodes to initialize the value of D register */
-    nnode_t** EN_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** FF_nodes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /*************************************** EN_MUXES ****************************************/
         /*****************************************************************************************/
-        EN_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
+        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),            // connect to pad while is not enable
+                                                 node->input_pins[i + CLK_width], // D[i]
+                                                 copy_input_npin(select_enable),  // enable selector
+                                                 node                             // node
+        );
 
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->enable_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->enable_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(EN_muxes[i],
-                              get_pad_pin(netlist),
-                              idx1);
-
-        /* remapping the D[i] pin to 0: mux input */
-        remap_pin_to_new_node(node->input_pins[i + CLK_width],
-                              EN_muxes[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(EN_muxes[i],
-                              copy_input_npin(select_enable),
-                              2);
-
-        // specify mux_set[i] output pin
-        signal_list_t* EN_mux_outputs = make_output_pins_for_existing_node(EN_muxes[i], 1);
-        npin_t* EN_mux_output_pin = EN_mux_outputs->pins[0];
+        npin_t* EN_mux_output_pin = EN_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
 
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_nodes[i]->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
 
         /**
          * connecting the data input of 
          * (EN == EN_POLARITY) ? D : Q
          */
-        add_input_pin_to_node(FF_nodes[i],
-                              EN_mux_output_pin,
-                              0);
+        add_input_pin_to_node(FF_node, EN_mux_output_pin, 0);
 
         /* connecting the clk pin */
         if (i != D_width - 1) {
-            add_input_pin_to_node(FF_nodes[i],
-                                  copy_input_npin(node->input_pins[0]),
-                                  1);
+            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
         } else {
-            remap_pin_to_new_node(node->input_pins[0],
-                                  FF_nodes[i],
-                                  1);
+            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
         }
 
         /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              0);
-        // CLEAN UP
-        free_signal_list(EN_mux_outputs);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
     }
 
     // CLEAN UP
     free_nnode(node);
-
-    vtr::free(EN_muxes);
-    vtr::free(FF_nodes);
 }
 
 /**
@@ -461,7 +348,6 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
      * Q:    output port 0
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int ARST_width = node->input_port_sizes[0]; // == 1
     int CLK_width = node->input_port_sizes[1];  // == 1
     int D_width = node->input_port_sizes[2];
@@ -469,6 +355,8 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     /*****************************************************************************************/
     /**************************************** EN_CHECK ***************************************/
     /*****************************************************************************************/
+    /* store enable sensitivity in enable pin */
+    node->input_pins[ARST_width + CLK_width + D_width]->sensitivity = node->attributes->enable_polarity;
     /* keep record of enable pin */
     npin_t* select_enable = copy_input_npin(node->input_pins[ARST_width + CLK_width + D_width]);
     /* delete to avoid mem leaks */
@@ -477,14 +365,11 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     /*****************************************************************************************/
     /*************************************** ARST_CHECK **************************************/
     /*****************************************************************************************/
+    /* store areset sensitivity in areset pin */
+    node->input_pins[0]->sensitivity = node->attributes->areset_polarity;
     /* keep record of reset pin */
     npin_t* select_reset = copy_input_npin(node->input_pins[0]);
     signal_list_t* areset_value = create_constant_signal(node->attributes->areset_value, D_width, netlist);
-
-    /* creating a internal nodes to initialize the value of D register */
-    nnode_t** EN_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** ARST_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** FF_nodes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
 
     /* merge clk and arst pins as a new ff clk */
     npin_t* FF_merged_clk_arst = merge_polarity(node->input_pins[ARST_width],      // CLK
@@ -494,110 +379,49 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
                                                 node,                              // NODE
                                                 netlist);
 
+    /* creating a internal nodes to initialize the value of D register */
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        EN_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
+        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),                         // pad while not enable
+                                                 node->input_pins[i + ARST_width + CLK_width], // D[i]
+                                                 copy_input_npin(select_enable),               // enable selector
+                                                 node                                          // node
+        );
 
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->enable_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->enable_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* hook a copy of Q into the buf node */
-        add_input_pin_to_node(EN_muxes[i],
-                              get_pad_pin(netlist),
-                              idx1);
-
-        /* remapping the D[i] pin to 0: mux input */
-        remap_pin_to_new_node(node->input_pins[i + ARST_width + CLK_width],
-                              EN_muxes[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(EN_muxes[i],
-                              copy_input_npin(select_enable),
-                              2);
-
-        // specify mux_set[i] output pin
-        signal_list_t* EN_muxes_outputs = make_output_pins_for_existing_node(EN_muxes[i], 1);
-        npin_t* EN_muxes_output_pin = EN_muxes_outputs->pins[0];
+        npin_t* EN_muxes_output_pin = EN_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** RST_MUX *****************************************/
         /*****************************************************************************************/
-        ARST_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
+        nnode_t* ARST_mux = create_single_bit_smux(EN_muxes_output_pin,           // enable mux output
+                                                   areset_value->pins[i],         // areset value
+                                                   copy_input_npin(select_reset), // areset selector
+                                                   node                           // node
+        );
 
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->areset_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->areset_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* connecting the D_ff pin to 1: mux input */
-        add_input_pin_to_node(ARST_muxes[i],
-                              EN_muxes_output_pin,
-                              idx1);
-
-        /* connecting the RST_ff pin to 0: mux input  */
-        add_input_pin_to_node(ARST_muxes[i],
-                              areset_value->pins[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(ARST_muxes[i],
-                              copy_input_npin(select_reset),
-                              2);
-
-        // specify mux_set[i] output pin
-        signal_list_t* ARST_muxes_outputs = make_output_pins_for_existing_node(ARST_muxes[i], 1);
-        npin_t* ARST_muxes_output_pin = ARST_muxes_outputs->pins[0];
+        npin_t* ARST_muxes_output_pin = ARST_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** FF_NODE *****************************************/
         /*****************************************************************************************/
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
 
         /* remapping the D[i] pin to 0: mux input */
-        add_input_pin_to_node(FF_nodes[i],
-                              ARST_muxes_output_pin,
-                              0);
+        add_input_pin_to_node(FF_node, ARST_muxes_output_pin, 0);
 
         /* hook new clk pin into FF node */
-        add_input_pin_to_node(FF_nodes[i], copy_input_npin(FF_merged_clk_arst), 1);
-        FF_nodes[i]->attributes->clk_edge_type = FF_merged_clk_arst->sensitivity;
+        add_input_pin_to_node(FF_node, copy_input_npin(FF_merged_clk_arst), 1);
+        FF_node->attributes->clk_edge_type = FF_merged_clk_arst->sensitivity;
 
         /* connectiong the dffe output pin to the RST_ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              0);
-
-        // CLEAN UP
-        free_signal_list(EN_muxes_outputs);
-        free_signal_list(ARST_muxes_outputs);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
     }
 
     // CLEAN UP
     free_signal_list(areset_value);
     free_nnode(node);
-
-    vtr::free(EN_muxes);
-    vtr::free(ARST_muxes);
-    vtr::free(FF_nodes);
 }
 
 /**
@@ -629,7 +453,6 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
      * Q:    output port 0
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
     int EN_width = node->input_port_sizes[2]; // == 1
@@ -637,6 +460,8 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     /*****************************************************************************************/
     /**************************************** EN_CHECK ***************************************/
     /*****************************************************************************************/
+    /* store reset sensitivity in rst pin */
+    node->input_pins[CLK_width + D_width]->sensitivity = node->attributes->enable_polarity;
     /* keep record of enable pin */
     npin_t* select_enable = copy_input_npin(node->input_pins[CLK_width + D_width]);
     /* delete to avoid mem leaks */
@@ -645,6 +470,8 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     /*****************************************************************************************/
     /*************************************** SRST_CHECK **************************************/
     /*****************************************************************************************/
+    /* store reset sensitivity in rst pin */
+    node->input_pins[CLK_width + D_width + EN_width]->sensitivity = node->attributes->sreset_polarity;
     /* keep record of reset pin */
     npin_t* select_reset = copy_input_npin(node->input_pins[CLK_width + D_width + EN_width]);
     /* delete to avoid mem leaks */
@@ -652,124 +479,56 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     signal_list_t* sreset_value = create_constant_signal(node->attributes->sreset_value, D_width, netlist);
 
     /* creating a internal nodes to initialize the value of D register */
-    nnode_t** EN_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** SRST_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** FF_nodes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        EN_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->enable_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->enable_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(EN_muxes[i],
-                              get_pad_pin(netlist),
-                              idx1);
-
-        /* remapping the D[i] pin to 0: mux input */
-        remap_pin_to_new_node(node->input_pins[i + CLK_width],
-                              EN_muxes[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(EN_muxes[i],
-                              copy_input_npin(select_enable),
-                              2);
+        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),            // pad while is not enable
+                                                 node->input_pins[i + CLK_width], // D[i]
+                                                 copy_input_npin(select_enable),  // enable selector
+                                                 node                             // node
+        );
 
         // specify mux_en[i] output pin
-        signal_list_t* EN_muxes_outputs = make_output_pins_for_existing_node(EN_muxes[i], 1);
-        npin_t* EN_muxes_output_pin = EN_muxes_outputs->pins[0];
+        npin_t* EN_muxes_output_pin = EN_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /************************************** SRST_MUX *****************************************/
         /*****************************************************************************************/
-        SRST_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->sreset_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->sreset_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* remapping the D[i] pin to 0: mux input */
-        add_input_pin_to_node(SRST_muxes[i],
-                              EN_muxes_output_pin,
-                              idx1);
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(SRST_muxes[i],
-                              sreset_value->pins[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(SRST_muxes[i],
-                              copy_input_npin(select_reset),
-                              2);
+        nnode_t* SRST_mux = create_single_bit_smux(EN_muxes_output_pin,           // enable mux output
+                                                   sreset_value->pins[i],         // sreset value
+                                                   copy_input_npin(select_reset), // sreset selector
+                                                   node                           // node
+        );
 
         // specify mux_set[i] output pin
-        signal_list_t* SRST_muxes_outputs = make_output_pins_for_existing_node(SRST_muxes[i], 1);
-        npin_t* SRST_muxes_output_pin = SRST_muxes_outputs->pins[0];
+        npin_t* SRST_muxes_output_pin = SRST_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_nodes[i]->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
 
         /**
          * connecting the data input of 
          * Q = (SRST) ? reset_value : D
          */
-        add_input_pin_to_node(FF_nodes[i],
-                              SRST_muxes_output_pin,
-                              0);
+        add_input_pin_to_node(FF_node, SRST_muxes_output_pin, 0);
 
         /* connecting the clk pin */
         if (i != D_width - 1) {
-            add_input_pin_to_node(FF_nodes[i],
-                                  copy_input_npin(node->input_pins[0]),
-                                  1);
+            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
         } else {
-            remap_pin_to_new_node(node->input_pins[0],
-                                  FF_nodes[i],
-                                  1);
+            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
         }
 
         /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              0);
-
-        // CLEAN UP
-        free_signal_list(EN_muxes_outputs);
-        free_signal_list(SRST_muxes_outputs);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
     }
     // CLEAN UP
     free_signal_list(sreset_value);
     free_nnode(node);
-
-    vtr::free(EN_muxes);
-    vtr::free(SRST_muxes);
-    vtr::free(FF_nodes);
 }
 
 /**
@@ -801,7 +560,6 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * Q:    output port 0
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
     int EN_width = node->input_port_sizes[2]; // == 1
@@ -809,6 +567,8 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
     /*****************************************************************************************/
     /*************************************** SRST_CHECK **************************************/
     /*****************************************************************************************/
+    /* store sreset sensitivity in srst pin */
+    node->input_pins[CLK_width + D_width + EN_width]->sensitivity = node->attributes->sreset_polarity;
     /* keep record of reset pin */
     npin_t* select_reset = copy_input_npin(node->input_pins[CLK_width + D_width + EN_width]);
     /* delete to avoid mem leaks */
@@ -818,134 +578,67 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
     /*****************************************************************************************/
     /**************************************** EN_CHECK ***************************************/
     /*****************************************************************************************/
+    /* store enable sensitivity in enable pin */
+    node->input_pins[CLK_width + D_width]->sensitivity = node->attributes->enable_polarity;
     /* keep record of enable pin */
     npin_t* select_enable = copy_input_npin(node->input_pins[CLK_width + D_width]);
     /* delete to avoid mem leaks */
     delete_npin(node->input_pins[CLK_width + D_width]);
 
     /* creating a internal nodes to initialize the value of D register */
-    nnode_t** EN_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** SRST_muxes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-    nnode_t** FF_nodes = (nnode_t**)vtr::calloc(D_width, sizeof(nnode_t*));
-
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /************************************** SRST_MUX *****************************************/
         /*****************************************************************************************/
-        SRST_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->sreset_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->sreset_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        /* remapping the D[i] pin to 0: mux input */
-        remap_pin_to_new_node(node->input_pins[i + CLK_width],
-                              SRST_muxes[i],
-                              idx1);
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(SRST_muxes[i],
-                              sreset_value->pins[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(SRST_muxes[i],
-                              copy_input_npin(select_reset),
-                              2);
+        nnode_t* SRST_mux = create_single_bit_smux(node->input_pins[i + CLK_width], // D[i]
+                                                   sreset_value->pins[i],           // sreset value
+                                                   copy_input_npin(select_reset),   // sreset selector
+                                                   node,                            // node
+        );
 
         // specify mux_set[i] output pin
-        signal_list_t* SRST_muxes_outputs = make_output_pins_for_existing_node(SRST_muxes[i], 1);
-        npin_t* SRST_muxes_output_pin = SRST_muxes_outputs->pins[0];
+        npin_t* SRST_muxes_output_pin = SRST_mux->output_pins[0];
 
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        EN_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->enable_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->enable_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-        }
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(EN_muxes[i],
-                              SRST_muxes_output_pin,
-                              idx1);
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(EN_muxes[i],
-                              get_pad_pin(netlist),
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(EN_muxes[i],
-                              copy_input_npin(select_enable),
-                              2);
+        nnode_t* EN_mux = create_single_bit_smux(SRST_muxes_output_pin,          // pad node while is not enable
+                                                 get_pad_pin(netlist),           // sreset mux output
+                                                 copy_input_npin(select_enable), // enable selecor
+                                                 node                            // node
+        );
 
         // specify EN_muxes[i] output pin
-        signal_list_t* EN_muxes_outputs = make_output_pins_for_existing_node(EN_muxes[i], 1);
-        npin_t* EN_muxes_output_pin = EN_muxes_outputs->pins[0];
+        npin_t* EN_muxes_output_pin = EN_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** FF_NODEs ****************************************/
         /*****************************************************************************************/
 
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_nodes[i]->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
 
         /**
          * connecting the data input of 
          * Q = (SRST) ? reset_value : D
          */
-        add_input_pin_to_node(FF_nodes[i],
-                              EN_muxes_output_pin,
-                              0);
+        add_input_pin_to_node(FF_node, EN_muxes_output_pin, 0);
 
         /* connecting the clk pin */
         if (i != D_width - 1) {
-            add_input_pin_to_node(FF_nodes[i],
-                                  copy_input_npin(node->input_pins[0]),
-                                  1);
+            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
         } else {
-            remap_pin_to_new_node(node->input_pins[0],
-                                  FF_nodes[i],
-                                  1);
+            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
         }
 
         /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              0);
-                              
-        // CLEAN UP
-        free_signal_list(SRST_muxes_outputs);
-        free_signal_list(EN_muxes_outputs);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
     }
 
     // CLEAN UP
     free_signal_list(sreset_value);
     free_nnode(node);
-
-    vtr::free(EN_muxes);
-    vtr::free(SRST_muxes);
-    vtr::free(FF_nodes);
 }
-
 
 /**
  * (function: resolve_dffsr_node)
@@ -976,14 +669,12 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     int CLR_width = node->input_port_sizes[1];
     int D_width = node->input_port_sizes[2];
 
-    nnode_t** FF_nodes = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
-    nnode_t** SET_muxes = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
-    nnode_t** CLR_muxes = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
-
     for (i = 0; i < width; i++) {
         /*****************************************************************************************/
         /**************************************** SET_CHECK **************************************/
         /*****************************************************************************************/
+        /* store set sensitivity in set pin */
+        node->input_pins[CLK_width + CLR_width + D_width + i]->sensitivity = node->attributes->set_polarity;
         /* keep record of set pin */
         npin_t* select_set = copy_input_npin(node->input_pins[CLK_width + CLR_width + D_width + i]);
         /* delete to avoid mem leaks */
@@ -992,121 +683,64 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /**************************************** SET_MUXES **************************************/
         /*****************************************************************************************/
-        SET_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        // connect SET_muxes selector based on the SET polarity
-        if (node->attributes->set_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->set_polarity == ACTIVE_LOW_SENSITIVITY) {
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        // remap D[i] to the SET_muxes[i]
-        remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + i],
-                              SET_muxes[i],
-                              idx1);
-
-        // connect VCC to the SET_muxes[i]
-        add_input_pin_to_node(SET_muxes[i],
-                              get_one_pin(netlist),
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(SET_muxes[i],
-                              copy_input_npin(select_set),
-                              2);
+        nnode_t* SET_mux = create_single_bit_smux(node->input_pins[CLK_width + CLR_width + i], // D[i]
+                                                  get_one_pin(netlist),                        // VCC (set value)
+                                                  copy_input_npin(select_set),                 // set selector
+                                                  node                                         // node
+        );
 
         // specify SET_muxes[i] output pin
-        signal_list_t* SET_muxes_outputs = make_output_pins_for_existing_node(SET_muxes[i], 1);
-        npin_t* SET_muxes_output_pin = SET_muxes_outputs->pins[0];
+        npin_t* SET_muxes_output_pin = SET_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** CLR_CHECK ***************************************/
         /*****************************************************************************************/
+        /* store reset sensitivity in rst pin */
+        node->input_pins[CLK_width + i]->sensitivity = node->attributes->clr_polarity;
         /* keep record of clr pin */
         npin_t* select_clr = copy_input_npin(node->input_pins[CLK_width + i]);
         /* delete to avoid mem leaks */
         delete_npin(node->input_pins[CLK_width + i]);
-        
+
         /*****************************************************************************************/
         /*************************************** CLR_MUXES ***************************************/
         /*****************************************************************************************/
-        CLR_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        // connect CLR_muxes selector based on the CLR polarity
-        if (node->attributes->clr_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->clr_polarity == ACTIVE_LOW_SENSITIVITY) {
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        // connect SET_muxes[i] output pin to the CLR_muxes[i]
-        add_input_pin_to_node(CLR_muxes[i],
-                              SET_muxes_output_pin,
-                              idx1);
-
-        // connect GND to the CLR_muxes[i]
-        add_input_pin_to_node(CLR_muxes[i],
-                              get_zero_pin(netlist),
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(CLR_muxes[i],
-                              copy_input_npin(select_clr),
-                              2);
+        nnode_t* CLR_mux = create_single_bit_smux(SET_muxes_output_pin,        // set mux output
+                                                  get_zero_pin(netlist),       // GND (clr value)
+                                                  copy_input_npin(select_clr), // clr selector
+                                                  node                         // node
+        );
 
         // specify CLR_muxes[i] output pin
-        signal_list_t* CLR_muxes_outputs = make_output_pins_for_existing_node(CLR_muxes[i], 1);
-        npin_t* CLR_muxes_output_pin = CLR_muxes_outputs->pins[0];
+        npin_t* CLR_muxes_output_pin = CLR_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /**************************************** FF_NODES ***************************************/
         /*****************************************************************************************/
         /* create FF node for DFFSR output */
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_nodes[i]->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
 
         /**
          * remap D[i] from the dffsr node to the ff node 
          * since we do not need it in dff node anymore 
          **/
-        add_input_pin_to_node(FF_nodes[i],
-                              CLR_muxes_output_pin,
-                              0);
+        add_input_pin_to_node(FF_node, CLR_muxes_output_pin, 0);
 
         /* remap the CLK pin from the dffsr node to the ff node */
         if (i == width - 1) {
             /* remap the CLK pin from the dffsr node to the new  */
-            remap_pin_to_new_node(node->input_pins[0],
-                                  FF_nodes[i],
-                                  1);
+            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
         } else {
             /* add a copy of CLK pin from the dffsr node to the new ff node */
-            add_input_pin_to_node(FF_nodes[i],
-                                  copy_input_npin(node->input_pins[0]),
-                                  1);
+            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
         }
 
         // remap node's output pin to CLR_muxes
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              0);
-
-        // CLEAN UP
-        free_signal_list(SET_muxes_outputs);
-        free_signal_list(CLR_muxes_outputs);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
     }
 
     // CLEAN UP
-    vtr::free(FF_nodes);
-    vtr::free(SET_muxes);
-    vtr::free(CLR_muxes);
     free_nnode(node);
 }
 
@@ -1135,66 +769,40 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * SET: input port 4
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int width = node->num_output_pins;
     int CLK_width = node->input_port_sizes[0];
     int CLR_width = node->input_port_sizes[1];
     int D_width = node->input_port_sizes[2];
     int EN_width = node->input_port_sizes[3];
 
-    nnode_t** FF_nodes = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
-    nnode_t** EN_muxes = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
-    nnode_t** SET_muxes = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
-    nnode_t** CLR_muxes = (nnode_t**)vtr::malloc(width * sizeof(nnode_t*));
-
     for (i = 0; i < width; i++) {
         /*****************************************************************************************/
         /**************************************** EN_CHECK ***************************************/
         /*****************************************************************************************/
+        /* store enable sensitivity in en pin */
+        node->input_pins[CLK_width + CLR_width + D_width + i]->sensitivity = node->attributes->enable_polarity;
         /* keep record of enable pin */
         npin_t* select_enable = copy_input_npin(node->input_pins[CLK_width + CLR_width + D_width + i]);
         /* delete to avoid mem leaks */
-        delete_npin(node->input_pins[CLK_width + CLR_width + D_width + i]); 
-        
+        delete_npin(node->input_pins[CLK_width + CLR_width + D_width + i]);
+
         /*****************************************************************************************/
         /*************************************** EN_MUXES ****************************************/
         /*****************************************************************************************/
-        EN_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        /* to check the polarity and connect the correspondence signal */
-        if (node->attributes->enable_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;            
-
-        } else if (node->attributes->enable_polarity == ACTIVE_LOW_SENSITIVITY) {
-            /* connecting selectors */
-            idx1 = 0;
-            idx2 = 1;
-        }
-
-        /* connecting the pad node to the 0: input of the mux pin */
-        add_input_pin_to_node(EN_muxes[i],
-                              get_pad_pin(netlist),
-                              idx1);
-
-        /* remapping the D[i] pin to 0: mux input */
-        remap_pin_to_new_node(node->input_pins[CLK_width + CLR_width + i],
-                              EN_muxes[i],
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(EN_muxes[i],
-                              copy_input_npin(select_enable),
-                              2);
+        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),                        // pad while not enable
+                                                 node->input_pins[CLK_width + CLR_width + i], // D[i]
+                                                 copy_input_npin(select_enable),              // enable selector
+                                                 node                                         // node
+        );
 
         // specify EN_muxes[i] output pin
-        signal_list_t* EN_muxes_outputs = make_output_pins_for_existing_node(EN_muxes[i], 1);
-        npin_t* EN_muxes_output_pin = EN_muxes_outputs->pins[0];
-        
+        npin_t* EN_muxes_output_pin = EN_mux->output_pins[0]->net->fanout_pins[0];
+
         /*****************************************************************************************/
         /*************************************** SET_CHECK ***************************************/
         /*****************************************************************************************/
+        /* store set sensitivity in set pin */
+        node->input_pins[CLK_width + CLR_width + D_width + EN_width + i]->sensitivity = node->attributes->set_polarity;
         /* keep record of set pin */
         npin_t* select_set = copy_input_npin(node->input_pins[CLK_width + CLR_width + D_width + EN_width + i]);
         /* delete to avoid mem leaks */
@@ -1203,90 +811,46 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /*************************************** SET_MUXES ***************************************/
         /*****************************************************************************************/
-        SET_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        // connect SET_muxes selector based on the SET polarity
-        if (node->attributes->set_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->set_polarity == ACTIVE_LOW_SENSITIVITY) {
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        // add en_mux output pin to the SET_muxes[i]
-        add_input_pin_to_node(SET_muxes[i],
-                              EN_muxes_output_pin,
-                              idx1);
-
-        // connect VCC to the SET_muxes[i]
-        add_input_pin_to_node(SET_muxes[i],
-                              get_one_pin(netlist),
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(SET_muxes[i],
-                              copy_input_npin(select_set),
-                              2);
+        nnode_t* SET_mux = create_single_bit_smux(EN_muxes_output_pin,         // enable output
+                                                  get_one_pin(netlist),        // VCC (set value)
+                                                  copy_input_npin(select_set), // set selector
+                                                  node                         // node
+        );
 
         // specify SET_muxes[i] output pin
-        signal_list_t* SET_muxes_outputs = make_output_pins_for_existing_node(SET_muxes[i], 1);
-        npin_t* SET_muxes_output_pin = SET_muxes_outputs->pins[0];
+        npin_t* SET_muxes_output_pin = SET_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** CLR_CHECK ***************************************/
         /*****************************************************************************************/
+        /* store reset sensitivity in rst pin */
+        node->input_pins[CLK_width + i]->sensitivity = node->attributes->clr_polarity;
         /* keep record of clr pin */
         npin_t* select_clr = copy_input_npin(node->input_pins[CLK_width + i]);
         /* delete to avoid mem leaks */
         delete_npin(node->input_pins[CLK_width + i]);
-        
+
         /*****************************************************************************************/
         /*************************************** CLR_MUXES ***************************************/
         /*****************************************************************************************/
-        CLR_muxes[i] = make_2port_gate(SMUX_2, 2, 1, 1, node, traverse_mark_number);
-
-        // connect mux_clr selector based on the CLR polarity
-        if (node->attributes->clr_polarity == ACTIVE_HIGH_SENSITIVITY) {
-            idx1 = 0;
-            idx2 = 1;
-
-        } else if (node->attributes->clr_polarity == ACTIVE_LOW_SENSITIVITY) {
-            idx1 = 1;
-            idx2 = 0;
-        }
-
-        // connect mux_set[i] output pin to the CLR_muxes[i]
-        add_input_pin_to_node(CLR_muxes[i],
-                              SET_muxes_output_pin,
-                              idx1);
-
-        // connect GND to the CLR_muxes[i]
-        add_input_pin_to_node(CLR_muxes[i],
-                              get_zero_pin(netlist),
-                              idx2);
-
-        /* hook selector pin into SMUX_2 */
-        add_input_pin_to_node(CLR_muxes[i],
-                              copy_input_npin(select_clr),
-                              2);
+        nnode_t* CLR_mux = create_single_bit_smux(SET_muxes_output_pin,        // set mux output
+                                                  get_zero_pin(netlist),       // GND (clr value)
+                                                  copy_input_npin(select_clr), // clr selector
+                                                  node                         // node
+        );
 
         // specify mux_en[i] output pin
-        signal_list_t* CLR_muxes_outputs = make_output_pins_for_existing_node(CLR_muxes[i], 1);
-        npin_t* CLR_muxes_output_pin = CLR_muxes_outputs->pins[0];
+        npin_t* CLR_muxes_output_pin = CLR_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
         /* create FF node for DFFSR output */
-        FF_nodes[i] = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_nodes[i]->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
+        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
 
         /* remap D[i] from the dffsr node to the ff node */
-        add_input_pin_to_node(FF_nodes[i],
-                              CLR_muxes_output_pin,
-                              0);
+        add_input_pin_to_node(FF_node, CLR_muxes_output_pin, 0);
 
         /**
          * remap the CLK pin from the dffsr node to the ff node
@@ -1294,31 +858,16 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
          **/
         if (i == width - 1) {
             /* remap the CLK pin from the dffsr node to the new  */
-            remap_pin_to_new_node(node->input_pins[0],
-                                  FF_nodes[i],
-                                  1);
+            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
         } else {
             /* add a copy of CLK pin from the dffsr node to the new ff node */
-            add_input_pin_to_node(FF_nodes[i],
-                                  copy_input_npin(node->input_pins[0]),
-                                  1);
+            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
         }
 
         // remap FF_nodes[i] output pin to dffsre output pin
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_nodes[i],
-                              i);
-
-        // CLEAN UP
-        free_signal_list(EN_muxes_outputs);
-        free_signal_list(SET_muxes_outputs);
-        free_signal_list(CLR_muxes_outputs);
+        remap_pin_to_new_node(node->output_pins[i], FF_node, i);
     }
 
     // CLEAN UP
-    vtr::free(FF_nodes);
-    vtr::free(EN_muxes);
-    vtr::free(SET_muxes);
-    vtr::free(CLR_muxes);
     free_nnode(node);
 }
