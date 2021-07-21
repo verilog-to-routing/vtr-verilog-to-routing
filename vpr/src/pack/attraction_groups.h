@@ -32,23 +32,21 @@ class AttractionInfo {
   public:
     AttractionInfo();
 
-    AttractGroupId get_atom_attraction_group(AtomBlockId atom_id);
+    AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
 
-    AttractionGroup get_attraction_group_info(AttractGroupId group_id);
+    AttractionGroup get_attraction_group_info(const AttractGroupId group_id);
 
-    void set_atom_attraction_group(AtomBlockId atom_id, AttractGroupId group_id);
+    void set_atom_attraction_group(const AtomBlockId atom_id, const AttractGroupId group_id);
 
-    void set_attraction_group_info(AttractGroupId group_id, AttractionGroup group_info);
+    void set_attraction_group_info(AttractGroupId group_id, const AttractionGroup& group_info);
 
-    void add_attraction_group(AttractionGroup group_info);
+    void add_attraction_group(const AttractionGroup& group_info);
 
     int num_attraction_groups();
 
-    float get_attraction_group_gain(AttractGroupId group_id);
+    float get_attraction_group_gain(const AttractGroupId group_id);
 
-    void set_attraction_group_gain(AttractGroupId group_id, float new_gain);
-
-    void initialize_atom_attraction_groups(int num_atoms);
+    void set_attraction_group_gain(const AttractGroupId group_id, const float new_gain);
 
   private:
     //Store each atom's attraction group assuming each atom is in at most one attraction group
@@ -57,5 +55,32 @@ class AttractionInfo {
     //Store atoms and gain value that belong to each attraction group
     vtr::vector<AttractGroupId, AttractionGroup> attraction_groups;
 };
+
+inline AttractGroupId AttractionInfo::get_atom_attraction_group(const AtomBlockId atom_id) {
+    return atom_attraction_group[atom_id];
+}
+
+inline void AttractionInfo::set_atom_attraction_group(const AtomBlockId atom_id, const AttractGroupId group_id) {
+    atom_attraction_group[atom_id] = group_id;
+    attraction_groups[group_id].group_atoms.push_back(atom_id);
+}
+
+inline int AttractionInfo::num_attraction_groups() {
+    return attraction_groups.size();
+}
+
+inline float AttractionInfo::get_attraction_group_gain(const AttractGroupId group_id) {
+    return attraction_groups[group_id].gain;
+}
+
+inline void AttractionInfo::set_attraction_group_gain(const AttractGroupId group_id, const float new_gain) {
+    attraction_groups[group_id].gain = new_gain;
+}
+
+
+
+
+
+
 
 #endif /* VPR_SRC_PACK_ATTRACTION_GROUPS_H_ */
