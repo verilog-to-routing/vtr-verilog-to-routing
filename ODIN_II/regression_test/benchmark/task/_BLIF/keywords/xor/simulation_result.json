@@ -7,11 +7,11 @@
         "simulation_time(ms)": 19.1,
         "Pi": 64,
         "Po": 32,
-        "logic element": 35,
+        "logic element": 128,
         "Longest Path": 5,
-        "Average Path": 3,
-        "Estimated LUTs": 35,
-        "Total Node": 35
+        "Average Path": 5,
+        "Estimated LUTs": 128,
+        "Total Node": 128
     },
     "xor/range_xor_ultra_wide/no_arch": {
         "test_name": "xor/range_xor_ultra_wide/no_arch",
@@ -21,11 +21,11 @@
         "simulation_time(ms)": 144.6,
         "Pi": 512,
         "Po": 256,
-        "logic element": 259,
+        "logic element": 1024,
         "Longest Path": 5,
-        "Average Path": 3,
-        "Estimated LUTs": 259,
-        "Total Node": 259
+        "Average Path": 5,
+        "Estimated LUTs": 1024,
+        "Total Node": 1024
     },
     "xor/range_xor_wide/no_arch": {
         "test_name": "xor/range_xor_wide/no_arch",
@@ -35,11 +35,11 @@
         "simulation_time(ms)": 2.9,
         "Pi": 6,
         "Po": 3,
-        "logic element": 6,
+        "logic element": 12,
         "Longest Path": 5,
-        "Average Path": 4,
-        "Estimated LUTs": 6,
-        "Total Node": 6
+        "Average Path": 5,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "xor/xor_indexed_port/no_arch": {
         "test_name": "xor/xor_indexed_port/no_arch",
