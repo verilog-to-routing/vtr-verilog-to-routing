@@ -13,6 +13,18 @@
 #include "atom_netlist.h"
 #include "globals.h"
 
+/**
+ * @file
+ * @brief This file defines the AttractionInfo class, which is used to store atoms in attraction groups, which are
+ *        used during the clustering process.
+ *
+ * Overview
+ * ========
+ * Attraction groups are used during the clustering process to tell the clusterer which atoms should be packed
+ * in the same cluster by virtue of having the same floorplan constraints. The attraction groups may also be
+ * used to cluster similar atoms together in other ways in the future.
+ */
+
 /// @brief Type tag for AttractGroupId
 struct attraction_id_tag;
 
@@ -20,8 +32,21 @@ struct attraction_id_tag;
 typedef vtr::StrongId<attraction_id_tag> AttractGroupId;
 
 struct AttractionGroup {
+    //stores all atoms in the attraction group
     std::vector<AtomBlockId> group_atoms;
-    float gain = 5; //give every attraction group an initial gain of 5
+
+    /*
+     * Atoms belonging to this attraction group will receive this gain if they
+     * are potential candidates to be put in a cluster with the same attraction group.
+     */
+    float gain = 5;
+
+    /*
+     * If the group is made up from a partition of atoms that are confined to a size one spot
+     * (i.e. one x, y grid location), the clusterer will immediately put all atoms in the group
+     * into the same cluster
+     */
+    /* TODO: Add the code in the clusterer that will do the above steps. */
     bool region_size_one = false;
 };
 
@@ -30,8 +55,11 @@ constexpr AttractGroupId NO_ATTRACTION_GROUP(-1);
 
 class AttractionInfo {
   public:
+    //Constructor that fills in the attraction groups based on vpr's floorplan constraints.
+    //If no constraints were specified, then no attraction groups will be created.
     AttractionInfo();
 
+    //Setters and getters for the class
     AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
 
     AttractionGroup get_attraction_group_info(const AttractGroupId group_id);
@@ -40,13 +68,13 @@ class AttractionInfo {
 
     void set_attraction_group_info(AttractGroupId group_id, const AttractionGroup& group_info);
 
-    void add_attraction_group(const AttractionGroup& group_info);
-
-    int num_attraction_groups();
-
     float get_attraction_group_gain(const AttractGroupId group_id);
 
     void set_attraction_group_gain(const AttractGroupId group_id, const float new_gain);
+
+    void add_attraction_group(const AttractionGroup& group_info);
+
+    int num_attraction_groups();
 
   private:
     //Store each atom's attraction group assuming each atom is in at most one attraction group
@@ -76,11 +104,5 @@ inline float AttractionInfo::get_attraction_group_gain(const AttractGroupId grou
 inline void AttractionInfo::set_attraction_group_gain(const AttractGroupId group_id, const float new_gain) {
     attraction_groups[group_id].gain = new_gain;
 }
-
-
-
-
-
-
 
 #endif /* VPR_SRC_PACK_ATTRACTION_GROUPS_H_ */
