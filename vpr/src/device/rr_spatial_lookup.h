@@ -102,6 +102,15 @@ class RRSpatialLookup {
     /* -- Mutators -- */
   public:
     /**
+     * Reserve the memory for a list of nodes at (x, y) location with given type and side
+     */
+    void reserve_nodes(int x,
+                       int y,
+                       t_rr_type type,
+                       int num_nodes,
+                       e_side side = SIDES[0]);
+
+    /**
      * Register a node in the fast look-up 
      * - You must have a valid node id to register the node in the lookup
      * - (x, y) are the coordinate of the node to be indexable in the fast look-up

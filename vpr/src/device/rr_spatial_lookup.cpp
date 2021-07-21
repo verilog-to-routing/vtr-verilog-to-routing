@@ -202,6 +202,23 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int x,
     return nodes;
 }
 
+void RRSpatialLookup::reserve_nodes(int x,
+                                    int y,
+                                    t_rr_type type,
+                                    int num_nodes,
+                                    e_side side) {
+    VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
+
+    /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
+    if (type != IPIN && type != OPIN) {
+        VTR_ASSERT(side == SIDES[0]);
+    }
+
+    resize_nodes(x, y, type, side);
+
+    rr_node_indices_[type][x][y][side].reserve(num_nodes);
+}
+
 void RRSpatialLookup::add_node(RRNodeId node,
                                int x,
                                int y,
