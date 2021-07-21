@@ -61,15 +61,31 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     int i;
     int BASE_width = node->input_port_sizes[0];
     int EXPO_width = node->input_port_sizes[1];
+    signal_list_t* base = init_signal_list();
     signal_list_t* exponent = init_signal_list();
+
+    /* creating a list of base pins */
+    for (i = 0; i < BASE_width; i++) {
+        add_pin_to_signal_list(base, node->input_pins[i]);
+    }
 
     /* creating a list of exponent pins */
     for (i = 0; i < EXPO_width; i++) {
         add_pin_to_signal_list(exponent, node->input_pins[BASE_width + i]);
     }
     
-    /* check if the exponentiation is constant */
-    if (is_constant_signal(exponent, netlist)) {
+    /* check if the base is constant */
+    if (is_constant_signal(base, netlist)) {
+        /* check if the exponentiation is constant */
+        if (is_constant_signal(exponent, netlist)) {
+            pure_const_biops(node, netlist);
+        } else {
+            /* swap base and expo */
+            swap_ports(node, 0, 1);
+            implement_constant_exponentiation(node, traverse_mark_number, netlist);
+        }
+    } else if (is_constant_signal(exponent, netlist)) {
+        /* check if the exponentiation is constant */
         implement_constant_exponentiation(node, traverse_mark_number, netlist);
     } else {
         implement_non_constant_exponentiation(node, traverse_mark_number, netlist);
@@ -140,7 +156,9 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
             add_pin_to_signal_list(base, node->input_pins[i]);
         } else {
             /* for extra pins, padding with zero */
-            add_pin_to_signal_list(base, get_zero_pin(netlist));
+            add_pin_to_signal_list(base, (node->attributes->port_a_signed == operation_list::SIGNED)
+                                             ? get_one_pin(netlist)
+                                             : get_zero_pin(netlist));
         }
     }
 

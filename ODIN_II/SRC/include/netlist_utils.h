@@ -48,7 +48,7 @@ void free_attribute(attr_t* attribute);
 signal_list_t* init_signal_list();
 extern bool is_constant_signal(signal_list_t* signal, netlist_t* netlist);
 extern long constant_signal_value(signal_list_t* signal, netlist_t* netlist);
-extern signal_list_t* create_constant_signal(const long value, const int desired_width, netlist_t* netlist);
+extern signal_list_t* create_constant_signal(const long long value, const int desired_width, netlist_t* netlist);
 extern signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long prune_size, int num_of_signals);
 void add_pin_to_signal_list(signal_list_t* list, npin_t* pin);
 void sort_signal_list_alphabetically(signal_list_t* list);
@@ -81,6 +81,8 @@ extern void reduce_input_ports(nnode_t*& node, netlist_t* netlist);
 extern signal_list_t* reduce_signal_list(signal_list_t* signalvar, operation_list signedness, netlist_t* netlist);
 chain_information_t* allocate_chain_info();
 void remove_fanout_pins_from_net(nnet_t* net, npin_t* pin, int id);
+extern void pure_const_biops(nnode_t* node, netlist_t* netlist);
+extern void swap_ports(nnode_t*& node, int idx1, int idx2);
 extern void remove_driver_pins_from_net(nnet_t* net, npin_t* pin, int id);
 extern void delete_npin(npin_t* pin);
 
