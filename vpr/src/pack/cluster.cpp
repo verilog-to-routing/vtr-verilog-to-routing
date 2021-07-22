@@ -316,6 +316,8 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 int transitive_fanout_threshold,
                                                                 const int feasible_block_array_size);
 
+bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_cluster_placement_stats* cluster_placement_stats_ptr);
+
 static t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                                  const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                  AttractionInfo& attraction_groups,
@@ -2480,19 +2482,7 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 t_pack_molecule* molecule = kv.second;
                 if (molecule->valid) {
-                    bool success = true;
-                    for (int j = 0; j < get_array_size_of_molecule(molecule); j++) {
-                        if (molecule->atom_block_ids[j]) {
-                            VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-                            auto blk_id2 = molecule->atom_block_ids[j];
-                            if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) {
-                                /* TODO: debating whether to check if placement exists for molecule
-                                 * (more robust) or individual atom blocks (faster) */
-                                success = false;
-                                break;
-                            }
-                        }
-                    }
+                    bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
                                                             cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size);
@@ -2529,19 +2519,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 t_pack_molecule* molecule = kv.second;
                 if (molecule->valid) {
-                    bool success = true;
-                    for (int j = 0; j < get_array_size_of_molecule(molecule); j++) {
-                        if (molecule->atom_block_ids[j]) {
-                            VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-                            auto blk_id2 = molecule->atom_block_ids[j];
-                            if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) {
-                                /* TODO: debating whether to check if placement exists for molecule (more
-                                 * robust) or individual atom blocks (faster) */
-                                success = false;
-                                break;
-                            }
-                        }
-                    }
+                    bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
                                                             cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
@@ -2573,19 +2551,7 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                 for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                     t_pack_molecule* molecule = kv.second;
                     if (molecule->valid) {
-                        bool success = true;
-                        for (int i_atom = 0; i_atom < get_array_size_of_molecule(molecule); i_atom++) {
-                            if (molecule->atom_block_ids[i_atom]) {
-                                VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[i_atom]) == ClusterBlockId::INVALID());
-                                auto blk_id2 = molecule->atom_block_ids[i_atom];
-                                if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) {
-                                    /* TODO: debating whether to check if placement exists for molecule
-                                     * (more robust) or individual atom blocks (faster) */
-                                    success = false;
-                                    break;
-                                }
-                            }
-                        }
+                        bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
                         if (success) {
                             add_molecule_to_pb_stats_candidates(molecule,
                                                                 cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size);
@@ -2620,25 +2586,33 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
     for (const auto& transitive_candidate : cur_pb->pb_stats->transitive_fanout_candidates) {
         t_pack_molecule* molecule = transitive_candidate.second;
         if (molecule->valid) {
-            bool success = true;
-            for (int j = 0; j < get_array_size_of_molecule(molecule); j++) {
-                if (molecule->atom_block_ids[j]) {
-                    VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == ClusterBlockId::INVALID());
-                    auto blk_id = molecule->atom_block_ids[j];
-                    if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) {
-                        /* TODO: debating whether to check if placement exists for molecule (more
-                         * robust) or individual atom blocks (faster) */
-                        success = false;
-                        break;
-                    }
-                }
-            }
+            bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
             if (success) {
                 add_molecule_to_pb_stats_candidates(molecule,
                                                     cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE));
             }
         }
     }
+}
+
+bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_cluster_placement_stats* cluster_placement_stats_ptr) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    bool success = true;
+
+    for (int i_atom = 0; i_atom < get_array_size_of_molecule(molecule); i_atom++) {
+        if (molecule->atom_block_ids[i_atom]) {
+            VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[i_atom]) == ClusterBlockId::INVALID());
+            auto blk_id2 = molecule->atom_block_ids[i_atom];
+            if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) {
+                /* TODO: debating whether to check if placement exists for molecule
+                 * (more robust) or individual atom blocks (faster) */
+                success = false;
+                break;
+            }
+        }
+    }
+
+    return success;
 }
 
 /*****************************************/
