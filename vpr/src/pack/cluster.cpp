@@ -2572,8 +2572,6 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 const int feasible_block_array_size) {
     //TODO: For now, only done by fan-out; should also consider fan-in
 
-    auto& atom_ctx = g_vpr_ctx.atom();
-
     cur_pb->pb_stats->explore_transitive_fanout = false;
 
     /* First time finding transitive fanout candidates therefore alloc and load them */
