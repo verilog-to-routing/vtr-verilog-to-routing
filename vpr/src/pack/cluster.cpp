@@ -2074,9 +2074,9 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
              * Eventually want to move this out of the while loop and only update it
              * for the top-level block in each cluster.*/
             AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
-            float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
             if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
                 //increase gain of atom based on attraction group gain
+                float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
                 cur_pb->pb_stats->gain[blk_id] += att_grp_gain;
             }
 

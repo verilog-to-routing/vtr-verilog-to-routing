@@ -25,7 +25,7 @@ AttractionInfo::AttractionInfo() {
     //Then, fill in the group id for the atoms that do have an attraction group
     int num_att_grps = attraction_groups.size();
 
-    for (int igroup; igroup < num_att_grps; igroup++) {
+    for (int igroup = 0; igroup < num_att_grps; igroup++) {
         AttractGroupId group_id(igroup);
 
         AttractionGroup att_group = attraction_groups[group_id];
