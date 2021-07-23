@@ -41,6 +41,8 @@ parse_file=vpr_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-#
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
 script_params=-starting_stage vpr --gen_post_synthesis_netlist on -check_equivalent --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off --absorb_buffer_luts off 
 
