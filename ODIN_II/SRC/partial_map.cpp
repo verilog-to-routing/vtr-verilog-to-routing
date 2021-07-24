@@ -509,7 +509,7 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
          *                                ...              ...              ...                          *
          *                                                                                               *
          *                                ...              ...              ...                          *
-         */
+         *************************************************************************************************/
 
         /* keeping the information of each single bit mux */
         int num_expressions = single_bit_mux->num_input_port_sizes - 1;
@@ -531,7 +531,7 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
 
             /* iterating over each single bit 2-mux to connect inputs */
             for (j = 0; j < num_of_muxes; j++) {
-                /**                                                                                      *
+                /*****************************************************************************************
                  * <SMUX_2>                                                                              *
                  *                                              SEL PORT                                 *
                  *                                                 |                                     *
@@ -543,7 +543,7 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
                  *                                    in2 --'--> |1 |                                    *
                  *                                               | /                                     *
                  *                                               |/                                      *
-                 */
+                 ****************************************************************************************/
                 muxes[i][j] = make_2port_gate(SMUX_2, 2, 1, 1, single_bit_mux, mark);
 
                 if (j != num_of_muxes - 1)
@@ -1490,15 +1490,9 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
     for (int i = 0; i < input_port_width; i++) {
         muxes[i] = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (input_port_width));
         for (int j = 0; j < input_port_width; j++) {
-            muxes[i][j] = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
-            // connect related pin of second_input to related multiplexer as a selector
-            nnode_t* select = make_1port_gate(BUF_NODE, 1, 1, node, mark);
-            add_input_pin_to_node(select, copy_input_npin(node->input_pins[input_port_width + i]), 0);
-            connect_nodes(select, 0, muxes[i][j], 1);
-
-            nnode_t* not_select = make_not_gate(select, mark);
-            connect_nodes(select, 0, not_select, 0);
-            connect_nodes(not_select, 0, muxes[i][j], 0);
+            muxes[i][j] = make_2port_gate(SMUX_2, 2, 1, 1, node, mark);
+            /* add selector pin */
+            add_input_pin_to_node(muxes[i][j], copy_input_npin(node->input_pins[input_port_width + i]), 2);
         }
     }
 
@@ -1524,18 +1518,18 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
             for (int j = shift_size; j < input_port_width; j++)
                 add_input_pin_to_node(muxes[i][j - shift_size],
                                       copy_input_npin(input_pins->pins[j]),
-                                      3);
+                                      1);
             // connect the sign bit of the previous output as extension bits
             int pad_bit = input_port_width - 1;
             for (int j = 0; j < shift_size; j++) {
                 if (node->attributes->port_a_signed == SIGNED && type == ASR) {
                     add_input_pin_to_node(muxes[i][j + input_port_width - shift_size],
                                           copy_input_npin(input_pins->pins[pad_bit]),
-                                          3);
+                                          1);
                 } else {
                     add_input_pin_to_node(muxes[i][j + input_port_width - shift_size],
                                           get_zero_pin(netlist),
-                                          3);
+                                          1);
                 }
             }
 
@@ -1550,18 +1544,18 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
             for (int j = 0; j < input_port_width - shift_size; j++)
                 add_input_pin_to_node(muxes[i][j + shift_size],
                                       copy_input_npin(input_pins->pins[j]),
-                                      3);
+                                      1);
 
             // connect the zero as extension bits
             for (int j = 0; j < shift_size; j++)
                 add_input_pin_to_node(muxes[i][j],
                                       get_zero_pin(netlist),
-                                      3);
+                                      1);
         }
 
         for (int j = 0; j < input_port_width; j++) {
             // connect the output of the previous stage mux as the first input to the next stage mux
-            add_input_pin_to_node(muxes[i][j], input_pins->pins[j], 2);
+            add_input_pin_to_node(muxes[i][j], input_pins->pins[j], 0);
         }
 
         free_signal_list(input_pins);
