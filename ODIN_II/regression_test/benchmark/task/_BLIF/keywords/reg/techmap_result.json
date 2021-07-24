@@ -2,9 +2,9 @@
     "reg/reg/no_arch": {
         "test_name": "reg/reg/no_arch",
         "input_blif": "reg.blif",
-        "max_rss(MiB)": 8.1,
-        "exec_time(ms)": 1.3,
-        "techmap_time(ms)": 1,
+        "max_rss(MiB)": 4.6,
+        "exec_time(ms)": 0.5,
+        "techmap_time(ms)": 0.2,
         "Pi": 1,
         "Po": 1,
         "logic element": 1,

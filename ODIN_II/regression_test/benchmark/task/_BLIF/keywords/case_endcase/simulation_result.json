@@ -2,9 +2,8 @@
     "case_endcase/case/no_arch": {
         "test_name": "case_endcase/case/no_arch",
         "generated_blif": "case_generated.blif",
-        "max_rss(MiB)": 8,
-        "exec_time(ms)": 20.1,
-        "simulation_time(ms)": 17.8,
+        "max_rss(MiB)": 4.3,
+        "exec_time(ms)": 0.7,
         "Pi": 11,
         "Po": 3,
         "logic element": 22,
