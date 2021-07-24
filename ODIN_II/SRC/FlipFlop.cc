@@ -130,7 +130,7 @@ void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
         /*****************************************************************************************/
         /************************************** ARST_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* ARST_mux = create_single_bit_smux(node->input_pins[ARST_width + CLK_width + i], // D[i]
+        nnode_t* ARST_mux = smux_with_sel_polarity(node->input_pins[ARST_width + CLK_width + i], // D[i]
                                                    areset_value->pins[i],                        // reset value
                                                    copy_input_npin(select_reset),                // reset selector
                                                    node                                          // node
@@ -202,7 +202,7 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
         /*****************************************************************************************/
         /*************************************** SRST_MUX ****************************************/
         /*****************************************************************************************/
-        nnode_t* SRST_mux = create_single_bit_smux(node->input_pins[i + CLK_width], // D[i]
+        nnode_t* SRST_mux = smux_with_sel_polarity(node->input_pins[i + CLK_width], // D[i]
                                                    sreset_value->pins[i],           // sreset value
                                                    copy_input_npin(select_reset),   // sreset selector
                                                    node                             // node
@@ -282,7 +282,7 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
         /*****************************************************************************************/
         /*************************************** EN_MUXES ****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),            // connect to pad while is not enable
+        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),            // connect to pad while is not enable
                                                  node->input_pins[i + CLK_width], // D[i]
                                                  copy_input_npin(select_enable),  // enable selector
                                                  node                             // node
@@ -384,7 +384,7 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),                         // pad while not enable
+        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),                         // pad while not enable
                                                  node->input_pins[i + ARST_width + CLK_width], // D[i]
                                                  copy_input_npin(select_enable),               // enable selector
                                                  node                                          // node
@@ -395,7 +395,7 @@ void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /*************************************** RST_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* ARST_mux = create_single_bit_smux(EN_muxes_output_pin,           // enable mux output
+        nnode_t* ARST_mux = smux_with_sel_polarity(EN_muxes_output_pin,           // enable mux output
                                                    areset_value->pins[i],         // areset value
                                                    copy_input_npin(select_reset), // areset selector
                                                    node                           // node
@@ -483,7 +483,7 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),            // pad while is not enable
+        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),            // pad while is not enable
                                                  node->input_pins[i + CLK_width], // D[i]
                                                  copy_input_npin(select_enable),  // enable selector
                                                  node                             // node
@@ -495,7 +495,7 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /************************************** SRST_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* SRST_mux = create_single_bit_smux(EN_muxes_output_pin,           // enable mux output
+        nnode_t* SRST_mux = smux_with_sel_polarity(EN_muxes_output_pin,           // enable mux output
                                                    sreset_value->pins[i],         // sreset value
                                                    copy_input_npin(select_reset), // sreset selector
                                                    node                           // node
@@ -590,19 +590,19 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /************************************** SRST_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* SRST_mux = create_single_bit_smux(node->input_pins[i + CLK_width], // D[i]
+        nnode_t* SRST_mux = smux_with_sel_polarity(node->input_pins[i + CLK_width], // D[i]
                                                    sreset_value->pins[i],           // sreset value
                                                    copy_input_npin(select_reset),   // sreset selector
-                                                   node,                            // node
+                                                   node                             // node
         );
 
         // specify mux_set[i] output pin
-        npin_t* SRST_muxes_output_pin = SRST_mux->output_pins[0];
+        npin_t* SRST_muxes_output_pin = SRST_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = create_single_bit_smux(SRST_muxes_output_pin,          // pad node while is not enable
+        nnode_t* EN_mux = smux_with_sel_polarity(SRST_muxes_output_pin,          // pad node while is not enable
                                                  get_pad_pin(netlist),           // sreset mux output
                                                  copy_input_npin(select_enable), // enable selecor
                                                  node                            // node
@@ -663,7 +663,6 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
      * SET: input port 3
     */
     int i;
-    int idx1 = 0, idx2 = 0;
     int width = node->num_output_pins;
     int CLK_width = node->input_port_sizes[0];
     int CLR_width = node->input_port_sizes[1];
@@ -683,7 +682,7 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /**************************************** SET_MUXES **************************************/
         /*****************************************************************************************/
-        nnode_t* SET_mux = create_single_bit_smux(node->input_pins[CLK_width + CLR_width + i], // D[i]
+        nnode_t* SET_mux = smux_with_sel_polarity(node->input_pins[CLK_width + CLR_width + i], // D[i]
                                                   get_one_pin(netlist),                        // VCC (set value)
                                                   copy_input_npin(select_set),                 // set selector
                                                   node                                         // node
@@ -705,7 +704,7 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /*************************************** CLR_MUXES ***************************************/
         /*****************************************************************************************/
-        nnode_t* CLR_mux = create_single_bit_smux(SET_muxes_output_pin,        // set mux output
+        nnode_t* CLR_mux = smux_with_sel_polarity(SET_muxes_output_pin,        // set mux output
                                                   get_zero_pin(netlist),       // GND (clr value)
                                                   copy_input_npin(select_clr), // clr selector
                                                   node                         // node
@@ -789,7 +788,7 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /*************************************** EN_MUXES ****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = create_single_bit_smux(get_pad_pin(netlist),                        // pad while not enable
+        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),                        // pad while not enable
                                                  node->input_pins[CLK_width + CLR_width + i], // D[i]
                                                  copy_input_npin(select_enable),              // enable selector
                                                  node                                         // node
@@ -811,7 +810,7 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /*************************************** SET_MUXES ***************************************/
         /*****************************************************************************************/
-        nnode_t* SET_mux = create_single_bit_smux(EN_muxes_output_pin,         // enable output
+        nnode_t* SET_mux = smux_with_sel_polarity(EN_muxes_output_pin,         // enable output
                                                   get_one_pin(netlist),        // VCC (set value)
                                                   copy_input_npin(select_set), // set selector
                                                   node                         // node
@@ -833,7 +832,7 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /*************************************** CLR_MUXES ***************************************/
         /*****************************************************************************************/
-        nnode_t* CLR_mux = create_single_bit_smux(SET_muxes_output_pin,        // set mux output
+        nnode_t* CLR_mux = smux_with_sel_polarity(SET_muxes_output_pin,        // set mux output
                                                   get_zero_pin(netlist),       // GND (clr value)
                                                   copy_input_npin(select_clr), // clr selector
                                                   node                         // node

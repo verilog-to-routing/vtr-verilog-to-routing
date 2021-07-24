@@ -50,6 +50,8 @@ extern bool is_constant_signal(signal_list_t* signal, netlist_t* netlist);
 extern long constant_signal_value(signal_list_t* signal, netlist_t* netlist);
 extern signal_list_t* create_constant_signal(const long long value, const int desired_width, netlist_t* netlist);
 extern signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long prune_size, int num_of_signals);
+extern signal_list_t** split_signal_list(signal_list_t* signalsvar, const int width);
+extern bool sigcmp(signal_list_t* sig, signal_list_t* be_checked);
 void add_pin_to_signal_list(signal_list_t* list, npin_t* pin);
 void sort_signal_list_alphabetically(signal_list_t* list);
 signal_list_t* combine_lists(signal_list_t** signal_lists, int num_signal_lists);

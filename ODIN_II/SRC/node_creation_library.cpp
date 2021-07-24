@@ -399,18 +399,18 @@ nnode_t* make_mult_block(nnode_t* node, short mark) {
 }
 
 /**
- * (function: create_multiport_mux)
+ * (function: smux_with_sel_polarity)
  * 
- * @brief create a multiport mux with given selector and signals lists
+ * @brief smux pins based on the selector polarity
  * 
- * @param selector signal list of selector pins
- * @param num_muxed_inputs num of inputs to be muxxed
- * @param inputs list of input signal lists
- * @param node pointing to a bram node
+ * @param pin1 input mux 1
+ * @param pin2 input mux 2
+ * @param inputs mux selector
+ * @param node pointing to the related node
  * 
- * @return mux output signal list
+ * @return smux node
  */
-nnode_t* create_single_bit_smux(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t* node) {
+nnode_t* smux_with_sel_polarity(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t* node) {
     /* validation */
     oassert(sel->sensitivity == ACTIVE_HIGH_SENSITIVITY || sel->sensitivity == ACTIVE_LOW_SENSITIVITY);
 
@@ -453,24 +453,31 @@ nnode_t* create_single_bit_smux(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t
 
     return (smux);
 }
+
 /**
  * (function: create_multiport_mux)
  * 
  * @brief create a multiport mux with given selector and signals lists
  * 
+ * @param inputs list of input signal lists
  * @param selector signal list of selector pins
  * @param num_muxed_inputs num of inputs to be muxxed
- * @param inputs list of input signal lists
- * @param node pointing to a bram node
+ * @param outs list of outputs signals 
+ * @param node pointing to the src node
+ * @param netlist pointer to the netlist
  * 
- * @return mux output signal list
+ * @return mux node
  */
-nnode_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node) {
+nnode_t* create_multiport_smux(signal_list_t** inputs, signal_list_t* selector, int num_muxed_inputs, signal_list_t* outs, nnode_t* node, netlist_t* netlist) {
+    /* validation */
+    int valid_num_mux_inputs = shift_left_value_with_overflow_check(0X1, selector->count, node->loc);
+    oassert(valid_num_mux_inputs >= num_muxed_inputs);
+
     int i, j;
     int offset = 0;
-    nnode_t* mux = allocate_nnode(node->loc);
 
-    mux->type = MULTIPORT_nBIT_MUX;
+    nnode_t* mux = allocate_nnode(node->loc);
+    mux->type = MULTIPORT_nBIT_SMUX;
     mux->name = node_name(mux, node->name);
     mux->traverse_visited = node->traverse_visited;
 
@@ -483,40 +490,62 @@ nnode_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, sig
     }
     offset += selector->count;
 
-    int max_input_width = 0;
+    int max_width = 0;
+    for (i = 0; i < num_muxed_inputs; i++) {
+        /* keep the size of max input to allocate equal output */
+        if (inputs[i]->count > max_width)
+            max_width = inputs[i]->count;
+    }
 
     for (i = 0; i < num_muxed_inputs; i++) {
         /* add input port data */
-        add_input_port_information(mux, inputs[i]->count);
-        allocate_more_input_pins(mux, inputs[i]->count);
+        add_input_port_information(mux, max_width);
+        allocate_more_input_pins(mux, max_width);
 
         for (j = 0; j < inputs[i]->count; j++) {
+            npin_t* pin = inputs[i]->pins[j];
             /* hook inputs into mux node */
-            add_input_pin_to_node(mux, inputs[i]->pins[j], offset + j);
+            if (j < max_width) {
+                if (pin->node)
+                    remap_pin_to_new_node(pin, mux, j + offset);
+                else
+                    add_input_pin_to_node(mux, pin, j + offset);
+            } else {
+                /* pad with PAD node */
+                add_input_pin_to_node(mux, get_pad_pin(netlist), j + offset);
+            }
         }
-        /* keep the size of max input to allocate equal output */
-        if (inputs[i]->count > max_input_width)
-            max_input_width = inputs[i]->count;
-
         /* record offset to have correct idx for adding pins */
-        offset += inputs[i]->count;
+        offset += max_width;
     }
 
-    /* add output signal */
-    add_output_port_information(mux, max_input_width);
-    allocate_more_output_pins(mux, max_input_width);
-    for (i = 0; i < max_input_width; i++) {
-        /* create the clk node's output pin */
-        npin_t* new_pin1 = allocate_npin();
-        npin_t* new_pin2 = allocate_npin();
-        nnet_t* new_net = allocate_nnet();
-        new_net->name = make_full_ref_name(NULL, NULL, NULL, mux->name, i);
-        /* hook the output pin into the node */
-        add_output_pin_to_node(mux, new_pin1, i);
-        /* hook up new pin 1 into the new net */
-        add_driver_pin_to_net(new_net, new_pin1);
-        /* hook up the new pin 2 to this new net */
-        add_fanout_pin_to_net(new_net, new_pin2);
+    /* add output info */
+    add_output_port_information(mux, max_width);
+    allocate_more_output_pins(mux, max_width);
+
+    // specify output pin
+    if (outs != NULL) {
+        for (i = 0; i < outs->count; i++) {
+            npin_t* output_pin;
+            if (i < max_width) {
+                output_pin = outs->pins[i];
+                if (output_pin->node)
+                    remap_pin_to_new_node(output_pin, mux, i);
+                else
+                    add_output_pin_to_node(mux, output_pin, i);
+            } else {
+                output_pin = allocate_npin();
+                nnet_t* output_net = allocate_nnet();
+                /* add output driver to the output net */
+                add_driver_pin_to_net(output_net, output_pin);
+                /* add output pin to the mux node */
+                add_output_pin_to_node(mux, output_pin, i);
+            }
+        }
+    } else {
+        signal_list_t* outputs = make_output_pins_for_existing_node(mux, max_width);
+        // CLEAN UP
+        free_signal_list(outputs);
     }
 
     return (mux);

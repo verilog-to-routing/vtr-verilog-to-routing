@@ -793,21 +793,21 @@ signal_list_t* create_constant_signal(const long long value, const int desired_w
     signal_list_t* list = init_signal_list();
 
     long i;
-    std::string binary_value_str = std::bitset<sizeof(long) * 8>(value).to_string();
+    std::string binary_value_str = string_of_radix_to_bitstring(std::to_string(value), 10);
     long width = binary_value_str.length();
 
-    long start = 0;
-    long end = 0;
-    bool extension = false;
+    while (desired_width > width) {
+        if (value < 0)
+            binary_value_str = "1" + binary_value_str;
+        else
+            binary_value_str = "0" + binary_value_str;
 
-    if (desired_width > width) {
-        start = desired_width;
-        end = 0;
-        extension = true;
-    } else {
-        start = width;
-        end = width - desired_width;
+        width = binary_value_str.length();
     }
+
+    long start = width;
+    long end = width - desired_width;
+    bool extension = false;
 
     /* create vcc/gnd signal pins */
     for (i = start; i > end; i--) {
@@ -836,72 +836,43 @@ signal_list_t* create_constant_signal(const long long value, const int desired_w
  * @return pruned signal list
  */
 signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long prune_size, int num_of_signals) {
+    /* validation */
+    oassert(prune_size);
+    oassert(num_of_signals);
+    oassert(signalsvar->count % signal_width == 0);
+
+    /* no need to prune */
+    if (prune_size <= signal_width)
+        return (signalsvar);
+
     int i, j;
     /* new signal list */
     signal_list_t* new_signals = NULL;
-    /* check if signalsvar exist */
-    if (signalsvar) {
-        if (num_of_signals == 1) {
-            /* check if the signalsvar size is greater than the needed width, we need to reduce it */
-            if (signalsvar->count > prune_size) {
-                new_signals = init_signal_list();
-                /* disconnect from its node */
-                for (i = 0; i < signalsvar->count; i++) {
-                    npin_t* pin = signalsvar->pins[i];
-                    /* adding pin to new signal list */
-                    if (i < prune_size) {
-                        add_pin_to_signal_list(new_signals, pin);
-                    }
-                    /* pruning the extra pins */
-                    else {
-                        /* detach from the node, its net and free pin */
-                        delete_npin(pin);
-                    }
-                }
-                // CLEAN UP
-                free_signal_list(signalsvar);
+    signal_list_t** splitted_signals = split_signal_list(signalsvar, signal_width);
 
-            } else {
-                /* no need to change anything */
-                new_signals = signalsvar;
+    /* iterating over signals to prune them */
+    for (i = 0; i < num_of_signals; i++) {
+        /* init pruned signal list */
+        signal_list_t* new_signal = init_signal_list();
+        for (j = 0; j < signal_width; j++) {
+            npin_t* pin = splitted_signals[i]->pins[j];
+            /* adding pin to new signal list */
+            if (i < prune_size) {
+                add_pin_to_signal_list(new_signal, pin);
             }
-
-        } else if (num_of_signals == 2) {
-            /* validate the signalsvar size */
-            oassert(signalsvar->count == 2 * signal_width);
-            /* round up the needed addr width if it is odd */
-            prune_size = (prune_size % 2 != 0) ? (prune_size + 1) : prune_size;
-
-            /* check if the signalsvar size is greater than the prune size, need to reduce it */
-            if (signalsvar->count > 2 * prune_size) {
-                int offset = 0;
-                new_signals = init_signal_list();
-                /* disconnect from its node */
-                for (i = 0; i < 2; i++) {
-                    for (j = 0; j < signal_width; j++) {
-                        npin_t* pin = signalsvar->pins[offset + j];
-                        /* adding pin to new signal list */
-                        if (j < prune_size) {
-                            add_pin_to_signal_list(new_signals, pin);
-                        }
-                        /* pruning the extra addr pins */
-                        else {
-                            /* detach from its node, its net and free pin */
-                            delete_npin(pin);
-                        }
-                    }
-                    /* increase offset to pick the needed addr pins from the beginning of the second addr */
-                    offset += signal_width;
-                }
-                // CLEAN UP
-                free_signal_list(signalsvar);
-
-            } else {
-                /* no need to change anything */
-                new_signals = signalsvar;
+            /* pruning the extra pins */
+            else {
+                /* detach from the node, its net and free pin */
+                delete_npin(pin);
             }
         }
+
+        free_signal_list(splitted_signals[i]);
+        splitted_signals[i] = new_signal;
     }
+
+    /* combining pruned signals */
+    new_signals = combine_lists(splitted_signals, num_of_signals);
 
     return (new_signals);
 }
@@ -941,6 +912,71 @@ signal_list_t* combine_lists(signal_list_t** signal_lists, int num_signal_lists)
     }
 
     return signal_lists[0];
+}
+
+/**
+ * (function: split_list)
+ * 
+ * @brief split signals list to a list of signal list with requested width
+ * 
+ * @param signalsvar signal list of pins (may include one signal or two signals)
+ * @param width the width of each signal in signalsvar
+ * 
+ * @return splitted signal list
+ */
+signal_list_t** split_signal_list(signal_list_t* signalsvar, const int width) {
+    signal_list_t** splitted_signals = NULL;
+
+    /* check if split is needed */
+    if (signalsvar->count == width) {
+        splitted_signals = (signal_list_t**)vtr::calloc(1, sizeof(signal_list_t*));
+        splitted_signals[0] = signalsvar;
+        return (splitted_signals);
+    }
+
+    /* validate signals list size */
+    oassert(width != 0);
+    oassert(signalsvar->count % width == 0);
+
+    int i, j;
+    int offset = 0;
+    int num_chunk = signalsvar->count / width;
+
+    /* initialize splitted signals */
+    splitted_signals = (signal_list_t**)vtr::calloc(num_chunk, sizeof(signal_list_t*));
+    for (i = 0; i < num_chunk; i++) {
+        splitted_signals[i] = init_signal_list();
+        for (j = 0; j < width; j++) {
+            npin_t* pin = signalsvar->pins[j + offset];
+            /* add to splitted signals list */
+            add_pin_to_signal_list(splitted_signals[i], pin);
+        }
+        offset += width;
+    }
+
+    return (splitted_signals);
+}
+
+/**
+ * (function: sigcmp)
+ * 
+ * @brief to check if sig is the same as be_checked
+ * 
+ * @param sig first signals
+ * @param be_checked second signals
+ */
+bool sigcmp(signal_list_t* sig, signal_list_t* be_checked) {
+    /* validate signal sizes */
+    oassert(sig->count == be_checked->count);
+
+    int i;
+    for (i = 0; i < sig->count; i++) {
+        /* checking their net */
+        if (sig->pins[i]->net != be_checked->pins[i]->net) {
+            return (false);
+        }
+    }
+    return (true);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1432,7 +1468,7 @@ npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, ed
     npin_t* eq2_output_pin = eq2_outputs->pins[0];
 
     /* NOR both signals */
-    nnode_t* nor_node = make_2port_gate(LOGICAL_NOR, 1, 1, 1, node, node->traverse_visited);
+    nnode_t* nor_node = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, node->traverse_visited);
     /* hook eq outputs as input into OR node */
     add_input_pin_to_node(nor_node, eq1_output_pin, 0);
     add_input_pin_to_node(nor_node, eq2_output_pin, 1);

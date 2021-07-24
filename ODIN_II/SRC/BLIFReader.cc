@@ -1886,7 +1886,7 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
         case (NOT_EQUAL):      //fallthrough
         case (CASE_EQUAL):     //fallthrough
         case (CASE_NOT_EQUAL): //fallthrough
-        case (MULTIPORT_nBIT_MUX): {
+        case (MULTIPORT_nBIT_SMUX): {
             // create a model with single output port, being read as the port [n-1] among [0...n-1]
             model = create_model(name, ports, ports->count - 1, ports->count);
             break;

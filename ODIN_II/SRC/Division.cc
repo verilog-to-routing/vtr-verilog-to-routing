@@ -642,7 +642,7 @@ static void make_CR_node(nnode_t* node, signal_list_t* input_signal_list, signal
      ************************************************** MUX **************************************************
      *********************************************************************************************************/
     /* creating the multiplexer node */
-    nnode_t* mux_node = make_3port_gate(MULTIPORT_nBIT_MUX, 1, 1, 1, 1, node, node->traverse_visited);
+    nnode_t* mux_node = make_3port_gate(MULTIPORT_nBIT_SMUX, 1, 1, 1, 1, node, node->traverse_visited);
     /* hook the selector c_ into the mux node */
     if (_c->node)
         remap_pin_to_new_node(_c, mux_node, 0);

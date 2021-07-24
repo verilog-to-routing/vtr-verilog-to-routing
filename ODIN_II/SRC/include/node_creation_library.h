@@ -28,7 +28,6 @@ nnode_t* make_mult_block(nnode_t* node, short mark);
 edge_type_e edge_type_blif_enum(std::string edge_kind_str, loc_t loc);
 const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc);
 
-extern nnode_t* create_single_bit_smux(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t* node);
-extern nnode_t* create_multiport_mux(signal_list_t* selector, int num_muxed_inputs, signal_list_t** inputs, nnode_t* node);
-
+extern nnode_t* smux_with_sel_polarity(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t* node);
+extern nnode_t* create_multiport_smux(signal_list_t** inputs, signal_list_t* selector, int num_muxed_inputs, signal_list_t* outs, nnode_t* node, netlist_t* netlist);
 #endif

@@ -363,7 +363,7 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
 
     /* creating the output Multiport MUX node */
     nnode_t* multiport_mux = allocate_nnode(node->loc);
-    multiport_mux->type = MULTIPORT_nBIT_MUX;
+    multiport_mux->type = MULTIPORT_nBIT_SMUX;
     multiport_mux->traverse_visited = traverse_mark_number;
     multiport_mux->name = node_name(multiport_mux, node->name);
 

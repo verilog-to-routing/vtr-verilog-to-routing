@@ -1913,7 +1913,9 @@ nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node) {
     oassert(spram_signals->we != NULL);
     oassert(spram_signals->addr->count >= 1);
     oassert(spram_signals->data->count >= 1);
-    oassert(spram_signals->data->count == spram_signals->out->count);
+    if (spram_signals->out != NULL) {
+        oassert(spram_signals->data->count == spram_signals->out->count);
+    }
 
     bool splitted = false;
     /* create a single port ram node */
@@ -1947,6 +1949,18 @@ nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node) {
     add_input_port_to_memory(spram, clk, "clk");
 
     /* OUTPUT */
+    if (spram_signals->out == NULL) {
+        /* init the signal list */
+        spram_signals->out = init_signal_list();
+        for (int i = 0; i < spram_signals->data->count; i++) {
+            npin_t* new_pin = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            /* add pin as the net driver */
+            add_driver_pin_to_net(new_net, new_pin);
+            /* store them into dpram signals */
+            add_pin_to_signal_list(spram_signals->out, new_pin);
+        }
+    }
     add_output_port_to_memory(spram, spram_signals->out, "out");
 
     /* check if hard block is available to so split if needed */
@@ -1989,18 +2003,21 @@ nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node) {
  */
 nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
     /* sanity checks */
+    oassert(dpram_signals->clk);
+    oassert((dpram_signals->we1) && (dpram_signals->we2));
     oassert((dpram_signals->addr1) && (dpram_signals->addr2));
     oassert((dpram_signals->data1) && (dpram_signals->data1));
-    oassert((dpram_signals->out1) && (dpram_signals->out2));
-    oassert((dpram_signals->we1) && (dpram_signals->we2));
-    oassert(dpram_signals->clk);
-
-    oassert(dpram_signals->addr1->count >= 1 && dpram_signals->data1->count >= 1);
-    oassert(dpram_signals->addr2->count >= 1 && dpram_signals->data2->count >= 1);
     oassert(dpram_signals->addr1->count == dpram_signals->addr2->count);
     oassert(dpram_signals->data1->count == dpram_signals->data2->count);
-    oassert(dpram_signals->data1->count == dpram_signals->out1->count);
-    oassert(dpram_signals->data2->count == dpram_signals->out2->count);
+    oassert(dpram_signals->addr1->count >= 1 && dpram_signals->data1->count >= 1);
+    oassert(dpram_signals->addr2->count >= 1 && dpram_signals->data2->count >= 1);
+
+    if (dpram_signals->out1 != NULL) {
+        oassert(dpram_signals->data1->count == dpram_signals->out1->count);
+    }
+    if (dpram_signals->out1 != NULL) {
+        oassert(dpram_signals->data2->count == dpram_signals->out2->count);
+    }
 
     bool splitted = false;
     /* create a dual port ram node */
@@ -2040,7 +2057,31 @@ nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
     add_input_port_to_memory(dpram, clk, "clk");
 
     /* OUTPUT */
+    if (dpram_signals->out1 == NULL) {
+        /* init the signal list */
+        dpram_signals->out1 = init_signal_list();
+        for (int i = 0; i < dpram_signals->data1->count; i++) {
+            npin_t* new_pin = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            /* add pin as the net driver */
+            add_driver_pin_to_net(new_net, new_pin);
+            /* store them into dpram signals */
+            add_pin_to_signal_list(dpram_signals->out1, new_pin);
+        }
+    }
     add_output_port_to_memory(dpram, dpram_signals->out1, "out1");
+    if (dpram_signals->out2 == NULL) {
+        /* init the signal list */
+        dpram_signals->out2 = init_signal_list();
+        for (int i = 0; i < dpram_signals->data2->count; i++) {
+            npin_t* new_pin = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            /* add pin as the net driver */
+            add_driver_pin_to_net(new_net, new_pin);
+            /* store them into dpram signals */
+            add_pin_to_signal_list(dpram_signals->out2, new_pin);
+        }
+    }
     add_output_port_to_memory(dpram, dpram_signals->out2, "out2");
 
     /* check if hard block is available to so split if needed */

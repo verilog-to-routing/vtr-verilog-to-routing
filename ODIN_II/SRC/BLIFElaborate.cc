@@ -271,7 +271,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case SMUX_2:          //fallthrough
         case MULTI_PORT_MUX:  //fallthrough
         case MULTI_BIT_MUX_2: //fallthorugh
-        case MULTIPORT_nBIT_MUX: {
+        case MULTIPORT_nBIT_SMUX: {
             /**
              * resolving multiplexer nodes which
             */
@@ -527,7 +527,7 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
     oassert(node->traverse_visited == traverse_mark_number);
 
     switch (node->type) {
-        case MULTIPORT_nBIT_MUX: {
+        case MULTIPORT_nBIT_SMUX: {
             /**
              * need to reorder the input pins, so that the 
              * selector signal comes at the first place
@@ -559,7 +559,7 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
         }
         default: {
             error_message(BLIF_ELBORATION, node->loc,
-                          "The node(%s) type (%s) is not among Odin's latch types [PMUX, MULTIPORT_nBIT_MUX, MULTI_BIT_MUX_2, MUX_2, MULTI_PORT_MUX]\n", node->name, node->type);
+                          "The node(%s) type (%s) is not among Odin's latch types [PMUX, MULTIPORT_nBIT_SMUX, MULTI_BIT_MUX_2, MUX_2, MULTI_PORT_MUX]\n", node->name, node->type);
             break;
         }
     }

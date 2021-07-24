@@ -260,32 +260,32 @@ enum operation_list {
     MEMORY,
     PAD_NODE,
     HARD_IP,
-    GENERIC,            /*added for the unknown node type */
-    CLOG2,              // $clog2
-    UNSIGNED,           // $unsigned
-    SIGNED,             // $signed
-                        // [START] operations to cover yosys subckt
-    MULTI_BIT_MUX_2,    // like MUX_2 but with n-bit input/output
-    MULTIPORT_nBIT_MUX, // n-bit input/output in multiple ports
-    HARD_ADD,           // VTR Adder hard block
-    HARD_MULTIPLY,      // VTR Multiply hard block
-    PMUX,               // Multiplexer with many inputs using one-hot select signal
-    ADFF,               // data, A to areset value and output port
-    SDFF,               // data, S to reset value and output port
-    DFFE,               // data, enable to output port
-    ADFFE,              // data, asynchronous reset value and enable to output port
-    SDFFE,              // data, synchronous reset value and enable to output port
-    SDFFCE,             // data, synchronous reset value and enable to reset value and output port
-    DFFSR,              // data, clear and set to output port
-    DFFSRE,             // data, clear and set with enable to output port
-    DLATCH,             // datato output port based on polarity without clk
-    ADLATCH,            // datato output port based on polarity without clk
-    SETCLR,             // set or clear an input pins
-    SPRAM,              // representing primitive single port ram
-    DPRAM,              // representing primitive dual port ram
-    BRAM,               // block of memry generated in yosys subcircuit formet blif file
-    ROM,                // single port block of memry generated in yosys subcircuit formet blif file (READ ACCESs)
-                        // [END] operations to cover yosys subckt
+    GENERIC,             /*added for the unknown node type */
+    CLOG2,               // $clog2
+    UNSIGNED,            // $unsigned
+    SIGNED,              // $signed
+                         // [START] operations to cover yosys subckt
+    MULTI_BIT_MUX_2,     // like MUX_2 but with n-bit input/output
+    MULTIPORT_nBIT_SMUX, // n-bit input/output in multiple ports
+    HARD_ADD,            // VTR Adder hard block
+    HARD_MULTIPLY,       // VTR Multiply hard block
+    PMUX,                // Multiplexer with many inputs using one-hot select signal
+    ADFF,                // data, A to areset value and output port
+    SDFF,                // data, S to reset value and output port
+    DFFE,                // data, enable to output port
+    ADFFE,               // data, asynchronous reset value and enable to output port
+    SDFFE,               // data, synchronous reset value and enable to output port
+    SDFFCE,              // data, synchronous reset value and enable to reset value and output port
+    DFFSR,               // data, clear and set to output port
+    DFFSRE,              // data, clear and set with enable to output port
+    DLATCH,              // datato output port based on polarity without clk
+    ADLATCH,             // datato output port based on polarity without clk
+    SETCLR,              // set or clear an input pins
+    SPRAM,               // representing primitive single port ram
+    DPRAM,               // representing primitive dual port ram
+    BRAM,                // block of memry generated in yosys subcircuit formet blif file
+    ROM,                 // single port block of memry generated in yosys subcircuit formet blif file (READ ACCESs)
+                         // [END] operations to cover yosys subckt
     operation_list_END
 };
 typedef std::unordered_map<std::string, operation_list> typemap;
