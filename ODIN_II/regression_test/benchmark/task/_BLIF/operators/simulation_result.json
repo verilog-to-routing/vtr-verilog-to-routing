@@ -2334,12 +2334,12 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asl_indexed/no_arch": {
         "test_name": "operators/signed_variable_asl_indexed/no_arch",
@@ -2349,11 +2349,11 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2364,12 +2364,12 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_asl_wire/no_arch": {
         "test_name": "operators/signed_variable_asl_wire/no_arch",
@@ -2379,11 +2379,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2394,12 +2394,12 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sl_indexed/no_arch": {
         "test_name": "operators/signed_variable_sl_indexed/no_arch",
@@ -2409,11 +2409,11 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2424,12 +2424,12 @@
         "simulation_time(ms)": 1.8,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sl_wire/no_arch": {
         "test_name": "operators/signed_variable_sl_wire/no_arch",
@@ -2439,11 +2439,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2454,12 +2454,12 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asl_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_asl_indexed/no_arch",
@@ -2469,11 +2469,11 @@
         "simulation_time(ms)": 2.8,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2484,12 +2484,12 @@
         "simulation_time(ms)": 1.8,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_asl_wire/no_arch": {
         "test_name": "operators/unsigned_variable_asl_wire/no_arch",
@@ -2499,11 +2499,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2514,12 +2514,12 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sl_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_sl_indexed/no_arch",
@@ -2529,11 +2529,11 @@
         "simulation_time(ms)": 2.8,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2544,12 +2544,12 @@
         "simulation_time(ms)": 1.8,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sl_wire/no_arch": {
         "test_name": "operators/unsigned_variable_sl_wire/no_arch",
@@ -2559,11 +2559,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2574,12 +2574,12 @@
         "simulation_time(ms)": 535.6,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asl_int_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_int_wide/no_arch",
@@ -2589,11 +2589,11 @@
         "simulation_time(ms)": 503.2,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2604,12 +2604,12 @@
         "simulation_time(ms)": 2213,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asl_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_ultra_wide/no_arch",
@@ -2619,11 +2619,11 @@
         "simulation_time(ms)": 2213.9,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2634,12 +2634,12 @@
         "simulation_time(ms)": 6.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asl_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_wide/no_arch",
@@ -2649,11 +2649,11 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2664,12 +2664,12 @@
         "simulation_time(ms)": 529.7,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sl_int_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_int_wide/no_arch",
@@ -2679,11 +2679,11 @@
         "simulation_time(ms)": 511.1,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2694,12 +2694,12 @@
         "simulation_time(ms)": 2198.3,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sl_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_ultra_wide/no_arch",
@@ -2709,11 +2709,11 @@
         "simulation_time(ms)": 2201.2,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2724,12 +2724,12 @@
         "simulation_time(ms)": 6.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sl_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_wide/no_arch",
@@ -2739,11 +2739,11 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2754,12 +2754,12 @@
         "simulation_time(ms)": 528.8,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asl_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_int_wide/no_arch",
@@ -2769,11 +2769,11 @@
         "simulation_time(ms)": 502.1,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2784,12 +2784,12 @@
         "simulation_time(ms)": 2186.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asl_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/no_arch",
@@ -2799,11 +2799,11 @@
         "simulation_time(ms)": 2209.5,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2814,12 +2814,12 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asl_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_wide/no_arch",
@@ -2829,11 +2829,11 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2844,12 +2844,12 @@
         "simulation_time(ms)": 519.7,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sl_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_int_wide/no_arch",
@@ -2859,11 +2859,11 @@
         "simulation_time(ms)": 501.8,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2874,12 +2874,12 @@
         "simulation_time(ms)": 2184.2,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sl_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/no_arch",
@@ -2889,11 +2889,11 @@
         "simulation_time(ms)": 2190.3,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2904,12 +2904,12 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sl_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_wide/no_arch",
@@ -2919,11 +2919,11 @@
         "simulation_time(ms)": 6.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2934,12 +2934,12 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_indexed/no_arch": {
         "test_name": "operators/signed_variable_asr_indexed/no_arch",
@@ -2949,11 +2949,11 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2964,12 +2964,12 @@
         "simulation_time(ms)": 529.5,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asr_int_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_int_wide/no_arch",
@@ -2979,11 +2979,11 @@
         "simulation_time(ms)": 524.4,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2994,12 +2994,12 @@
         "simulation_time(ms)": 2250.6,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asr_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_ultra_wide/no_arch",
@@ -3009,11 +3009,11 @@
         "simulation_time(ms)": 2224.8,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3024,12 +3024,12 @@
         "simulation_time(ms)": 6.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asr_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_wide/no_arch",
@@ -3039,11 +3039,11 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3054,12 +3054,12 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_asr_wire/no_arch": {
         "test_name": "operators/signed_variable_asr_wire/no_arch",
@@ -3069,11 +3069,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3084,12 +3084,12 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sr_indexed/no_arch": {
         "test_name": "operators/signed_variable_sr_indexed/no_arch",
@@ -3099,11 +3099,11 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3114,12 +3114,12 @@
         "simulation_time(ms)": 544.4,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sr_int_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_int_wide/no_arch",
@@ -3129,11 +3129,11 @@
         "simulation_time(ms)": 548.8,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3144,12 +3144,12 @@
         "simulation_time(ms)": 2212.4,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sr_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_ultra_wide/no_arch",
@@ -3159,11 +3159,11 @@
         "simulation_time(ms)": 2232.8,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3174,12 +3174,12 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sr_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_wide/no_arch",
@@ -3189,11 +3189,11 @@
         "simulation_time(ms)": 6.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3204,12 +3204,12 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sr_wire/no_arch": {
         "test_name": "operators/signed_variable_sr_wire/no_arch",
@@ -3219,11 +3219,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3234,12 +3234,12 @@
         "simulation_time(ms)": 2.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asr_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_asr_indexed/no_arch",
@@ -3249,11 +3249,11 @@
         "simulation_time(ms)": 2.8,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3264,12 +3264,12 @@
         "simulation_time(ms)": 524.5,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asr_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_int_wide/no_arch",
@@ -3279,11 +3279,11 @@
         "simulation_time(ms)": 501.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3294,12 +3294,12 @@
         "simulation_time(ms)": 2301.8,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asr_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/no_arch",
@@ -3309,11 +3309,11 @@
         "simulation_time(ms)": 2298.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3324,12 +3324,12 @@
         "simulation_time(ms)": 6.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asr_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_wide/no_arch",
@@ -3339,11 +3339,11 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3354,12 +3354,12 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_asr_wire/no_arch": {
         "test_name": "operators/unsigned_variable_asr_wire/no_arch",
@@ -3369,11 +3369,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3384,12 +3384,12 @@
         "simulation_time(ms)": 2.7,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sr_indexed/no_arch": {
         "test_name": "operators/unsigned_variable_sr_indexed/no_arch",
@@ -3399,11 +3399,11 @@
         "simulation_time(ms)": 2.7,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3414,12 +3414,12 @@
         "simulation_time(ms)": 537.6,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 4,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sr_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_int_wide/no_arch",
@@ -3429,11 +3429,11 @@
         "simulation_time(ms)": 501.1,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
-        "Longest Path": 37,
+        "logic element": 1056,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3444,12 +3444,12 @@
         "simulation_time(ms)": 2200.4,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 4,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sr_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/no_arch",
@@ -3459,11 +3459,11 @@
         "simulation_time(ms)": 2263.4,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
-        "Longest Path": 70,
+        "logic element": 4290,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3474,12 +3474,12 @@
         "simulation_time(ms)": 6.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sr_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_wide/no_arch",
@@ -3489,11 +3489,11 @@
         "simulation_time(ms)": 6.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3504,12 +3504,12 @@
         "simulation_time(ms)": 1.9,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sr_wire/no_arch": {
         "test_name": "operators/unsigned_variable_sr_wire/no_arch",
@@ -3519,11 +3519,11 @@
         "simulation_time(ms)": 1.7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5004,12 +5004,12 @@
         "exec_time(ms)": 7.2,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asl_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_indexed/k6_N10_mem32K_40nm",
@@ -5019,12 +5019,12 @@
         "exec_time(ms)": 48.5,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asl_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asl_int_wide/k6_N10_40nm",
@@ -5034,12 +5034,12 @@
         "exec_time(ms)": 85.4,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_int_wide/k6_N10_mem32K_40nm",
@@ -5049,12 +5049,12 @@
         "exec_time(ms)": 126,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asl_ultra_wide/k6_N10_40nm",
@@ -5064,12 +5064,12 @@
         "exec_time(ms)": 496.3,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_ultra_wide/k6_N10_mem32K_40nm",
@@ -5079,12 +5079,12 @@
         "exec_time(ms)": 545.7,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asl_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asl_wide/k6_N10_40nm",
@@ -5094,12 +5094,12 @@
         "exec_time(ms)": 7.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wide/k6_N10_mem32K_40nm",
@@ -5109,12 +5109,12 @@
         "exec_time(ms)": 48.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asl_wire/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asl_wire/k6_N10_40nm",
@@ -5124,12 +5124,12 @@
         "exec_time(ms)": 7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_asl_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wire/k6_N10_mem32K_40nm",
@@ -5139,12 +5139,12 @@
         "exec_time(ms)": 49.6,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_asr_indexed/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_indexed/k6_N10_40nm",
@@ -5154,12 +5154,12 @@
         "exec_time(ms)": 7.3,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_indexed/k6_N10_mem32K_40nm",
@@ -5169,12 +5169,12 @@
         "exec_time(ms)": 48.8,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_int_wide/k6_N10_40nm",
@@ -5184,12 +5184,12 @@
         "exec_time(ms)": 87,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_int_wide/k6_N10_mem32K_40nm",
@@ -5199,12 +5199,12 @@
         "exec_time(ms)": 126.7,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_asr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_ultra_wide/k6_N10_40nm",
@@ -5214,12 +5214,12 @@
         "exec_time(ms)": 488.3,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_ultra_wide/k6_N10_mem32K_40nm",
@@ -5229,12 +5229,12 @@
         "exec_time(ms)": 530.7,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_asr_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_wide/k6_N10_40nm",
@@ -5244,12 +5244,12 @@
         "exec_time(ms)": 7.9,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wide/k6_N10_mem32K_40nm",
@@ -5259,12 +5259,12 @@
         "exec_time(ms)": 49.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_asr_wire/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_wire/k6_N10_40nm",
@@ -5274,12 +5274,12 @@
         "exec_time(ms)": 7.9,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_asr_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wire/k6_N10_mem32K_40nm",
@@ -5289,12 +5289,12 @@
         "exec_time(ms)": 48.2,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sl_indexed/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_indexed/k6_N10_40nm",
@@ -5304,12 +5304,12 @@
         "exec_time(ms)": 7.3,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sl_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_indexed/k6_N10_mem32K_40nm",
@@ -5319,12 +5319,12 @@
         "exec_time(ms)": 48.9,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sl_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_int_wide/k6_N10_40nm",
@@ -5334,12 +5334,12 @@
         "exec_time(ms)": 85,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_int_wide/k6_N10_mem32K_40nm",
@@ -5349,12 +5349,12 @@
         "exec_time(ms)": 125.9,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_ultra_wide/k6_N10_40nm",
@@ -5364,12 +5364,12 @@
         "exec_time(ms)": 489.6,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_ultra_wide/k6_N10_mem32K_40nm",
@@ -5379,12 +5379,12 @@
         "exec_time(ms)": 539.5,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sl_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_wide/k6_N10_40nm",
@@ -5394,12 +5394,12 @@
         "exec_time(ms)": 7.8,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wide/k6_N10_mem32K_40nm",
@@ -5409,12 +5409,12 @@
         "exec_time(ms)": 49.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sl_wire/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_wire/k6_N10_40nm",
@@ -5424,12 +5424,12 @@
         "exec_time(ms)": 7.1,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sl_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wire/k6_N10_mem32K_40nm",
@@ -5439,12 +5439,12 @@
         "exec_time(ms)": 56.9,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sr_indexed/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_indexed/k6_N10_40nm",
@@ -5454,12 +5454,12 @@
         "exec_time(ms)": 7.2,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sr_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_indexed/k6_N10_mem32K_40nm",
@@ -5469,12 +5469,12 @@
         "exec_time(ms)": 48.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_sr_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_int_wide/k6_N10_40nm",
@@ -5484,12 +5484,12 @@
         "exec_time(ms)": 84.6,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_int_wide/k6_N10_mem32K_40nm",
@@ -5499,12 +5499,12 @@
         "exec_time(ms)": 133.5,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/signed_variable_sr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_ultra_wide/k6_N10_40nm",
@@ -5514,12 +5514,12 @@
         "exec_time(ms)": 482.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_ultra_wide/k6_N10_mem32K_40nm",
@@ -5529,12 +5529,12 @@
         "exec_time(ms)": 526.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/signed_variable_sr_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_wide/k6_N10_40nm",
@@ -5544,12 +5544,12 @@
         "exec_time(ms)": 8,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wide/k6_N10_mem32K_40nm",
@@ -5559,12 +5559,12 @@
         "exec_time(ms)": 50.2,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/signed_variable_sr_wire/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_wire/k6_N10_40nm",
@@ -5574,12 +5574,12 @@
         "exec_time(ms)": 7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/signed_variable_sr_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wire/k6_N10_mem32K_40nm",
@@ -5589,12 +5589,12 @@
         "exec_time(ms)": 57.6,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/specifyBlock/k6_N10_40nm": {
         "test_name": "operators/specifyBlock/k6_N10_40nm",
@@ -6704,12 +6704,12 @@
         "exec_time(ms)": 7.1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asl_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_indexed/k6_N10_mem32K_40nm",
@@ -6719,12 +6719,12 @@
         "exec_time(ms)": 48.9,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asl_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asl_int_wide/k6_N10_40nm",
@@ -6734,12 +6734,12 @@
         "exec_time(ms)": 87.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_int_wide/k6_N10_mem32K_40nm",
@@ -6749,12 +6749,12 @@
         "exec_time(ms)": 123.8,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_N10_40nm",
@@ -6764,12 +6764,12 @@
         "exec_time(ms)": 492.9,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_N10_mem32K_40nm",
@@ -6779,12 +6779,12 @@
         "exec_time(ms)": 541.5,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asl_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asl_wide/k6_N10_40nm",
@@ -6794,12 +6794,12 @@
         "exec_time(ms)": 7.8,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wide/k6_N10_mem32K_40nm",
@@ -6809,12 +6809,12 @@
         "exec_time(ms)": 49.2,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asl_wire/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asl_wire/k6_N10_40nm",
@@ -6824,12 +6824,12 @@
         "exec_time(ms)": 7.2,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_asl_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wire/k6_N10_mem32K_40nm",
@@ -6839,12 +6839,12 @@
         "exec_time(ms)": 51.9,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_asr_indexed/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_indexed/k6_N10_40nm",
@@ -6854,12 +6854,12 @@
         "exec_time(ms)": 7.3,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asr_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_indexed/k6_N10_mem32K_40nm",
@@ -6869,12 +6869,12 @@
         "exec_time(ms)": 48.9,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_asr_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_int_wide/k6_N10_40nm",
@@ -6884,12 +6884,12 @@
         "exec_time(ms)": 85.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_int_wide/k6_N10_mem32K_40nm",
@@ -6899,12 +6899,12 @@
         "exec_time(ms)": 125.8,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_asr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_N10_40nm",
@@ -6914,12 +6914,12 @@
         "exec_time(ms)": 501.7,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_N10_mem32K_40nm",
@@ -6929,12 +6929,12 @@
         "exec_time(ms)": 539.5,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_asr_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_wide/k6_N10_40nm",
@@ -6944,12 +6944,12 @@
         "exec_time(ms)": 7.8,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wide/k6_N10_mem32K_40nm",
@@ -6959,12 +6959,12 @@
         "exec_time(ms)": 50.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_asr_wire/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_wire/k6_N10_40nm",
@@ -6974,12 +6974,12 @@
         "exec_time(ms)": 7.2,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_asr_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wire/k6_N10_mem32K_40nm",
@@ -6989,12 +6989,12 @@
         "exec_time(ms)": 49.2,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sl_indexed/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_indexed/k6_N10_40nm",
@@ -7004,12 +7004,12 @@
         "exec_time(ms)": 7.4,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sl_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_indexed/k6_N10_mem32K_40nm",
@@ -7019,12 +7019,12 @@
         "exec_time(ms)": 48.6,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sl_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_int_wide/k6_N10_40nm",
@@ -7034,12 +7034,12 @@
         "exec_time(ms)": 90.9,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_int_wide/k6_N10_mem32K_40nm",
@@ -7049,12 +7049,12 @@
         "exec_time(ms)": 124.5,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_N10_40nm",
@@ -7064,12 +7064,12 @@
         "exec_time(ms)": 509.6,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_N10_mem32K_40nm",
@@ -7079,12 +7079,12 @@
         "exec_time(ms)": 531.8,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sl_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_wide/k6_N10_40nm",
@@ -7094,12 +7094,12 @@
         "exec_time(ms)": 7.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wide/k6_N10_mem32K_40nm",
@@ -7109,12 +7109,12 @@
         "exec_time(ms)": 49.1,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sl_wire/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_wire/k6_N10_40nm",
@@ -7124,12 +7124,12 @@
         "exec_time(ms)": 7,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sl_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wire/k6_N10_mem32K_40nm",
@@ -7139,12 +7139,12 @@
         "exec_time(ms)": 48.3,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sr_indexed/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_indexed/k6_N10_40nm",
@@ -7154,12 +7154,12 @@
         "exec_time(ms)": 7.3,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sr_indexed/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_indexed/k6_N10_mem32K_40nm",
@@ -7169,12 +7169,12 @@
         "exec_time(ms)": 49.9,
         "Pi": 3,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/unsigned_variable_sr_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_int_wide/k6_N10_40nm",
@@ -7184,12 +7184,12 @@
         "exec_time(ms)": 85.5,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_int_wide/k6_N10_mem32K_40nm",
@@ -7199,12 +7199,12 @@
         "exec_time(ms)": 126.1,
         "Pi": 37,
         "Po": 32,
-        "logic element": 3104,
+        "logic element": 1056,
         "generic logic size": 6,
-        "Longest Path": 37,
+        "Longest Path": 35,
         "Average Path": 5,
-        "Estimated LUTs": 3104,
-        "Total Node": 3104
+        "Estimated LUTs": 1056,
+        "Total Node": 1056
     },
     "operators/unsigned_variable_sr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_N10_40nm",
@@ -7214,12 +7214,12 @@
         "exec_time(ms)": 487.9,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_N10_mem32K_40nm",
@@ -7229,12 +7229,12 @@
         "exec_time(ms)": 548,
         "Pi": 72,
         "Po": 65,
-        "logic element": 12740,
+        "logic element": 4290,
         "generic logic size": 6,
-        "Longest Path": 70,
+        "Longest Path": 68,
         "Average Path": 6,
-        "Estimated LUTs": 12740,
-        "Total Node": 12740
+        "Estimated LUTs": 4290,
+        "Total Node": 4290
     },
     "operators/unsigned_variable_sr_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_wide/k6_N10_40nm",
@@ -7244,12 +7244,12 @@
         "exec_time(ms)": 7.8,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wide/k6_N10_mem32K_40nm",
@@ -7259,12 +7259,12 @@
         "exec_time(ms)": 49.2,
         "Pi": 5,
         "Po": 3,
-        "logic element": 30,
+        "logic element": 12,
         "generic logic size": 6,
-        "Longest Path": 8,
-        "Average Path": 5,
-        "Estimated LUTs": 30,
-        "Total Node": 30
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "operators/unsigned_variable_sr_wire/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_wire/k6_N10_40nm",
@@ -7274,12 +7274,12 @@
         "exec_time(ms)": 7.1,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/unsigned_variable_sr_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wire/k6_N10_mem32K_40nm",
@@ -7289,12 +7289,12 @@
         "exec_time(ms)": 49.1,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
+        "logic element": 2,
         "generic logic size": 6,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "operators/twobits_arithmetic_div/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_div/k6_frac_N10_frac_chain_mem32K_40nm",
