@@ -64,7 +64,7 @@ inline void GenericWriter::__write(const netlist_t* netlist) {
             }
          */
         default: {
-            error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file format! Should have specified in command line arguments\n");
+            error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file type!\n");
             exit(ERROR_INITIALIZATION);
         }
     }

@@ -329,6 +329,13 @@ def vtr_command_argparser(prog=None):
         dest="include_list_file",
         help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
     )
+    odin.add_argument(
+        "-coarsen",
+        default=False,
+        action="store_true",
+        dest="coarsen",
+        help="Notify Odin if the input BLIF is coarse-grain",
+    )
     #
     # VPR arguments
     #
@@ -576,6 +583,9 @@ def process_odin_args(args):
 
     if args.use_odin_simulation:
         odin_args["use_odin_simulation"] = True
+
+    if args.coarsen:
+        odin_args["coarsen"] = True
 
     return odin_args
 

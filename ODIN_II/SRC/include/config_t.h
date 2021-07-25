@@ -9,8 +9,6 @@
 struct config_t {
     std::vector<std::string> list_of_file_names;
 
-    std::string output_type; // string name of the type of output file
-
     std::string debug_output_path; // path for where to output the debug outputs
     file_type_e input_file_type;
     file_type_e output_file_type;

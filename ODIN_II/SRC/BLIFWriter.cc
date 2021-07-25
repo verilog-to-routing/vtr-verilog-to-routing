@@ -283,7 +283,7 @@ void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
     // }
 
     /* traverse the internals of the flat net-list */
-    if (strcmp(configuration.output_type.c_str(), "blif") == 0) {
+    if (configuration.output_file_type == file_type_e::_BLIF) {
         depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
     } else {
         error_message(NETLIST, unknown_location, "%s", "Invalid output file type.");

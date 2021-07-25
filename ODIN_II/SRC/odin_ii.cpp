@@ -663,7 +663,6 @@ void get_options(int argc, char** argv) {
  *-------------------------------------------------------------------------*/
 void set_default_config() {
     /* Set up the global configuration. */
-    configuration.output_type = std::string("blif");
     configuration.coarsen = false;
     configuration.output_file_type = file_type_e::_BLIF;
     configuration.output_ast_graphs = 0;

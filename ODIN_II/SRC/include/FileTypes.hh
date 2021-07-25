@@ -26,13 +26,18 @@
 #ifndef __FILE_TYPE_E_H__
 #define __FILE_TYPE_E_H__
 
-enum class file_type_e {
-    _ILANG,         /* not supported yet */
-    _VERILOG,          
+#include <string>
+#include <unordered_map>
+
+enum file_type_e {
+    _ILANG, /* not supported yet */
+    _VERILOG,
+    _VERILOG_HEADER,
     _BLIF,
-    _EBLIF,         /* not supported yet */
-    _UNDEFINED,     /* EROOR */
+    _EBLIF,     /* not supported yet */
+    _UNDEFINED, /* EROOR */
     file_type_e_END
 };
+typedef std::unordered_map<std::string, file_type_e> filemap;
 
 #endif

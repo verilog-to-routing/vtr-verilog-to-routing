@@ -2,6 +2,7 @@
 #define GLOBALS_H
 
 #include "odin_types.h"
+#include "FileTypes.hh"
 #include "string_cache.h"
 #include "Hashtable.hpp"
 #include "read_xml_arch_file.h"
@@ -53,7 +54,8 @@ extern netlist_t* read_blif_netlist;
  */
 extern HardSoftLogicMixer* mixer;
 
-extern typemap odin_subckt_str;
-extern typemap yosys_subckt_str;
+extern filemap file_type_strmap;
+extern typemap odin_subckt_strmap;
+extern typemap yosys_subckt_strmap;
 
 #endif

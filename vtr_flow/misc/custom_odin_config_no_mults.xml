@@ -6,10 +6,13 @@
 <!-- required-->
 <config>
 	<!-- required-->
-	<verilog_files>
+	<inputs>
+		<!-- These are the input flags for the project, required -->
+		<!-- possible types: verilog, verilog_header and blif -->
+		<input_type>TTT</input_type>
 		<!-- Way of specifying multiple files in a project, required -->
-		<verilog_file>XXX</verilog_file>
-	</verilog_files>
+		<input_path_and_name>XXX</input_path_and_name>
+	</inputs>
 	<!-- required-->
 	<output>
 		<!-- These are the output flags for the project, required -->

@@ -61,7 +61,7 @@ inline void* GenericReader::__read() {
             }
          */
         default: {
-            error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file format! Should have specified in command line arguments\n");
+            error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file type!\n");
             exit(ERROR_PARSE_ARGS);
         }
     }

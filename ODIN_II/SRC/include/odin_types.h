@@ -159,8 +159,6 @@ struct global_args_t {
  */
 extern const char* ieee_std_STR[];
 
-extern const char* file_extension_supported_STR[];
-
 extern const char* ZERO_GND_ZERO;
 extern const char* ONE_VCC_CNS;
 extern const char* ZERO_PAD_ZERO;
@@ -178,12 +176,6 @@ enum ieee_std {
     ieee_2001_noconfig,
     ieee_2001,
     ieee_2005
-};
-
-enum file_extension_supported {
-    VERILOG,
-    VERILOG_HEADER,
-    file_extension_supported_END
 };
 
 enum edge_type_e {

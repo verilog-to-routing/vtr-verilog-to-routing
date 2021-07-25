@@ -83,15 +83,15 @@ void create_directory(std::string path) {
 void assert_supported_file_extension(std::string input_file, loc_t loc) {
     bool supported = false;
     std::string extension = get_file_extension(input_file);
-    for (int i = 0; i < file_extension_supported_END && !supported; i++) {
-        supported = (extension == std::string(file_extension_supported_STR[i]));
+    for (int i = 0; i < file_type_e::file_type_e_END && !supported; i++) {
+        supported = (file_type_strmap[extension] != file_type_e::file_type_e_END);
     }
 
     if (!supported) {
         std::string supported_extension_list = "";
-        for (int i = 0; i < file_extension_supported_END; i++) {
+        for (auto iter : file_type_strmap) {
             supported_extension_list += " ";
-            supported_extension_list += file_extension_supported_STR[i];
+            supported_extension_list += iter.second;
         }
 
         possible_error_message(UTIL, loc,

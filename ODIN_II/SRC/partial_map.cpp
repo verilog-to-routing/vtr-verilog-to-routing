@@ -72,7 +72,7 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
  *-----------------------------------------------------------------------*/
 void partial_map_top(netlist_t* netlist) {
     /* depending on the output target choose how to do partial mapping */
-    if (strcmp(configuration.output_type.c_str(), "blif") == 0) {
+    if (configuration.output_file_type == file_type_e::_BLIF) {
         /* do the partial map without any larger structures identified */
         depth_first_traversal_to_partial_map(PARTIAL_MAP_TRAVERSE_VALUE, netlist);
     }

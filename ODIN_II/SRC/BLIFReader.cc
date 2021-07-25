@@ -28,7 +28,6 @@
 #include "odin_ii.h"
 #include "odin_util.h"
 #include "odin_types.h"
-#include "SubcktTypes.h"
 #include "odin_globals.h"
 
 #include "ast_util.h"
@@ -339,7 +338,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     subcircuit_name_prefix[5] = '\0';
 
     if (configuration.coarsen) {
-        new_node->type = yosys_subckt_str[subcircuit_name];
+        new_node->type = yosys_subckt_strmap[subcircuit_name];
 
         if (new_node->type == BRAM) {
             new_node->type = (new_node->attributes->RD_PORTS && new_node->attributes->WR_PORTS)    ? BRAM
@@ -347,10 +346,10 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                                                                                                    : operation_list_END;
         }
     } else {
-        if (odin_subckt_str[subcircuit_name] != NO_OP)
-            new_node->type = odin_subckt_str[subcircuit_name];
-        else if (odin_subckt_str[subcircuit_name_prefix] != NO_OP)
-            new_node->type = odin_subckt_str[subcircuit_name_prefix];
+        if (odin_subckt_strmap[subcircuit_name] != NO_OP)
+            new_node->type = odin_subckt_strmap[subcircuit_name];
+        else if (odin_subckt_strmap[subcircuit_name_prefix] != NO_OP)
+            new_node->type = odin_subckt_strmap[subcircuit_name_prefix];
         else    
             new_node->type = MEMORY;
     }
@@ -2002,7 +2001,7 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
     char* buffer = NULL;
     attr_t* attributes = new_node->attributes;
 
-    if (need_params(yosys_subckt_str[subckt_name])) {
+    if (need_params(yosys_subckt_strmap[subckt_name])) {
         while (getbline(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             ptr = vtr::strtok(buffer, TOKENS, file, buffer);
