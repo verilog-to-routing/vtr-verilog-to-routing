@@ -1,0 +1,58 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=../ODIN_II/regression_test/benchmark/_BLIF/vtr/
+
+# Path to directory of architectures to use
+archs_dir=arch/timing/
+
+# Add circuits to list to sweep
+circuit_list_add=and_latch.blif
+circuit_list_add=arm_core.blif
+circuit_list_add=bgm.blif
+circuit_list_add=blob_merge.blif
+circuit_list_add=boundtop.blif
+circuit_list_add=ch_intrinsics.blif
+circuit_list_add=diffeq1.blif
+circuit_list_add=diffeq2.blif
+circuit_list_add=LU8PEEng.blif
+circuit_list_add=LU32PEEng.blif
+circuit_list_add=LU64PEEng.blif
+# circuit_list_add=matmul_8x8_fp16.blif [Yosys fails to synthesis]
+circuit_list_add=mcml.blif
+circuit_list_add=mkDelayWorker32B.blif
+circuit_list_add=mkPktMerge.blif
+circuit_list_add=mkSMAdapter4B.blif
+circuit_list_add=multiclock_output_and_latch.blif
+circuit_list_add=multiclock_reader_writer.blif
+circuit_list_add=multiclock_separate_and_latch.blif
+circuit_list_add=or1200.blif
+circuit_list_add=raygentop.blif
+circuit_list_add=sha.blif
+circuit_list_add=single_ff.blif
+circuit_list_add=single_wire.blif
+circuit_list_add=spree.blif
+circuit_list_add=stereovision0.blif
+circuit_list_add=stereovision1.blif
+circuit_list_add=stereovision2.blif
+circuit_list_add=stereovision3.blif
+circuit_list_add=tpu.16x16.int8.blif
+circuit_list_add=tpu.32x32.int8.blif
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_mem32K_40nm.xml
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+script_params_common = -track_memory_usage -coarsen
