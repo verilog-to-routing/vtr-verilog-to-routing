@@ -20,15 +20,17 @@
  *
  * Overview
  * ========
- * Attraction groups are used during the clustering process to tell the clusterer which atoms should be packed
- * in the same cluster by virtue of having the same floorplan constraints. The attraction groups may also be
- * used to cluster similar atoms together in other ways in the future.
+ * Attraction groups are used during the clustering process. Atoms in the same attraction groups will be highly desirable to
+ * be packed together. If an atom is in the same attraction group as an atoms already in the cluster, its gain will be increased
+ * to reflect the increased desire to pack atoms of the same attraction group together. Currently, the attraction groups are created
+ * based on which atoms are in the same Partition, from floorplanning constraints. In the future, attraction groups can be used to
+ * pack atoms together based on other concepts.
  */
 
 /// @brief Type tag for AttractGroupId
 struct attraction_id_tag;
 
-/// @brief A unique identifier for a partition
+/// @brief A unique identifier for an attraction group.
 typedef vtr::StrongId<attraction_id_tag> AttractGroupId;
 
 struct AttractionGroup {
@@ -47,7 +49,7 @@ struct AttractionGroup {
      * into the same cluster
      */
     /* TODO: Add the code in the clusterer that will do the above steps. */
-    bool region_size_one = false;
+    //bool must_be_packed_in_one_cluster = false;
 };
 
 class AttractionInfo {
@@ -59,7 +61,7 @@ class AttractionInfo {
     //Setters and getters for the class
     AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
 
-    AttractionGroup get_attraction_group_info(const AttractGroupId group_id);
+    const AttractionGroup& get_attraction_group_info(const AttractGroupId group_id);
 
     void set_atom_attraction_group(const AtomBlockId atom_id, const AttractGroupId group_id);
 
@@ -75,6 +77,7 @@ class AttractionInfo {
 
   private:
     //Store each atom's attraction group assuming each atom is in at most one attraction group
+    //Atoms with no attraction group will have AttractGroupId::INVALID
     vtr::vector<AtomBlockId, AttractGroupId> atom_attraction_group;
 
     //Store atoms and gain value that belong to each attraction group

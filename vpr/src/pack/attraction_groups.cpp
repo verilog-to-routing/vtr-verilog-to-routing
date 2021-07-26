@@ -36,7 +36,7 @@ AttractionInfo::AttractionInfo() {
     }
 }
 
-AttractionGroup AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
+const AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
     return attraction_groups[group_id];
 }
 
