@@ -259,10 +259,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         bool read_edge_metadata,
         t_chan_width* chan_width,
         t_rr_graph_storage* rr_nodes,
+        RRGraphBuilder* rr_graph_builder,
         RRGraphView* rr_graph,
         std::vector<t_rr_switch_inf>* rr_switch_inf,
         std::vector<t_rr_indexed_data>* rr_indexed_data,
-        t_rr_node_indices* rr_node_indices,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
         const std::vector<t_segment_inf>& segment_inf,
@@ -274,10 +274,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         : wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
         , chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
+        , rr_graph_builder_(rr_graph_builder)
         , rr_graph_(rr_graph)
         , rr_switch_inf_(rr_switch_inf)
         , rr_indexed_data_(rr_indexed_data)
-        , rr_node_indices_(rr_node_indices)
         , read_rr_graph_filename_(read_rr_graph_filename)
         , graph_type_(graph_type)
         , base_cost_type_(base_cost_type)
@@ -829,7 +829,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline uxsd::enum_node_direction get_node_direction(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
-            return to_uxsd_node_direction(node.direction());
+            return to_uxsd_node_direction(rr_graph.node_direction(node.id()));
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
         }
@@ -1566,148 +1566,21 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     /*Allocates and load the rr_node look up table. SINK and SOURCE, IPIN and OPIN
      *share the same look up table. CHANX and CHANY have individual look ups */
     void process_rr_node_indices() {
-        const auto& rr_graph = (*rr_graph_);
-        /* Alloc the lookup table */
-        auto& indices = *rr_node_indices_;
-
-        typedef struct max_ptc {
-            short chanx_max_ptc = 0;
-            short chany_max_ptc = 0;
-        } t_max_ptc;
-
-        /*
-         * Local multi-dimensional vector to hold max_ptc for every coordinate.
-         * It has same height and width as CHANY and CHANX are inverted
-         */
-        vtr::Matrix<t_max_ptc> coordinates_max_ptc; /* [x][y] */
-        size_t max_coord_size = std::max(grid_.width(), grid_.height());
-        coordinates_max_ptc.resize({max_coord_size, max_coord_size}, t_max_ptc());
+        auto& rr_graph_builder = (*rr_graph_builder_);
 
         /* Alloc the lookup table */
         for (t_rr_type rr_type : RR_TYPES) {
             if (rr_type == CHANX) {
-                indices[rr_type].resize({grid_.height(), grid_.width(), NUM_SIDES});
+                rr_graph_builder.node_lookup().resize_nodes(grid_.height(), grid_.width(), rr_type, NUM_SIDES);
             } else {
-                indices[rr_type].resize({grid_.width(), grid_.height(), NUM_SIDES});
+                rr_graph_builder.node_lookup().resize_nodes(grid_.width(), grid_.height(), rr_type, NUM_SIDES);
             }
         }
 
-        /*
-         * Add the correct node into the vector
-         * For CHANX and CHANY no node is added yet, but the maximum ptc is counted for each
-         * x/y location. This is needed later to add the correct node corresponding to CHANX
-         * and CHANY.
-         *
-         * Note that CHANX and CHANY 's x and y are swapped due to the chan and seg convention.
-         */
+        /* Add the correct node into the vector */
         for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
             auto node = (*rr_nodes_)[inode];
-            if (rr_graph.node_type(node.id()) == SOURCE || rr_graph.node_type(node.id()) == SINK) {
-                for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                    for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.ptc_num() >= (int)indices[SOURCE][ix][iy][0].size()) {
-                            indices[SOURCE][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
-                        }
-                        if (node.ptc_num() >= (int)indices[SINK][ix][iy][0].size()) {
-                            indices[SINK][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
-                        }
-                        indices[rr_graph.node_type(node.id())][ix][iy][0][node.ptc_num()] = inode;
-                    }
-                }
-            } else if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {
-                for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                    for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        for (const e_side& side : SIDES) {
-                            if (!node.is_node_on_specific_side(side)) {
-                                continue;
-                            }
-                            if (node.ptc_num() >= (int)indices[OPIN][ix][iy][side].size()) {
-                                indices[OPIN][ix][iy][side].resize(node.ptc_num() + 1, OPEN);
-                            }
-                            if (node.ptc_num() >= (int)indices[IPIN][ix][iy][side].size()) {
-                                indices[IPIN][ix][iy][side].resize(node.ptc_num() + 1, OPEN);
-                            }
-                            indices[rr_graph.node_type(node.id())][ix][iy][side][node.ptc_num()] = inode;
-                        }
-                    }
-                }
-            } else if (rr_graph.node_type(node.id()) == CHANX) {
-                for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                    for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        coordinates_max_ptc[iy][ix].chanx_max_ptc = std::max(coordinates_max_ptc[iy][ix].chanx_max_ptc, node.ptc_num());
-                    }
-                }
-            } else if (rr_graph.node_type(node.id()) == CHANY) {
-                for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                    for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        coordinates_max_ptc[ix][iy].chany_max_ptc = std::max(coordinates_max_ptc[ix][iy].chany_max_ptc, node.ptc_num());
-                    }
-                }
-            }
-        }
-
-        /* Alloc the lookup table */
-        for (t_rr_type rr_type : RR_TYPES) {
-            if (rr_type == CHANX) {
-                for (size_t y = 0; y < grid_.height(); ++y) {
-                    for (size_t x = 0; x < grid_.width(); ++x) {
-                        indices[CHANX][y][x][0].resize(coordinates_max_ptc[y][x].chanx_max_ptc + 1, OPEN);
-                    }
-                }
-            } else if (rr_type == CHANY) {
-                for (size_t x = 0; x < grid_.width(); ++x) {
-                    for (size_t y = 0; y < grid_.height(); ++y) {
-                        indices[CHANY][x][y][0].resize(coordinates_max_ptc[x][y].chany_max_ptc + 1, OPEN);
-                    }
-                }
-            }
-        }
-
-        int count;
-        /* CHANX and CHANY need to reevaluated with its ptc num as the correct index*/
-        for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
-            auto node = (*rr_nodes_)[inode];
-            if (rr_graph.node_type(node.id()) == CHANX) {
-                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                        count = node.ptc_num();
-                        if (count >= int(indices[CHANX][iy][ix][0].size())) {
-                            report_error(
-                                "Ptc index %d for CHANX (%d, %d) is out of bounds, size = %zu",
-                                count, ix, iy, indices[CHANX][iy][ix][0].size());
-                        }
-                        indices[CHANX][iy][ix][0][count] = inode;
-                    }
-                }
-            } else if (rr_graph.node_type(node.id()) == CHANY) {
-                for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                    for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        count = node.ptc_num();
-                        if (count >= int(indices[CHANY][ix][iy][0].size())) {
-                            report_error(
-                                "Ptc index %d for CHANY (%d, %d) is out of bounds, size = %zu",
-                                count, ix, iy, indices[CHANY][ix][iy][0].size());
-                        }
-                        indices[CHANY][ix][iy][0][count] = inode;
-                    }
-                }
-            }
-        }
-
-        //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
-        // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
-        for (size_t x = 0; x < grid_.width(); x++) {
-            for (size_t y = 0; y < grid_.height(); y++) {
-                int width_offset = grid_[x][y].width_offset;
-                int height_offset = grid_[x][y].height_offset;
-                if (width_offset != 0 || height_offset != 0) {
-                    int root_x = x - width_offset;
-                    int root_y = y - height_offset;
-
-                    indices[SOURCE][x][y][0] = indices[SOURCE][root_x][root_y][0];
-                    indices[SINK][x][y][0] = indices[SINK][root_x][root_y][0];
-                }
-            }
+            rr_graph_builder.add_node_to_all_locs(node.id());
         }
     }
 
@@ -1797,27 +1670,27 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return side_map_[sides.to_ulong()];
     }
 
-    e_direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {
+    Direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {
         switch (direction) {
             case uxsd::enum_node_direction::INC_DIR:
-                return INC_DIRECTION;
+                return Direction::INC;
             case uxsd::enum_node_direction::DEC_DIR:
-                return DEC_DIRECTION;
+                return Direction::DEC;
             case uxsd::enum_node_direction::BI_DIR:
-                return BI_DIRECTION;
+                return Direction::BIDIR;
             default:
                 report_error(
                     "Invalid node direction %d", direction);
         }
     }
 
-    uxsd::enum_node_direction to_uxsd_node_direction(e_direction direction) {
+    uxsd::enum_node_direction to_uxsd_node_direction(Direction direction) {
         switch (direction) {
-            case INC_DIRECTION:
+            case Direction::INC:
                 return uxsd::enum_node_direction::INC_DIR;
-            case DEC_DIRECTION:
+            case Direction::DEC:
                 return uxsd::enum_node_direction::DEC_DIR;
-            case BI_DIRECTION:
+            case Direction::BIDIR:
                 return uxsd::enum_node_direction::BI_DIR;
             default:
                 report_error(
@@ -1976,6 +1849,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     int* wire_to_rr_ipin_switch_;
     t_chan_width* chan_width_;
     t_rr_graph_storage* rr_nodes_;
+    RRGraphBuilder* rr_graph_builder_;
     RRGraphView* rr_graph_;
     std::vector<t_rr_switch_inf>* rr_switch_inf_;
     std::vector<t_rr_indexed_data>* rr_indexed_data_;

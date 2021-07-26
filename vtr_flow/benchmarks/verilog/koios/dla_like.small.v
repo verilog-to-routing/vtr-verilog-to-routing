@@ -15,7 +15,7 @@
 //4. Double-buffering after each layer. 
 ///////////////////////////////////////////////////////////////////////////////
 
-`define complex_dsp
+
 module DLA (
 	input clk,
 	input i_reset,

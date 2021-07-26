@@ -324,7 +324,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
 
                 arrow = "->"; //we will point the coordinates from start to finish, left to right
 
-                if (device_ctx.rr_nodes[node->inode].direction() == DEC_DIRECTION) {                 //signal travels along decreasing direction
+                if (rr_graph.node_direction(RRNodeId(node->inode)) == Direction::DEC) {              //signal travels along decreasing direction
                     start_x = " (" + std::to_string(device_ctx.rr_nodes[node->inode].xhigh()) + ","; //start coordinates have large value
                     start_y = std::to_string(device_ctx.rr_nodes[node->inode].yhigh()) + ")";
                     end_x = "(" + std::to_string(device_ctx.rr_nodes[node->inode].xlow()) + ","; //end coordinates have smaller value
@@ -336,7 +336,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
                     start_y = std::to_string(device_ctx.rr_nodes[node->inode].ylow()) + ")";
                     end_x = "(" + std::to_string(device_ctx.rr_nodes[node->inode].xhigh()) + ","; //end coordinates have larger value
                     end_y = std::to_string(device_ctx.rr_nodes[node->inode].yhigh()) + ")";
-                    if (device_ctx.rr_nodes[node->inode].direction() == BI_DIRECTION) {
+                    if (rr_graph.node_direction(RRNodeId(node->inode)) == Direction::BIDIR) {
                         arrow = "<->"; //indicate that signal can travel both direction
                     }
                 }

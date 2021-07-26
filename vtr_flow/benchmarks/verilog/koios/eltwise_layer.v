@@ -56,7 +56,7 @@
 //section by section. The number of rows will be programmed
 //in the "iterations" register in the design.
 
-`define complex_dsp
+
 `define BFLOAT16 
 
 // IEEE Half Precision => EXPONENT = 5, MANTISSA = 10

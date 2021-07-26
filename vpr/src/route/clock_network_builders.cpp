@@ -62,11 +62,11 @@ void ClockNetwork::set_num_instance(int num_inst) {
 
 void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraphBuilder& clock_graph,
                                                            t_rr_graph_storage* rr_nodes,
-                                                           t_rr_node_indices* rr_node_indices,
+                                                           RRGraphBuilder& rr_graph_builder,
                                                            t_rr_edge_info_set* rr_edges_to_create,
                                                            int num_segments) {
     for (int inst_num = 0; inst_num < get_num_inst(); inst_num++) {
-        create_rr_nodes_and_internal_edges_for_one_instance(clock_graph, rr_nodes, rr_node_indices, rr_edges_to_create, num_segments);
+        create_rr_nodes_and_internal_edges_for_one_instance(clock_graph, rr_nodes, rr_graph_builder, rr_edges_to_create, num_segments);
     }
 }
 
@@ -217,7 +217,7 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
 
 void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                                    t_rr_graph_storage* rr_nodes,
-                                                                   t_rr_node_indices* rr_node_indices,
+                                                                   RRGraphBuilder& rr_graph_builder,
                                                                    t_rr_edge_info_set* rr_edges_to_create,
                                                                    int num_segments) {
     // Only chany wires need to know the number of segments inorder
@@ -273,9 +273,9 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                                     drive_x,
                                                     y,
                                                     ptc_num,
-                                                    BI_DIRECTION,
+                                                    Direction::BIDIR,
                                                     rr_nodes,
-                                                    rr_node_indices);
+                                                    rr_graph_builder);
             clock_graph.add_switch_location(get_name(), drive.name, drive_x, y, drive_node_idx);
 
             // create rib wire to the right and left of the drive point
@@ -283,16 +283,16 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                                    drive_x - 1,
                                                    y,
                                                    ptc_num,
-                                                   DEC_DIRECTION,
+                                                   Direction::DEC,
                                                    rr_nodes,
-                                                   rr_node_indices);
+                                                   rr_graph_builder);
             auto right_node_idx = create_chanx_wire(drive_x + 1,
                                                     x_end,
                                                     y,
                                                     ptc_num,
-                                                    INC_DIRECTION,
+                                                    Direction::INC,
                                                     rr_nodes,
-                                                    rr_node_indices);
+                                                    rr_graph_builder);
             record_tap_locations(x_start + x_offset,
                                  x_end,
                                  y,
@@ -311,9 +311,9 @@ int ClockRib::create_chanx_wire(int x_start,
                                 int x_end,
                                 int y,
                                 int ptc_num,
-                                e_direction direction,
+                                Direction direction,
                                 t_rr_graph_storage* rr_nodes,
-                                t_rr_node_indices* rr_node_indices) {
+                                RRGraphBuilder& rr_graph_builder) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
     auto node = rr_nodes->back();
@@ -328,13 +328,13 @@ int ClockRib::create_chanx_wire(int x_start,
 
     short seg_index = 0;
     switch (direction) {
-        case BI_DIRECTION:
+        case Direction::BIDIR:
             seg_index = drive_seg_idx;
             break;
-        case DEC_DIRECTION:
+        case Direction::DEC:
             seg_index = left_seg_idx;
             break;
-        case INC_DIRECTION:
+        case Direction::INC:
             seg_index = right_seg_idx;
             break;
         default:
@@ -343,7 +343,16 @@ int ClockRib::create_chanx_wire(int x_start,
     }
     node.set_cost_index(CHANX_COST_INDEX_START + seg_index); // Actual value set later
 
-    add_to_rr_node_indices(*rr_node_indices, *rr_nodes, node_index);
+    /* Add the node to spatial lookup */
+    auto& rr_graph = (*rr_nodes);
+    RRNodeId chanx_node = RRNodeId(node_index);
+    /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
+    for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
+        for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
+            //TODO: CHANX uses odd swapped x/y indices here. Will rework once rr_node_indices is shadowed
+            rr_graph_builder.node_lookup().add_node(chanx_node, iy, ix, rr_graph.node_type(chanx_node), rr_graph.node_ptc_num(chanx_node));
+        }
+    }
 
     return node_index;
 }
@@ -511,7 +520,7 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
 
 void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                                      t_rr_graph_storage* rr_nodes,
-                                                                     t_rr_node_indices* rr_node_indices,
+                                                                     RRGraphBuilder& rr_graph_builder,
                                                                      t_rr_edge_info_set* rr_edges_to_create,
                                                                      int num_segments) {
     auto& grid = clock_graph.grid();
@@ -563,9 +572,9 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                     drive_y,
                                                     x,
                                                     ptc_num,
-                                                    BI_DIRECTION,
+                                                    Direction::BIDIR,
                                                     rr_nodes,
-                                                    rr_node_indices,
+                                                    rr_graph_builder,
                                                     num_segments);
             clock_graph.add_switch_location(get_name(), drive.name, x, drive_y, drive_node_idx);
 
@@ -574,17 +583,17 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                    drive_y - 1,
                                                    x,
                                                    ptc_num,
-                                                   DEC_DIRECTION,
+                                                   Direction::DEC,
                                                    rr_nodes,
-                                                   rr_node_indices,
+                                                   rr_graph_builder,
                                                    num_segments);
             auto right_node_idx = create_chany_wire(drive_y + 1,
                                                     y_end,
                                                     x,
                                                     ptc_num,
-                                                    INC_DIRECTION,
+                                                    Direction::INC,
                                                     rr_nodes,
-                                                    rr_node_indices,
+                                                    rr_graph_builder,
                                                     num_segments);
 
             // Keep a record of the rr_node idx that we will use to connects switches to at
@@ -607,9 +616,9 @@ int ClockSpine::create_chany_wire(int y_start,
                                   int y_end,
                                   int x,
                                   int ptc_num,
-                                  e_direction direction,
+                                  Direction direction,
                                   t_rr_graph_storage* rr_nodes,
-                                  t_rr_node_indices* rr_node_indices,
+                                  RRGraphBuilder& rr_graph_builder,
                                   int num_segments) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
@@ -625,13 +634,13 @@ int ClockSpine::create_chany_wire(int y_start,
 
     short seg_index = 0;
     switch (direction) {
-        case BI_DIRECTION:
+        case Direction::BIDIR:
             seg_index = drive_seg_idx;
             break;
-        case DEC_DIRECTION:
+        case Direction::DEC:
             seg_index = left_seg_idx;
             break;
-        case INC_DIRECTION:
+        case Direction::INC:
             seg_index = right_seg_idx;
             break;
         default:
@@ -640,7 +649,15 @@ int ClockSpine::create_chany_wire(int y_start,
     }
     node.set_cost_index(CHANX_COST_INDEX_START + num_segments + seg_index);
 
-    add_to_rr_node_indices(*rr_node_indices, *rr_nodes, node_index);
+    /* Add the node to spatial lookup */
+    auto& rr_graph = (*rr_nodes);
+    RRNodeId chany_node = RRNodeId(node_index);
+    /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
+    for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
+        for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {
+            rr_graph_builder.node_lookup().add_node(chany_node, ix, iy, rr_graph.node_type(chany_node), rr_graph.node_ptc_num(chany_node));
+        }
+    }
 
     return node_index;
 }
@@ -678,14 +695,14 @@ size_t ClockHTree::estimate_additional_nodes(const DeviceGrid& /*grid*/) {
 
 void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                                      t_rr_graph_storage* rr_nodes,
-                                                                     t_rr_node_indices* rr_node_indices,
+                                                                     RRGraphBuilder& rr_graph_builder,
                                                                      t_rr_edge_info_set* rr_edges_to_create,
                                                                      int num_segments) {
     //Remove unused parameter warning
     (void)clock_graph;
     (void)num_segments;
     (void)rr_nodes;
-    (void)rr_node_indices;
+    (void)rr_graph_builder;
     (void)rr_edges_to_create;
 
     VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "HTrees are not yet supported.\n");

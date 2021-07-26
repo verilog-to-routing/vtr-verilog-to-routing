@@ -143,10 +143,6 @@ inline short t_rr_node::rc_index() const {
     return storage_->node_rc_index(id_);
 }
 
-inline e_direction t_rr_node::direction() const {
-    return storage_->node_direction(id_);
-}
-
 inline bool t_rr_node::is_node_on_specific_side(e_side side) const {
     return storage_->is_node_on_specific_side(id_, side);
 }

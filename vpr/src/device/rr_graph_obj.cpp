@@ -70,10 +70,10 @@ vtr::Rect<short> RRGraph::node_bounding_box(const RRNodeId& node) const {
 /* Node starting and ending points */
 /************************************************************************
  * Get the coordinator of a starting point of a routing track 
- * For routing tracks in INC_DIRECTION
+ * For routing tracks in Direction::INC
  * (xlow, ylow) should be the starting point 
  *
- * For routing tracks in DEC_DIRECTION
+ * For routing tracks in Direction::DEC
  * (xhigh, yhigh) should be the starting point 
  *
  * For routing tracks in BI_DIRECTION
@@ -85,7 +85,7 @@ vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
 
     vtr::Point<short> start_coordinate(node_xlow(node), node_ylow(node));
 
-    if (DEC_DIRECTION == node_direction(node)) {
+    if (Direction::DEC == node_direction(node)) {
         start_coordinate.set(node_xhigh(node), node_yhigh(node));
     }
 
@@ -94,10 +94,10 @@ vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
 
 /************************************************************************
  * Get the coordinator of a end point of a routing track 
- * For routing tracks in INC_DIRECTION
+ * For routing tracks in Direction::INC
  * (xhigh, yhigh) should be the ending point 
  *
- * For routing tracks in DEC_DIRECTION
+ * For routing tracks in Direction::DEC
  * (xlow, ylow) should be the ending point 
  *
  * For routing tracks in BI_DIRECTION
@@ -109,7 +109,7 @@ vtr::Point<short> RRGraph::node_end_coordinate(const RRNodeId& node) const {
 
     vtr::Point<short> end_coordinate(node_xhigh(node), node_yhigh(node));
 
-    if (DEC_DIRECTION == node_direction(node)) {
+    if (Direction::DEC == node_direction(node)) {
         end_coordinate.set(node_xlow(node), node_ylow(node));
     }
 
@@ -156,7 +156,7 @@ short RRGraph::node_cost_index(const RRNodeId& node) const {
     return node_cost_indices_[node];
 }
 
-e_direction RRGraph::node_direction(const RRNodeId& node) const {
+Direction RRGraph::node_direction(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
     return node_directions_[node];
@@ -823,7 +823,7 @@ RRNodeId RRGraph::create_node(const t_rr_type& type) {
     node_capacities_.push_back(-1);
     node_ptc_nums_.push_back(-1);
     node_cost_indices_.push_back(-1);
-    node_directions_.push_back(NO_DIRECTION);
+    node_directions_.push_back(Direction::NONE);
     node_sides_.push_back(NUM_SIDES);
     node_Rs_.push_back(0.);
     node_Cs_.push_back(0.);
@@ -1007,7 +1007,7 @@ void RRGraph::set_node_cost_index(const RRNodeId& node, const short& cost_index)
     node_cost_indices_[node] = cost_index;
 }
 
-void RRGraph::set_node_direction(const RRNodeId& node, const e_direction& direction) {
+void RRGraph::set_node_direction(const RRNodeId& node, const Direction& direction) {
     VTR_ASSERT(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direct can only be specified on CHANX/CNAY rr nodes");
 

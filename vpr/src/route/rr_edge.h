@@ -1,6 +1,7 @@
 #ifndef RR_EDGE_H
 #define RR_EDGE_H
 
+/* TODO: MUST change the node id to RRNodeId before refactoring is finished! */
 struct t_rr_edge_info {
     t_rr_edge_info(int from, int to, short type) noexcept
         : from_node(from)

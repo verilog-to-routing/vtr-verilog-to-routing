@@ -4,7 +4,7 @@
 
 //`define SIMULATION_MEMORY
 //`define SIMULATION_addfp
-`define complex_dsp
+
 `define VECTOR_DEPTH 64 //Q,K,V vector size
 `define DATA_WIDTH 16
 `define VECTOR_BITS 1024 // 16 bit each (16x64)

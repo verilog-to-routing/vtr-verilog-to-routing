@@ -1343,16 +1343,24 @@ struct t_det_routing_arch {
     std::string read_rr_graph_filename;
     std::string write_rr_graph_filename;
 };
-
-enum e_direction : unsigned char {
-    INC_DIRECTION = 0,
-    DEC_DIRECTION = 1,
-    BI_DIRECTION = 2,
-    NO_DIRECTION = 3,
+/*
+ * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.
+ * Direction::DEC: wire_driver is positioned at the high-coordinate end of the wire.
+ * Direction::BIDIR: wire has multiple drivers, so signals can travel either way along the wire
+ * Direction::NONE: node does not have a direction, such as IPIN/OPIN
+ */
+enum class Direction : unsigned char {
+    INC = 0,
+    DEC = 1,
+    BIDIR = 2,
+    NONE = 3,
     NUM_DIRECTIONS
 };
 
-constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"}};
+constexpr std::array<const char*, static_cast<int>(Direction::NUM_DIRECTIONS)> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NONE"}};
+
+//this array is used in rr_graph_storage.cpp so that node_direction_string() can return a const std::string&
+const std::array<std::string, static_cast<int>(Direction::NUM_DIRECTIONS)> CONST_DIRECTION_STRING = {{"INC_DIR", "DEC_DIR", "BI_DIR", "NONE"}};
 
 /**
  * @brief Lists detailed information about segmentation.  [0 .. W-1].
@@ -1392,7 +1400,7 @@ struct t_seg_details {
     float Rmetal = 0;
     float Cmetal = 0;
     bool twisted = 0;
-    enum e_direction direction = NO_DIRECTION;
+    enum Direction direction = Direction::NONE;
     int group_start = 0;
     int group_size = 0;
     int seg_start = 0;
@@ -1430,7 +1438,7 @@ class t_chan_seg_details {
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
 
-    e_direction direction() const { return seg_detail_->direction; }
+    Direction direction() const { return seg_detail_->direction; }
 
     int index() const { return seg_detail_->index; }
 
