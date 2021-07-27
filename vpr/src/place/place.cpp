@@ -1328,13 +1328,12 @@ static e_move_result try_swap(const t_annealing_state* state,
     e_create_move create_move_outcome;
 
     //When manual move toggle button is active, the manual move window asks the user for input.
-    ManualMovesGlobals* manual_move_global = get_manual_moves_global();
-    if (manual_move_global->manual_move_flag) {
 #ifndef NO_GRAPHICS
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->manual_moves_global.manual_move_flag) {
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 #endif /*NO_GRAPHICS*/
-
         create_move_outcome = manual_move_generator.propose_move(
             blocks_affected, move_type, rlim, placer_opts, criticalities);
     } else {
@@ -1428,15 +1427,14 @@ static e_move_result try_swap(const t_annealing_state* state,
         move_outcome = assess_swap(delta_c, state->t);
 
         //Updates the manaul_move_global members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
-        if (manual_move_global->manual_move_flag) {
-            update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c,
-                                     move_outcome);
 #ifndef NO_GRAPHICS
+        if (draw_state->manual_moves_global.manual_move_flag) {
+            update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
             cost_summary_dialog();
-#endif /*NO_GRAPHICS*/
             //User accepts or rejects the move.
-            move_outcome = manual_move_global->manual_move_info.user_move_outcome;
+            move_outcome = draw_state->manual_moves_global.manual_move_info.user_move_outcome;
         }
+#endif /*NO_GRAPHICS*/
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1475,7 +1473,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             //Highlights the new block when manual move is selected.
 #ifndef NO_GRAPHICS
-            highlight_new_block_location(manual_move_global->manual_move_flag);
+            highlight_new_block_location();
 #endif /*NO_GRPAHICS*/
 
         } else {

@@ -34,9 +34,13 @@ ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& ag
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float /*rlim*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
-    ManualMovesGlobals* manual_move_global = get_manual_moves_global();
-    int block_id = manual_move_global->manual_move_info.blockID;
-    t_pl_loc to = manual_move_global->manual_move_info.to_location;
+    int block_id;
+    t_pl_loc to;
+
+#ifndef NO_GRAPHICS
+    block_id = return_block_id();
+    to = return_to_loc();
+#endif /*NO_GRAPHICS*/
 
     ClusterBlockId b_from = ClusterBlockId(block_id);
 

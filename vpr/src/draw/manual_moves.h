@@ -13,20 +13,16 @@
 /** This file contains all functions for manual moves **/
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
-#    include "draw_global.h"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-#endif /*NO_GRAPHICS*/
-
-#include "move_utils.h"
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <iostream>
+#    include "move_utils.h"
+#    include <cstdio>
+#    include <cfloat>
+#    include <cstring>
+#    include <cmath>
+#    include <algorithm>
+#    include <iostream>
 
 /**
  * @brief ManualMovesInfo struct
@@ -59,12 +55,8 @@ struct ManualMovesGlobals {
     bool mm_window_is_open = false;
     bool user_highlighted_block = false;
     bool manual_move_flag = false;
-#ifndef NO_GRAPHICS
     GtkWidget* manual_move_window;
-#endif /*NO_GRAPHICS*/
 };
-
-#ifndef NO_GRAPHICS
 
 /** manual moves functions **/
 
@@ -112,16 +104,13 @@ void cost_summary_dialog();
  * @brief Highlights new block location
  *
  * Highlights block in the new location if the manual move flag is active and the user accepted the manual move.
- * @param manual_move_flag: Needed to check the state of the manual move toggle button.
  */
-void highlight_new_block_location(bool manual_move_flag);
+void highlight_new_block_location();
 
 /**
  * @brief Disables the mm_window_is_open boolean and destroys the window
  */
 void close_manual_moves_window();
-
-#endif /*NO_GRAPHICS*/
 
 /**
  * @brief Gets the manual_moves_global variables in manual_move.cpp.
@@ -146,5 +135,17 @@ void update_manual_move_costs(double d_cost, double d_timing, double d_bounding_
  * @return True if the string only contains numbers, false otherwise.
  */
 bool string_is_a_number(std::string block_id);
+
+/**
+ * @brief Returns the block requested by the user for manual moves.
+ */
+int return_block_id();
+
+/**
+ * @brief Returns the to location requested by the user for manual moves.
+ */
+t_pl_loc return_to_loc();
+
+#endif /*NO_GRAPHICS*/
 
 #endif /* MANUAL_MOVES_H */
