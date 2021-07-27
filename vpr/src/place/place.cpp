@@ -1333,7 +1333,6 @@ static e_move_result try_swap(const t_annealing_state* state,
     if (draw_state->manual_moves_global.manual_move_flag) {
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
-#endif /*NO_GRAPHICS*/
         create_move_outcome = manual_move_generator.propose_move(
             blocks_affected, move_type, rlim, placer_opts, criticalities);
     } else {
@@ -1341,6 +1340,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         create_move_outcome = move_generator.propose_move(blocks_affected,
                                                           move_type, rlim, placer_opts, criticalities);
     }
+#endif /*NO_GRAPHICS*/
 
     ++move_type_stat.num_moves[(int)move_type];
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
