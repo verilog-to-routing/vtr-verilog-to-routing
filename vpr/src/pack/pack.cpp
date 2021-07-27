@@ -100,7 +100,7 @@ bool try_pack(t_packer_opts* packer_opts,
                                                                expected_lowest_cost_pb_gnode,
                                                                list_of_packing_patterns.size()));
 
-    AttractionInfo attraction_groups;
+    AttractionInfo attraction_groups(packer_opts->use_attraction_groups);
     VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
     VTR_LOG("Finish prepacking.\n");
 

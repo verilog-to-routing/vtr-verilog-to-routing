@@ -1,20 +1,9 @@
 #include "attraction_groups.h"
 
-AttractionInfo::AttractionInfo() {
+AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
-
-    //Create an attraction group for each partition in the floorplanning constraints
-    for (int ipart = 0; ipart < num_parts; ipart++) {
-        PartitionId partid(ipart);
-        Partition part = floorplanning_ctx.constraints.get_partition(partid);
-
-        AttractionGroup group_info;
-        group_info.group_atoms = floorplanning_ctx.constraints.get_part_atoms(partid);
-
-        attraction_groups.push_back(group_info);
-    }
 
     //Initialize every atom to have no attraction group id
     int num_atoms = atom_ctx.nlist.blocks().size();
@@ -22,16 +11,29 @@ AttractionInfo::AttractionInfo() {
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
 
-    //Then, fill in the group id for the atoms that do have an attraction group
-    int num_att_grps = attraction_groups.size();
+    //Create an attraction group for each partition in the floorplanning constraints
+    if (attraction_groups_on) {
+        for (int ipart = 0; ipart < num_parts; ipart++) {
+            PartitionId partid(ipart);
+            Partition part = floorplanning_ctx.constraints.get_partition(partid);
 
-    for (int igroup = 0; igroup < num_att_grps; igroup++) {
-        AttractGroupId group_id(igroup);
+            AttractionGroup group_info;
+            group_info.group_atoms = floorplanning_ctx.constraints.get_part_atoms(partid);
 
-        AttractionGroup att_group = attraction_groups[group_id];
+            attraction_groups.push_back(group_info);
+        }
 
-        for (unsigned int iatom = 0; iatom < att_group.group_atoms.size(); iatom++) {
-            atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
+        //Then, fill in the group id for the atoms that do have an attraction group
+        int num_att_grps = attraction_groups.size();
+
+        for (int igroup = 0; igroup < num_att_grps; igroup++) {
+            AttractGroupId group_id(igroup);
+
+            AttractionGroup att_group = attraction_groups[group_id];
+
+            for (unsigned int iatom = 0; iatom < att_group.group_atoms.size(); iatom++) {
+                atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
+            }
         }
     }
 }

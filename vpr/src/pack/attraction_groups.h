@@ -41,7 +41,7 @@ struct AttractionGroup {
      * Atoms belonging to this attraction group will receive this gain if they
      * are potential candidates to be put in a cluster with the same attraction group.
      */
-    float gain = 3;
+    float gain = 7;
 
     /*
      * If the group is made up from a partition of atoms that are confined to a size one spot
@@ -56,7 +56,7 @@ class AttractionInfo {
   public:
     //Constructor that fills in the attraction groups based on vpr's floorplan constraints.
     //If no constraints were specified, then no attraction groups will be created.
-    AttractionInfo();
+    AttractionInfo(bool attraction_groups_on);
 
     //Setters and getters for the class
     AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
