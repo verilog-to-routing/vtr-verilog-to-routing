@@ -28,10 +28,8 @@
 #include "odin_types.h"
 
 extern void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-extern void resolve_adff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-extern void resolve_adffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);

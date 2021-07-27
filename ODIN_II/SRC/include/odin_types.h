@@ -262,10 +262,8 @@ enum operation_list {
     HARD_ADD,            // VTR Adder hard block
     HARD_MULTIPLY,       // VTR Multiply hard block
     PMUX,                // Multiplexer with many inputs using one-hot select signal
-    ADFF,                // data, A to areset value and output port
     SDFF,                // data, S to reset value and output port
     DFFE,                // data, enable to output port
-    ADFFE,               // data, asynchronous reset value and enable to output port
     SDFFE,               // data, synchronous reset value and enable to output port
     SDFFCE,              // data, synchronous reset value and enable to reset value and output port
     DFFSR,               // data, clear and set to output port

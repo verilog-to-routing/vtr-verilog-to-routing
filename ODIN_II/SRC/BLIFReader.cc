@@ -350,7 +350,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
             new_node->type = odin_subckt_strmap[subcircuit_name];
         else if (odin_subckt_strmap[subcircuit_name_prefix] != NO_OP)
             new_node->type = odin_subckt_strmap[subcircuit_name_prefix];
-        else    
+        else
             new_node->type = MEMORY;
     }
 
@@ -1667,7 +1667,7 @@ int BLIF::Reader::count_blif_lines() {
     }
 
     rewind(file);
-    
+
     /* clean up */
     vtr::free(buffer);
 
@@ -1869,9 +1869,7 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
         case (DIVIDE):         //fallthrough
         case (DLATCH):         //fallthrough
         case (ADLATCH):        //fallthrough
-        case (ADFF):           //fallthrough
         case (DFFE):           //fallthrough
-        case (ADFFE):          //fallthrough
         case (FF_NODE):        //fallthrough
         case (BITWISE_OR):     //fallthrough
         case (BITWISE_NOT):    //fallthrough
@@ -2040,7 +2038,7 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
                     ptr = vtr::strtok(NULL, TOKENS, file, buffer);
                     attributes->ABITS = std::bitset<sizeof(long) * 8>(ptr).to_ulong();
 
-                }else if (!strcmp(ptr, "MEMID")) {
+                } else if (!strcmp(ptr, "MEMID")) {
                     std::string memory_id(vtr::strtok(NULL, TOKENS, file, buffer));
                     unsigned first_back_slash = memory_id.find_last_of(YOSYS_ID_FIRST_DELIMITER);
                     unsigned last_double_quote = memory_id.find_last_not_of(YOSYS_ID_LAST_DELIMITER);
@@ -2121,7 +2119,6 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
                             attributes->WR_CLK_POLARITY = ACTIVE_HIGH_SENSITIVITY;
                         else if (sensitivity == 0)
                             attributes->WR_CLK_POLARITY = ACTIVE_LOW_SENSITIVITY;
-
                     }
                 }
             } else if (!strcmp(ptr, ".end") || !strcmp(ptr, ".subckt")) {
@@ -2157,10 +2154,8 @@ bool BLIF::Reader::need_params(operation_list type) {
         case (DLATCH):  //fallthrough
         case (ADLATCH): //fallthrough
         case (SETCLR):  //fallthrough
-        case (ADFF):    //fallthrough
         case (SDFF):    //fallthrough
         case (DFFE):    //fallthrough
-        case (ADFFE):   //fallthrough
         case (SDFFE):   //fallthrough
         case (SDFFCE):  //fallthrough
         case (DFFSR):   //fallthrough

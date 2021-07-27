@@ -20,12 +20,15 @@ memory_collect; opt;
 check;
 # Transform the design into a new one with single top module
 flatten;
+# resolve asynchronous dffs
+techmap -map $env(ODIN_LIB_DIR)/adff2dff.v;
+techmap -map $env(ODIN_LIB_DIR)/adffe2dff.v;
 # Make name convention more readable
 autoname;
 # Transforms pmux into trees of regular multiplexers
 pmuxtree;
 # undirven to ensure there is no wire without drive
-opt -undriven -full;# -noff; potential option to remove all sdff and etc. Only dff will remain
+opt -undriven -full; # -noff #potential option to remove all sdff and etc. Only dff will remain
 
 # param is to print non-standard cells attributes
 # impltf is also used not to show the definition of primary netlist ports, i.e. VCC, GND and PAD, in the output.

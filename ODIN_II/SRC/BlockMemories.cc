@@ -64,7 +64,6 @@ static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist);
 static bool check_same_addrs(block_memory* bram);
 static void perform_optimization(block_memory* memory);
 static signal_list_t* merge_read_write_clks(signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist);
-static signal_list_t* create_single_clk_pin(signal_list_t* clks, nnode_t* node, netlist_t* netlist);
 static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t* selectors, int desired_width, nnode_t* node, netlist_t* netlist);
 static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list_t* selectors, nnode_t* node, netlist_t* netlist);
 
@@ -280,8 +279,9 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
         add_pin_to_signal_list(rom->write_data, get_pad_pin(netlist));
     }
 
+    signal_list_t* copy_signal = copy_input_signals(rom->read_clk);
     /* create single clk pin */
-    rom->clk = create_single_clk_pin(copy_input_signals(rom->read_clk), node, netlist);
+    rom->clk = create_single_clk_pin(copy_signal, node, netlist);
 
     /* no need to these variables in rom */
     rom->write_addr = NULL;
@@ -299,6 +299,9 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
     /* creating a unique name for the block memory */
     rom->name = make_full_ref_name(rom->node->name, NULL, NULL, rom->memory_id, -1);
     read_only_memories.emplace(rom->name, rom);
+
+    // CLEAN UP
+    free_signal_list(copy_signal);
 
     return (rom);
 }
@@ -1544,48 +1547,6 @@ static void perform_optimization(block_memory* memory) {
 }
 
 /**
- * (function: create_single_clk_pin)
- * 
- * @brief ORing all given clks
- * 
- * @param clks signal list of clocks
- * @param node pointing to a bram node
- * @param netlist pointer to the current netlist file
- * 
- * @return single clock pin
- */
-static signal_list_t* create_single_clk_pin(signal_list_t* clks, nnode_t* node, netlist_t* netlist) {
-    signal_list_t* return_signal = NULL;
-
-    /* or all clks */
-    signal_list_t* clk_chain = make_chain(LOGICAL_OR, clks, node);
-
-    /* create a new clk node */
-    nnode_t* nor_gate = make_2port_gate(LOGICAL_NOR, 1, 1, 1, node, node->traverse_visited);
-    /* add related inputs */
-    add_input_pin_to_node(nor_gate, get_zero_pin(netlist), 0);
-    add_input_pin_to_node(nor_gate, clk_chain->pins[0], 1);
-    /* creating output signal */
-    signal_list_t* not_clk = make_output_pins_for_existing_node(nor_gate, 1);
-
-    /* creating a single input/output node */
-    nnode_t* clk_node = make_not_gate(nor_gate, node->traverse_visited);
-    connect_nodes(nor_gate, 0, clk_node, 0);
-    return_signal = make_output_pins_for_existing_node(clk_node, 1);
-
-    // CLEAN UP
-    free_signal_list(clk_chain);
-    free_signal_list(not_clk);
-
-    /* adding the new clk node to netlist clocks */
-    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
-    netlist->clocks[netlist->num_clocks] = clk_node;
-    netlist->num_clocks++;
-
-    return (return_signal);
-}
-
-/**
  * (function: split_cascade_port)
  * 
  * @brief split the given signal list into chunks of desired_width size. 
@@ -1850,7 +1811,7 @@ static signal_list_t* merge_read_write_clks(signal_list_t* clks1, signal_list_t*
     signal_list_t* or_output = make_output_pins_for_existing_node(or_gate, 1);
 
     /* create a clock node to specify the edge sensitivity */
-    nnode_t* clk_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
+    nnode_t* clk_node = make_1port_gate(LOGICAL_AND, 1, 1, node, node->traverse_visited);
     connect_nodes(or_gate, 0, clk_node, 0);
     /* create the clk node's output pin */
     signal_list_t* clk_output = make_output_pins_for_existing_node(clk_node, 1);

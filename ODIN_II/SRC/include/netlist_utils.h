@@ -73,12 +73,13 @@ netlist_t* allocate_netlist();
 void free_netlist(netlist_t* to_free);
 void add_node_to_netlist(netlist_t* netlist, nnode_t* node, operation_list special_node);
 void mark_clock_node(netlist_t* netlist, const char* clock_name);
+extern signal_list_t* create_single_clk_pin(signal_list_t* clks, nnode_t* node, netlist_t* netlist);
 
 int get_output_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_output_port_index_from_mapping(nnode_t* node, const char* name);
 int get_input_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_input_port_index_from_mapping(nnode_t* node, const char* name);
-extern npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, edge_type_e pin2_polarity, nnode_t* node, netlist_t* netlist);
+extern npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, edge_type_e pin2_polarity, nnode_t* node);
 extern void reduce_input_ports(nnode_t*& node, netlist_t* netlist);
 extern signal_list_t* reduce_signal_list(signal_list_t* signalvar, operation_list signedness, netlist_t* netlist);
 chain_information_t* allocate_chain_info();

@@ -5,13 +5,15 @@
         "max_rss(MiB)": 6.7,
         "exec_time(ms)": 1.9,
         "techmap_time(ms)": 1.5,
+        "Latch Drivers": 1,
         "Pi": 2,
         "Po": 1,
-        "logic element": 5,
-        "Longest Path": 7,
-        "Average Path": 5,
-        "Estimated LUTs": 5,
-        "Total Node": 5
+        "logic element": 1,
+        "latch": 1,
+        "Longest Path": 5,
+        "Average Path": 4,
+        "Estimated LUTs": 1,
+        "Total Node": 3
     },
     "DEFAULT": {
         "test_name": "n/a",

@@ -252,10 +252,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             break;
         }
         case FF_NODE: //fallthrough
-        case ADFF:    //fallthrough
         case SDFF:    //fallthrough
         case DFFE:    //fallthrough
-        case ADFFE:   //fallthrough
         case SDFFE:   //fallthrough
         case SDFFCE:  //fallthrough
         case DFFSR:   //fallthrough
@@ -330,10 +328,10 @@ static void resolve_logical_nodes(nnode_t* node, uintptr_t traverse_mark_number,
     oassert(node->traverse_visited == traverse_mark_number);
 
     switch (node->type) {
-        case GTE:          //fallthrough
-        case LTE:          //fallthrough
-        case GT:           //fallthrough
-        case LT:           //fallthrough
+        case GTE:           //fallthrough
+        case LTE:           //fallthrough
+        case GT:            //fallthrough
+        case LT:            //fallthrough
         case LOGICAL_EQUAL: //fallthrough
         case NOT_EQUAL: {
             /**
@@ -551,7 +549,7 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
             /* postpone to partial mapping phase */
             break;
         }
-        case MUX_2: //fallthrough
+        case MUX_2:  //fallthrough
         case SMUX_2: //fallthrough
         case MULTI_PORT_MUX: {
             error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
@@ -630,13 +628,6 @@ static void resolve_ff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netl
             resolve_dff_node(node, traverse_mark_number, netlist);
             break;
         }
-        case ADFF: {
-            /**
-             * resolving a dff node with reset value
-            */
-            resolve_adff_node(node, traverse_mark_number, netlist);
-            break;
-        }
         case SDFF: {
             /**
              * resolving a dff node with reset value
@@ -649,13 +640,6 @@ static void resolve_ff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netl
              * resolving a dff node with enable
             */
             resolve_dffe_node(node, traverse_mark_number, netlist);
-            break;
-        }
-        case ADFFE: {
-            /**
-             * resolving a dff node with enable and arst
-            */
-            resolve_adffe_node(node, traverse_mark_number, netlist);
             break;
         }
         case SDFFE: {

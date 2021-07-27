@@ -291,7 +291,6 @@ signal_list_t* make_chain(operation_list type, signal_list_t* inputs, nnode_t* n
     add_pin_to_signal_list(output, internal_outputs->pins[width - 2]);
 
     // CLEAN UP
-    free_signal_list(inputs);
     free_signal_list(internal_outputs);
     vtr::free(gates);
 
