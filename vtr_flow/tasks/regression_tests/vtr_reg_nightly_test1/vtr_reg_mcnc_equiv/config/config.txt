@@ -3,6 +3,9 @@
 # Configuration file for running experiments
 ##############################################
 
+#This task checks for logical equivalency of a netlist before and after VPR using ABC. It performs a formal equivalence check but tests the same 
+#benchmarks as vtr_reg_mcnc. 
+
 # Path to directory of circuits to use
 circuits_dir=benchmarks/blif/wiremap6
 
