@@ -2,8 +2,8 @@
     "for/generate_for_int/no_arch": {
         "test_name": "for/generate_for_int/no_arch",
         "generated_blif": "generate_for_int_generated.blif",
-        "max_rss(MiB)": 6.2,
-        "exec_time(ms)": 0.9,
+        "max_rss(MiB)": 74,
+        "exec_time(ms)": 30.4,
         "Po": 32,
         "logic element": 32,
         "Longest Path": 3,
@@ -14,8 +14,8 @@
     "for/generate_for_ultra_wide/no_arch": {
         "test_name": "for/generate_for_ultra_wide/no_arch",
         "generated_blif": "generate_for_ultra_wide_generated.blif",
-        "max_rss(MiB)": 6.7,
-        "exec_time(ms)": 3.3,
+        "max_rss(MiB)": 74.9,
+        "exec_time(ms)": 230,
         "Po": 256,
         "logic element": 256,
         "Longest Path": 3,
@@ -26,8 +26,8 @@
     "for/generate_for_wide/no_arch": {
         "test_name": "for/generate_for_wide/no_arch",
         "generated_blif": "generate_for_wide_generated.blif",
-        "max_rss(MiB)": 6.1,
-        "exec_time(ms)": 0.6,
+        "max_rss(MiB)": 44,
+        "exec_time(ms)": 6.9,
         "Po": 3,
         "logic element": 3,
         "Longest Path": 3,

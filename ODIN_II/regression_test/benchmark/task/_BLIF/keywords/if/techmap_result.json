@@ -2,9 +2,9 @@
     "if/if_statement/no_arch": {
         "test_name": "if/if_statement/no_arch",
         "input_blif": "if_statement.blif",
-        "max_rss(MiB)": 9.4,
-        "exec_time(ms)": 1.7,
-        "techmap_time(ms)": 1.4,
+        "max_rss(MiB)": 46.8,
+        "exec_time(ms)": 8.2,
+        "techmap_time(ms)": 2.4,
         "Latch Drivers": 1,
         "Pi": 2,
         "Po": 1,

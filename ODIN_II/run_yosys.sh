@@ -44,6 +44,7 @@ _TEST_INPUT_LIST=()
 _VERILOG_INPUT_LIST=()
 _REGENERATE_BLIF="off"
 _SHOW_FAILURE="off"
+_OUTPUT_PATH=""
 _CLEAN="off"
 
 ###############################################
@@ -129,7 +130,8 @@ function help() {
 	
     OPTIONS
             -h|--help                       $(_prt_cur_arg off) print this
-            -s|--show_failure               $(_prt_cur_arg off) show failures in yosys blif generating process
+            -o|--output                     Specify the output file
+            -s|--show_failure               $(_prt_cur_arg ${_SHOW_FAILURE}) show failures in yosys blif generating process
             -V|--verilog < test name >      A path to a single Verilog file
             -t|--test < test name >         A path to a single test file
             -T|--task                       Test name is either a absolute or relative path to 
@@ -216,9 +218,20 @@ function parse_args() {
                         _REGENERATE_BLIF="on"
                         echo "regenerating blifs of benchmark/_BLIF"
                 
-                ;;--show_failure)
+                ;;-s|--show_failure)
                         _SHOW_FAILURE="on"
                         echo "show yosys log if a benchmark fails"
+                
+                ;;-o|--output)
+					# this is handled down stream
+					if [ "_$2" == "_" ]
+					then 
+						echo "empty argument for $1"
+						_exit_with_code "-1"
+					fi
+					# concat tests
+					_OUTPUT_PATH=( "$2" )
+					shift
 
                 ;;--clean)
                         _CLEAN="on"
@@ -313,7 +326,7 @@ function populate_arg_from_file() {
 	fi
 }
 
-function run_single_files() {
+function run_single_hdl() {
     for circuit in "${_VERILOG_INPUT_LIST[@]}"
     do
         # validate input file
@@ -322,19 +335,23 @@ function run_single_files() {
             _exit_with_code "-1"
         fi
 
-        export OUTPUT_BLIF_PATH="${ODIN_DIR}/yosys"
-
         # run yosys for the current circuit
         CIRCUIT_FILE=$(basename "${circuit}")
-
         CIRCUIT_NAME="${CIRCUIT_FILE%.*}"
+        
+        export TCL_CIRCUIT="${circuit}"
+        if [ _"${_OUTPUT_PATH}" == "_" ]; then
+            export OUTPUT_BLIF_PATH="${ODIN_DIR}/yosys"
+            export TCL_BLIF_NAME="${CIRCUIT_NAME}.blif"
+            OUTPUT_REALPATH="${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}"
+        else
+            export TCL_BLIF_NAME=$(basename "${_OUTPUT_PATH}")
+            export OUTPUT_BLIF_PATH="${_OUTPUT_PATH%/*}"
+            OUTPUT_REALPATH="${_OUTPUT_PATH}"
+        fi
 
         # to check the required path and files
-        check "${OUTPUT_BLIF_PATH}" "${CIRCUIT_NAME}"
-
-        export TCL_CIRCUIT="${circuit}"
-        export TCL_BLIF_NAME="${CIRCUIT_NAME}.blif"
-        OUTPUT_REALPATH="${ODIN_DIR}/${TCL_BLIF_NAME}"
+        check "${OUTPUT_BLIF_PATH}" "${TCL_BLIF_NAME%.*}"
 
         if [ -f "${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}" ]; then
             print_test_stat "E"
@@ -446,7 +463,7 @@ function run_suite() {
 function run() {
     # run single verilog file
     if [ ${#_VERILOG_INPUT_LIST[@]} -gt 0 ]; then
-        run_single_files
+        run_single_hdl
     elif [ ${#_TEST_INPUT_LIST[@]} -gt 0 ]; then
         run_suite
     else 

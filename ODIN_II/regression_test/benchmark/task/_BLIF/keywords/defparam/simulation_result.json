@@ -2,8 +2,8 @@
     "defparam/defparam_depth_1/no_arch": {
         "test_name": "defparam/defparam_depth_1/no_arch",
         "generated_blif": "defparam_depth_1_generated.blif",
-        "max_rss(MiB)": 6.4,
-        "exec_time(ms)": 0.7,
+        "max_rss(MiB)": 52.3,
+        "exec_time(ms)": 12.7,
         "Pi": 10,
         "Po": 10,
         "logic element": 10,
@@ -15,8 +15,8 @@
     "defparam/defparam_depth_2/no_arch": {
         "test_name": "defparam/defparam_depth_2/no_arch",
         "generated_blif": "defparam_depth_2_generated.blif",
-        "max_rss(MiB)": 6.4,
-        "exec_time(ms)": 0.7,
+        "max_rss(MiB)": 52.1,
+        "exec_time(ms)": 12.7,
         "Pi": 10,
         "Po": 10,
         "logic element": 10,
@@ -28,8 +28,8 @@
     "defparam/override_same_param_name/no_arch": {
         "test_name": "defparam/override_same_param_name/no_arch",
         "generated_blif": "override_same_param_name_generated.blif",
-        "max_rss(MiB)": 6.3,
-        "exec_time(ms)": 0.8,
+        "max_rss(MiB)": 55.7,
+        "exec_time(ms)": 15.4,
         "Pi": 10,
         "Po": 7,
         "logic element": 12,

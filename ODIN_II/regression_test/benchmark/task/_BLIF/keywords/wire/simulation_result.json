@@ -2,8 +2,8 @@
     "wire/input_wire/no_arch": {
         "test_name": "wire/input_wire/no_arch",
         "generated_blif": "input_wire_generated.blif",
-        "max_rss(MiB)": 6.1,
-        "exec_time(ms)": 0.7,
+        "max_rss(MiB)": 46.5,
+        "exec_time(ms)": 8.6,
         "Pi": 5,
         "Po": 5,
         "logic element": 5,
@@ -15,8 +15,8 @@
     "wire/wire_failure/no_arch": {
         "test_name": "wire/wire_failure/no_arch",
         "generated_blif": "wire_failure_generated.blif",
-        "max_rss(MiB)": 6,
-        "exec_time(ms)": 0.6,
+        "max_rss(MiB)": 42.4,
+        "exec_time(ms)": 5.9,
         "Pi": 2,
         "Po": 1,
         "logic element": 2,
@@ -28,8 +28,8 @@
     "wire/wire/no_arch": {
         "test_name": "wire/wire/no_arch",
         "generated_blif": "wire_generated.blif",
-        "max_rss(MiB)": 6.1,
-        "exec_time(ms)": 0.6,
+        "max_rss(MiB)": 41.5,
+        "exec_time(ms)": 5.3,
         "Pi": 1,
         "Po": 1,
         "logic element": 1,
