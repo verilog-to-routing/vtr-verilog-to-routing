@@ -62,8 +62,10 @@ struct ManualMovesGlobals {
 
 /**
  * @brief Gets the state of the manual moves togle button and assigns it to the manual_move_flag in the ManualMovesGlobal struct.
+ *
+ * @return True if the toggle button is active, false otherwise.
  */
-void get_manual_move_flag();
+bool get_manual_move_flag();
 
 /**
  * @brief Draws the manual move window.

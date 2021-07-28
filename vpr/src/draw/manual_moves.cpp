@@ -184,11 +184,11 @@ bool checking_legality_conditions(ClusterBlockId block_id, t_pl_loc to) {
     return true;
 }
 
-void get_manual_move_flag() {
+bool get_manual_move_flag() {
     t_draw_state* draw_state = get_draw_state_vars();
     GObject* manual_moves = application.get_object("manualMove");
-    //return gtk_toggle_button_get_active((GtkToggleButton*) manual_moves);
     draw_state->manual_moves_global.manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_moves);
+    return draw_state->manual_moves_global.manual_move_flag;
 }
 
 void cost_summary_dialog() {
