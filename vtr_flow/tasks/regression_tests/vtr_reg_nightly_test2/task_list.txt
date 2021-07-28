@@ -1,8 +1,3 @@
-regression_tests/vtr_reg_nightly_test2/func_multiclock/blanket
-regression_tests/vtr_reg_nightly_test2/func_multiclock/iterative
-regression_tests/vtr_reg_nightly_test2/func_multiclock/multiclock_mcnc
-regression_tests/vtr_reg_nightly_test2/func_multiclock/once 
-regression_tests/vtr_reg_nightly_test2/func_multiclock/vanilla
 regression_tests/vtr_reg_nightly_test2/vtr_reg_netlist_writer 
 regression_tests/vtr_reg_nightly_test2/vtr_func_formal 
 regression_tests/vtr_reg_nightly_test2/vtr_bidir 
@@ -13,7 +8,7 @@ regression_tests/vtr_reg_nightly_test2/vpr_verify_rr_graph_titan
 regression_tests/vtr_reg_nightly_test2/vpr_verify_rr_graph_error_check 
 regression_tests/vtr_reg_nightly_test2/vtr_timing_update_diff 
 regression_tests/vtr_reg_nightly_test2/vtr_timing_update_diff_titan 
-regression_tests/vtr_reg_nightly_test2/func_multiclock/multiclock_mcnc 
+regression_tests/vtr_reg_nightly_test2/vtr_reg_multiclock_mcnc
 regression_tests/vtr_reg_nightly_test2/titan_other   
 regression_tests/vtr_reg_nightly_test2/titan_quick_qor
 
