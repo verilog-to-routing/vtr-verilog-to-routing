@@ -1,7 +1,9 @@
 yosys -import
 
 # Read VTR baseline library first
-read_verilog -lib $env(PRIMITIVES);
+read_verilog -lib -nomem2reg -specify $env(PRIMITIVES);
+setattr -mod -set keep_hierarchy 1 single_port_ram
+setattr -mod -set keep_hierarchy 1 dual_port_ram
 
 # Read the hardware decription Verilog
 read_verilog -nomem2reg $env(TCL_CIRCUIT);
@@ -16,13 +18,17 @@ procs; opt;
 fsm; opt;
 # Collects memories, their port and create multiport memory cells
 memory_collect; opt;
+
 # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
 check;
+# resolve asynchronous dffs
+techmap -map $env(ODIN_TECHLIB)/adff2dff.v;
+techmap -map $env(ODIN_TECHLIB)/adffe2dff.v;
+# convert mem block to bram/rom
+techmap -map $env(ODIN_TECHLIB)/mem_map.v;
+
 # Transform the design into a new one with single top module
 flatten;
-# resolve asynchronous dffs
-techmap -map $env(ODIN_LIB_DIR)/adff2dff.v;
-techmap -map $env(ODIN_LIB_DIR)/adffe2dff.v;
 # Make name convention more readable
 autoname;
 # Transforms pmux into trees of regular multiplexers

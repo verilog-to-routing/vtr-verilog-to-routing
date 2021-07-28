@@ -421,7 +421,7 @@ typemap yosys_subckt_strmap({
                                 {"$lt", LT},                             // (A, B, Y)
                                 {"$lut", operation_list_END},            // (A, Y)
                                 {"$macc", operation_list_END},           // (A, B, Y)
-                                {"$mem", BRAM},                          // (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA)
+                                {"$mem", operation_list_END},            // (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA)
                                 {"$meminit", operation_list_END},        // (ADDR, DATA)
                                 {"$memrd", ROM},                         // (CLK, EN, ADDR, DATA)
                                 {"$memwr", operation_list_END},          // (CLK, EN, ADDR, DATA)
@@ -461,6 +461,9 @@ typemap yosys_subckt_strmap({
                                 {"$tribuf", operation_list_END},         // (A, EN, Y)
                                 {"$xnor", LOGICAL_XNOR},                 // (A, B, Y)
                                 {"$xor", LOGICAL_XOR},                   // (A, B, Y)
+                                /***************** Odin techlib START **************/
+                                {"_$ROM", ROM},   // (in, out)
+                                {"_$BRAM", BRAM}, // (in, out)
                                 /*********** VTR Primitive modules START ***********/
                                 {"LUT_K", operation_list_END},             // (in, out)
                                 {"DFF", FF_NODE},                          // (clock, D, Q)

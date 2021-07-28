@@ -63,7 +63,6 @@ static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist);
 
 static bool check_same_addrs(block_memory* bram);
 static void perform_optimization(block_memory* memory);
-static signal_list_t* merge_read_write_clks(signal_list_t* rd_clks, signal_list_t* wr_clks, nnode_t* node, netlist_t* netlist);
 static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t* selectors, int desired_width, nnode_t* node, netlist_t* netlist);
 static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list_t* selectors, nnode_t* node, netlist_t* netlist);
 
@@ -111,97 +110,84 @@ block_memory* lookup_block_memory(char* instance_name_prefix, char* identifier) 
  * @param node pointing to a bram node
  * @param netlist pointer to the current netlist file
  */
-static block_memory* init_block_memory(nnode_t* node, netlist_t* netlist) {
+static block_memory* init_block_memory(nnode_t* node, netlist_t* /* netlist */) {
     int i, offset;
     block_memory* bram = (block_memory*)vtr::malloc(sizeof(block_memory));
 
     /** 
      * yosys memory block information 
      * 
-     * RD_ADDR:    input port [0] 
-     * RD_CLOCK:   input port [1] 
-     * RD_DATA:    output port [0] 
+     * CLK:        input port [0] 
+     * RD_ADDR:    input port [1] 
+     * RD_DATA:    output port[0] 
      * RD_ENABLE:  input port [2] 
      * WR_ADDR:    input port [3] 
-     * WR_CLOCK:   input port [4] 
-     * WR_DATA:    input port [5] 
-     * WR_ENABLE:  input port [6] 
+     * WR_DATA:    input port [4] 
+     * WR_ENABLE:  input port [5] 
     */
 
-    int RD_ADDR_width = node->input_port_sizes[0];
-    int RD_CLK_width = node->input_port_sizes[1];
+    int CLK_width = node->input_port_sizes[0];
+    int RD_ADDR_width = node->input_port_sizes[1];
     int RD_DATA_width = node->output_port_sizes[0];
     int RD_ENABLE_width = node->input_port_sizes[2];
     int WR_ADDR_width = node->input_port_sizes[3];
-    int WR_CLK_width = node->input_port_sizes[4];
-    int WR_DATA_width = node->input_port_sizes[5];
-    int WR_ENABLE_width = node->input_port_sizes[6];
+    int WR_DATA_width = node->input_port_sizes[4];
+    int WR_ENABLE_width = node->input_port_sizes[5];
+
+    oassert(CLK_width == 1);
 
     /* INPUT */
-    /* read address pins */
-    offset = 0;
-    bram->read_addr = init_signal_list();
-    for (i = 0; i < RD_ADDR_width; i++) {
-        add_pin_to_signal_list(bram->read_addr, node->input_pins[offset + i]);
-    }
 
-    /* read clk pins */
-    offset += RD_ADDR_width;
-    bram->read_clk = init_signal_list();
-    for (i = 0; i < RD_CLK_width; i++) {
-        add_pin_to_signal_list(bram->read_clk, node->input_pins[offset + i]);
+    /* CLK */
+    offset = 0;
+    bram->clk = init_signal_list();
+    add_pin_to_signal_list(bram->clk, node->input_pins[offset]);
+
+    /* read address pins */
+    offset += CLK_width;
+    bram->read_addr = init_signal_list();
+    for (i = 0; i < RD_ADDR_width; ++i) {
+        add_pin_to_signal_list(bram->read_addr, node->input_pins[i + offset]);
     }
 
     /* read enable pins */
-    offset += RD_CLK_width;
+    offset += RD_ADDR_width;
     bram->read_en = init_signal_list();
-    for (i = 0; i < RD_ENABLE_width; i++) {
-        add_pin_to_signal_list(bram->read_en, node->input_pins[offset + i]);
+    for (i = 0; i < RD_ENABLE_width; ++i) {
+        add_pin_to_signal_list(bram->read_en, node->input_pins[i + offset]);
     }
 
     /* write addr pins */
     offset += RD_ENABLE_width;
     bram->write_addr = init_signal_list();
-    for (i = 0; i < WR_ADDR_width; i++) {
-        add_pin_to_signal_list(bram->write_addr, node->input_pins[offset + i]);
-    }
-
-    /* write clk pins */
-    offset += WR_ADDR_width;
-    bram->write_clk = init_signal_list();
-    for (i = 0; i < WR_CLK_width; i++) {
-        add_pin_to_signal_list(bram->write_clk, node->input_pins[offset + i]);
+    for (i = 0; i < WR_ADDR_width; ++i) {
+        add_pin_to_signal_list(bram->write_addr, node->input_pins[i + offset]);
     }
 
     /* write data pins */
-    offset += WR_CLK_width;
+    offset += WR_ADDR_width;
     bram->write_data = init_signal_list();
-    for (i = 0; i < WR_DATA_width; i++) {
-        add_pin_to_signal_list(bram->write_data, node->input_pins[offset + i]);
+    for (i = 0; i < WR_DATA_width; ++i) {
+        add_pin_to_signal_list(bram->write_data, node->input_pins[i + offset]);
     }
 
     /* write enable clk pins */
     offset += WR_DATA_width;
     bram->write_en = init_signal_list();
-    for (i = 0; i < WR_ENABLE_width; i++) {
-        add_pin_to_signal_list(bram->write_en, node->input_pins[offset + i]);
+    for (i = 0; i < WR_ENABLE_width; ++i) {
+        add_pin_to_signal_list(bram->write_en, node->input_pins[i + offset]);
     }
 
     /* OUTPUT */
     /* read clk pins */
     offset = 0;
     bram->read_data = init_signal_list();
-    for (i = 0; i < RD_DATA_width; i++) {
-        add_pin_to_signal_list(bram->read_data, node->output_pins[offset + i]);
+    for (i = 0; i < RD_DATA_width; ++i) {
+        add_pin_to_signal_list(bram->read_data, node->output_pins[i + offset]);
     }
 
     /* creating new node since we need to reorder some input port for each inferenece mode */
     bram->node = node;
-
-    /* CLK */
-    /* handling multiple clock signals */
-    /* merge all read and write clock to a single clock pin */
-    bram->clk = merge_read_write_clks(bram->read_clk, bram->write_clk, bram->node, netlist);
 
     /* keep track of location since we need for further node creation */
     bram->loc = node->loc;
@@ -230,62 +216,56 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
     /** 
      * yosys single port ram information 
      * 
-     * RD_ADDR:    input port [0] 
-     * RD_CLOCK:   input port [1] 
+     * CLK:        input port [0] 
+     * RD_ADDR:    input port [1] 
      * RD_DATA:    output port [0] 
      * RD_ENABLE:  input port [2] 
     */
 
-    int RD_ADDR_width = node->input_port_sizes[0];
-    int RD_CLK_width = node->input_port_sizes[1];
+    int CLK_width = node->input_port_sizes[0];
+    int RD_ADDR_width = node->input_port_sizes[1];
     int RD_DATA_width = node->output_port_sizes[0];
     int RD_ENABLE_width = node->input_port_sizes[2];
-
     int WR_DATA_width = node->output_port_sizes[0];
 
-    /* INPUT */
-    /* read address pins */
-    offset = 0;
-    rom->read_addr = init_signal_list();
-    for (i = 0; i < RD_ADDR_width; i++) {
-        add_pin_to_signal_list(rom->read_addr, node->input_pins[offset + i]);
-    }
+    oassert(CLK_width == 1);
 
-    /* read clk pins */
-    offset += RD_ADDR_width;
-    rom->read_clk = init_signal_list();
-    for (i = 0; i < RD_CLK_width; i++) {
-        add_pin_to_signal_list(rom->read_clk, node->input_pins[offset + i]);
+    /* INPUT */
+    /* CLK */
+    offset = 0;
+    rom->clk = init_signal_list();
+    add_pin_to_signal_list(rom->clk, node->input_pins[offset]);
+
+    /* read address pins */
+    offset += CLK_width;
+    rom->read_addr = init_signal_list();
+    for (i = 0; i < RD_ADDR_width; ++i) {
+        add_pin_to_signal_list(rom->read_addr, node->input_pins[i + offset]);
     }
 
     /* read enable pins */
-    offset += RD_CLK_width;
+    offset += RD_ADDR_width;
     rom->read_en = init_signal_list();
-    for (i = 0; i < RD_ENABLE_width; i++) {
-        add_pin_to_signal_list(rom->read_en, node->input_pins[offset + i]);
+    for (i = 0; i < RD_ENABLE_width; ++i) {
+        add_pin_to_signal_list(rom->read_en, node->input_pins[i + offset]);
     }
 
     /* OUTPUT */
     offset = 0;
     rom->read_data = init_signal_list();
-    for (i = 0; i < RD_DATA_width; i++) {
-        add_pin_to_signal_list(rom->read_data, node->output_pins[offset + i]);
+    for (i = 0; i < RD_DATA_width; ++i) {
+        add_pin_to_signal_list(rom->read_data, node->output_pins[i + offset]);
     }
 
     /* PAD DATA IN */
     /* we pad the data_in port for rom using pad pins */
     rom->write_data = init_signal_list();
-    for (i = 0; i < WR_DATA_width; i++) {
+    for (i = 0; i < WR_DATA_width; ++i) {
         add_pin_to_signal_list(rom->write_data, get_pad_pin(netlist));
     }
 
-    signal_list_t* copy_signal = copy_input_signals(rom->read_clk);
-    /* create single clk pin */
-    rom->clk = create_single_clk_pin(copy_signal, node, netlist);
-
     /* no need to these variables in rom */
     rom->write_addr = NULL;
-    rom->write_clk = NULL;
     rom->write_en = NULL;
 
     /* creating new node since we need to reorder some input port for each inferenece mode */
@@ -299,9 +279,6 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
     /* creating a unique name for the block memory */
     rom->name = make_full_ref_name(rom->node->name, NULL, NULL, rom->memory_id, -1);
     read_only_memories.emplace(rom->name, rom);
-
-    // CLEAN UP
-    free_signal_list(copy_signal);
 
     return (rom);
 }
@@ -333,7 +310,7 @@ static void create_r_single_port_ram(block_memory* rom, netlist_t* netlist) {
     signals->addr = rom->read_addr;
 
     /* handle clk signal */
-    signals->clk = rom->read_clk->pins[0];
+    signals->clk = rom->clk->pins[0];
 
     /**
      * we pad the data_in port using pad pins 
@@ -386,13 +363,13 @@ static void create_2r_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /* split read addr and add the first half to the addr1 */
     signals->addr1 = init_signal_list();
-    for (i = 0; i < addr_width; i++) {
+    for (i = 0; i < addr_width; ++i) {
         add_pin_to_signal_list(signals->addr1, bram->read_addr->pins[i]);
     }
 
     /* add pad pins as data1 */
     signals->data1 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(signals->data1, get_pad_pin(netlist));
     }
 
@@ -400,24 +377,20 @@ static void create_2r_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     signals->we1 = get_zero_pin(netlist);
     delete_npin(bram->read_en->pins[0]);
 
-    /* add merged clk signal as dpram clk signal */
+    /* add clk signal as dpram clk signal */
     signals->clk = bram->clk->pins[0];
-    /* delete read clks since there is no need of them anymore */
-    for (i = 0; i < bram->read_clk->count; i++) {
-        delete_npin(bram->read_clk->pins[i]);
-    }
 
     /* split read data and add the first half to the out1 */
     signals->out1 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(signals->out1, bram->read_data->pins[i]);
     }
 
     /* add the second half of the read addr to addr2 */
     offset = addr_width;
     signals->addr2 = init_signal_list();
-    for (i = 0; i < addr_width; i++) {
-        add_pin_to_signal_list(signals->addr2, bram->read_addr->pins[offset + i]);
+    for (i = 0; i < addr_width; ++i) {
+        add_pin_to_signal_list(signals->addr2, bram->read_addr->pins[i + offset]);
     }
 
     /* there is no write data to set any we, so it will be connected to GND */
@@ -426,15 +399,15 @@ static void create_2r_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /* add the second half of the write data to data2 */
     signals->data2 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(signals->data2, get_pad_pin(netlist));
     }
 
     /* add the second half of the read data to out2 */
     offset = data_width;
     signals->out2 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
-        add_pin_to_signal_list(signals->out2, bram->read_data->pins[offset + i]);
+    for (i = 0; i < data_width; ++i) {
+        add_pin_to_signal_list(signals->out2, bram->read_data->pins[i + offset]);
     }
 
     /* create a new dual port ram */
@@ -467,28 +440,19 @@ static void create_nr_single_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /* single port ram signals */
     sp_ram_signals* signals = (sp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
-    signal_list_t* copy_signal = NULL;
+    signal_list_t* selectors = NULL;
 
     /* INPUTS */
-    copy_signal = copy_input_signals(bram->read_en);
+    selectors = copy_input_signals(bram->read_en);
     /* adding the muxed read addrs as spram address */
     signals->addr = split_cascade_port(bram->read_addr,
-                                       copy_signal,
+                                       selectors,
                                        addr_width,
                                        old_node,
                                        netlist);
 
-    /** 
-     * handling multiple clock signals 
-     * using a clk resulted fbram ORing all read clocks
-    */
-    if (bram->read_clk->count > 1) {
-        signal_list_t* old_read_clk = bram->read_clk;
-        bram->read_clk = merge_read_write_clks(bram->read_clk, NULL, old_node, netlist);
-        // CLEAN UP
-        free_signal_list(old_read_clk);
-    }
-    signals->clk = bram->read_clk->pins[0];
+    /* add clk singnal */
+    signals->clk = bram->clk->pins[0];
 
     /**
      * bram->write_data is already initialized with pad pins in bram init
@@ -506,7 +470,7 @@ static void create_nr_single_port_ram(block_memory* bram, netlist_t* netlist) {
     nnode_t* spram = create_single_port_ram(signals, old_node);
 
     signal_list_t* spram_outputs = init_signal_list();
-    for (int i = 0; i < data_width; i++) {
+    for (int i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(spram_outputs, spram->output_pins[i]);
     }
 
@@ -514,10 +478,11 @@ static void create_nr_single_port_ram(block_memory* bram, netlist_t* netlist) {
     decode_out_port(spram_outputs, bram->read_data, bram->read_en, old_node, netlist);
 
     // CLEAN UP bram src node
-    cleanup_block_memory_old_node(old_node);
+    free_signal_list(selectors);
     free_signal_list(spram_outputs);
-    free_signal_list(copy_signal);
+
     free_sp_ram_signals(signals);
+    cleanup_block_memory_old_node(old_node);
 }
 
 /**
@@ -544,7 +509,7 @@ static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist 
     sp_ram_signals* signals = (sp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
 
     /* the wr addr will be deleted since we do not need it anymore */
-    for (i = 0; i < bram->write_addr->count; i++) {
+    for (i = 0; i < bram->write_addr->count; ++i) {
         npin_t* wr_addr_pin = bram->write_addr->pins[i];
         /* delete pin */
         delete_npin(wr_addr_pin);
@@ -554,12 +519,7 @@ static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist 
     /* adding the read addr input port as address1 */
     signals->addr = bram->read_addr;
 
-    /** 
-     * handling multiple clock signals 
-     * using a clk resulted fbram ORing all read clocks
-    */
-    /* handling multiple clock signals */
-    /* merge all read and write clock to a single clock pin */
+    /* handling clock signals */
     signals->clk = bram->clk->pins[0];
 
     /**
@@ -569,7 +529,7 @@ static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist 
     signals->data = bram->write_data;
 
     /* the rd enables will be deleted since we do not need it anymore */
-    for (i = 0; i < bram->read_en->count; i++) {
+    for (i = 0; i < bram->read_en->count; ++i) {
         npin_t* rd_en_pin = bram->read_en->pins[i];
         /* delete pin */
         delete_npin(rd_en_pin);
@@ -579,7 +539,7 @@ static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist 
     if (bram->write_en->count > 1) {
         /* need to OR all write enable since we1 should be one bit in single port ram */
         // bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
-        for (i = 1; i < bram->write_en->count; i++) {
+        for (i = 1; i < bram->write_en->count; ++i) {
             delete_npin(bram->write_en->pins[i]);
         }
     }
@@ -619,66 +579,30 @@ static void create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     /* dual port ram signals */
     dp_ram_signals* signals = (dp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
 
-    /* equalize the addr width with max */
-    int max_addr_width = std::max(bram->read_addr->count, bram->write_addr->count);
-
     /* INPUTS */
-    /* adding the read addr input port as address1 */
-    int read_addr_size = bram->read_addr->count;
-    for (i = 0; i < max_addr_width; i++) {
-        if (i < read_addr_size) {
-            npin_t* pin = bram->read_addr->pins[i];
-            /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
-            pin->node->input_pins[pin->pin_node_idx] = NULL;
-        } else {
-            add_pin_to_signal_list(bram->read_addr, get_pad_pin(netlist));
-        }
-    }
     signals->addr1 = bram->read_addr;
-
-    /* adding the write addr port as address2 */
-    int write_addr_size = bram->write_addr->count;
-    for (i = 0; i < max_addr_width; i++) {
-        if (i < write_addr_size) {
-            npin_t* pin = bram->write_addr->pins[i];
-            /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
-            pin->node->input_pins[pin->pin_node_idx] = NULL;
-        } else {
-            add_pin_to_signal_list(bram->write_addr, get_pad_pin(netlist));
-        }
-    }
     signals->addr2 = bram->write_addr;
 
-    /** 
-     * handling multiple clock signals 
-     * using a clk resulted from merging all read and write clocks
-    */
+    /* adding the write addr port as address2 */
     signals->clk = bram->clk->pins[0];
 
     /* adding the write data port as data1 */
-    // remap_input_port_to_block_memory(bram, bram->write_data, "data1");
     signals->data2 = bram->write_data;
 
     /* we pad the second data port using pad pins */
     signal_list_t* pad_signals = init_signal_list();
-    for (i = 0; i < bram->write_data->count; i++) {
+    for (i = 0; i < bram->write_data->count; ++i) {
         add_pin_to_signal_list(pad_signals, get_pad_pin(netlist));
     }
     signals->data1 = pad_signals;
 
-    for (i = 0; i < bram->read_en->count; i++) {
+    for (i = 0; i < bram->read_en->count; ++i) {
         /* delete all read enable pins, since no need to write from addr1 */
         delete_npin(bram->read_en->pins[0]);
     }
     signals->we1 = get_zero_pin(netlist);
 
-    if (bram->write_en->count > 1) {
-        /* need to OR all write enable since we2 should be one bit in dual port ram */
-        // bram->write_en = make_chain(LOGICAL_OR, bram->write_en, old_node);
-        for (i = 1; i < bram->write_en->count; i++) {
-            delete_npin(bram->write_en->pins[i]);
-        }
-    }
+    /* adding wr_en as we of port 2 */
     signals->we2 = bram->write_en->pins[0];
 
     /* OUTPUT */
@@ -741,7 +665,7 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /* add read address as addr1 to dpram signal lists */
     signals->addr1 = init_signal_list();
-    for (i = 0; i < bram->read_addr->count; i++) {
+    for (i = 0; i < bram->read_addr->count; ++i) {
         add_pin_to_signal_list(signals->addr1, bram->read_addr->pins[i]);
     }
 
@@ -749,27 +673,27 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     offset = addr_width;
     signal_list_t* wr_addr1 = init_signal_list();
     signal_list_t* wr_addr2 = init_signal_list();
-    for (i = 0; i < addr_width; i++) {
+    for (i = 0; i < addr_width; ++i) {
         add_pin_to_signal_list(wr_addr1, bram->write_addr->pins[i]);
         add_pin_to_signal_list(wr_addr2, bram->write_addr->pins[i + offset]);
     }
 
+    oassert(bram->write_en->count == 2);
+    npin_t* wr_en1 = bram->write_en->pins[0];
+    npin_t* wr_en2 = bram->write_en->pins[1];
+
     offset = data_width;
     signal_list_t* wr_data1 = init_signal_list();
     signal_list_t* wr_data2 = init_signal_list();
-    signal_list_t* wr_en1 = init_signal_list();
-    signal_list_t* wr_en2 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(wr_data1, bram->write_data->pins[i]);
         add_pin_to_signal_list(wr_data2, bram->write_data->pins[i + offset]);
-        add_pin_to_signal_list(wr_en1, bram->write_en->pins[i]);
-        add_pin_to_signal_list(wr_en2, bram->write_en->pins[i + offset]);
     }
 
     /**
      * [NOTE]:
-     * Odin-II does handle memory block with more than two distint
-     * address ports using muxed read/write ports
+     * Odin-II handle memory block with more than two distint
+     * address ports by muxing read/write ports based on en
     */
     bool first_match = sigcmp(wr_addr1, bram->read_addr);
     bool second_match = sigcmp(wr_addr2, bram->read_addr);
@@ -779,8 +703,6 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
         second_match = sigcmp(bram->read_addr, wr_addr2);
         if (!first_match && !second_match) {
             // CLEAN UP
-            free_signal_list(wr_en1);
-            free_signal_list(wr_en2);
             free_signal_list(wr_addr1);
             free_signal_list(wr_addr2);
             free_signal_list(wr_data1);
@@ -801,19 +723,14 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     /* free read en since we do not need in DPRAM model */
     delete_npin(bram->read_en->pins[0]);
     /* add write enable signals for matched wr port as we1 */
-    signal_list_t* we1 = (first_match) ? wr_en1 : wr_en2;
-    // we1 = make_chain(LOGICAL_OR, we1, old_node);
-    signals->we1 = we1->pins[0];
-    for (i = 1; i < we1->count; i++) {
-        delete_npin(we1->pins[i]);
-    }
+    signals->we1 = (first_match) ? wr_en1 : wr_en2;
 
-    /* add merged clk signal as dpram clk signal */
+    /* add clk signal as dpram clk signal */
     signals->clk = bram->clk->pins[0];
 
     /* map read data to the out1 */
     signals->out1 = init_signal_list();
-    for (i = 0; i < bram->read_data->count; i++) {
+    for (i = 0; i < bram->read_data->count; ++i) {
         add_pin_to_signal_list(signals->out1, bram->read_data->pins[i]);
     }
 
@@ -821,21 +738,15 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     /* addr2 for another write addr */
     signals->addr2 = (first_match) ? wr_addr2 : wr_addr1;
 
-    /* add write enable signals for first wr port as we1 */
-    signal_list_t* we2 = (first_match) ? wr_en2 : wr_en1;
-    /* merged enables will be connected to we2 */
-    // we2 = make_chain(LOGICAL_OR, we2, old_node);
-    signals->we2 = we2->pins[0];
-    for (i = 1; i < we2->count; i++) {
-        delete_npin(we2->pins[i]);
-    }
+    /* add write enable signals for second wr port as we2 */
+    signals->we2 = (first_match) ? wr_en2 : wr_en1;
 
     /* the rest of write data pin is for data2 */
     signals->data2 = (first_match) ? wr_data2 : wr_data1;
 
     /* out2 will be unconnected */
     signals->out2 = init_signal_list();
-    for (i = 0; i < signals->out1->count; i++) {
+    for (i = 0; i < signals->out1->count; ++i) {
         /* create the clk node's output pin */
         npin_t* new_pin1 = allocate_npin();
         npin_t* new_pin2 = allocate_npin();
@@ -854,14 +765,12 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     // CLEAN UP
     /* free matched wr addr pins since they are as the same as read addr */
-    for (i = 0; i < addr_width; i++) {
+    for (i = 0; i < addr_width; ++i) {
         npin_t* pin = (first_match) ? wr_addr1->pins[i] : wr_addr2->pins[i];
         /* delete pin */
         delete_npin(pin);
     }
     free_signal_list((first_match) ? wr_addr1 : wr_addr2);
-    free_signal_list(we1);
-    free_signal_list(we2);
 
     cleanup_block_memory_old_node(old_node);
     free_dp_ram_signals(signals);
@@ -894,7 +803,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /* add write address as addr1 to dpram signal lists */
     signals->addr1 = init_signal_list();
-    for (i = 0; i < bram->write_addr->count; i++) {
+    for (i = 0; i < bram->write_addr->count; ++i) {
         add_pin_to_signal_list(signals->addr1, bram->write_addr->pins[i]);
     }
 
@@ -903,21 +812,19 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
      * As a result, the corresponding write data will be mapped to data1 
     */
     signals->data1 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(signals->data1, bram->write_data->pins[i]);
     }
 
+    oassert(bram->write_en->count == 1);
     /* add write enable signals for matched wr port as we1 */
     signals->we1 = bram->write_en->pins[0];
-    for (i = 1; i < bram->write_en->count; i++) {
-        delete_npin(bram->write_en->pins[i]);
-    }
 
     /* split rd_addr, rd_data ports */
     offset = addr_width;
     signal_list_t* rd_addr1 = init_signal_list();
     signal_list_t* rd_addr2 = init_signal_list();
-    for (i = 0; i < addr_width; i++) {
+    for (i = 0; i < addr_width; ++i) {
         add_pin_to_signal_list(rd_addr1, bram->read_addr->pins[i]);
         add_pin_to_signal_list(rd_addr2, bram->read_addr->pins[i + offset]);
     }
@@ -925,19 +832,19 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     offset = data_width;
     signal_list_t* rd_data1 = init_signal_list();
     signal_list_t* rd_data2 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(rd_data1, bram->read_data->pins[i]);
         add_pin_to_signal_list(rd_data2, bram->read_data->pins[i + offset]);
     }
 
     /* delete rd pins since we use corresponding wr_en and zero*/
-    for (i = 0; i < bram->read_en->count; i++) {
+    for (i = 0; i < bram->read_en->count; ++i) {
         delete_npin(bram->read_en->pins[i]);
     }
 
     /**
      * [NOTE]:
-     * Odin-II does handle memory block with more than two distint
+     * Odin-II handle memory block with more than two distint
      * address ports using muxed read/write ports
     */
     bool first_match = sigcmp(bram->write_addr, rd_addr1);
@@ -974,7 +881,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /* the rest of write data pin is for data2 */
     signals->data2 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(signals->data2, get_pad_pin(netlist));
     }
 
@@ -986,7 +893,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     // CLEAN UP
     /* free matched rd addr pins since they are as the same as write addr */
-    for (i = 0; i < addr_width; i++) {
+    for (i = 0; i < addr_width; ++i) {
         npin_t* pin = (first_match) ? rd_addr1->pins[i] : rd_addr2->pins[i];
         /* delete pin */
         delete_npin(pin);
@@ -1026,28 +933,28 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     offset = addr_width;
     signal_list_t* wr_addr1 = init_signal_list();
     signal_list_t* wr_addr2 = init_signal_list();
-    for (i = 0; i < addr_width; i++) {
+    for (i = 0; i < addr_width; ++i) {
         add_pin_to_signal_list(wr_addr1, bram->write_addr->pins[i]);
         add_pin_to_signal_list(wr_addr2, bram->write_addr->pins[i + offset]);
     }
 
+    oassert(bram->write_en->count == 2);
+    npin_t* wr_en1 = bram->write_en->pins[0];
+    npin_t* wr_en2 = bram->write_en->pins[1];
+
     offset = data_width;
     signal_list_t* wr_data1 = init_signal_list();
     signal_list_t* wr_data2 = init_signal_list();
-    signal_list_t* wr_en1 = init_signal_list();
-    signal_list_t* wr_en2 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(wr_data1, bram->write_data->pins[i]);
         add_pin_to_signal_list(wr_data2, bram->write_data->pins[i + offset]);
-        add_pin_to_signal_list(wr_en1, bram->write_en->pins[i]);
-        add_pin_to_signal_list(wr_en2, bram->write_en->pins[i + offset]);
     }
 
     /* split rd_addr, rd_data ports */
     offset = addr_width;
     signal_list_t* rd_addr1 = init_signal_list();
     signal_list_t* rd_addr2 = init_signal_list();
-    for (i = 0; i < addr_width; i++) {
+    for (i = 0; i < addr_width; ++i) {
         add_pin_to_signal_list(rd_addr1, bram->read_addr->pins[i]);
         add_pin_to_signal_list(rd_addr2, bram->read_addr->pins[i + offset]);
     }
@@ -1055,19 +962,19 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     offset = data_width;
     signal_list_t* rd_data1 = init_signal_list();
     signal_list_t* rd_data2 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(rd_data1, bram->read_data->pins[i]);
         add_pin_to_signal_list(rd_data2, bram->read_data->pins[i + offset]);
     }
 
     /* delete rd pins since we use corresponding wr_en and zero*/
-    for (i = 0; i < bram->read_en->count; i++) {
+    for (i = 0; i < bram->read_en->count; ++i) {
         delete_npin(bram->read_en->pins[i]);
     }
 
     /**
      * [NOTE]:
-     * Odin-II does handle memory block with more than two distint
+     * Odin-II handle memory block with more than two distint
      * address ports using muxed read/write ports
     */
     bool first_match_read1 = sigcmp(wr_addr1, rd_addr1);
@@ -1079,8 +986,6 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     if (!first_match_read1 && !second_match_read1) {
         // CLEAN UP
-        free_signal_list(wr_en1);
-        free_signal_list(wr_en2);
         free_signal_list(wr_addr1);
         free_signal_list(wr_addr2);
         free_signal_list(wr_data1);
@@ -1117,21 +1022,13 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     signals->data2 = (first_match_read1) ? wr_data2 : wr_data1;
 
     /* add write enable signals for first wr port as we1 */
-    // wr_en1 = make_chain(LOGICAL_OR, wr_en1, old_node);
-    signals->we1 = wr_en1->pins[0];
-    for (i = 1; i < wr_en1->count; i++) {
-        delete_npin(wr_en1->pins[i]);
-    }
+    signals->we1 = wr_en1;
 
-    /* add merged clk signal as dpram clk signal */
+    /* add clk signal as dpram clk signal */
     signals->clk = bram->clk->pins[0];
 
     /* add write enable signals for the second wr port as we2 */
-    //wr_en2 = make_chain(LOGICAL_OR, wr_en2, old_node);
-    signals->we2 = wr_en2->pins[0];
-    for (i = 1; i < wr_en2->count; i++) {
-        delete_npin(wr_en2->pins[i]);
-    }
+    signals->we2 = wr_en2;
 
     /* create a new dual port ram */
     create_dual_port_ram(signals, old_node);
@@ -1140,15 +1037,13 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     /* at this point wr_addr and rd_addr must be the same */
     oassert(bram->read_addr->count == bram->write_addr->count);
     /* the wr addr will be deleted since we do not need it anymore */
-    for (i = 0; i < bram->write_addr->count; i++) {
+    for (i = 0; i < bram->write_addr->count; ++i) {
         npin_t* wr_addr_pin = bram->write_addr->pins[i];
         /* delete pin */
         delete_npin(wr_addr_pin);
     }
     free_signal_list(wr_addr1);
     free_signal_list(wr_addr2);
-    free_signal_list(wr_en1);
-    free_signal_list(wr_en2);
 
     cleanup_block_memory_old_node(old_node);
     free_dp_ram_signals(signals);
@@ -1165,8 +1060,7 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param netlist pointer to the current netlist file
  */
 static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
-    int i, j;
-    int offset = 0;
+    int i;
     nnode_t* old_node = bram->node;
     int data_width = bram->node->attributes->DBITS;
     int addr_width = bram->node->attributes->ABITS;
@@ -1179,74 +1073,54 @@ static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     /* dual port ram signals */
     dp_ram_signals* signals = (dp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
-    signal_list_t* copy_signal = NULL;
+    signal_list_t* selectors = NULL;
 
     /* INPUTS */
-    copy_signal = copy_input_signals(bram->read_en);
+    selectors = copy_input_signals(bram->read_en);
     /* adding the read addr input port as address1 */
     signals->addr1 = split_cascade_port(bram->read_addr,
-                                        copy_signal,
+                                        selectors,
                                         addr_width,
                                         old_node,
                                         netlist);
-    free_signal_list(copy_signal);
-    /**
-     * write_en follows the one_hot_logic in yosys mem cells that only
-     * can be used for wr_data. This is actually why the size of write_en
-     * is equal to write_da. Once we need to use write_en as mux selector
-     * of wr_addrs we need make it single bit. and since yosys only use one
-     * signal to drive all wr_en pins we can only take one enable pin from
-     * each write access port
-    */
-    offset = 0;
-    signal_list_t* single_bit_wr_ens = init_signal_list();
-    for (i = 0; i < num_wr_ports; i++) {
-        add_pin_to_signal_list(single_bit_wr_ens, bram->write_en->pins[offset]);
-        /* delete extra pins */
-        for (j = 1; j < data_width; j++) {
-            delete_npin(bram->write_en->pins[j + offset]);
-        }
-        offset += data_width;
-    }
-    copy_signal = copy_input_signals(single_bit_wr_ens);
+    free_signal_list(selectors);
+
+    selectors = copy_input_signals(bram->write_en);
     /* adding the write addr port as address2 */
     signals->addr2 = split_cascade_port(bram->write_addr,
-                                        copy_signal,
+                                        selectors,
                                         addr_width,
                                         old_node,
                                         netlist);
-    free_signal_list(copy_signal);
+    free_signal_list(selectors);
 
-    /** 
-     * handling multiple clock signals 
-     * using a clk resulted fbram merging all read and write clocks
-    */
+    /* handling clock signals */
     signals->clk = bram->clk->pins[0];
 
     /* we pad the first data port using pad pins */
     signals->data1 = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(signals->data1, get_pad_pin(netlist));
     }
-    copy_signal = copy_input_signals(single_bit_wr_ens);
+    selectors = copy_input_signals(bram->write_en);
     /* adding the write data port as data2 */
     signals->data2 = split_cascade_port(bram->write_data,
-                                        copy_signal,
+                                        selectors,
                                         data_width,
                                         old_node,
                                         netlist);
-    free_signal_list(copy_signal);
+    free_signal_list(selectors);
 
     /* first port does not have data, so the enable is GND */
     signals->we1 = get_zero_pin(netlist);
 
     /* create vcc signas as the value of we2 when the write_en pins are active */
     signal_list_t* vcc_signals = init_signal_list();
-    for (i = 0; i < num_wr_ports; i++) {
+    for (i = 0; i < num_wr_ports; ++i) {
         add_pin_to_signal_list(vcc_signals, get_one_pin(netlist));
     }
     signal_list_t* we2_signal = split_cascade_port(vcc_signals,
-                                                   single_bit_wr_ens,
+                                                   bram->write_en,
                                                    1,
                                                    old_node,
                                                    netlist);
@@ -1262,7 +1136,7 @@ static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
     nnode_t* dpram = create_dual_port_ram(signals, old_node);
 
     signal_list_t* dpram_outputs = init_signal_list();
-    for (i = 0; i < data_width; i++) {
+    for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(dpram_outputs, dpram->output_pins[i]);
     }
 
@@ -1271,7 +1145,6 @@ static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 
     // CLEAN UP
     cleanup_block_memory_old_node(old_node);
-    free_signal_list(single_bit_wr_ens);
     free_signal_list(dpram_outputs);
     free_signal_list(we2_signal);
     free_signal_list(vcc_signals);
@@ -1399,7 +1272,7 @@ void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     oassert(node->traverse_visited == traverse_mark_number);
 
     /* validate bram port sizes */
-    oassert(node->num_input_port_sizes == 7);
+    oassert(node->num_input_port_sizes == 6);
     oassert(node->num_output_port_sizes == 1);
 
     /* initializing a new block ram */
@@ -1582,7 +1455,7 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
     /* create cascaded multiplexers */
     nnode_t** muxes = (nnode_t**)vtr::calloc(num_chunk, sizeof(nnode_t*));
     signal_list_t** internal_outputs = (signal_list_t**)vtr::calloc(num_chunk, sizeof(signal_list_t*));
-    for (i = 0; i < num_chunk; i++) {
+    for (i = 0; i < num_chunk; ++i) {
         /* mux inputs */
         signal_list_t** mux_inputs = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
         mux_inputs[0] = init_signal_list();
@@ -1642,13 +1515,13 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
     return_value = internal_outputs[num_chunk - 1];
 
     // CLEAN UP
-    for (i = 0; i < num_chunk; i++) {
+    for (i = 0; i < num_chunk; ++i) {
         free_signal_list(splitted_signals[i]);
     }
     vtr::free(splitted_signals);
 
     /* free internal output signal list expect the last one since it is the return value */
-    for (i = 0; i < num_chunk - 1; i++) {
+    for (i = 0; i < num_chunk - 1; ++i) {
         free_signal_list(internal_outputs[i]);
     }
     vtr::free(internal_outputs);
@@ -1689,7 +1562,7 @@ static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list
     /* adding fanout pins to src pin nets */
     signal_list_t** src_nets_fanouts = (signal_list_t**)vtr::calloc(width, sizeof(signal_list_t*));
     /* create the n fanout pin for src pins, since they are output pins of a memory */
-    for (i = 0; i < width; i++) {
+    for (i = 0; i < width; ++i) {
         npin_t* src_pin = src->pins[i];
         /* validate that it is output */
         oassert(src_pin->type == OUTPUT);
@@ -1708,7 +1581,7 @@ static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list
 
     /* create multiplexers */
     nnode_t** muxes = (nnode_t**)vtr::calloc(num_chunk, sizeof(nnode_t*));
-    for (i = 0; i < num_chunk; i++) {
+    for (i = 0; i < num_chunk; ++i) {
         /* mux inputs */
         signal_list_t** mux_inputs = (signal_list_t**)vtr::calloc(2, sizeof(signal_list_t*));
         mux_inputs[0] = init_signal_list();
@@ -1747,80 +1620,15 @@ static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list
     }
 
     // CLEAN UP
-    for (i = 0; i < num_chunk; i++) {
+    for (i = 0; i < num_chunk; ++i) {
         free_signal_list(splitted_signals[i]);
     }
     vtr::free(splitted_signals);
-    for (i = 0; i < width; i++) {
+    for (i = 0; i < width; ++i) {
         free_signal_list(src_nets_fanouts[i]);
     }
     vtr::free(src_nets_fanouts);
     vtr::free(muxes);
-}
-
-/**
- * (function: merge_read_write_clks)
- * 
- * @brief create a OR gate with read and write clocks as input
- * 
- * @param clks1 signal list of read/write clocks
- * @param clks2 signal list of write/read clocks
- * @param node pointing to a bram node
- * @param netlist pointer to the current netlist file
- * 
- * @return single clock pin
- */
-static signal_list_t* merge_read_write_clks(signal_list_t* clks1, signal_list_t* clks2, nnode_t* node, netlist_t* /* netlist */) {
-    /* validation */
-    oassert(clks1 != clks2);
-    oassert(clks1 || clks2);
-
-    int i;
-    int clks1_width = (clks1) ? clks1->count : -1;
-    int clks2_width = (clks2) ? clks2->count : -1;
-
-    /* adding the OR of rd_clk and wr_clk as clock port */
-    nnode_t* or_gate = allocate_nnode(node->loc);
-    or_gate->traverse_visited = node->traverse_visited;
-    or_gate->type = LOGICAL_OR;
-    or_gate->name = node_name(or_gate, node->name);
-
-    if (clks1) {
-        add_input_port_information(or_gate, clks1_width);
-        allocate_more_input_pins(or_gate, clks1_width);
-        /* hook input pins */
-        for (i = 0; i < clks1_width; i++) {
-            npin_t* rd_clk = clks1->pins[i];
-            remap_pin_to_new_node(rd_clk, or_gate, i);
-        }
-    }
-    if (clks2) {
-        add_input_port_information(or_gate, clks2_width);
-        allocate_more_input_pins(or_gate, clks2_width);
-        /* hook input pins */
-        for (i = 0; i < clks2_width; i++) {
-            npin_t* wr_clk = clks2->pins[i];
-            remap_pin_to_new_node(wr_clk, or_gate, clks1_width + i);
-        }
-    }
-
-    /* add or gate output information */
-    add_output_port_information(or_gate, 1);
-    allocate_more_output_pins(or_gate, 1);
-    // specify the output pin
-    signal_list_t* or_output = make_output_pins_for_existing_node(or_gate, 1);
-
-    /* create a clock node to specify the edge sensitivity */
-    nnode_t* clk_node = make_1port_gate(LOGICAL_AND, 1, 1, node, node->traverse_visited);
-    connect_nodes(or_gate, 0, clk_node, 0);
-    /* create the clk node's output pin */
-    signal_list_t* clk_output = make_output_pins_for_existing_node(clk_node, 1);
-    clk_output->pins[0]->mapping = vtr::strdup("clk");
-
-    // CLEAN UP
-    free_signal_list(or_output);
-
-    return (clk_output);
 }
 
 /**
@@ -1832,14 +1640,14 @@ static signal_list_t* merge_read_write_clks(signal_list_t* clks1, signal_list_t*
  */
 static void cleanup_block_memory_old_node(nnode_t* old_node) {
     int i;
-    for (i = 0; i < old_node->num_input_pins; i++) {
+    for (i = 0; i < old_node->num_input_pins; ++i) {
         npin_t* pin = old_node->input_pins[i];
 
         if (pin)
             old_node->input_pins[i] = NULL;
     }
 
-    for (i = 0; i < old_node->num_output_pins; i++) {
+    for (i = 0; i < old_node->num_output_pins; ++i) {
         npin_t* pin = old_node->output_pins[i];
 
         if (pin)
@@ -1895,11 +1703,9 @@ void free_block_memory_index(block_memory_hashtable to_free) {
  */
 static void free_block_memory(block_memory* to_free) {
     free_signal_list(to_free->read_addr);
-    free_signal_list(to_free->read_clk);
     free_signal_list(to_free->read_data);
     free_signal_list(to_free->read_en);
     free_signal_list(to_free->write_addr);
-    free_signal_list(to_free->write_clk);
     free_signal_list(to_free->write_data);
     free_signal_list(to_free->write_en);
     free_signal_list(to_free->clk);

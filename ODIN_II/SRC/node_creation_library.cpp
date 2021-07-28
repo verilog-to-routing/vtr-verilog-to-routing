@@ -484,8 +484,12 @@ nnode_t* create_multiport_smux(signal_list_t** inputs, signal_list_t* selector, 
     add_input_port_information(mux, selector->count);
     allocate_more_input_pins(mux, selector->count);
     for (i = 0; i < selector->count; i++) {
+        npin_t* sel = selector->pins[i];
         /* hook selector into mux node as first port */
-        add_input_pin_to_node(mux, selector->pins[i], i);
+        if (sel->node)
+            remap_pin_to_new_node(sel, mux, i);
+        else
+            add_input_pin_to_node(mux, sel, i);
     }
     offset += selector->count;
 

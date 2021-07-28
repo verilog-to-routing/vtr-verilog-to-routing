@@ -2015,7 +2015,7 @@ nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
     if (dpram_signals->out1 != NULL) {
         oassert(dpram_signals->data1->count == dpram_signals->out1->count);
     }
-    if (dpram_signals->out1 != NULL) {
+    if (dpram_signals->out2 != NULL) {
         oassert(dpram_signals->data2->count == dpram_signals->out2->count);
     }
 

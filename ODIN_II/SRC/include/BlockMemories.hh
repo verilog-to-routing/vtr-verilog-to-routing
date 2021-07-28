@@ -44,12 +44,10 @@ struct block_memory {
     nnode_t* node;
 
     signal_list_t* read_addr;
-    signal_list_t* read_clk;
     signal_list_t* read_data;
     signal_list_t* read_en;
 
     signal_list_t* write_addr;
-    signal_list_t* write_clk;
     signal_list_t* write_data;
     signal_list_t* write_en;
 
