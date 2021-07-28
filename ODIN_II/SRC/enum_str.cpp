@@ -421,7 +421,7 @@ typemap yosys_subckt_strmap({
                                 {"$lt", LT},                             // (A, B, Y)
                                 {"$lut", operation_list_END},            // (A, Y)
                                 {"$macc", operation_list_END},           // (A, B, Y)
-                                {"$mem", operation_list_END},            // (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA)
+                                {"$mem", YMEM},                          // (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA)
                                 {"$meminit", operation_list_END},        // (ADDR, DATA)
                                 {"$memrd", ROM},                         // (CLK, EN, ADDR, DATA)
                                 {"$memwr", operation_list_END},          // (CLK, EN, ADDR, DATA)

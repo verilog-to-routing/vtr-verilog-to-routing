@@ -64,6 +64,7 @@ extern void init_block_memory_index();
 extern block_memory* lookup_block_memory(char* instance_name_prefix, char* identifier);
 extern void free_block_memories();
 
+extern void resolve_ymem_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 

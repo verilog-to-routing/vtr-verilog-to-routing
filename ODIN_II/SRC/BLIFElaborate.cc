@@ -280,6 +280,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case DPRAM: //fallthrough
         case ROM:   //fallthrough
         case BRAM:  //fallthrough
+        case YMEM:  //fallthrough
         case MEMORY: {
             /**
              * resolving memory nodes based on the given architecture
@@ -719,6 +720,13 @@ static void resolve_memory_nodes(nnode_t* node, uintptr_t traverse_mark_number, 
              * resolving a block memory node based on the given architecture
             */
             resolve_bram_node(node, traverse_mark_number, netlist);
+            break;
+        }
+        case YMEM: {
+            /**
+             * resolving yosys $mem to BRAM or ROM
+            */
+            resolve_ymem_node(node, traverse_mark_number, netlist);
             break;
         }
         case MEMORY: {

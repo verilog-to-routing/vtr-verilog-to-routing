@@ -2,8 +2,8 @@
     "initial/initial_delays/no_arch": {
         "test_name": "initial/initial_delays/no_arch",
         "generated_blif": "initial_delays_generated.blif",
-        "max_rss(MiB)": 4.2,
-        "exec_time(ms)": 0.5,
+        "max_rss(MiB)": 6,
+        "exec_time(ms)": 0.7,
         "Po": 9,
         "logic element": 9,
         "Longest Path": 3,
@@ -14,8 +14,8 @@
     "initial/initial_multiple_blocks/no_arch": {
         "test_name": "initial/initial_multiple_blocks/no_arch",
         "generated_blif": "initial_multiple_blocks_generated.blif",
-        "max_rss(MiB)": 4.3,
-        "exec_time(ms)": 0.6,
+        "max_rss(MiB)": 6.2,
+        "exec_time(ms)": 0.8,
         "Pi": 6,
         "Po": 15,
         "logic element": 15,
@@ -27,8 +27,8 @@
     "initial/initial_multiple_statements/no_arch": {
         "test_name": "initial/initial_multiple_statements/no_arch",
         "generated_blif": "initial_multiple_statements_generated.blif",
-        "max_rss(MiB)": 4.3,
-        "exec_time(ms)": 0.5,
+        "max_rss(MiB)": 6,
+        "exec_time(ms)": 0.7,
         "Pi": 1,
         "Po": 9,
         "logic element": 9,

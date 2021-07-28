@@ -2,8 +2,8 @@
     "parameter/multiple_parameter/no_arch": {
         "test_name": "parameter/multiple_parameter/no_arch",
         "generated_blif": "multiple_parameter_generated.blif",
-        "max_rss(MiB)": 4.3,
-        "exec_time(ms)": 0.4,
+        "max_rss(MiB)": 5.9,
+        "exec_time(ms)": 0.6,
         "Pi": 3,
         "Po": 3,
         "logic element": 3,
@@ -15,8 +15,8 @@
     "parameter/parameter_define/no_arch": {
         "test_name": "parameter/parameter_define/no_arch",
         "generated_blif": "parameter_define_generated.blif",
-        "max_rss(MiB)": 4.2,
-        "exec_time(ms)": 0.5,
+        "max_rss(MiB)": 6,
+        "exec_time(ms)": 0.6,
         "Po": 5,
         "logic element": 5,
         "Longest Path": 3,
@@ -27,8 +27,8 @@
     "parameter/parameter_override/no_arch": {
         "test_name": "parameter/parameter_override/no_arch",
         "generated_blif": "parameter_override_generated.blif",
-        "max_rss(MiB)": 4.4,
-        "exec_time(ms)": 0.7,
+        "max_rss(MiB)": 6.3,
+        "exec_time(ms)": 0.8,
         "Pi": 10,
         "Po": 7,
         "logic element": 12,

@@ -43,6 +43,7 @@ void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net);
 void remap_pin_to_new_node(npin_t* pin, nnode_t* new_node, int pin_idx);
 
 attr_t* init_attribute();
+attr_t* copy_attribute(attr_t* to, attr_t* copy);
 void free_attribute(attr_t* attribute);
 
 signal_list_t* init_signal_list();

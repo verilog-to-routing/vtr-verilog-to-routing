@@ -2,8 +2,8 @@
     "buf/buf_indexed_port/no_arch": {
         "test_name": "buf/buf_indexed_port/no_arch",
         "generated_blif": "buf_indexed_port_generated.blif",
-        "max_rss(MiB)": 4.2,
-        "exec_time(ms)": 0.4,
+        "max_rss(MiB)": 5.9,
+        "exec_time(ms)": 0.9,
         "Pi": 2,
         "Po": 2,
         "logic element": 2,
@@ -15,8 +15,8 @@
     "buf/buf_wire/no_arch": {
         "test_name": "buf/buf_wire/no_arch",
         "generated_blif": "buf_wire_generated.blif",
-        "max_rss(MiB)": 4.2,
-        "exec_time(ms)": 0.4,
+        "max_rss(MiB)": 6.2,
+        "exec_time(ms)": 0.8,
         "Pi": 1,
         "Po": 1,
         "logic element": 1,
@@ -28,7 +28,7 @@
     "buf/range_buf_int_wide/no_arch": {
         "test_name": "buf/range_buf_int_wide/no_arch",
         "generated_blif": "range_buf_int_wide_generated.blif",
-        "max_rss(MiB)": 4.2,
+        "max_rss(MiB)": 6.3,
         "exec_time(ms)": 1,
         "Pi": 32,
         "Po": 32,
@@ -41,8 +41,8 @@
     "buf/range_buf_ultra_wide/no_arch": {
         "test_name": "buf/range_buf_ultra_wide/no_arch",
         "generated_blif": "range_buf_ultra_wide_generated.blif",
-        "max_rss(MiB)": 5.1,
-        "exec_time(ms)": 5.3,
+        "max_rss(MiB)": 7.1,
+        "exec_time(ms)": 4.7,
         "Pi": 256,
         "Po": 256,
         "logic element": 256,
@@ -54,8 +54,8 @@
     "buf/range_buf_wide/no_arch": {
         "test_name": "buf/range_buf_wide/no_arch",
         "generated_blif": "range_buf_wide_generated.blif",
-        "max_rss(MiB)": 4.3,
-        "exec_time(ms)": 0.5,
+        "max_rss(MiB)": 6.1,
+        "exec_time(ms)": 0.6,
         "Pi": 3,
         "Po": 3,
         "logic element": 3,

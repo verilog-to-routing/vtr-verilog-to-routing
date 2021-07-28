@@ -2,8 +2,8 @@
     "specparam/specparam_define_check/no_arch": {
         "test_name": "specparam/specparam_define_check/no_arch",
         "input_blif": "specparam_define_check.blif",
-        "max_rss(MiB)": 6.6,
-        "exec_time(ms)": 2,
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 1.8,
         "techmap_time(ms)": 1.5,
         "Pi": 2,
         "Po": 1,
@@ -16,8 +16,8 @@
     "specparam/specparam_inside/no_arch": {
         "test_name": "specparam/specparam_inside/no_arch",
         "input_blif": "specparam_inside.blif",
-        "max_rss(MiB)": 6.6,
-        "exec_time(ms)": 2,
+        "max_rss(MiB)": 9.4,
+        "exec_time(ms)": 1.8,
         "techmap_time(ms)": 1.5,
         "Pi": 2,
         "Po": 1,
@@ -30,8 +30,8 @@
     "specparam/specparam_outside/no_arch": {
         "test_name": "specparam/specparam_outside/no_arch",
         "input_blif": "specparam_outside.blif",
-        "max_rss(MiB)": 6.6,
-        "exec_time(ms)": 2,
+        "max_rss(MiB)": 9.3,
+        "exec_time(ms)": 1.8,
         "techmap_time(ms)": 1.5,
         "Pi": 2,
         "Po": 1,

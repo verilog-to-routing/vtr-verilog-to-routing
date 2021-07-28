@@ -705,7 +705,46 @@ attr_t* init_attribute() {
     attribute->DBITS = 0;
     attribute->ABITS = 0;
 
-    return attribute;
+    return (attribute);
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: init_attribute_structure)
+ * 	Initializes the netlist node attributes including edge sensitivies and reset value
+ *-------------------------------------------------------------------------------------------*/
+attr_t* copy_attribute(attr_t* to, attr_t* copy) {
+    if (to == NULL)
+        to = init_attribute();
+
+    to->clk_edge_type = copy->clk_edge_type;
+    to->clr_polarity = copy->clr_polarity;
+    to->set_polarity = copy->set_polarity;
+    to->areset_polarity = copy->areset_polarity;
+    to->sreset_polarity = copy->sreset_polarity;
+    to->enable_polarity = copy->enable_polarity;
+
+    to->areset_value = copy->areset_value;
+    to->sreset_value = copy->sreset_value;
+
+    to->port_a_signed = copy->port_a_signed;
+    to->port_b_signed = copy->port_b_signed;
+
+    /* memory node attributes */
+    to->size = copy->size;
+    to->offset = copy->offset;
+    to->memory_id = vtr::strdup(copy->memory_id);
+
+    to->RD_CLK_ENABLE = copy->RD_CLK_ENABLE;
+    to->WR_CLK_ENABLE = copy->WR_CLK_ENABLE;
+    to->RD_CLK_POLARITY = copy->RD_CLK_POLARITY;
+    to->WR_CLK_POLARITY = copy->WR_CLK_POLARITY;
+
+    to->RD_PORTS = copy->RD_PORTS;
+    to->WR_PORTS = copy->WR_PORTS;
+    to->DBITS = copy->DBITS;
+    to->ABITS = copy->ABITS;
+
+    return (copy);
 }
 
 /*---------------------------------------------------------------------------------------------

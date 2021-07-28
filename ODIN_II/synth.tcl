@@ -25,7 +25,12 @@ check;
 techmap -map $env(ODIN_TECHLIB)/adff2dff.v;
 techmap -map $env(ODIN_TECHLIB)/adffe2dff.v;
 # convert mem block to bram/rom
-techmap -map $env(ODIN_TECHLIB)/mem_map.v;
+
+# [NOTE]: Yosys complains about expression width more than 24 bits.
+# E.g. [63:0] memory [18:0] ==>  ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
+# mem will be handled using Odin-II
+# memory_bram -rules $env(ODIN_TECHLIB)/mem_rules.txt
+# techmap -map $env(ODIN_TECHLIB)/mem_map.v; 
 
 # Transform the design into a new one with single top module
 flatten;
