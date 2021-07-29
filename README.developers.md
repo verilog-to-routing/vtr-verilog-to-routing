@@ -940,7 +940,7 @@ LSAN_OPTIONS=suppressions=$VTR_ROOT/vpr/lsan.supp
 ```
 where $VTR_ROOT is the root directory of your vtr source code tree.
 
-Note that some of the continuous integration (CI) regtests run on pull requests turn on sanitizers (currently S: Basic and R: Odin-II Basic Tests)
+Note that some of the continuous integration (CI) regtests (run automatically on pull requests) turn on sanitizers (currently S: Basic and R: Odin-II Basic Tests)
 
 ## Valgrind
 An alternative way to run vtr programs to check for invalid memory accesses and memory leaks is to use the valgrind tool. valgrind can be run on any build except the sanitized build, without recompilation. For example, to run on vpr use 
@@ -950,7 +950,7 @@ valgrind --leak-check=full --suppressions=./vpr/valgrind.supp ./vpr/vpr [... usu
 ```
 The suppression file included in the command above will suppress reporting of known memory leaks in libraries included by vpr.
 
-Note that valgrind is run on some flows by the continuous integration (CI) tests run on pull requests.
+Note that valgrind is run on some flows by the continuous integration (CI) tests.
 
 ## Assertion Levels
 VTR supports configurable assertion levels.
