@@ -414,16 +414,22 @@ nnode_t* smux_with_sel_polarity(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t
     oassert(sel->sensitivity == ACTIVE_HIGH_SENSITIVITY || sel->sensitivity == ACTIVE_LOW_SENSITIVITY);
 
     int idx1 = 0, idx2 = 0;
-    nnode_t* smux = make_2port_gate(SMUX_2, 2, 1, 1, node, node->traverse_visited);
+    nnode_t* smux = make_2port_gate(SMUX_2, 1, 2, 1, node, node->traverse_visited);
+
+    /* hook selector pin into SMUX_2 */
+    if (sel->node)
+        remap_pin_to_new_node(sel, smux, 0);
+    else
+        add_input_pin_to_node(smux, sel, 0);
 
     /* to check the polarity and connect the correspondence signal */
     if (sel->sensitivity == ACTIVE_HIGH_SENSITIVITY) {
-        idx1 = 0;
-        idx2 = 1;
+        idx1 = 1;
+        idx2 = 2;
 
     } else if (sel->sensitivity == ACTIVE_LOW_SENSITIVITY) {
-        idx1 = 1;
-        idx2 = 0;
+        idx1 = 2;
+        idx2 = 1;
     }
 
     /* connecting the first input pin to 0: smux input */
@@ -437,12 +443,6 @@ nnode_t* smux_with_sel_polarity(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t
         remap_pin_to_new_node(pin2, smux, idx2);
     else
         add_input_pin_to_node(smux, pin2, idx2);
-
-    /* hook selector pin into SMUX_2 */
-    if (sel->node)
-        remap_pin_to_new_node(sel, smux, 2);
-    else
-        add_input_pin_to_node(smux, sel, 2);
 
     // specify  output pin
     signal_list_t* outputs = make_output_pins_for_existing_node(smux, 1);

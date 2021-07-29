@@ -275,7 +275,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
      * begin simulation section
      */
     netlist_t* odin_netlist = NULL;
-    if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED
+    if ((global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED && !coarsen_cleanup)
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
         || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {

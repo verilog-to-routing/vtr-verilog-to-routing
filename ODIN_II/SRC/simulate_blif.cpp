@@ -1499,7 +1499,7 @@ static void compute_mux_2_node(nnode_t* node, int cycle) {
 static void compute_smux_2_node(nnode_t* node, int cycle) {
     verify_i_o_availabilty(node, -1, 1);
     oassert(node->num_input_port_sizes == 2);
-    oassert(node->input_port_sizes[0] == node->input_port_sizes[1] + 1);
+    oassert(node->input_port_sizes[0] == node->input_port_sizes[1] - 1);
 
     ast_node_t* ast_node = node->related_ast_node;
 
@@ -1507,27 +1507,26 @@ static void compute_smux_2_node(nnode_t* node, int cycle) {
     bool unknown = false;
     int select = -1;
     int default_select = -1;
-    int offset = node->input_port_sizes[0];
 
-    npin_t* select_pin = node->input_pins[offset];
+    npin_t* select_pin = node->input_pins[0];
     BitSpace::bit_value_t sel_value = get_pin_value(select_pin, cycle);
 
     if (BitSpace::is_unk[sel_value])
         unknown = true;
     else if (sel_value == BitSpace::_0) // Take the first selection only.
-        select = 0;
-    else if (sel_value == BitSpace::_1) // Take the second selection only.
         select = 1;
+    else if (sel_value == BitSpace::_1) // Take the second selection only.
+        select = 2;
 
     /*
      *  If the pin comes from an "else" condition or a case "default" condition,
      *  we favour it in the case where there are unknowns.
      */
     if (ast_node && select_pin->is_default && (ast_node->type == IF || ast_node->type == CASE))
-        default_select = 0;
+        default_select = 1;
 
     // If there are unknowns and there is a default clause, select it.
-    if (unknown && default_select >= 0) {
+    if (unknown && default_select >= 1) {
         unknown = false;
         select = default_select;
     }

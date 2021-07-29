@@ -246,7 +246,7 @@ enum operation_list {
     ADDER_FUNC,
     CARRY_FUNC,
     MUX_2,
-    SMUX_2, // MUX_2 with single bit selector (no need to add not selector as the second pin) => [IN1, IN2] [SEL] [OUT]
+    SMUX_2, // MUX_2 with single bit selector (no need to add not selector as the second pin) => [SEL] [IN1, IN2] [OUT]
     BLIF_FUNCTION,
     NETLIST_FUNCTION,
     MEMORY,

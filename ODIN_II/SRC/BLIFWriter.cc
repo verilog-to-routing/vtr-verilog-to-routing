@@ -435,7 +435,7 @@ void BLIF::Writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* f
             break;
         
         case SMUX_2:
-            define_set_input_logical_function(node, "1-0 1\n-11 1\n", fp);
+            define_set_input_logical_function(node, "01- 1\n1-1 1\n", fp);
             break;
 
         case FF_NODE:
