@@ -2,30 +2,24 @@
     "localparam/localparam/no_arch": {
         "test_name": "localparam/localparam/no_arch",
         "input_blif": "localparam.blif",
-        "max_rss(MiB)": 44.9,
-        "exec_time(ms)": 7.4,
-        "techmap_time(ms)": 0.9,
+        "max_rss(MiB)": 38.4,
+        "exec_time(ms)": 3.8,
+        "techmap_time(ms)": 1.3,
         "Pi": 3,
         "Po": 3,
-        "logic element": 3,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "localparam/parameter_define_localparam/no_arch": {
         "test_name": "localparam/parameter_define_localparam/no_arch",
         "input_blif": "parameter_define_localparam.blif",
-        "max_rss(MiB)": 44.6,
-        "exec_time(ms)": 7.4,
-        "techmap_time(ms)": 0.9,
+        "max_rss(MiB)": 37.5,
+        "exec_time(ms)": 3.8,
+        "techmap_time(ms)": 1.2,
         "Pi": 3,
         "Po": 3,
-        "logic element": 3,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

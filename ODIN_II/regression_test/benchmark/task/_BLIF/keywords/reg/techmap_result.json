@@ -2,16 +2,13 @@
     "reg/reg/no_arch": {
         "test_name": "reg/reg/no_arch",
         "input_blif": "reg.blif",
-        "max_rss(MiB)": 42.3,
-        "exec_time(ms)": 5.6,
-        "techmap_time(ms)": 0.8,
+        "max_rss(MiB)": 38,
+        "exec_time(ms)": 3.7,
+        "techmap_time(ms)": 1.1,
         "Pi": 1,
         "Po": 1,
-        "logic element": 1,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

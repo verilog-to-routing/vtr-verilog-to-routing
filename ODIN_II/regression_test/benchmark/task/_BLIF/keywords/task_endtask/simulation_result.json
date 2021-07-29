@@ -2,8 +2,8 @@
     "task_endtask/inside_port/no_arch": {
         "test_name": "task_endtask/inside_port/no_arch",
         "generated_blif": "inside_port_generated.blif",
-        "max_rss(MiB)": 59.2,
-        "exec_time(ms)": 18.2,
+        "max_rss(MiB)": 57.5,
+        "exec_time(ms)": 27.1,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,
@@ -15,8 +15,8 @@
     "task_endtask/outside_port/no_arch": {
         "test_name": "task_endtask/outside_port/no_arch",
         "generated_blif": "outside_port_generated.blif",
-        "max_rss(MiB)": 58.8,
-        "exec_time(ms)": 17.5,
+        "max_rss(MiB)": 59.1,
+        "exec_time(ms)": 27.5,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,
@@ -28,8 +28,8 @@
     "task_endtask/task_call_function/no_arch": {
         "test_name": "task_endtask/task_call_function/no_arch",
         "generated_blif": "task_call_function_generated.blif",
-        "max_rss(MiB)": 59.1,
-        "exec_time(ms)": 18.1,
+        "max_rss(MiB)": 57.3,
+        "exec_time(ms)": 27.1,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,
@@ -41,8 +41,8 @@
     "task_endtask/task_call_task/no_arch": {
         "test_name": "task_endtask/task_call_task/no_arch",
         "generated_blif": "task_call_task_generated.blif",
-        "max_rss(MiB)": 59.2,
-        "exec_time(ms)": 17.4,
+        "max_rss(MiB)": 57.5,
+        "exec_time(ms)": 27.2,
         "Pi": 16,
         "Po": 16,
         "logic element": 16,

@@ -2,15 +2,12 @@
     "genvar/generate_for/no_arch": {
         "test_name": "genvar/generate_for/no_arch",
         "input_blif": "generate_for.blif",
-        "max_rss(MiB)": 44.8,
-        "exec_time(ms)": 7.2,
-        "techmap_time(ms)": 0.9,
+        "max_rss(MiB)": 37.8,
+        "exec_time(ms)": 4,
+        "techmap_time(ms)": 1.3,
         "Po": 3,
-        "logic element": 3,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

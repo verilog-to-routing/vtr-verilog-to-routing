@@ -2,16 +2,16 @@
     "case_endcase/case/no_arch": {
         "test_name": "case_endcase/case/no_arch",
         "input_blif": "case.blif",
-        "max_rss(MiB)": 71.7,
-        "exec_time(ms)": 27.4,
-        "techmap_time(ms)": 6.6,
+        "max_rss(MiB)": 41.5,
+        "exec_time(ms)": 11.5,
+        "techmap_time(ms)": 8.5,
         "Pi": 11,
         "Po": 3,
-        "logic element": 22,
-        "Longest Path": 7,
-        "Average Path": 6,
-        "Estimated LUTs": 22,
-        "Total Node": 22
+        "logic element": 19,
+        "Longest Path": 6,
+        "Average Path": 5,
+        "Estimated LUTs": 19,
+        "Total Node": 19
     },
     "DEFAULT": {
         "test_name": "n/a",

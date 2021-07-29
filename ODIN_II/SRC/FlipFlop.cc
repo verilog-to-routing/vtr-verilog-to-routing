@@ -29,6 +29,8 @@
 #include "netlist_utils.h"
 #include "vtr_memory.h"
 
+static void shrink_register(nnode_t* node, short mark, netlist_t* netlist);
+
 /**
  * (function: resolve_dff_node)
  * 
@@ -71,8 +73,11 @@ void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
     */
     /* single bit dff, [0]: clk, [1]: D */
     if (node->num_input_pins == 2) {
-        /* adding the new generated node to the ff node list of the enetlist */
+        /* adding the new generated node to the ff node list of the netlist */
         add_node_to_netlist(netlist, ff_node, FF_NODE);
+    } else if (node->num_input_pins > 2) {
+        /* shrink to one bit ff */
+        shrink_register(ff_node, traverse_mark_number, netlist);
     }
 
     // CLEAN UP
@@ -153,6 +158,8 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
 
         /* connectiong the dffe output pin to the ff_node output pin */
         remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
+        /* adding the new generated node to the ff node list of the netlist */
+        add_node_to_netlist(netlist, FF_node, FF_NODE);
     }
 
     // CLEAN UP
@@ -233,6 +240,8 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
 
         /* connectiong the dffe output pin to the ff_node output pin */
         remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
+        /* adding the new generated node to the ff node list of the netlist */
+        add_node_to_netlist(netlist, FF_node, FF_NODE);
     }
 
     // CLEAN UP
@@ -340,6 +349,8 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
 
         /* connectiong the dffe output pin to the ff_node output pin */
         remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
+        /* adding the new generated node to the ff node list of the netlist */
+        add_node_to_netlist(netlist, FF_node, FF_NODE);
     }
     // CLEAN UP
     free_signal_list(sreset_value);
@@ -448,6 +459,8 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
 
         /* connectiong the dffe output pin to the ff_node output pin */
         remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
+        /* adding the new generated node to the ff node list of the netlist */
+        add_node_to_netlist(netlist, FF_node, FF_NODE);
     }
 
     // CLEAN UP
@@ -552,6 +565,8 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
 
         // remap node's output pin to CLR_muxes
         remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
+        /* adding the new generated node to the ff node list of the netlist */
+        add_node_to_netlist(netlist, FF_node, FF_NODE);
     }
 
     // CLEAN UP
@@ -680,6 +695,60 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
 
         // remap FF_nodes[i] output pin to dffsre output pin
         remap_pin_to_new_node(node->output_pins[i], FF_node, i);
+        /* adding the new generated node to the ff node list of the netlist */
+        add_node_to_netlist(netlist, FF_node, FF_NODE);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: shrink_register )
+ *
+ * @brief multibit ff_nodes (registers) need to shrink into 
+ * multiple single bit ff_node 
+ * 
+ * @param node pointer to the register node
+ * @param mark unique traversal mark for partial mapping pass
+ * @param netlist pointer to the current netlist file
+ *-------------------------------------------------------------------------------------------*/
+static void shrink_register(nnode_t* node, short mark, netlist_t* netlist) {
+    /* input pins include clk pin. num of inputs == num of outputs */
+    oassert(node->num_input_pins == node->num_output_pins + 1);
+
+    /**
+     * input_pin[0] -> CLK
+     * input_pin[1..n] -> D
+     * output_pin[0..n-1] -> Q
+     */
+
+    int i;
+    int width = node->num_output_pins;
+    /* container for clk pin */
+    npin_t* clk_pin = node->input_pins[width];
+
+    /* staarting from 1 since the first bit is clk */
+    for (i = 0; i < width; i++) {
+        /* creating a single bit ff_node */
+        nnode_t* ff_node = make_1port_gate(FF_NODE, 2, 1, node, mark);
+        ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* hook the clk pin to the new ff_node */
+        if (i != width - 1) {
+            add_input_pin_to_node(ff_node, copy_input_npin(clk_pin), 1);
+        } else {
+            remap_pin_to_new_node(clk_pin, ff_node, 1);
+        }
+
+        /* remapping the bit[i] of the register */
+        remap_pin_to_new_node(node->input_pins[i], ff_node, 0);
+
+        /* remapping the output pin, index is i-1 since we start from 1 */
+        remap_pin_to_new_node(node->output_pins[i], ff_node, 0);
+
+        /* adding the new generated node to the ff node list of the netlist */
+        add_node_to_netlist(netlist, ff_node, FF_NODE);
     }
 
     // CLEAN UP

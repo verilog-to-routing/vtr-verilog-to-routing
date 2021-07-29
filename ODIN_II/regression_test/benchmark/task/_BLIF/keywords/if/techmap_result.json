@@ -2,18 +2,17 @@
     "if/if_statement/no_arch": {
         "test_name": "if/if_statement/no_arch",
         "input_blif": "if_statement.blif",
-        "max_rss(MiB)": 46.8,
-        "exec_time(ms)": 8.2,
-        "techmap_time(ms)": 2.4,
-        "Latch Drivers": 1,
+        "max_rss(MiB)": 39.7,
+        "exec_time(ms)": 5.7,
+        "techmap_time(ms)": 2.5,
         "Pi": 2,
         "Po": 1,
         "logic element": 1,
         "latch": 1,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 4,
         "Estimated LUTs": 1,
-        "Total Node": 3
+        "Total Node": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

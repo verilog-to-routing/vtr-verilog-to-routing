@@ -2,8 +2,8 @@
     "assign/assign_int_wide/no_arch": {
         "test_name": "assign/assign_int_wide/no_arch",
         "generated_blif": "assign_int_wide_generated.blif",
-        "max_rss(MiB)": 74,
-        "exec_time(ms)": 31.6,
+        "max_rss(MiB)": 72.8,
+        "exec_time(ms)": 50.4,
         "Pi": 32,
         "Po": 32,
         "logic element": 32,
@@ -15,8 +15,8 @@
     "assign/assign_ultra_wide/no_arch": {
         "test_name": "assign/assign_ultra_wide/no_arch",
         "generated_blif": "assign_ultra_wide_generated.blif",
-        "max_rss(MiB)": 76,
-        "exec_time(ms)": 233.2,
+        "max_rss(MiB)": 75.2,
+        "exec_time(ms)": 349,
         "Pi": 256,
         "Po": 256,
         "logic element": 256,
@@ -28,8 +28,8 @@
     "assign/assign_wide/no_arch": {
         "test_name": "assign/assign_wide/no_arch",
         "generated_blif": "assign_wide_generated.blif",
-        "max_rss(MiB)": 44.2,
-        "exec_time(ms)": 7,
+        "max_rss(MiB)": 44.3,
+        "exec_time(ms)": 10.9,
         "Pi": 3,
         "Po": 3,
         "logic element": 3,
@@ -41,8 +41,8 @@
     "assign/assign_wire/no_arch": {
         "test_name": "assign/assign_wire/no_arch",
         "generated_blif": "assign_wire_generated.blif",
-        "max_rss(MiB)": 41.7,
-        "exec_time(ms)": 5.4,
+        "max_rss(MiB)": 40.1,
+        "exec_time(ms)": 7.5,
         "Pi": 1,
         "Po": 1,
         "logic element": 1,

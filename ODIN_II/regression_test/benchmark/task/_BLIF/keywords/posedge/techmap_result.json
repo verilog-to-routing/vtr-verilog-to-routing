@@ -2,18 +2,16 @@
     "posedge/posedge/no_arch": {
         "test_name": "posedge/posedge/no_arch",
         "input_blif": "posedge.blif",
-        "max_rss(MiB)": 45.6,
-        "exec_time(ms)": 7.5,
-        "techmap_time(ms)": 2.3,
+        "max_rss(MiB)": 40.3,
+        "exec_time(ms)": 5.3,
+        "techmap_time(ms)": 2.8,
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 1,
-        "logic element": 1,
         "latch": 1,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
     },
     "DEFAULT": {
         "test_name": "n/a",
