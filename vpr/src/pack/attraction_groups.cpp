@@ -11,7 +11,10 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
 
-    //Create an attraction group for each partition in the floorplanning constraints
+    /*
+     * Create an attraction group for each partition in the floorplanning constraints
+     * if the packer option for attraction groups is turned on.
+     */
     if (attraction_groups_on) {
         for (int ipart = 0; ipart < num_parts; ipart++) {
             PartitionId partid(ipart);
