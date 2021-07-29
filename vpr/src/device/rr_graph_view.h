@@ -77,7 +77,7 @@ class RRGraphView {
         return node_storage_.node_direction_string(node);
     }
 
-    /* Get the direction string of a routing resource node. This function is inlined for runtime optimization. */
+    /* Get the fan in of a routing resource node. This function is inlined for runtime optimization. */
     inline t_edge_size node_fan_in(RRNodeId node) const {
         return node_storage_.fan_in(node);
     }
