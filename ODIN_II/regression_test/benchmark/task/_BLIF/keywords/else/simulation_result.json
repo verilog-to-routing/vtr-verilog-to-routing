@@ -2,8 +2,8 @@
     "else/else_if/no_arch": {
         "test_name": "else/else_if/no_arch",
         "generated_blif": "else_if_generated.blif",
-        "max_rss(MiB)": 50.8,
-        "exec_time(ms)": 16.5,
+        "max_rss(MiB)": 4.9,
+        "exec_time(ms)": 0.7,
         "Pi": 2,
         "Po": 2,
         "logic element": 9,
@@ -15,8 +15,8 @@
     "else/if_else/no_arch": {
         "test_name": "else/if_else/no_arch",
         "generated_blif": "if_else_generated.blif",
-        "max_rss(MiB)": 40.6,
-        "exec_time(ms)": 8.3,
+        "max_rss(MiB)": 4.9,
+        "exec_time(ms)": 0.5,
         "Pi": 2,
         "Po": 1,
         "logic element": 2,
