@@ -935,7 +935,9 @@ $ make
 ```
 
 You can suppress reporting of known memory leaks in libraries used by vpr by setting the environment variable below:
+```shell
 LSAN_OPTIONS=suppressions=$VTR_ROOT/vpr/lsan.supp
+```
 where $VTR_ROOT is the root directory of your vtr source code tree.
 
 Note that some of the continuous integration (CI) regtests run on pull requests turn on sanitizers (currently S: Basic and R: Odin-II Basic Tests)
@@ -943,9 +945,10 @@ Note that some of the continuous integration (CI) regtests run on pull requests 
 ## Valgrind
 An alternative way to run vtr programs to check for invalid memory accesses and memory leaks is to use the valgrind tool. valgrind can be run on any build except the sanitized build, without recompilation. For example, to run on vpr use 
 ```shell
-valgrind --leak-check=full --suppressions=$VTR_ROOT/vpr/valgrind.supp vpr [... usual vpr options here ...]
+#From the VTR root directory
+valgrind --leak-check=full --suppressions=./vpr/valgrind.supp ./vpr/vpr [... usual vpr options here ...]
 ```
-where $VTR_ROOT is the root directory of your vtr source code tree. The suppression file included in the command above will suppress reporting of known memory leaks in libraries included by vpr.
+The suppression file included in the command above will suppress reporting of known memory leaks in libraries included by vpr.
 
 Note that valgrind is run on some flows by the continuous integration (CI) tests run on pull requests.
 
