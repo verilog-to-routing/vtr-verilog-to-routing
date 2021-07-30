@@ -382,7 +382,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                 int switch_index = device_ctx.rr_nodes[from_node].edge_switch(iedge);
                                 auto switch_type = device_ctx.rr_switch_inf[switch_index].type();
 
-                                int fan_in = device_ctx.rr_nodes[to_node].fan_in();
+                                int fan_in = rr_graph.node_fan_in(RRNodeId(to_node));
 
                                 if (device_ctx.rr_switch_inf[switch_index].type() == SwitchType::MUX) {
                                     /* Each wire segment begins with a multipexer followed by a driver for unidirectional */

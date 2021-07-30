@@ -102,10 +102,6 @@ inline short t_rr_node::edge_switch(t_edge_size iedge) const {
     return storage_->edge_switch(id_, iedge);
 }
 
-inline t_edge_size t_rr_node::fan_in() const {
-    return storage_->fan_in(id_);
-}
-
 inline short t_rr_node::xlow() const {
     return storage_->node_xlow(id_);
 }
