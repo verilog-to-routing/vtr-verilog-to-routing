@@ -1256,6 +1256,9 @@ function run_vtr_reg() {
 	pushd "${VTR_DIR}"  &> /dev/null
 	RELATIVE_PATH_TO_TEST=$(realapath_from "${FILTERED_VTR_TASK_PATH}" "${VTR_REG_DIR}")
 	/usr/bin/env perl run_reg_test.py -j "${_NUMBER_OF_PROCESS}" $(dirname ${RELATIVE_PATH_TO_TEST})
+    if [ _"$?" != "_0" ]; then
+        _exit_with_code "-1"
+    fi
 	popd  &> /dev/null
 }
 

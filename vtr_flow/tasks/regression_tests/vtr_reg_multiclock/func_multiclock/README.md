@@ -1,0 +1,1 @@
+The tasks inside this directory tests that VTR can correctly handle multi-clock designs in different ways. The default way to handle multiple clocks is iterative. 
