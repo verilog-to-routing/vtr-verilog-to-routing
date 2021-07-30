@@ -979,7 +979,7 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
     seg_details->arch_wire_switch = global_route_switch;
     seg_details->arch_opin_switch = global_route_switch;
     seg_details->longline = false;
-    seg_details->direction = BI_DIRECTION;
+    seg_details->direction = Direction::BIDIR;
     seg_details->Cmetal = 0.0;
     seg_details->Rmetal = 0.0;
     seg_details->start = 1;
@@ -2496,7 +2496,7 @@ std::string describe_rr_node(int inode) {
     }
 
     msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
-    msg += vtr::string_fmt(" fan-in: %d", rr_node.fan_in());
+    msg += vtr::string_fmt(" fan-in: %d", rr_graph.node_fan_in(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-out: %d", rr_node.num_edges());
 
     return msg;

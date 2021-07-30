@@ -95,7 +95,7 @@ static void label_wire_muxes(const int chan_num,
                              const t_chan_seg_details* seg_details,
                              const int seg_type_index,
                              const int max_len,
-                             const enum e_direction dir,
+                             const enum Direction dir,
                              const int max_chan_width,
                              const bool check_cb,
                              std::vector<int>* labels,
@@ -107,7 +107,7 @@ static void label_incoming_wires(const int chan_num,
                                  const int sb_seg,
                                  const t_chan_seg_details* seg_details,
                                  const int max_len,
-                                 const enum e_direction dir,
+                                 const enum Direction dir,
                                  const int max_chan_width,
                                  std::vector<int>* labels,
                                  int* num_incoming_wires,
@@ -341,10 +341,10 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].arch_opin_switch = arch_opin_switch;
 
             if (BI_DIRECTIONAL == directionality) {
-                seg_details[cur_track].direction = BI_DIRECTION;
+                seg_details[cur_track].direction = Direction::BIDIR;
             } else {
                 VTR_ASSERT(UNI_DIRECTIONAL == directionality);
-                seg_details[cur_track].direction = (itrack % 2) ? DEC_DIRECTION : INC_DIRECTION;
+                seg_details[cur_track].direction = (itrack % 2) ? Direction::DEC : Direction::INC;
             }
 
             seg_details[cur_track].index = i;
@@ -692,9 +692,9 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     std::vector<int>& dec_muxes = scratchpad->scratch[1];
 
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     INC_DIRECTION, max_chan_width, true, &inc_muxes, &num_inc_muxes, &dummy);
+                     Direction::INC, max_chan_width, true, &inc_muxes, &num_inc_muxes, &dummy);
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     DEC_DIRECTION, max_chan_width, true, &dec_muxes, &num_dec_muxes, &dummy);
+                     Direction::DEC, max_chan_width, true, &dec_muxes, &num_dec_muxes, &dummy);
 
     /* Clip Fc to the number of muxes. */
     if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
@@ -747,7 +747,7 @@ bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_
     VTR_ASSERT(ofs < length);
 
     /* If unidir segment that is going backwards, we need to flip the ofs */
-    if (DEC_DIRECTION == seg_details[track].direction()) {
+    if (Direction::DEC == seg_details[track].direction()) {
         ofs = (length - 1) - ofs;
     }
 
@@ -777,7 +777,7 @@ void dump_seg_details(const t_chan_seg_details* seg_details,
                 seg_details[i].Rmetal(), seg_details[i].Cmetal());
 
         fprintf(fp, "direction: %s\n",
-                DIRECTION_STRING[seg_details[i].direction()]);
+                DIRECTION_STRING[static_cast<int>(seg_details[i].direction())]);
 
         fprintf(fp, "cb list:  ");
         for (int j = 0; j < seg_details[i].length(); j++)
@@ -1802,7 +1802,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
          * However, can't connect to right (top) if already at rightmost (topmost) track end */
         if (sb_seg < end_sb_seg) {
             if (custom_switch_block) {
-                if (DEC_DIRECTION == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
+                if (Direction::DEC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side,
                                                       switch_override,
@@ -1822,8 +1822,8 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (UNI_DIRECTIONAL == directionality) {
                     /* No fanout if no SB. */
                     /* Also, we are connecting from the top or right of SB so it
-                     * makes the most sense to only get there from DEC_DIRECTION wires. */
-                    if ((from_is_sblock) && (DEC_DIRECTION == from_seg_details[from_track].direction())) {
+                     * makes the most sense to only get there from Direction::DEC wires. */
+                    if ((from_is_sblock) && (Direction::DEC == from_seg_details[from_track].direction())) {
                         num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, from_track, to_chan,
                                                                  to_seg, to_sb, to_type, max_chan_width, grid,
                                                                  from_side_a, to_side, Fs_per_side,
@@ -1840,7 +1840,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
          * However, can't connect to left (bottom) if already at leftmost (bottommost) track end */
         if (sb_seg > start_sb_seg) {
             if (custom_switch_block) {
-                if (INC_DIRECTION == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
+                if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
                                                       switch_override,
@@ -1860,9 +1860,9 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (UNI_DIRECTIONAL == directionality) {
                     /* No fanout if no SB. */
                     /* Also, we are connecting from the bottom or left of SB so it
-                     * makes the most sense to only get there from INC_DIRECTION wires. */
+                     * makes the most sense to only get there from Direction::INC wires. */
                     if ((from_is_sblock)
-                        && (INC_DIRECTION == from_seg_details[from_track].direction())) {
+                        && (Direction::INC == from_seg_details[from_track].direction())) {
                         num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, from_track, to_chan,
                                                                  to_seg, to_sb, to_type, max_chan_width, grid,
                                                                  from_side_b, to_side, Fs_per_side,
@@ -2049,9 +2049,9 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     int sb_y = (CHANX == to_type ? to_chan : to_sb);
     int max_len = (CHANX == to_type ? grid.width() : grid.height()) - 2; //-2 for no perimeter channels
 
-    enum e_direction to_dir = DEC_DIRECTION;
+    enum Direction to_dir = Direction::DEC;
     if (to_sb < to_seg) {
-        to_dir = INC_DIRECTION;
+        to_dir = Direction::INC;
     }
 
     *Fs_clipped = false;
@@ -2409,7 +2409,7 @@ void load_sblock_pattern_lookup(const int i,
 
         /* Figure out all the tracks on a side that are ending and the
          * ones that are passing through and have a SB. */
-        enum e_direction end_dir = (pos_dir ? DEC_DIRECTION : INC_DIRECTION);
+        enum Direction end_dir = (pos_dir ? Direction::DEC : Direction::INC);
         incoming_wire_label[side] = &scratchpad->scratch[NUM_SIDES + side];
         label_incoming_wires(chan, seg, sb_seg,
                              seg_details, chan_len, end_dir, nodes_per_chan->max,
@@ -2419,7 +2419,7 @@ void load_sblock_pattern_lookup(const int i,
 
         /* Figure out all the tracks on a side that are starting. */
         int dummy;
-        enum e_direction start_dir = (pos_dir ? INC_DIRECTION : DEC_DIRECTION);
+        enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
         wire_mux_on_track[side] = &scratchpad->scratch[side];
         label_wire_muxes(chan, seg,
                          seg_details, UNDEFINED, chan_len, start_dir, nodes_per_chan->max,
@@ -2531,7 +2531,7 @@ static void label_wire_muxes(const int chan_num,
                              const t_chan_seg_details* seg_details,
                              const int seg_type_index,
                              const int max_len,
-                             const enum e_direction dir,
+                             const enum Direction dir,
                              const int max_chan_width,
                              const bool check_cb,
                              std::vector<int>* labels_ptr,
@@ -2582,7 +2582,7 @@ static void label_wire_muxes(const int chan_num,
 
             /* Determine if we are a wire startpoint */
             is_endpoint = (seg_num == start);
-            if (DEC_DIRECTION == seg_details[itrack].direction()) {
+            if (Direction::DEC == seg_details[itrack].direction()) {
                 is_endpoint = (seg_num == end);
             }
 
@@ -2616,7 +2616,7 @@ static void label_incoming_wires(const int chan_num,
                                  const int sb_seg,
                                  const t_chan_seg_details* seg_details,
                                  const int max_len,
-                                 const enum e_direction dir,
+                                 const enum Direction dir,
                                  const int max_chan_width,
                                  std::vector<int>* labels_ptr,
                                  int* num_incoming_wires,
@@ -2648,7 +2648,7 @@ static void label_incoming_wires(const int chan_num,
 
                 /* Determine if we are a wire endpoint */
                 is_endpoint = (seg_num == end);
-                if (DEC_DIRECTION == seg_details[itrack].direction()) {
+                if (Direction::DEC == seg_details[itrack].direction()) {
                     is_endpoint = (seg_num == start);
                 }
 
