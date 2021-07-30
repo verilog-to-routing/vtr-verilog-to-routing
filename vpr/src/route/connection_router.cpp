@@ -686,7 +686,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto$ rr_graph = device_ctx.rr_graph;
+    const auto& rr_graph = device_ctx.rr_graph;
 
     //To node info
     auto rc_index = rr_graph.node_rc_index(RRNodeId(to_node));

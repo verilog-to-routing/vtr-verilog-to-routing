@@ -85,10 +85,11 @@ class RRGraphView {
     /* Get the resistance of a routing resource node. This function is inlined for runtime optimization. */
     inline float node_R(RRNodeId node) const {
         return node_storage_.node_R(node);
+    }
 
     /* Get the rc_index of a routing resource node. This function is inlined for runtime optimization. */
     inline int16_t node_rc_index(RRNodeId node) const {
-        return node_storage_[id].rc_index_;
+        return node_storage_.node_rc_index(node);
     }
         
     /* Get the fan in of a routing resource node. This function is inlined for runtime optimization. */
