@@ -82,6 +82,18 @@ class RRSpatialLookup {
                                              t_rr_type type) const;
 
     /**
+     * Returns the indices of the specified routing resource nodes,
+     * representing virtual sinks.  
+     * - (x, y) are the coordinate of the sink nodes within the FPGA
+     *
+     * Note: 
+     * - Return an empty list if there are no sinks at the given (x, y) location
+     * - The node list returned only contains valid ids
+     */
+    std::vector<RRNodeId> find_sink_nodes(int x,
+                                          int y) const;
+
+    /**
      * Like find_node() but returns all matching nodes on all the sides.
      * This is particularly useful for getting all instances
      * of a specific IPIN/OPIN at a specific gird tile (x,y) location.
@@ -118,7 +130,7 @@ class RRSpatialLookup {
                   int y,
                   t_rr_type type,
                   int ptc,
-                  e_side side);
+                  e_side side = SIDES[0]);
 
     /**
      * Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
@@ -168,6 +180,18 @@ class RRSpatialLookup {
                       t_rr_type type,
                       e_side side);
 
+    /* -- Internal data queries -- */
+  private:
+    /* An internal API to find all the nodes in a specific location with a given type
+     * For OPIN/IPIN nodes that may exist on multiple sides, a specific side must be provided  
+     * This API is NOT public because its too powerful for developers with very limited sanity checks 
+     * But it is used to build the public APIs find_channel_nodes() etc., where sufficient sanity checks are applied
+     */
+    std::vector<RRNodeId> find_nodes(int x,
+                                     int y,
+                                     t_rr_type type,
+                                     e_side side = SIDES[0]) const;
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
@@ -179,7 +203,7 @@ class RRSpatialLookup {
      * or inside the data structures to be changed later.
      * That explains why the reference is used here temporarily
      */
-    /* Fast look-up */
+    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional arrqay mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices& rr_node_indices_;
 };
 

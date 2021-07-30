@@ -1,4 +1,4 @@
-regression_tests/vtr_reg_nightly_basic/func_multiclock/blanket
-regression_tests/vtr_reg_nightly_basic/func_multiclock/iterative
-regression_tests/vtr_reg_nightly_basic/func_multiclock/once
-regression_tests/vtr_reg_nightly_basic/func_multiclock/vanilla
+regression_tests/vtr_reg_multiclock/func_multiclock/blanket
+regression_tests/vtr_reg_multiclock/func_multiclock/iterative
+regression_tests/vtr_reg_multiclock/func_multiclock/once
+regression_tests/vtr_reg_multiclock/func_multiclock/vanilla

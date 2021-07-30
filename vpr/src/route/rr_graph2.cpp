@@ -1324,20 +1324,6 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
     return true;
 }
 
-std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
-                                                    t_rr_type rr_type,
-                                                    int x,
-                                                    int y) {
-    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
-
-    /* Currently need to swap x and y for CHANX because of chan, seg convention */
-    if (CHANX == rr_type) {
-        std::swap(x, y);
-    }
-
-    return L_rr_node_indices[rr_type][x][y][SIDES[0]];
-}
-
 void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                          int x,
                          int y,
@@ -1516,49 +1502,6 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
     }
 
     return ((unsigned)ptc < lookup.size() ? lookup[ptc] : -1);
-}
-
-int find_average_rr_node_index(int device_width,
-                               int device_height,
-                               t_rr_type rr_type,
-                               int ptc,
-                               const t_rr_node_indices& L_rr_node_indices) {
-    /* Find and return the index to a rr_node that is located at the "center" *
-     * of the current grid array, if possible.  In the event the "center" of  *
-     * the grid array is an EMPTY or IO node, then retry alternate locations.  *
-     * Worst case, this function will simply return the 1st non-EMPTY and     *
-     * non-IO node.                                                           */
-
-    int inode = get_rr_node_index(L_rr_node_indices, (device_width) / 2, (device_height) / 2,
-                                  rr_type, ptc);
-
-    if (inode == OPEN) {
-        inode = get_rr_node_index(L_rr_node_indices, (device_width) / 4, (device_height) / 4,
-                                  rr_type, ptc);
-    }
-    if (inode == OPEN) {
-        inode = get_rr_node_index(L_rr_node_indices, (device_width) / 4 * 3, (device_height) / 4 * 3,
-                                  rr_type, ptc);
-    }
-    if (inode == OPEN) {
-        auto& device_ctx = g_vpr_ctx.device();
-
-        for (int x = 0; x < device_width; ++x) {
-            for (int y = 0; y < device_height; ++y) {
-                if (device_ctx.grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
-                    continue;
-                if (is_io_type(device_ctx.grid[x][y].type))
-                    continue;
-
-                inode = get_rr_node_index(L_rr_node_indices, x, y, rr_type, ptc);
-                if (inode != OPEN)
-                    break;
-            }
-            if (inode != OPEN)
-                break;
-        }
-    }
-    return (inode);
 }
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
@@ -2746,45 +2689,4 @@ static bool should_apply_switch_override(int switch_override) {
         return true;
     }
     return false;
-}
-
-/*
- * Utility
- */
-void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes, int inode) {
-    const t_rr_node& rr_node = rr_nodes[inode];
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
-        for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
-            auto rr_type = rr_graph.node_type(RRNodeId(inode));
-            if (rr_type == IPIN || rr_type == OPIN) {
-                for (const e_side& side : SIDES) {
-                    if (!rr_node.is_node_on_specific_side(side)) {
-                        continue;
-                    }
-                    insert_at_ptc_index(rr_node_indices[rr_graph.node_type(RRNodeId(inode))][x][y][side], rr_node.ptc_num(), inode);
-                }
-            } else if (rr_type == CHANX) {
-                //CHANX uses odd swapped x/y indices....
-                insert_at_ptc_index(rr_node_indices[rr_graph.node_type(RRNodeId(inode))][y][x][0], rr_node.ptc_num(), inode);
-            } else {
-                insert_at_ptc_index(rr_node_indices[rr_graph.node_type(RRNodeId(inode))][x][y][0], rr_node.ptc_num(), inode);
-            }
-        }
-    }
-}
-
-void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode) {
-    if (ptc >= int(rr_indices.size())) {
-        rr_indices.resize(ptc + 1, OPEN); //Functional, but inefficient allocations...
-    }
-
-    if (rr_indices[ptc] == inode) {
-        return;
-    }
-
-    VTR_ASSERT(rr_indices[ptc] == OPEN);
-    rr_indices[ptc] = inode;
 }

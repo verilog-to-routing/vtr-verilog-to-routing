@@ -79,24 +79,28 @@ static double power_count_transistors_connectionbox() {
     auto& power_ctx = g_vpr_ctx.power();
 
     auto type = find_most_common_block_type(device_ctx.grid);
-    VTR_ASSERT(type->pb_graph_head->num_input_ports == 1);
-    inputs = type->pb_graph_head->num_input_pins[0];
 
-    /* Buffers from Tracks */
-    buffer_size = power_ctx.commonly_used->max_seg_to_IPIN_fanout
-                  * (power_ctx.commonly_used->NMOS_1X_C_d
-                     / power_ctx.commonly_used->INV_1X_C_in)
-                  / power_ctx.arch->logical_effort_factor;
-    buffer_size = std::max(1.0F, buffer_size);
-    transistor_cnt += power_ctx.solution_inf.channel_width
-                      * power_count_transistors_buffer(buffer_size);
+    //For each port on the most common block, look at the number of
+    //input pins this port has and estimate the transistor count based
+    //on the size muxes that drive these input pins.
+    for (int i = 0; i < type->pb_graph_head->num_input_ports; i++) {
+        inputs = type->pb_graph_head->num_input_pins[i];
 
-    /* Muxes to IPINs */
-    transistor_cnt += inputs
-                      * power_count_transistors_mux(
-                            power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
-                                               power_ctx.arch->mux_transistor_size));
+        /* Buffers from Tracks */
+        buffer_size = power_ctx.commonly_used->max_seg_to_IPIN_fanout
+                      * (power_ctx.commonly_used->NMOS_1X_C_d
+                         / power_ctx.commonly_used->INV_1X_C_in)
+                      / power_ctx.arch->logical_effort_factor;
+        buffer_size = std::max(1.0F, buffer_size);
+        transistor_cnt += power_ctx.solution_inf.channel_width
+                          * power_count_transistors_buffer(buffer_size);
 
+        /* Muxes to IPINs */
+        transistor_cnt += inputs
+                          * power_count_transistors_mux(
+                                power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
+                                                   power_ctx.arch->mux_transistor_size));
+    }
     return transistor_cnt;
 }
 
