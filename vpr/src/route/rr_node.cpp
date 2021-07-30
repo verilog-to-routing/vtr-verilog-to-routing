@@ -83,10 +83,6 @@ void t_rr_node::set_cost_index(size_t new_cost_index) {
     storage_->set_node_cost_index(id_, new_cost_index);
 }
 
-void t_rr_node::set_rc_index(short new_rc_index) {
-    storage_->set_node_rc_index(id_, new_rc_index);
-}
-
 void t_rr_node::set_capacity(short new_capacity) {
     storage_->set_node_capacity(id_, new_capacity);
 }

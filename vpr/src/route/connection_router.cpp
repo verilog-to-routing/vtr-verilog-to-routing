@@ -685,13 +685,16 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     float switch_Tdel = rr_switch_inf_[iswitch].Tdel;
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto$ rr_graph = device_ctx.rr_graph;
+
     //To node info
-    auto rc_index = rr_nodes_.node_rc_index(RRNodeId(to_node));
+    auto rc_index = rr_graph.node_rc_index(RRNodeId(to_node));
     float node_C = rr_rc_data_[rc_index].C;
     float node_R = rr_rc_data_[rc_index].R;
 
     //From node info
-    float from_node_R = rr_rc_data_[rr_nodes_.node_rc_index(RRNodeId(from_node))].R;
+    float from_node_R = rr_rc_data_[rr_graph.node_rc_index(RRNodeId(from_node))].R;
 
     //Update R_upstream
     if (switch_buffered) {
