@@ -2401,9 +2401,10 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 /*
  * Get candidate molecule to pack into currently open cluster
  * Molecule selection priority:
- * 1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
- * 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
- * 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
+ * 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
+ * 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
+ * 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
+ * 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
  */
 static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -2415,45 +2416,46 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                   bool prioritize_transitive_connectivity,
                                                   int transitive_fanout_threshold,
                                                   const int feasible_block_array_size) {
-    /* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
-     * not currently in a cluster and satisfies the feasibility     *
-     * function passed in as is_feasible.  If there are no feasible *
-     * blocks it returns ClusterBlockId::INVALID().                                */
+    /*
+     * This routine populates a list of feasible blocks outside the cluster, then returns the best candidate for the cluster.
+     * If there are no feasible blocks it returns a nullptr.
+     */
 
     if (gain_mode == HILL_CLIMBING) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK,
                         "Hill climbing not supported yet, error out.\n");
     }
 
-    // 1. Find unpacked molecule based on criticality and strong connectedness (connected by low fanout nets) with current cluster
+    // 1. Find unpacked molecules based on criticality and strong connectedness (connected by low fanout nets) with current cluster
     if (cur_pb->pb_stats->num_feasible_blocks == NOT_VALID) {
         add_cluster_molecule_candidates_by_connectivity_and_timing(cur_pb, cluster_placement_stats_ptr, atom_molecules, feasible_block_array_size);
     }
 
     if (prioritize_transitive_connectivity) {
-        // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets,
                                                                        cluster_index, transitive_fanout_threshold, feasible_block_array_size);
         }
 
-        // 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
+        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, feasible_block_array_size);
         }
     } else { //Reverse order
-        // 3. Find unpacked molecule based on weak connectedness (connected by high fanout nets) with current cluster
+        // 3. Find unpacked molecules based on weak connectedness (connected by high fanout nets) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, feasible_block_array_size);
         }
 
-        // 2. Find unpacked molecule based on transitive connections (eg. 2 hops away) with current cluster
+        // 2. Find unpacked molecules based on transitive connections (eg. 2 hops away) with current cluster
         if (cur_pb->pb_stats->num_feasible_blocks == 0 && cur_pb->pb_stats->explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cur_pb, cluster_placement_stats_ptr, atom_molecules, clb_inter_blk_nets,
                                                                        cluster_index, transitive_fanout_threshold, feasible_block_array_size);
         }
     }
 
+    // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
     add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups, feasible_block_array_size);
 
     /* Grab highest gain molecule */
@@ -2469,6 +2471,7 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
     return molecule;
 }
 
+/* Add molecules with strong connectedness to the current cluster to the list of feasible blocks. */
 static void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                                                                        t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                        const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -2497,6 +2500,7 @@ static void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur
     }
 }
 
+/* Add molecules based on weak connectedness (connected by high fanout nets) with current cluster */
 static void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                                                                        t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                        const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -2536,6 +2540,11 @@ static void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur
     cur_pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID(); /* Mark off that this high fanout net has been considered */
 }
 
+/*
+ * If the current cluster being packed has an attraction group associated with it
+ * (i.e. there are atoms in it that belong to an attraction group), this routine adds molecules
+ * from the associated attraction group to the list of feasible blocks for the cluster.
+ */
 static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -2543,8 +2552,6 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                                 const int feasible_block_array_size) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    //If the current cluster belongs to an attraction group, add all of the atoms
-    //from that attraction group to the feasible blocks
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
     if (grp_id != AttractGroupId::INVALID()) {
         AttractionGroup group = attraction_groups.get_attraction_group_info(grp_id);
@@ -2567,6 +2574,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     }
 }
 
+/* Add molecules based on transitive connections (eg. 2 hops away) with current cluster*/
 static void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                        t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                        const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -2597,6 +2605,7 @@ static void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur
     }
 }
 
+/*Check whether a free primitive exists for each atom block in the molecule*/
 static bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_cluster_placement_stats* cluster_placement_stats_ptr) {
     auto& atom_ctx = g_vpr_ctx.atom();
     bool success = true;
@@ -2606,8 +2615,8 @@ static bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, 
             VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[i_atom]) == ClusterBlockId::INVALID());
             auto blk_id2 = molecule->atom_block_ids[i_atom];
             if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) {
-                /* TODO: debating whether to check if placement exists for molecule
-                 * (more robust) or individual atom blocks (faster) (Jason Luu)*/
+                /* TODO (Jason Luu): debating whether to check if placement exists for molecule
+                 * (more robust) or individual atom blocks (faster)*/
                 success = false;
                 break;
             }
