@@ -398,6 +398,80 @@ nnode_t* make_mult_block(nnode_t* node, short mark) {
 }
 
 /**
+ * (function: make_ff_node)
+ * 
+ * @brief smux pins based on the selector polarity
+ * 
+ * @param D input
+ * @param clk clock
+ * @param Q qutput
+ * @param node pointing to the related node
+ * @param netlist pointing to the related netlist
+ * @return smux node
+ */
+extern nnode_t* make_ff_node(npin_t* D, npin_t* clk, npin_t* Q, nnode_t* node, netlist_t* netlist) {
+    /* validate clk */
+    oassert(clk->net->num_driver_pins == 1);
+
+    npin_t* FF_input = D;
+    /* detach from old node */
+    if (FF_input->node)
+        FF_input->node->input_pins[FF_input->pin_node_idx] = NULL;
+    if (clk->node) {
+        clk->node->input_pins[clk->pin_node_idx] = NULL;
+    }
+
+    bool latch = false;
+    nnode_t* clock_node = clk->net->driver_pins[0]->node;
+    if (clock_node->type != CLOCK_NODE && clock_node->type != INPUT_NODE)
+        latch = true;
+
+    /* legalize ff */
+    if (configuration.fflegalize) {
+        if (clk->sensitivity == FALLING_EDGE_SENSITIVITY) {
+            nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
+            /* hook the input into not node */
+            add_input_pin_to_node(not_node, D, 0);
+            /* create output pin */
+            signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
+            FF_input = not_outputs->pins[0];
+            /* change clk sensitivity */
+            clk->sensitivity = RISING_EDGE_SENSITIVITY;
+            // CLEAN UP
+            free_signal_list(not_outputs);
+        }
+    }
+
+    /* create FF node */
+    nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, node->traverse_visited);
+    /* hook clk into FF node */
+    FF_node->attributes->clk_edge_type = clk->sensitivity;
+    add_input_pin_to_node(FF_node, clk, 1);
+    /* hook D into FF node */
+    add_input_pin_to_node(FF_node, FF_input, 0);
+
+    if (Q) {
+        /* detach from old node */
+        if (Q->node)
+            Q->node->output_pins[Q->pin_node_idx] = NULL;
+        /* connect Q to FF node */
+        add_output_pin_to_node(FF_node, Q, 0);
+    } else {
+        /* hook the output pin into the new ff_node */
+        signal_list_t* FF_outputs = make_output_pins_for_existing_node(FF_node, 1);
+        FF_input = FF_outputs->pins[0];
+        // CLEAN UP
+        free_signal_list(FF_outputs);
+    }
+
+    /* adding the new generated node to the ff node list of the netlist */
+    if (!latch)
+        add_node_to_netlist(netlist, FF_node, FF_NODE);
+
+    return (FF_node);
+}
+
+/**
  * (function: smux_with_sel_polarity)
  * 
  * @brief smux pins based on the selector polarity
@@ -454,9 +528,9 @@ nnode_t* smux_with_sel_polarity(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t
 }
 
 /**
- * (function: create_multiport_mux)
+ * (function: make_multiport_mux)
  * 
- * @brief create a multiport mux with given selector and signals lists
+ * @brief make a multiport mux with given selector and signals lists
  * 
  * @param inputs list of input signal lists
  * @param selector signal list of selector pins
@@ -467,7 +541,7 @@ nnode_t* smux_with_sel_polarity(npin_t* pin1, npin_t* pin2, npin_t* sel, nnode_t
  * 
  * @return mux node
  */
-nnode_t* create_multiport_smux(signal_list_t** inputs, signal_list_t* selector, int num_muxed_inputs, signal_list_t* outs, nnode_t* node, netlist_t* netlist) {
+nnode_t* make_multiport_smux(signal_list_t** inputs, signal_list_t* selector, int num_muxed_inputs, signal_list_t* outs, nnode_t* node, netlist_t* netlist) {
     /* validation */
     int valid_num_mux_inputs = shift_left_value_with_overflow_check(0X1, selector->count, node->loc);
     oassert(valid_num_mux_inputs >= num_muxed_inputs);

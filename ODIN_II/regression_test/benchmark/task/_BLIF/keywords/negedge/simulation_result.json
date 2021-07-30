@@ -7,12 +7,12 @@
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 1,
-        "logic element": 1,
+        "logic element": 2,
         "latch": 1,
-        "Longest Path": 4,
+        "Longest Path": 5,
         "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "DEFAULT": {
         "test_name": "n/a",

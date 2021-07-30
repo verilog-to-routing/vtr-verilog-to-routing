@@ -111,7 +111,7 @@
         "latch": 532,
         "Adder": 3476,
         "generic logic size": 4,
-        "Longest Path": 460,
+        "Longest Path": 309,
         "Average Path": 5,
         "Estimated LUTs": 19387,
         "Total Node": 22004
@@ -128,7 +128,7 @@
         "logic element": 24092,
         "latch": 532,
         "generic logic size": 6,
-        "Longest Path": 460,
+        "Longest Path": 309,
         "Average Path": 5,
         "Estimated LUTs": 24949,
         "Total Node": 24625
@@ -430,7 +430,7 @@
         "latch": 293,
         "Memory": 8,
         "generic logic size": 4,
-        "Longest Path": 52,
+        "Longest Path": 55,
         "Average Path": 5,
         "Estimated LUTs": 615,
         "Total Node": 877
@@ -448,7 +448,7 @@
         "latch": 293,
         "Memory": 8,
         "generic logic size": 6,
-        "Longest Path": 52,
+        "Longest Path": 55,
         "Average Path": 5,
         "Estimated LUTs": 596,
         "Total Node": 877
@@ -681,7 +681,7 @@
         "Multiplier": 8,
         "Memory": 1409,
         "generic logic size": 4,
-        "Longest Path": 4728,
+        "Longest Path": 4791,
         "Average Path": 5,
         "Estimated LUTs": 56505,
         "Total Node": 67192
@@ -700,7 +700,7 @@
         "Multiplier": 8,
         "Memory": 1409,
         "generic logic size": 6,
-        "Longest Path": 6492,
+        "Longest Path": 6592,
         "Average Path": 5,
         "Estimated LUTs": 63018,
         "Total Node": 70692
@@ -757,7 +757,7 @@
         "Multiplier": 27,
         "Memory": 348,
         "generic logic size": 4,
-        "Longest Path": 19605,
+        "Longest Path": 19607,
         "Average Path": 5,
         "Estimated LUTs": 193273,
         "Total Node": 264100
@@ -1085,7 +1085,7 @@
         "latch": 118,
         "Adder": 28,
         "generic logic size": 4,
-        "Longest Path": 87,
+        "Longest Path": 88,
         "Average Path": 5,
         "Estimated LUTs": 1507,
         "Total Node": 1363
@@ -1102,7 +1102,7 @@
         "logic element": 1258,
         "latch": 118,
         "generic logic size": 6,
-        "Longest Path": 98,
+        "Longest Path": 99,
         "Average Path": 5,
         "Estimated LUTs": 1465,
         "Total Node": 1382

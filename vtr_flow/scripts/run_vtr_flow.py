@@ -336,6 +336,14 @@ def vtr_command_argparser(prog=None):
         dest="coarsen",
         help="Notify Odin if the input BLIF is coarse-grain",
     )
+    odin.add_argument(
+        "-fflegalize",
+        default=False,
+        action="store_true",
+        dest="fflegalize",
+        help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
+             +"(Odin-II synthesis flow generates rising edge FFs by default)",
+    )
     #
     # VPR arguments
     #
@@ -586,6 +594,9 @@ def process_odin_args(args):
 
     if args.coarsen:
         odin_args["coarsen"] = True
+    
+    if args.fflegalize:
+        odin_args["fflegalize"] = True
 
     return odin_args
 

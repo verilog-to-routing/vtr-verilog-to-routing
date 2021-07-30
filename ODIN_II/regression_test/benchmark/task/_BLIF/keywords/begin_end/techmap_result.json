@@ -22,12 +22,12 @@
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 2,
-        "logic element": 2,
+        "logic element": 3,
         "latch": 1,
-        "Longest Path": 4,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 2,
-        "Total Node": 4
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "begin_end/posedge/no_arch": {
         "test_name": "begin_end/posedge/no_arch",

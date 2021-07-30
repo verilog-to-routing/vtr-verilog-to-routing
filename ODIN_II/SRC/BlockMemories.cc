@@ -1423,7 +1423,7 @@ static nnode_t* ymem_to_rom(nnode_t* node, uintptr_t traverse_mark_number) {
     /* check for BRAM */
     oassert(node->num_input_port_sizes == 3);
     oassert(node->num_output_port_sizes == 1);
-    
+
     /* create BRAM node */
     nnode_t* transformed_mem = allocate_nnode(node->loc);
     transformed_mem->traverse_visited = traverse_mark_number;
@@ -1474,7 +1474,6 @@ static nnode_t* ymem_to_rom(nnode_t* node, uintptr_t traverse_mark_number) {
     }
     new_offset += RD_ENABLE_width;
 
-
     /* RD_DATA */
     offset = 0;
     oassert(RD_DATA_width == num_rd_ports * data_width);
@@ -1520,7 +1519,7 @@ static nnode_t* ymem_to_bram(nnode_t* node, uintptr_t traverse_mark_number) {
     /* check for BRAM */
     oassert(node->num_input_port_sizes == 7);
     oassert(node->num_output_port_sizes == 1);
-    
+
     /* create BRAM node */
     nnode_t* transformed_mem = allocate_nnode(node->loc);
     transformed_mem->traverse_visited = traverse_mark_number;
@@ -1747,12 +1746,12 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
             signal_list_t* selector_i = init_signal_list();
             add_pin_to_signal_list(selector_i, selectors->pins[i]);
             /* a regular multiplexer instatiation */
-            muxes[i] = create_multiport_smux(mux_inputs,
-                                             selector_i,
-                                             2,
-                                             NULL,
-                                             node,
-                                             netlist);
+            muxes[i] = make_multiport_smux(mux_inputs,
+                                           selector_i,
+                                           2,
+                                           NULL,
+                                           node,
+                                           netlist);
 
             // CLEAN UP
             free_signal_list(selector_i);
@@ -1866,12 +1865,12 @@ static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list
             signal_list_t* selector_i = init_signal_list();
             add_pin_to_signal_list(selector_i, selectors->pins[i]);
             /* a regular multiplexer instatiation */
-            muxes[i] = create_multiport_smux(mux_inputs,
-                                             selector_i,
-                                             2,
-                                             splitted_signals[i],
-                                             node,
-                                             netlist);
+            muxes[i] = make_multiport_smux(mux_inputs,
+                                           selector_i,
+                                           2,
+                                           splitted_signals[i],
+                                           node,
+                                           netlist);
 
             // CLEAN UP
             free_signal_list(selector_i);

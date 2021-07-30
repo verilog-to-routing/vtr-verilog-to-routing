@@ -451,6 +451,11 @@ void get_options(int argc, char** argv) {
         .help("Print all warnings (can be substantial)")
         .default_value("false")
         .action(argparse::Action::STORE_TRUE);
+    
+    other_grp.add_argument(global_args.fflegalize, "--fflegalize")
+        .help("Make all flip-flops rising edge to be compatible with VPR (may add inverters)")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE);
 
     other_grp.add_argument(global_args.adder_def, "--adder_type")
         .help("DEPRECATED")
@@ -638,6 +643,10 @@ void get_options(int argc, char** argv) {
         coarsen_cleanup = false;
     }
 
+    if (global_args.fflegalize.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.fflegalize = global_args.fflegalize;
+    }
+
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {
         global_args.sim_directory.set(configuration.debug_output_path, argparse::Provenance::SPECIFIED);
     }
@@ -664,6 +673,7 @@ void get_options(int argc, char** argv) {
 void set_default_config() {
     /* Set up the global configuration. */
     configuration.coarsen = false;
+    configuration.fflegalize = false;
     configuration.output_file_type = file_type_e::_BLIF;
     configuration.output_ast_graphs = 0;
     configuration.output_netlist_graphs = 0;

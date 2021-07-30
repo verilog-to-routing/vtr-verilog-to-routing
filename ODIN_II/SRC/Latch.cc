@@ -64,24 +64,13 @@ void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
-        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = new_clk->sensitivity;
-
-        /**
-         * connecting the data input of 
-         * (EN == EN_POLARITY) ? D : Q
-         */
-        remap_pin_to_new_node(node->input_pins[i],
-                              FF_node,
-                              0);
-
-        /* connecting the clk pin */
-        add_input_pin_to_node(FF_node, new_clk, 1);
-
-        /* connectiong the buf output pin to the buf_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_node,
-                              0);
+        /* remapping the D inputs to [1..n] */
+        make_ff_node(node->input_pins[i],      // D
+                     copy_input_npin(new_clk), // clk
+                     node->output_pins[i],     // Q
+                     node,                     // node
+                     netlist                   // netlist
+        );
     }
 
     // CLEAN UP
@@ -176,24 +165,12 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
         /*****************************************************************************************/
         /*************************************** FF_NODE *****************************************/
         /*****************************************************************************************/
-        nnode_t* FF_node = make_1port_gate(FF_NODE, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = new_clk->sensitivity;
-
-        /**
-         * connecting the data input of 
-         * Q = (SRST) ? reset_value : D
-         */
-        add_input_pin_to_node(FF_node,
-                              ARST_muxes_output_pin,
-                              0);
-
-        /* connecting the clk pin */
-        add_input_pin_to_node(FF_node, copy_input_npin(new_clk), 1);
-
-        /* connectiong the dffe output pin to the buf_node output pin */
-        remap_pin_to_new_node(node->output_pins[i],
-                              FF_node,
-                              0);
+        make_ff_node(ARST_muxes_output_pin,    // D
+                     copy_input_npin(new_clk), // clk
+                     node->output_pins[i],     // Q
+                     node,                     // node
+                     netlist                   // netlist
+        );
     }
 
     // CLEAN UP

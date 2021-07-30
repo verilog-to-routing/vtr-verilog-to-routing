@@ -1,0 +1,72 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=../ODIN_II/regression_test/benchmark/_BLIF/common/
+
+# Path to directory of architectures to use
+archs_dir=arch/timing/
+
+# Add circuits to list to sweep
+circuit_list_add=1r.blif
+circuit_list_add=1r2w.blif
+circuit_list_add=2r.blif
+circuit_list_add=2r1w.blif
+circuit_list_add=2r2w.blif
+circuit_list_add=adder.blif
+circuit_list_add=adff.blif
+circuit_list_add=adffe.blif
+circuit_list_add=adlatch.blif
+circuit_list_add=bitwise_not.blif
+circuit_list_add=bram.blif
+circuit_list_add=dff.blif
+circuit_list_add=dffe.blif
+circuit_list_add=dffsr.blif
+circuit_list_add=dffsre.blif
+circuit_list_add=div_by_const.blif
+circuit_list_add=div.blif
+circuit_list_add=dlatch.blif
+circuit_list_add=ge.blif
+circuit_list_add=gt.blif
+circuit_list_add=hierarchy.blif
+circuit_list_add=le.blif
+circuit_list_add=logical_not.blif
+circuit_list_add=lt.blif
+circuit_list_add=mem.blif
+circuit_list_add=memrd.blif
+circuit_list_add=mod.blif
+circuit_list_add=mult_const.blif
+circuit_list_add=mult.blif
+circuit_list_add=mux.blif
+circuit_list_add=nr.blif
+circuit_list_add=nrnw.blif
+circuit_list_add=pmux.blif
+circuit_list_add=pow_const.blif
+circuit_list_add=pow.blif
+circuit_list_add=reduce_and.blif
+circuit_list_add=reduce_bool.blif
+circuit_list_add=register.blif
+circuit_list_add=rom.blif
+circuit_list_add=sdff.blif
+circuit_list_add=sdffce.blif
+circuit_list_add=sdffe.blif
+circuit_list_add=sr.blif
+circuit_list_add=sub.blif
+
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_40nm.xml
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+script_params_common = -track_memory_usage -coarsen -fflegalize

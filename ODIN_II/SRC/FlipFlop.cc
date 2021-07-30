@@ -29,8 +29,6 @@
 #include "netlist_utils.h"
 #include "vtr_memory.h"
 
-static void shrink_register(nnode_t* node, short mark, netlist_t* netlist);
-
 /**
  * (function: resolve_dff_node)
  * 
@@ -51,33 +49,19 @@ void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
     */
     int i;
     int width = node->num_output_pins;
-    nnode_t* ff_node = make_2port_gate(FF_NODE, width, 1, width, node, traverse_mark_number);
-    ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
-    /* remap the last bit of the clk pin to the last input pin since the resit does not work at all */
     int clk_width = node->input_port_sizes[0];
-    remap_pin_to_new_node(node->input_pins[0], ff_node, width);
+    /* clock pin record */
+    npin_t* clk_pin = node->input_pins[0];
+    clk_pin->sensitivity = node->attributes->clk_edge_type;
 
     /* remapping the D inputs to [1..n] */
     for (i = 0; i < width; i++) {
-        remap_pin_to_new_node(node->input_pins[clk_width + i], ff_node, i);
-    }
-
-    /* hook the output pins into the new ff_node */
-    for (i = 0; i < width; i++) {
-        remap_pin_to_new_node(node->output_pins[i], ff_node, i);
-    }
-
-    /** if it is multibit we will leave it for partial mapping phase,
-     * otherwise we need to add single bit ff node to the ff_node 
-     * list of the current netlist 
-    */
-    /* single bit dff, [0]: clk, [1]: D */
-    if (node->num_input_pins == 2) {
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, ff_node, FF_NODE);
-    } else if (node->num_input_pins > 2) {
-        /* shrink to one bit ff */
-        shrink_register(ff_node, traverse_mark_number, netlist);
+        make_ff_node(node->input_pins[i + clk_width],                       // D
+                     (i == width - 1) ? clk_pin : copy_input_npin(clk_pin), // clk
+                     node->output_pins[i],                                  // Q
+                     node,                                                  // node
+                     netlist                                                // netlist
+        );
     }
 
     // CLEAN UP
@@ -140,26 +124,17 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
 
-        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* clock pin record */
+        npin_t* clk_pin = node->input_pins[0];
+        clk_pin->sensitivity = node->attributes->clk_edge_type;
 
-        /**
-         * connecting the data input of 
-         * Q = (SRST) ? reset_value : D
-         */
-        add_input_pin_to_node(FF_node, SRST_mux_output_pin, 0);
-
-        /* connecting the clk pin */
-        if (i != D_width - 1) {
-            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
-        } else {
-            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
-        }
-
-        /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, FF_node, FF_NODE);
+        /* remapping the D inputs to [1..n] */
+        make_ff_node(SRST_mux_output_pin,                                     // D
+                     (i == D_width - 1) ? clk_pin : copy_input_npin(clk_pin), // clk
+                     node->output_pins[i],                                    // Q
+                     node,                                                    // node
+                     netlist                                                  // netlist
+        );
     }
 
     // CLEAN UP
@@ -222,26 +197,17 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
 
-        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* clock pin record */
+        npin_t* clk_pin = node->input_pins[0];
+        clk_pin->sensitivity = node->attributes->clk_edge_type;
 
-        /**
-         * connecting the data input of 
-         * (EN == EN_POLARITY) ? D : Q
-         */
-        add_input_pin_to_node(FF_node, EN_mux_output_pin, 0);
-
-        /* connecting the clk pin */
-        if (i != D_width - 1) {
-            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
-        } else {
-            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
-        }
-
-        /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, FF_node, FF_NODE);
+        /* remapping the D inputs to [1..n] */
+        make_ff_node(EN_mux_output_pin,                                       // D
+                     (i == D_width - 1) ? clk_pin : copy_input_npin(clk_pin), // clk
+                     node->output_pins[i],                                    // Q
+                     node,                                                    // node
+                     netlist                                                  // netlist
+        );
     }
 
     // CLEAN UP
@@ -326,31 +292,22 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         );
 
         // specify mux_set[i] output pin
-        npin_t* SRST_muxes_output_pin = SRST_mux->output_pins[0]->net->fanout_pins[0];
+        npin_t* SRST_mux_output_pin = SRST_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
-        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* clock pin record */
+        npin_t* clk_pin = node->input_pins[0];
+        clk_pin->sensitivity = node->attributes->clk_edge_type;
 
-        /**
-         * connecting the data input of 
-         * Q = (SRST) ? reset_value : D
-         */
-        add_input_pin_to_node(FF_node, SRST_muxes_output_pin, 0);
-
-        /* connecting the clk pin */
-        if (i != D_width - 1) {
-            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
-        } else {
-            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
-        }
-
-        /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, FF_node, FF_NODE);
+        /* remapping the D inputs to [1..n] */
+        make_ff_node(SRST_mux_output_pin,                                     // D
+                     (i == D_width - 1) ? clk_pin : copy_input_npin(clk_pin), // clk
+                     node->output_pins[i],                                    // Q
+                     node,                                                    // node
+                     netlist                                                  // netlist
+        );
     }
     // CLEAN UP
     free_signal_list(sreset_value);
@@ -435,32 +392,23 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         );
 
         // specify EN_muxes[i] output pin
-        npin_t* EN_muxes_output_pin = EN_mux->output_pins[0]->net->fanout_pins[0];
+        npin_t* EN_mux_output_pin = EN_mux->output_pins[0]->net->fanout_pins[0];
 
         /*****************************************************************************************/
         /*************************************** FF_NODEs ****************************************/
         /*****************************************************************************************/
 
-        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* clock pin record */
+        npin_t* clk_pin = node->input_pins[0];
+        clk_pin->sensitivity = node->attributes->clk_edge_type;
 
-        /**
-         * connecting the data input of 
-         * Q = (SRST) ? reset_value : D
-         */
-        add_input_pin_to_node(FF_node, EN_muxes_output_pin, 0);
-
-        /* connecting the clk pin */
-        if (i != D_width - 1) {
-            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
-        } else {
-            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
-        }
-
-        /* connectiong the dffe output pin to the ff_node output pin */
-        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, FF_node, FF_NODE);
+        /* remapping the D inputs to [1..n] */
+        make_ff_node(EN_mux_output_pin,                                       // D
+                     (i == D_width - 1) ? clk_pin : copy_input_npin(clk_pin), // clk
+                     node->output_pins[i],                                    // Q
+                     node,                                                    // node
+                     netlist                                                  // netlist
+        );
     }
 
     // CLEAN UP
@@ -544,29 +492,17 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /**************************************** FF_NODES ***************************************/
         /*****************************************************************************************/
-        /* create FF node for DFFSR output */
-        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* clock pin record */
+        npin_t* clk_pin = node->input_pins[0];
+        clk_pin->sensitivity = node->attributes->clk_edge_type;
 
-        /**
-         * remap D[i] from the dffsr node to the ff node 
-         * since we do not need it in dff node anymore 
-         **/
-        add_input_pin_to_node(FF_node, CLR_muxes_output_pin, 0);
-
-        /* remap the CLK pin from the dffsr node to the ff node */
-        if (i == width - 1) {
-            /* remap the CLK pin from the dffsr node to the new  */
-            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
-        } else {
-            /* add a copy of CLK pin from the dffsr node to the new ff node */
-            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
-        }
-
-        // remap node's output pin to CLR_muxes
-        remap_pin_to_new_node(node->output_pins[i], FF_node, 0);
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, FF_node, FF_NODE);
+        /* remapping the D inputs to [1..n] */
+        make_ff_node(CLR_muxes_output_pin,                                    // D
+                     (i == D_width - 1) ? clk_pin : copy_input_npin(clk_pin), // clk
+                     node->output_pins[i],                                    // Q
+                     node,                                                    // node
+                     netlist                                                  // netlist
+        );
     }
 
     // CLEAN UP
@@ -674,81 +610,17 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
-        /* create FF node for DFFSR output */
-        nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, traverse_mark_number);
-        FF_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
+        /* clock pin record */
+        npin_t* clk_pin = node->input_pins[0];
+        clk_pin->sensitivity = node->attributes->clk_edge_type;
 
-        /* remap D[i] from the dffsr node to the ff node */
-        add_input_pin_to_node(FF_node, CLR_muxes_output_pin, 0);
-
-        /**
-         * remap the CLK pin from the dffsr node to the ff node
-         * since we do not need it in dff node anymore 
-         **/
-        if (i == width - 1) {
-            /* remap the CLK pin from the dffsr node to the new  */
-            remap_pin_to_new_node(node->input_pins[0], FF_node, 1);
-        } else {
-            /* add a copy of CLK pin from the dffsr node to the new ff node */
-            add_input_pin_to_node(FF_node, copy_input_npin(node->input_pins[0]), 1);
-        }
-
-        // remap FF_nodes[i] output pin to dffsre output pin
-        remap_pin_to_new_node(node->output_pins[i], FF_node, i);
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, FF_node, FF_NODE);
-    }
-
-    // CLEAN UP
-    free_nnode(node);
-}
-
-/**
- *---------------------------------------------------------------------------------------------
- * (function: shrink_register )
- *
- * @brief multibit ff_nodes (registers) need to shrink into 
- * multiple single bit ff_node 
- * 
- * @param node pointer to the register node
- * @param mark unique traversal mark for partial mapping pass
- * @param netlist pointer to the current netlist file
- *-------------------------------------------------------------------------------------------*/
-static void shrink_register(nnode_t* node, short mark, netlist_t* netlist) {
-    /* input pins include clk pin. num of inputs == num of outputs */
-    oassert(node->num_input_pins == node->num_output_pins + 1);
-
-    /**
-     * input_pin[0] -> CLK
-     * input_pin[1..n] -> D
-     * output_pin[0..n-1] -> Q
-     */
-
-    int i;
-    int width = node->num_output_pins;
-    /* container for clk pin */
-    npin_t* clk_pin = node->input_pins[width];
-
-    /* staarting from 1 since the first bit is clk */
-    for (i = 0; i < width; i++) {
-        /* creating a single bit ff_node */
-        nnode_t* ff_node = make_1port_gate(FF_NODE, 2, 1, node, mark);
-        ff_node->attributes->clk_edge_type = node->attributes->clk_edge_type;
-        /* hook the clk pin to the new ff_node */
-        if (i != width - 1) {
-            add_input_pin_to_node(ff_node, copy_input_npin(clk_pin), 1);
-        } else {
-            remap_pin_to_new_node(clk_pin, ff_node, 1);
-        }
-
-        /* remapping the bit[i] of the register */
-        remap_pin_to_new_node(node->input_pins[i], ff_node, 0);
-
-        /* remapping the output pin, index is i-1 since we start from 1 */
-        remap_pin_to_new_node(node->output_pins[i], ff_node, 0);
-
-        /* adding the new generated node to the ff node list of the netlist */
-        add_node_to_netlist(netlist, ff_node, FF_NODE);
+        /* remapping the D inputs to [1..n] */
+        make_ff_node(CLR_muxes_output_pin,                                    // D
+                     (i == D_width - 1) ? clk_pin : copy_input_npin(clk_pin), // clk
+                     node->output_pins[i],                                    // Q
+                     node,                                                    // node
+                     netlist                                                  // netlist
+        );
     }
 
     // CLEAN UP

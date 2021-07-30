@@ -1297,13 +1297,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 6,
-        "logic element": 6,
+        "logic element": 9,
         "latch": 6,
         "generic logic size": 4,
-        "Longest Path": 4,
+        "Longest Path": 5,
         "Average Path": 4,
-        "Estimated LUTs": 6,
-        "Total Node": 13
+        "Estimated LUTs": 9,
+        "Total Node": 16
     },
     "common/register/no_arch": {
         "test_name": "common/register/no_arch",
@@ -1315,12 +1315,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 6,
-        "logic element": 6,
+        "logic element": 9,
         "latch": 6,
-        "Longest Path": 4,
+        "Longest Path": 5,
         "Average Path": 4,
-        "Estimated LUTs": 6,
-        "Total Node": 13
+        "Estimated LUTs": 9,
+        "Total Node": 16
     },
     "common/rom/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/rom/k6_frac_N10_frac_chain_mem32K_40nm",

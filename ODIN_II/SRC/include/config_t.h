@@ -12,6 +12,7 @@ struct config_t {
     std::string debug_output_path; // path for where to output the debug outputs
     file_type_e input_file_type;
     file_type_e output_file_type;
+    bool fflegalize;
     bool coarsen;
 
     bool output_ast_graphs;     // switch that outputs ast graphs per node for use with GRaphViz tools

@@ -42,7 +42,7 @@ circuit_list_add=tpu.16x16.int8.blif
 circuit_list_add=tpu.32x32.int8.blif
 
 # Add architectures to list to sweep
-arch_list_add=k6_frac_N10_mem32K_40nm.xml
+arch_list_add=k6_frac_N10_40nm.xml
 arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
 
 # Parse info and how to parse
@@ -55,4 +55,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params_common = -track_memory_usage -coarsen
+script_params_common = -track_memory_usage -coarsen -fflegalize

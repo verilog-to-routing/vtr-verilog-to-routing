@@ -462,13 +462,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 14,
+        "logic element": 15,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 8,
+        "Longest Path": 9,
         "Average Path": 3,
-        "Estimated LUTs": 14,
-        "Total Node": 16
+        "Estimated LUTs": 15,
+        "Total Node": 17
     },
     "syntax/bm_jk_rtl/no_arch": {
         "test_name": "syntax/bm_jk_rtl/no_arch",
@@ -479,12 +479,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 14,
+        "logic element": 15,
         "latch": 1,
-        "Longest Path": 8,
+        "Longest Path": 9,
         "Average Path": 3,
-        "Estimated LUTs": 14,
-        "Total Node": 16
+        "Estimated LUTs": 15,
+        "Total Node": 17
     },
     "syntax/bm_log_all/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/bm_log_all/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1683,12 +1683,14 @@
         "Latch Drivers": 1,
         "Pi": 10,
         "Po": 4,
+        "logic element": 4,
         "latch": 4,
         "Memory": 4,
         "generic logic size": 4,
-        "Longest Path": 4,
+        "Longest Path": 5,
         "Average Path": 4,
-        "Total Node": 9
+        "Estimated LUTs": 4,
+        "Total Node": 13
     },
     "syntax/multi_edge_reader_writer/no_arch": {
         "test_name": "syntax/multi_edge_reader_writer/no_arch",
@@ -1699,12 +1701,12 @@
         "Latch Drivers": 1,
         "Pi": 10,
         "Po": 4,
-        "logic element": 146,
+        "logic element": 150,
         "latch": 36,
-        "Longest Path": 11,
-        "Average Path": 4,
-        "Estimated LUTs": 146,
-        "Total Node": 183
+        "Longest Path": 12,
+        "Average Path": 5,
+        "Estimated LUTs": 150,
+        "Total Node": 187
     },
     "syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1914,7 +1916,7 @@
         "Adder": 31,
         "Multiplier": 13,
         "generic logic size": 4,
-        "Longest Path": 1082,
+        "Longest Path": 1086,
         "Average Path": 7,
         "Estimated LUTs": 3516,
         "Total Node": 3971
@@ -1930,7 +1932,7 @@
         "Po": 7,
         "logic element": 3856,
         "latch": 517,
-        "Longest Path": 1303,
+        "Longest Path": 1326,
         "Average Path": 7,
         "Estimated LUTs": 3856,
         "Total Node": 4374
@@ -1966,7 +1968,7 @@
         "Po": 11,
         "logic element": 12116,
         "latch": 616,
-        "Longest Path": 1650,
+        "Longest Path": 1649,
         "Average Path": 8,
         "Estimated LUTs": 12116,
         "Total Node": 12733
