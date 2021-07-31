@@ -1,0 +1,5 @@
+#AddressSanitizer suppression file for VPR
+
+#Leaks from TBB library, which
+#allows VPR to run with parallelism
+lib:libtbb
