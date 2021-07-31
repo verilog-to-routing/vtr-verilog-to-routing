@@ -2,9 +2,9 @@
     "if/if_statement/no_arch": {
         "test_name": "if/if_statement/no_arch",
         "generated_blif": "if_statement_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 1.5,
-        "simulation_time(ms)": 0.6,
+        "max_rss(MiB)": 44,
+        "exec_time(ms)": 6.7,
+        "simulation_time(ms)": 0.8,
         "test_coverage(%)": 100,
         "Pi": 1,
         "Po": 1,

@@ -2,8 +2,8 @@
     "integer/integer_failure/no_arch": {
         "test_name": "integer/integer_failure/no_arch",
         "generated_blif": "integer_failure_generated.blif",
-        "max_rss(MiB)": 5.3,
-        "exec_time(ms)": 1.9,
+        "max_rss(MiB)": 75.4,
+        "exec_time(ms)": 112.4,
         "Pi": 64,
         "Po": 32,
         "logic element": 95,
@@ -15,6 +15,9 @@
     "integer/integer_port/no_arch": {
         "test_name": "integer/integer_port/no_arch",
         "generated_blif": "integer_port_generated.blif",
+        "max_rss(MiB)": 75.5,
+        "exec_time(ms)": 114.9,
+        "simulation_time(ms)": 1.8,
         "test_coverage(%)": 98.2,
         "Pi": 32,
         "Po": 32,

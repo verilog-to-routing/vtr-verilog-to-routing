@@ -2,8 +2,8 @@
     "module_endmodule/multiple_modules/no_arch": {
         "test_name": "module_endmodule/multiple_modules/no_arch",
         "generated_blif": "multiple_modules_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 2.3,
+        "max_rss(MiB)": 54.6,
+        "exec_time(ms)": 14.3,
         "simulation_time(ms)": 1.2,
         "test_coverage(%)": 100,
         "Pi": 10,
@@ -17,6 +17,9 @@
     "module_endmodule/multiple_topmodules/no_arch": {
         "test_name": "module_endmodule/multiple_topmodules/no_arch",
         "generated_blif": "multiple_topmodules_generated.blif",
+        "max_rss(MiB)": 47.8,
+        "exec_time(ms)": 12.8,
+        "simulation_time(ms)": 3.8,
         "test_coverage(%)": 100,
         "Po": 4,
         "logic element": 4,

@@ -2,9 +2,9 @@
     "default/case_default/no_arch": {
         "test_name": "default/case_default/no_arch",
         "generated_blif": "case_default_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 4.4,
-        "simulation_time(ms)": 3.1,
+        "max_rss(MiB)": 67.2,
+        "exec_time(ms)": 24.3,
+        "simulation_time(ms)": 3.8,
         "test_coverage(%)": 100,
         "Pi": 11,
         "Po": 3,

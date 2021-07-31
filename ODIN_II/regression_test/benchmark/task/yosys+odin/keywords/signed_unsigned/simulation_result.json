@@ -2,6 +2,9 @@
     "signed_unsigned/signed_to_signed/no_arch": {
         "test_name": "signed_unsigned/signed_to_signed/no_arch",
         "generated_blif": "signed_to_signed_generated.blif",
+        "max_rss(MiB)": 49.8,
+        "exec_time(ms)": 10.1,
+        "simulation_time(ms)": 0.5,
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 6,

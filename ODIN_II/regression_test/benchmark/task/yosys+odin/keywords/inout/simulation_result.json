@@ -2,6 +2,9 @@
     "inout/double_assign_inout/no_arch": {
         "test_name": "inout/double_assign_inout/no_arch",
         "generated_blif": "double_assign_inout_generated.blif",
+        "max_rss(MiB)": 45.2,
+        "exec_time(ms)": 7.1,
+        "simulation_time(ms)": 0.3,
         "test_coverage(%)": 88.9,
         "Pi": 2,
         "Po": 2,
@@ -14,8 +17,8 @@
     "inout/inout_failure/no_arch": {
         "test_name": "inout/inout_failure/no_arch",
         "generated_blif": "inout_failure_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 0.6,
+        "max_rss(MiB)": 48,
+        "exec_time(ms)": 8.5,
         "Pi": 3,
         "Po": 3,
         "logic element": 5,
@@ -27,6 +30,9 @@
     "inout/simple_inout/no_arch": {
         "test_name": "inout/simple_inout/no_arch",
         "generated_blif": "simple_inout_generated.blif",
+        "max_rss(MiB)": 48.9,
+        "exec_time(ms)": 12.2,
+        "simulation_time(ms)": 2.4,
         "test_coverage(%)": 100,
         "Pi": 3,
         "Po": 3,

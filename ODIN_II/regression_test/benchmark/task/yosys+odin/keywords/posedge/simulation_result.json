@@ -2,9 +2,9 @@
     "posedge/posedge/no_arch": {
         "test_name": "posedge/posedge/no_arch",
         "generated_blif": "posedge_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 1.7,
-        "simulation_time(ms)": 0.7,
+        "max_rss(MiB)": 44.8,
+        "exec_time(ms)": 7.2,
+        "simulation_time(ms)": 0.8,
         "test_coverage(%)": 100,
         "Latch Drivers": 1,
         "Pi": 1,

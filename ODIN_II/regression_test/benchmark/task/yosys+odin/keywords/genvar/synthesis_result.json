@@ -2,12 +2,12 @@
     "genvar/generate_for/no_arch": {
         "test_name": "genvar/generate_for/no_arch",
         "verilog": "generate_for.v",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 27.6,
-        "elaboration_time(ms)": 27.2,
+        "max_rss(MiB)": 39.3,
+        "exec_time(ms)": 22.5,
+        "elaboration_time(ms)": 20.5,
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0,
-        "synthesis_time(ms)": 27.2,
+        "synthesis_time(ms)": 20.5,
         "Po": 3,
         "Longest Path": 2,
         "Average Path": 2

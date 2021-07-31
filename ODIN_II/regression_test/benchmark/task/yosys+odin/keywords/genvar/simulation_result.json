@@ -2,9 +2,9 @@
     "genvar/generate_for/no_arch": {
         "test_name": "genvar/generate_for/no_arch",
         "generated_blif": "generate_for_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 0.9,
-        "simulation_time(ms)": 0.2,
+        "max_rss(MiB)": 46.4,
+        "exec_time(ms)": 7.6,
+        "simulation_time(ms)": 0.3,
         "test_coverage(%)": 100,
         "Po": 3,
         "logic element": 3,

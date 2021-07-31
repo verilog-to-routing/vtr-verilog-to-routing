@@ -2,9 +2,9 @@
     "negedge/negedge/no_arch": {
         "test_name": "negedge/negedge/no_arch",
         "generated_blif": "negedge_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 1.4,
-        "simulation_time(ms)": 0.6,
+        "max_rss(MiB)": 46.2,
+        "exec_time(ms)": 8,
+        "simulation_time(ms)": 0.8,
         "test_coverage(%)": 100,
         "Latch Drivers": 1,
         "Pi": 2,
