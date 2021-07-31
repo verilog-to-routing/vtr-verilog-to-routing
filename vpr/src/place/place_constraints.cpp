@@ -413,3 +413,50 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
 
     return pr_size_one;
 }
+
+int get_region_size(const Region& reg, t_logical_block_type_ptr block_type) {
+    auto& device_ctx = g_vpr_ctx.device();
+    vtr::Rect<int> reg_rect = reg.get_region_rect();
+
+    int xdim = reg_rect.xmax() - reg_rect.xmin() + 1;
+    int ydim = reg_rect.ymax() - reg_rect.ymin() + 1;
+
+    std::vector<std::vector<int>> vect(xdim, std::vector<int>(ydim, 0));
+
+    for (int i = vect.size() - 1; i >= 0; i--) {
+        for (int j = vect[i].size() - 1; j >= 0; j--) {
+            auto& tile = device_ctx.grid[i + reg_rect.xmin()][j + reg_rect.ymin()].type;
+
+            if (is_tile_compatible(tile, block_type)) {
+                vect[i][j] = 1;
+            }
+
+            if (i < signed(vect.size() - 1)) {
+                vect[i][j] += vect[i + 1][j];
+            }
+            if (j < signed(vect[i].size() - 1)) {
+                vect[i][j] += vect[i][j + 1];
+            }
+            if (i < signed(vect.size()) - 1 && j < signed(vect[i].size() - 1)) {
+                vect[i][j] -= vect[i + 1][j + 1];
+            }
+
+            VTR_LOG(" %d ", vect[i][j]);
+        }
+        VTR_LOG("\n");
+    }
+    int num_tiles = vect[0][0];
+
+    return num_tiles;
+}
+
+int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type) {
+    std::vector<Region> part_reg = pr.get_partition_region();
+    int num_tiles = 0;
+
+    for (unsigned int i = 0; i < part_reg.size(); i++) {
+        num_tiles += get_region_size(part_reg[i], block_type);
+    }
+
+    return num_tiles;
+}

@@ -349,6 +349,7 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
 vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
+    auto& floorplan_ctx = g_vpr_ctx.floorplanning();
 
     auto blocks = cluster_ctx.clb_nlist.blocks();
     auto pl_macros = place_ctx.pl_macros;
@@ -368,7 +369,9 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     //go through all blocks and store floorplan constraints and num equivalent tiles
     for (auto blk_id : blocks) {
         if (is_cluster_constrained(blk_id)) {
-            block_scores[blk_id].floorplan_constraints = 1;
+            PartitionRegion pr = floorplan_ctx.cluster_constraints[blk_id];
+            auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+            block_scores[blk_id].floorplan_constraints = get_part_reg_size(pr, block_type);
         }
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto num_tiles = logical_block->equivalent_tiles.size();

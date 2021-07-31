@@ -113,4 +113,8 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
+int get_region_size(const Region& reg, t_logical_block_type_ptr block_type);
+
+int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type);
+
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */
