@@ -6,7 +6,7 @@ setattr -mod -set keep_hierarchy 1 single_port_ram
 setattr -mod -set keep_hierarchy 1 dual_port_ram
 
 # Read the hardware decription Verilog
-read_verilog -nomem2reg $env(TCL_CIRCUIT);
+read_verilog -nomem2reg -nolatches $env(TCL_CIRCUIT);
 # Check that cells match libraries and find top module
 hierarchy -check -auto-top;
 
@@ -40,6 +40,8 @@ pmuxtree;
 opt -undriven -full; # -noff #potential option to remove all sdff and etc. Only dff will remain
 # Make name convention more readable
 autoname;
+# Print statistics
+stat;
 
 # param is to print non-standard cells attributes
 # impltf is also used not to show the definition of primary netlist ports, i.e. VCC, GND and PAD, in the output.
