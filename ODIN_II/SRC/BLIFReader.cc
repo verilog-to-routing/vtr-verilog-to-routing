@@ -1037,7 +1037,7 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
 
         oassert(output_bit_map);
 
-        /*Patern recognition for faster simulation*/
+        /*Pattern recognition for faster simulation*/
         if (!strcmp(output_bit_map, One)) {
             //On-gate recognition
             //TODO move off-logic parts to appropriate code block
