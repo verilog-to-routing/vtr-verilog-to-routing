@@ -434,7 +434,6 @@ class RRGraph {
      */
     e_side node_side(const RRNodeId& node) const;
 
-
     /* Get segment id of a node, containing the information of the routing
      * segment that the node represents. See more details in the data structure t_segment_inf
      */

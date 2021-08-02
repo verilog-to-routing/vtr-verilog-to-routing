@@ -91,7 +91,7 @@ class RRGraphView {
     inline int16_t node_rc_index(RRNodeId node) const {
         return node_storage_.node_rc_index(node);
     }
-        
+
     /* Get the fan in of a routing resource node. This function is inlined for runtime optimization. */
     inline t_edge_size node_fan_in(RRNodeId node) const {
         return node_storage_.fan_in(node);

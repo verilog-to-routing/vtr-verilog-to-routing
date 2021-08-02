@@ -1482,7 +1482,7 @@ init_route_tree_to_source_no_net(int inode) {
     rt_root->net_pin_index = OPEN;
     rt_root->C_downstream = rr_graph.node_C(RRNodeId(inode));
     rt_root->R_upstream = rr_graph.node_R(RRNodeId(inode));
-    rt_root->Tdel = 0.5 * rr_graph.node_R(RRNodeId(inode)) *rr_graph.node_C(RRNodeId(inode));
+    rt_root->Tdel = 0.5 * rr_graph.node_R(RRNodeId(inode)) * rr_graph.node_C(RRNodeId(inode));
     rr_node_to_rt_node[inode] = rt_root;
 
     return (rt_root);
