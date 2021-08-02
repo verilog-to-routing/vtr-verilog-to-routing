@@ -29,6 +29,7 @@
 #include "prepack.h"
 #include "vpr_utils.h"
 #include "echo_files.h"
+#include "attraction_groups.h"
 
 /*****************************************/
 /*Local Function Declaration			 */

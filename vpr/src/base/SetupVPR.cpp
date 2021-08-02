@@ -495,6 +495,7 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->high_fanout_threshold = Options.pack_high_fanout_threshold;
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
     PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
+    PackerOpts->use_attraction_groups = Options.use_attraction_groups;
 
     //TODO: document?
     PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
