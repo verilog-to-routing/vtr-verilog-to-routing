@@ -64,11 +64,8 @@
 #define GRAPH_CRUNCH 17
 #define STATS 18
 #define SEQUENTIAL_LEVELIZE 19
-
-#define SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE 30
-
-/* the width of Odin's base value */
-#define ODIN_BITSET_BASE_VALUE 32
+/* a unique mark for the BLIF elaboration DFS traversal */
+#define BLIF_ELABORATE_TRAVERSE_VALUE 30
 
 /* unique numbers for using void *data entries in some of the datastructures */
 #define RESET -1
@@ -105,7 +102,7 @@ struct global_args_t {
     argparse::ArgValue<bool> show_help;
 
     argparse::ArgValue<bool> fflegalize; // makes flip-flops rising edge sensitive
-    argparse::ArgValue<bool> coarsen; // tells Odin-II that the input blif is coarse-grain
+    argparse::ArgValue<bool> coarsen;    // tells Odin-II that the input blif is coarse-grain
 
     argparse::ArgValue<std::string> adder_def; //DEPRECATED
 
@@ -202,6 +199,16 @@ enum init_value_e {
     undefined = 3,
 };
 
+/**
+ * list of Odin-II supported operation node
+ * In the synthesis flow, most operations are resolved or mapped
+ * to a n operation mode that has instantiation procedure in the 
+ * partial mapping. However, for techmap flow, nodes are elaborated
+ * into the partial mapper supported operation in BLIF elaboration.
+ * Technically, each Odin-II node should have one of the following
+ * operation type. To add support for a new type you would need to
+ * start from here to see how each operation mode is being resolved.
+*/
 enum operation_list {
     NO_OP,
     MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
@@ -469,12 +476,19 @@ struct chain_information_t {
 
 //-----------------------------------------------------------------------------------------------------
 
-/* DEFINTIONS netlist node attributes*/
+/**
+ * DEFINTIONS netlist node attributes
+ * the attr_t structure provides the control signals sensitivity
+ * In the synthesis flow, the attribute structure mostly used to 
+ * specify the clock sensetivity. However, in the techmap flow, 
+ * it is used in most sections, including DFFs, Block memories 
+ * and arithmetic operation instantiation
+*/
 struct attr_t {
-    edge_type_e clk_edge_type;   //
-    edge_type_e clr_polarity;    //
-    edge_type_e set_polarity;    //
-    edge_type_e enable_polarity; //
+    edge_type_e clk_edge_type;   // clock edge sensitivity
+    edge_type_e clr_polarity;    // clear (reset to GND) polarity
+    edge_type_e set_polarity;    // set to VCC polarity
+    edge_type_e enable_polarity; // enable polarity
     edge_type_e areset_polarity; // asynchronous reset polarity
     edge_type_e sreset_polarity; // synchronous reset polarity
 

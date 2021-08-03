@@ -21,108 +21,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: this file provides a routine to utilize the constant shift 
+ * operation used in other node instantiation process, such as multipication.
  */
 
-#include "Shift.hh"
+#include "Shift.hpp"
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "netlist_utils.h"
 #include "vtr_memory.h"
-
-/**
- * (function: resolve_shift_node)
- * 
- * @brief resolving the shift nodes by making
- * the input port sizes the same
- * 
- * @param node pointing to a shift node 
- * @param traverse_mark_number unique traversal mark for blif elaboration pass
- * @param netlist pointer to the current netlist file
- */
-void equalize_shift_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
-    oassert(node->traverse_visited == traverse_mark_number);
-
-    /**
-     * (SHIFT ports)
-     * INPUTS
-     *  A: (width_a)
-     *  B: (width_b)
-     * OUTPUT
-     *  Y: width_y
-    */
-    int port_a_size = node->input_port_sizes[0];
-    int port_b_size = node->input_port_sizes[1];
-    int port_y_size = node->output_port_sizes[0];
-
-    /* no change is needed */
-    if (port_a_size == port_b_size)
-        return;
-
-    /* new port size */
-    int max_size = std::max(port_a_size, port_b_size);
-
-    /* creating the new node */
-    nnode_t* new_shift_node = make_2port_gate(node->type, max_size, max_size, port_y_size, node, traverse_mark_number);
-
-    int i;
-    npin_t* extension_pin = NULL;
-
-    for (i = 0; i < max_size; i++) {
-        /* port a needs to be extended */
-        if (port_a_size < max_size) {
-            /* remapping the a pins + adding extension pin */
-            if (i < port_a_size) {
-                /* need to remap existing pin */
-                remap_pin_to_new_node(node->input_pins[i],
-                                      new_shift_node,
-                                      i);
-            } else {
-                /* need to add extension pin */
-                extension_pin = (node->attributes->port_a_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_a_size - 1]) : get_zero_pin(netlist);
-                add_input_pin_to_node(new_shift_node,
-                                      extension_pin,
-                                      i);
-            }
-
-            /* remapping the b pins untouched */
-            remap_pin_to_new_node(node->input_pins[i + max_size],
-                                  new_shift_node,
-                                  i + max_size);
-
-        }
-        /* port b needs to be extended */
-        else if (port_b_size < max_size) {
-            /* remapping the a pins untouched */
-            remap_pin_to_new_node(node->input_pins[i],
-                                  new_shift_node,
-                                  i);
-
-            /* remapping the b pins + adding extension pin */
-            if (i < port_b_size) {
-                /* need to remap existing pin */
-                remap_pin_to_new_node(node->input_pins[i + max_size],
-                                      new_shift_node,
-                                      i + max_size);
-            } else {
-                /* need to add extension pin */
-                extension_pin = (node->attributes->port_b_signed == SIGNED) ? copy_input_npin(new_shift_node->input_pins[port_b_size - 1 + max_size]) : get_zero_pin(netlist);
-                add_input_pin_to_node(new_shift_node,
-                                      extension_pin,
-                                      i + max_size);
-            }
-        }
-    }
-
-    /* Connecting output pins */
-    for (i = 0; i < port_y_size; i++) {
-        remap_pin_to_new_node(node->output_pins[i],
-                              new_shift_node,
-                              i);
-    }
-
-    // CLEAN UP
-    free_nnode(node);
-}
 
 /**
  * (function: constant_shift)

@@ -21,9 +21,12 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: This filde provide utils to modify the logical nodes to make 
+ * them compatible with the Odin-II partial mapper.
  */
 
-#include "LogicalOps.hh"
+#include "LogicalOps.hpp"
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "netlist_utils.h"

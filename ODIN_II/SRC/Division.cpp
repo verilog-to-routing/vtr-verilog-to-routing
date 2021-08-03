@@ -21,9 +21,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ * @file Division.cpp comprises the combinational implementation of 
+ * Division operation using shift and subtraction nodes. To utilize
+ * this routine of this file, a high-level RTL DIV node is required
+ * with port order according to what mentioned in resolve_div_node.
+ * Currently, this file is highly used by Yosys generated divison
+ * sub-circuit.
  */
 
-#include "Division.hh"
+#include "Division.hpp"
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "netlist_utils.h"
@@ -38,7 +46,15 @@ static void connect_div_output_pins(nnode_t* node, signal_list_t** output_signal
 /**
  * (function: resolve_divide_node)
  * 
- * @brief resolving divide node
+ * @brief this function resolves a high-level RTL divison node.
+ * the node should follow the same port ordering as mentioned below.
+ * This functin first modifies the divison node signals to check the 
+ * required restriction, then it implements division circuitry and 
+ * connects outputs accordingly.
+ *
+ * The division circuit design comes from section 2.6.1 Combinational Divisors
+ * of Algebric Circuits by Ruiz et. al 
+ * [https://www.springer.com/gp/book/9783642546488]
  * 
  * @param node pointing to a div node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -142,6 +158,10 @@ static signal_list_t** modify_div_signal_sizes(nnode_t* node, netlist_t* netlist
  * (function: implement_division)
  * 
  * @brief creating division node (A / B)
+ * In high-level, the division implementsusing a series of shift and subtractors.
+ * After shifting the quotient, it is deducted from the the dividend and the remainder.
+ * properly trasferred to the next level. With n bit divisor the divison is performed 
+ * in n-steps.
  * 
  * @note this should perfom before partial mapping since
  * some nodes like minus are not resolved yet
@@ -172,8 +192,6 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
 
     int dividend_size = dividend_sig_list->count;
     int divisor_size = divisor_sig_list->count;
-    int quotient_size = divisor_size;
-    int remainder_size = divisor_size;
 
     /* checking the division circuit restrictions */
     oassert(dividend_size == 2 * divisor_size - 1);
@@ -187,7 +205,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
     /* creating the network */
     for (i = 0; i < divisor_size; i++) {
         /**
-         * <DIV internal circuit>                                                                                                                                *
+         * <DIV internal circuit>                                                                                                          *
          *        D[m-1] d[n-1]          D[m-n-1] d[n-2]           D[m-n] d[0]                                                             *
          *           |    |                |    |                   |    |                                                                 *
          *           |    |                |    |                   |    |                                                                 *
@@ -218,7 +236,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
          *                              |/   |________|----------->|________|----    ------>|________|-------->|________|--> c[0]          *
          *                                _c               c    _c     |      c             _c   |      c   _c      |                      *
          *                                                             |                         |                  |                      *
-         *                                                           r_n-1                     r_1                r_0                     *
+         *                                                           r_n-1                     r_1                r_0                      *
          *                                      ....                  ....                     ....                ....                    *
          *                                      ....                  ....                     ....                ....                    *
          *                                      ....                  ....                     ....                ....                    *
@@ -293,24 +311,9 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
             /* making not gate with input b to drive c for the last CR node in each row */
             if (j == num_CR_per_row - 1) {
                 /* creating a not gate to connect last borrow to the last c_ */
-                nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
-                /* hook the last borrow pin to the not gate */
-                add_input_pin_to_node(not_node, b, 0);
-
-                /* connecting the not_node output pin */
-                npin_t* new_pin1 = allocate_npin();
-                npin_t* new_pin2 = allocate_npin();
-                nnet_t* new_net = allocate_nnet();
-                new_net->name = make_full_ref_name(NULL, NULL, NULL, not_node->name, 0);
-                /* hook the output pin into the node */
-                add_output_pin_to_node(not_node, new_pin1, 0);
-                /* hook up new pin 1 into the new net */
-                add_driver_pin_to_net(new_net, new_pin1);
-                /* hook up the new pin 2 to this new net */
-                add_fanout_pin_to_net(new_net, new_pin2);
-
+                nnode_t* not_node = make_inverter(b, node, node->traverse_visited);
                 /* hook the not node output to the last CR node _c input*/
-                _c = new_pin2;
+                _c = not_node->output_pins[0]->net->fanout_pins[0];
             } else {
                 _c = CR_outputs[i][j + 1]->pins[2];
             }
@@ -346,10 +349,6 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
         */
         offset++;
     }
-
-    /* validate the size of output signal lists */
-    oassert(quotient_size == quotient_signal_list->count);
-    oassert(remainder_size == remainder_signal_list->count);
 
     // CLEAN UP
     /* input signal list comes from modify div input size function */

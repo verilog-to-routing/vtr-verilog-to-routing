@@ -229,6 +229,9 @@ filemap file_type_strmap({{"ilang", file_type_e::_ILANG},
  * global hashmap of odin subckt types
  * Technically, Odin-II only outputs the following hard blocks
  * as (.subckt) record in its output BLIF file
+ *
+ *  FIRST_ELEMENT: model name showing in a blif file
+ *  SECOND_ELEMENT: corresponding Odin-II cell type
  */
 typemap odin_subckt_strmap({{"multiply", MULTIPLY},
                             {"mult_", MULTIPLY},
@@ -241,6 +244,18 @@ typemap odin_subckt_strmap({{"multiply", MULTIPLY},
  * global hashmap of yosys subckt types
  * Technically, Yosys only outputs the following hard blocks
  * as (.subckt) record in its output BLIF file
+ *
+ *  FIRST_ELEMENT: Yosys model names showing in a blif file
+ *  SECOND_ELEMENT: corresponding Odin-II cell type
+ *
+ * NOTE: to add support for a new type, first you would find a 
+ * corresponding Odin-II cell type or create a new one matching 
+ * with the new type corresponding model (.subckt) in BLIF file, 
+ * and add it to the following typemap. Then, you would need to 
+ * specify the model input output order in the Odin-II BLIF Reader.
+ * At the end, a resolve_XXX_node function needs to be implemented
+ * in BLIF Elaboration phase to make the new node compatible with
+ * the Odin-II partial mapper.
  */
 typemap yosys_subckt_strmap({
                                 {"$_ANDNOT_", operation_list_END},

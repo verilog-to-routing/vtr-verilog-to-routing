@@ -258,6 +258,9 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
  * since some logic need to be softened
  * 
  * @param node pointer to the multipication netlist node
+ * @param port_status showing which value is constant, which is variable
+ * @param mark a unique DFS traversal number
+ * @param netlist pointer to the current netlist
  * 
  * @return output signal
  * -------------------------------------------------------------------------*/

@@ -21,13 +21,18 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file This file includes the defintion of basic structure used 
+ * in Odin-II BLIF class to parse a BLIF file. Moreover, it provides
+ * the declaration of BLIF class routines
+
  */
 
 #ifndef __BLIF_H__
 #define __BLIF_H__
 
-#include "GenericReader.hh"
-#include "GenericWriter.hh"
+#include "GenericReader.hpp"
+#include "GenericWriter.hpp"
 
 
 #include "odin_types.h"

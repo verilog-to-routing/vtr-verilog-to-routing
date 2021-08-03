@@ -21,6 +21,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file a netlist traersal phase newly added to Odin-II techmap.
+ * Basically, this file include the resolve_XXX_node routines to
+ * make high-level netlist nodes compatible with Odin-II partial 
+ * mapper. However, the instantiation process of operations that 
+ * aren't supported by Odin-II synthesis flow is also implemnented
+ * in this phase. 
+ * E.g. Division (constant, varfiable), Exponentiation (variable) 
  */
 
 #include <string.h>
@@ -37,22 +45,22 @@
 #include "odin_util.h"
 #include "simulate_blif.h"
 
-#include "BLIFElaborate.hh"
+#include "BLIFElaborate.hpp"
 #include "multipliers.h"
 #include "hard_blocks.h"
 #include "memories.h"
-#include "BlockMemories.hh"
-#include "LogicalOps.hh"
+#include "BlockMemories.hpp"
+#include "LogicalOps.hpp"
 #include "memories.h"
 #include "adders.h"
-#include "Division.hh"
-#include "Latch.hh"
-#include "Power.hh"
-#include "FlipFlop.hh"
-#include "Shift.hh"
-#include "Modulo.hh"
-#include "CaseEqual.hh"
-#include "Multiplexer.hh"
+#include "Division.hpp"
+#include "Latch.hpp"
+#include "Power.hpp"
+#include "FlipFlop.hpp"
+#include "Shift.hpp"
+#include "Modulo.hpp"
+#include "CaseEqual.hpp"
+#include "Multiplexer.hpp"
 #include "subtractions.h"
 
 #include "math.h"
@@ -104,7 +112,7 @@ void blif_elaborate_top(netlist_t* netlist) {
         init_block_memory_index();
 
         /* do the elaboration without any larger structures identified */
-        depth_first_traversal_to_blif_elaborate(SUBCKT_BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
+        depth_first_traversal_to_blif_elaborate(BLIF_ELABORATE_TRAVERSE_VALUE, netlist);
         /**
          * After blif elaboration, the netlist is flatten. 
          * change it to not do flattening for simulation blif reading 
@@ -384,7 +392,7 @@ static void resolve_shift_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
              * resolving the shift nodes by making
              * the input port sizes the same
             */
-            equalize_shift_ports(node, traverse_mark_number, netlist);
+            equalize_ports_size(node, traverse_mark_number, netlist);
             break;
         }
         default: {

@@ -21,27 +21,26 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: This file includes the enumerator class containing all 
+ * file types whether supported or planed to support by Odin-II.
  */
 
-#include "GenericIO.hh"
-#include "odin_error.h"
+#ifndef __FILE_TYPE_E_H__
+#define __FILE_TYPE_E_H__
 
-GenericIO::GenericIO() = default;
+#include <string>
+#include <unordered_map>
 
-GenericIO::~GenericIO() = default;
+enum file_type_e {
+    _ILANG, /* not supported yet */
+    _VERILOG,
+    _VERILOG_HEADER,
+    _BLIF,
+    _EBLIF,     /* not supported yet */
+    _UNDEFINED, /* EROOR */
+    file_type_e_END
+};
+typedef std::unordered_map<std::string, file_type_e> filemap;
 
-void* GenericIO::__read() {
-    error_message(UTIL, unknown_location,
-                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
-    return NULL;
-}
-
-void GenericIO::__write(const netlist_t* /* netlist */) {
-    error_message(UTIL, unknown_location,
-                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
-}
-
-void GenericIO::__create_file(const file_type_e /* file_type */) {
-    error_message(UTIL, unknown_location,
-                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
-}
+#endif

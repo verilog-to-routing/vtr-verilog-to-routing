@@ -74,7 +74,6 @@ netlist_t* allocate_netlist();
 void free_netlist(netlist_t* to_free);
 void add_node_to_netlist(netlist_t* netlist, nnode_t* node, operation_list special_node);
 void mark_clock_node(netlist_t* netlist, const char* clock_name);
-extern signal_list_t* create_single_clk_pin(signal_list_t* clks, nnode_t* node, netlist_t* netlist);
 
 int get_output_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_output_port_index_from_mapping(nnode_t* node, const char* name);

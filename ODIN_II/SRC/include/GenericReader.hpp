@@ -21,12 +21,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: Odin-II Generic Reader class declration
  */
 
 #ifndef __GENERIC_READER_H__
 #define __GENERIC_READER_H__
 
-#include "GenericIO.hh"
+#include "GenericIO.hpp"
 #include <string>
 
 /**

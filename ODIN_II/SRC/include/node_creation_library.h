@@ -8,6 +8,7 @@ nnode_t* make_1port_logic_gate_with_inputs(operation_list type, int width, signa
 nnode_t* make_2port_logic_gates_with_inputs(operation_list type, int width_port1, signal_list_t* pin_list1, int width_port2, signal_list_t* pin_list2, nnode_t* node, short mark);
 
 nnode_t* make_not_gate(nnode_t* node, short mark);
+nnode_t* make_inverter(npin_t* pin, nnode_t* node, short mark);
 nnode_t* make_1port_logic_gate(operation_list type, int width, nnode_t* node, short mark);
 
 nnode_t* make_1port_gate(operation_list type, int width_input, int width_output, nnode_t* node, short mark);

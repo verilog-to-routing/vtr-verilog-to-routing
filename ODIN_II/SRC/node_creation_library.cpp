@@ -101,6 +101,54 @@ nnode_t* make_not_gate(nnode_t* node, short mark) {
     return logic_node;
 }
 
+/**
+ * -------------------------------------------------------------------------
+ * (function: make_not_gate)
+ * @brief Making a not gate with the given pin as input 
+ * and a new pin allocated as the output
+ *
+ * @param pin input pin
+ * @param node related netlist node
+ * @param mark netlist traversal number 
+ *
+ * @return not node
+ *-----------------------------------------------------------------------*/
+nnode_t* make_inverter(npin_t* pin, nnode_t* node, short mark) {
+    /* validate the input pin */
+    oassert(pin->type == INPUT);
+
+    nnode_t* logic_node;
+
+    logic_node = allocate_nnode(node->loc);
+    logic_node->traverse_visited = mark;
+    logic_node->type = LOGICAL_NOT;
+    logic_node->name = node_name(logic_node, node->name);
+    logic_node->related_ast_node = node->related_ast_node;
+
+    allocate_more_input_pins(logic_node, 1);
+    allocate_more_output_pins(logic_node, 1);
+
+    if (pin->node)
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+    
+    /* hook the pin into the not node */
+    add_input_pin_to_node(logic_node, pin, 0);
+
+    /* connecting the not_node output pin */
+    npin_t* new_pin1 = allocate_npin();
+    npin_t* new_pin2 = allocate_npin();
+    nnet_t* new_net = allocate_nnet();
+    new_net->name = make_full_ref_name(NULL, NULL, NULL, logic_node->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(logic_node, new_pin1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(new_net, new_pin1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(new_net, new_pin2);
+
+    return logic_node;
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: make_1port_gate)
  * 	Make a 1 port gate with variable sizes

@@ -21,9 +21,14 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: this file propose the combinational instantiation of constant and 
+ * variable exponentiation operation. Both implementations utilize the 
+ * multipication operations; however the constant exponentiation is designed 
+ * to use less multiply node to achieve area and speed efficiency.
  */
 
-#include "Power.hh"
+#include "Power.hpp"
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "netlist_utils.h"

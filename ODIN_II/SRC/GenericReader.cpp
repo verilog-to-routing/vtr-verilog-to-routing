@@ -21,11 +21,15 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: This file provides the definition of Odin-II Generic Reader routines.
+ * The Generic Reader detects the language type and call the required routines
+ * of the related class.
  */
 
-#include "GenericReader.hh"
-#include "Verilog.hh"
-#include "BLIF.hh"
+#include "GenericReader.hpp"
+#include "Verilog.hpp"
+#include "BLIF.hpp"
 #include "config_t.h"
 #include "odin_ii.h"
 

@@ -1,4 +1,4 @@
-/*
+/**
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -19,6 +19,11 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: definition of BLIF Writer routine to generate a BLIF output file.
+ * Unlike other tools that prints each BLIF record in a single line, Odin-II
+ * BLIF Writer print BLIF records in a specified size. That means it makes  
+ * BLIF file more readable by splitting line by the specified threshold. 
  */
 
 #include <stdlib.h>
@@ -32,7 +37,7 @@
 #include "odin_globals.h"
 
 #include "ast_util.h"
-#include "BLIFElaborate.hh"
+#include "BLIFElaborate.hpp"
 #include "netlist_utils.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"
@@ -49,7 +54,7 @@
 #include "adders.h"
 #include "subtractions.h"
 
-#include "BLIF.hh"
+#include "BLIF.hpp"
 
 /**
  * -----------------------------------------------------------------------------------------------------------------------------

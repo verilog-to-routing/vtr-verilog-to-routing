@@ -21,9 +21,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: This file includes the circuitry implemention of dlatch, 
+ * dlatch with asynchronoush reset and a set-reset node.All control
+ * signals will be check based on their polarity specified in the 
+ * attribute structure of the related node.
+ *      DLATCH: a dlatch with enable control signal
+ *      ADLATCH: dlatch with asynchronous reset
+ *      SETCLR: set (VCC), and clear (GND) to output
  */
 
-#include "Latch.hh"
+#include "Latch.hpp"
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "netlist_utils.h"
@@ -55,27 +63,22 @@ void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
     int D_width = node->input_port_sizes[0];
     // int EN_width = node->input_port_sizes[1]; // == 1
 
-    signal_list_t* possible_clks = init_signal_list();
-    add_pin_to_signal_list(possible_clks, node->input_pins[D_width]);
-    signal_list_t* new_clk_output = create_single_clk_pin(possible_clks, node, netlist);
-    npin_t* new_clk = new_clk_output->pins[0];
+    npin_t* latch_trigger = merge_polarity(node->input_pins[D_width], node->attributes->enable_polarity, NULL, UNDEFINED_SENSITIVITY, node);
 
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /**************************************** FF_NODE ****************************************/
         /*****************************************************************************************/
         /* remapping the D inputs to [1..n] */
-        make_ff_node(node->input_pins[i],      // D
-                     copy_input_npin(new_clk), // clk
-                     node->output_pins[i],     // Q
-                     node,                     // node
-                     netlist                   // netlist
+        make_ff_node(node->input_pins[i],            // D
+                     copy_input_npin(latch_trigger), // clk
+                     node->output_pins[i],           // Q
+                     node,                           // node
+                     netlist                         // netlist
         );
     }
 
     // CLEAN UP
-    free_signal_list(new_clk_output);
-    free_signal_list(possible_clks);
     free_nnode(node);
 }
 
@@ -132,12 +135,11 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
     /*****************************************************************************************/
     /***************************************** FF CLK ****************************************/
     /*****************************************************************************************/
-    signal_list_t* possible_clks = init_signal_list();
-    add_pin_to_signal_list(possible_clks, copy_input_npin(select_enable));
-    add_pin_to_signal_list(possible_clks, copy_input_npin(select_areset));
-    /* create single bit clk */
-    signal_list_t* adlatch_clk = create_single_clk_pin(possible_clks, node, netlist);
-    npin_t* new_clk = adlatch_clk->pins[0];
+    npin_t* latch_trigger = merge_polarity(copy_input_npin(select_enable),
+                                           node->attributes->enable_polarity,
+                                           copy_input_npin(select_areset),
+                                           node->attributes->areset_polarity,
+                                           node);
 
     /* creating a internal nodes to initialize the value of D register */
     for (i = 0; i < D_width; i++) {
@@ -165,17 +167,15 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
         /*****************************************************************************************/
         /*************************************** FF_NODE *****************************************/
         /*****************************************************************************************/
-        make_ff_node(ARST_muxes_output_pin,    // D
-                     copy_input_npin(new_clk), // clk
-                     node->output_pins[i],     // Q
-                     node,                     // node
-                     netlist                   // netlist
+        make_ff_node(ARST_muxes_output_pin,          // D
+                     copy_input_npin(latch_trigger), // clk
+                     node->output_pins[i],           // Q
+                     node,                           // node
+                     netlist                         // netlist
         );
     }
 
     // CLEAN UP
-    free_signal_list(possible_clks);
-    free_signal_list(adlatch_clk);
     free_nnode(node);
 }
 

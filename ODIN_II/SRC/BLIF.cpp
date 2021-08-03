@@ -21,37 +21,19 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file the definition of the BLIF class constructor, destructor
  */
 
-#ifndef __GENERIC_IO_H__
-#define __GENERIC_IO_H__
-
-#include "FileTypes.hh"
-#include "odin_types.h"
+#include "BLIF.hpp"
 
 /**
- * @brief A class to provide the general object of an input file reader
-*/
-class GenericIO {
-
-    public:
-        /**
-         * @brief Construct the GenericIO object
-         * required by compiler
-         */
-        GenericIO();
-        /**
-         * @brief Destruct the GenericIO object
-         * to avoid memory leakage
-         */
-        virtual ~GenericIO();
-
-        virtual void* __read();
-        virtual void  __write (const netlist_t* netlist);
-
-        /* to create the output file */
-        virtual void __create_file(const file_type_e file_type);
-
-};
-
-#endif
+ * @brief Construct the BLIF object
+ * required by compiler
+ */
+BLIF::BLIF() = default;
+/**
+ * @brief Destruct the BLIF object
+ * to avoid memory leakage
+ */
+BLIF::~BLIF() = default;

@@ -21,13 +21,19 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *@file the definition of the VERILOG class constructor, destructor
  */
-#ifndef __MULTIPLEXER_H__
-#define __MULTIPLEXER_H__
 
-#include "odin_types.h"
+#include "Verilog.hpp"
 
-extern void make_selector_as_first_port(nnode_t* node);
-extern void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-
-#endif //__MULTIPLEXER_H__
+/**
+ * @brief Construct the Verilog object
+ * required by compiler
+ */
+Verilog::Verilog() = default;
+/**
+ * @brief Destruct the Verilog object
+ * to avoid memory leakage
+ */
+Verilog::~Verilog() = default;

@@ -2,7 +2,7 @@
 #define GLOBALS_H
 
 #include "odin_types.h"
-#include "FileTypes.hh"
+#include "FileTypes.hpp"
 #include "string_cache.h"
 #include "Hashtable.hpp"
 #include "read_xml_arch_file.h"

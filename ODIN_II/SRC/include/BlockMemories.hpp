@@ -21,25 +21,26 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file This file includes the defintion of basic structure used 
+ * in Odin-II Block Memory resolving process. Moreover, it provides
+ * the declaration of the related public routines
  */
 #ifndef _BLOCK_MEMORIES_H_
 #define _BLOCK_MEMORIES_H_
 
 #include <unordered_map>
 
-extern vtr::t_linked_vptr* block_memory_list;
-extern vtr::t_linked_vptr* read_only_memory_list;
-
-const int REG_INFERRENCE_THRESHOLD_WIDTH = 32;
-const int REG_INFERRENCE_THRESHOLD_DEPTH = 20;
-const int LUTRAM_MAX_THRESHOLD_AREA = 2560;
-const int LUTRAM_MIN_THRESHOLD_AREA = 640;
+const int REG_INFERRENCE_THRESHOLD_WIDTH = 32; // Width threshold for register array inference
+const int REG_INFERRENCE_THRESHOLD_DEPTH = 20; // Depth threshold for register array inference
+const int LUTRAM_MAX_THRESHOLD_AREA = 2560;    // Maximum area threshold for LUTRAM inference
+const int LUTRAM_MIN_THRESHOLD_AREA = 640;     // Minimum area threshold for LUTRAM inference
 
 /*
  * Contains a pointer to the block memory node as well as other
  * information which is used in creating the block memory.
  */
-struct block_memory {
+struct block_memory_t {
     loc_t loc;
     nnode_t* node;
 
@@ -57,11 +58,28 @@ struct block_memory {
     char* memory_id;
 };
 
-typedef std::unordered_map<std::string, block_memory*> block_memory_hashtable;
+typedef std::unordered_map<std::string, block_memory_t*> block_memory_hashtable;
 extern block_memory_hashtable block_memories;
 
+/**
+ * block memories information. variable will be invalid
+ * after iterations happen before partial mapping
+*/
+struct block_memory_information_t {
+    /**
+     * block memory linked list, required for iterations 
+     * in optimization and mapping phase.
+    */
+    vtr::t_linked_vptr* block_memory_list;
+    vtr::t_linked_vptr* read_only_memory_list;
+    /* hashtable to look up block memories faster */
+    block_memory_hashtable block_memories;
+    block_memory_hashtable read_only_memories;
+};
+extern block_memory_information_t block_memories_info;
+
 extern void init_block_memory_index();
-extern block_memory* lookup_block_memory(char* instance_name_prefix, char* identifier);
+extern block_memory_t* lookup_block_memory(char* instance_name_prefix, char* identifier);
 extern void free_block_memories();
 
 extern void resolve_ymem_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);

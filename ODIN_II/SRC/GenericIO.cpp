@@ -21,17 +21,30 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: this file provides the definition of abstract methods of
+ * Odin-II Generic IO class.
  */
 
-#include "Verilog.hh"
+#include "GenericIO.hpp"
+#include "odin_error.h"
 
-/**
- * @brief Construct the Verilog object
- * required by compiler
- */
-Verilog::Verilog() = default;
-/**
- * @brief Destruct the Verilog object
- * to avoid memory leakage
- */
-Verilog::~Verilog() = default;
+GenericIO::GenericIO() = default;
+
+GenericIO::~GenericIO() = default;
+
+void* GenericIO::__read() {
+    error_message(UTIL, unknown_location,
+                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
+    return NULL;
+}
+
+void GenericIO::__write(const netlist_t* /* netlist */) {
+    error_message(UTIL, unknown_location,
+                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
+}
+
+void GenericIO::__create_file(const file_type_e /* file_type */) {
+    error_message(UTIL, unknown_location,
+                  "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
+}

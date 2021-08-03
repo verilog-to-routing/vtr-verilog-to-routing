@@ -44,14 +44,14 @@
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
-#include "BLIFElaborate.hh"
+#include "BLIFElaborate.hpp"
 #include "multipliers.h"
 #include "netlist_check.h"
 #include "netlist_cleanup.h"
 
 #include "hard_blocks.h"
 #include "memories.h"
-#include "BlockMemories.hh"
+#include "BlockMemories.hpp"
 #include "simulate_blif.h"
 
 #include "netlist_visualizer.h"
@@ -63,8 +63,8 @@
 #include "vtr_memory.h"
 #include "HardSoftLogicMixer.hpp"
 
-#include "GenericReader.hh"
-#include "BLIF.hh"
+#include "GenericReader.hpp"
+#include "BLIF.hpp"
 
 #define DEFAULT_OUTPUT "."
 
@@ -119,7 +119,7 @@ static ODIN_ERROR_CODE synthesize() {
             clean_multipliers();
         }
 
-        if (read_only_memory_list || block_memory_list) {
+        if (block_memories_info.read_only_memory_list || block_memories_info.block_memory_list) {
             /* Perform a hard block registration and splitting in width */
             iterate_block_memories(verilog_netlist);
             free_block_memories();

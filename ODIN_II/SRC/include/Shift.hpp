@@ -22,22 +22,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef __SHIFT_H__
+#define __SHIFT_H__
 
-#ifndef __FILE_TYPE_E_H__
-#define __FILE_TYPE_E_H__
+#include "odin_types.h"
 
-#include <string>
-#include <unordered_map>
+extern signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
 
-enum file_type_e {
-    _ILANG, /* not supported yet */
-    _VERILOG,
-    _VERILOG_HEADER,
-    _BLIF,
-    _EBLIF,     /* not supported yet */
-    _UNDEFINED, /* EROOR */
-    file_type_e_END
-};
-typedef std::unordered_map<std::string, file_type_e> filemap;
-
-#endif
+#endif //__SHIFT_H__

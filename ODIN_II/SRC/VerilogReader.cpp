@@ -21,9 +21,16 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: includes the definiion of VERILOG Reader class to read a 
+ * given Verilog or Verilog Header file. Odin-II utilizes Bison and
+ * Flex to parse input Verilog file. After parsing a Verilog file, 
+ * Odin-II uses an abstract syntax tree to perform elaboration.
+ * It should mention that Odin-II currently does not have extensive
+ * Verilog 2005 standard support.
  */
 
-#include "Verilog.hh"
+#include "Verilog.hpp"
 #include "ast_util.h"
 #include "odin_globals.h"
 #include "parse_making_ast.h"

@@ -21,6 +21,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file: This file includes the routines definitions to map block 
+ * memories to VTR compatible memory types, i.e., Single Port RAM
+ * and Dual Port RAM. The definition of block me ory and read-only
+ * memory is provided in techlib directory in Odin-II root directory.
+ * Basically, a memory block with both read and write accesses that has
+ * separate port for each operation is called BRAM. While following the
+ * same definiton, read-only memory block ios referred to a BRAM that
+ * has only read access (even multiple acesses). This function also 
+ * includes ymem block support which somehow represents the Yosys internal
+ * memory cell.
  */
 
 #include <string.h>
@@ -34,45 +45,42 @@
 #include "node_creation_library.h"
 #include "hard_blocks.h"
 #include "memories.h"
-#include "BlockMemories.hh"
+#include "BlockMemories.hpp"
 #include "partial_map.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
 using vtr::t_linked_vptr;
+/* global linked list including block memory instances */
+struct block_memory_information_t block_memories_info;
 
-t_linked_vptr* block_memory_list;
-t_linked_vptr* read_only_memory_list;
-block_memory_hashtable block_memories;
-block_memory_hashtable read_only_memories;
+static block_memory_t* init_block_memory(nnode_t* node, netlist_t* netlist);
 
-static block_memory* init_block_memory(nnode_t* node, netlist_t* netlist);
+void map_bram_to_mem_hardblocks(block_memory_t* bram, netlist_t* netlist);
+void map_rom_to_mem_hardblocks(block_memory_t* rom, netlist_t* netlist);
 
-void map_bram_to_mem_hardblocks(block_memory* bram, netlist_t* netlist);
-void map_rom_to_mem_hardblocks(block_memory* rom, netlist_t* netlist);
-
-static void create_r_single_port_ram(block_memory* rom, netlist_t* netlist);
-static void create_2r_dual_port_ram(block_memory* rom, netlist_t* netlist);
-static void create_nr_single_port_ram(block_memory* rom, netlist_t* netlist);
-static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist */);
-static void create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
-static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
-static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist);
-static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist);
-static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist);
+static void create_r_single_port_ram(block_memory_t* rom, netlist_t* netlist);
+static void create_2r_dual_port_ram(block_memory_t* rom, netlist_t* netlist);
+static void create_nr_single_port_ram(block_memory_t* rom, netlist_t* netlist);
+static void create_rw_single_port_ram(block_memory_t* bram, netlist_t* /* netlist */);
+static void create_rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
+static void create_r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
+static void create_2rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
+static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
+static void create_nrnw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 
 static nnode_t* ymem_to_rom(nnode_t* node, uintptr_t traverse_mark_number);
 static nnode_t* ymem_to_bram(nnode_t* node, uintptr_t traverse_mark_number);
 
-static bool check_same_addrs(block_memory* bram);
-static void perform_optimization(block_memory* memory);
+static bool check_same_addrs(block_memory_t* bram);
+static void perform_optimization(block_memory_t* memory);
 static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t* selectors, int desired_width, nnode_t* node, netlist_t* netlist);
 static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list_t* selectors, nnode_t* node, netlist_t* netlist);
 
 static void cleanup_block_memory_old_node(nnode_t* old_node);
 
 static void free_block_memory_index(block_memory_hashtable to_free);
-static void free_block_memory(block_memory* to_free);
+static void free_block_memory(block_memory_t* to_free);
 
 /**
  * (function: init_block_memory_index)
@@ -80,8 +88,8 @@ static void free_block_memory(block_memory* to_free);
  * @brief Initialises hashtables to lookup memories based on inputs and names.
  */
 void init_block_memory_index() {
-    block_memories = block_memory_hashtable();
-    read_only_memories = block_memory_hashtable();
+    block_memories_info.block_memories = block_memory_hashtable();
+    block_memories_info.read_only_memories = block_memory_hashtable();
 }
 
 /**
@@ -92,14 +100,14 @@ void init_block_memory_index() {
  * @param instance_name_prefix memory node name (unique hard block node name)
  * @param identifier memory block id
  */
-block_memory* lookup_block_memory(char* instance_name_prefix, char* identifier) {
+block_memory_t* lookup_block_memory(char* instance_name_prefix, char* identifier) {
     char* memory_string = make_full_ref_name(instance_name_prefix, NULL, NULL, identifier, -1);
 
-    block_memory_hashtable::const_iterator mem_out = block_memories.find(std::string(memory_string));
+    block_memory_hashtable::const_iterator mem_out = block_memories_info.block_memories.find(std::string(memory_string));
 
     vtr::free(memory_string);
 
-    if (mem_out == block_memories.end())
+    if (mem_out == block_memories_info.block_memories.end())
         return (NULL);
     else
         return (mem_out->second);
@@ -113,9 +121,9 @@ block_memory* lookup_block_memory(char* instance_name_prefix, char* identifier) 
  * @param node pointing to a bram node
  * @param netlist pointer to the current netlist file
  */
-static block_memory* init_block_memory(nnode_t* node, netlist_t* /* netlist */) {
+static block_memory_t* init_block_memory(nnode_t* node, netlist_t* /* netlist */) {
     int i, offset;
-    block_memory* bram = (block_memory*)vtr::malloc(sizeof(block_memory));
+    block_memory_t* bram = (block_memory_t*)vtr::malloc(sizeof(block_memory_t));
 
     /** 
      * BRAM information 
@@ -199,7 +207,7 @@ static block_memory* init_block_memory(nnode_t* node, netlist_t* /* netlist */) 
 
     /* creating a unique name for the block memory */
     bram->name = make_full_ref_name(bram->node->name, NULL, NULL, bram->memory_id, -1);
-    block_memories.emplace(bram->name, bram);
+    block_memories_info.block_memories.emplace(bram->name, bram);
 
     return (bram);
 }
@@ -212,9 +220,9 @@ static block_memory* init_block_memory(nnode_t* node, netlist_t* /* netlist */) 
  * @param node pointing to a rom node
  * @param netlist pointer to the current netlist file
  */
-static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
+static block_memory_t* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
     int i, offset;
-    block_memory* rom = (block_memory*)vtr::malloc(sizeof(block_memory));
+    block_memory_t* rom = (block_memory_t*)vtr::malloc(sizeof(block_memory_t));
 
     /** 
      * ROM information
@@ -281,7 +289,7 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
 
     /* creating a unique name for the block memory */
     rom->name = make_full_ref_name(rom->node->name, NULL, NULL, rom->memory_id, -1);
-    read_only_memories.emplace(rom->name, rom);
+    block_memories_info.read_only_memories.emplace(rom->name, rom);
 
     return (rom);
 }
@@ -296,7 +304,7 @@ static block_memory* init_read_only_memory(nnode_t* node, netlist_t* netlist) {
  * @param rom pointing to a rom node node
  * @param netlist pointer to the current netlist file
  */
-static void create_r_single_port_ram(block_memory* rom, netlist_t* netlist) {
+static void create_r_single_port_ram(block_memory_t* rom, netlist_t* netlist) {
     nnode_t* old_node = rom->node;
     int num_rd_ports = old_node->attributes->RD_PORTS;
     int num_wr_ports = old_node->attributes->WR_PORTS;
@@ -346,7 +354,7 @@ static void create_r_single_port_ram(block_memory* rom, netlist_t* netlist) {
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
  */
-static void create_2r_dual_port_ram(block_memory* bram, netlist_t* netlist) {
+static void create_2r_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     nnode_t* old_node = bram->node;
 
     int i, offset;
@@ -430,7 +438,7 @@ static void create_2r_dual_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param bram pointing to a bram node node
  * @param netlist pointer to the current netlist file
  */
-static void create_nr_single_port_ram(block_memory* bram, netlist_t* netlist) {
+static void create_nr_single_port_ram(block_memory_t* bram, netlist_t* netlist) {
     nnode_t* old_node = bram->node;
     int data_width = bram->node->attributes->DBITS;
     int addr_width = bram->node->attributes->ABITS;
@@ -498,7 +506,7 @@ static void create_nr_single_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param bram pointing to a bram node node
  * @param netlist pointer to the current netlist file
  */
-static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist */) {
+static void create_rw_single_port_ram(block_memory_t* bram, netlist_t* /* netlist */) {
     int i;
     nnode_t* old_node = bram->node;
     int num_rd_ports = old_node->attributes->RD_PORTS;
@@ -569,7 +577,7 @@ static void create_rw_single_port_ram(block_memory* bram, netlist_t* /* netlist 
  * @param bram pointing to a block memory
  * @param netlist pointer to the current netlist file
  */
-static void create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
+static void create_rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     int i;
     nnode_t* old_node = bram->node;
     int num_rd_ports = old_node->attributes->RD_PORTS;
@@ -650,7 +658,7 @@ static void create_rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
  */
-static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
+static void create_r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     nnode_t* old_node = bram->node;
 
     int i, offset;
@@ -788,7 +796,7 @@ static void create_r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
  */
-static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
+static void create_2rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     nnode_t* old_node = bram->node;
 
     int i, offset;
@@ -917,7 +925,7 @@ static void create_2rw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
  */
-static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
+static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     nnode_t* old_node = bram->node;
 
     int i, offset;
@@ -1062,7 +1070,7 @@ static void create_2r2w_dual_port_ram(block_memory* bram, netlist_t* netlist) {
  * @param bram pointing to a bram node node
  * @param netlist pointer to the current netlist file
  */
-static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
+static void create_nrnw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     int i;
     nnode_t* old_node = bram->node;
     int data_width = bram->node->attributes->DBITS;
@@ -1157,12 +1165,13 @@ static void create_nrnw_dual_port_ram(block_memory* bram, netlist_t* netlist) {
 /**
  * (function: map_rom_to_mem_hardblocks)
  * 
- * @brief split the rom in width of input data if exceeded fromthe width of the output
+ * @brief mapping a read-only memory to single_port_ram or 
+ * dual_port_ram according to the number and source of its ports
  * 
  * @param rom pointer to the read only memory
  * @param netlist pointer to the current netlist file
  */
-void map_rom_to_mem_hardblocks(block_memory* rom, netlist_t* netlist) {
+void map_rom_to_mem_hardblocks(block_memory_t* rom, netlist_t* netlist) {
     nnode_t* node = rom->node;
 
     int width = node->attributes->DBITS;
@@ -1194,7 +1203,7 @@ void map_rom_to_mem_hardblocks(block_memory* rom, netlist_t* netlist) {
             create_2r_dual_port_ram(rom, netlist);
 
         } else {
-            /* more than 2 read port wil be handle using multiplexed ports and a SPRAM */
+            /* more than 2 read ports wil be handle using multiplexed ports and a SPRAM */
             create_nr_single_port_ram(rom, netlist);
         }
     }
@@ -1203,12 +1212,13 @@ void map_rom_to_mem_hardblocks(block_memory* rom, netlist_t* netlist) {
 /**
  * (function: map_bram_to_mem_hardblocks)
  * 
- * @brief split the bram in width of input data if exceeded from the width of the output
+ * @brief mapping a block_memory (has both read and write access) to single_port_ram 
+ * or dual_port_ram according to the number and source of its ports
  * 
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
  */
-void map_bram_to_mem_hardblocks(block_memory* bram, netlist_t* netlist) {
+void map_bram_to_mem_hardblocks(block_memory_t* bram, netlist_t* netlist) {
     nnode_t* node = bram->node;
 
     int width = node->attributes->DBITS;
@@ -1221,7 +1231,6 @@ void map_bram_to_mem_hardblocks(block_memory* bram, netlist_t* netlist) {
     /**
      * Potential place for checking block ram if their relative 
      * size is less than a threshold, they could be mapped on LUTRAM
-     *
      */
 
     int bram_relative_area = depth * width;
@@ -1279,12 +1288,12 @@ void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     oassert(node->num_output_port_sizes == 1);
 
     /* initializing a new block ram */
-    block_memory* bram = init_block_memory(node, netlist);
+    block_memory_t* bram = init_block_memory(node, netlist);
 
     /* perform optimization on memory inference */
     perform_optimization(bram);
 
-    block_memory_list = insert_in_vptr_list(block_memory_list, bram);
+    block_memories_info.block_memory_list = insert_in_vptr_list(block_memories_info.block_memory_list, bram);
 }
 
 /**
@@ -1306,12 +1315,12 @@ void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
     oassert(node->num_output_port_sizes == 1);
 
     /* create the rom and allocate ports according to the DPRAM hard block */
-    block_memory* rom = init_read_only_memory(node, netlist);
+    block_memory_t* rom = init_read_only_memory(node, netlist);
 
     /* perform optimization on memory inference */
     perform_optimization(rom);
 
-    read_only_memory_list = insert_in_vptr_list(read_only_memory_list, rom);
+    block_memories_info.read_only_memory_list = insert_in_vptr_list(block_memories_info.read_only_memory_list, rom);
 }
 
 /**
@@ -1352,9 +1361,9 @@ void resolve_ymem_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
  * @param netlist pointer to the current netlist file
  */
 void iterate_block_memories(netlist_t* netlist) {
-    t_linked_vptr* ptr = block_memory_list;
+    t_linked_vptr* ptr = block_memories_info.block_memory_list;
     while (ptr != NULL) {
-        block_memory* bram = (block_memory*)ptr->data_vptr;
+        block_memory_t* bram = (block_memory_t*)ptr->data_vptr;
 
         /* validation */
         oassert(bram != NULL);
@@ -1363,9 +1372,9 @@ void iterate_block_memories(netlist_t* netlist) {
         ptr = ptr->next;
     }
 
-    ptr = read_only_memory_list;
+    ptr = block_memories_info.read_only_memory_list;
     while (ptr != NULL) {
-        block_memory* rom = (block_memory*)ptr->data_vptr;
+        block_memory_t* rom = (block_memory_t*)ptr->data_vptr;
 
         /* validation */
         oassert(rom != NULL);
@@ -1385,7 +1394,7 @@ void iterate_block_memories(netlist_t* netlist) {
  * 
  * @return read_addr == write_addr
  */
-static bool check_same_addrs(block_memory* bram) {
+static bool check_same_addrs(block_memory_t* bram) {
     int read_addr_width = bram->read_addr->count;
     int write_addr_width = bram->write_addr->count;
 
@@ -1637,7 +1646,7 @@ static nnode_t* ymem_to_bram(nnode_t* node, uintptr_t traverse_mark_number) {
  * 
  * @param bram pointer to the block memory
  */
-static void perform_optimization(block_memory* memory) {
+static void perform_optimization(block_memory_t* memory) {
     nnode_t* node = memory->node;
     int depth = node->attributes->size;
     int addr_width = node->attributes->ABITS;
@@ -1928,16 +1937,16 @@ static void cleanup_block_memory_old_node(nnode_t* old_node) {
  */
 void free_block_memories() {
     /* check if any block memory indexed */
-    if (block_memory_list) {
-        free_block_memory_index(block_memories);
-        while (block_memory_list != NULL)
-            block_memory_list = delete_in_vptr_list(block_memory_list);
+    if (block_memories_info.block_memory_list) {
+        free_block_memory_index(block_memories_info.block_memories);
+        while (block_memories_info.block_memory_list != NULL)
+            block_memories_info.block_memory_list = delete_in_vptr_list(block_memories_info.block_memory_list);
     }
     /* check if any read only memory indexed */
-    if (read_only_memory_list) {
-        free_block_memory_index(read_only_memories);
-        while (read_only_memory_list != NULL)
-            read_only_memory_list = delete_in_vptr_list(read_only_memory_list);
+    if (block_memories_info.read_only_memory_list) {
+        free_block_memory_index(block_memories_info.read_only_memories);
+        while (block_memories_info.read_only_memory_list != NULL)
+            block_memories_info.read_only_memory_list = delete_in_vptr_list(block_memories_info.read_only_memory_list);
     }
 }
 
@@ -1964,7 +1973,7 @@ void free_block_memory_index(block_memory_hashtable to_free) {
  * memory, making sure it has the right ports, and collapsing
  * the memory if possible.
  */
-static void free_block_memory(block_memory* to_free) {
+static void free_block_memory(block_memory_t* to_free) {
     free_signal_list(to_free->read_addr);
     free_signal_list(to_free->read_data);
     free_signal_list(to_free->read_en);

@@ -21,13 +21,17 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @file This file includes the defintion of basic structure used 
+ * in Odin-II BLIF class to parse a Verilog file. Moreover, it 
+ * provides the declaration of Verilog class routines
  */
 
 #ifndef __VERILOG_H__
 #define __VERILOG_H__
 
-#include "GenericReader.hh"
-#include "GenericWriter.hh"
+#include "GenericReader.hpp"
+#include "GenericWriter.hpp"
 
 #include "ast_util.h"
 

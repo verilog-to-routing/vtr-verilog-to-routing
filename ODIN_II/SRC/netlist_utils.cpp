@@ -1386,69 +1386,6 @@ void mark_clock_node(
     clock_node->type = CLOCK_NODE;
 }
 
-/**
- * (function: create_single_clk_pin)
- * 
- * @brief ORing all given clks
- * 
- * @param clks signal list of clocks
- * @param node pointing to a bram node
- * @param netlist pointer to the current netlist file
- * 
- * @return signal list containing single clock pin
- */
-signal_list_t* create_single_clk_pin(signal_list_t* clks, nnode_t* node, netlist_t* netlist) {
-    int i;
-    signal_list_t* return_signal = NULL;
-
-    /* only rising edge latchs are supported in vpr, currently */
-    for (i = 0; i < clks->count; i++) {
-        npin_t* pin = clks->pins[i];
-        if (pin->sensitivity == ACTIVE_LOW_SENSITIVITY || pin->sensitivity == FALLING_EDGE_SENSITIVITY) {
-            nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
-            /* detach pin if needed */
-            if (pin->node)
-                pin->node->input_pins[pin->pin_node_idx] = NULL;
-            /* add pin to node node */
-            add_input_pin_to_node(not_node, pin, 0);
-            /* create output pin */
-            signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
-            /* get the new pin */
-            pin = not_outputs->pins[0]->net->fanout_pins[0];
-            pin->sensitivity = RISING_EDGE_SENSITIVITY;
-            /* keep the record of new clk */
-            clks->pins[i] = pin;
-        }
-    }
-
-    /* or all clks */
-    signal_list_t* clk_chain = (clks->count > 1) ? make_chain(LOGICAL_OR, clks, node) : NULL;
-    npin_t* clk_chain_output = (clks->count > 1) ? clk_chain->pins[0] : clks->pins[0];
-
-    /* detach from previous nodes */
-    if (clk_chain_output->node)
-        clk_chain_output->node->input_pins[clk_chain_output->pin_node_idx] = NULL;
-
-    /* creating a single input/output node */
-    nnode_t* clk_node = make_1port_gate(LOGICAL_AND, 1, 1, node, node->traverse_visited);
-    /* hook the chain output into clk node */
-    add_input_pin_to_node(clk_node, clk_chain_output, 0);
-    /* specify clk output pin */
-    return_signal = make_output_pins_for_existing_node(clk_node, 1);
-    return_signal->pins[0]->sensitivity = RISING_EDGE_SENSITIVITY;
-
-    // CLEAN UP
-    if (clks->count > 1)
-        free_signal_list(clk_chain);
-
-    /* adding the new clk node to netlist clocks */
-    netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*) * (netlist->num_clocks + 1));
-    netlist->clocks[netlist->num_clocks] = clk_node;
-    netlist->num_clocks++;
-
-    return (return_signal);
-}
-
 /*
  * Gets the index of the first output pin with the given mapping
  * on the given node.
@@ -1525,7 +1462,7 @@ int get_input_port_index_from_mapping(nnode_t* node, const char* name) {
  * @param pin2_polarity second pin polarity
  * @param node pointer to pins node for tracking purpose
  * 
- * @return a new pin with RISING_EDGE_SENSITIVITY polarity
+ * @return a new pin with ACTIVE_HIGH_SENSITIVIITY polarity
  */
 npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, edge_type_e pin2_polarity, nnode_t* node) {
     /* validate pins */
@@ -1544,6 +1481,7 @@ npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, ed
         /* specify eq1 output pin */
         signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
         pin1_out = not_outputs->pins[0]->net->fanout_pins[0];
+        pin1_out->sensitivity = ACTIVE_HIGH_SENSITIVITY;
         // CLEAN UP
         free_signal_list(not_outputs);
     } else {
@@ -1554,37 +1492,45 @@ npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, ed
 
     /* pin2 and its polarity */
     npin_t* pin2_out = NULL;
-    if (pin2_polarity == ACTIVE_LOW_SENSITIVITY) {
-        nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
-        if (pin2->node)
-            /* remap the pin to not_node node */
-            remap_pin_to_new_node(pin2, not_node, 0);
-        else
-            add_input_pin_to_node(not_node, pin2, 0);
+    if (pin2){
+        if (pin2_polarity == ACTIVE_LOW_SENSITIVITY) {
+            nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
+            if (pin2->node)
+                /* remap the pin to not_node node */
+                remap_pin_to_new_node(pin2, not_node, 0);
+            else
+                add_input_pin_to_node(not_node, pin2, 0);
 
-        /* specify eq1 output pin */
-        signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
-        pin2_out = not_outputs->pins[0];
-        // CLEAN UP
-        free_signal_list(not_outputs);
-    } else {
-        pin2_out = pin2;
-        /* detach pin2 */
-        pin2->node->input_pins[pin2->pin_node_idx] = NULL;
+            /* specify eq1 output pin */
+            signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
+            pin2_out = not_outputs->pins[0];
+            pin2_out->sensitivity = ACTIVE_HIGH_SENSITIVITY;
+            // CLEAN UP
+            free_signal_list(not_outputs);
+        } else {
+            pin2_out = pin2;
+            /* detach pin2 */
+            pin2->node->input_pins[pin2->pin_node_idx] = NULL;
+        }
     }
 
     /* OR both signals */
-    nnode_t* or_node = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, node->traverse_visited);
-    /* hook pin1 outputs as input into OR node */
-    add_input_pin_to_node(or_node, pin1_out, 0);
-    add_input_pin_to_node(or_node, pin2_out, 1);
-    /* specify OR output pin */
-    signal_list_t* or_outputs = make_output_pins_for_existing_node(or_node, 1);
-    npin_t* or_output = or_outputs->pins[0];
-    or_output->sensitivity = ACTIVE_HIGH_SENSITIVITY;
+    npin_t* or_output = NULL;
+    if(pin2) {
+        nnode_t* or_node = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, node->traverse_visited);
+        /* hook pin1 outputs as input into OR node */
+        add_input_pin_to_node(or_node, pin1_out, 0);
+        add_input_pin_to_node(or_node, pin2_out, 1);
+        /* specify OR output pin */
+        signal_list_t* or_outputs = make_output_pins_for_existing_node(or_node, 1);
+        or_output = or_outputs->pins[0];
+        or_output->sensitivity = ACTIVE_HIGH_SENSITIVITY;
 
-    // CLEAN UP
-    free_signal_list(or_outputs);
+        // CLEAN UP
+        free_signal_list(or_outputs);
+    } else {
+        or_output = pin1_out;
+    }
 
     return (or_output);
 }
