@@ -442,6 +442,7 @@ void try_place(const t_placer_opts& placer_opts,
     t_placer_statistics stats;
 
     t_placement_checkpoint placement_checkpoint;
+    t_graph_type graph_directionality;
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -481,7 +482,13 @@ void try_place(const t_placer_opts& placer_opts,
 
     width_fac = placer_opts.place_chan_width;
 
-    init_chan(width_fac, chan_width_dist);
+    if (router_opts.route_type == GLOBAL) {
+        graph_directionality = GRAPH_BIDIR;
+    } else {
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+    }
+
+    init_chan(width_fac, chan_width_dist, graph_directionality);
 
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
                                      directs, num_directs);

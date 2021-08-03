@@ -52,3 +52,5 @@ sudo apt install -y \
   clang-7 \
   clang-10
 #  libtbb-dev
+
+pip install -r requirements.txt
