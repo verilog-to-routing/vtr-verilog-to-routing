@@ -2,9 +2,9 @@
     "for/generate_for_int/no_arch": {
         "test_name": "for/generate_for_int/no_arch",
         "input_blif": "generate_for_int.blif",
-        "max_rss(MiB)": 4.7,
-        "exec_time(ms)": 1.1,
-        "techmap_time(ms)": 0.8,
+        "max_rss(MiB)": 35.7,
+        "exec_time(ms)": 8.1,
+        "techmap_time(ms)": 4.7,
         "Po": 32,
         "Longest Path": 2,
         "Average Path": 2
@@ -12,9 +12,9 @@
     "for/generate_for_ultra_wide/no_arch": {
         "test_name": "for/generate_for_ultra_wide/no_arch",
         "input_blif": "generate_for_ultra_wide.blif",
-        "max_rss(MiB)": 5.4,
-        "exec_time(ms)": 4.2,
-        "techmap_time(ms)": 3.9,
+        "max_rss(MiB)": 42.4,
+        "exec_time(ms)": 17.4,
+        "techmap_time(ms)": 14.6,
         "Po": 256,
         "Longest Path": 2,
         "Average Path": 2
@@ -22,9 +22,9 @@
     "for/generate_for_wide/no_arch": {
         "test_name": "for/generate_for_wide/no_arch",
         "input_blif": "generate_for_wide.blif",
-        "max_rss(MiB)": 4.7,
-        "exec_time(ms)": 0.4,
-        "techmap_time(ms)": 0.2,
+        "max_rss(MiB)": 37,
+        "exec_time(ms)": 3.8,
+        "techmap_time(ms)": 0.8,
         "Po": 3,
         "Longest Path": 2,
         "Average Path": 2

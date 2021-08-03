@@ -2,8 +2,8 @@
     "localparam/localparam/no_arch": {
         "test_name": "localparam/localparam/no_arch",
         "generated_blif": "localparam_generated.blif",
-        "max_rss(MiB)": 4.9,
-        "exec_time(ms)": 0.5,
+        "max_rss(MiB)": 43,
+        "exec_time(ms)": 10.4,
         "Pi": 3,
         "Po": 3,
         "logic element": 3,
@@ -15,8 +15,8 @@
     "localparam/parameter_define_localparam/no_arch": {
         "test_name": "localparam/parameter_define_localparam/no_arch",
         "generated_blif": "parameter_define_localparam_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 0.4,
+        "max_rss(MiB)": 42.6,
+        "exec_time(ms)": 10.4,
         "Pi": 3,
         "Po": 3,
         "logic element": 3,

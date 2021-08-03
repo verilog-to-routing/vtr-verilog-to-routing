@@ -2,8 +2,8 @@
     "begin_end/case_default/no_arch": {
         "test_name": "begin_end/case_default/no_arch",
         "generated_blif": "case_default_generated.blif",
-        "max_rss(MiB)": 4.9,
-        "exec_time(ms)": 0.9,
+        "max_rss(MiB)": 60.8,
+        "exec_time(ms)": 32.9,
         "Pi": 11,
         "Po": 3,
         "logic element": 20,
@@ -15,8 +15,8 @@
     "begin_end/negedge/no_arch": {
         "test_name": "begin_end/negedge/no_arch",
         "generated_blif": "negedge_generated.blif",
-        "max_rss(MiB)": 5,
-        "exec_time(ms)": 0.7,
+        "max_rss(MiB)": 44.9,
+        "exec_time(ms)": 13.4,
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 2,
@@ -30,8 +30,8 @@
     "begin_end/posedge/no_arch": {
         "test_name": "begin_end/posedge/no_arch",
         "generated_blif": "posedge_generated.blif",
-        "max_rss(MiB)": 4.9,
-        "exec_time(ms)": 0.5,
+        "max_rss(MiB)": 39.9,
+        "exec_time(ms)": 8.8,
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 1,

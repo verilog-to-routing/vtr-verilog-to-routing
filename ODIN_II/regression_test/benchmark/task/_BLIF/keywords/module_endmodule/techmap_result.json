@@ -2,9 +2,9 @@
     "module_endmodule/multiple_modules/no_arch": {
         "test_name": "module_endmodule/multiple_modules/no_arch",
         "input_blif": "multiple_modules.blif",
-        "max_rss(MiB)": 4.8,
-        "exec_time(ms)": 1,
-        "techmap_time(ms)": 0.8,
+        "max_rss(MiB)": 38.9,
+        "exec_time(ms)": 5.5,
+        "techmap_time(ms)": 3.3,
         "Pi": 10,
         "Po": 10,
         "Longest Path": 2,
@@ -13,9 +13,9 @@
     "module_endmodule/multiple_topmodules/no_arch": {
         "test_name": "module_endmodule/multiple_topmodules/no_arch",
         "input_blif": "multiple_topmodules.blif",
-        "max_rss(MiB)": 4.6,
-        "exec_time(ms)": 0.5,
-        "techmap_time(ms)": 0.3,
+        "max_rss(MiB)": 37.3,
+        "exec_time(ms)": 4.1,
+        "techmap_time(ms)": 0.9,
         "Po": 4,
         "Longest Path": 2,
         "Average Path": 2
