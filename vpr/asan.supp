@@ -2,4 +2,4 @@
 
 #Leaks from TBB library, which
 #allows VPR to run with parallelism
-lib:libtbb
+interceptor_via_lib:libtbb
