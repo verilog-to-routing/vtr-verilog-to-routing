@@ -421,39 +421,34 @@ int get_region_size(const Region& reg, t_logical_block_type_ptr block_type) {
     int xdim = reg_rect.xmax() - reg_rect.xmin() + 1;
     int ydim = reg_rect.ymax() - reg_rect.ymin() + 1;
 
-    std::vector<std::vector<int>> vect(xdim, std::vector<int>(ydim, 0));
+    std::vector<std::vector<int>> region_grid(xdim, std::vector<int>(ydim, 0));
 
-    for (int i = vect.size() - 1; i >= 0; i--) {
-        for (int j = vect[i].size() - 1; j >= 0; j--) {
-            auto& tile = device_ctx.grid[i + reg_rect.xmin()][j + reg_rect.ymin()].type;
+    for (int i_col = region_grid.size() - 1; i_col >= 0; i_col--) {
+        for (int j_row = region_grid[i_col].size() - 1; j_row >= 0; j_row--) {
+            auto& tile = device_ctx.grid[i_col + reg_rect.xmin()][j_row + reg_rect.ymin()].type;
 
             if (is_tile_compatible(tile, block_type)) {
                 if (reg.get_sub_tile() != NO_SUBTILE) {
-                	if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
-                		vect[i][j] = 1;
-                	}
+                    if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
+                        region_grid[i_col][j_row] = 1;
+                    }
                 } else {
-                	vect[i][j] = 1;
+                    region_grid[i_col][j_row] = 1;
                 }
-            } else {
-            	//VTR_LOG("Tile not compatible \n");
             }
 
-            if (i < signed(vect.size() - 1)) {
-                vect[i][j] += vect[i + 1][j];
+            if (i_col < signed(region_grid.size() - 1)) {
+                region_grid[i_col][j_row] += region_grid[i_col + 1][j_row];
             }
-            if (j < signed(vect[i].size() - 1)) {
-                vect[i][j] += vect[i][j + 1];
+            if (j_row < signed(region_grid[i_col].size() - 1)) {
+                region_grid[i_col][j_row] += region_grid[i_col][j_row + 1];
             }
-            if (i < signed(vect.size()) - 1 && j < signed(vect[i].size() - 1)) {
-                vect[i][j] -= vect[i + 1][j + 1];
+            if (i_col < signed(region_grid.size()) - 1 && j_row < signed(region_grid[i_col].size() - 1)) {
+                region_grid[i_col][j_row] -= region_grid[i_col + 1][j_row + 1];
             }
-
-            //VTR_LOG(" %d ", vect[i][j]);
         }
-        //VTR_LOG("\n");
     }
-    int num_tiles = vect[0][0];
+    int num_tiles = region_grid[0][0];
 
     return num_tiles;
 }
@@ -462,11 +457,9 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type) 
     std::vector<Region> part_reg = pr.get_partition_region();
     int num_tiles = 0;
 
-    for (unsigned int i = 0; i < part_reg.size(); i++) {
-        num_tiles += get_region_size(part_reg[i], block_type);
+    for (unsigned int i_reg = 0; i_reg < part_reg.size(); i_reg++) {
+        num_tiles += get_region_size(part_reg[i_reg], block_type);
     }
-
-    VTR_LOG("Number of tiles is %d \n", num_tiles);
 
     return num_tiles;
 }

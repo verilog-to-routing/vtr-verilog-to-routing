@@ -113,8 +113,18 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
+/*
+ * Returns the number of grid tiles that are covered by the region and compatible
+ * with the cluster's block type.
+ */
 int get_region_size(const Region& reg, t_logical_block_type_ptr block_type);
 
+/*
+ * Returns the number of grid tiles that are covered by the partition region and
+ * compatible with the cluster's block type.
+ * Used prior to initial placement to help sort blocks based on how difficult they
+ * are to place.
+ */
 int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

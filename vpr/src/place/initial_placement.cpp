@@ -31,9 +31,9 @@ static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int 
 
 static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc head_pos);
 static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro);
-static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations, std::vector<t_pl_macro> sorted_macros);
+static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations, const std::vector<t_pl_macro>& sorted_macros);
 
-static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type, std::vector<ClusterBlockId> sorted_blocks);
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type, const std::vector<ClusterBlockId>& sorted_blocks);
 
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
@@ -164,7 +164,7 @@ static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_mac
     return (macro_placed);
 }
 
-static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations, std::vector<t_pl_macro> sorted_macros) {
+static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations, const std::vector<t_pl_macro>& sorted_macros) {
     int macro_placed;
     int itype, itry, ipos, isub_tile;
     ClusterBlockId blk_id;
@@ -178,7 +178,6 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
 
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macro.members[0].blk_index;
-        VTR_LOG("Placing macro %d \n", blk_id);
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
         for (auto tile_type : block_type->equivalent_tiles) { //Try each possible tile type
@@ -241,7 +240,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
 
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
-static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type, std::vector<ClusterBlockId> sorted_blocks) {
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type, const std::vector<ClusterBlockId>& sorted_blocks) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -390,7 +389,7 @@ std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_bloc
     };
 
     std::stable_sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
-    print_sorted_blocks(sorted_blocks, block_scores);
+    //print_sorted_blocks(sorted_blocks, block_scores);
 
     return sorted_blocks;
 }
