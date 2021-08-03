@@ -105,14 +105,14 @@
         "Latch Drivers": 1,
         "Pi": 2,
         "Po": 10,
-        "logic element": 26,
-        "latch": 9,
+        "logic element": 25,
+        "latch": 8,
         "Adder": 8,
         "generic logic size": 4,
         "Longest Path": 18,
         "Average Path": 3,
-        "Estimated LUTs": 28,
-        "Total Node": 44
+        "Estimated LUTs": 27,
+        "Total Node": 42
     },
     "large/LargeRam/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/LargeRam/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -288,7 +288,7 @@
         "latch": 837,
         "Adder": 125,
         "generic logic size": 4,
-        "Longest Path": 434,
+        "Longest Path": 427,
         "Average Path": 4,
         "Estimated LUTs": 4728,
         "Total Node": 5397
@@ -327,7 +327,7 @@
         "Adder": 413,
         "Multiplier": 15,
         "generic logic size": 4,
-        "Longest Path": 108,
+        "Longest Path": 110,
         "Average Path": 4,
         "Estimated LUTs": 2995,
         "Total Node": 4391

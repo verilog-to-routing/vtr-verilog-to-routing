@@ -66,7 +66,7 @@ Hashtable* output_nets_hash;
  * -----------------------------------------------------------------------------------------------------------------------------
  * ---------------------------------------------------------- Reader -----------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------------------------------
-*/
+ */
 
 BLIF::Reader::Reader() {
     insert_global_clock = true;
@@ -142,7 +142,7 @@ void* BLIF::Reader::__read() {
  * #############################################################################################################################
  * #################################################### PROTECTED METHODS ######################################################
  * #############################################################################################################################
-*/
+ */
 
 /*---------------------------------------------------------------------------------------------
  * (function: read_tokens)
@@ -350,9 +350,9 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         new_node->type = yosys_subckt_strmap[subcircuit_name];
 
         if (new_node->type == BRAM) {
-            new_node->type = (new_node->attributes->RD_PORTS && new_node->attributes->WR_PORTS)    ? BRAM
-                             : (new_node->attributes->RD_PORTS && !new_node->attributes->WR_PORTS) ? ROM
-                                                                                                   : operation_list_END;
+            new_node->type = (new_node->attributes->RD_PORTS && new_node->attributes->WR_PORTS) ? BRAM
+                                                                                                : (new_node->attributes->RD_PORTS && !new_node->attributes->WR_PORTS) ? ROM
+                                                                                                                                                                      : operation_list_END;
         }
     } else {
         if (odin_subckt_strmap[subcircuit_name] != NO_OP)
@@ -864,7 +864,7 @@ hard_block_model* BLIF::Reader::read_hard_block_model(char* name_subckt, operati
  * #############################################################################################################################
  * #################################################### PROTECTED METHODS ######################################################
  * #############################################################################################################################
-*/
+ */
 
 /*
  * ---------------------------------------------------------------------------------------------
@@ -1754,7 +1754,7 @@ void BLIF::Reader::free_hard_block_ports(hard_block_ports* p) {
  * #############################################################################################################################
  * ##################################################### PRIVATE METHODS #######################################################
  * #############################################################################################################################
-*/
+ */
 
 /**
  *---------------------------------------------------------------------------------------------
@@ -1932,7 +1932,7 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
  *---------------------------------------------------------------------------------------------
  * (function: create_model)
  * 
-  @brief create a model that has multiple input ports and one output port.
+ * @brief create a model that has multiple input ports and one output port.
  * port sizes will be specified based on the number of pins in the BLIF file
  * 
  * @param name representing the name of a hard block

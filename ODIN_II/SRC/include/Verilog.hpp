@@ -37,75 +37,68 @@
 
 /**
  * @brief A class to provide the general object of an input Verilog file reader
-*/
+ */
 class Verilog {
-    public:
+  public:
+    /**
+     * @brief Construct the object
+     * required by compiler
+     */
+    Verilog();
+    /**
+     * @brief Destruct the object
+     * to avoid memory leakage
+     */
+    ~Verilog();
 
+    class Reader : public GenericReader {
+      public:
         /**
-         * @brief Construct the object
+         * @brief Construct the Reader object
          * required by compiler
          */
-        Verilog();
+        Reader();
         /**
-         * @brief Destruct the object
+         * @brief Destruct the Reader object
          * to avoid memory leakage
          */
-        ~Verilog();
-        
-        class Reader : public GenericReader {
+        ~Reader();
 
-            public:
-                /**
-                 * @brief Construct the Reader object
-                 * required by compiler
-                 */
-                Reader();
-                /**
-                 * @brief Destruct the Reader object
-                 * to avoid memory leakage
-                 */
-                ~Reader();
+        void* __read();
 
-                void* __read();
+        /* No need to have writer in Generic Reader */
+        void __write(const netlist_t* /* netlist */) {
+            error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
+        }
 
-                /* No need to have writer in Generic Reader */
-                void __write(const netlist_t* /* netlist */) {
-                    error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
-                }
+      protected:
+      private:
+    };
 
-            protected:
-                
+    class Writer : public GenericWriter {
+      public:
+        /**
+         * @brief Construct the Writer object
+         * required by compiler
+         */
+        Writer();
+        /**
+         * @brief Destruct the Writer object
+         * to avoid memory leakage
+         */
+        ~Writer();
 
-            private:
-        };
+        /* No need to have reader in Generic Writer */
+        void* __read() {
+            error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
+            return NULL;
+        }
 
-        class Writer : public GenericWriter {
-            public:
-                /**
-                 * @brief Construct the Writer object
-                 * required by compiler
-                 */
-                Writer();
-                /**
-                 * @brief Destruct the Writer object
-                 * to avoid memory leakage
-                 */
-                ~Writer();
+        void __write(const netlist_t* netlist);
+        void __create_file(const file_type_e file_type);
 
-                /* No need to have reader in Generic Writer */
-                void* __read() {
-                    error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
-                    return NULL;
-                }
-
-                void __write(const netlist_t* netlist);
-                void __create_file(const file_type_e file_type);
-
-            protected:
-                
-        };
-
+      protected:
+    };
 };
-
 
 #endif //__VERILOG_H__

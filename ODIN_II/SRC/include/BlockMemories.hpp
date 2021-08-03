@@ -64,12 +64,12 @@ extern block_memory_hashtable block_memories;
 /**
  * block memories information. variable will be invalid
  * after iterations happen before partial mapping
-*/
+ */
 struct block_memory_information_t {
     /**
      * block memory linked list, required for iterations 
      * in optimization and mapping phase.
-    */
+     */
     vtr::t_linked_vptr* block_memory_list;
     vtr::t_linked_vptr* read_only_memory_list;
     /* hashtable to look up block memories faster */

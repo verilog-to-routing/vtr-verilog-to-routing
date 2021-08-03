@@ -33,27 +33,25 @@
 
 /**
  * @brief A class to provide the general object of an input file reader
-*/
+ */
 class GenericIO {
+  public:
+    /**
+     * @brief Construct the GenericIO object
+     * required by compiler
+     */
+    GenericIO();
+    /**
+     * @brief Destruct the GenericIO object
+     * to avoid memory leakage
+     */
+    virtual ~GenericIO();
 
-    public:
-        /**
-         * @brief Construct the GenericIO object
-         * required by compiler
-         */
-        GenericIO();
-        /**
-         * @brief Destruct the GenericIO object
-         * to avoid memory leakage
-         */
-        virtual ~GenericIO();
+    virtual void* __read();
+    virtual void __write(const netlist_t* netlist);
 
-        virtual void* __read();
-        virtual void  __write (const netlist_t* netlist);
-
-        /* to create the output file */
-        virtual void __create_file(const file_type_e file_type);
-
+    /* to create the output file */
+    virtual void __create_file(const file_type_e file_type);
 };
 
 #endif

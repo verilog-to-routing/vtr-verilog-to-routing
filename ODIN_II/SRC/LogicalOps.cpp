@@ -151,8 +151,8 @@ void split_in_single_bit_logic(nnode_t* node, uintptr_t traverse_mark_number, ne
             remap_pin_to_new_node(node->input_pins[i], new_node, 0);
         } else {
             add_input_pin_to_node(new_node,
-                                    (node->attributes->port_a_signed) ? get_one_pin(netlist) : get_zero_pin(netlist),
-                                    0);
+                                  (node->attributes->port_a_signed) ? get_one_pin(netlist) : get_zero_pin(netlist),
+                                  0);
         }
         /* hook the second input into new node if exist */
         if (node->num_input_port_sizes == 2) {
@@ -160,8 +160,8 @@ void split_in_single_bit_logic(nnode_t* node, uintptr_t traverse_mark_number, ne
                 remap_pin_to_new_node(node->input_pins[width_a + i], new_node, 1);
             } else {
                 add_input_pin_to_node(new_node,
-                                        (node->attributes->port_b_signed) ? get_one_pin(netlist) : get_zero_pin(netlist),
-                                        1);
+                                      (node->attributes->port_b_signed) ? get_one_pin(netlist) : get_zero_pin(netlist),
+                                      1);
             }
         }
 
@@ -192,7 +192,7 @@ void split_in_single_bit_logic(nnode_t* node, uintptr_t traverse_mark_number, ne
             add_input_pin_to_node(buf_node, get_pad_pin(netlist), 0);
             /* remap the extra output pin to buf node */
             remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
-        }        
+        }
     }
 
     // CLEAN UP

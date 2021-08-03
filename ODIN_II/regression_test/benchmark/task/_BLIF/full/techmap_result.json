@@ -195,15 +195,15 @@
         "Latch Drivers": 1,
         "Pi": 417,
         "Po": 37,
-        "logic element": 4232,
+        "logic element": 400,
         "latch": 2116,
         "Adder": 838,
         "Multiplier": 25,
         "generic logic size": 4,
-        "Longest Path": 134,
-        "Average Path": 4,
-        "Estimated LUTs": 4232,
-        "Total Node": 7212
+        "Longest Path": 98,
+        "Average Path": 5,
+        "Estimated LUTs": 400,
+        "Total Node": 3380
     },
     "full/cf_fir_3_8_8/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/cf_fir_3_8_8/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -215,15 +215,15 @@
         "Latch Drivers": 1,
         "Pi": 41,
         "Po": 18,
-        "logic element": 296,
+        "logic element": 32,
         "latch": 148,
         "Adder": 55,
         "Multiplier": 4,
         "generic logic size": 4,
-        "Longest Path": 43,
-        "Average Path": 4,
-        "Estimated LUTs": 296,
-        "Total Node": 504
+        "Longest Path": 33,
+        "Average Path": 5,
+        "Estimated LUTs": 32,
+        "Total Node": 240
     },
     "full/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm",

@@ -60,7 +60,7 @@
  * -----------------------------------------------------------------------------------------------------------------------------
  * ---------------------------------------------------------- Writer -----------------------------------------------------------
  * -----------------------------------------------------------------------------------------------------------------------------
-*/
+ */
 
 BLIF::Writer::Writer()
     : GenericWriter() {
@@ -97,23 +97,23 @@ bool BLIF::Writer::warn_undriven(nnode_t* node, nnet_t* net) {
 
 // [TODO] Uncomment this for In Outs
 /* static void BLIF::Writer::merge_with_inputs(nnode_t* node, long pin_idx) {
-   oassert(pin_idx < node->num_input_pins);
-   nnet_t* net = node->input_pins[pin_idx]->net;
-   warn_undriven(node, net);
-   // Merge node with all inputs with fanout of 1
-   if (net->num_fanout_pins <= 1) {
-       for (int i = 0; i < net->num_driver_pins; i++) {
-           npin_t* driver = net->driver_pins[i];
-           if (driver->name != NULL && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY) || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
-               vtr::free(driver->name);
-               driver->name = vtr::strdup(node->name);
-           } else {
-               vtr::free(driver->node->name);
-               driver->node->name = vtr::strdup(node->name);
-           }
-       }
-   }
-} */
+ * oassert(pin_idx < node->num_input_pins);
+ * nnet_t* net = node->input_pins[pin_idx]->net;
+ * warn_undriven(node, net);
+ * // Merge node with all inputs with fanout of 1
+ * if (net->num_fanout_pins <= 1) {
+ * for (int i = 0; i < net->num_driver_pins; i++) {
+ * npin_t* driver = net->driver_pins[i];
+ * if (driver->name != NULL && ((driver->node->type == MULTIPLY) || (driver->node->type == HARD_IP) || (driver->node->type == MEMORY) || (driver->node->type == ADD) || (driver->node->type == MINUS))) {
+ * vtr::free(driver->name);
+ * driver->name = vtr::strdup(node->name);
+ * } else {
+ * vtr::free(driver->node->name);
+ * driver->node->name = vtr::strdup(node->name);
+ * }
+ * }
+ * }
+ * } */
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: print_net_driver)
@@ -334,7 +334,7 @@ void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp,
     int i;
 
     /* if a coarsen BLIF is recieved, these variables are already created */
-    if(!coarsen_cleanup){    
+    if (!coarsen_cleanup) {
         netlist->gnd_node->name = vtr::strdup("gnd");
         netlist->vcc_node->name = vtr::strdup("vcc");
         netlist->pad_node->name = vtr::strdup("unconn");
@@ -438,7 +438,7 @@ void BLIF::Writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* f
         case MUX_2:
             define_decoded_mux(node, fp);
             break;
-        
+
         case SMUX_2:
             define_set_input_logical_function(node, "01- 1\n1-1 1\n", fp);
             break;

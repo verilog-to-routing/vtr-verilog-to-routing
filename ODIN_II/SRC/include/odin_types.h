@@ -208,7 +208,7 @@ enum init_value_e {
  * Technically, each Odin-II node should have one of the following
  * operation type. To add support for a new type you would need to
  * start from here to see how each operation mode is being resolved.
-*/
+ */
 enum operation_list {
     NO_OP,
     MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
@@ -483,7 +483,7 @@ struct chain_information_t {
  * specify the clock sensetivity. However, in the techmap flow, 
  * it is used in most sections, including DFFs, Block memories 
  * and arithmetic operation instantiation
-*/
+ */
 struct attr_t {
     edge_type_e clk_edge_type;   // clock edge sensitivity
     edge_type_e clr_polarity;    // clear (reset to GND) polarity

@@ -451,7 +451,7 @@ void get_options(int argc, char** argv) {
         .help("Print all warnings (can be substantial)")
         .default_value("false")
         .action(argparse::Action::STORE_TRUE);
-    
+
     other_grp.add_argument(global_args.fflegalize, "--fflegalize")
         .help("Make all flip-flops rising edge to be compatible with VPR (may add inverters)")
         .default_value("false")

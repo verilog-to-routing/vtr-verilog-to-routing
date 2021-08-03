@@ -52,6 +52,6 @@ void resolve_modulo_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * As a result, we calculate the division here and afterwards 
      * the decision about output connection will happen 
      * in connect_div_output function 
-    */
+     */
     resolve_divide_node(node, traverse_mark_number, netlist);
 }

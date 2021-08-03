@@ -49,38 +49,38 @@ nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, 
 
     nnode_t* output_node = NULL;
     /**
-         * <CASE EQUAL internal nodes>
-         * 
-         *               
-         *   A[0] ---  \\‾‾``                          
-         *              ||   ``                         
-         *              ||   ''O -----------------------------------------   VCC               
-         *              ||   ,,                                          |   |       
-         *   B[0] ---  //__,,                                           _|___|_                   
-         *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
-         *                                                              \ ⏝⏝ /    
-         *   A[1] ---  \\‾‾``                                              | 
-         *              ||   ``                                            | 
-         *              ||   ''O -----------------------------   __________|         
-         *              ||   ,,                              |   |                              
-         *   B[1] ---  //__,,                               _|___|_                           
-         *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
-         *                                                  \ ⏝⏝ /                                       
-         *   A[2] ---  \\‾‾``                                  |                     
-         *              ||   ``                                |                     
-         *              ||   ''O -----------------   __________|                     
-         *              ||   ,,                  |   |                                
-         *   B[2] ---  //__,,                   _|___|_                                       
-         *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
-         *                                      \ ⏝⏝ /   
-         *       ...                               |   (output_node)       
-         *                                         |         
-         *       ...                          ...                 
-         *                                 |                 
-         *                                 |                 
-         *                                                  
-         *                               OUTPUT              
-        */
+     * <CASE EQUAL internal nodes>
+     * 
+     *               
+     *   A[0] ---  \\‾‾``                          
+     *              ||   ``                         
+     *              ||   ''O -----------------------------------------   VCC               
+     *              ||   ,,                                          |   |       
+     *   B[0] ---  //__,,                                           _|___|_                   
+     *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
+     *                                                              \ ⏝⏝ /    
+     *   A[1] ---  \\‾‾``                                              | 
+     *              ||   ``                                            | 
+     *              ||   ''O -----------------------------   __________|         
+     *              ||   ,,                              |   |                              
+     *   B[1] ---  //__,,                               _|___|_                           
+     *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
+     *                                                  \ ⏝⏝ /                                       
+     *   A[2] ---  \\‾‾``                                  |                     
+     *              ||   ``                                |                     
+     *              ||   ''O -----------------   __________|                     
+     *              ||   ,,                  |   |                                
+     *   B[2] ---  //__,,                   _|___|_                                       
+     *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
+     *                                      \ ⏝⏝ /   
+     *       ...                               |   (output_node)       
+     *                                         |         
+     *       ...                          ...                 
+     *                                 |                 
+     *                                 |                 
+     *                                                  
+     *                               OUTPUT              
+     */
 
     /**
      * (CASE_EQUAL ports)
@@ -89,7 +89,7 @@ nnode_t* resolve_case_equal_node(nnode_t* node, uintptr_t traverse_mark_number, 
      *  B: (width)
      * OUTPUT
      *  Y: 1 bit (0=not equal & 1=equal)
-    */
+     */
     int i;
     int width = node->input_port_sizes[0];
     nnode_t** xnor_nodes = (nnode_t**)vtr::calloc(width, sizeof(nnode_t*));
@@ -198,43 +198,43 @@ nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_numb
     oassert(node->traverse_visited == traverse_mark_number);
 
     /**
-         * <CASE NOT EQUAL internal nodes>
-         * 
-         *               
-         *   A[0] ---  \\‾‾``                          
-         *              ||   ``                         
-         *              ||   ''O -----------------------------------------   VCC               
-         *              ||   ,,                                          |   |       
-         *   B[0] ---  //__,,                                           _|___|_                   
-         *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
-         *                                                              \ ⏝⏝ /    
-         *   A[1] ---  \\‾‾``                                              | 
-         *              ||   ``                                            | 
-         *              ||   ''O -----------------------------   __________|         
-         *              ||   ,,                              |   |                              
-         *   B[1] ---  //__,,                               _|___|_                           
-         *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
-         *                                                  \ ⏝⏝ /                                       
-         *   A[2] ---  \\‾‾``                                  |                     
-         *              ||   ``                                |                     
-         *              ||   ''O -----------------   __________|                     
-         *              ||   ,,                  |   |                                
-         *   B[2] ---  //__,,                   _|___|_                                       
-         *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
-         *                                      \ ⏝⏝ /   
-         *       ...                               |         
-         *                                         |         
-         *       ...                          ...                 
-         *                                 |                 
-         *       ...                       |                 
-         *                               _____ 
-         *                               \   /
-         *                                \ /   (output_node) 
-         *                                 |
-         *                                 |                
-         *               
-         *                               OUTPUT              
-        */
+     * <CASE NOT EQUAL internal nodes>
+     * 
+     *               
+     *   A[0] ---  \\‾‾``                          
+     *              ||   ``                         
+     *              ||   ''O -----------------------------------------   VCC               
+     *              ||   ,,                                          |   |       
+     *   B[0] ---  //__,,                                           _|___|_                   
+     *         (xnor_nodes[0])                                     | 0   1 | (and_nodes[0])     
+     *                                                              \ ⏝⏝ /    
+     *   A[1] ---  \\‾‾``                                              | 
+     *              ||   ``                                            | 
+     *              ||   ''O -----------------------------   __________|         
+     *              ||   ,,                              |   |                              
+     *   B[1] ---  //__,,                               _|___|_                           
+     *         (xnor_nodes[1])                         | 0   1 | (and_nodes[1])                       
+     *                                                  \ ⏝⏝ /                                       
+     *   A[2] ---  \\‾‾``                                  |                     
+     *              ||   ``                                |                     
+     *              ||   ''O -----------------   __________|                     
+     *              ||   ,,                  |   |                                
+     *   B[2] ---  //__,,                   _|___|_                                       
+     *         (xnor_nodes[2])             | 0   1 | (and_nodes[2])          
+     *                                      \ ⏝⏝ /   
+     *       ...                               |         
+     *                                         |         
+     *       ...                          ...                 
+     *                                 |                 
+     *       ...                       |                 
+     *                               _____ 
+     *                               \   /
+     *                                \ /   (output_node) 
+     *                                 |
+     *                                 |                
+     *               
+     *                               OUTPUT              
+     */
 
     /**
      * (CASE_NOT EQUAL ports)
@@ -243,7 +243,7 @@ nnode_t* resolve_case_not_equal_node(nnode_t* node, uintptr_t traverse_mark_numb
      *  B: (width)
      * OUTPUT
      *  Y: 1 bit (0=not equal & 1=equal)
-    */
+     */
     nnode_t* case_equal = resolve_case_equal_node(node, traverse_mark_number, netlist);
 
     nnode_t* not_node = make_not_gate(case_equal, traverse_mark_number);

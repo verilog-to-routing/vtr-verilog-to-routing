@@ -68,7 +68,7 @@ void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * IN1: Dividend (m bits) 
      * IN2: Divisor  (n bits) 
      * OUT: Quotient (k bits)
-    */
+     */
     int divisor_width = node->input_port_sizes[1];
 
     /** 
@@ -77,7 +77,7 @@ void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * 1. m == 2*n - 1
      * 2. divisor MSB == 1 (left)
      * 3. n == k
-    */
+     */
     /**
      * modify div input signals to provide compatibility 
      * with the first and third restrictions.
@@ -184,7 +184,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
      * IN2: Divisor (n bits)
      * OUT1: Quotient (n bits)
      * OUT2: Remainder (n bits)
-    */
+     */
 
     int i, j;
     signal_list_t* dividend_sig_list = input_signals[0];
@@ -240,7 +240,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
          *                                      ....                  ....                     ....                ....                    *
          *                                      ....                  ....                     ....                ....                    *
          *                                      ....                  ....                     ....                ....                    *
-        */
+         */
 
         /* In the first row, the divisor is not shifting, so we need one less CR node */
         int num_CR_per_row = (i == 0) ? (divisor_size) : (divisor_size + 1);
@@ -260,8 +260,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
              * [3] = _c      [next CR quotiont]
              */
             int dividend_idx = dividend_size - offset + j;
-            int divisor_idx = (i == 0) ? (j) : (j == num_CR_per_row - 1) ? (-1)
-                                                                         : (j);
+            int divisor_idx = (i == 0) ? (j) : (j == num_CR_per_row - 1) ? (-1) : (j);
 
             /* setting up containers for CR outptu pins */
             npin_t* b = CR_outputs[i][j]->pins[0];
@@ -321,7 +320,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
 
             /**
              *  Making the CR node located at row i and col j
-            */
+             */
             make_CR_node(node, CR_node_input_signals, CR_outputs[i][j]);
 
             /*********************************************************/
@@ -346,7 +345,7 @@ static signal_list_t** implement_division(nnode_t* node, signal_list_t** input_s
          * increasing the offset by 1 in each iteration to 
          * connect all dividend pins to the first row CR 
          * nodes and all first CR nodes in other rows 
-        */
+         */
         offset++;
     }
 
@@ -620,7 +619,7 @@ static void make_CR_node(nnode_t* node, signal_list_t* input_signal_list, signal
      * connecting output pins 
      * [0]: b
      * [1]: fs_out
-    */
+     */
     /* b is already created so we only need to hook it up to the node */
     add_output_pin_to_node(fs_node, b, 1);
     b->net->name = make_full_ref_name(NULL, NULL, NULL, fs_node->name, 1);
@@ -654,7 +653,7 @@ static void make_CR_node(nnode_t* node, signal_list_t* input_signal_list, signal
     /**
      * connecting mux output pin
      * [0]: p 
-    */
+     */
     /* p is already created so we only need to hook it up to the node */
     add_output_pin_to_node(mux_node, p, 0);
     p->net->name = make_full_ref_name(NULL, NULL, NULL, mux_node->name, 0);

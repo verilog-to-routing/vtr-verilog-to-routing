@@ -61,8 +61,8 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
      * B: input port [1]
      * 
      * Y: output port [0]
-    */
-    
+     */
+
     int i;
     int BASE_width = node->input_port_sizes[0];
     int EXPO_width = node->input_port_sizes[1];
@@ -78,7 +78,7 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
     for (i = 0; i < EXPO_width; i++) {
         add_pin_to_signal_list(exponent, node->input_pins[BASE_width + i]);
     }
-    
+
     /* check if the base is constant */
     if (is_constant_signal(base, netlist)) {
         /* check if the exponentiation is constant */
@@ -134,7 +134,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
      *                                                            BASE --- |_____|                                 *
      *                                                          (PADDED)                                           *
      *                                                                                                             *
-    */
+     */
     /**
      * POW ports:
      * 
@@ -142,7 +142,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
      * B: input port [1] (constant)
      * 
      * Y: output port [0]
-    */
+     */
 
     int i, j;
     int BASE_width = node->input_port_sizes[0];
@@ -177,7 +177,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
         /**
          * here multipication output [i] should be assigned to interanl output [i] 
          * (BASE^2 ... BASE^(2^n-1)) 
-        */
+         */
         mul_nodes[i] = make_2port_gate(MULTIPLY, OUT_width, OUT_width, OUT_width, node, traverse_mark_number);
         /* Adding to mult_list for future checking on hard blocks */
         mult_list = insert_in_vptr_list(mult_list, mul_nodes[i]);
@@ -192,7 +192,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
                 add_input_pin_to_node(mul_nodes[i], copy_input_npin(base->pins[j]), j);
                 add_input_pin_to_node(mul_nodes[i], copy_input_npin(base->pins[j]), OUT_width + j);
             } else {
-                add_input_pin_to_node(mul_nodes[i], internal_outputs[i-1]->pins[j], j);
+                add_input_pin_to_node(mul_nodes[i], internal_outputs[i - 1]->pins[j], j);
                 add_input_pin_to_node(mul_nodes[i], copy_input_npin(base->pins[j]), OUT_width + j);
             }
 
@@ -209,7 +209,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
                 add_driver_pin_to_net(new_net, new_pin1);
                 /* hook up the new pin 2 to this new net */
                 add_fanout_pin_to_net(new_net, new_pin2);
-            
+
                 /* add the output pin to internal outputs */
                 add_pin_to_signal_list(internal_outputs[i], new_pin2);
             } else {
@@ -223,7 +223,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
     for (i = 0; i < node->num_input_pins; i++) {
         /* container for input pin */
         npin_t* input_pin = node->input_pins[i];
-        
+
         /* detach from pow node */
         node->input_pins[i] = NULL;
         /* detach from its net */
@@ -238,12 +238,11 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
     }
     vtr::free(internal_outputs);
     vtr::free(mul_nodes);
-    
+
     free_signal_list(base);
     free_signal_list(exponent);
     free_nnode(node);
 }
-
 
 /**
  *-------------------------------------------------------------------------------------------
@@ -294,7 +293,7 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
      *                                             ..     BASE --- |_____|     | MUL | ----                        *
      *                                                  (PADDED)      BASE --- |_____|                             *
      *                                                              (PADDED)                                       *
-    */
+     */
     /**
      * POW ports:
      * 
@@ -302,7 +301,7 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
      * B: input port [1]
      * 
      * Y: output port [0]
-    */
+     */
 
     int i, j;
     int BASE_width = node->input_port_sizes[0];
@@ -335,7 +334,7 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
         /**
          * here multipication output [i] should be assigned to interanl output [i] 
          * (BASE^2 ... BASE^(2^n-1)) 
-        */
+         */
         mul_nodes[i - 2] = make_2port_gate(MULTIPLY, OUT_width, OUT_width, OUT_width, node, traverse_mark_number);
         /* Adding to mult_list for future checking on hard blocks */
         mult_list = insert_in_vptr_list(mult_list, mul_nodes[i - 2]);
@@ -411,7 +410,7 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
         for (i = OUT_width; i < BASE_width; i++) {
             /* container for input pin */
             npin_t* input_pin = node->input_pins[i];
-            
+
             /* detach from pow node */
             node->input_pins[i] = NULL;
             /* detach from its net */

@@ -32,51 +32,49 @@
 
 /**
  * @brief A class to provide the general object of an input file reader
-*/
+ */
 class GenericWriter : public GenericIO {
+  public:
+    /**
+     * @brief Construct the GenericWriter object
+     * required by compiler
+     */
+    GenericWriter();
+    /**
+     * @brief Destruct the GenericWriter object
+     * to avoid memory leakage
+     */
+    ~GenericWriter();
 
-    public:
-        /**
-         * @brief Construct the GenericWriter object
-         * required by compiler
-         */
-        GenericWriter();
-        /**
-         * @brief Destruct the GenericWriter object
-         * to avoid memory leakage
-         */
-        ~GenericWriter();
+    /* No need to have reader in Generic Writer */
+    void* __read() {
+        error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
+        return (NULL);
+    }
 
-        /* No need to have reader in Generic Writer */
-        void* __read() {
-            error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
-            return (NULL);
-        }
+    void __write(const netlist_t* netlist);
+    void _write_blif(const netlist_t* netlist);
+    /**
+     * [TODO]
+     * void  write_verilog(const netlist_t* netlist, FILE* output_file);
+     * void  write_systemverilog(const netlist_t* netlist, FILE* output_file);
+     * void  write_ilang(const netlist_t* netlist, FILE* output_file); 
+     */
 
-        void __write (const netlist_t* netlist);
-        void _write_blif(const netlist_t* netlist);
-        /**
-         * [TODO]
-         * void  write_verilog(const netlist_t* netlist, FILE* output_file);
-         * void  write_systemverilog(const netlist_t* netlist, FILE* output_file);
-         * void  write_ilang(const netlist_t* netlist, FILE* output_file); 
-         */
+    /* to create the output file */
+    void __create_file(const file_type_e file_type);
 
-        /* to create the output file */
-        void __create_file(const file_type_e file_type);
+  protected:
+    FILE* output_file;
 
-    protected:
-        FILE*           output_file;
-        
-    private:
-        GenericWriter*  blif_writer;
-        /**
-         * [TODO]
-         * GenericWriter*  verilog_writer;
-         * GenericWriter*  systemverilog_writer;
-         * GenericWriter*  ilang_writer;
-        */
-
+  private:
+    GenericWriter* blif_writer;
+    /**
+     * [TODO]
+     * GenericWriter*  verilog_writer;
+     * GenericWriter*  systemverilog_writer;
+     * GenericWriter*  ilang_writer;
+     */
 };
 
 #endif

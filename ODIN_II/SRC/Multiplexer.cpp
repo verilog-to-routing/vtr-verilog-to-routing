@@ -102,7 +102,7 @@ void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
      * input_pin[1]:  A (WIDTH)
      * input_pin[2]:  B (WIDTH*S_WIDTH)
      * output_pin[0]: Y (WIDTH)
-    */
+     */
     int width = node->num_output_pins;
     int selector_width = node->input_port_sizes[0];
 
@@ -164,14 +164,14 @@ void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
          *                                                         |/                                        *
          *                                                   (ternay_mux_1)                                  *
          *                                                                                                       
-        */
+         */
         /**
          * (Level_muxes)
          * S: 1 bit
          * 0: width 
          * 1: width 
          * Out: width 
-        */
+         */
         level_muxes[i] = make_3port_gate(MULTIPORT_nBIT_SMUX, 1, width, width, width, node, traverse_mark_number);
         level_muxes_out_signals[i] = (signal_list_t*)vtr::calloc(width, sizeof(signal_list_t));
 
@@ -222,7 +222,7 @@ void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
              * 0: 1 bit
              * 1: 1 bit
              * Out: 1 bit
-            */
+             */
             int active_idx = i - 1;
             active_bit_muxes[active_idx] = make_3port_gate(MULTIPORT_nBIT_SMUX, 1, 1, 1, 1, node, traverse_mark_number);
 
@@ -274,7 +274,7 @@ void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
              * 0: width
              * 1: width
              * Out: width
-            */
+             */
             int ternary_idx = i - 1;
             ternary_muxes[ternary_idx] = make_3port_gate(MULTIPORT_nBIT_SMUX, 1, width, width, width, node, traverse_mark_number);
             ternary_muxes_out_signals[ternary_idx] = (signal_list_t*)vtr::calloc(width, sizeof(signal_list_t));

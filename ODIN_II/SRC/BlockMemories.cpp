@@ -135,7 +135,7 @@ static block_memory_t* init_block_memory(nnode_t* node, netlist_t* /* netlist */
      * WR_ADDR:    input port [3] 
      * WR_DATA:    input port [4] 
      * WR_ENABLE:  input port [5] 
-    */
+     */
 
     int CLK_width = node->input_port_sizes[0];
     int RD_ADDR_width = node->input_port_sizes[1];
@@ -231,7 +231,7 @@ static block_memory_t* init_read_only_memory(nnode_t* node, netlist_t* netlist) 
      * RD_ADDR:    input port [1] 
      * RD_DATA:    output port [0] 
      * RD_ENABLE:  input port [2] 
-    */
+     */
 
     int CLK_width = node->input_port_sizes[0];
     int RD_ADDR_width = node->input_port_sizes[1];
@@ -326,7 +326,7 @@ static void create_r_single_port_ram(block_memory_t* rom, netlist_t* netlist) {
     /**
      * we pad the data_in port using pad pins 
      * rom->write_data is already filled with pad pins
-    */
+     */
     signals->data = rom->write_data;
 
     /* there is no write data to set any we, so it will be connected to GND */
@@ -467,7 +467,7 @@ static void create_nr_single_port_ram(block_memory_t* bram, netlist_t* netlist) 
 
     /**
      * bram->write_data is already initialized with pad pins in bram init
-    */
+     */
     signals->data = copy_input_signals(bram->write_data);
 
     /* there is no write data to set any we, so it will be connected to GND */
@@ -536,7 +536,7 @@ static void create_rw_single_port_ram(block_memory_t* bram, netlist_t* /* netlis
     /**
      * we pad the data_in port using pad pins 
      * bram->write_data is already filled with pad pins
-    */
+     */
     signals->data = bram->write_data;
 
     /* the rd enables will be deleted since we do not need it anymore */
@@ -705,7 +705,7 @@ static void create_r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
      * [NOTE]:
      * Odin-II handle memory block with more than two distint
      * address ports by muxing read/write ports based on en
-    */
+     */
     bool first_match = sigcmp(wr_addr1, bram->read_addr);
     bool second_match = sigcmp(wr_addr2, bram->read_addr);
 
@@ -728,7 +728,7 @@ static void create_r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     /**
      * one write address is always equal to read addr.
      * As a result, the corresponding write data will be mapped to data1 
-    */
+     */
     signals->data1 = (first_match) ? wr_data1 : wr_data2;
 
     /* free read en since we do not need in DPRAM model */
@@ -821,7 +821,7 @@ static void create_2rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     /**
      * one write address is always equal to read addr.
      * As a result, the corresponding write data will be mapped to data1 
-    */
+     */
     signals->data1 = init_signal_list();
     for (i = 0; i < data_width; ++i) {
         add_pin_to_signal_list(signals->data1, bram->write_data->pins[i]);
@@ -857,7 +857,7 @@ static void create_2rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
      * [NOTE]:
      * Odin-II handle memory block with more than two distint
      * address ports using muxed read/write ports
-    */
+     */
     bool first_match = sigcmp(bram->write_addr, rd_addr1);
     bool second_match = sigcmp(bram->write_addr, rd_addr2);
 
@@ -987,7 +987,7 @@ static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
      * [NOTE]:
      * Odin-II handle memory block with more than two distint
      * address ports using muxed read/write ports
-    */
+     */
     bool first_match_read1 = sigcmp(wr_addr1, rd_addr1);
     bool second_match_read1 = sigcmp(wr_addr2, rd_addr1);
     if (!first_match_read1 && !second_match_read1) {
@@ -1447,7 +1447,7 @@ static nnode_t* ymem_to_rom(nnode_t* node, uintptr_t traverse_mark_number) {
      * RD_CLK:     input port [1]  ==> RD_ADDR:    input port [1] 
      * RD_DATA:    output port[0]  ==> RD_DATA:    output port [0] 
      * RD_ENABLE:  input port [2]  ==> RD_ENABLE:  input port [2] 
-    */
+     */
 
     /* CLK */
     offset = RD_ADDR_width;
@@ -1547,7 +1547,7 @@ static nnode_t* ymem_to_bram(nnode_t* node, uintptr_t traverse_mark_number) {
      * WR_CLK:     input port [4]  ==> WR_DATA:    input port [4]   
      * WR_DATA:    input port [5]  ==> WR_ENABLE:  input port [5]   
      * WR_ENABLE:  input port [6] 
-    */
+     */
 
     /* CLK */
     offset = RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width;

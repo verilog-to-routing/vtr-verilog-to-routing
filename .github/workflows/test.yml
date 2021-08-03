@@ -189,14 +189,17 @@ jobs:
         python-version: 3.6
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
-    - run: ./.github/gha/install_yosys.sh
+    - run: |
+          if [ ${{ matrix.suite }} == 'odin_tech_basic' ]; then
+            ./.github/scripts/install_yosys.sh
+          fi
 
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
         BUILD_TYPE: debug
       run: |
-        ./.github/travis/build.sh
+        ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
 

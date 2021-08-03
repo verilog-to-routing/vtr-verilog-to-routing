@@ -342,7 +342,7 @@ def vtr_command_argparser(prog=None):
         action="store_true",
         dest="fflegalize",
         help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
-             +"(Odin-II synthesis flow generates rising edge FFs by default)",
+        + "(Odin-II synthesis flow generates rising edge FFs by default)",
     )
     #
     # VPR arguments
@@ -594,7 +594,7 @@ def process_odin_args(args):
 
     if args.coarsen:
         odin_args["coarsen"] = True
-    
+
     if args.fflegalize:
         odin_args["fflegalize"] = True
 

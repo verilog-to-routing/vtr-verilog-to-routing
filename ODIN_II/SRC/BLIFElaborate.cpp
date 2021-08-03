@@ -226,7 +226,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             /**
              * resolving the shift nodes by making
              * the input port sizes the same
-            */
+             */
             resolve_shift_nodes(node, traverse_number, netlist);
             break;
         }
@@ -234,7 +234,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case CASE_NOT_EQUAL: {
             /**
              * resolving case equal and not equal nodes by
-            */
+             */
             resolve_case_equal_nodes(node, traverse_number, netlist);
             break;
         }
@@ -268,7 +268,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case DFFSRE: {
             /**
              * resolving flip flop nodes 
-            */
+             */
             resolve_ff_nodes(node, traverse_number, netlist);
             break;
         }
@@ -280,7 +280,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case MULTIPORT_nBIT_SMUX: {
             /**
              * resolving multiplexer nodes which
-            */
+             */
             resolve_mux_nodes(node, traverse_number, netlist);
             break;
         }
@@ -292,7 +292,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case MEMORY: {
             /**
              * resolving memory nodes based on the given architecture
-            */
+             */
             resolve_memory_nodes(node, traverse_number, netlist);
             break;
         }
@@ -345,7 +345,7 @@ static void resolve_logical_nodes(nnode_t* node, uintptr_t traverse_mark_number,
         case NOT_EQUAL: {
             /**
              * remove extra output pins and only keeo the first output pin
-            */
+             */
             prune_logical_node_outputs(node, traverse_mark_number, netlist);
             break;
         }
@@ -358,7 +358,7 @@ static void resolve_logical_nodes(nnode_t* node, uintptr_t traverse_mark_number,
         case LOGICAL_XNOR: {
             /**
              * split logical node into single bit logical node
-            */
+             */
             split_in_single_bit_logic(node, traverse_mark_number, netlist);
             break;
         }
@@ -391,7 +391,7 @@ static void resolve_shift_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
             /**
              * resolving the shift nodes by making
              * the input port sizes the same
-            */
+             */
             equalize_ports_size(node, traverse_mark_number, netlist);
             break;
         }
@@ -421,7 +421,7 @@ static void resolve_case_equal_nodes(nnode_t* node, uintptr_t traverse_mark_numb
         case CASE_EQUAL: {
             /**
              * resolving case equal node using xor and and gates
-            */
+             */
             resolve_case_equal_node(node, traverse_mark_number, netlist);
             break;
         }
@@ -429,7 +429,7 @@ static void resolve_case_equal_nodes(nnode_t* node, uintptr_t traverse_mark_numb
             /**
              * resolving case not equal node by putting not gate 
              * after case equal output node
-            */
+             */
             resolve_case_not_equal_node(node, traverse_mark_number, netlist);
             break;
         }
@@ -472,7 +472,7 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
         case MINUS: {
             /** 
              * equalize the size of input and output ports 
-            */
+             */
             equalize_ports_size(node, traverse_mark_number, netlist);
 
             /* Adding to sub_list for future checking on hard blocks */
@@ -550,7 +550,7 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
             make_selector_as_first_port(node);
             /**
              * resolving pmux node which is using one-hot selector
-            */
+             */
             resolve_pmux_node(node, traverse_mark_number, netlist);
             break;
         }
@@ -603,7 +603,7 @@ static void resolve_latch_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
         case SETCLR: {
             /**
              * resolving a sr node with set and reset
-            */
+             */
             resolve_sr_node(node, traverse_mark_number, netlist);
             break;
         }
@@ -640,42 +640,42 @@ static void resolve_ff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netl
         case SDFF: {
             /**
              * resolving a dff node with reset value
-            */
+             */
             resolve_sdff_node(node, traverse_mark_number, netlist);
             break;
         }
         case DFFE: {
             /**
              * resolving a dff node with enable
-            */
+             */
             resolve_dffe_node(node, traverse_mark_number, netlist);
             break;
         }
         case SDFFE: {
             /**
              * resolving a dff node with enable and srst
-            */
+             */
             resolve_sdffe_node(node, traverse_mark_number, netlist);
             break;
         }
         case SDFFCE: {
             /**
              * resolving a dff node with srst and enable for both output and reset
-            */
+             */
             resolve_sdffce_node(node, traverse_mark_number, netlist);
             break;
         }
         case DFFSR: {
             /**
              * resolving a dff node with set and reset
-            */
+             */
             resolve_dffsr_node(node, traverse_mark_number, netlist);
             break;
         }
         case DFFSRE: {
             /**
              * resolving a dff node with set and reset and enable
-            */
+             */
             resolve_dffsre_node(node, traverse_mark_number, netlist);
             break;
         }
@@ -705,35 +705,35 @@ static void resolve_memory_nodes(nnode_t* node, uintptr_t traverse_mark_number, 
         case SPRAM: {
             /**
              * resolving a single port ram by create the related soft logic
-            */
+             */
             resolve_single_port_ram(node, traverse_mark_number, netlist);
             break;
         }
         case DPRAM: {
             /**
              * resolving a single port ram by create the related soft logic
-            */
+             */
             resolve_dual_port_ram(node, traverse_mark_number, netlist);
             break;
         }
         case ROM: {
             /**
              * resolving a read_only_memory node based on the given architecture
-            */
+             */
             resolve_rom_node(node, traverse_mark_number, netlist);
             break;
         }
         case BRAM: {
             /**
              * resolving a block memory node based on the given architecture
-            */
+             */
             resolve_bram_node(node, traverse_mark_number, netlist);
             break;
         }
         case YMEM: {
             /**
              * resolving yosys $mem to BRAM or ROM
-            */
+             */
             resolve_ymem_node(node, traverse_mark_number, netlist);
             break;
         }

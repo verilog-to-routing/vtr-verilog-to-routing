@@ -60,7 +60,7 @@ void* Verilog::Reader::__read() {
     /**
      *  Now that we have a parse tree (abstract syntax tree [ast]) of
      *	the Verilog we want to make into a netlist.
-    */
+     */
     printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
     create_netlist(verilog_ast);
 

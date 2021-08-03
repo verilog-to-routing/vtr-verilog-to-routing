@@ -1492,7 +1492,7 @@ npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, ed
 
     /* pin2 and its polarity */
     npin_t* pin2_out = NULL;
-    if (pin2){
+    if (pin2) {
         if (pin2_polarity == ACTIVE_LOW_SENSITIVITY) {
             nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
             if (pin2->node)
@@ -1516,7 +1516,7 @@ npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, ed
 
     /* OR both signals */
     npin_t* or_output = NULL;
-    if(pin2) {
+    if (pin2) {
         nnode_t* or_node = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, node->traverse_visited);
         /* hook pin1 outputs as input into OR node */
         add_input_pin_to_node(or_node, pin1_out, 0);

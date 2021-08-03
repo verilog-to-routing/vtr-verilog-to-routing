@@ -58,7 +58,7 @@ void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * D:   input port 0
      * EN:  input port 1
      * Q:   output port 0
-    */
+     */
     int i;
     int D_width = node->input_port_sizes[0];
     // int EN_width = node->input_port_sizes[1]; // == 1
@@ -108,7 +108,7 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
      * D:    input port 1
      * EN:   input port 2
      * Q:    output port 0
-    */
+     */
     int i;
     int ARST_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
@@ -197,7 +197,7 @@ void resolve_sr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* n
      * CLR: input port 0
      * Q:   output port 0
      * SET: input port 1
-    */
+     */
     int width = node->num_output_pins;
     int CLR_width = node->input_port_sizes[0];
 

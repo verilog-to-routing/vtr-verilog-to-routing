@@ -56,13 +56,13 @@ inline void* GenericReader::__read() {
         /**
          * [TODO]
          *  case (file_type_e::_EBLIF): {
-                this->read_systemverilog();
-                break;
-            }
+         * this->read_systemverilog();
+         * break;
+         * }
          *  case (file_type_e::_SYSTEM_VERILOG): {
-                this->read_systemverilog();
-                break;
-            }
+         * this->read_systemverilog();
+         * break;
+         * }
          */
         default: {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file type!\n");

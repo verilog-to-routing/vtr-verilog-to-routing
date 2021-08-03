@@ -55,17 +55,17 @@ inline void GenericWriter::__write(const netlist_t* netlist) {
         /**
          * [TODO]
          *  case (file_type_e::_VERILOG): {
-                netlist = this->write_verilog();
-                break;
-            }
+         * netlist = this->write_verilog();
+         * break;
+         * }
          *  case (file_type_e::_EBLIF): {
-                netlist = this->write_verilog();
-                break;
-            }
+         * netlist = this->write_verilog();
+         * break;
+         * }
          *  case (file_type_e::_SYSTEM_VERILOG): {
-                this->write_systemverilog();
-                break;
-            }
+         * this->write_systemverilog();
+         * break;
+         * }
          */
         default: {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown input file type!\n");
@@ -91,20 +91,20 @@ inline void GenericWriter::__create_file(const file_type_e file_type) {
         /**
          * [TODO]
          *  case (file_type_e::_VERILOG): {
-                this->verilog_writer = new VERILOG::Writer();
-                this->verilog_writer->__create_file();
-                break;
-            }
+         * this->verilog_writer = new VERILOG::Writer();
+         * this->verilog_writer->__create_file();
+         * break;
+         * }
          *  case (file_type_e::_EBLIF): {
-                this->eblif_writer = new EBLIF::Writer();
-                this->eblif_writer->__create_file();
-                break;
-            }
+         * this->eblif_writer = new EBLIF::Writer();
+         * this->eblif_writer->__create_file();
+         * break;
+         * }
          *  case (file_type_e::_SYSTEM_VERILOG): {
-                this->sverilog_writer = new SVERILOG::Writer();
-                this->sverilog_writer->__create_file();
-                break;
-            }
+         * this->sverilog_writer = new SVERILOG::Writer();
+         * this->sverilog_writer->__create_file();
+         * break;
+         * }
          */
         default: {
             error_message(PARSE_ARGS, unknown_location, "%s", "Unknown or invalid output file format!\n");

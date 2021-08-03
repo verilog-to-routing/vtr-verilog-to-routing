@@ -130,7 +130,7 @@ nnode_t* make_inverter(npin_t* pin, nnode_t* node, short mark) {
 
     if (pin->node)
         pin->node->input_pins[pin->pin_node_idx] = NULL;
-    
+
     /* hook the pin into the not node */
     add_input_pin_to_node(logic_node, pin, 0);
 

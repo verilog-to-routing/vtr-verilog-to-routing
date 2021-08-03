@@ -9,13 +9,13 @@
         "Pi": 12,
         "Po": 29,
         "logic element": 220,
-        "latch": 1748,
-        "Adder": 824,
+        "latch": 1706,
+        "Adder": 758,
         "generic logic size": 4,
-        "Longest Path": 93,
+        "Longest Path": 92,
         "Average Path": 5,
         "Estimated LUTs": 220,
-        "Total Node": 2793
+        "Total Node": 2685
     },
     "FIR/ex1BT16_fir_20/k6_N10_40nm": {
         "test_name": "FIR/ex1BT16_fir_20/k6_N10_40nm",
@@ -26,13 +26,13 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 1769,
-        "latch": 1748,
+        "logic element": 1640,
+        "latch": 1706,
         "generic logic size": 6,
-        "Longest Path": 93,
+        "Longest Path": 92,
         "Average Path": 5,
-        "Estimated LUTs": 1769,
-        "Total Node": 3518
+        "Estimated LUTs": 1640,
+        "Total Node": 3347
     },
     "FIR/ex1BT16_fir_20/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex1BT16_fir_20/k6_N10_mem32K_40nm",
@@ -43,13 +43,13 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 1769,
-        "latch": 1748,
+        "logic element": 1640,
+        "latch": 1706,
         "generic logic size": 6,
-        "Longest Path": 93,
+        "Longest Path": 92,
         "Average Path": 5,
-        "Estimated LUTs": 1769,
-        "Total Node": 3518
+        "Estimated LUTs": 1640,
+        "Total Node": 3347
     },
     "FIR/ex1BT16_fir_20/no_arch": {
         "test_name": "FIR/ex1BT16_fir_20/no_arch",
@@ -59,12 +59,12 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 1769,
-        "latch": 1748,
-        "Longest Path": 93,
+        "logic element": 1640,
+        "latch": 1706,
+        "Longest Path": 92,
         "Average Path": 5,
-        "Estimated LUTs": 1769,
-        "Total Node": 3518
+        "Estimated LUTs": 1640,
+        "Total Node": 3347
     },
     "FIR/ex1EP16_fir_6/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "FIR/ex1EP16_fir_6/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -277,13 +277,13 @@
         "Pi": 12,
         "Po": 29,
         "logic element": 364,
-        "latch": 5138,
-        "Adder": 1676,
+        "latch": 4400,
+        "Adder": 1585,
         "generic logic size": 4,
-        "Longest Path": 209,
+        "Longest Path": 179,
         "Average Path": 5,
         "Estimated LUTs": 364,
-        "Total Node": 7179
+        "Total Node": 6350
     },
     "FIR/ex2BT16_fir_71/k6_N10_40nm": {
         "test_name": "FIR/ex2BT16_fir_71/k6_N10_40nm",
@@ -294,13 +294,13 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 3521,
-        "latch": 5138,
+        "logic element": 3342,
+        "latch": 4400,
         "generic logic size": 6,
-        "Longest Path": 209,
+        "Longest Path": 179,
         "Average Path": 5,
-        "Estimated LUTs": 3521,
-        "Total Node": 8660
+        "Estimated LUTs": 3342,
+        "Total Node": 7743
     },
     "FIR/ex2BT16_fir_71/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex2BT16_fir_71/k6_N10_mem32K_40nm",
@@ -311,13 +311,13 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 3521,
-        "latch": 5138,
+        "logic element": 3342,
+        "latch": 4400,
         "generic logic size": 6,
-        "Longest Path": 209,
+        "Longest Path": 179,
         "Average Path": 5,
-        "Estimated LUTs": 3521,
-        "Total Node": 8660
+        "Estimated LUTs": 3342,
+        "Total Node": 7743
     },
     "FIR/ex2BT16_fir_71/no_arch": {
         "test_name": "FIR/ex2BT16_fir_71/no_arch",
@@ -327,12 +327,12 @@
         "Latch Drivers": 1,
         "Pi": 12,
         "Po": 29,
-        "logic element": 3521,
-        "latch": 5138,
-        "Longest Path": 209,
+        "logic element": 3342,
+        "latch": 4400,
+        "Longest Path": 179,
         "Average Path": 5,
-        "Estimated LUTs": 3521,
-        "Total Node": 8660
+        "Estimated LUTs": 3342,
+        "Total Node": 7743
     },
     "FIR/ex2EP16_fir_13/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "FIR/ex2EP16_fir_13/k6_frac_N10_frac_chain_mem32K_40nm",

@@ -57,7 +57,7 @@ void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
     /**
      * need to reformat the order of pins and the number of ports
      * since odin ff_node has only one port which the last pin is clk
-    */
+     */
     int i;
     int width = node->num_output_pins;
     int clk_width = node->input_port_sizes[0];
@@ -102,7 +102,7 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
      * D:    input port 1
      * SRST: input port 2
      * Q:    output port 3
-    */
+     */
     int i;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
@@ -176,7 +176,7 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
      * D:   input port 1
      * EN:  input port 2
      * Q:   output port 3
-    */
+     */
     int i;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
@@ -252,7 +252,7 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
      * EN:   input port 2
      * SRST: input port 3
      * Q:    output port 0
-    */
+     */
     int i;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
@@ -352,7 +352,7 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * EN:   input port 2
      * SRST: input port 3
      * Q:    output port 0
-    */
+     */
     int i;
     int CLK_width = node->input_port_sizes[0]; // == 1
     int D_width = node->input_port_sizes[1];
@@ -448,7 +448,7 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
      * CLR: input port 1
      * D:   input port 2
      * SET: input port 3
-    */
+     */
     int i;
     int width = node->num_output_pins;
     int CLK_width = node->input_port_sizes[0];
@@ -543,7 +543,7 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * EN:  input port 3
      * Q:   output port 0
      * SET: input port 4
-    */
+     */
     int i;
     int width = node->num_output_pins;
     int CLK_width = node->input_port_sizes[0];
