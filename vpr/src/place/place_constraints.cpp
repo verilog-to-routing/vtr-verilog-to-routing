@@ -428,7 +428,15 @@ int get_region_size(const Region& reg, t_logical_block_type_ptr block_type) {
             auto& tile = device_ctx.grid[i + reg_rect.xmin()][j + reg_rect.ymin()].type;
 
             if (is_tile_compatible(tile, block_type)) {
-                vect[i][j] = 1;
+                if (reg.get_sub_tile() != NO_SUBTILE) {
+                	if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
+                		vect[i][j] = 1;
+                	}
+                } else {
+                	vect[i][j] = 1;
+                }
+            } else {
+            	//VTR_LOG("Tile not compatible \n");
             }
 
             if (i < signed(vect.size() - 1)) {
@@ -441,9 +449,9 @@ int get_region_size(const Region& reg, t_logical_block_type_ptr block_type) {
                 vect[i][j] -= vect[i + 1][j + 1];
             }
 
-            VTR_LOG(" %d ", vect[i][j]);
+            //VTR_LOG(" %d ", vect[i][j]);
         }
-        VTR_LOG("\n");
+        //VTR_LOG("\n");
     }
     int num_tiles = vect[0][0];
 
@@ -457,6 +465,8 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type) 
     for (unsigned int i = 0; i < part_reg.size(); i++) {
         num_tiles += get_region_size(part_reg[i], block_type);
     }
+
+    VTR_LOG("Number of tiles is %d \n", num_tiles);
 
     return num_tiles;
 }
