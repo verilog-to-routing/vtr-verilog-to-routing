@@ -66,7 +66,7 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
 void instantiate_shift(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_unary_sub(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist);
-void instantiate_single_sub3(nnode_t* node, short mark, netlist_t* netlist);
+void instantiate_sub_w_borrow(nnode_t* node, short mark, netlist_t* netlist);
 
 void instantiate_soft_logic_ram(nnode_t* node, short mark, netlist_t* netlist);
 
@@ -199,7 +199,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
                     oassert(false);
             } else {
                 if (node->num_input_port_sizes == 3) {
-                    instantiate_single_sub3(node, traverse_number, netlist);
+                    instantiate_sub_w_borrow(node, traverse_number, netlist);
                 } else if (node->num_input_port_sizes == 2) {
                     instantiate_sub_w_carry(node, traverse_number, netlist);
                 } else if (node->num_input_port_sizes == 1) {
@@ -833,15 +833,15 @@ void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist) {
 
 /**
  *---------------------------------------------------------------------------------------------
- * (function: instantiate_single_sub3 )
+ * (function: instantiate_sub_w_borrow )
  * 
- * @brief implementing a single bit subtraction circuit with borrow in and borrow out
+ * @brief instantiating a single bit subtraction circuit with borrow_in and borrow_out
  * 
  * @param node pointing to a logical not node 
  * @param mark unique traversal mark for blif elaboration pass
  * @param netlist pointer to the current netlist file
  *-------------------------------------------------------------------------------------------*/
-void instantiate_single_sub3(nnode_t* node, short mark, netlist_t* netlist) {
+void instantiate_sub_w_borrow(nnode_t* node, short mark, netlist_t* netlist) {
     /* to validate the input otuptu ports */
     oassert(node->num_input_port_sizes > 1);
     oassert(node->num_output_port_sizes > 0);
@@ -851,7 +851,7 @@ void instantiate_single_sub3(nnode_t* node, short mark, netlist_t* netlist) {
     oassert(node->output_port_sizes[0] == 1);
 
     /* to implement the sub 3 logic */
-    instantiate_single_bit_sub3(node, mark, netlist);
+    instantiate_sub_w_borrow_block(node, mark, netlist);
 }
 
 /*---------------------------------------------------------------------------------------------
