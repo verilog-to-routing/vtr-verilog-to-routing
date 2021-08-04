@@ -324,14 +324,14 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
 
                 arrow = "->"; //we will point the coordinates from start to finish, left to right
 
-                if (rr_graph.node_direction(RRNodeId(node->inode)) == Direction::DEC) {              //signal travels along decreasing direction
+                if (rr_graph.node_direction(RRNodeId(node->inode)) == Direction::DEC) {                //signal travels along decreasing direction
                     start_x = " (" + std::to_string(rr_graph.node_xhigh(RRNodeId(node->inode))) + ","; //start coordinates have large value
                     start_y = std::to_string(rr_graph.node_yhigh(RRNodeId(node->inode))) + ")";
                     end_x = "(" + std::to_string(rr_graph.node_xlow(RRNodeId(node->inode))) + ","; //end coordinates have smaller value
                     end_y = std::to_string(rr_graph.node_ylow(RRNodeId(node->inode))) + ")";
                 }
 
-                else {                                                                              // signal travels in increasing direction, stays at same point, or can travel both directions
+                else {                                                                                // signal travels in increasing direction, stays at same point, or can travel both directions
                     start_x = " (" + std::to_string(rr_graph.node_xlow(RRNodeId(node->inode))) + ","; //start coordinates have smaller value
                     start_y = std::to_string(rr_graph.node_ylow(RRNodeId(node->inode))) + ")";
                     end_x = "(" + std::to_string(rr_graph.node_xhigh(RRNodeId(node->inode))) + ","; //end coordinates have larger value
