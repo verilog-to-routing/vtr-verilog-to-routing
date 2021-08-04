@@ -719,11 +719,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         // the regular graph.
         for (int i = 0; i < num_rr_nodes; i++) {
             if (rr_graph.node_type(RRNodeId(i)) == CHANX) {
-                int ylow = device_ctx.rr_nodes[i].ylow();
+                int ylow = rr_graph.node_ylow(RRNodeId(i));
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
             }
             if (rr_graph.node_type(RRNodeId(i)) == CHANY) {
-                int xlow = device_ctx.rr_nodes[i].xlow();
+                int xlow = rr_graph.node_xlow(RRNodeId(i));
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.y_list[xlow]);
             }
         }
@@ -2457,9 +2457,9 @@ std::string describe_rr_node(int inode) {
 
     msg += vtr::string_fmt(" type: %s", rr_node.type_string());
 
-    msg += vtr::string_fmt(" location: (%d,%d)", rr_node.xlow(), rr_node.ylow());
-    if (rr_node.xlow() != rr_node.xhigh() || rr_node.ylow() != rr_node.yhigh()) {
-        msg += vtr::string_fmt(" <-> (%d,%d)", rr_node.xhigh(), rr_node.yhigh());
+    msg += vtr::string_fmt(" location: (%d,%d)", rr_graph.node_xlow(rr_node.id()), rr_graph.node_ylow(rr_node.id()));
+    if (rr_graph.node_xlow(rr_node.id()) != rr_graph.node_xhigh(rr_node.id()) || rr_graph.node_ylow(rr_node.id()) != rr_graph.node_yhigh(rr_node.id())) {
+        msg += vtr::string_fmt(" <-> (%d,%d)", rr_graph.node_xhigh(rr_node.id()), rr_graph.node_yhigh(rr_node.id()));
     }
 
     if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
@@ -2483,7 +2483,7 @@ std::string describe_rr_node(int inode) {
                                    rr_node_direction_string.c_str());
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
-        auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
         std::string pin_name = block_type_pin_index_to_name(type, rr_node.pin_num());
 
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
@@ -2968,8 +2968,8 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const t_rr_graph_storage
 
         for (int to_rr : candidate_rr_nodes) {
             VTR_ASSERT(rr_graph.node_type(RRNodeId(to_rr)) == IPIN);
-            float to_dist = std::abs(rr_nodes.node_xlow(from_rr) - rr_nodes[to_rr].xlow())
-                            + std::abs(rr_nodes.node_ylow(from_rr) - rr_nodes[to_rr].ylow());
+            float to_dist = std::abs(rr_graph.node_xlow(from_rr) - rr_graph.node_xlow(RRNodeId(to_rr)))
+                            + std::abs(rr_graph.node_ylow(from_rr) - rr_graph.node_ylow(RRNodeId(to_rr)));
 
             for (const e_side& to_side : SIDES) {
                 /* Bypass those side where the node does not appear */

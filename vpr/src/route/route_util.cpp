@@ -31,19 +31,19 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
 
         if (rr_type == CHANX) {
             VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX);
-            VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
+            VTR_ASSERT(rr_graph.node_ylow(rr_node.id()) == rr_graph.node_yhigh(rr_node.id()));
 
-            int y = rr_node.ylow();
-            for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
+            int y = rr_graph.node_ylow(rr_node.id());
+            for (int x = rr_graph.node_xlow(rr_node.id()); x <= rr_graph.node_xhigh(rr_node.id()); ++x) {
                 usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
             }
         } else {
             VTR_ASSERT(rr_type == CHANY);
             VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANY);
-            VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
+            VTR_ASSERT(rr_graph.node_xlow(rr_node.id()) == rr_graph.node_xhigh(rr_node.id()));
 
-            int x = rr_node.xlow();
-            for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
+            int x = rr_graph.node_xlow(rr_node.id());
+            for (int y = rr_graph.node_ylow(rr_node.id()); y <= rr_graph.node_yhigh(rr_node.id()); ++y) {
                 usage[x][y] += route_ctx.rr_node_route_inf[inode].occ();
             }
         }
@@ -65,18 +65,18 @@ vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
 
         if (rr_graph.node_type(RRNodeId(inode)) == CHANX && rr_type == CHANX) {
             VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX);
-            VTR_ASSERT(rr_node.ylow() == rr_node.yhigh());
+            VTR_ASSERT(rr_graph.node_ylow(rr_node.id()) == rr_graph.node_yhigh(rr_node.id()));
 
-            int y = rr_node.ylow();
-            for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
+            int y = rr_graph.node_ylow(rr_node.id());
+            for (int x = rr_graph.node_xlow(rr_node.id()); x <= rr_graph.node_xhigh(rr_node.id()); ++x) {
                 avail[x][y] += rr_node_capacity;
             }
         } else if (rr_graph.node_type(RRNodeId(inode)) == CHANY && rr_type == CHANY) {
             VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANY);
-            VTR_ASSERT(rr_node.xlow() == rr_node.xhigh());
+            VTR_ASSERT(rr_graph.node_xlow(rr_node.id()) == rr_graph.node_xhigh(rr_node.id()));
 
-            int x = rr_node.xlow();
-            for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
+            int x = rr_graph.node_xlow(rr_node.id());
+            for (int y = rr_graph.node_ylow(rr_node.id()); y <= rr_graph.node_yhigh(rr_node.id()); ++y) {
                 avail[x][y] += rr_node_capacity;
             }
         }

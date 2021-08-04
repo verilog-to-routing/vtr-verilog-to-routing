@@ -211,8 +211,8 @@ static void check_source(int inode, ClusterNetId net_id) {
                         "in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
     }
 
-    int i = device_ctx.rr_nodes[inode].xlow();
-    int j = device_ctx.rr_nodes[inode].ylow();
+    int i = rr_graph.node_xlow(RRNodeId(inode));
+    int j = rr_graph.node_ylow(RRNodeId(inode));
     /* for sinks and sources, ptc_num is class */
     int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     /* First node_block for net is the source */
@@ -326,16 +326,16 @@ static bool check_adjacent(int from_node, int to_node) {
     num_adj = 0;
 
     from_type = rr_graph.node_type(RRNodeId(from_node));
-    from_xlow = device_ctx.rr_nodes[from_node].xlow();
-    from_ylow = device_ctx.rr_nodes[from_node].ylow();
-    from_xhigh = device_ctx.rr_nodes[from_node].xhigh();
-    from_yhigh = device_ctx.rr_nodes[from_node].yhigh();
+    from_xlow = rr_graph.node_xlow(RRNodeId(from_node));
+    from_ylow = rr_graph.node_ylow(RRNodeId(from_node));
+    from_xhigh = rr_graph.node_xhigh(RRNodeId(from_node));
+    from_yhigh = rr_graph.node_yhigh(RRNodeId(from_node));
     from_ptc = device_ctx.rr_nodes[from_node].ptc_num();
     to_type = rr_graph.node_type(RRNodeId(to_node));
-    to_xlow = device_ctx.rr_nodes[to_node].xlow();
-    to_ylow = device_ctx.rr_nodes[to_node].ylow();
-    to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
-    to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+    to_xlow = rr_graph.node_xlow(RRNodeId(to_node));
+    to_ylow = rr_graph.node_ylow(RRNodeId(to_node));
+    to_xhigh = rr_graph.node_xhigh(RRNodeId(to_node));
+    to_yhigh = rr_graph.node_yhigh(RRNodeId(to_node));
     to_ptc = device_ctx.rr_nodes[to_node].ptc_num();
 
     switch (from_type) {
@@ -393,8 +393,8 @@ static bool check_adjacent(int from_node, int to_node) {
             if (to_type == IPIN) {
                 num_adj += 1; //adjacent
             } else if (to_type == CHANX) {
-                from_xhigh = device_ctx.rr_nodes[from_node].xhigh();
-                to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
+                from_xhigh = rr_graph.node_xhigh(RRNodeId(from_node));
+                to_xhigh = rr_graph.node_xhigh(RRNodeId(to_node));
                 if (from_ylow == to_ylow) {
                     /* UDSD Modification by WMF Begin */
                     /*For Fs > 3, can connect to overlapping wire segment */
@@ -426,8 +426,8 @@ static bool check_adjacent(int from_node, int to_node) {
             if (to_type == IPIN) {
                 num_adj += 1; //adjacent
             } else if (to_type == CHANY) {
-                from_yhigh = device_ctx.rr_nodes[from_node].yhigh();
-                to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+                from_yhigh = rr_graph.node_yhigh(RRNodeId(from_node));
+                to_yhigh = rr_graph.node_yhigh(RRNodeId(to_node));
                 if (from_xlow == to_xlow) {
                     /* UDSD Modification by WMF Begin */
                     if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
@@ -476,14 +476,15 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
     int chany_x, chany_ylow, chany_yhigh;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
-    chanx_y = device_ctx.rr_nodes[chanx_node].ylow();
-    chanx_xlow = device_ctx.rr_nodes[chanx_node].xlow();
-    chanx_xhigh = device_ctx.rr_nodes[chanx_node].xhigh();
+    chanx_y = rr_graph.node_ylow(RRNodeId(chanx_node));
+    chanx_xlow = rr_graph.node_xlow(RRNodeId(chanx_node));
+    chanx_xhigh = rr_graph.node_xhigh(RRNodeId(chanx_node));
 
-    chany_x = device_ctx.rr_nodes[chany_node].xlow();
-    chany_ylow = device_ctx.rr_nodes[chany_node].ylow();
-    chany_yhigh = device_ctx.rr_nodes[chany_node].yhigh();
+    chany_x = rr_graph.node_xlow(RRNodeId(chany_node));
+    chany_ylow = rr_graph.node_ylow(RRNodeId(chany_node));
+    chany_yhigh = rr_graph.node_yhigh(RRNodeId(chany_node));
 
     if (chany_ylow > chanx_y + 1 || chany_yhigh < chanx_y)
         return (0);

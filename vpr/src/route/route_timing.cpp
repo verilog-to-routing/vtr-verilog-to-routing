@@ -1670,8 +1670,8 @@ static size_t calculate_wirelength_available() {
     for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
         const t_rr_type channel_type = rr_graph.node_type(RRNodeId(i));
         if (channel_type == CHANX || channel_type == CHANY) {
-            size_t length_x = device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow();
-            size_t length_y = device_ctx.rr_nodes[i].yhigh() - device_ctx.rr_nodes[i].ylow();
+            size_t length_x = rr_graph.node_xhigh(RRNodeId(i)) - rr_graph.node_xlow(RRNodeId(i));
+            size_t length_y = rr_graph.node_yhigh(RRNodeId(i)) - rr_graph.node_ylow(RRNodeId(i));
 
             available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * (length_x + length_y + 1);
         }
@@ -1936,6 +1936,7 @@ static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& upd
 //Returns the bounding box of a net's used routing resources
 static t_bb calc_current_bb(const t_trace* head) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& grid = device_ctx.grid;
 
     t_bb bb;
@@ -1950,10 +1951,10 @@ static t_bb calc_current_bb(const t_trace* head) {
         //'within' of the BB. Only those which are *strictly* out side the
         //box are excluded, hence we use the nodes xhigh/yhigh for xmin/xmax,
         //and xlow/ylow for xmax/ymax calculations
-        bb.xmin = std::min<int>(bb.xmin, node.xhigh());
-        bb.ymin = std::min<int>(bb.ymin, node.yhigh());
-        bb.xmax = std::max<int>(bb.xmax, node.xlow());
-        bb.ymax = std::max<int>(bb.ymax, node.ylow());
+        bb.xmin = std::min<int>(bb.xmin, rr_graph.node_xhigh(node.id()));
+        bb.ymin = std::min<int>(bb.ymin, rr_graph.node_yhigh(node.id()));
+        bb.xmax = std::max<int>(bb.xmax, rr_graph.node_xlow(node.id()));
+        bb.ymax = std::max<int>(bb.ymax, rr_graph.node_ylow(node.id()));
     }
 
     VTR_ASSERT(bb.xmin <= bb.xmax);

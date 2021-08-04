@@ -191,7 +191,7 @@ void get_serial_num() {
         while (tptr != nullptr) {
             inode = tptr->index;
             serial_num += (size_t(net_id) + 1)
-                          * (device_ctx.rr_nodes[inode].xlow() * (device_ctx.grid.width()) - device_ctx.rr_nodes[inode].yhigh());
+                          * (rr_graph.node_xlow(RRNodeId(inode)) * (device_ctx.grid.width()) - rr_graph.node_yhigh(RRNodeId(inode)));
 
             serial_num -= device_ctx.rr_nodes[inode].ptc_num() * (size_t(net_id) + 1) * 10;
 
@@ -1147,13 +1147,13 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
     const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
     VTR_ASSERT(rr_graph.node_type(RRNodeId(driver_rr)) == SOURCE);
 
-    VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
-    VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
+    VTR_ASSERT(rr_graph.node_xlow(source_node.id()) <= rr_graph.node_xhigh(source_node.id()));
+    VTR_ASSERT(rr_graph.node_ylow(source_node.id()) <= rr_graph.node_yhigh(source_node.id()));
 
-    int xmin = source_node.xlow();
-    int ymin = source_node.ylow();
-    int xmax = source_node.xhigh();
-    int ymax = source_node.yhigh();
+    int xmin = rr_graph.node_xlow(source_node.id());
+    int ymin = rr_graph.node_ylow(source_node.id());
+    int xmax = rr_graph.node_xhigh(source_node.id());
+    int ymax = rr_graph.node_yhigh(source_node.id());
 
     auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
@@ -1161,13 +1161,13 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
         const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
         VTR_ASSERT(rr_graph.node_type(RRNodeId(sink_rr)) == SINK);
 
-        VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
-        VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());
+        VTR_ASSERT(rr_graph.node_xlow(sink_node.id()) <= rr_graph.node_xhigh(sink_node.id()));
+        VTR_ASSERT(rr_graph.node_ylow(sink_node.id()) <= rr_graph.node_yhigh(sink_node.id()));
 
-        xmin = std::min<int>(xmin, sink_node.xlow());
-        xmax = std::max<int>(xmax, sink_node.xhigh());
-        ymin = std::min<int>(ymin, sink_node.ylow());
-        ymax = std::max<int>(ymax, sink_node.yhigh());
+        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_node.id()));
+        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_node.id()));
+        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_node.id()));
+        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_node.id()));
     }
 
     /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
@@ -1238,16 +1238,16 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                 while (tptr != nullptr) {
                     int inode = tptr->index;
                     t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
-                    int ilow = device_ctx.rr_nodes[inode].xlow();
-                    int jlow = device_ctx.rr_nodes[inode].ylow();
+                    int ilow = rr_graph.node_xlow(RRNodeId(inode));
+                    int jlow = rr_graph.node_ylow(RRNodeId(inode));
 
                     fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
                             device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
 
-                    if ((ilow != device_ctx.rr_nodes[inode].xhigh())
-                        || (jlow != device_ctx.rr_nodes[inode].yhigh()))
-                        fprintf(fp, "to (%d,%d) ", device_ctx.rr_nodes[inode].xhigh(),
-                                device_ctx.rr_nodes[inode].yhigh());
+                    if ((ilow != rr_graph.node_xhigh(RRNodeId(inode)))
+                        || (jlow != rr_graph.node_yhigh(RRNodeId(inode))))
+                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(RRNodeId(inode)),
+                                rr_graph.node_yhigh(RRNodeId(inode)));
 
                     switch (rr_type) {
                         case IPIN:

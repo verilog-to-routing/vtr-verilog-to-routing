@@ -171,8 +171,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
 
                     /* Ignore any uninitialized rr_graph nodes */
                     if ((rr_graph.node_type(RRNodeId(to_node)) == SOURCE)
-                        && (device_ctx.rr_nodes[to_node].xlow() == 0) && (device_ctx.rr_nodes[to_node].ylow() == 0)
-                        && (device_ctx.rr_nodes[to_node].xhigh() == 0) && (device_ctx.rr_nodes[to_node].yhigh() == 0)) {
+                        && (rr_graph.node_xlow(RRNodeId(to_node)) == 0) && (rr_graph.node_ylow(RRNodeId(to_node)) == 0)
+                        && (rr_graph.node_xhigh(RRNodeId(to_node)) == 0) && (rr_graph.node_yhigh(RRNodeId(to_node)) == 0)) {
                         continue;
                     }
 
@@ -226,24 +226,24 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 /* Now add in the shared buffer transistors, and reset some flags. */
 
                 if (from_rr_type == CHANX) {
-                    for (i = device_ctx.rr_nodes[from_node].xlow() - 1;
-                         i <= device_ctx.rr_nodes[from_node].xhigh(); i++) {
+                    for (i = rr_graph.node_xlow(RRNodeId(from_node)) - 1;
+                         i <= rr_graph.node_xhigh(RRNodeId(from_node)); i++) {
                         ntrans_sharing += shared_buffer_trans[i];
                         shared_buffer_trans[i] = 0.;
                     }
 
-                    for (i = device_ctx.rr_nodes[from_node].xlow(); i <= device_ctx.rr_nodes[from_node].xhigh();
+                    for (i = rr_graph.node_xlow(RRNodeId(from_node)); i <= rr_graph.node_xhigh(RRNodeId(from_node));
                          i++)
                         cblock_counted[i] = false;
 
                 } else { /* CHANY */
-                    for (j = device_ctx.rr_nodes[from_node].ylow() - 1;
-                         j <= device_ctx.rr_nodes[from_node].yhigh(); j++) {
+                    for (j = rr_graph.node_ylow(RRNodeId(from_node)) - 1;
+                         j <= rr_graph.node_yhigh(RRNodeId(from_node)); j++) {
                         ntrans_sharing += shared_buffer_trans[j];
                         shared_buffer_trans[j] = 0.;
                     }
 
-                    for (j = device_ctx.rr_nodes[from_node].ylow(); j <= device_ctx.rr_nodes[from_node].yhigh();
+                    for (j = rr_graph.node_ylow(RRNodeId(from_node)); j <= rr_graph.node_yhigh(RRNodeId(from_node));
                          j++)
                         cblock_counted[j] = false;
                 }
@@ -370,8 +370,8 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
                     /* Ignore any uninitialized rr_graph nodes */
                     if ((rr_graph.node_type(RRNodeId(to_node)) == SOURCE)
-                        && (device_ctx.rr_nodes[to_node].xlow() == 0) && (device_ctx.rr_nodes[to_node].ylow() == 0)
-                        && (device_ctx.rr_nodes[to_node].xhigh() == 0) && (device_ctx.rr_nodes[to_node].yhigh() == 0)) {
+                        && (rr_graph.node_xlow(RRNodeId(to_node)) == 0) && (rr_graph.node_ylow(RRNodeId(to_node)) == 0)
+                        && (rr_graph.node_xhigh(RRNodeId(to_node)) == 0) && (rr_graph.node_yhigh(RRNodeId(to_node)) == 0)) {
                         continue;
                     }
 
@@ -446,11 +446,11 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
                 /* Reset some flags */
                 if (from_rr_type == CHANX) {
-                    for (i = device_ctx.rr_nodes[from_node].xlow(); i <= device_ctx.rr_nodes[from_node].xhigh(); i++)
+                    for (i = rr_graph.node_xlow(RRNodeId(from_node)); i <= rr_graph.node_xhigh(RRNodeId(from_node)); i++)
                         cblock_counted[i] = false;
 
                 } else { /* CHANY */
-                    for (j = device_ctx.rr_nodes[from_node].ylow(); j <= device_ctx.rr_nodes[from_node].yhigh();
+                    for (j = rr_graph.node_ylow(RRNodeId(from_node)); j <= rr_graph.node_yhigh(RRNodeId(from_node));
                          j++)
                         cblock_counted[j] = false;
                 }

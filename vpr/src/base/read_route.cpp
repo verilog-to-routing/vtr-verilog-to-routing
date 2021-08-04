@@ -209,6 +209,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -266,7 +267,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
             if (tokens[4] == "to") {
                 format_coordinates(x2, y2, tokens[5], inet, filename, lineno);
-                if (node.xlow() != x || node.xhigh() != x2 || node.yhigh() != y2 || node.ylow() != y) {
+                if (rr_graph.node_xlow(node.id()) != x || rr_graph.node_xhigh(node.id()) != x2 || rr_graph.node_yhigh(node.id()) != y2 || rr_graph.node_ylow(node.id()) != y) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "The coordinates of node %d does not match the rr graph", inode);
                 }
@@ -279,7 +280,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 }
                 prev_node = node.id();
             } else {
-                if (node.xlow() != x || node.xhigh() != x || node.yhigh() != y || node.ylow() != y) {
+                if (rr_graph.node_xlow(node.id()) != x || rr_graph.node_xhigh(node.id()) != x || rr_graph.node_yhigh(node.id()) != y || rr_graph.node_ylow(node.id()) != y) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "The coordinates of node %d does not match the rr graph", inode);
                 }

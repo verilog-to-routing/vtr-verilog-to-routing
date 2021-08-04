@@ -82,6 +82,26 @@ class RRGraphView {
         return node_storage_.fan_in(node);
     }
 
+    /* Get the xlow of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_xlow(RRNodeId node) const {
+        return node_storage_.node_xlow(node);
+    }
+    
+    /* Get the xhigh of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_xhigh(RRNodeId node) const {
+        return node_storage_.node_xhigh(node);
+    }
+    
+    /* Get the ylow of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_ylow(RRNodeId node) const {
+        return node_storage_.node_ylow(node);
+    }
+    
+    /* Get the yhigh of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_yhigh(RRNodeId node) const {
+        return node_storage_.node_yhigh(node);
+    }
+    
     /* Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
