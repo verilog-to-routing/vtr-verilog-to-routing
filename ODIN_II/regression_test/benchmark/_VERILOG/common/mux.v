@@ -1,6 +1,6 @@
 `define WIDTH 2
 
-module mux (
+module multiplexer (
 	input 	 			 sel1,
 	input 	 			 sel2,
 	input   [`WIDTH-1:0] x_top, 

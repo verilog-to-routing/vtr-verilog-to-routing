@@ -1,9 +1,9 @@
 yosys -import
 
 # Read VTR baseline library first
-read_verilog -lib -nomem2reg -specify $env(PRIMITIVES);
-setattr -mod -set keep_hierarchy 1 single_port_ram
-setattr -mod -set keep_hierarchy 1 dual_port_ram
+read_verilog -nomem2reg $env(PRIMITIVES);
+# setattr -mod -set keep_hierarchy 1 single_port_ram
+# setattr -mod -set keep_hierarchy 1 dual_port_ram
 
 # Read the hardware decription Verilog
 read_verilog -nomem2reg -nolatches $env(TCL_CIRCUIT);
