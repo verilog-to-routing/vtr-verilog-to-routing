@@ -81,6 +81,8 @@
 #include "lut_stats.h"
 #include "vtr_error.h"
 #include "physical_types.h"
+#include "hard_block_recog.h"
+#include "hard_block_recog_test.h"
 
 #include <sys/stat.h>
 
@@ -140,13 +142,24 @@ t_boolean print_unused_subckt_pins; //user-set flag which controls whether subck
                                     //this option to be true.
 t_boolean eblif_format;             //If true, writes circuit in extended BLIF (.eblif) format (supported by YOSYS & VPR)
 
+t_boolean identify_and_instantiate_custom_hard_blocks; // user-set flag. Which if true, helps find and filter user-defined hard blocks within the netlist (based on the supplied hard block names) and then instantiates the hard blocks within the blif file. 
+									// or if false, then the netlist is processed without identifying any hard blocks.
+									// this option should only be used if the original user-design contained custom hard-blocks.
+									// The user-defined hard block names need to be provided
+
 //============================================================================================
 //			FUNCTION DECLARATIONS
 //============================================================================================
 
+// Srivatsan, test function to better understand how the module data structure /works
+
+void print_module(t_module* my_module);
+
+void print_arch_modules(t_arch* my_arch, std::vector<t_logical_block_type>* my_logical_types);
+
 //Setup Functions
 void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
-			   string* outfile);
+			   string* outfile, std::vector<std::string>* hard_block_list);
 	void setup_tokens (tokmap* tokens);
 
 //Execution Functions
@@ -231,7 +244,20 @@ void echo_blif_model (char* echo_file, const char* vqm_filename,
 
 int main(int argc, char* argv[])
 {
+	//char* test = "test";
+	//char* test_two = "test_two";
+	//test_copy_array_ref(10000);
+	//test_create_unconnected_node_port_association(10, -1, test);
+	//test_create_hard_block_port_info_structure(test);
+	//test_convert_hard_block_model_port_to_hard_block_node_port(test, 25);
+	//test_store_hard_block_port_info(test,test_two,"router", 45);
+	//test_extract_and_store_hard_block_model_port(test, test_two, 500, 1000, "router");
 
+	//test_delete_hard_block_port_info(test, "router", 10000);
+	//test_initialize_hard_block_models();
+
+
+	//test_create_and_initialize_all_hard_block_ports();
 	t_blif_model my_model;
 	//holds top-level model data for the .blif netlist
 	//***The primary goal of the program is to populate and dump this structure appropriately.***
@@ -263,6 +289,9 @@ int main(int argc, char* argv[])
 	//used to construct output filenames from project name 
 	//char* filename necessitated by vqm_parse_file()
 
+	// a list which stores all the user supplied custom hard block names
+	std::vector<std::string> hard_block_list;
+
 //*************************************************************************************************
 //	Begin Conversion
 //*************************************************************************************************
@@ -271,7 +300,14 @@ int main(int argc, char* argv[])
 	cout << "This parser reads a .vqm file and converts it to .blif format.\n\n" ;
 	
 	//verify command-line is correct, populate input variables and global mode flags.
-	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file);
+	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &hard_block_list);
+
+	std::vector<std::string>::iterator it;
+
+	for (it = hard_block_list.begin(); it != hard_block_list.end(); it++)
+	{
+		std::cout << *it << "\n";
+	}
 
 	setup_lut_support_map ();	//initialize LUT support for cleanup and elaborate functions
 
@@ -290,6 +326,8 @@ int main(int argc, char* argv[])
 
     //VQM Parser Call, requires char* filename
     my_module = vqm_parse_file(temp_name);
+
+	//print_module(my_module);
 
 	unsigned long processEnd = clock();
 	cout << "\n>> VQM Parsing took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
@@ -369,8 +407,23 @@ int main(int argc, char* argv[])
 			//file contains cleaned data read from the .vqm structures.
 		}
 	}
-		
-		
+
+	//print_arch_modules(&arch, &logical_block_types);
+	
+	// only process the netlist for any custom hard blocks if the user provided valid hard block names
+	if (identify_and_instantiate_custom_hard_blocks)
+	{
+		try
+		{
+			filter_and_create_hard_blocks(my_module,&arch,&hard_block_list, arch_file, source_file);
+		}
+		catch(const vtr::VtrError& error)
+		{
+			VTR_LOG_ERROR("%s\n", ((std::string)error.what()).c_str());
+			exit(1);
+		}
+	}
+	
 	//Reorganize netlist data into structures conducive to .blif writing.
 	if (verbose_mode){
 		cout << "\n>> Initializing BLIF model\n" ;
@@ -429,7 +482,7 @@ int main(int argc, char* argv[])
 //============================================================================================
 
 void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
-			   string* outfile){
+			   string* outfile, std::vector<std::string>* hard_block_list){
 /*  Interpret the command-line arguments, accepting the input files, output file, and various
  *  mode settings from the user. 
  *
@@ -471,6 +524,10 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
     remove_const_nets = T_FALSE;
     print_unused_subckt_pins = T_FALSE;
     eblif_format = T_FALSE;
+	identify_and_instantiate_custom_hard_blocks = T_FALSE;
+
+	// temporary storage to hold hard block names from the argument list
+	std::string curr_hard_block_name; 
 
 	//Now read the command line to configure input variables.
 	for (int i = 1; i < argc; i++){
@@ -591,6 +648,64 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_EBLIF_FORMAT:
                     eblif_format = T_TRUE;
                     break;
+				case OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS:
+					// first check whether an accompanying hard block name was supplied
+					if ( i+1 == argc ){
+						// no hard block name was supplied so throw an error
+						cout << "ERROR: Missing Hard Block Names.\n" ;
+						print_usage (T_TRUE);
+					}
+
+					// now we loop through and process the following arguments
+					while (T_TRUE)
+					{
+						// first check whether the next argument is a new option or a supplied hard block name
+						it = CmdTokens.find(argv[i+1]);
+
+						// case where the next argument is a command line option
+						if (it != CmdTokens.end())
+						{
+							// When we come here, we need to finish processing further command line arguments for hard block names. Since we have a different command-line option.
+
+							// case one below is when the user didnt provide any hard block names and just provided the next command-line option
+							if (!identify_and_instantiate_custom_hard_blocks)
+							{
+								// since no hard block names were supplied, we throw an error
+								cout << "ERROR: Missing Hard Block Names.\n"; 
+								print_usage (T_TRUE);
+							}
+							else
+							{
+								// the user already provided a legal hard block name, so if we come here then the user simply just wanted to use another command line option, so we just leave this case statement.
+								break;
+							}
+						}
+						else
+						{
+							// when we are here, the user provided an argument which is potentially a valid hard block name
+							curr_hard_block_name.assign(argv[i+1]);
+
+							// check if the provided name is valid
+							verify_hard_block_name(curr_hard_block_name);
+
+							// if we are here then the provided name was valid.
+							identify_and_instantiate_custom_hard_blocks = T_TRUE;
+							
+							hard_block_list->push_back(curr_hard_block_name); // add the hard block name to the list
+
+							// update argument index to show that we have processed the current hard block name successfully
+							i++;
+						}
+
+						// we handle the case where the next argument is empty (if we continued then an exception will be thrown in the find function above)
+						if (i+1 == argc)
+						{
+							// at this point we would have read a vlid input.
+							// Safe to assume that the user just finished providing hard block names
+							break;
+						}
+					}
+					break;
 				default:
 					//Should never get here; unknown tokens aren't mapped.
 					cout << "\nERROR: Token " << argv[i] << " mishandled.\n" ;
@@ -643,6 +758,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-remove_const_nets", OT_REMOVE_CONST_NETS));
 	tokens->insert(tokpair("-include_unused_subckt_pins", OT_INCLUDE_UNUSED_SUBCKT_PINS));
 	tokens->insert(tokpair("-eblif_format", OT_EBLIF_FORMAT));
+	tokens->insert(tokpair("-identify_and_instantiate_custom_hard_blocks", OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS));
 }
 
 //============================================================================================
@@ -2170,6 +2286,98 @@ void echo_blif_model (char* echo_file, const char* vqm_filename,
 	
 	// Close file.
 	model_out.close();
+}
+
+// this is a test function to see how the t_module data structure works (by printing everything)
+
+void print_module(t_module* my_module)
+{
+	t_node* temp_node = NULL;
+	t_node_port_association* temp_ports = NULL;
+	// go through all the nodes in the design
+	for (auto i = 0; i < my_module->number_of_nodes; i++)
+	{
+		temp_node = my_module->array_of_nodes[i];
+
+		for (auto j = 0; j < temp_node->number_of_ports; j++)
+		{
+			temp_ports = temp_node->array_of_ports[j];	
+		} 
+	}
+
+	return;
+}
+
+// this is a test function to see how the t_arch data structure works
+// For the hard block functionality we just care about the modules
+// so print information regarding that
+void print_arch_modules(t_arch* my_arch, std::vector<t_logical_block_type>* my_logical_types)
+{
+	t_model* temp = my_arch->models;
+	t_model_ports* temp_input_ports = NULL;
+	t_model_ports* temp_output_ports = NULL;
+
+	std::string temp_name;
+
+	char* output_port_name = NULL;
+	char* input_port_name  = NULL;
+
+	// iterator to traverse the logical_types
+	std::vector<t_logical_block_type>::iterator it;
+
+	// code related to the logical types
+	t_pb_type* temp_logical_type = NULL;
+	t_port* temp_port = NULL;
+
+	while (temp != NULL)
+	{
+		temp_input_ports = temp->inputs;
+		temp_output_ports = temp->outputs;
+
+		temp_name = temp->name;
+
+		/*if(temp_name.compare("stratixiv_ram_block.opmode{dual_port}.output_type{reg}.port_a_address_width{2}.port_b_address_width{2}") == 0)
+		{
+			// breakpoint here
+			std::cout << "test" << "\n";
+		}*/
+
+		if(temp_name.compare("router") == 0)
+		{
+			// breakpoint here
+			std::cout << "test" << "\n";
+		}
+
+		// lets go through all the ports
+		while (temp_input_ports != NULL)
+		{
+			input_port_name = temp_input_ports->name;
+
+			temp_input_ports = temp_input_ports->next;
+		}
+
+		while (temp_output_ports != NULL)
+		{
+			output_port_name = temp_output_ports->name;
+
+			temp_output_ports = temp_output_ports->next;
+		}
+
+		temp = temp->next;
+	}
+	
+	// we now traverse the logical types
+	for(it = my_logical_types->begin(); it != my_logical_types->end(); it++)
+	{
+		temp_logical_type = it->pb_type;
+
+		for (int i = 0; i < temp_logical_type->num_ports; i++)
+		{
+			temp_port = &(temp_logical_type->ports[i]);
+		}
+	}
+	
+	return;
 }
 
 //============================================================================================

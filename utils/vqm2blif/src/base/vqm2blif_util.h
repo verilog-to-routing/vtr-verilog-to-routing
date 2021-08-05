@@ -43,6 +43,7 @@
 #include <queue>
 #include <set>
 #include <string.h>
+#include <regex>
 
 #include "vqm_dll.h"	//VQM Parser
 #include "hash.h"				//Hash Table Functions
@@ -82,7 +83,8 @@ enum v_OptionBaseToken
     OT_REMOVE_CONST_NETS,
     OT_INCLUDE_UNUSED_SUBCKT_PINS,
     OT_EBLIF_FORMAT,
-	OT_UNKNOWN
+	OT_UNKNOWN,
+  OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS
 };
 
 struct cstrcomp{	//operator structure to compare C-strings within a map class
@@ -114,6 +116,9 @@ struct RamInfo {
 //File Handling
 
 void verify_format (string* filename, string extension);	//verifies a given string ends in ".extension"
+
+// verifies whether the hard block name provided by the user meets verilog naming rules
+void verify_hard_block_name(string curr_hard_block_name); 
 
 void construct_filename (char* filename, const char* path, const char* ext);	//constructs a filename based on the path and termination passed
 

@@ -21,6 +21,7 @@ void print_usage (t_boolean terminate){
     cout << "\t-include_unused_subckt_pins\n";
     cout << "\t-remove_const_nets\n";
     cout << "\t-eblif_format\n";
+    cout << "\t-identify_and_instantiate_custom_hard_blocks <hard_block_1_name> <hard_block_2_name> ...\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
@@ -44,6 +45,42 @@ void verify_format (string* filename, string extension){
 		cout << "ERROR: Improper filename " << *filename << ".\n" ;
 		print_usage(T_TRUE);
 	}
+}
+
+//============================================================================================
+//============================================================================================
+
+//============================================================================================
+//============================================================================================
+
+void verify_hard_block_name(string curr_hard_block_name){
+// verifies whether the hard block name provided by the user meets verilog naming rules
+
+    // naming rules have 2 main conditions:
+    // Condition 1: the first charatcer must be a lowercase/uppercase alphabetical character. Or the first character can be a underscore.
+    // Condition 2: The remaning characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character 
+    std::regex verilog_naming_rules ("^[a-zA-Z_][a-zA-Z_\$0-9]*[a-zA-Z_\$0-9]$");
+
+    if (!(std::regex_match(curr_hard_block_name, verilog_naming_rules)))
+    {
+        // the hard block name did not meet the verilog naming rules
+        // Display error message to user
+        std::cout << "ERROR:The provided Hard Block Name '" << curr_hard_block_name << "' did not meet the verilog naming rules.\n";
+
+        std::cout << "********\n";
+
+        std::cout << "Please ensure the provided Hard Block Names follow the conditions below:\n";
+
+        std::cout << "\tCondition 1: The first character of the Hard Block Name should either be a-z, A-Z or _\n";
+
+        std::cout << "\tCondition 2: The remaining characters of the Hard Block Name should either be a-z, A-Z, 0-9, _ or $\n";
+
+        exit(1);
+
+    }
+
+    return;
+
 }
 
 //============================================================================================
