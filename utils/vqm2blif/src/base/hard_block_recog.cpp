@@ -112,7 +112,7 @@ int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard
     {
         equivalent_hard_block_node_port_array = convert_hard_block_model_port_to_hard_block_node_port(curr_hard_block_model_port);
 
-        store_hard_block_port_info(storage_of_hard_block_info, curr_hard_block_name, curr_hard_block_model_port->name, &equivalent_hard_block_node_port_array, &port_index);
+        store_hard_block_port_info(storage_of_hard_block_info, curr_hard_block_name, curr_hard_block_model_port->name, curr_hard_block_model_port->dir, &equivalent_hard_block_node_port_array, &port_index);
 
         curr_hard_block_model_port = curr_hard_block_model_port->next;
 
@@ -172,7 +172,7 @@ t_node_port_association* create_unconnected_node_port_association(char *port_nam
 }
 
 // need the hard block name itself
-void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_name,std::string curr_port_name, t_array_ref** curr_port_array, int* port_index)
+void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_name,std::string curr_port_name, PORTS current_port_dir,t_array_ref** curr_port_array, int* port_index)
 {
        
     std::unordered_map<std::string,t_hard_block_port_info>::iterator curr_port_info = ((storage_of_hard_block_port_info->hard_block_type_name_to_port_info).find(curr_hard_block_name));
@@ -181,6 +181,9 @@ void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_i
     
     // insert the port name to the current index
     (curr_port_info->second).port_name_to_port_start_index.insert({curr_port_name, *port_index});
+
+    //insert the port direction of the current port
+    (curr_port_info->second).port_name_to_port_dir.insert({curr_port_name, current_port_dir});
 
     *port_index += (*curr_port_array)->array_size;
 

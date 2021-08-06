@@ -31,6 +31,7 @@
 #include "vtr_log.h"
 #include "vqm_common.h"
 #include "vtr_memory.h"
+#include "logic_types.h"
 
 // user vqm2blif libraries
 #include "vqm2blif_util.h"
@@ -67,6 +68,9 @@ typedef struct s_hard_block_port_info
 {
     // mapping structure to quickly identify where a specific port begins
     std::unordered_map<std::string, int> port_name_to_port_start_index;
+    
+    // mapping structure to quickly identify the direction of a port
+    std::unordered_map<std::string, PORTS> port_name_to_port_dir;
 
     // An array of all the ports within the hard block is stored here
     // refer to 'vqm_dll.h' for more information
@@ -165,7 +169,7 @@ t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports
 
 t_node_port_association* create_unconnected_node_port_association(char*, int ,int);
 
-void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string, t_array_ref**, int*);
+void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,PORTS, t_array_ref**, int*);
 
 void copy_array_ref(t_array_ref*, t_array_ref*);
 
