@@ -318,6 +318,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            int* wire_to_rr_ipin_switch,
                            int* Warnings);
 
+std::vector<t_pin_loc> get_pin_loc(const e_pin_type pin_type, const t_physical_tile_type_ptr Type);
+
 /******************* Subroutine definitions *******************************/
 
 void create_rr_graph(const t_graph_type graph_type,
@@ -589,6 +591,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         }
     }
 
+    // Not sure what perturbation is. This may also need to be modified since it uses sets_per_seg_type.
     auto perturb_ipins = alloc_and_load_perturb_ipins(types.size(), segment_inf.size(),
                                                       sets_per_seg_type_x.get(), Fc_in, Fc_out, directionality);
     /* END FC */
@@ -596,6 +599,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* Alloc node lookups, count nodes, alloc rr nodes */
     int num_rr_nodes = 0;
 
+    // Might need to be modifed because it uses the chan width.
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
                                    max_chan_width, grid,
                                    &num_rr_nodes, chan_details_x, chan_details_y);
