@@ -36,9 +36,7 @@ output [`WIDTH-1:0] dpram2_out2;
 input [`DEPTH-1:0] address;
 input [`DEPTH-1:0] address2;
 
-defparam inst1.ADDR_WIDTH = `DEPTH;
-defparam inst1.DATA_WIDTH = `WIDTH;
-dual_port_ram inst1(
+dual_port_ram #(`DEPTH, `WIDTH) inst1(
   .we1(wren1),
   .we2(wren2),
   .clk(clock),
@@ -50,9 +48,7 @@ dual_port_ram inst1(
   .addr2(address2)
 );
 
-defparam inst2.ADDR_WIDTH = `DEPTH;
-defparam inst2.DATA_WIDTH = `WIDTH;
-dual_port_ram inst2(
+dual_port_ram #(`DEPTH, `WIDTH) inst2 (
   .we1(wren1),
   .we2(1'b0),
   .clk(clock),
@@ -64,9 +60,7 @@ dual_port_ram inst2(
   .addr2(address2)
 );
 
-defparam inst3.ADDR_WIDTH = `DEPTH;
-defparam inst3.DATA_WIDTH = `WIDTH;
-single_port_ram inst3(
+single_port_ram #(`DEPTH, `WIDTH) inst3(
   .we(wren1),
   .clk(clock),
   .data(value_in),

@@ -56,6 +56,7 @@ int is_dont_care_string(char* string);
 char* get_pin_name(char* name);
 char* get_port_name(char* name);
 char* get_hard_block_node_name(char* name);
+char* get_stripped_name(const char* subcircuit_name);
 int get_pin_number(char* name);
 short get_bit(char in);
 short get_bit(short in);

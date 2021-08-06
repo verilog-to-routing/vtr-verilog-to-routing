@@ -6,15 +6,13 @@
         "max_rss(MiB)": 82.1,
         "exec_time(ms)": 193.2,
         "techmap_time(ms)": 62.7,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 3,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_4add_2chains_tie_off_depop50_mem20K_22nm": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_4add_2chains_tie_off_depop50_mem20K_22nm",
@@ -23,15 +21,13 @@
         "max_rss(MiB)": 82.3,
         "exec_time(ms)": 273.3,
         "techmap_time(ms)": 84.6,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 3,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_frac_chain_depop50_mem32K_40nm": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_frac_chain_depop50_mem32K_40nm",
@@ -40,15 +36,13 @@
         "max_rss(MiB)": 85.8,
         "exec_time(ms)": 177.5,
         "techmap_time(ms)": 58.6,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -57,15 +51,13 @@
         "max_rss(MiB)": 83.5,
         "exec_time(ms)": 219,
         "techmap_time(ms)": 87.4,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_40nm": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_40nm",
@@ -74,15 +66,13 @@
         "max_rss(MiB)": 85.8,
         "exec_time(ms)": 152.8,
         "techmap_time(ms)": 55.7,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_routedCLK_40nm": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_routedCLK_40nm",
@@ -91,15 +81,13 @@
         "max_rss(MiB)": 83.6,
         "exec_time(ms)": 154.8,
         "techmap_time(ms)": 55.5,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0short_40nm": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0short_40nm",
@@ -108,15 +96,13 @@
         "max_rss(MiB)": 85.2,
         "exec_time(ms)": 192.5,
         "techmap_time(ms)": 56.6,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_mem32K_40nm_custom_pins": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_mem32K_40nm_custom_pins",
@@ -125,15 +111,13 @@
         "max_rss(MiB)": 83.3,
         "exec_time(ms)": 279.7,
         "techmap_time(ms)": 78,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 5,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_frac_N10_mem32K_40nm": {
         "test_name": "arch_sweep/both_ram/k6_frac_N10_mem32K_40nm",
@@ -142,33 +126,25 @@
         "max_rss(MiB)": 85.4,
         "exec_time(ms)": 201.7,
         "techmap_time(ms)": 67.7,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 5,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_N10_40nm": {
         "test_name": "arch_sweep/both_ram/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "input_blif": "both_ram.blif",
+        "exit": 134,
+        "errors": [
+            "[NETLIST] Memory dual_port_ram^MEM~0 of depth 2^11 exceeds ODIN bound of 2^10."
+        ],
         "max_rss(MiB)": 2431.2,
         "exec_time(ms)": 12905.3,
-        "techmap_time(ms)": 12895.7,
-        "Latch Drivers": 1,
-        "Pi": 40,
-        "Po": 40,
-        "logic element": 155943,
-        "latch": 49192,
-        "generic logic size": 6,
-        "Longest Path": 13,
-        "Average Path": 4,
-        "Estimated LUTs": 209303,
-        "Total Node": 205136
+        "techmap_time(ms)": 12895.7
     },
     "arch_sweep/both_ram/k6_N10_mem32K_40nm_fc_abs": {
         "test_name": "arch_sweep/both_ram/k6_N10_mem32K_40nm_fc_abs",
@@ -177,15 +153,13 @@
         "max_rss(MiB)": 82.4,
         "exec_time(ms)": 154.5,
         "techmap_time(ms)": 58.4,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 6,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_N10_mem32K_40nm_nonuniform": {
         "test_name": "arch_sweep/both_ram/k6_N10_mem32K_40nm_nonuniform",
@@ -194,15 +168,13 @@
         "max_rss(MiB)": 82.4,
         "exec_time(ms)": 202.9,
         "techmap_time(ms)": 57.5,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 6,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_N10_mem32K_40nm_pulse": {
         "test_name": "arch_sweep/both_ram/k6_N10_mem32K_40nm_pulse",
@@ -211,15 +183,13 @@
         "max_rss(MiB)": 82.6,
         "exec_time(ms)": 266.7,
         "techmap_time(ms)": 68.5,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 6,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "arch_sweep/both_ram/k6_N10_mem32K_40nm": {
         "test_name": "arch_sweep/both_ram/k6_N10_mem32K_40nm",
@@ -228,15 +198,13 @@
         "max_rss(MiB)": 82.7,
         "exec_time(ms)": 159.2,
         "techmap_time(ms)": 57.6,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 6,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "DEFAULT": {
         "test_name": "n/a",

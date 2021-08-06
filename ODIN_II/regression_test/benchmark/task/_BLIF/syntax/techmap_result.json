@@ -577,31 +577,24 @@
         "max_rss(MiB)": 83.1,
         "exec_time(ms)": 298.7,
         "techmap_time(ms)": 87,
-        "Latch Drivers": 1,
-        "Pi": 40,
+        "Pi": 41,
         "Po": 40,
-        "latch": 40,
         "Memory": 24,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 65
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "syntax/both_ram/no_arch": {
         "test_name": "syntax/both_ram/no_arch",
         "input_blif": "both_ram.blif",
+        "exit": 134,
+        "errors": [
+            "[NETLIST] Memory dual_port_ram^MEM~0 of depth 2^11 exceeds ODIN bound of 2^10."
+        ],
         "max_rss(MiB)": 2430.5,
         "exec_time(ms)": 14471.9,
-        "techmap_time(ms)": 14467.9,
-        "Latch Drivers": 1,
-        "Pi": 40,
-        "Po": 40,
-        "logic element": 155943,
-        "latch": 49192,
-        "Longest Path": 13,
-        "Average Path": 4,
-        "Estimated LUTs": 155943,
-        "Total Node": 205136
+        "techmap_time(ms)": 14467.9
     },
     "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -711,15 +704,13 @@
         "max_rss(MiB)": 63.5,
         "exec_time(ms)": 180,
         "techmap_time(ms)": 38.5,
-        "Latch Drivers": 1,
-        "Pi": 4,
+        "Pi": 5,
         "Po": 4,
-        "latch": 4,
         "Memory": 4,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 9
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 4
     },
     "syntax/constant_module_inst/no_arch": {
         "test_name": "syntax/constant_module_inst/no_arch",
@@ -727,15 +718,14 @@
         "max_rss(MiB)": 45.5,
         "exec_time(ms)": 32.7,
         "techmap_time(ms)": 28.2,
-        "Latch Drivers": 1,
-        "Pi": 4,
+        "Pi": 5,
         "Po": 4,
         "logic element": 168,
-        "latch": 68,
-        "Longest Path": 10,
-        "Average Path": 4,
+        "latch": 64,
+        "Longest Path": 9,
+        "Average Path": 5,
         "Estimated LUTs": 168,
-        "Total Node": 237
+        "Total Node": 232
     },
     "syntax/delay_syntax/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/delay_syntax/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1264,15 +1254,13 @@
         "max_rss(MiB)": 95.1,
         "exec_time(ms)": 285.6,
         "techmap_time(ms)": 119.2,
-        "Latch Drivers": 1,
-        "Pi": 72,
+        "Pi": 73,
         "Po": 64,
-        "latch": 64,
         "Memory": 32,
         "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Total Node": 97
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 32
     },
     "syntax/inferred_DPram/no_arch": {
         "test_name": "syntax/inferred_DPram/no_arch",
@@ -1280,15 +1268,14 @@
         "max_rss(MiB)": 82.7,
         "exec_time(ms)": 175.3,
         "techmap_time(ms)": 170.8,
-        "Latch Drivers": 1,
-        "Pi": 72,
+        "Pi": 73,
         "Po": 64,
         "logic element": 1688,
-        "latch": 576,
-        "Longest Path": 11,
-        "Average Path": 4,
+        "latch": 512,
+        "Longest Path": 10,
+        "Average Path": 5,
         "Estimated LUTs": 1688,
-        "Total Node": 2265
+        "Total Node": 2200
     },
     "syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1297,15 +1284,13 @@
         "max_rss(MiB)": 94.7,
         "exec_time(ms)": 278.7,
         "techmap_time(ms)": 124.6,
-        "Latch Drivers": 1,
-        "Pi": 37,
+        "Pi": 38,
         "Po": 160,
-        "latch": 96,
         "Memory": 96,
         "generic logic size": 4,
-        "Longest Path": 4,
+        "Longest Path": 3,
         "Average Path": 3,
-        "Total Node": 193
+        "Total Node": 96
     },
     "syntax/inferred_ram_w_clog2/no_arch": {
         "test_name": "syntax/inferred_ram_w_clog2/no_arch",
@@ -1313,15 +1298,14 @@
         "max_rss(MiB)": 154,
         "exec_time(ms)": 436.4,
         "techmap_time(ms)": 432.5,
-        "Latch Drivers": 1,
-        "Pi": 37,
+        "Pi": 38,
         "Po": 160,
         "logic element": 6447,
-        "latch": 3168,
-        "Longest Path": 10,
-        "Average Path": 3,
+        "latch": 3072,
+        "Longest Path": 9,
+        "Average Path": 4,
         "Estimated LUTs": 6447,
-        "Total Node": 9616
+        "Total Node": 9519
     },
     "syntax/inferred_SPram/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/inferred_SPram/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1487,13 +1471,13 @@
         "Pi": 38,
         "Po": 32,
         "logic element": 64,
-        "latch": 64,
+        "latch": 32,
         "Memory": 32,
         "generic logic size": 4,
-        "Longest Path": 7,
+        "Longest Path": 6,
         "Average Path": 4,
         "Estimated LUTs": 64,
-        "Total Node": 161
+        "Total Node": 129
     },
     "syntax/memlooptesting/no_arch": {
         "test_name": "syntax/memlooptesting/no_arch",
@@ -1505,11 +1489,11 @@
         "Pi": 38,
         "Po": 32,
         "logic element": 1156,
-        "latch": 576,
-        "Longest Path": 13,
-        "Average Path": 4,
+        "latch": 544,
+        "Longest Path": 12,
+        "Average Path": 5,
         "Estimated LUTs": 1156,
-        "Total Node": 1733
+        "Total Node": 1701
     },
     "syntax/memory_combinational/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/memory_combinational/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1522,14 +1506,14 @@
         "Pi": 79,
         "Po": 32,
         "logic element": 82,
-        "latch": 33,
+        "latch": 1,
         "Adder": 2,
         "Memory": 32,
         "generic logic size": 4,
-        "Longest Path": 10,
+        "Longest Path": 9,
         "Average Path": 5,
         "Estimated LUTs": 82,
-        "Total Node": 150
+        "Total Node": 118
     },
     "syntax/memory_combinational/no_arch": {
         "test_name": "syntax/memory_combinational/no_arch",
@@ -1541,11 +1525,11 @@
         "Pi": 79,
         "Po": 32,
         "logic element": 25987,
-        "latch": 8225,
-        "Longest Path": 16,
+        "latch": 8193,
+        "Longest Path": 15,
         "Average Path": 6,
         "Estimated LUTs": 25987,
-        "Total Node": 34213
+        "Total Node": 34181
     },
     "syntax/mix_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/mix_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1680,17 +1664,13 @@
         "max_rss(MiB)": 64.7,
         "exec_time(ms)": 180.2,
         "techmap_time(ms)": 20.2,
-        "Latch Drivers": 1,
-        "Pi": 10,
+        "Pi": 11,
         "Po": 4,
-        "logic element": 4,
-        "latch": 4,
         "Memory": 4,
         "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 4,
-        "Estimated LUTs": 4,
-        "Total Node": 13
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 4
     },
     "syntax/multi_edge_reader_writer/no_arch": {
         "test_name": "syntax/multi_edge_reader_writer/no_arch",
@@ -1698,15 +1678,14 @@
         "max_rss(MiB)": 46.8,
         "exec_time(ms)": 32.5,
         "techmap_time(ms)": 26.2,
-        "Latch Drivers": 1,
-        "Pi": 10,
+        "Pi": 11,
         "Po": 4,
-        "logic element": 150,
-        "latch": 36,
-        "Longest Path": 12,
+        "logic element": 146,
+        "latch": 32,
+        "Longest Path": 10,
         "Average Path": 5,
-        "Estimated LUTs": 150,
-        "Total Node": 187
+        "Estimated LUTs": 146,
+        "Total Node": 178
     },
     "syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -2112,14 +2091,14 @@
         "Pi": 17,
         "Po": 16,
         "logic element": 8,
-        "latch": 24,
+        "latch": 8,
         "Adder": 9,
         "Memory": 16,
         "generic logic size": 4,
-        "Longest Path": 15,
+        "Longest Path": 14,
         "Average Path": 4,
         "Estimated LUTs": 8,
-        "Total Node": 58
+        "Total Node": 42
     },
     "syntax/spram_big/no_arch": {
         "test_name": "syntax/spram_big/no_arch",
@@ -2131,11 +2110,11 @@
         "Pi": 17,
         "Po": 16,
         "logic element": 8751,
-        "latch": 4120,
-        "Longest Path": 41,
-        "Average Path": 5,
+        "latch": 4104,
+        "Longest Path": 40,
+        "Average Path": 6,
         "Estimated LUTs": 8751,
-        "Total Node": 12872
+        "Total Node": 12856
     },
     "syntax/task_automatic/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/task_automatic/k6_frac_N10_frac_chain_mem32K_40nm",

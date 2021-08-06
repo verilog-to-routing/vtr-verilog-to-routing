@@ -2,8 +2,8 @@ yosys -import
 
 # Read VTR baseline library first
 read_verilog -nomem2reg $env(PRIMITIVES);
-# setattr -mod -set keep_hierarchy 1 single_port_ram
-# setattr -mod -set keep_hierarchy 1 dual_port_ram
+setattr -mod -set keep_hierarchy 1 single_port_ram;
+setattr -mod -set keep_hierarchy 1 dual_port_ram;
 
 # Read the hardware decription Verilog
 read_verilog -nomem2reg -nolatches $env(TCL_CIRCUIT);
@@ -17,7 +17,7 @@ procs; opt;
 # Extraction and optimization of finite state machines
 fsm; opt;
 # Collects memories, their port and create multiport memory cells
-memory_collect; opt;
+memory_collect; memory_dff; opt;
 
 # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
 check;

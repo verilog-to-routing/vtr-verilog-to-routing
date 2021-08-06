@@ -238,6 +238,7 @@ module multiply #(
 endmodule // mult
 
 //single_port_ram module
+(* keep_hierarchy *)
 module single_port_ram #(
     parameter ADDR_WIDTH = 1,
     parameter DATA_WIDTH = 1
@@ -273,6 +274,7 @@ module single_port_ram #(
 endmodule // single_port_RAM
 
 //dual_port_ram module
+(* keep_hierarchy *)
 module dual_port_ram #(
     parameter ADDR_WIDTH = 1,
     parameter DATA_WIDTH = 1

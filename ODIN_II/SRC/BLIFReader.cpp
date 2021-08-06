@@ -341,26 +341,41 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     if (configuration.coarsen)
         hard_block_sensitivities(subcircuit_name, new_node);
 
-    // Determine the type of hard block.
-    char subcircuit_name_prefix[6];
-    memcpy(subcircuit_name_prefix, subcircuit_name, 5);
-    subcircuit_name_prefix[5] = '\0';
+    {
+        // getting the subckt prefix name
+        char* subcircuit_stripped_name = get_stripped_name(subcircuit_name);
+        /* check for coarse-grain configuration */
+        if (configuration.coarsen) {
+            new_node->type = yosys_subckt_strmap[subcircuit_name];
 
-    if (configuration.coarsen) {
-        new_node->type = yosys_subckt_strmap[subcircuit_name];
+            if (subcircuit_stripped_name && new_node->type == NO_OP)
+                new_node->type = yosys_subckt_strmap[subcircuit_stripped_name];
 
-        if (new_node->type == BRAM) {
-            new_node->type = (new_node->attributes->RD_PORTS && new_node->attributes->WR_PORTS) ? BRAM
-                                                                                                : (new_node->attributes->RD_PORTS && !new_node->attributes->WR_PORTS) ? ROM
-                                                                                                                                                                      : operation_list_END;
-        }
-    } else {
-        if (odin_subckt_strmap[subcircuit_name] != NO_OP)
+            if (new_node->type == NO_OP)
+                error_message(PARSE_BLIF, unknown_location,
+                              "Unsupported sub-circuit type (%s) in BLIF file.\n", subcircuit_name);
+
+            if (new_node->type == BRAM) {
+                new_node->type = (new_node->attributes->RD_PORTS
+                                  && new_node->attributes->WR_PORTS)
+                                     ? BRAM
+                                     : (new_node->attributes->RD_PORTS
+                                        && !new_node->attributes->WR_PORTS)
+                                           ? ROM
+                                           : operation_list_END;
+            }
+        } else {
             new_node->type = odin_subckt_strmap[subcircuit_name];
-        else if (odin_subckt_strmap[subcircuit_name_prefix] != NO_OP)
-            new_node->type = odin_subckt_strmap[subcircuit_name_prefix];
-        else
-            new_node->type = MEMORY;
+
+            /* check for subcircuit prefix prefix */
+            if (subcircuit_stripped_name && new_node->type == NO_OP)
+                new_node->type = odin_subckt_strmap[subcircuit_stripped_name];
+
+            if (new_node->type == NO_OP)
+                new_node->type = MEMORY;
+        }
+        // CLEAN UP
+        vtr::free(subcircuit_stripped_name);
     }
 
     // Look up the model in the models cache.
@@ -401,7 +416,11 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
         new_pin->type = INPUT;
-        new_pin->mapping = (new_node->type == BRAM || new_node->type == ROM || new_node->type == MEMORY)
+        new_pin->mapping = (new_node->type == BRAM
+                            || new_node->type == ROM
+                            || new_node->type == SPRAM
+                            || new_node->type == DPRAM
+                            || new_node->type == MEMORY)
                                ? get_hard_block_port_name(mapping)
                                : NULL;
 
@@ -418,7 +437,11 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         npin_t* new_pin = allocate_npin();
         new_pin->name = NULL; //vtr::strdup(name);
         new_pin->type = OUTPUT;
-        new_pin->mapping = (new_node->type == BRAM || new_node->type == ROM || new_node->type == MEMORY)
+        new_pin->mapping = (new_node->type == BRAM
+                            || new_node->type == ROM
+                            || new_node->type == SPRAM
+                            || new_node->type == DPRAM
+                            || new_node->type == MEMORY)
                                ? get_hard_block_port_name(mapping)
                                : NULL;
 

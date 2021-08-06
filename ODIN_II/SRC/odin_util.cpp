@@ -601,6 +601,52 @@ char* get_hard_block_node_name(char* name) {
     return (port_name);
 }
 
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: get_stripped_name)
+ * 
+ * @brief find the sub-circuit name in an altered sub-circuit name
+ * In yosys cases, it appears when there is instantiated parameterized 
+ * module, so Yosys changes the ne name to avoid name collision.
+ * For Odin-II, it looks for the pattern specified as names of supported
+ * hard blocks, such as mult_XXX
+ * 
+ * @param subcircuit_name complete name
+ * 
+ * @return a stripped name
+ * -------------------------------------------------------------------------------------------
+ */
+char* get_stripped_name(const char* subcircuit_name) {
+    /* validation */
+    oassert(subcircuit_name);
+
+    char* subcircuit_stripped_name = NULL;
+
+    /* looking for Yosys style generated RTLIL module name */
+    if (configuration.coarsen) {
+        const char* pos = strchr(subcircuit_name, '\\');
+        if (pos) {
+            const char* end = strchr(pos, '\0');
+            // get stripped name
+            if (end) {
+                subcircuit_stripped_name = (char*)vtr::malloc((end - pos + 1) * sizeof(char));
+                memcpy(subcircuit_stripped_name, pos + 1, end - pos - 1);
+                subcircuit_stripped_name[end - pos - 1] = '\0';
+            }
+        }
+    }
+    /* looking for Odin-II style subckt types */
+    else {
+        /* init sub-circuit */
+        subcircuit_stripped_name = (char*)vtr::calloc(6, sizeof(char));
+        /* Determine the type of hard block. */
+        memcpy(subcircuit_stripped_name, subcircuit_name, 5);
+        subcircuit_stripped_name[5] = '\0';
+    }
+
+    return (subcircuit_stripped_name);
+}
+
 /*
  * Gets the pin number (the number after the ~)
  * from the given name.
