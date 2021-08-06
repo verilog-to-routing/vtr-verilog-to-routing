@@ -4,9 +4,9 @@ SHELL=$(type -P bash)
 # GLOBAL PATH VARIABLES
 THIS_SCRIPT_PATH=$(readlink -f "$0")
 THIS_DIR=$(dirname "${THIS_SCRIPT_PATH}")
-VTR_DIR=$(readlink -f "${THIS_DIR}/..")
-ODIN_DIR="${VTR_DIR}/ODIN_II"
-REGRESSION_DIR="${THIS_DIR}/regression_test"
+ODIN_DIR=$(readlink -f "${THIS_DIR}/../..")
+VTR_DIR="${ODIN_DIR}/.."
+REGRESSION_DIR="${ODIN_DIR}/regression_test"
 REG_LIB="${REGRESSION_DIR}/.library"
 
 ##############################################
@@ -29,7 +29,7 @@ RELAPATH_BLIF_SUITE_DIR=$(realapath_from "${BLIF_SUITE_DIR}" "${PWD}")
 
 TASK_DIR="${BENCHMARK_DIR}/task"
 BLIF_TASK_DIR="${TASK_DIR}/_BLIF"
-RELAPATH_BLIF_TASK_DIR=$(realapath_from "${BLIF_TASK_DIR}" "${PWD}")
+RELAPATH_BLIF_TASK_DIR=$(realapath_from "${BLIF_TASK_DIR}" "${ODIN_DIR}")
 
 
 # COLORS
@@ -178,7 +178,7 @@ function check() {
 
     LOG_PATH="${FILE_PATH}/logs"
 
-    if [ ! -d "${LOG_PATH}" ]; then
+    if [ ! -d "${LOG_PATH}" ] && [ "_${_SHOW_LOG}" == "_on" ]; then
         mkdir -p ${LOG_PATH}
     else    
         find "${LOG_PATH}" -name "${FILE_NAME}.log" -delete
@@ -369,6 +369,7 @@ function run_single_hdl() {
             OUTPUT_REALPATH="${_OUTPUT_PATH}"
         fi
 
+        export TCL_BLIF=${OUTPUT_REALPATH}
         # to check the required path and files
         check "${OUTPUT_BLIF_PATH}" "${TCL_BLIF_NAME%.*}"
 
@@ -377,7 +378,7 @@ function run_single_hdl() {
             continue
         fi
         
-        run_yosys "${ODIN_DIR}/synth.tcl"
+        run_yosys "${THIS_DIR}/synth.tcl"
     done
 
     unset _VERILOG_INPUT_LIST
@@ -417,8 +418,9 @@ function run_task() {
             continue
         fi
 
-
-        run_yosys "${ODIN_DIR}/synth.tcl"
+        export TCL_BLIF="${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}"
+        echo
+        run_yosys "${THIS_DIR}/synth.tcl"
     done
 
     unset _circuit_list

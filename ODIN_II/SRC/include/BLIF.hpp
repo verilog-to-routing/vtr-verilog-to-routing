@@ -34,6 +34,7 @@
 #include "GenericReader.hpp"
 #include "GenericWriter.hpp"
 
+#include "config_t.h"
 #include "odin_types.h"
 #include "Hashtable.hpp"
 

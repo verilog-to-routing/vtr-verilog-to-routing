@@ -45,6 +45,6 @@ stat;
 
 # param is to print non-standard cells attributes
 # impltf is also used not to show the definition of primary netlist ports, i.e. VCC, GND and PAD, in the output.
-write_blif -param -impltf $env(OUTPUT_BLIF_PATH)/$env(TCL_BLIF_NAME);
+write_blif -param -impltf $env(TCL_BLIF);
 
 exit;

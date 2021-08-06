@@ -1257,7 +1257,7 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
                     pin->node->input_pins[pin->pin_node_idx] = NULL;
                 } else {
                     /* pad with zero pins */
-                    npin_t* extension_pin = get_zero_pin(verilog_netlist);
+                    npin_t* extension_pin = get_zero_pin(global_netlist);
                     add_pin_to_signal_list(result, extension_pin);
                 }
             }
@@ -1284,7 +1284,7 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
                     extension_pin = copy_input_npin(operand_signal->pins[pad_bit]);
                 } else {
                     /* otherwise result will be padded with zero pins */
-                    extension_pin = get_zero_pin(verilog_netlist);
+                    extension_pin = get_zero_pin(global_netlist);
                 }
 
                 add_pin_to_signal_list(result, extension_pin);

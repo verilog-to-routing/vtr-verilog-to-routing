@@ -1,8 +1,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include "config_t.h"
 #include "odin_types.h"
-#include "FileTypes.hpp"
 #include "string_cache.h"
 #include "Hashtable.hpp"
 #include "read_xml_arch_file.h"
@@ -23,7 +23,7 @@ extern STRING_CACHE* module_names_to_idx;
 extern STRING_CACHE* output_nets_sc;
 extern STRING_CACHE* input_nets_sc;
 
-extern netlist_t* verilog_netlist;
+extern netlist_t* global_netlist;
 
 extern nnode_t** top_input_nodes;
 extern long num_top_input_nodes;
@@ -54,8 +54,12 @@ extern netlist_t* read_blif_netlist;
  */
 extern HardSoftLogicMixer* mixer;
 
-extern filemap file_type_strmap;
-extern typemap odin_subckt_strmap;
-extern typemap yosys_subckt_strmap;
+// a global var to specify the need for cleanup after receiving coarsen BLIF as input.
+extern bool coarsen_cleanup;
+
+extern strmap<file_type_e> file_type_strmap;
+extern strmap<elaborator_e> elaborator_strmap;
+extern strmap<operation_list> odin_subckt_strmap;
+extern strmap<operation_list> yosys_subckt_strmap;
 
 #endif

@@ -46,8 +46,7 @@ void* Verilog::Reader::__read() {
     printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
     verilog_ast = init_parser();
     parse_to_ast();
-    // GenericReader gr = new GenericReader();
-    // verilog_ast = (ast_t*)gr->read();
+
     /**
      *  Note that the entry point for ast optimzations is done per module with the
      * function void next_parsed_verilog_file(ast_node_t *file_items_list)
@@ -64,5 +63,5 @@ void* Verilog::Reader::__read() {
     printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
     create_netlist(verilog_ast);
 
-    return static_cast<void*>(verilog_netlist);
+    return static_cast<void*>(global_netlist);
 }

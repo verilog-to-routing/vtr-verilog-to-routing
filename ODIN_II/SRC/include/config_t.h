@@ -1,17 +1,18 @@
+#ifndef CONFIG_T_H
+#define CONFIG_T_H
+
 #include <vector>
 #include <string>
-#include "FileTypes.hpp"
-
-#ifndef CONFIG_T_H
-#    define CONFIG_T_H
+#include "odin_types.h"
 
 /* This is the data structure that holds config file details */
 struct config_t {
     std::vector<std::string> list_of_file_names;
 
     std::string debug_output_path; // path for where to output the debug outputs
-    file_type_e input_file_type;
-    file_type_e output_file_type;
+    enum file_type_e input_file_type;
+    enum file_type_e output_file_type;
+    enum elaborator_e elaborator_type;
     bool fflegalize;
     bool coarsen;
 
@@ -50,6 +51,7 @@ struct config_t {
     int soft_logic_memory_width_threshold;
 
     std::string arch_file; // Name of the FPGA architecture file
+    std::string tcl_file;  // Name of the Yosys TCL script file
 };
 
 extern config_t configuration;

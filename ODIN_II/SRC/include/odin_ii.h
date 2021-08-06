@@ -9,9 +9,12 @@ enum ODIN_ERROR_CODE {
     ERROR_PARSE_CONFIG,
     ERROR_PARSE_ARGS,
     ERROR_PARSE_ARCH,
-    ERROR_SYNTHESIS,
     ERROR_PARSE_BLIF,
-
+    ERROR_ELABORATION,
+    ERROR_OPTIMIZATION,
+    ERROR_TECHMAP,
+    ERROR_SYNTHESIS,
+    ERROR_OUTPUT
 };
 
 netlist_t* start_odin_ii(int argc, char** argv);

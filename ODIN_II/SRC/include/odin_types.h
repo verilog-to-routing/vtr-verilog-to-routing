@@ -31,11 +31,11 @@
 #include "read_xml_arch_file.h"
 #include "argparse_value.hpp"
 #include "AtomicBuffer.hpp"
-#include "config_t.h"
 #include <mutex>
 #include <atomic>
 #include <string>
 #include <stdbool.h>
+#include <unordered_map>
 
 #include <stdlib.h>
 
@@ -54,6 +54,9 @@
 #endif
 
 #define ODIN_STD_BITWIDTH (sizeof(long) * 8)
+
+/* buffer size for reading a directory path */
+#define READ_BUFFER_SIZE 1048576 // 1MB
 
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
@@ -83,12 +86,16 @@ struct netlist_t;
 /* the global arguments of the software */
 struct global_args_t {
     std::string program_name;
+    // Odin-II Root directory
+    std::string program_root;
 
     argparse::ArgValue<std::string> config_file;
     argparse::ArgValue<std::vector<std::string>> verilog_files;
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
     argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file
+    argparse::ArgValue<std::string> tcl_file;    // Name of the Yosys TCL script file
+    argparse::ArgValue<std::string> elaborator;  // Name of the external elaborator tool, currently Yosys is supported, default is Odin
     argparse::ArgValue<bool> permissive;         //turn possible_errors into warnings
     argparse::ArgValue<bool> print_parse_tokens; // print the tokens as they are parsed byt the parser
 
@@ -168,6 +175,25 @@ extern const char* LUTRAM_string;
 extern const char* edge_type_e_STR[];
 extern const char* operation_list_STR[][2];
 extern const char* ids_STR[];
+
+template<typename T>
+using strmap = std::unordered_map<std::string, T>;
+
+enum file_type_e {
+    _ILANG, /* not supported yet */
+    _VERILOG,
+    _VERILOG_HEADER,
+    _BLIF,
+    _EBLIF,     /* not supported yet */
+    _UNDEFINED, /* EROOR */
+    file_type_e_END
+};
+
+enum elaborator_e {
+    _ODIN,
+    _YOSYS,
+    elaborator_e_END
+};
 
 enum ieee_std {
     ieee_1995,
@@ -287,7 +313,6 @@ enum operation_list {
                          // [END] operations to cover yosys subckt
     operation_list_END
 };
-typedef std::unordered_map<std::string, operation_list> typemap;
 
 enum ids {
     NO_ID,

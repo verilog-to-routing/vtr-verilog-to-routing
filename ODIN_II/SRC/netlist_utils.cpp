@@ -35,8 +35,6 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-extern global_args_t global_args;
-
 /*---------------------------------------------------------------------------------------------
  * (function: allocate_nnode)
  *-------------------------------------------------------------------------------------------*/
@@ -548,14 +546,14 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
 
     /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
     if (strstr(full_name, ONE_VCC_CNS)) {
-        join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->one_net;
+        join_nets(global_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)global_netlist->one_net;
     } else if (strstr(full_name, ZERO_GND_ZERO)) {
-        join_nets(verilog_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->zero_net;
+        join_nets(global_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)global_netlist->zero_net;
     } else if (strstr(full_name, ZERO_PAD_ZERO)) {
-        join_nets(verilog_netlist->pad_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        input_nets_sc->data[sc_spot_input_old] = (void*)verilog_netlist->pad_net;
+        join_nets(global_netlist->pad_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)global_netlist->pad_net;
     }
     /* check if the instantiation pin exists. */
     else if ((sc_spot_output = sc_lookup_string(output_nets_sc, full_name)) == -1) {
@@ -577,7 +575,7 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
             }
         } else {
             /* already exists so we'll join the nets */
-            combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], verilog_netlist);
+            combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], global_netlist);
             input_nets_sc->data[sc_spot_input_old] = NULL;
         }
     } else {
@@ -592,7 +590,7 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
             input_nets_sc->data[sc_spot_input_old] = (void*)out_net;
         } else if ((out_net != in_net) && (out_net->combined == false)) {
             // merge the out_net into the in_net and alter related string cache data for all nets driven by the out_net
-            combine_nets_with_spot_copy(out_net, in_net, sc_spot_output, verilog_netlist);
+            combine_nets_with_spot_copy(out_net, in_net, sc_spot_output, global_netlist);
         }
     }
 }
@@ -1799,7 +1797,8 @@ void swap_ports(nnode_t*& node, int idx1, int idx2) {
     nnode_t* new_node = allocate_nnode(node->loc);
     for (i = 0; i < node->num_input_port_sizes; i++) {
         int port_idx = -1;
-        port_idx = (i == idx1) ? idx2 : (i == idx2) ? idx1 : i;
+        port_idx = (i == idx1) ? idx2 : (i == idx2) ? idx1
+                                                    : i;
 
         /* add ports information */
         add_input_port_information(new_node, signals[port_idx]->count);

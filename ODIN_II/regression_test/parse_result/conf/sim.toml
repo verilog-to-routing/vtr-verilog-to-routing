@@ -1,7 +1,7 @@
 #include head.toml
 
 ["generated_blif"]
-    regex = "Blif: (.+)"
+    regex = "BLIF: (.+)"
     default = "n/a"
 
 #include basic.toml

@@ -44,8 +44,11 @@
 // for mkdir
 #ifdef WIN32
 #    include <direct.h>
+#    define get_current_path _getcwd
 #else
 #    include <sys/stat.h>
+#    include <unistd.h>
+#    define get_current_path getcwd
 #endif
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc) {
@@ -61,6 +64,15 @@ std::string get_file_extension(std::string input_file) {
     auto dot_location = input_file.find_last_of('.');
     if (dot_location != std::string::npos) {
         return input_file.substr(dot_location);
+    } else {
+        return "";
+    }
+}
+
+std::string get_directory(std::string input_file) {
+    auto last_slash_location = input_file.find_last_of("\\/");
+    if (last_slash_location != std::string::npos) {
+        return input_file.substr(0, last_slash_location);
     } else {
         return "";
     }
@@ -108,6 +120,19 @@ FILE* open_file(const char* file_name, const char* open_type) {
         error_message(UTIL, unknown_location, "cannot open file: %s\n", file_name);
     }
     return opened_file;
+}
+
+/**
+ * (function: get_root_path)
+ *
+ * @brief find the Odin-II root path
+*/
+void get_root_path() {
+    /* create a string buffer to hold path */
+    char buffer[READ_BUFFER_SIZE];
+    get_current_path(buffer, READ_BUFFER_SIZE);
+
+    global_args.program_root = std::string(buffer);
 }
 
 /*---------------------------------------------------------------------------------------------
