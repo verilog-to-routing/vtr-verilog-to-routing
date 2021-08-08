@@ -180,7 +180,7 @@ function check() {
 
     if [ ! -d "${LOG_PATH}" ] && [ "_${_SHOW_LOG}" == "_on" ]; then
         mkdir -p ${LOG_PATH}
-    else    
+    elif [ "_${_SHOW_LOG}" == "_on" ]; then
         find "${LOG_PATH}" -name "${FILE_NAME}.log" -delete
     fi
 }
@@ -419,7 +419,6 @@ function run_task() {
         fi
 
         export TCL_BLIF="${OUTPUT_BLIF_PATH}/${TCL_BLIF_NAME}"
-        echo
         run_yosys "${THIS_DIR}/synth.tcl"
     done
 

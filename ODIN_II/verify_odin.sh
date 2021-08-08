@@ -210,7 +210,7 @@ function generate_blifs() {
     RUN_YOSYS_SCRIPT_PARAMS=" -t ${BENCHMARK} "
     RUN_YOSYS_SCRIPT_PARAMS+="${_RUN_YOSYS_ARGS}"
 
-    ${THIS_DIR}/run_yosys.sh  ${RUN_YOSYS_SCRIPT_PARAMS}
+    ${REGRESSION_DIR}/tools/run_yosys.sh  ${RUN_YOSYS_SCRIPT_PARAMS}
     _RUN_YOSYS_ARGS=""
 }
     
