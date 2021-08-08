@@ -7,7 +7,6 @@ let
     lxml
     python-utils
   ];
-  python27 = pkgs.python27.withPackages python_packages;
   python3 = pkgs.python3.withPackages python_packages;
 in
 stdenv.mkDerivation rec {
@@ -27,7 +26,6 @@ stdenv.mkDerivation rec {
     clang-tools
     gperftools
     perl
-    python27
     python3
     time
   ];
