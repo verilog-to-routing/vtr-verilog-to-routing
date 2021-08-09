@@ -1582,6 +1582,9 @@ void reduce_input_ports(nnode_t*& node, netlist_t* netlist) {
                    ? make_1port_gate(node->type, input_ports[0]->count, node->num_output_pins, node, node->traverse_visited)
                    : make_2port_gate(node->type, input_ports[0]->count, input_ports[1]->count, node->num_output_pins, node, node->traverse_visited);
 
+    /* copt attributes */
+    copy_attribute(new_node->attributes, node->attributes);
+
     /* hook the input pins */
     for (i = 0; i < input_ports[0]->count; i++) {
         npin_t* pin = input_ports[0]->pins[i];
@@ -1939,6 +1942,10 @@ void equalize_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, netlist
     /* creating the new node */
     nnode_t* new_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, new_out_size, node, traverse_mark_number)
                                             : make_2port_gate(node->type, port_a_size, port_b_size, new_out_size, node, traverse_mark_number);
+
+    /* copt attributes */
+    copy_attribute(new_node->attributes, node->attributes);
+
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
         /* remapping the a pins */
