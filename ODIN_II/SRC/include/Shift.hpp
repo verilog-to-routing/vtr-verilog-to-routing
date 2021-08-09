@@ -27,6 +27,5 @@
 
 #include "odin_types.h"
 
-extern signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist);
-
+extern signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, operation_list signedness, netlist_t* netlist);
 #endif //__SHIFT_H__

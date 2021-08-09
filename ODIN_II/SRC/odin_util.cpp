@@ -129,10 +129,11 @@ FILE* open_file(const char* file_name, const char* open_type) {
  */
 void get_root_path() {
     /* create a string buffer to hold path */
-    char buffer[READ_BUFFER_SIZE];
-    get_current_path(buffer, READ_BUFFER_SIZE);
+    char* buffer;
+    buffer = get_current_path(NULL, READ_BUFFER_SIZE);
 
     global_args.program_root = std::string(buffer);
+    vtr::free(buffer);
 }
 
 /*---------------------------------------------------------------------------------------------

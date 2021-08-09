@@ -710,7 +710,7 @@ attr_t* init_attribute() {
  * (function: init_attribute_structure)
  * 	Initializes the netlist node attributes including edge sensitivies and reset value
  *-------------------------------------------------------------------------------------------*/
-attr_t* copy_attribute(attr_t* to, attr_t* copy) {
+void copy_attribute(attr_t* to, attr_t* copy) {
     if (to == NULL)
         to = init_attribute();
 
@@ -741,8 +741,18 @@ attr_t* copy_attribute(attr_t* to, attr_t* copy) {
     to->WR_PORTS = copy->WR_PORTS;
     to->DBITS = copy->DBITS;
     to->ABITS = copy->ABITS;
+}
 
-    return (copy);
+/*---------------------------------------------------------------------------------------------
+ * (function: copy_signedness)
+ * 	Initializes the netlist node attributes including edge sensitivies and reset value
+ *-------------------------------------------------------------------------------------------*/
+void copy_signedness(attr_t* to, attr_t* copy) {
+    if (to == NULL)
+        to = init_attribute();
+
+    to->port_a_signed = copy->port_a_signed;
+    to->port_b_signed = copy->port_b_signed;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -880,7 +890,7 @@ signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long p
     oassert(signalsvar->count % signal_width == 0);
 
     /* no need to prune */
-    if (prune_size <= signal_width)
+    if (prune_size >= signal_width)
         return (signalsvar);
 
     int i, j;
@@ -895,13 +905,15 @@ signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long p
         for (j = 0; j < signal_width; j++) {
             npin_t* pin = splitted_signals[i]->pins[j];
             /* adding pin to new signal list */
-            if (i < prune_size) {
+            if (j < prune_size) {
                 add_pin_to_signal_list(new_signal, pin);
             }
             /* pruning the extra pins */
             else {
                 /* detach from the node, its net and free pin */
                 delete_npin(pin);
+                warning_message(NETLIST, unknown_location,
+                                "Input pin (%s) exceeds the size of its connected port, will be left unconnected", pin->net->name);
             }
         }
 
@@ -1450,87 +1462,92 @@ int get_input_port_index_from_mapping(nnode_t* node, const char* name) {
 }
 
 /**
- * (function: merge_polarity)
+ * (function: legalize_polarity)
  * 
- * @brief merge two pins based on their polarities
+ * @brief legalize latch polarity to RE
  * 
- * @param pin1 first pin
- * @param pin1_polarity first pin polarity
- * @param pin2 second pin
- * @param pin2_polarity second pin polarity
+ * @param pin first pin
+ * @param pin_polarity first pin polarity
  * @param node pointer to pins node for tracking purpose
  * 
- * @return a new pin with ACTIVE_HIGH_SENSITIVIITY polarity
+ * @return a new pin with RISING_EDGE_SENSITIVITY polarity
  */
-npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, edge_type_e pin2_polarity, nnode_t* node) {
+npin_t* legalize_polarity(npin_t* pin, edge_type_e pin_polarity, nnode_t* node) {
     /* validate pins */
-    oassert(pin1 && pin2 && node);
+    oassert(pin && node);
+    oassert(pin->type == INPUT);
 
-    /* pin1 and its polarity */
-    npin_t* pin1_out = NULL;
-    if (pin1_polarity == ACTIVE_LOW_SENSITIVITY) {
+    /* pin and its polarity */
+    npin_t* pin_out = pin;
+
+    /* detach pin from its node */
+    if (pin->node)
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+    if (pin_polarity == FALLING_EDGE_SENSITIVITY || pin_polarity == ACTIVE_LOW_SENSITIVITY) {
+        /* create a not gate */
         nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
-        if (pin1->node)
-            /* remap the pin to not_node node */
-            remap_pin_to_new_node(pin1, not_node, 0);
-        else
-            add_input_pin_to_node(not_node, pin1, 0);
-
-        /* specify eq1 output pin */
-        signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
-        pin1_out = not_outputs->pins[0]->net->fanout_pins[0];
-        pin1_out->sensitivity = ACTIVE_HIGH_SENSITIVITY;
-        // CLEAN UP
-        free_signal_list(not_outputs);
-    } else {
-        pin1_out = pin1;
-        /* detach pin1 */
-        pin1->node->input_pins[pin1->pin_node_idx] = NULL;
+        /* hook the pin into not node */
+        add_input_pin_to_node(not_node, pin, 0);
+        /* create output pins */
+        pin_out = allocate_npin();
+        npin_t* not_out = allocate_npin();
+        nnet_t* not_out_net = allocate_nnet();
+        not_out_net->name = make_full_ref_name(NULL, NULL, NULL, not_node->name, 0);
+        /* hook the output pin into the node */
+        add_output_pin_to_node(not_node, not_out, 0);
+        /* hook up new pin 1 into the new net */
+        add_driver_pin_to_net(not_out_net, not_out);
+        /* hook up the new pin 2 to this new net */
+        add_fanout_pin_to_net(not_out_net, pin_out);
     }
 
-    /* pin2 and its polarity */
-    npin_t* pin2_out = NULL;
-    if (pin2) {
-        if (pin2_polarity == ACTIVE_LOW_SENSITIVITY) {
-            nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
-            if (pin2->node)
-                /* remap the pin to not_node node */
-                remap_pin_to_new_node(pin2, not_node, 0);
-            else
-                add_input_pin_to_node(not_node, pin2, 0);
+    /* set new pin polarity */
+    pin_out->sensitivity = RISING_EDGE_SENSITIVITY;
 
-            /* specify eq1 output pin */
-            signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
-            pin2_out = not_outputs->pins[0];
-            pin2_out->sensitivity = ACTIVE_HIGH_SENSITIVITY;
-            // CLEAN UP
-            free_signal_list(not_outputs);
-        } else {
-            pin2_out = pin2;
-            /* detach pin2 */
-            pin2->node->input_pins[pin2->pin_node_idx] = NULL;
-        }
-    }
+    return (pin_out);
+}
 
-    /* OR both signals */
-    npin_t* or_output = NULL;
-    if (pin2) {
-        nnode_t* or_node = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, node->traverse_visited);
-        /* hook pin1 outputs as input into OR node */
-        add_input_pin_to_node(or_node, pin1_out, 0);
-        add_input_pin_to_node(or_node, pin2_out, 1);
-        /* specify OR output pin */
-        signal_list_t* or_outputs = make_output_pins_for_existing_node(or_node, 1);
-        or_output = or_outputs->pins[0];
-        or_output->sensitivity = ACTIVE_HIGH_SENSITIVITY;
+/**
+ * (function: legalize_latch_clock)
+ * 
+ * @brief legalize latch clock polarity to RE
+ * 
+ * @param pin clk pin
+ * @param pin_polarity clk pin polarity
+ * @param node pointer to pins node for tracking purpose
+ * 
+ * @return a new pin with RISING_EDGE_SENSITIVITY polarity
+ */
+npin_t* legalize_latch_clock(npin_t* pin, edge_type_e pin_polarity, nnode_t* node) {
+    /* validate pins */
+    oassert(pin && node);
+    oassert(pin->type == INPUT);
 
-        // CLEAN UP
-        free_signal_list(or_outputs);
-    } else {
-        or_output = pin1_out;
-    }
+    /* pin and its polarity */
+    npin_t* pin_out = NULL;
+    npin_t* legalized_clk_pin = legalize_polarity(pin, pin_polarity, node);
 
-    return (or_output);
+    /* create a new clock node */
+    nnode_t* clk_node = make_1port_gate(CLOCK_NODE, 1, 1, node, node->traverse_visited);
+    /* hook the pin into not node */
+    add_input_pin_to_node(clk_node, legalized_clk_pin, 0);
+    /* create output pins */
+    pin_out = allocate_npin();
+    npin_t* clk_out = allocate_npin();
+    nnet_t* clk_out_net = allocate_nnet();
+    clk_out_net->name = make_full_ref_name(NULL, NULL, NULL, clk_node->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(clk_node, clk_out, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(clk_out_net, clk_out);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(clk_out_net, pin_out);
+
+    /* set new pin polarity */
+    pin_out->sensitivity = RISING_EDGE_SENSITIVITY;
+
+    return (pin_out);
 }
 
 /**
@@ -1582,8 +1599,8 @@ void reduce_input_ports(nnode_t*& node, netlist_t* netlist) {
                    ? make_1port_gate(node->type, input_ports[0]->count, node->num_output_pins, node, node->traverse_visited)
                    : make_2port_gate(node->type, input_ports[0]->count, input_ports[1]->count, node->num_output_pins, node, node->traverse_visited);
 
-    /* copt attributes */
-    copy_attribute(new_node->attributes, node->attributes);
+    /* copy attributes */
+    copy_signedness(new_node->attributes, node->attributes);
 
     /* hook the input pins */
     for (i = 0; i < input_ports[0]->count; i++) {
@@ -1876,6 +1893,10 @@ void equalize_input_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, n
     /* creating the new node */
     nnode_t* new_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, port_y_size, node, traverse_mark_number)
                                             : make_2port_gate(node->type, port_a_size, port_b_size, port_y_size, node, traverse_mark_number);
+
+    /* copy signedness attributes */
+    copy_signedness(new_node->attributes, node->attributes);
+
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
         /* remapping the a pins */
@@ -1943,8 +1964,8 @@ void equalize_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, netlist
     nnode_t* new_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, new_out_size, node, traverse_mark_number)
                                             : make_2port_gate(node->type, port_a_size, port_b_size, new_out_size, node, traverse_mark_number);
 
-    /* copt attributes */
-    copy_attribute(new_node->attributes, node->attributes);
+    /* copy signedness attributes */
+    copy_signedness(new_node->attributes, node->attributes);
 
     int i;
     for (i = 0; i < node->num_input_pins; i++) {

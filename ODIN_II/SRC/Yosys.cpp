@@ -140,8 +140,10 @@ void Yosys::execute() {
     FILE* fp = run_cmd(yosys_full_command.c_str(), "r");
     int exit_code = WEXITSTATUS(pclose(fp));
 
+    printf("Yosys log file file can be fount at (%s)\n", this->log.c_str());
+
     if (exit_code != 0)
-        throw vtr::VtrError(vtr::string_fmt("Yosys failed to perform elaboration, log file can be found at (%s)\n", this->log.c_str()));
+        throw vtr::VtrError("Yosys failed to perform elaboration\n");
 }
 
 /**

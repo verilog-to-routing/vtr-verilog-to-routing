@@ -43,7 +43,8 @@ void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net);
 void remap_pin_to_new_node(npin_t* pin, nnode_t* new_node, int pin_idx);
 
 attr_t* init_attribute();
-attr_t* copy_attribute(attr_t* to, attr_t* copy);
+void copy_attribute(attr_t* to, attr_t* copy);
+void copy_signedness(attr_t* to, attr_t* copy);
 void free_attribute(attr_t* attribute);
 
 signal_list_t* init_signal_list();
@@ -79,7 +80,8 @@ int get_output_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_output_port_index_from_mapping(nnode_t* node, const char* name);
 int get_input_pin_index_from_mapping(nnode_t* node, const char* name);
 int get_input_port_index_from_mapping(nnode_t* node, const char* name);
-extern npin_t* merge_polarity(npin_t* pin1, edge_type_e pin1_polarity, npin_t* pin2, edge_type_e pin2_polarity, nnode_t* node);
+extern npin_t* legalize_polarity(npin_t* pin, edge_type_e pin_polarity, nnode_t* node);
+extern npin_t* legalize_latch_clock(npin_t* pin, edge_type_e pin_polarity, nnode_t* node);
 extern void reduce_input_ports(nnode_t*& node, netlist_t* netlist);
 extern signal_list_t* reduce_signal_list(signal_list_t* signalvar, operation_list signedness, netlist_t* netlist);
 chain_information_t* allocate_chain_info();

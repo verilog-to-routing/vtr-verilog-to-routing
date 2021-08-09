@@ -155,6 +155,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
     for (i = 0; i < EXPO_width; i++) {
         add_pin_to_signal_list(exponent, node->input_pins[BASE_width + i]);
     }
+    int pad_pin = BASE_width - 1;
     for (i = 0; i < OUT_width; i++) {
         /* here BASE (act as BASE^1) signal should be assigned to interanl output [1] */
         if (i < BASE_width) {
@@ -163,7 +164,7 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
         } else {
             /* for extra pins, padding with zero */
             add_pin_to_signal_list(base, (node->attributes->port_a_signed == operation_list::SIGNED)
-                                             ? get_one_pin(netlist)
+                                             ? copy_input_npin(node->input_pins[pad_pin])
                                              : get_zero_pin(netlist));
         }
     }
@@ -179,6 +180,9 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
          * (BASE^2 ... BASE^(2^n-1)) 
          */
         mul_nodes[i] = make_2port_gate(MULTIPLY, OUT_width, OUT_width, OUT_width, node, traverse_mark_number);
+        /* copy signedness */
+        if (node->attributes->port_a_signed == operation_list::SIGNED)
+            mul_nodes[i]->attributes->port_a_signed = SIGNED;
         /* Adding to mult_list for future checking on hard blocks */
         mult_list = insert_in_vptr_list(mult_list, mul_nodes[i]);
         /* initialize the inernal output signal list */
@@ -315,6 +319,7 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
     /* creating the first and second internal outputs */
     internal_outputs[0] = init_signal_list();
     internal_outputs[1] = init_signal_list();
+    int pad_pin = BASE_width - 1;
     for (i = 0; i < OUT_width; i++) {
         /* here a signal with value one (000...0001) should be assigned to interanl output [0] */
         add_pin_to_signal_list(internal_outputs[0], (i == 0) ? get_one_pin(netlist) : get_zero_pin(netlist));
@@ -325,7 +330,9 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
             add_pin_to_signal_list(internal_outputs[1], node->input_pins[i]);
         } else {
             /* for extra pins, padding with zero */
-            add_pin_to_signal_list(internal_outputs[1], get_zero_pin(netlist));
+            add_pin_to_signal_list(internal_outputs[1], (node->attributes->port_a_signed == operation_list::SIGNED)
+                                                            ? copy_input_npin(node->input_pins[pad_pin])
+                                                            : get_zero_pin(netlist));
         }
     }
 
@@ -336,6 +343,11 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
          * (BASE^2 ... BASE^(2^n-1)) 
          */
         mul_nodes[i - 2] = make_2port_gate(MULTIPLY, OUT_width, OUT_width, OUT_width, node, traverse_mark_number);
+        /* copy signedness */
+        if (node->attributes->port_a_signed == operation_list::SIGNED) {
+            mul_nodes[i - 2]->attributes->port_a_signed = SIGNED;
+            mul_nodes[i - 2]->attributes->port_b_signed = SIGNED;
+        }
         /* Adding to mult_list for future checking on hard blocks */
         mult_list = insert_in_vptr_list(mult_list, mul_nodes[i - 2]);
         /* initialize the inernal output signal list */

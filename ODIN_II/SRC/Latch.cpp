@@ -63,7 +63,8 @@ void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
     int D_width = node->input_port_sizes[0];
     // int EN_width = node->input_port_sizes[1]; // == 1
 
-    npin_t* latch_trigger = merge_polarity(node->input_pins[D_width], node->attributes->enable_polarity, NULL, UNDEFINED_SENSITIVITY, node);
+    /* legalize latch trigger polarity */
+    npin_t* latch_trigger = legalize_latch_clock(node->input_pins[D_width], node->attributes->enable_polarity, node);
 
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
@@ -135,18 +136,36 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
     /*****************************************************************************************/
     /***************************************** FF CLK ****************************************/
     /*****************************************************************************************/
-    npin_t* latch_trigger = merge_polarity(copy_input_npin(select_enable),
-                                           node->attributes->enable_polarity,
-                                           copy_input_npin(select_areset),
-                                           node->attributes->areset_polarity,
-                                           node);
+    npin_t* legalized_arst = legalize_polarity(select_areset, node->attributes->areset_polarity, node);
+    npin_t* legalized_en = legalize_polarity(select_enable, node->attributes->enable_polarity, node);
+    /* feeding the latch rigger with OR arst and en */
+    nnode_t* or_node = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, traverse_mark_number);
+    /* hook the inputs into OR node */
+    add_input_pin_to_node(or_node, legalized_en, 0);
+    add_input_pin_to_node(or_node, legalized_arst, 1);
+    /* create output pin */
+    npin_t* new_pin1 = allocate_npin();
+    npin_t* new_pin2 = allocate_npin();
+    nnet_t* new_net = allocate_nnet();
+    new_net->name = make_full_ref_name(NULL, NULL, NULL, or_node->name, 0);
+    /* hook the output pin into the node */
+    add_output_pin_to_node(or_node, new_pin1, 0);
+    /* hook up new pin 1 into the new net */
+    add_driver_pin_to_net(new_net, new_pin1);
+    /* hook up the new pin 2 to this new net */
+    add_fanout_pin_to_net(new_net, new_pin2);
+
+    /* get clock pin from a clock node */
+    npin_t* legalize_clk = legalize_latch_clock(new_pin2, RISING_EDGE_SENSITIVITY, node);
 
     /* creating a internal nodes to initialize the value of D register */
     for (i = 0; i < D_width; i++) {
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),             // pad while not enable
+        npin_t* Qp = allocate_npin();
+        add_fanout_pin_to_net(node->output_pins[i]->net, Qp);
+        nnode_t* EN_mux = smux_with_sel_polarity(Qp,                               // no change while not enable
                                                  node->input_pins[i + ARST_width], // D[i]
                                                  copy_input_npin(select_enable),   // enable selector
                                                  node                              // node
@@ -167,11 +186,11 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
         /*****************************************************************************************/
         /*************************************** FF_NODE *****************************************/
         /*****************************************************************************************/
-        make_ff_node(ARST_muxes_output_pin,          // D
-                     copy_input_npin(latch_trigger), // clk
-                     node->output_pins[i],           // Q
-                     node,                           // node
-                     netlist                         // netlist
+        make_ff_node(ARST_muxes_output_pin,         // D
+                     copy_input_npin(legalize_clk), // clk
+                     node->output_pins[i],          // Q
+                     node,                          // node
+                     netlist                        // netlist
         );
     }
 

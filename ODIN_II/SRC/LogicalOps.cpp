@@ -64,6 +64,9 @@ void prune_logical_node_outputs(nnode_t* node, uintptr_t traverse_mark_number, n
                             ? make_1port_gate(node->type, max_width, 1, node, traverse_mark_number)
                             : make_2port_gate(node->type, max_width, max_width, 1, node, traverse_mark_number);
 
+    /* copy attributes */
+    copy_signedness(new_node->attributes, node->attributes);
+
     for (i = 0; i < max_width; i++) {
         /* hook the first input into new node */
         if (i < width_a) {
@@ -146,6 +149,10 @@ void split_in_single_bit_logic(nnode_t* node, uintptr_t traverse_mark_number, ne
         nnode_t* new_node = (node->num_input_port_sizes == 1)
                                 ? make_1port_gate(node->type, 1, 1, node, traverse_mark_number)
                                 : make_2port_gate(node->type, 1, 1, 1, node, traverse_mark_number);
+
+        /* copy attributes */
+        copy_signedness(new_node->attributes, node->attributes);
+
         /* hook the first input into new node */
         if (i < width_a) {
             remap_pin_to_new_node(node->input_pins[i], new_node, 0);

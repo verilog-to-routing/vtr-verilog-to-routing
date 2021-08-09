@@ -1366,6 +1366,9 @@ nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netl
                                    out_port_size,
                                    node, traverse_mark_number);
 
+        /* copy attributes */
+        copy_attribute(new_node->attributes, node->attributes);
+
         for (i = 0; i < in_port1_size; i++) {
             remap_pin_to_new_node(node->input_pins[i],
                                   new_node,

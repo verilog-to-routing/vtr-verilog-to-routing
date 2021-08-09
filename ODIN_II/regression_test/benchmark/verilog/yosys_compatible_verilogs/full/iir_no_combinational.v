@@ -1,11 +1,9 @@
-module iir (clk, reset, start, din, params, dout, ready,iir_start,iir_done);
-input clk, reset, start;
+module iir_no_combinational (GLOBAL_SIM_BASE_CLK,  clk, reset, start, din, params, dout, ready,iir_start,iir_done);
+input clk, reset, start, GLOBAL_SIM_BASE_CLK;
 input [7:0] din;
 input [15:0] params;
 output [7:0] dout;
-reg [7:0] dout;
 output ready;
-reg ready;
 reg temp_ready;
 reg [6:0] finite_counter;
 wire count0;
@@ -14,19 +12,20 @@ output iir_done;
 wire iir_done;
 reg del_count0;
 
-reg [15:0] a1, a2, b0, b1, b2, yk1, yk2;
-reg [7:0] uk, uk1, uk2 ;
-reg [28:0] ysum ;
-reg [26:0] yk ;
-reg [22:0] utmp;
-reg [3:0] wait_counter ;
+wire [15:0] a1, a2, b0, b1, b2, yk1, yk2;
+wire [7:0] uk, uk1, uk2 ;
+wire [28:0] ysum ;
+wire [26:0] yk ;
+wire [22:0] utmp;
+wire [3:0] wait_counter ;
 // temporary variable
 wire [31:0] yo1, yo2;
 //wire [23:0] b0t, b1t, b2t;
 wire [22:0] b0t, b1t, b2t;
 wire [22:0] b0tpaj, b1tpaj, b2tpaj;
 
-reg [3:0] obf_state, obf_next_state ;
+wire [3:0] obf_state;
+reg [3:0] obf_next_state ;
 
 reg [7:0] temp_uk, temp_uk1, temp_uk2 ;
 reg [15:0] temp_a1, temp_a2, temp_b0, temp_b1, temp_b2, temp_yk1, temp_yk2;
@@ -166,22 +165,22 @@ assign b0tpaj = b0t;
 assign b1tpaj = b1t;
 assign b2tpaj = b2t;
 
-wire tmp_uk;
-wire tmp_uk1;
-wire tmp_uk2;
-wire tmp_yk1;
-wire tmp_yk2;
-wire tmp_yk;
-wire tmp_ysum;
-wire tmp_utmp;
-wire tmp_a1;
-wire tmp_a2;
-wire tmp_b0;
-wire tmp_b1;
-wire tmp_b2;
-wire tmp_dout;
-wire tmp_obf_state;
-wire tmp_ready;
+reg tmp_uk;
+reg tmp_uk1;
+reg tmp_uk2;
+reg tmp_yk1;
+reg tmp_yk2;
+reg tmp_yk;
+reg tmp_ysum;
+reg tmp_utmp;
+reg tmp_a1;
+reg tmp_a2;
+reg tmp_b0;
+reg tmp_b1;
+reg tmp_b2;
+reg tmp_dout;
+reg tmp_obf_state;
+reg tmp_ready;
 
 // async reset
 assign uk = (reset)? 0: tmp_uk;
@@ -223,8 +222,9 @@ end
 // wait counter, count 4 clock after sum is calculated, to 
 // time outputs are ready, and filter is ready to accept next
 // input
-wire tmp_wait_counter;
-assign wait_counter = (reset)? 0 : tmp_wait_counter;wire tmp_finite_counter;
+reg tmp_wait_counter;
+assign wait_counter = (reset)? 0 : tmp_wait_counter;
+wire tmp_finite_counter;
 
 
 always @(posedge clk ) begin
@@ -248,5 +248,6 @@ always @(posedge clk) begin
 end
 
 assign iir_done = (count0 && ~del_count0); 
+
 
 endmodule

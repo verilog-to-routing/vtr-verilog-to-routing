@@ -196,7 +196,9 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
         /*****************************************************************************************/
         /*************************************** EN_MUXES ****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),            // connect to pad while is not enable
+        npin_t* Qp = allocate_npin();
+        add_fanout_pin_to_net(node->output_pins[i]->net, Qp);
+        nnode_t* EN_mux = smux_with_sel_polarity(Qp,                              // no change while is not enable
                                                  node->input_pins[i + CLK_width], // D[i]
                                                  copy_input_npin(select_enable),  // enable selector
                                                  node                             // node
@@ -284,7 +286,9 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),            // pad while is not enable
+        npin_t* Qp = allocate_npin();
+        add_fanout_pin_to_net(node->output_pins[i]->net, Qp);
+        nnode_t* EN_mux = smux_with_sel_polarity(Qp,                              // no change while is not enable
                                                  node->input_pins[i + CLK_width], // D[i]
                                                  copy_input_npin(select_enable),  // enable selector
                                                  node                             // node
@@ -396,8 +400,10 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /*************************************** EN_MUX *****************************************/
         /*****************************************************************************************/
+        npin_t* Qp = allocate_npin();
+        add_fanout_pin_to_net(node->output_pins[i]->net, Qp);
         nnode_t* EN_mux = smux_with_sel_polarity(SRST_muxes_output_pin,          // pad node while is not enable
-                                                 get_pad_pin(netlist),           // sreset mux output
+                                                 Qp,                             // Q
                                                  copy_input_npin(select_enable), // enable selecor
                                                  node                            // node
         );
@@ -565,7 +571,9 @@ void resolve_dffsre_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         /*************************************** EN_MUXES ****************************************/
         /*****************************************************************************************/
-        nnode_t* EN_mux = smux_with_sel_polarity(get_pad_pin(netlist),                        // pad while not enable
+        npin_t* Qp = allocate_npin();
+        add_fanout_pin_to_net(node->output_pins[i]->net, Qp);
+        nnode_t* EN_mux = smux_with_sel_polarity(Qp,                                          // no change while not enable
                                                  node->input_pins[CLK_width + CLR_width + i], // D[i]
                                                  copy_input_npin(select_enable),              // enable selector
                                                  node                                         // node

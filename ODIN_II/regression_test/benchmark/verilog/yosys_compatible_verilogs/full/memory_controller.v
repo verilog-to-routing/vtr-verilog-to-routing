@@ -5,10 +5,10 @@
 module memory_controller
 (
 	clk,
-	addr1,
-	addr2,
 	we1,
 	we2,
+	addr1,
+	addr2,
 	data1,
 	data2,
 	sp_out, 

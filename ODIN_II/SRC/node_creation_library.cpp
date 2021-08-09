@@ -465,8 +465,9 @@ extern nnode_t* make_ff_node(npin_t* D, npin_t* clk, npin_t* Q, nnode_t* node, n
     /* detach from old node */
     if (FF_input->node)
         FF_input->node->input_pins[FF_input->pin_node_idx] = NULL;
-    if (clk->node) {
-        clk->node->input_pins[clk->pin_node_idx] = NULL;
+    npin_t* FF_clk = clk;
+    if (FF_clk->node) {
+        FF_clk->node->input_pins[FF_clk->pin_node_idx] = NULL;
     }
 
     bool latch = false;
@@ -479,22 +480,32 @@ extern nnode_t* make_ff_node(npin_t* D, npin_t* clk, npin_t* Q, nnode_t* node, n
         if (clk->sensitivity == FALLING_EDGE_SENSITIVITY) {
             nnode_t* not_node = make_1port_gate(LOGICAL_NOT, 1, 1, node, node->traverse_visited);
             /* hook the input into not node */
-            add_input_pin_to_node(not_node, D, 0);
+            add_input_pin_to_node(not_node, clk, 0);
             /* create output pin */
             signal_list_t* not_outputs = make_output_pins_for_existing_node(not_node, 1);
-            FF_input = not_outputs->pins[0];
+            FF_clk = not_outputs->pins[0];
+
+            /* create clk node */
+            nnode_t* clk_node = make_1port_gate(CLOCK_NODE, 1, 1, node, node->traverse_visited);
+            /* hook the input into not node */
+            add_input_pin_to_node(clk_node, FF_clk, 0);
+            /* create output pin */
+            signal_list_t* clk_outputs = make_output_pins_for_existing_node(clk_node, 1);
+            FF_clk = clk_outputs->pins[0];
+
             /* change clk sensitivity */
-            clk->sensitivity = RISING_EDGE_SENSITIVITY;
+            FF_clk->sensitivity = RISING_EDGE_SENSITIVITY;
             // CLEAN UP
             free_signal_list(not_outputs);
+            free_signal_list(clk_outputs);
         }
     }
 
     /* create FF node */
     nnode_t* FF_node = make_2port_gate(FF_NODE, 1, 1, 1, node, node->traverse_visited);
     /* hook clk into FF node */
-    FF_node->attributes->clk_edge_type = clk->sensitivity;
-    add_input_pin_to_node(FF_node, clk, 1);
+    FF_node->attributes->clk_edge_type = FF_clk->sensitivity;
+    add_input_pin_to_node(FF_node, FF_clk, 1);
     /* hook D into FF node */
     add_input_pin_to_node(FF_node, FF_input, 0);
 

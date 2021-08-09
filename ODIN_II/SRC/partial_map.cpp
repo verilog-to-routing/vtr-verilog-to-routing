@@ -1278,8 +1278,7 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
             for (i = output_width - 1; i >= operand_width - shift_size; i--) {
                 npin_t* extension_pin = NULL;
                 if (node->related_ast_node
-                    && node->related_ast_node->types.variable.signedness == SIGNED
-                    && node->type == ASR) {
+                    && node->attributes->port_a_signed == SIGNED && node->type == ASR) {
                     /* for signed values padding will be with last pin */
                     extension_pin = copy_input_npin(operand_signal->pins[pad_bit]);
                 } else {

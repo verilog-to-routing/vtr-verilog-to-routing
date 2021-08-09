@@ -286,6 +286,9 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
 
     int variable_operand_offset = (port_status == mult_port_stat_e::MULTIPICAND_CONSTANT) ? 0 : IN1_width;
     int variable_operand_width = node->num_input_pins - const_operand_width;
+    operation_list variable_operand_signedness = (port_status == mult_port_stat_e::MULTIPICAND_CONSTANT)
+                                                     ? node->attributes->port_a_signed
+                                                     : node->attributes->port_b_signed;
 
     /* after each level one bit will be added to the width of results */
     int width = node->num_output_pins;
@@ -365,6 +368,7 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
                 /* keeping the shift output nodes for adding with the previous stage internal outputs */
                 signal_list_t* shift_outputs = init_signal_list();
 
+                int pad_pin = variable_operand->count - 1;
                 for (j = 0; j < width; j++) {
                     if (j < variable_operand_width) {
                         /* connecing the first input of the shift node */
@@ -373,7 +377,9 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
                                               j);
                     } else {
                         add_input_pin_to_node(shift_node,
-                                              get_zero_pin(netlist),
+                                              (variable_operand_signedness == SIGNED)
+                                                  ? copy_input_npin(variable_operand->pins[pad_pin])
+                                                  : get_zero_pin(netlist),
                                               j);
                     }
 
@@ -1650,6 +1656,8 @@ static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat,
     /* constatnt and variable port of the given multipication */
     signal_list_t* const_port = init_signal_list();
     signal_list_t* var_port = init_signal_list();
+    operation_list const_signedness = UNSIGNED;
+    operation_list var_signedness = UNSIGNED;
 
     /* initialize const and var port signals */
     if (mult_port_stat == mult_port_stat_e::MULTIPICAND_CONSTANT) {
@@ -1657,19 +1665,23 @@ static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat,
         for (i = 0; i < node->input_port_sizes[0]; i++) {
             add_pin_to_signal_list(var_port, node->input_pins[i]);
         }
+        var_signedness = node->attributes->port_a_signed;
         /* adding const port pins to signal list */
         for (i = node->input_port_sizes[0]; i < node->num_input_pins; i++) {
             add_pin_to_signal_list(const_port, node->input_pins[i]);
         }
+        const_signedness = node->attributes->port_b_signed;
     } else if (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) {
         /* adding var port pins to signal list */
         for (i = 0; i < node->input_port_sizes[0]; i++) {
             add_pin_to_signal_list(const_port, node->input_pins[i]);
         }
+        const_signedness = node->attributes->port_a_signed;
         /* adding const port pins to signal list */
         for (i = node->input_port_sizes[0]; i < node->num_input_pins; i++) {
             add_pin_to_signal_list(var_port, node->input_pins[i]);
         }
+        var_signedness = node->attributes->port_b_signed;
     }
 
     int idx = -1;
@@ -1697,6 +1709,14 @@ static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat,
     /* creating new mult node */
     int offset = 0;
     nnode_t* new_node = make_2port_gate(node->type, first_port->count, second_port->count, node->num_output_pins, node, traverse_mark_number);
+    /* copy attributes */
+    if (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) {
+        new_node->attributes->port_a_signed = const_signedness;
+        new_node->attributes->port_b_signed = var_signedness;
+    } else {
+        new_node->attributes->port_a_signed = var_signedness;
+        new_node->attributes->port_b_signed = const_signedness;
+    }
     /* adding first port */
     for (i = 0; i < first_port->count; i++) {
         remap_pin_to_new_node(first_port->pins[i], new_node, offset + i);

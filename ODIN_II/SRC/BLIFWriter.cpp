@@ -466,10 +466,12 @@ void BLIF::Writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* f
         case HARD_IP:
             define_hard_block(node, fp);
             break;
+        case CLOCK_NODE:
+            define_clock(node, fp);
+            break;
         case INPUT_NODE:
         case OUTPUT_NODE:
         case PAD_NODE:
-        case CLOCK_NODE:
         case GND_NODE:
         case VCC_NODE:
             /* some nodes already converted */
@@ -605,6 +607,24 @@ void BLIF::Writer::define_set_input_logical_function(nnode_t* node, const char* 
         fprintf(out, "%s", bit_output);
     }
     fprintf(out, "\n");
+}
+
+/** 
+ * ---------------------------------------------------------------------------------------------
+ * (function: define_clock)
+ * ---------------------------------------------------------------------------------------------
+ */
+void BLIF::Writer::define_clock(nnode_t* node, FILE* out) {
+    oassert(node->num_input_pins < 2);
+
+    if (node->num_input_pins == 1) {
+        print_dot_names_header(out, node);
+
+        /* print out the blif definition of this gate */
+        fprintf(out, "%s", "1 1");
+
+        fprintf(out, "\n");
+    }
 }
 
 /**

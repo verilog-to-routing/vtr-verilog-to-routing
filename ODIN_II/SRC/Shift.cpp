@@ -43,7 +43,7 @@
  * @param assignment_size width of the output
  * @param netlist pointer to the current netlist file
  */
-signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, netlist_t* netlist) {
+signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size, const operation_list shift_type, const int assignment_size, operation_list signedness, netlist_t* netlist) {
     signal_list_t* return_list = init_signal_list();
 
     /* record the size of the shift */
@@ -92,15 +92,15 @@ signal_list_t* constant_shift(signal_list_t* input_signals, const int shift_size
                 }
             }
 
+            int pad_bit = input_width - 1;
             /* Extend pad_bit to outputs that don't have inputs connected */
             for (i = output_width - 1; i >= input_width - shift_size; i--) {
                 npin_t* extension_pin = NULL;
-                // [TODO]: Extra potential feature, check for signedness
-                // if (op->children[0]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
-                //     extension_pin = copy_input_npin(input_signals->pins[pad_bit]);
-                // } else {
-                extension_pin = get_zero_pin(netlist);
-                // }
+                if (signedness == SIGNED && shift_type == ASR) {
+                    extension_pin = copy_input_npin(input_signals->pins[pad_bit]);
+                } else {
+                    extension_pin = get_zero_pin(netlist);
+                }
 
                 add_pin_to_signal_list(return_list, extension_pin);
                 extension_pin->node = NULL;

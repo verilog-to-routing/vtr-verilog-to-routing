@@ -291,7 +291,7 @@ void resolve_pmux_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
                 // choosing between node and level_muxes[0] is because we remap the B signal in i = 0
                 add_pin_to_signal_list(signal_B_to_shift, copy_input_npin(signal_B->pins[j]));
             }
-            signal_list_t* shifted_B = constant_shift(signal_B_to_shift, i, SR, width, netlist);
+            signal_list_t* shifted_B = constant_shift(signal_B_to_shift, i, SR, width, UNSIGNED, netlist);
 
             /* Connecting multiplexing inputs of ternary_muxes, 0: B>>2^i, 1:'hxxx */
             for (j = 0; j < width; j++) {
