@@ -52,8 +52,8 @@ void verify_format (string* filename, string extension){
 
 
 
-void verify_hard_block_name(string curr_hard_block_name){
-// verifies whether the hard block name provided by the user meets verilog naming rules
+void verify_hard_block_type_name(string curr_hard_block_type_name){
+// verifies whether the hard block name (type of hard block) provided by the user meets verilog naming rules
 
     // naming rules have 2 main conditions:
     // Condition 1: the first charatcer must be a lowercase/uppercase alphabetical character. Or the first character can be a underscore.
@@ -64,21 +64,21 @@ void verify_hard_block_name(string curr_hard_block_name){
     // we check this below
     std::regex verilog_naming_rules_two ("[\\](.*)", std::regex_constants::extended);
 
-   if ((!(std::regex_match(curr_hard_block_name, verilog_naming_rules_one))) && (!(std::regex_match(curr_hard_block_name, verilog_naming_rules_two))))
+   if ((!(std::regex_match(curr_hard_block_type_name, verilog_naming_rules_one))) && (!(std::regex_match(curr_hard_block_type_name, verilog_naming_rules_two))))
     {
-        // the hard block name did not meet the verilog naming rules
+        // the hard block type name did not meet the verilog naming rules
         // Display error message to user
-        std::cout << "ERROR:The provided Hard Block Name '" << curr_hard_block_name << "' did not meet the verilog naming rules.\n";
+        std::cout << "ERROR:The provided Hard Block Type Name '" << curr_hard_block_type_name << "' did not meet the verilog naming rules.\n";
 
         std::cout << "********\n";
 
-        std::cout << "Please ensure the provided Hard Block Names follow the conditions below:\n";
+        std::cout << "Please ensure the provided Hard Block Type Names follow the conditions below:\n";
 
-        std::cout << "\tCondition 1: The first character of the Hard Block Name should either be a-z, A-Z or _\n";
+        std::cout << "\tCondition 1: The first character of the Hard Block Type Name should either be a-z, A-Z or _\n";
 
-        std::cout << "\tCondition 2: The remaining characters of the Hard Block Name should either be a-z, A-Z, 0-9, _ or $\n";
+        std::cout << "\tCondition 2: The remaining characters of the Hard Block Type Name should either be a-z, A-Z, 0-9, _ or $\n";
 
-        std::cout << "Alternatively, any character can be used for the hard block name, as long as the name is escaped using '\\' character. For example, '\\reset-' would be legal.\n";
+        std::cout << "Alternatively, any character can be used for the hard block type name, as long as the name is escaped using '\\' character. For example, '\\reset-' would be legal.\n";
 
         exit(1);
 
@@ -94,25 +94,25 @@ void verify_hard_block_name(string curr_hard_block_name){
 //============================================================================================
 //============================================================================================
 
-void cleanup_hard_block_name(string* curr_hard_block_name){
-// if the hard block name was escaped by '\', we need to remove the '\' character from the name
+void cleanup_hard_block_type_name(string* curr_hard_block_type_name){
+// if the hard block type name was escaped by '\', we need to remove the '\' character from the name
 
-    // matching token below tries to determine whether the current hard block name was escaped with '\'
+    // matching token below tries to determine whether the current hard block type name was escaped with '\'
     std::regex verilog_naming_rules ("[\\](.*)", std::regex_constants::extended);
 
-    // stores the hard block name without the '\' character
+    // stores the hard block type name without the '\' character
     std::smatch matches;
 
     // store the matched strings and also determine whether
-    // the hard block name is actually escaped. if not escqaped, then we do not need to do anything
-    if (std::regex_match(*curr_hard_block_name, matches, verilog_naming_rules, std::regex_constants::match_default))
+    // the hard block type name is actually escaped. if not escaped, then we do not need to do anything
+    if (std::regex_match(*curr_hard_block_type_name, matches, verilog_naming_rules, std::regex_constants::match_default))
     {
         // if we are here, there should be two string matches
-        // the first match is the entire hard block name with the escape character '\'
-        // the second match should just be the hard block name without the escape character '\'
+        // the first match is the entire hard block type name with the escape character '\'
+        // the second match should just be the hard block type name without the escape character '\'
 
         // below we just store the second match
-        curr_hard_block_name->assign(matches[matches.size() - 1]);
+        curr_hard_block_type_name->assign(matches[matches.size() - 1]);
     }
 
     return;

@@ -148,6 +148,28 @@ typedef struct s_hard_block_recog
 
 }t_hard_block_recog;
 
+/*
+*   When we go through the .vqm file, the ports of any user defined hard block  *   will be represented as a LUT (stratix_lcell), or flip flop (dffeas) (for *   more info refer to 'hard_block_recog.cpp'). The generated names found in *   the .vqm file for the two previous blocks contain a lot of information     *   about the hard block. The structure below is used to store the information, 
+*   which includes the hard block name, hard block type, the specfic hard    *   block port and if the port is a bus, then the specific index.
+*/
+typedef struct s_parsed_hard_block_component_info
+{
+    // name used to identify the unique hard block the current port belongs to
+    // multiple ports can belong to the same hard block and there can be multiple hard blocks in the design
+    std::string curr_hard_block_name;
+
+    // the specific type of hard block the current port belongs to
+    // the user can define multiple hard block types
+    std::string curr_hard_block_type;
+
+    // the port name defined in the current block (LUT or dffeas)
+    std::string curr_hard_block_port;
+
+    // index of the port defined in the current block (LUT or dffeas)
+    int curr_hard_block_port_index;
+
+}t_parse_hard_block_component_info;
+
 
 /*  Function Declarations 
 *
@@ -174,6 +196,10 @@ void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,PO
 void copy_array_ref(t_array_ref*, t_array_ref*);
 
 void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>*);
+
+std::string identify_hard_block_type(std::vector<std::string>*, std::string);
+
+void identify_hard_block_port_name_and_index (t_parse_hard_block_component_info*, std::string);
 
 // utility functions
 

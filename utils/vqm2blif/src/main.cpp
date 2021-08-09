@@ -290,7 +290,7 @@ int main(int argc, char* argv[])
 	//char* filename necessitated by vqm_parse_file()
 
 	// a list which stores all the user supplied custom hard block names
-	std::vector<std::string> hard_block_list;
+	std::vector<std::string> hard_block_type_name_list;
 
 //*************************************************************************************************
 //	Begin Conversion
@@ -300,11 +300,11 @@ int main(int argc, char* argv[])
 	cout << "This parser reads a .vqm file and converts it to .blif format.\n\n" ;
 	
 	//verify command-line is correct, populate input variables and global mode flags.
-	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &hard_block_list);
+	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &hard_block_type_name_list);
 
 	std::vector<std::string>::iterator it;
 
-	for (it = hard_block_list.begin(); it != hard_block_list.end(); it++)
+	for (it = hard_block_type_name_list.begin(); it != hard_block_type_name_list.end(); it++)
 	{
 		std::cout << *it << "\n";
 	}
@@ -415,7 +415,7 @@ int main(int argc, char* argv[])
 	{
 		try
 		{
-			filter_and_create_hard_blocks(my_module,&arch,&hard_block_list, arch_file, source_file);
+			filter_and_create_hard_blocks(my_module,&arch,&hard_block_type_name_list, arch_file, source_file);
 		}
 		catch(const vtr::VtrError& error)
 		{
@@ -482,7 +482,7 @@ int main(int argc, char* argv[])
 //============================================================================================
 
 void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
-			   string* outfile, std::vector<std::string>* hard_block_list){
+			   string* outfile, std::vector<std::string>* hard_block_type_name_list){
 /*  Interpret the command-line arguments, accepting the input files, output file, and various
  *  mode settings from the user. 
  *
@@ -649,54 +649,54 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                     eblif_format = T_TRUE;
                     break;
 				case OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS:
-					// first check whether an accompanying hard block name was supplied
+					// first check whether an accompanying hard block type name was supplied (user provides the names of all the various types of custom hard blocks within the design)
 					if ( i+1 == argc ){
-						// no hard block name was supplied so throw an error
-						cout << "ERROR: Missing Hard Block Names.\n" ;
+						// no hard block type name was supplied so throw an error
+						cout << "ERROR: Missing Hard Block Type Names.\n" ;
 						print_usage (T_TRUE);
 					}
 
 					// now we loop through and process the following arguments
 					while (T_TRUE)
 					{
-						// first check whether the next argument is a new option or a supplied hard block name
+						// first check whether the next argument is a new option or a supplied hard block type name
 						it = CmdTokens.find(argv[i+1]);
 
 						// case where the next argument is a command line option
 						if (it != CmdTokens.end())
 						{
-							// When we come here, we need to finish processing further command line arguments for hard block names. Since we have a different command-line option.
+							// When we come here, we need to finish processing further command line arguments for hard block type names. Since we have a different command-line option.
 
-							// case one below is when the user didnt provide any hard block names and just provided the next command-line option
+							// case one below is when the user didnt provide any hard block type names and just provided the next command-line option
 							if (!identify_and_instantiate_custom_hard_blocks)
 							{
-								// since no hard block names were supplied, we throw an error
-								cout << "ERROR: Missing Hard Block Names.\n"; 
+								// since no hard block type names were supplied, we throw an error
+								cout << "ERROR: Missing Hard Block Type Names.\n"; 
 								print_usage (T_TRUE);
 							}
 							else
 							{
-								// the user already provided a legal hard block name, so if we come here then the user simply just wanted to use another command line option, so we just leave this case statement.
+								// the user already provided a legal hard block type name, so if we come here then the user simply just wanted to use another command line option, so we just leave this case statement.
 								break;
 							}
 						}
 						else
 						{
-							// when we are here, the user provided an argument which is potentially a valid hard block name
+							// when we are here, the user provided an argument which is potentially a valid hard block type name
 							curr_hard_block_name.assign(argv[i+1]);
 
 							// check if the provided name is valid
-							verify_hard_block_name(curr_hard_block_name);
+							verify_hard_block_type_name(curr_hard_block_name);
 
-							// if the hard block name was escaped by '\', then we need to remove the '\' character from the string (look at 'verify_hard_block_name' function for more info)
-							cleanup_hard_block_name(&curr_hard_block_name);
+							// if the hard block type name was escaped by '\', then we need to remove the '\' character from the string (look at 'verify_hard_block_type_name' function for more info)
+							cleanup_hard_block_type_name(&curr_hard_block_name);
 
 							// if we are here then the provided name was valid.
 							identify_and_instantiate_custom_hard_blocks = T_TRUE;
 							
-							hard_block_list->push_back(curr_hard_block_name); // add the hard block name to the list
+							hard_block_type_name_list->push_back(curr_hard_block_name); // add the hard block type name to the list
 
-							// update argument index to show that we have processed the current hard block name successfully
+							// update argument index to show that we have processed the current hard block type name successfully
 							i++;
 						}
 

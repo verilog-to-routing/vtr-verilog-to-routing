@@ -117,11 +117,11 @@ struct RamInfo {
 
 void verify_format (string* filename, string extension);	//verifies a given string ends in ".extension"
 
-// verifies whether the hard block name provided by the user meets verilog naming rules
-void verify_hard_block_name(string curr_hard_block_name);
+// verifies whether the hard block type name provided by the user meets verilog naming rules
+void verify_hard_block_type_name(string curr_hard_block_name);
 
-// if the hard block name was escaped by '\', we need to remove the '\' character from the name (refer to function above)
-void cleanup_hard_block_name(string* curr_hard_block_name);
+// if the hard block type name was escaped by '\', we need to remove the '\' character from the name (refer to function above)
+void cleanup_hard_block_type_name(string* curr_hard_block_name);
 
 void construct_filename (char* filename, const char* path, const char* ext);	//constructs a filename based on the path and termination passed
 

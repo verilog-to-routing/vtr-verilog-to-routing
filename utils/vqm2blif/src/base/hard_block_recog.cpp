@@ -5,13 +5,13 @@
 #include "hard_block_recog.h"
 
 
-void filter_and_create_hard_blocks(t_module* main_module, t_arch* main_arch, std::vector<std::string>* hard_block_names, std::string arch_file_name, std::string vqm_file_name)
+void filter_and_create_hard_blocks(t_module* main_module, t_arch* main_arch, std::vector<std::string>* hard_block_type_names, std::string arch_file_name, std::string vqm_file_name)
 {
     t_hard_block_recog hard_block_node_refs_and_info;
 
     try
     {
-        initialize_hard_block_models(main_arch, hard_block_names, &hard_block_node_refs_and_info);
+        initialize_hard_block_models(main_arch, hard_block_type_names, &hard_block_node_refs_and_info);
     }
     catch(const vtr::VtrError& error)
     {
@@ -30,13 +30,13 @@ void filter_and_create_hard_blocks(t_module* main_module, t_arch* main_arch, std
     return;
 }
 
-void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* hard_block_names, t_hard_block_recog* storage_of_hard_block_info)
+void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* hard_block_type_names, t_hard_block_recog* storage_of_hard_block_info)
 {
     t_model* hard_block_model = NULL;
     std::vector<std::string>::iterator hard_block_name_traverser;
     bool single_hard_block_init_result = false;
 
-    for (hard_block_name_traverser = hard_block_names->begin(); hard_block_name_traverser != hard_block_names->end(); hard_block_name_traverser++)
+    for (hard_block_name_traverser = hard_block_type_names->begin(); hard_block_name_traverser != hard_block_type_names->end(); hard_block_name_traverser++)
     {
         // function already made
         hard_block_model = find_arch_model_by_name(*hard_block_name_traverser, main_arch->models);
@@ -103,7 +103,7 @@ void create_hard_block_port_info_structure(t_hard_block_recog* storage_of_hard_b
 
 }
 
-int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard_block_info, t_model_ports* curr_hard_block_model_port, std::string curr_hard_block_name,int port_index, std::string port_type)
+int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard_block_info, t_model_ports* curr_hard_block_model_port, std::string curr_hard_block_type_name,int port_index, std::string port_type)
 {
     t_array_ref* equivalent_hard_block_node_port_array = NULL;
     int starting_port_index = port_index;
@@ -112,7 +112,7 @@ int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard
     {
         equivalent_hard_block_node_port_array = convert_hard_block_model_port_to_hard_block_node_port(curr_hard_block_model_port);
 
-        store_hard_block_port_info(storage_of_hard_block_info, curr_hard_block_name, curr_hard_block_model_port->name, curr_hard_block_model_port->dir, &equivalent_hard_block_node_port_array, &port_index);
+        store_hard_block_port_info(storage_of_hard_block_info, curr_hard_block_type_name, curr_hard_block_model_port->name, curr_hard_block_model_port->dir, &equivalent_hard_block_node_port_array, &port_index);
 
         curr_hard_block_model_port = curr_hard_block_model_port->next;
 
@@ -120,7 +120,7 @@ int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard
 
     if (starting_port_index == port_index)
     {
-        VTR_LOG_WARN("Model '%s' found in the architecture file does not have %s ports\n", curr_hard_block_name.c_str(), port_type.c_str());
+        VTR_LOG_WARN("Model '%s' found in the architecture file does not have %s ports\n", curr_hard_block_type_name.c_str(), port_type.c_str());
     }
 
     return port_index;
@@ -172,10 +172,10 @@ t_node_port_association* create_unconnected_node_port_association(char *port_nam
 }
 
 // need the hard block name itself
-void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_name,std::string curr_port_name, PORTS current_port_dir,t_array_ref** curr_port_array, int* port_index)
+void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_type_name,std::string curr_port_name, PORTS current_port_dir,t_array_ref** curr_port_array, int* port_index)
 {
        
-    std::unordered_map<std::string,t_hard_block_port_info>::iterator curr_port_info = ((storage_of_hard_block_port_info->hard_block_type_name_to_port_info).find(curr_hard_block_name));
+    std::unordered_map<std::string,t_hard_block_port_info>::iterator curr_port_info = ((storage_of_hard_block_port_info->hard_block_type_name_to_port_info).find(curr_hard_block_type_name));
 
     copy_array_ref(*curr_port_array, &(curr_port_info->second).hard_block_ports);
     
@@ -207,11 +207,16 @@ void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
     return;
 }
 
-void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_name_to_port_info_map)
+std::string identify_hard_block_type(std::vector<std::string>* list_, std::string)
 {
-    std::unordered_map<std::string, t_hard_block_port_info>::iterator curr_hard_block_port_info = hard_block_name_to_port_info_map->begin();
 
-    while (curr_hard_block_port_info != (hard_block_name_to_port_info_map->end()))
+}
+
+void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_type_name_to_port_info_map)
+{
+    std::unordered_map<std::string, t_hard_block_port_info>::iterator curr_hard_block_port_info = hard_block_type_name_to_port_info_map->begin();
+
+    while (curr_hard_block_port_info != (hard_block_type_name_to_port_info_map->end()))
     {
 
         int number_of_ports = (curr_hard_block_port_info->second).hard_block_ports.array_size;
