@@ -286,7 +286,6 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const int* sets_per_seg_type_x,
                                                               const int* sets_per_seg_type_y,
                                                               t_chan_width nodes_per_chan,
-                                                              const int max_chan_width,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
                                                               bool* Fc_clipped);
@@ -549,13 +548,13 @@ static void build_rr_graph(const t_graph_type graph_type,
         Fc_out = std::vector<vtr::Matrix<int>>(types.size(), ones);
     } else {
         bool Fc_clipped = false;
-        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type_x.get(), sets_per_seg_type_y.get(), nodes_per_chan, max_chan_width,
+        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type_x.get(), sets_per_seg_type_y.get(), nodes_per_chan,
                                          e_fc_type::IN, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
-        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type_x.get(), sets_per_seg_type_y.get(), nodes_per_chan, max_chan_width,
+        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type_x.get(), sets_per_seg_type_y.get(), nodes_per_chan,
                                           e_fc_type::OUT, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -1046,7 +1045,6 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const int* sets_per_seg_type_x,
                                                               const int* sets_per_seg_type_y,
                                                               t_chan_width nodes_per_chan,
-                                                              const int max_chan_width,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
                                                               bool* Fc_clipped) {
@@ -1062,7 +1060,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
         fac = 2;
     }
 
-    VTR_ASSERT((max_chan_width % fac) == 0);
+    VTR_ASSERT((nodes_per_chan.x_max % fac) == 0);
+    VTR_ASSERT((nodes_per_chan.y_max % fac) == 0);
 
     for (const auto& type : types) { // Determine the Fc values for each block type, skipping EMPTY
         int itype = type.index;
