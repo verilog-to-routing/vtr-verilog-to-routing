@@ -2120,7 +2120,7 @@ void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netl
     /* check if the node is a valid spram */
     if (!is_blif_sp_ram(node))
         error_message(BLIF_ELBORATION, node->loc,
-                      "%s", "SPRAM ports mismatch with VTR single_port_ram hard block ports\n");
+                      "SPRAM (%s) ports mismatch with VTR single_port_ram hard block ports\n", node->name);
 
     /** 
      * blif single port ram information 
@@ -2223,7 +2223,7 @@ void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlis
     /* check if the node is a valid spram */
     if (!is_blif_dp_ram(node))
         error_message(BLIF_ELBORATION, node->loc,
-                      "%s", "DPRAM ports mismatch with VTR dual_port_ram hard block ports\n");
+                      "DPRAM (%s) ports mismatch with VTR dual_port_ram hard block ports\n", node->name);
 
     /** 
      * blif dual port ram information 

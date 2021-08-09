@@ -209,7 +209,7 @@ static void output() {
         /**
          * point for outputs.  This includes soft and hard mapping all structures to the
          * target format.  Some of these could be considred optimizations
-        */
+         */
         printf("Outputting the netlist to the specified output format\n");
 
         generic_writer->__write(global_netlist);

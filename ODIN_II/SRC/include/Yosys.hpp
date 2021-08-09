@@ -67,12 +67,12 @@ class Yosys {
     ~Yosys();
 
     /**
-    * ---------------------------------------------------------------------------------------------
-    * (function: perform_elaboration)
-    * 
-    * @brief Call Yosys elaboration and set Odin-II input BLIF file
-    * to the Yosys output BLIF
-    * -------------------------------------------------------------------------------------------*/
+     * ---------------------------------------------------------------------------------------------
+     * (function: perform_elaboration)
+     * 
+     * @brief Call Yosys elaboration and set Odin-II input BLIF file
+     * to the Yosys output BLIF
+     * -------------------------------------------------------------------------------------------*/
     void perform_elaboration();
 
   protected:
@@ -88,26 +88,26 @@ class Yosys {
     std::string odin_techlib;
 
     /**
-    * ---------------------------------------------------------------------------------------------
-    * (function: set_default_env)
-    * 
-    * @brief set local environment variables of the default TCL script
-    * -------------------------------------------------------------------------------------------*/
+     * ---------------------------------------------------------------------------------------------
+     * (function: set_default_env)
+     * 
+     * @brief set local environment variables of the default TCL script
+     * -------------------------------------------------------------------------------------------*/
     void set_default_env();
     /**
-    * ---------------------------------------------------------------------------------------------
-    * (function: execute)
-    * 
-    * @brief Run Yosys executable with the class TCL script file
-    * -------------------------------------------------------------------------------------------*/
+     * ---------------------------------------------------------------------------------------------
+     * (function: execute)
+     * 
+     * @brief Run Yosys executable with the class TCL script file
+     * -------------------------------------------------------------------------------------------*/
     void execute();
     /**
-    * ---------------------------------------------------------------------------------------------
-    * (function: elaborate)
-    * 
-    * @brief Call yosys using the specified TCL script to generate
-    * a coarse-grain netlist
-    * -------------------------------------------------------------------------------------------*/
+     * ---------------------------------------------------------------------------------------------
+     * (function: elaborate)
+     * 
+     * @brief Call yosys using the specified TCL script to generate
+     * a coarse-grain netlist
+     * -------------------------------------------------------------------------------------------*/
     void elaborate();
 };
 

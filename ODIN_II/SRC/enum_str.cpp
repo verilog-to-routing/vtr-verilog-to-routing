@@ -101,10 +101,8 @@ const char* operation_list_STR[][2] = {
     {"HARD_ADD", "hADD"},              // VTR Adder hard block
     {"HARD_MULTIPLY", "hMUL"},         // VTR Multiply hard block
     {"PMUX", "pMUX"},                  // Multiplexer with many inputs using one-hot select signal
-    {"ADFF", "aDFF"},                  // data, A to areset value and output port
     {"SDFF", "sDFF"},                  // data, S to reset value and output port
     {"DFFE", "DFFe"},                  // data, enable to output port
-    {"ADFFE", "aDFFe"},                // data, asynchronous reset value and enable to output port
     {"SDFFE", "sDFFe"},                // data, synchronous reset value and enable to output port
     {"SDFFCE", "sDFFce"},              // data, synchronous reset value and enable to reset value and output port
     {"DFFSR", "DFFsr"},                // data, clear and set to output port
@@ -114,6 +112,7 @@ const char* operation_list_STR[][2] = {
     {"SETCLR", "setclr"},              // set or clear an input pins
     {"SPRAM", "spRAM"},                // representing primitive single port ram
     {"DPRAM", "dpRAM"},                // representing primitive dual port ram
+    {"YMEM", "yRAM"},                  // representing primitive dual port ram
     {"BRAM", "bRAM"},                  // block of memry generated in yosys subcircuit formet blif file
     {"ROM", "ROM"},
     // [END] operations to cover yosys subckt

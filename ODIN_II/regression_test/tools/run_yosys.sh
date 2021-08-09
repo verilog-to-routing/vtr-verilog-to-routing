@@ -24,11 +24,11 @@ BENCHMARK_DIR="${REGRESSION_DIR}/benchmark"
 VTR_REG_DIR="${VTR_DIR}/vtr_flow/tasks/regression_tests"
 
 SUITE_DIR="${BENCHMARK_DIR}/suite/"
-BLIF_SUITE_DIR="${SUITE_DIR}/_BLIF"
+BLIF_SUITE_DIR="${SUITE_DIR}/yosys+odin"
 RELAPATH_BLIF_SUITE_DIR=$(realapath_from "${BLIF_SUITE_DIR}" "${PWD}")
 
 TASK_DIR="${BENCHMARK_DIR}/task"
-BLIF_TASK_DIR="${TASK_DIR}/_BLIF"
+BLIF_TASK_DIR="${TASK_DIR}/yosys+odin"
 RELAPATH_BLIF_TASK_DIR=$(realapath_from "${BLIF_TASK_DIR}" "${ODIN_DIR}")
 
 
@@ -142,7 +142,7 @@ function help() {
             -V|--verilog < test name >      A path to a single Verilog file
             -t|--test < test name >         A path to a single test file
             -T|--task                       Test name is either a absolute or relative path to 
-                                            a directory containing a task.ycfg, task_list.conf 
+                                            a directory containing a task.conf, task_list.conf 
 
         AVAILABLE_TASK:
     "
@@ -313,7 +313,20 @@ function populate_arg_from_file() {
 
 					;;_circuit_list_add)
 						# glob the value
-						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
+						_circuit_list_add+=( "${_circuits_dir}"/${_value} )		
+
+                    ;;_archs_dir)
+					;;_arch_list_add)
+					;;_script_synthesis_params)
+                    ;;_script_techmap_params)
+					;;_script_simulation_params)
+					;;_simulation_parse_file)
+					;;_techmap_parse_file)
+                    ;;_synthesis_parse_file)
+					;;_synthesis_params)
+                    ;;_techmap_params)
+					;;_simulation_params)
+					;;_regression_params)
 
 					;;_)
 						echo "skip" > /dev/null
@@ -393,7 +406,7 @@ function run_task() {
         fi
     fi
 
-    populate_arg_from_file "${directory}/task.ycfg"
+    populate_arg_from_file "${directory}/task.conf"
    
     for circuit in "${_circuit_list[@]}"
 	do
@@ -453,7 +466,7 @@ function run_suite() {
                     mapfile -t test_list <"${possible_test}/task_list.conf"
                     current_test_list+=( "${test_list[@]}" )
                     _TEST_INPUT_LIST+=( "${test_list[@]}" )
-                elif [ -f "${possible_test}/task.ycfg" ]
+                elif [ -f "${possible_test}/task.conf" ]
                 then
                     task_list+=( "${possible_test}" )
                 else
@@ -475,7 +488,7 @@ function run_suite() {
 
 	if [ "_${TEST_COUNT}" == "_0" ];
 	then
-		echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.ycfg, see --help"
+		echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.conf, see --help"
 		_exit_with_code "-1"
 	fi
 }
@@ -487,7 +500,7 @@ function run() {
     elif [ ${#_TEST_INPUT_LIST[@]} -gt 0 ]; then
         run_suite
     else 
-        echo "No test is passed it must pass a verilog file or test directory containing either a task_list.conf or a task.ycfg, see --help"
+        echo "No test is passed it must pass a verilog file or test directory containing either a task_list.conf or a task.conf, see --help"
 		_exit_with_code "-1"
     fi
 }

@@ -351,9 +351,27 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
             if (subcircuit_stripped_name && new_node->type == NO_OP)
                 new_node->type = yosys_subckt_strmap[subcircuit_stripped_name];
 
-            if (new_node->type == NO_OP)
-                error_message(PARSE_BLIF, unknown_location,
-                              "Unsupported sub-circuit type (%s) in BLIF file.\n", subcircuit_name);
+            if (new_node->type == NO_OP) {
+                char new_name[READ_BLIF_BUFFER];
+                vtr::free(new_node->name);
+                /* in case of weird names, need to add memories manually */
+                if (ports->count == 5) {
+                    /* specify node type */
+                    new_node->type = yosys_subckt_strmap[SINGLE_PORT_RAM_string];
+                    /* specify node name */
+                    odin_sprintf(new_name, "\\%s~%ld", SINGLE_PORT_RAM_string, hard_block_number - 1);
+                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
+                } else if (ports->count == 9) {
+                    /* specify node type */
+                    new_node->type = yosys_subckt_strmap[DUAL_PORT_RAM_string];
+                    /* specify node name */
+                    odin_sprintf(new_name, "\\%s~%ld", DUAL_PORT_RAM_string, hard_block_number - 1);
+                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
+                } else {
+                    error_message(PARSE_BLIF, unknown_location,
+                                  "Unsupported sub-circuit type (%s) in BLIF file.\n", subcircuit_name);
+                }
+            }
 
             if (new_node->type == BRAM) {
                 new_node->type = (new_node->attributes->RD_PORTS

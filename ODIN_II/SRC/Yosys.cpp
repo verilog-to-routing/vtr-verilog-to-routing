@@ -67,7 +67,7 @@ Yosys::Yosys() {
      * specify the path to default TCL file.
      * defualt TCL file is located at:
      * "$ODIN_ROOT/regression_test/tools/synth.tcl"
-    */
+     */
     this->tcl
         = (!configuration.tcl_file.empty())
               ? configuration.tcl_file                                                      // user specified tcl file
@@ -156,10 +156,16 @@ void Yosys::elaborate() {
         this->execute();
         printf("Successful Elaboration of digital design by Yosys\n\tCoarse-grain netlist is available at: %s\n\n", this->blif.c_str());
 
+        /* set globals */
+        global_args.coarsen.set(true, argparse::Provenance::SPECIFIED);
+        global_args.blif_file.set(this->blif, argparse::Provenance::SPECIFIED);
         /* modify Odin-II configurations to run through the techmap flow with coarse-grain netlist */
         configuration.coarsen = true;
         coarsen_cleanup = true;
-        global_args.blif_file.set(this->blif, argparse::Provenance::SPECIFIED);
+        /* erase list of inputs to add yosys generated BLIF instead */
+        configuration.list_of_file_names.erase(
+            configuration.list_of_file_names.begin(), configuration.list_of_file_names.end());
+        /* add yosys generated BLIF */
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
         configuration.input_file_type = file_type_e::_BLIF;
 

@@ -126,7 +126,7 @@ FILE* open_file(const char* file_name, const char* open_type) {
  * (function: get_root_path)
  *
  * @brief find the Odin-II root path
-*/
+ */
 void get_root_path() {
     /* create a string buffer to hold path */
     char buffer[READ_BUFFER_SIZE];

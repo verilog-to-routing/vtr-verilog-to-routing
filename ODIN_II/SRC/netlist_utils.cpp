@@ -1797,8 +1797,7 @@ void swap_ports(nnode_t*& node, int idx1, int idx2) {
     nnode_t* new_node = allocate_nnode(node->loc);
     for (i = 0; i < node->num_input_port_sizes; i++) {
         int port_idx = -1;
-        port_idx = (i == idx1) ? idx2 : (i == idx2) ? idx1
-                                                    : i;
+        port_idx = (i == idx1) ? idx2 : (i == idx2) ? idx1 : i;
 
         /* add ports information */
         add_input_port_information(new_node, signals[port_idx]->count);
