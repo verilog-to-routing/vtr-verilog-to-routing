@@ -50,8 +50,7 @@ void verify_format (string* filename, string extension){
 //============================================================================================
 //============================================================================================
 
-//============================================================================================
-//============================================================================================
+
 
 void verify_hard_block_name(string curr_hard_block_name){
 // verifies whether the hard block name provided by the user meets verilog naming rules
@@ -59,9 +58,13 @@ void verify_hard_block_name(string curr_hard_block_name){
     // naming rules have 2 main conditions:
     // Condition 1: the first charatcer must be a lowercase/uppercase alphabetical character. Or the first character can be a underscore.
     // Condition 2: The remaning characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character 
-    std::regex verilog_naming_rules ("^[a-zA-Z_][a-zA-Z_\$0-9]*[a-zA-Z_\$0-9]$");
+    std::regex verilog_naming_rules_one ("^[a-zA-Z_][a-zA-Z_\$0-9]*[a-zA-Z_\$0-9]$");
 
-    if (!(std::regex_match(curr_hard_block_name, verilog_naming_rules)))
+    // verilog names can also contain any characters, as long as they are escaped with a '\' at the start of the identifer. For example, \reset-
+    // we check this below
+    std::regex verilog_naming_rules_two ("[\\](.*)", std::regex_constants::extended);
+
+   if ((!(std::regex_match(curr_hard_block_name, verilog_naming_rules_one))) && (!(std::regex_match(curr_hard_block_name, verilog_naming_rules_two))))
     {
         // the hard block name did not meet the verilog naming rules
         // Display error message to user
@@ -75,6 +78,8 @@ void verify_hard_block_name(string curr_hard_block_name){
 
         std::cout << "\tCondition 2: The remaining characters of the Hard Block Name should either be a-z, A-Z, 0-9, _ or $\n";
 
+        std::cout << "Alternatively, any character can be used for the hard block name, as long as the name is escaped using '\\' character. For example, '\\reset-' would be legal.\n";
+
         exit(1);
 
     }
@@ -85,6 +90,34 @@ void verify_hard_block_name(string curr_hard_block_name){
 
 //============================================================================================
 //============================================================================================
+
+//============================================================================================
+//============================================================================================
+
+void cleanup_hard_block_name(string* curr_hard_block_name){
+// if the hard block name was escaped by '\', we need to remove the '\' character from the name
+
+    // matching token below tries to determine whether the current hard block name was escaped with '\'
+    std::regex verilog_naming_rules ("[\\](.*)", std::regex_constants::extended);
+
+    // stores the hard block name without the '\' character
+    std::smatch matches;
+
+    // store the matched strings and also determine whether
+    // the hard block name is actually escaped. if not escqaped, then we do not need to do anything
+    if (std::regex_match(*curr_hard_block_name, matches, verilog_naming_rules, std::regex_constants::match_default))
+    {
+        // if we are here, there should be two string matches
+        // the first match is the entire hard block name with the escape character '\'
+        // the second match should just be the hard block name without the escape character '\'
+
+        // below we just store the second match
+        curr_hard_block_name->assign(matches[matches.size() - 1]);
+    }
+
+    return;
+
+}
 
 void construct_filename (char* filename, const char* path, const char* ext){
 //Constructs a char* filename from a given path and extension.

@@ -688,6 +688,9 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 							// check if the provided name is valid
 							verify_hard_block_name(curr_hard_block_name);
 
+							// if the hard block name was escaped by '\', then we need to remove the '\' character from the string (look at 'verify_hard_block_name' function for more info)
+							cleanup_hard_block_name(&curr_hard_block_name);
+
 							// if we are here then the provided name was valid.
 							identify_and_instantiate_custom_hard_blocks = T_TRUE;
 							
