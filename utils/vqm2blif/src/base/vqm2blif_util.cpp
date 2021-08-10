@@ -21,7 +21,7 @@ void print_usage (t_boolean terminate){
     cout << "\t-include_unused_subckt_pins\n";
     cout << "\t-remove_const_nets\n";
     cout << "\t-eblif_format\n";
-    cout << "\t-identify_and_instantiate_custom_hard_blocks <hard_block_1_name> <hard_block_2_name> ...\n";
+    cout << "\t-identify_and_instantiate_custom_hard_blocks <hard_block_1_module_name> <hard_block_2_module_name> ...\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
@@ -53,22 +53,23 @@ void verify_format (string* filename, string extension){
 
 
 void verify_hard_block_type_name(string curr_hard_block_type_name){
-// verifies whether the hard block name (type of hard block) provided by the user meets verilog naming rules
+// verifies whether the hard block name (type of hard block) provided by the user meets verilog/VHDL naming rules. VHDL naming rules are a subset of verilog, so we just check verilog. (Using verilog 2001 standard)
 
     // naming rules have 2 main conditions:
     // Condition 1: the first charatcer must be a lowercase/uppercase alphabetical character. Or the first character can be a underscore.
-    // Condition 2: The remaning characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character 
-    std::regex verilog_naming_rules_one ("^[a-zA-Z_][a-zA-Z_\$0-9]*[a-zA-Z_\$0-9]$");
+    // Condition 2: The remaning characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character
+    // the rules above are checked with the identifier below 
+    std::regex verilog_VHDL_naming_rules_one ("^[a-zA-Z_][a-zA-Z_\$0-9]*[a-zA-Z_\$0-9]$");
 
     // verilog names can also contain any characters, as long as they are escaped with a '\' at the start of the identifer. For example, \reset-
-    // we check this below
-    std::regex verilog_naming_rules_two ("[\\](.*)", std::regex_constants::extended);
+    // we check this using the identifier below
+    std::regex verilog_VHDL_naming_rules_two ("[\\](.*)", std::regex_constants::extended); // need std::regex_constants::extended as it supports '\\' character
 
-   if ((!(std::regex_match(curr_hard_block_type_name, verilog_naming_rules_one))) && (!(std::regex_match(curr_hard_block_type_name, verilog_naming_rules_two))))
+   if ((!(std::regex_match(curr_hard_block_type_name, verilog_VHDL_naming_rules_one))) && (!(std::regex_match(curr_hard_block_type_name, verilog_VHDL_naming_rules_two))))
     {
         // the hard block type name did not meet the verilog naming rules
         // Display error message to user
-        std::cout << "ERROR:The provided Hard Block Type Name '" << curr_hard_block_type_name << "' did not meet the verilog naming rules.\n";
+        std::cout << "ERROR:The provided Hard Block Type Name '" << curr_hard_block_type_name << "' did not meet the verilog/VHDL naming rules.\n";
 
         std::cout << "********\n";
 

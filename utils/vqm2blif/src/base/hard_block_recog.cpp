@@ -33,17 +33,17 @@ void filter_and_create_hard_blocks(t_module* main_module, t_arch* main_arch, std
 void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* hard_block_type_names, t_hard_block_recog* storage_of_hard_block_info)
 {
     t_model* hard_block_model = NULL;
-    std::vector<std::string>::iterator hard_block_name_traverser;
+    std::vector<std::string>::iterator hard_block_type_name_traverser;
     bool single_hard_block_init_result = false;
 
-    for (hard_block_name_traverser = hard_block_type_names->begin(); hard_block_name_traverser != hard_block_type_names->end(); hard_block_name_traverser++)
+    for (hard_block_type_name_traverser = hard_block_type_names->begin(); hard_block_type_name_traverser != hard_block_type_names->end(); hard_block_type_name_traverser++)
     {
         // function already made
-        hard_block_model = find_arch_model_by_name(*hard_block_name_traverser, main_arch->models);
+        hard_block_model = find_arch_model_by_name(*hard_block_type_name_traverser, main_arch->models);
 
         if (hard_block_model == NULL)
         {         
-            throw vtr::VtrError("The provided hard block model '" + *hard_block_name_traverser + "' was not found within the corresponding FPGA architecture.");
+            throw vtr::VtrError("The provided hard block model '" + *hard_block_type_name_traverser + "' was not found within the corresponding FPGA architecture.");
         }
         else
         { 
@@ -51,7 +51,7 @@ void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* h
 
             if (!single_hard_block_init_result)
             {
-                throw vtr::VtrError("Hard block model '" + *hard_block_name_traverser + "' found in the architecture has no input/output ports.");
+                throw vtr::VtrError("Hard block model '" + *hard_block_type_name_traverser + "' found in the architecture has no input/output ports.");
             }
         }
 
@@ -207,9 +207,65 @@ void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
     return;
 }
 
-std::string identify_hard_block_type(std::vector<std::string>* list_, std::string)
+std::string identify_hard_block_type(std::vector<std::string>* hard_block_type_name_list, std::string curr_node_name_component)
 {
+    std::vector<std::string>::iterator hard_block_type_name_traverser;
+    
+    std::string hard_block_type_name_to_find;
+    std::string hard_block_type = "";
+    
+    size_t match_result = 0;
 
+    for (hard_block_type_name_traverser = hard_block_type_name_list->begin(); hard_block_type_name_traverser != hard_block_type_name_list->end(); hard_block_type_name_traverser++)
+    {
+        hard_block_type_name_to_find.assign(*hard_block_type_name_traverser + HARD_BLOCK_TYPE_NAME_SEPERATOR);
+
+        match_result = curr_node_name_component.find(hard_block_type_name_to_find);
+
+        if (match_result != std::string::npos)
+        {
+            hard_block_type.assign(*hard_block_type_name_traverser);
+            break;
+        }
+
+    }
+
+    return hard_block_type;
+}
+
+void identify_hard_block_port_name_and_index (t_parsed_hard_block_component_info* curr_hard_block_component, std::string curr_node_name_component)
+{   
+    // identifer to check whether the port defined in the current node name is a bus (ex. payload[1]~QIC_DANGLING_PORT_I)
+    std::regex port_is_a_bus ("(.*)[[]([0-9]*)\]~(?:.*)");
+
+    // identifier to check whether the current port defined in the current node name isn't a bus (ex. value~9490_I)
+    std::regex port_is_not_a_bus ("(.*)~(?:.*)");
+
+    // when we compare the given node name component with the previous identifiers, the port name and port index are extracted and they are stored in the variable below
+    std::smatch port_info;
+
+    // handle either the case where the current port defined in the provided node name is either a bus or not
+    // we should never not match with either case below
+    if (std::regex_match(curr_node_name_component, port_info, port_is_a_bus, std::regex_constants::match_default))
+    {
+        // if we are here, then the port is a bus
+
+        // store the extarcted port name and index to be used externally
+        curr_hard_block_component->curr_hard_block_port_name.assign(port_info[PORT_NAME]);
+        
+        curr_hard_block_component->curr_hard_block_port_index = std::stoi(port_info[PORT_INDEX]);
+    }
+    else if (std::regex_match(curr_node_name_component, port_info, port_is_not_a_bus, std::regex_constants::match_default))
+    {
+        // if we are here then the port was not a bus
+
+        // just store the extracted port name and default poert index to be used externally
+        curr_hard_block_component->curr_hard_block_port_name.assign(port_info[PORT_NAME]);
+        
+        curr_hard_block_component->curr_hard_block_port_index = DEFAULT_PORT_INDEX;
+    }
+
+    return;
 }
 
 void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_type_name_to_port_info_map)

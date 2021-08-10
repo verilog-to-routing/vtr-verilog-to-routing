@@ -51,6 +51,13 @@
 #define OUTPUT_PORTS "output"
 
 #define HARD_BLOCK_WITH_NO_PORTS 0
+#define DEFAULT_PORT_INDEX 0
+
+// unique identifier that seperates a hard block type name (module name), from the specific instance name
+#define HARD_BLOCK_TYPE_NAME_SEPERATOR ":"
+
+#define PORT_NAME 1
+#define PORT_INDEX 2
 
 
 
@@ -100,7 +107,7 @@ typedef struct s_hard_block
 
     // helps keep track of the number of hard block ports we have assigned
     // a net to 
-    int hard_block_ports_assigned;
+    int hard_block_ports_assigned = 0;
 
     // a reference to the corresponding hard block node that represents this 
     // particular hard block instance
@@ -163,12 +170,12 @@ typedef struct s_parsed_hard_block_component_info
     std::string curr_hard_block_type;
 
     // the port name defined in the current block (LUT or dffeas)
-    std::string curr_hard_block_port;
+    std::string curr_hard_block_port_name;
 
     // index of the port defined in the current block (LUT or dffeas)
-    int curr_hard_block_port_index;
+    int curr_hard_block_port_index = 0;
 
-}t_parse_hard_block_component_info;
+}t_parsed_hard_block_component_info;
 
 
 /*  Function Declarations 
@@ -199,7 +206,7 @@ void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_po
 
 std::string identify_hard_block_type(std::vector<std::string>*, std::string);
 
-void identify_hard_block_port_name_and_index (t_parse_hard_block_component_info*, std::string);
+void identify_hard_block_port_name_and_index (t_parsed_hard_block_component_info*, std::string);
 
 // utility functions
 
