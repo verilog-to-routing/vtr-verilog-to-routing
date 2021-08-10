@@ -80,7 +80,7 @@ class Yosys {
     std::string log;
     std::string blif;
     std::string executable;
-    const char* which_yosys = std::string("which yosys").c_str();
+    std::string which_yosys = std::string("which yosys");
 
   private:
     std::string tcl_primitives;

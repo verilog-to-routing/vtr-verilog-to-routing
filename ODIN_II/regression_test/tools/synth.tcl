@@ -6,7 +6,7 @@ setattr -mod -set keep_hierarchy 1 single_port_ram;
 setattr -mod -set keep_hierarchy 1 dual_port_ram;
 
 # Read the hardware decription Verilog
-read_verilog -nomem2reg $env(TCL_CIRCUIT);
+read_verilog -nomem2reg -nolatches $env(TCL_CIRCUIT);
 # Check that cells match libraries and find top module
 hierarchy -check -auto-top;
 

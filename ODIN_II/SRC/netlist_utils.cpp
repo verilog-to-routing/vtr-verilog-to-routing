@@ -911,7 +911,8 @@ signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long p
             /* pruning the extra pins */
             else {
                 /* detach from the node, its net and free pin */
-                delete_npin(pin);
+                pin->node->input_pins[pin->pin_node_idx] = NULL;
+                pin->node = NULL;
                 warning_message(NETLIST, unknown_location,
                                 "Input pin (%s) exceeds the size of its connected port, will be left unconnected", pin->net->name);
             }
@@ -923,6 +924,9 @@ signal_list_t* prune_signal(signal_list_t* signalsvar, long signal_width, long p
 
     /* combining pruned signals */
     new_signals = combine_lists(splitted_signals, num_of_signals);
+
+    // CLEAN UP
+    vtr::free(splitted_signals);
 
     return (new_signals);
 }

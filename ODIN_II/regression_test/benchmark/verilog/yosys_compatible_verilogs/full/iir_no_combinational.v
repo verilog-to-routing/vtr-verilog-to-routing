@@ -1,5 +1,5 @@
-module iir_no_combinational (GLOBAL_SIM_BASE_CLK,  clk, reset, start, din, params, dout, ready,iir_start,iir_done);
-input clk, reset, start, GLOBAL_SIM_BASE_CLK;
+module iir_no_combinational (clk, reset, start, din, params, dout, ready,iir_start,iir_done);
+input clk, reset, start;
 input [7:0] din;
 input [15:0] params;
 output [7:0] dout;

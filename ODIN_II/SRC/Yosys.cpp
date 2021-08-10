@@ -48,7 +48,7 @@
  */
 Yosys::Yosys() {
     /* to check if Yosys is installed */
-    FILE* fp = run_cmd(this->which_yosys, "r");
+    FILE* fp = run_cmd(this->which_yosys.c_str(), "r");
     char* retval = NULL;
     vtr::getline(retval, fp);
     int exit_code = WEXITSTATUS(pclose(fp));

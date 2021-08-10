@@ -274,27 +274,15 @@ def run_odin_test(args, test_name):
     elif test_name == "odin_reg_basic":
         odin_reg_script[-1] += "suite/light_suite"
     elif test_name == "odin_tech_basic":
-        odin_reg_script[-1] += "suite/_BLIF/techmap_lightsuite"
+        odin_reg_script[-1] += "suite/yosys+odin/techmap_lightsuite"
     elif test_name == "odin_tech_strong":
-        odin_reg_script[-1] += "suite/_BLIF/techmap_heavysuite"
+        odin_reg_script[-1] += "suite/yosys+odin/techmap_heavysuite"
     elif test_name == "odin_reg_strong":
         odin_reg_script[-1] += "suite/heavy_suite"
     else:
         raise IOError("Test does not exist: {}".format(test_name))
 
     odin_root = str(Path(odin_reg_script[0]).resolve().parent)
-
-    # generates yosys blif if needed
-    if "odin_tech" in test_name:
-        yosys_reg_script = [
-            str(paths.run_yosys_path),
-            "-t",
-            odin_reg_script[-1],
-            "--generate_blif",
-            # to avoid showing yosys logs
-            "--show_failure" if args.show_failures else "",
-        ]
-        subprocess.call(yosys_reg_script, cwd=odin_root)
 
     result = subprocess.call(odin_reg_script, cwd=odin_root)
 

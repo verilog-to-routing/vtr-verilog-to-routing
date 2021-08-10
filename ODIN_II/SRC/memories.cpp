@@ -1273,13 +1273,11 @@ bool is_blif_sp_ram(nnode_t* node) {
     oassert(node->name);
     /* return value */
     bool is_ram = true;
-    char* hard_block_name = (configuration.coarsen) ? get_stripped_name(node->name) : node->name;
-    char* hard_block_identifier = get_hard_block_node_name(hard_block_name);
+    if (std::string(node->name).find(SINGLE_PORT_RAM_string) == std::string::npos)
+        return false;
 
     /* check the num input/output ports */
-    is_ram = (!strcmp(hard_block_identifier, SINGLE_PORT_RAM_string))
-             && (node->num_input_port_sizes == 4)
-             && (node->num_output_port_sizes == 1);
+    is_ram = (node->num_input_port_sizes == 4) && (node->num_output_port_sizes == 1);
 
     /* check if it is a ram */
     if (is_ram) {
@@ -1307,10 +1305,6 @@ bool is_blif_sp_ram(nnode_t* node) {
         }
     }
 
-    // CLEAN UP
-    vtr::free(hard_block_name);
-    vtr::free(hard_block_identifier);
-
     return (is_ram);
 }
 
@@ -1326,13 +1320,11 @@ bool is_blif_dp_ram(nnode_t* node) {
     oassert(node->name);
     /* return value */
     bool is_ram = true;
-    char* hard_block_name = (configuration.coarsen) ? get_stripped_name(node->name) : node->name;
-    char* hard_block_identifier = get_hard_block_node_name(hard_block_name);
+    if (std::string(node->name).find(DUAL_PORT_RAM_string) == std::string::npos)
+        return false;
 
     /* check the num input/output ports */
-    is_ram = (!strcmp(hard_block_identifier, DUAL_PORT_RAM_string))
-             && (node->num_input_port_sizes == 7)
-             && (node->num_output_port_sizes == 2);
+    is_ram = (node->num_input_port_sizes == 7) && (node->num_output_port_sizes == 2);
 
     /* check if it is a ram */
     if (is_ram) {
@@ -1359,10 +1351,6 @@ bool is_blif_dp_ram(nnode_t* node) {
             }
         }
     }
-
-    // CLEAN UP
-    vtr::free(hard_block_name);
-    vtr::free(hard_block_identifier);
 
     return (is_ram);
 }
