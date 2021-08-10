@@ -102,6 +102,7 @@ static void do_one_route(int source_node, int sink_node,
             device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_nodes,
+            &g_vpr_ctx.mutable_device().rr_graph,
             device_ctx.rr_rc_data,
             device_ctx.rr_switch_inf,
             g_vpr_ctx.mutable_routing().rr_node_route_inf);

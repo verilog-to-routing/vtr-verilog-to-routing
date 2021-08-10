@@ -203,8 +203,8 @@ static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id) {
     os << "Yhigh = " << device_ctx.rr_nodes.node_yhigh(node_id) << '\n';
 
     //Print out associated RC characteristics as they will be non-zero
-    os << "Resistance = " << rr_graph.node_R(RRNodeId(node_id)) << '\n';
-    os << "Capacitance = " << rr_graph.node_C(RRNodeId(node_id)) << '\n';
+    os << "Resistance = " << rr_graph.node_R(node_id) << '\n';
+    os << "Capacitance = " << rr_graph.node_C(node_id) << '\n';
 }
 
 ///@brief Print out information specific to SOURCE/SINK type rr nodes
