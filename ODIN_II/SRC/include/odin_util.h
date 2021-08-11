@@ -14,7 +14,7 @@ std::string get_directory(std::string input_file);
 void create_directory(std::string path);
 void assert_supported_file_extension(std::string input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
-void get_root_path();
+void get_current_path();
 
 const char* name_based_on_op(operation_list op);
 const char* name_based_on_ids(ids op);

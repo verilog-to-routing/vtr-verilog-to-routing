@@ -305,8 +305,6 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
         /* get the command line options */
         get_options(argc, argv);
-        /* get Odin-II root direcdtory path */
-        get_root_path();
 
         create_directory(configuration.debug_output_path);
 
@@ -479,7 +477,12 @@ struct ParseInitRegState {
 void get_options(int argc, char** argv) {
     auto parser = argparse::ArgumentParser(argv[0]);
 
+    // get current path where Odin-II is running
+    get_current_path();
+    // get Odin-II program name
     global_args.program_name = parser.prog();
+    // getting Odin-II path and program name
+    global_args.program_root = get_directory(std::string(argv[0]));
 
     auto& input_grp = parser.add_argument_group("input files");
 

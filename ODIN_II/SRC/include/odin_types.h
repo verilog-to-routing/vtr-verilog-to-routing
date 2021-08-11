@@ -88,6 +88,8 @@ struct global_args_t {
     std::string program_name;
     // Odin-II Root directory
     std::string program_root;
+    // Current path Odin-II is running
+    std::string current_path;
 
     argparse::ArgValue<std::string> config_file;
     argparse::ArgValue<std::vector<std::string>> verilog_files;

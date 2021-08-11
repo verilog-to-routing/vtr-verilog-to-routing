@@ -323,6 +323,13 @@ def vtr_command_argparser(prog=None):
         help="Supplies Odin with a custom config file for optimizations.",
     )
     odin.add_argument(
+        "-elaborator",
+        nargs=None,
+        default="odin",
+        dest="elaborator",
+        help="Specify the elaborator of the synthesis flow for Odin-II",
+    )
+    odin.add_argument(
         "-include",
         nargs="*",
         default=None,
@@ -582,6 +589,7 @@ def process_odin_args(args):
     """
     odin_args = OrderedDict()
     odin_args["adder_type"] = args.adder_type
+    odin_args["elaborator"] = args.elaborator
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True

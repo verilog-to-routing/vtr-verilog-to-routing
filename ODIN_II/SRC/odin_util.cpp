@@ -44,11 +44,10 @@
 // for mkdir
 #ifdef WIN32
 #    include <direct.h>
-#    define get_current_path _getcwd
+#    define getcwd _getcwd
 #else
 #    include <sys/stat.h>
 #    include <unistd.h>
-#    define get_current_path getcwd
 #endif
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc) {
@@ -123,16 +122,16 @@ FILE* open_file(const char* file_name, const char* open_type) {
 }
 
 /**
- * (function: get_root_path)
+ * (function: get_current_path)
  *
- * @brief find the Odin-II root path
+ * @brief find the path where Odin-II is running
  */
-void get_root_path() {
+void get_current_path() {
     /* create a string buffer to hold path */
     char* buffer;
-    buffer = get_current_path(NULL, READ_BUFFER_SIZE);
+    buffer = getcwd(NULL, READ_BUFFER_SIZE);
 
-    global_args.program_root = std::string(buffer);
+    global_args.current_path = std::string(buffer);
     vtr::free(buffer);
 }
 

@@ -75,7 +75,11 @@ Yosys::Yosys() {
 
     std::string path_prefix = (global_args.output_file.provenance() == argparse::Provenance::SPECIFIED)
                                   ? get_directory(global_args.output_file.value())
-                                  : global_args.program_root;
+                                  : global_args.current_path;
+    /* to handle unwanted root access */
+    if (path_prefix == "")
+        path_prefix = global_args.current_path;
+
     this->log = std::string(path_prefix + "/" + "yosys_elaboration.log");
     this->blif = std::string(path_prefix + "/" + "yosys_netlist.blif");
 
@@ -138,9 +142,10 @@ void Yosys::execute() {
     std::string yosys_full_command = this->executable + " -c " + this->tcl + " > " + this->log;
 
     FILE* fp = run_cmd(yosys_full_command.c_str(), "r");
-    int exit_code = WEXITSTATUS(pclose(fp));
+    auto status = pclose(fp);
+    int exit_code = WEXITSTATUS(status);
 
-    printf("Yosys log file file can be fount at (%s)\n", this->log.c_str());
+    printf("Yosys log file file can be found at (%s)\n", this->log.c_str());
 
     if (exit_code != 0)
         throw vtr::VtrError("Yosys failed to perform elaboration\n");
