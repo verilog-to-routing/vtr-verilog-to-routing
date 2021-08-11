@@ -208,8 +208,9 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
-    - run: ./.github/scripts/install_yosys.sh
 
     - name: Test
       env:
@@ -217,6 +218,7 @@ jobs:
         BUILD_TYPE: debug
       run: |
         ./.github/scripts/build.sh
+        ./.github/scripts/build-yosys.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
 
