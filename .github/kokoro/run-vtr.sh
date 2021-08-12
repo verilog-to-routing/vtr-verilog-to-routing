@@ -19,7 +19,7 @@ source $SCRIPT_DIR/steps/git.sh
 
 if [ $VTR_TEST == "vtr_reg_strong" ] || [ $VTR_TEST == "odin_reg_strong" ]; then
 	source $SCRIPT_DIR/steps/vtr-min-setup.sh
-elif [ $VTR_TEST == "odin_tech_strong" ]; then
+elif [ $VTR_TEST == "vtr_reg_yosys+odin" ] || [ $VTR_TEST == "odin_tech_strong" ]; then
 	# Yosys needs to be installed first and then Odin-II tech map runs
     source $SCRIPT_DIR/steps/vtr-yosys-setup.sh
 else

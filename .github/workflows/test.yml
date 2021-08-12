@@ -195,10 +195,6 @@ jobs:
           {
             name: 'Yosys+ODIN-II Basic',
             suite: 'odin_tech_basic'
-          },
-          {
-            name: 'VTR Yosys+ODIN-II',
-            suite: 'vtr_reg_yosys+odin'
           }
         ]
     name: '${{ matrix.name }}'

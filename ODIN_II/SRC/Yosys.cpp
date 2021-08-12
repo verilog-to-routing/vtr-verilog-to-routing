@@ -51,7 +51,8 @@ Yosys::Yosys() {
     FILE* fp = run_cmd(this->which_yosys.c_str(), "r");
     char* retval = NULL;
     vtr::getline(retval, fp);
-    int exit_code = WEXITSTATUS(pclose(fp));
+    auto status = pclose(fp);
+    int exit_code = WEXITSTATUS(status);
 
     if (exit_code == 0) {
         /* remove newline */
