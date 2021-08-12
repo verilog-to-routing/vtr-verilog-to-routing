@@ -402,8 +402,8 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
         /*****************************************************************************************/
         npin_t* Qp = allocate_npin();
         add_fanout_pin_to_net(node->output_pins[i]->net, Qp);
-        nnode_t* EN_mux = smux_with_sel_polarity(SRST_muxes_output_pin,          // pad node while is not enable
-                                                 Qp,                             // Q
+        nnode_t* EN_mux = smux_with_sel_polarity(Qp,                             // pad node while is not enable
+                                                 SRST_muxes_output_pin,          // Q
                                                  copy_input_npin(select_enable), // enable selecor
                                                  node                            // node
         );
