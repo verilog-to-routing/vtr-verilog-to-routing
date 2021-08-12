@@ -207,6 +207,74 @@ void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
     return;
 }
 
+t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node* curr_module_node, std::vector<std::string>* hard_block_type_name_list)
+{
+    std::string curr_module_node_name = curr_module_node->name;
+
+    // container to hold all the names of the different hierachy levels found for the current node in the netlist(refer to 'split_node_name function' for more info)
+    std::vector<std::string> components_of_module_node_name;
+
+    int index_of_node_name_component_with_hard_block_type_info = 0;
+    int index_of_node_name_component_with_hard_block_port_info = 0;
+
+    // data structure to hold all the extract port information
+    t_parsed_hard_block_port_info stored_port_info;
+
+    split_node_name(curr_module_node_name, &components_of_module_node_name, VQM_NODE_NAME_DELIMITER);
+
+    // if the node name does not have atleast two hierarhcy levels, then it cannot be a hard block port so we cannot extract any more information.
+    // a hard block port in the vqm netlist must have atleast the port information and the next top level block name it is connected to. As shown below:
+    // For example, \router:test_noc_router|payload[8]~QIC_DANGLING_PORT_I is a hard block payload port connected to a router block.
+    // \Add0~9_I is not a hard block port
+    if ((components_of_module_node_name.size()) >= 2)
+    {
+        // looking at the comment above, regardless of how many hierarchy levels an node has, the lowest level (last index) will contain the port info and the second lowest level (second last index) will contain the hard block type.
+        // so we store those indices below
+        index_of_node_name_component_with_hard_block_type_info = components_of_module_node_name.size() - 2;
+        index_of_node_name_component_with_hard_block_port_info = components_of_module_node_name.size() - 1;
+
+        stored_port_info.hard_block_type.assign(identify_hard_block_type(hard_block_type_name_list, components_of_module_node_name[index_of_node_name_component_with_hard_block_type_info]));
+
+        // if the hard block type was empty, then the current node does not represent a hard block port, therefore we cannot extract any more info
+        /* For example, sha256_pc:\sha256_gen:10:sha256_pc_gen:sha256_2|altshift_taps:q_w_rtl_2|shift_taps_b8v:auto_generated|altsyncram_6aa1:altsyncram5|ram_block6a17550~I meets all the conditions to get here, but it is a ram block */
+        if (!(stored_port_info.hard_block_type.empty()))
+        {
+            // if the hard block type was verified then we can go ahead and store its name and also its parsed port name and index
+
+            stored_port_info.hard_block_name.assign(construct_hard_block_name(&components_of_module_node_name, VQM_NODE_NAME_DELIMITER));
+
+            identify_hard_block_port_name_and_index(&stored_port_info, components_of_module_node_name[index_of_node_name_component_with_hard_block_port_info]);
+        }
+    }
+
+    return stored_port_info;
+
+}
+
+void split_node_name(std::string original_node_name, std::vector<std::string>* node_name_components, std::string delimiter)
+{
+
+    // positional trackers to determine the beginning and end position of each hierarchy level (component of the node name) of the current node within the design. The positions are updated as we go through the node name and identify every level of hierarchy.
+    size_t start_of_current_node_name_component = 0;
+    size_t end_of_current_node_name_component = 0;
+
+    // go through the node name, then identify and store each hierarchy level of the node (represented as a component of the original node name), found using the delimiter
+    while ((end_of_current_node_name_component = original_node_name.find(delimiter, start_of_current_node_name_component)) != std::string::npos)
+    {
+        // store the current node name component (current hierarchy level)
+        node_name_components->push_back(original_node_name.substr(start_of_current_node_name_component, end_of_current_node_name_component - start_of_current_node_name_component));
+
+        // update position for the next node name component (next hierarchy level)
+        start_of_current_node_name_component = end_of_current_node_name_component + delimiter.length();
+
+    }
+
+    // since the last component (the port info is not follwed by a delimiter we need to handle it here and store it)
+    node_name_components->push_back(original_node_name.substr(start_of_current_node_name_component, end_of_current_node_name_component - start_of_current_node_name_component));
+
+    return;
+}
+
 std::string identify_hard_block_type(std::vector<std::string>* hard_block_type_name_list, std::string curr_node_name_component)
 {
     std::vector<std::string>::iterator hard_block_type_name_traverser;
@@ -233,7 +301,26 @@ std::string identify_hard_block_type(std::vector<std::string>* hard_block_type_n
     return hard_block_type;
 }
 
-void identify_hard_block_port_name_and_index (t_parsed_hard_block_component_info* curr_hard_block_component, std::string curr_node_name_component)
+std::string construct_hard_block_name(std::vector<std::string>*node_name_components, std::string delimiter)
+{
+    // stores the full name of the hard block the current node is part of, the current node represents a port of a hard block
+    std::string curr_hard_block_name = "";
+
+    /* the hard block name should not include the specific port the current node represents (so we reduce the size by 1 to remove it when constructing the hard block name)
+    the last index of the node name components vector contains the port information, so by reducing the size of the vector by one we can ignore the port info when constructing the hard block name */
+    int number_of_node_name_components = node_name_components->size() - 1;
+
+    // go through the node name components and combine them together to form the hard block name. 
+    for (int i = 0; i < number_of_node_name_components; i++)
+    {
+        curr_hard_block_name += (*node_name_components)[i] + delimiter;
+    }
+
+    return curr_hard_block_name;
+
+}
+
+void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* curr_hard_block_port, std::string curr_node_name_component)
 {   
     // identifer to check whether the port defined in the current node name is a bus (ex. payload[1]~QIC_DANGLING_PORT_I)
     std::regex port_is_a_bus ("(.*)[[]([0-9]*)\]~(?:.*)");
@@ -250,19 +337,19 @@ void identify_hard_block_port_name_and_index (t_parsed_hard_block_component_info
     {
         // if we are here, then the port is a bus
 
-        // store the extarcted port name and index to be used externally
-        curr_hard_block_component->curr_hard_block_port_name.assign(port_info[PORT_NAME]);
+        // store the extracted port name and index to be used externally
+        curr_hard_block_port->hard_block_port_name.assign(port_info[PORT_NAME]);
         
-        curr_hard_block_component->curr_hard_block_port_index = std::stoi(port_info[PORT_INDEX]);
+        curr_hard_block_port->hard_block_port_index = std::stoi(port_info[PORT_INDEX]);
     }
     else if (std::regex_match(curr_node_name_component, port_info, port_is_not_a_bus, std::regex_constants::match_default))
     {
         // if we are here then the port was not a bus
+        // not need to update port index as the default value represents a port that is not a bus
 
-        // just store the extracted port name and default poert index to be used externally
-        curr_hard_block_component->curr_hard_block_port_name.assign(port_info[PORT_NAME]);
-        
-        curr_hard_block_component->curr_hard_block_port_index = DEFAULT_PORT_INDEX;
+        // store the extracted port name
+        curr_hard_block_port->hard_block_port_name.assign(port_info[PORT_NAME]);
+    
     }
 
     return;

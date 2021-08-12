@@ -256,6 +256,13 @@ int main(int argc, char* argv[])
 	//test_delete_hard_block_port_info(test, "router", 10000);
 	//test_initialize_hard_block_models();
 
+	//test_identify_hard_block_type();
+	//test_identify_hard_block_port_name_and_index();
+	
+	//test_split_node_name();
+	//test_construct_hard_block_name();
+
+	//test_extract_hard_block_port_info_from_module_node();
 
 	//test_create_and_initialize_all_hard_block_ports();
 	t_blif_model my_model;
@@ -649,10 +656,10 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                     eblif_format = T_TRUE;
                     break;
 				case OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS:
-					// first check whether an accompanying hard block type name was supplied (user provides the names of all the various types of custom hard blocks within the design)
+					// first check whether an accompanying hard block type name was supplied (user provides the names of all the various types of custom hard blocks within the design, essentially this is the module name)
 					if ( i+1 == argc ){
 						// no hard block type name was supplied so throw an error
-						cout << "ERROR: Missing Hard Block Type Names.\n" ;
+						cout << "ERROR: Missing Hard Block Module Names.\n" ;
 						print_usage (T_TRUE);
 					}
 
@@ -671,7 +678,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 							if (!identify_and_instantiate_custom_hard_blocks)
 							{
 								// since no hard block type names were supplied, we throw an error
-								cout << "ERROR: Missing Hard Block Type Names.\n"; 
+								cout << "ERROR: Missing Hard Block Module Names.\n"; 
 								print_usage (T_TRUE);
 							}
 							else
@@ -694,7 +701,16 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 							// if we are here then the provided name was valid.
 							identify_and_instantiate_custom_hard_blocks = T_TRUE;
 							
-							hard_block_type_name_list->push_back(curr_hard_block_name); // add the hard block type name to the list
+							// check to see whether the user repeated a hard block type name
+							if ((std::find(hard_block_type_name_list->begin(), hard_block_type_name_list->end(), curr_hard_block_name)) == hard_block_type_name_list->end())
+							{
+								hard_block_type_name_list->push_back(curr_hard_block_name); // add the hard block type name to the list
+							}
+							else
+							{
+								cout << "ERROR: Hard Block Module name '" << curr_hard_block_name << "' was repeated.\n";
+								print_usage (T_TRUE);
+							}
 
 							// update argument index to show that we have processed the current hard block type name successfully
 							i++;

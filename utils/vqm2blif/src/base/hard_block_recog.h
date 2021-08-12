@@ -40,6 +40,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <sstream>
 
 // useful spacing definitions
 #define TOP_LEVEL 0
@@ -55,6 +56,11 @@
 
 // unique identifier that seperates a hard block type name (module name), from the specific instance name
 #define HARD_BLOCK_TYPE_NAME_SEPERATOR ":"
+
+// a node name in reference to a hard block port (dffeas and stratic_lcell blocks) in the vqm netlist file consists of multiple hierarchy levels.
+// for example we can have the following name: \router_interconnect:test_router_interconnect|router:noc_router|id[2]~QIC_DANGLING_PORT_I (this has 3 hierarchy levels)
+// each level of hierarchy (module within module) is seperated by the delimiter character defined below. The last level of hierarchy is the output net of the block 
+#define VQM_NODE_NAME_DELIMITER "|"
 
 #define PORT_NAME 1
 #define PORT_INDEX 2
@@ -103,7 +109,7 @@ typedef struct s_hard_block_port_info
 typedef struct s_hard_block
 {
     // indicates the name of the user defined hard block
-    std::string hard_block_name;
+    std::string hard_block_name = "";
 
     // helps keep track of the number of hard block ports we have assigned
     // a net to 
@@ -159,23 +165,24 @@ typedef struct s_hard_block_recog
 *   When we go through the .vqm file, the ports of any user defined hard block  *   will be represented as a LUT (stratix_lcell), or flip flop (dffeas) (for *   more info refer to 'hard_block_recog.cpp'). The generated names found in *   the .vqm file for the two previous blocks contain a lot of information     *   about the hard block. The structure below is used to store the information, 
 *   which includes the hard block name, hard block type, the specfic hard    *   block port and if the port is a bus, then the specific index.
 */
-typedef struct s_parsed_hard_block_component_info
+typedef struct s_parsed_hard_block_port_info
 {
     // name used to identify the unique hard block the current port belongs to
     // multiple ports can belong to the same hard block and there can be multiple hard blocks in the design
-    std::string curr_hard_block_name;
+    std::string hard_block_name = "";
 
     // the specific type of hard block the current port belongs to
     // the user can define multiple hard block types
-    std::string curr_hard_block_type;
+    std::string hard_block_type = "";
 
     // the port name defined in the current block (LUT or dffeas)
-    std::string curr_hard_block_port_name;
+    std::string hard_block_port_name = "";
 
     // index of the port defined in the current block (LUT or dffeas)
-    int curr_hard_block_port_index = 0;
+    // initialized to an index equivalent to what a port thas is not a bus would have
+    int hard_block_port_index = DEFAULT_PORT_INDEX;
 
-}t_parsed_hard_block_component_info;
+}t_parsed_hard_block_port_info;
 
 
 /*  Function Declarations 
@@ -204,9 +211,15 @@ void copy_array_ref(t_array_ref*, t_array_ref*);
 
 void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>*);
 
+t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node*, std::vector<std::string>*);
+
 std::string identify_hard_block_type(std::vector<std::string>*, std::string);
 
-void identify_hard_block_port_name_and_index (t_parsed_hard_block_component_info*, std::string);
+void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info*, std::string);
+
+void split_node_name(std::string, std::vector<std::string>*, std::string);
+
+std::string construct_hard_block_name(std::vector<std::string>*, std::string);
 
 // utility functions
 
