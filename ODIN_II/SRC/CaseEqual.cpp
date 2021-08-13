@@ -22,9 +22,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: this file include the circuitry iplementation of case equal 
- * and case not equal high-level negtlist nodes. The implementations 
- * are XNOR, AND and invertor gate based. 
+ * @file: this file includes the circuitry implementation of case_equal 
+ * and case_not_equal high-level netlist nodes. The implementations 
+ * are XNOR, AND and invertor gates based. 
  */
 
 #include "CaseEqual.hpp"

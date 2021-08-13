@@ -22,8 +22,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: This filde provide utils to modify the logical nodes to make 
- * them compatible with the Odin-II partial mapper.
+ * @file: This file provides utilities to modify the logical nodes 
+ * to make them compatible with the Odin-II partial mapper.
  */
 
 #include "LogicalOps.hpp"

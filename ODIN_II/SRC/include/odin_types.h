@@ -230,7 +230,7 @@ enum init_value_e {
 /**
  * list of Odin-II supported operation node
  * In the synthesis flow, most operations are resolved or mapped
- * to a n operation mode that has instantiation procedure in the 
+ * to an operation mode that has instantiation procedure in the 
  * partial mapping. However, for techmap flow, nodes are elaborated
  * into the partial mapper supported operation in BLIF elaboration.
  * Technically, each Odin-II node should have one of the following
@@ -506,8 +506,8 @@ struct chain_information_t {
 /**
  * DEFINTIONS netlist node attributes
  * the attr_t structure provides the control signals sensitivity
- * In the synthesis flow, the attribute structure mostly used to 
- * specify the clock sensetivity. However, in the techmap flow, 
+ * In the synthesis flow, the attribute structure is mostly used to 
+ * specify the clock sensitivity. However, in the techmap flow, 
  * it is used in most sections, including DFFs, Block memories 
  * and arithmetic operation instantiation
  */

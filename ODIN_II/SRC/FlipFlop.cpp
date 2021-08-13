@@ -22,16 +22,16 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: This file includes the circuitry implemention of six synchronous
+ * @file: This file includes the circuitry implementation of six synchronous
  * Data Flip-Flop models. All control signals will be check based on their 
  * polarity specified in the attribute structure of the related node.
  *      SDFF: A DFF with synchronous reset 
  *      DFFE: A DFF with enable signal
- *      SDFFE: A DFF with enable and synchronous signals
- *      SDFFCE: A DFF with enable signal prior to synchronous reset 
+ *      SDFFE: A DFF with enabling and synchronous signals
+ *      SDFFCE: A DFF with enable signal prior to the synchronous reset 
  *             (enable needs to be active to be able to reset)
  *      DFFSR: A DFF with set (VCC) and clear (GND) signals
- *      DFFSRE: A DFF with set (VCC), clear (GND), and enable signals
+ *      DFFSRE: A DFF with the set (VCC), clear (GND), and enable signals
  */
 
 #include "FlipFlop.hpp"

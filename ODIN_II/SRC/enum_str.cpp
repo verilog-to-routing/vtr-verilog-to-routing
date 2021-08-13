@@ -251,10 +251,10 @@ strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
  * corresponding Odin-II cell type or create a new one matching 
  * with the new type corresponding model (.subckt) in BLIF file, 
  * and add it to the following typemap. Then, you would need to 
- * specify the model input output order in the Odin-II BLIF Reader.
+ * specify the model input-output order in the Odin-II BLIF Reader.
  * At the end, a resolve_XXX_node function needs to be implemented
- * in BLIF Elaboration phase to make the new node compatible with
- * the Odin-II partial mapper.
+ * in the BLIF Elaboration phase to make the new node compatible
+ * with the Odin-II partial mapper.
  */
 strmap<operation_list> yosys_subckt_strmap({
     {"$_ANDNOT_", operation_list_END},

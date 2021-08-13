@@ -22,10 +22,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: this file propose the combinational instantiation of constant and 
- * variable exponentiation operation. Both implementations utilize the 
- * multipication operations; however the constant exponentiation is designed 
- * to use less multiply node to achieve area and speed efficiency.
+ * @file: this file proposes the combinational instantiation of constant
+ * and variable exponentiation operations. Both implementations utilize 
+ * the multiplication operations; however, the constant exponentiation is
+ * designed to use fewer multiply nodes to achieve area and speed efficiency.
  */
 
 #include "Power.hpp"

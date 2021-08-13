@@ -21,13 +21,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: includes the definiion of BLIF Reader class to read a given
+ * @file: includes the definition of BLIF Reader class to read a given
  * BLIF file. The Odin-II BLIF Reader can also read large files since 
- * it read each file witha BLIF_READ_BUFFER chunk or line by line.
+ * it read each file with a BLIF_READ_BUFFER chunk or line by line.
  * Odin-II BLIF Reader caches the read models while traversing the
  * BLIF file to avoid searching the BLIF file looking for the model 
  * definition. Moreover, function getbline provides developers with 
- * the ability of reading a BLIF file line by line or using the chunk.
+ * the ability to read a BLIF file line by line or using a chunk.
  */
 
 #include <stdlib.h>

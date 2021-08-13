@@ -22,13 +22,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file a netlist traersal phase newly added to Odin-II techmap.
- * Basically, this file include the resolve_XXX_node routines to
+ * @file a netlist traversal phase newly added to Odin-II techmap.
+ * Basically, this file includes the resolve_XXX_node routines to
  * make high-level netlist nodes compatible with Odin-II partial 
  * mapper. However, the instantiation process of operations that 
- * aren't supported by Odin-II synthesis flow is also implemnented
+ * aren't supported by Odin-II synthesis flow is also implemented
  * in this phase. 
- * E.g. Division (constant, varfiable), Exponentiation (variable) 
+ * E.g. Division (constant, variable), Exponentiation (variable) 
  */
 
 #include <string.h>

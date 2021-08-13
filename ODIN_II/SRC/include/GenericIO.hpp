@@ -22,7 +22,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: Odin-II Generic IO abstract class declration
+ * @file: Odin-II Generic IO abstract class declaration
  */
 
 #ifndef __GENERIC_IO_H__

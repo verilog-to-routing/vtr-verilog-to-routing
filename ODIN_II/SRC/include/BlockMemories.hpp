@@ -22,19 +22,19 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file This file includes the defintion of basic structure used 
- * in Odin-II Block Memory resolving process. Moreover, it provides
- * the declaration of the related public routines
+ * @file This file includes the definition of the basic structure 
+ * used in Odin-II Block Memory resolving process. Moreover, it 
+ * provides the declaration of the related public routines.
  */
 #ifndef _BLOCK_MEMORIES_H_
 #define _BLOCK_MEMORIES_H_
 
 #include <unordered_map>
 
-const int REG_INFERRENCE_THRESHOLD_WIDTH = 32; // Width threshold for register array inference
-const int REG_INFERRENCE_THRESHOLD_DEPTH = 20; // Depth threshold for register array inference
-const int LUTRAM_MAX_THRESHOLD_AREA = 2560;    // Maximum area threshold for LUTRAM inference
-const int LUTRAM_MIN_THRESHOLD_AREA = 640;     // Minimum area threshold for LUTRAM inference
+const int REG_INFERENCE_THRESHOLD_WIDTH = 32; // Width threshold for register array inference
+const int REG_INFERENCE_THRESHOLD_DEPTH = 20; // Depth threshold for register array inference
+const int LUTRAM_MAX_THRESHOLD_AREA = 2560;   // Maximum area threshold for LUTRAM inference
+const int LUTRAM_MIN_THRESHOLD_AREA = 640;    // Minimum area threshold for LUTRAM inference
 
 /*
  * Contains a pointer to the block memory node as well as other

@@ -23,7 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * @file: This file provides the definition of Odin-II Generic Reader routines.
- * The Generic Reader detects the language type and call the required routines
+ * The Generic Reader detects the language type and calls the required routines
  * of the related class.
  */
 

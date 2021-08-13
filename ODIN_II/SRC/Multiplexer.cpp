@@ -22,9 +22,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- *@file: this file provides utils to modify multiplexer node to make 
- * it compatible with the Odin-II partial mapper. Moreover, it includes
- * the circuitry implementation of pmux, a cell designed for parrallel cases
+ * @file: this file provides utils to modify the multiplexer node 
+ * to make it compatible with the Odin-II partial mapper. Moreover,
+ * it includes the circuitry implementation of pmux, a cell designed
+ * for parallel cases
  */
 
 #include "Multiplexer.hpp"

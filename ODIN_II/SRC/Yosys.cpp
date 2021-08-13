@@ -22,25 +22,24 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file This file includes the defintion of basic structure used in 
- * Odin-II to run Yosys API. Technically, this class utilize Yosys 
- * as a seperate synthesizer to generate a coarse-grain netlist. 
+ * @file This file includes the definition of the basic structure 
+ * used in Odin-II to run Yosys API. Technically, this class utilizes
+ * Yosys as a separate synthesizer to generate a coarse-grain netlist.
  * In the end, the Yosys generated netlist is technology mapped to the
- * target device using Odin-II partial mapper. It worth noting that
- * Yosys performs corase-grain synthesis using the TCL config script
- * located at $ODIN_II_ROOT/regression_test/tool/synth.tcl
- * Users can also generate only coarse-grain the netlist BLIF file using
- * run_yosys.sh script located at the same directory.
+ * target device using Odin-II partial mapper. It is worth noting that 
+ * Yosys performs coarse-grain synthesis using the TCL config script 
+ * located at $ODIN_II_ROOT/regression_test/tool/synth.tcl Users can 
+ * also generate only coarse-grain the netlist BLIF file using 
+ * run_yosys.sh script located in the same directory.
  */
 
 #include <cstdlib>
 #include "Yosys.hpp"
-#include "config_t.h"     // configuration
-#include "odin_util.h"    // get_directory
-#include "odin_error.h"   // error_message
-#include "odin_globals.h" // global_args
-#include "vtr_util.h"     // vtr::getline
-#include "vtr_memory.h"   // vtr::free
+#include "config_t.h"   // configuration
+#include "odin_util.h"  // get_directory
+#include "odin_error.h" // error_message
+#include "vtr_util.h"   // vtr::getline
+#include "vtr_memory.h" // vtr::free
 
 /**
  * @brief Construct the Yosys object
@@ -49,19 +48,12 @@
 Yosys::Yosys() {
     /* to check if Yosys is installed */
     FILE* fp = run_cmd(this->which_yosys.c_str(), "r");
-    char* retval = NULL;
-    vtr::getline(retval, fp);
     auto status = pclose(fp);
     int exit_code = WEXITSTATUS(status);
 
-    if (exit_code == 0) {
-        /* remove newline */
-        retval[strcspn(retval, "\n")] = 0;
-        /* get Yosys executable path */
-        this->executable = std::string(retval);
-    } else {
+    if (exit_code != 0) {
         error_message(PARSE_ARGS, unknown_location,
-                      "Yosys is not installed on the current system, the installation instruction is specified on (%s)", YOSYS_GITHUB_URL);
+                      "Yosys is not locally installed on the (%s)\n", std::string(global_args.program_root + "../yosys/").c_str());
     }
 
     /**
@@ -83,9 +75,6 @@ Yosys::Yosys() {
 
     this->log = std::string(path_prefix + "/" + "yosys_elaboration.log");
     this->blif = std::string(path_prefix + "/" + "yosys_netlist.blif");
-
-    // CLEAN UP
-    vtr::free(retval);
 }
 
 /**
@@ -162,7 +151,7 @@ void Yosys::execute() {
 void Yosys::elaborate() {
     try {
         this->execute();
-        printf("Successful Elaboration of digital design by Yosys\n\tCoarse-grain netlist is available at: %s\n\n", this->blif.c_str());
+        printf("Successful Elaboration of the design by Yosys\n\tCoarse-grain netlist is available at: %s\n\n", this->blif.c_str());
 
         /* set globals */
         global_args.coarsen.set(true, argparse::Provenance::SPECIFIED);

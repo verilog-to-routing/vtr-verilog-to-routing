@@ -22,8 +22,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: This file includes the circuitry implemention of dlatch, 
- * dlatch with asynchronoush reset and a set-reset node.All control
+ * @file: This file includes the circuitry implementation of dlatch, 
+ * dlatch with asynchronous reset and a set-reset node.All control
  * signals will be check based on their polarity specified in the 
  * attribute structure of the related node.
  *      DLATCH: a dlatch with enable control signal

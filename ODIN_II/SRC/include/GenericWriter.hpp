@@ -22,7 +22,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: Odin-II Generic Reader class declration
+ * @file: Odin-II Generic Reader class declaration
  */
 
 #ifndef __GENERIC_WRITER_H__

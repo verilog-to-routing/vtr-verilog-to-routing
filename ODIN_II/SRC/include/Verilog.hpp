@@ -22,9 +22,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file This file includes the defintion of basic structure used 
- * in Odin-II BLIF class to parse a Verilog file. Moreover, it 
- * provides the declaration of Verilog class routines
+ * @file This file includes the definition of the basic structure 
+ * used in Odin-II BLIF class to parse a Verilog file. Moreover, 
+ * it provides the declaration of Verilog class routines
  */
 
 #ifndef __VERILOG_H__

@@ -22,7 +22,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: includes the definiion of VERILOG Reader class to read a 
+ * @file: includes the definition of VERILOG Reader class to read a 
  * given Verilog or Verilog Header file. Odin-II utilizes Bison and
  * Flex to parse input Verilog file. After parsing a Verilog file, 
  * Odin-II uses an abstract syntax tree to perform elaboration.

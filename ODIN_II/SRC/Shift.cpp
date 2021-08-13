@@ -23,7 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * @file: this file provides a routine to utilize the constant shift 
- * operation used in other node instantiation process, such as multipication.
+ * operation used in other node instantiation processes, such as multiplication.
  */
 
 #include "Shift.hpp"

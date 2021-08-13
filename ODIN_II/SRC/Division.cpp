@@ -26,8 +26,8 @@
  * @file Division.cpp comprises the combinational implementation of 
  * Division operation using shift and subtraction nodes. To utilize
  * this routine of this file, a high-level RTL DIV node is required
- * with port order according to what mentioned in resolve_div_node.
- * Currently, this file is highly used by Yosys generated divison
+ * with port order according to what is mentioned in resolve_div_node.
+ * Currently, this file is highly used by Yosys generated division
  * sub-circuit.
  */
 

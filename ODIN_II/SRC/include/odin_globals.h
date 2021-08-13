@@ -54,7 +54,10 @@ extern netlist_t* read_blif_netlist;
  */
 extern HardSoftLogicMixer* mixer;
 
-// a global var to specify the need for cleanup after receiving coarsen BLIF as input.
+/**
+ * a global var to specify the need for cleanup after receiving
+ * coarsen BLIF as the input.
+ */
 extern bool coarsen_cleanup;
 
 extern strmap<file_type_e> file_type_strmap;

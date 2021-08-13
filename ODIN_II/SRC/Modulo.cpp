@@ -22,9 +22,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: This file provides the resolve process for modulo node 
- * which exatcly the same as divison. Only different remainder output 
- * signal is taken instead the quotient signal for modulo node. 
+ * @file: This file provides the resolving process for the modulo 
+ * node which exactly the same as division. The only different 
+ * remainder output signal is taken instead of the quotient signal 
+ * for the modulo node. 
  */
 
 #include "Modulo.hpp"

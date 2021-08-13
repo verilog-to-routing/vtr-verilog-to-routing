@@ -138,7 +138,7 @@ static void optimization() {
         //START ################# NETLIST OPTIMIZATION ############################
 
         /* point for all netlist optimizations. */
-        printf("Performing Optimizations of the Netlist\n");
+        printf("Performing Optimization on the Netlist\n");
         if (hard_multipliers) {
             /* Perform a splitting of the multipliers for hard block mults */
             reduce_operations(global_netlist, MULTIPLY);
@@ -187,7 +187,7 @@ static void techmap() {
 
     if (global_netlist) {
         /* point where we convert netlist to FPGA or other hardware target compatible format */
-        printf("Performing Partial Technology Map to target device\n");
+        printf("Performing Partial Technology Mapping to the target device\n");
         partial_map_top(global_netlist);
         mixer->perform_optimizations(global_netlist);
 
@@ -259,7 +259,7 @@ static ODIN_ERROR_CODE synthesize() {
         techmap();
         printf("Successful Partial Technology Mapping by Odin-II\n");
     } catch (vtr::VtrError& vtr_error) {
-        printf("Odin-II Failed to perform partial map to target device %s with exit code:%d \n", vtr_error.what(), ERROR_TECHMAP);
+        printf("Odin-II Failed to perform partial mapping to target device %s with exit code:%d \n", vtr_error.what(), ERROR_TECHMAP);
         exit(ERROR_TECHMAP);
     }
     /*take the synthsis time before outputting netlist */

@@ -20,10 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: definition of BLIF Writer routine to generate a BLIF output file.
- * Unlike other tools that prints each BLIF record in a single line, Odin-II
- * BLIF Writer print BLIF records in a specified size. That means it makes  
- * BLIF file more readable by splitting line by the specified threshold. 
+ * @file: definition of BLIF Writer routine to generate a BLIF output 
+ * file. Unlike other tools that print each BLIF record in a single 
+ * line, Odin-IIBLIF Writer prints BLIF records in a specified size. 
+ * That means it makes the BLIF file more readable by splitting the 
+ * line by the specified threshold. 
  */
 
 #include <stdlib.h>

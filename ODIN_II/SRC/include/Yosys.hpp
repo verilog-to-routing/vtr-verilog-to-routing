@@ -22,15 +22,15 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file This file includes the defintion of basic structure used in 
- * Odin-II to run Yosys API. Technically, this class utilize Yosys 
- * as a seperate synthesizer to generate a coarse-grain netlist. 
+ * @file This file includes the definition of the basic structure used 
+ * in Odin-II to run Yosys API. Technically, this class utilize Yosys 
+ * as a separate synthesizer to generate a coarse-grain netlist. 
  * In the end, the Yosys generated netlist is technology mapped to the
- * target device using Odin-II partial mapper. It worth noting that
- * Yosys performs corase-grain synthesis using the TCL config script
+ * target device using Odin-II partial mapper. It is worth noting that
+ * Yosys performs coarse-grain synthesis using the TCL config script
  * located at $ODIN_II_ROOT/regression_test/tool/synth.tcl
- * Users can also generate only coarse-grain the netlist BLIF file using
- * run_yosys.sh script located at the same directory.
+ * Users can also generate only coarse-grain the netlist BLIF file
+ * using run_yosys.sh script located at the same directory.
  */
 
 #ifndef __YOSYS_H__
@@ -48,7 +48,7 @@
 #    define run_cmd popen
 #endif
 
-#define YOSYS_GITHUB_URL "https://github.com/YosysHQ/yosys.git"
+#include "odin_globals.h" // global_args
 
 /**
  * @brief A class to provide the general object of Yosys synthezier
@@ -79,8 +79,13 @@ class Yosys {
     std::string tcl;
     std::string log;
     std::string blif;
-    std::string executable;
-    std::string which_yosys = std::string("which yosys");
+    /*
+     * Considering local yosys executable file to avoid collision with the
+     * global one if any is installed on the user system. This is because
+     * of the specific yosys version that Odin-II currently supports.
+     */
+    std::string executable = std::string(global_args.program_root + "/../yosys/yosys");
+    std::string which_yosys = std::string("which " + this->executable);
 
   private:
     std::string tcl_primitives;
