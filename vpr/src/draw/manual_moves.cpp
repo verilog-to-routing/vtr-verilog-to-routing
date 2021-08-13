@@ -79,10 +79,10 @@ void draw_manual_moves_window(std::string block_id) {
 }
 
 void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
-    int block_id;
-    int x_location;
-    int y_location;
-    int subtile_location;
+    int block_id = -1;
+    int x_location = -1;
+    int y_location = -1;
+    int subtile_location = -1;
     bool valid_input = true;
 
     t_draw_state* draw_state = get_draw_state_vars();

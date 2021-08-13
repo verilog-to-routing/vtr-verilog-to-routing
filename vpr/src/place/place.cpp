@@ -1189,6 +1189,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
 #ifndef NO_GRAPHICS
         //Checks manual move flag for manual move feature
         t_draw_state* draw_state = get_draw_state_vars();
+        //std::cout << &draw_state->manual_moves_global << std::endl;
         if (draw_state->show_graphics)
             manual_move_flag = get_manual_move_flag();
 #endif /*NO_GRAPHICS*/
@@ -1338,12 +1339,12 @@ static e_move_result try_swap(const t_annealing_state* state,
 #ifndef NO_GRAPHICS
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+
         create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
-#endif /*NO_GRAPHICS*/
+#endif //NO_GRAPHICS
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected,
-                                                          move_type, rlim, placer_opts, criticalities);
+        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
     }
 
     ++move_type_stat.num_moves[(int)move_type];
@@ -1436,10 +1437,11 @@ static e_move_result try_swap(const t_annealing_state* state,
             t_draw_state* draw_state = get_draw_state_vars();
             update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
             cost_summary_dialog();
+
             //User accepts or rejects the move.
             move_outcome = draw_state->manual_moves_global.manual_move_info.user_move_outcome;
         }
-#endif /*NO_GRAPHICS*/
+#endif //NO_GRAPHICS
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1479,7 +1481,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             //Highlights the new block when manual move is selected.
 #ifndef NO_GRAPHICS
             highlight_new_block_location();
-#endif /*NO_GRAPHICS*/
+#endif //NO_GRAPHICS
 
         } else {
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
