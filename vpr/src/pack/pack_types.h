@@ -12,6 +12,7 @@
 
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+#include "attraction_groups.h"
 
 /**************************************************************************
  * Packing Algorithm Enumerations
@@ -73,6 +74,10 @@ struct t_pb_stats {
     /* Use vector because array size is expected to be small so runtime should be faster using vector than map despite the O(N) vs O(log(n)) behaviour.*/
     std::vector<std::vector<AtomNetId>> lookahead_input_pins_used;  /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
     std::vector<std::vector<AtomNetId>> lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
+
+    //The attraction group associated with the cluster.
+    //Will be AttractGroupId::INVALID() if no attraction group is associated with the cluster.
+    AttractGroupId attraction_grp_id;
 
     /* Array of feasible blocks to select from [0..max_array_size-1]
      * Sorted in ascending gain order so that the last cluster_ctx.blocks is the most desirable (this makes it easy to pop blocks off the list

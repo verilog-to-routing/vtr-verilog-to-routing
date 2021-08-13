@@ -227,11 +227,11 @@ def vtr_command_main(arg_list, prog=None):
 
         config_files = [find_task_config_file(task_name) for task_name in task_names]
         configs = []
-        common_task_prefix = None  # common task prefix to shorten task names
+        common_task_prefix = ""  # common task prefix to shorten task names
         for config_file in config_files:
             config = load_task_config(config_file)
             configs += [config]
-            if common_task_prefix is None:
+            if not common_task_prefix:
                 common_task_prefix = config.task_name
             else:
                 match = SequenceMatcher(
