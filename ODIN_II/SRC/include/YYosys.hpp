@@ -22,98 +22,92 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file This file includes the definition of the basic structure used 
- * in Odin-II to run Yosys API. Technically, this class utilize Yosys 
- * as a separate synthesizer to generate a coarse-grain netlist. 
- * In the end, the Yosys generated netlist is technology mapped to the
- * target device using Odin-II partial mapper. It is worth noting that
- * Yosys performs coarse-grain synthesis using the TCL config script
- * located at $ODIN_II_ROOT/regression_test/tool/synth.tcl
- * Users can also generate only coarse-grain the netlist BLIF file
- * using run_yosys.sh script located at the same directory.
+ * @file This file includes the declaration of the basic structure used
+ * in Odin-II to run Yosys API. Users can also separately run Yosys to 
+ * performs coarse-grain synthesis using the run_yosys script located at:
+ *      $ODIN_II_ROOT/regression_test/tool/run_yosys.sh
+ * This script generates a coarse-grain netlist; then, they can pass the
+ * BLIF file to Odin-II with --coarsen flag for performing techmap. Yosys
+ * log file is located in the same place where the Odin-II output BLIF is.
+ * To see Yosys logs in the standard output stream you can provide Odin-II
+ * with  --show_yosys_log flag.
  */
 
-#ifndef __YOSYS_H__
-#define __YOSYS_H__
+#ifndef __YYOSYS_H__
+#define __YYOSYS_H__
 
 #include <string>
 #include <stdlib.h>
 
-/* to set local environment variable */
-#ifdef WIN32
-#    define set_env _setenv
-#    define run_cmd _popen
-#else
-#    define set_env setenv
-#    define run_cmd popen
-#endif
+#define ODIN_USE_YOSYS_STR "-DODIN_USE_YOSYS=ON"
 
 #include "odin_globals.h" // global_args
 
 /**
  * @brief A class to provide the general object of Yosys synthezier
  */
-class Yosys {
+class YYosys {
   public:
     /**
      * @brief Construct the object
      * required by compiler
      */
-    Yosys();
+    YYosys();
     /**
      * @brief Destruct the object
      * to avoid memory leakage
      */
-    ~Yosys();
+    ~YYosys();
 
     /**
      * ---------------------------------------------------------------------------------------------
      * (function: perform_elaboration)
      * 
-     * @brief Call Yosys elaboration and set Odin-II input BLIF file
-     * to the Yosys output BLIF
+     * @brief Perform Yosys elaboration and set the Odin-II input BLIF
+     * file with the Yosys generated output BLIF file
      * -------------------------------------------------------------------------------------------*/
     void perform_elaboration();
 
   protected:
-    std::string tcl;
-    std::string log;
-    std::string blif;
-    /*
-     * Considering local yosys executable file to avoid collision with the
-     * global one if any is installed on the user system. This is because
-     * of the specific yosys version that Odin-II currently supports.
-     */
-    std::string executable = std::string(global_args.program_root + "/../yosys/yosys");
-    std::string which_yosys = std::string("which " + this->executable);
+    std::string log_file;          // a log file including Yosys output logs
+    std::string coarse_grain_blif; // Yosys coarse-grain output BLIF
 
   private:
-    std::string tcl_primitives;
-    std::string tcl_circuit;
-    std::string odin_techlib;
+    std::string odin_techlib;                  // the path od Odin-II techlib
+    std::ostream* yosys_log_stream;            // Yosys log output stream
+    std::string vtr_primitives_file;           // the path of VTR primitives Verilog file
+    std::vector<std::string> verilog_circuits; // Odin-II input Verilog files
 
     /**
      * ---------------------------------------------------------------------------------------------
-     * (function: set_default_env)
+     * (function: set_default_variables)
      * 
-     * @brief set local environment variables of the default TCL script
+     * @brief set Yosys+Odin default variables
      * -------------------------------------------------------------------------------------------*/
-    void set_default_env();
+    void set_default_variables();
     /**
      * ---------------------------------------------------------------------------------------------
      * (function: execute)
      * 
-     * @brief Run Yosys executable with the class TCL script file
+     * @brief Executing Yosys using its API
      * -------------------------------------------------------------------------------------------*/
     void execute();
     /**
      * ---------------------------------------------------------------------------------------------
      * (function: elaborate)
      * 
-     * @brief Call yosys using the specified TCL script to generate
-     * a coarse-grain netlist
+     * @brief Perform Yosys elaboration and set the Odin-II input BLIF
+     * file with the Yosys generated output BLIF file
      * -------------------------------------------------------------------------------------------*/
     void elaborate();
+    /**
+     * ---------------------------------------------------------------------------------------------
+     * (function: output_blif)
+     * 
+     * @brief Ask Yosys to generate an output BLIF file in 
+     * the path specified in this->coarse_grain_blif
+     * -------------------------------------------------------------------------------------------*/
+    void output_blif();
 };
 
-#endif //__VERILOG_H__
+#endif //__YYOSYS_H__

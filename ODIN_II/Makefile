@@ -18,7 +18,7 @@ endif
 #    debug
 BUILD_TYPE ?= release
 MAKEFLAGS := -s
-CMAKE_ARGS = -DVTR_IPO_BUILD=off
+CMAKE_ARGS = -DVTR_IPO_BUILD=off $(CMAKE_PARAMS)
 
 BUILD_DIR=../build
 ODIN_BUILD_DIR=$(BUILD_DIR)/ODIN_II
@@ -79,7 +79,11 @@ _set_sanitize: $(ODIN_BUILD_DIR)/.sanitize.build
 	cd $(BUILD_DIR) &&\
 	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_SANITIZE=on ..
 
-BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize
+_set_yosys+odin: $(ODIN_BUILD_DIR)/.yosys+odin.build
+	cd $(BUILD_DIR) &&\
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_USE_YOSYS=ON ..
+
+BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize yosys+odin
 $(foreach  t,$(BUILD_IT_TARGETS), $(eval $(call _build_it_gen,$(t))))
 
 scrub:

@@ -58,7 +58,7 @@
 #include "adders.h"
 #include "netlist_statistic.h"
 #include "subtractions.h"
-#include "Yosys.hpp"
+#include "YYosys.hpp"
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"
@@ -105,7 +105,7 @@ static void elaborate() {
             break;
         }
         case (elaborator_e::_YOSYS): {
-            Yosys yosys;
+            YYosys yosys;
             /* perform elaboration */
             yosys.perform_elaboration();
             /* parse yosys generated BLIF file */
@@ -513,9 +513,11 @@ void get_options(int argc, char** argv) {
         .default_value("Odin")
         .metavar("ELABORATTOR");
 
-    ext_elaborator_group.add_argument(global_args.tcl_file, "--tcl")
-        .help("Yosys TCL script file")
-        .metavar("TCL_FILE");
+    ext_elaborator_group.add_argument(global_args.show_yosys_log, "--show_yosys_log")
+        .help("Print Yosys log into the standard output stream")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("show_yosys_log");
 
     ext_elaborator_group.add_argument(global_args.coarsen, "--coarsen")
         .help("specify the input BLIF is flatten or coarsen")
@@ -729,8 +731,8 @@ void get_options(int argc, char** argv) {
         configuration.elaborator_type = elaborator_strmap[global_args.elaborator];
     }
 
-    if (global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.tcl_file = global_args.tcl_file;
+    if (global_args.show_yosys_log.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.show_yosys_log = global_args.show_yosys_log;
     }
 
     if (global_args.write_netlist_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
@@ -789,6 +791,7 @@ void set_default_config() {
     /* Set up the global configuration. */
     configuration.coarsen = false;
     configuration.fflegalize = false;
+    configuration.show_yosys_log = false;
     configuration.output_file_type = file_type_e::_BLIF;
     configuration.elaborator_type = elaborator_e::_ODIN;
     configuration.output_ast_graphs = 0;
@@ -797,7 +800,6 @@ void set_default_config() {
     configuration.output_preproc_source = 0; // TODO: unused
     configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
     configuration.arch_file = "";
-    configuration.tcl_file = "";
 
     configuration.fixed_hard_multiplier = 0;
     configuration.split_hard_multiplier = 0;

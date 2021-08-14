@@ -13,8 +13,9 @@ struct config_t {
     enum file_type_e input_file_type;
     enum file_type_e output_file_type;
     enum elaborator_e elaborator_type;
-    bool fflegalize;
-    bool coarsen;
+    bool fflegalize;     // Legalize DFFs by making them rising edge
+    bool coarsen;        // Specify if the input BLIF is coarse-grain
+    bool show_yosys_log; // Print Yosys logs into the standard output stream
 
     bool output_ast_graphs;     // switch that outputs ast graphs per node for use with GRaphViz tools
     bool output_netlist_graphs; // switch that outputs netlist graphs per node for use with GraphViz tools
@@ -51,7 +52,6 @@ struct config_t {
     int soft_logic_memory_width_threshold;
 
     std::string arch_file; // Name of the FPGA architecture file
-    std::string tcl_file;  // Name of the Yosys TCL script file
 };
 
 extern config_t configuration;
