@@ -1,15 +1,17 @@
 #ifndef RR_EDGE_H
 #define RR_EDGE_H
 
+#include "rr_graph_fwd.h"
+
 /* TODO: MUST change the node id to RRNodeId before refactoring is finished! */
 struct t_rr_edge_info {
-    t_rr_edge_info(int from, int to, short type) noexcept
+    t_rr_edge_info(RRNodeId from, RRNodeId to, short type) noexcept
         : from_node(from)
         , to_node(to)
         , switch_type(type) {}
 
-    int from_node = OPEN;
-    int to_node = OPEN;
+    RRNodeId from_node = RRNodeId::INVALID();
+    RRNodeId to_node = RRNodeId::INVALID();
     short switch_type = OPEN;
 
     friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
