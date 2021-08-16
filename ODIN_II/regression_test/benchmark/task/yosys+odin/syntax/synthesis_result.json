@@ -1801,42 +1801,30 @@
         "test_name": "syntax/instantiated_by_name_function_valid/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "instantiated_by_name_function_valid.v",
+        "exit": 134,
+        "errors": [
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ],
         "max_rss(MiB)": 66.2,
         "exec_time(ms)": 164.4,
         "elaboration_time(ms)": 57.8,
         "optimization_time(ms)": 0.1,
         "techmap_time(ms)": 0.1,
-        "synthesis_time(ms)": 58,
-        "Latch Drivers": 1,
-        "Pi": 4,
-        "Po": 4,
-        "logic element": 3,
-        "latch": 3,
-        "Adder": 4,
-        "generic logic size": 4,
-        "Longest Path": 8,
-        "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 11
+        "synthesis_time(ms)": 58
     },
     "syntax/instantiated_by_name_function_valid/no_arch": {
         "test_name": "syntax/instantiated_by_name_function_valid/no_arch",
         "verilog": "instantiated_by_name_function_valid.v",
+        "exit": 134,
+        "errors": [
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ],
         "max_rss(MiB)": 45.9,
         "exec_time(ms)": 74.5,
         "elaboration_time(ms)": 69.8,
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.3,
-        "synthesis_time(ms)": 70.1,
-        "Latch Drivers": 1,
-        "Pi": 4,
-        "Po": 4,
-        "logic element": 8,
-        "latch": 3,
-        "Longest Path": 7,
-        "Average Path": 3,
-        "Estimated LUTs": 8,
-        "Total Node": 12
+        "synthesis_time(ms)": 70.1
     },
     "syntax/instantiated_by_name_task_invalid_1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/instantiated_by_name_task_invalid_1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1876,31 +1864,30 @@
         "test_name": "syntax/instantiated_by_name_task_valid/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "instantiated_by_name_task_valid.v",
+        "exit": 134,
+        "errors": [
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ],
         "max_rss(MiB)": 60.1,
         "exec_time(ms)": 153.6,
         "elaboration_time(ms)": 48.6,
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
-        "synthesis_time(ms)": 48.7,
-        "Pi": 1,
-        "Po": 4,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
+        "synthesis_time(ms)": 48.7
     },
     "syntax/instantiated_by_name_task_valid/no_arch": {
         "test_name": "syntax/instantiated_by_name_task_valid/no_arch",
         "verilog": "instantiated_by_name_task_valid.v",
+        "exit": 134,
+        "errors": [
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ],
         "max_rss(MiB)": 39.4,
         "exec_time(ms)": 53,
         "elaboration_time(ms)": 49.4,
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
-        "synthesis_time(ms)": 49.5,
-        "Pi": 1,
-        "Po": 4,
-        "Longest Path": 2,
-        "Average Path": 2
+        "synthesis_time(ms)": 49.5
     },
     "syntax/instantiating_by_name_invalid_1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/instantiating_by_name_invalid_1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1957,37 +1944,30 @@
         "test_name": "syntax/instantiating_by_name_valid/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "instantiating_by_name_valid.v",
+        "exit": 134,
+        "errors": [
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ],
         "max_rss(MiB)": 64.3,
         "exec_time(ms)": 161.1,
         "elaboration_time(ms)": 61.8,
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
-        "synthesis_time(ms)": 62,
-        "Pi": 2,
-        "Po": 1,
-        "logic element": 1,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
+        "synthesis_time(ms)": 62
     },
     "syntax/instantiating_by_name_valid/no_arch": {
         "test_name": "syntax/instantiating_by_name_valid/no_arch",
         "verilog": "instantiating_by_name_valid.v",
+        "exit": 134,
+        "errors": [
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ],
         "max_rss(MiB)": 43.7,
         "exec_time(ms)": 84.9,
         "elaboration_time(ms)": 81.3,
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.2,
-        "synthesis_time(ms)": 81.4,
-        "Pi": 2,
-        "Po": 1,
-        "logic element": 1,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
+        "synthesis_time(ms)": 81.4
     },
     "syntax/l2_and_h2_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/l2_and_h2_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm",

@@ -217,47 +217,65 @@
         "test_name": "syntax/bm_dag5_mod/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_dag5_mod.v",
-        "exit": 134,
-        "errors": [
-            "bm_dag5_mod.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
-        ],
         "elaboration_time(ms)": 2.3,
         "optimization_time(ms)": 0,
-        "techmap_time(ms)": 0
+        "techmap_time(ms)": 0,
+        "Latch Drivers": 1,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 13,
+        "latch": 13,
+        "generic logic size": 4,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 13,
+        "Total Node": 27
     },
     "syntax/bm_dag5_mod/no_arch": {
         "test_name": "syntax/bm_dag5_mod/no_arch",
         "verilog": "bm_dag5_mod.v",
-        "exit": 134,
-        "errors": [
-            "bm_dag5_mod.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
-        ],
         "elaboration_time(ms)": 2.1,
         "optimization_time(ms)": 0,
-        "techmap_time(ms)": 0
+        "techmap_time(ms)": 0,
+        "Latch Drivers": 1,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 13,
+        "latch": 13,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 13,
+        "Total Node": 27
     },
     "syntax/bm_dag6_mod_log/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/bm_dag6_mod_log/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_dag6_mod_log.v",
-        "exit": 134,
-        "errors": [
-            "bm_dag6_mod_log.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
-        ],
         "elaboration_time(ms)": 3.8,
         "optimization_time(ms)": 0,
-        "techmap_time(ms)": 0.1
+        "techmap_time(ms)": 0.1,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 15,
+        "generic logic size": 4,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 15,
+        "Total Node": 15
     },
     "syntax/bm_dag6_mod_log/no_arch": {
         "test_name": "syntax/bm_dag6_mod_log/no_arch",
         "verilog": "bm_dag6_mod_log.v",
-        "exit": 134,
-        "errors": [
-            "bm_dag6_mod_log.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
-        ],
         "elaboration_time(ms)": 3.7,
         "optimization_time(ms)": 0,
-        "techmap_time(ms)": 0.1
+        "techmap_time(ms)": 0.1,
+        "Pi": 6,
+        "Po": 3,
+        "logic element": 15,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 15,
+        "Total Node": 15
     },
     "syntax/bm_dag7_mod_log/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/bm_dag7_mod_log/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -602,22 +620,20 @@
         "optimization_time(ms)": 0.4,
         "techmap_time(ms)": 0.1,
         "synthesis_time(ms)": 13.6,
-        "Pi": 51,
+        "Pi": 41,
         "Po": 40,
-        "logic element": 115,
-        "Memory": 48,
+        "Memory": 24,
         "generic logic size": 4,
-        "Longest Path": 7,
-        "Average Path": 4,
-        "Estimated LUTs": 115,
-        "Total Node": 163
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 24
     },
     "syntax/both_ram/no_arch": {
         "test_name": "syntax/both_ram/no_arch",
         "verilog": "both_ram.v",
         "exit": 134,
         "errors": [
-            "both_ram.v:49:1 [NETLIST] Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
+            "both_ram.v:49:1 [NETLIST] Memory pram.inst1 of depth 2^11 exceeds ODIN bound of 2^10."
         ],
         "elaboration_time(ms)": 3,
         "optimization_time(ms)": 0
@@ -1412,14 +1428,14 @@
         "techmap_time(ms)": 0.2,
         "synthesis_time(ms)": 15,
         "Latch Drivers": 1,
-        "Pi": 70,
-        "Po": 32,
-        "latch": 32,
+        "Pi": 72,
+        "Po": 64,
+        "latch": 64,
         "Memory": 32,
         "generic logic size": 4,
         "Longest Path": 4,
         "Average Path": 4,
-        "Total Node": 65
+        "Total Node": 97
     },
     "syntax/inferred_DPram/no_arch": {
         "test_name": "syntax/inferred_DPram/no_arch",
@@ -1431,14 +1447,14 @@
         "techmap_time(ms)": 8.8,
         "synthesis_time(ms)": 22.2,
         "Latch Drivers": 1,
-        "Pi": 70,
-        "Po": 32,
-        "logic element": 846,
-        "latch": 288,
+        "Pi": 72,
+        "Po": 64,
+        "logic element": 1688,
+        "latch": 576,
         "Longest Path": 11,
         "Average Path": 4,
-        "Estimated LUTs": 846,
-        "Total Node": 1135
+        "Estimated LUTs": 1688,
+        "Total Node": 2265
     },
     "syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1693,7 +1709,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "instantiating_by_name_invalid.v:13:1 [NETLIST] Module entry in3 does not exist"
+            "instantiating_by_name_invalid.v:13:1 [NETLIST] Module instantiation (and2) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1718,7 +1734,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "instantiating_by_name_invalid.v:13:1 [NETLIST] Module entry in3 does not exist"
+            "instantiating_by_name_invalid.v:13:1 [NETLIST] Module instantiation (and2) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiating_by_name_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
