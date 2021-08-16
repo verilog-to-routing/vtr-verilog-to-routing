@@ -1,7 +1,0 @@
-GLOBAL_SIM_BASE_CLK en in_out1 in_out2
-0 1 z z
-1 0 z z
-0 1 z 0
-1 1 z 1
-0 0 1 z
-1 0 0 z

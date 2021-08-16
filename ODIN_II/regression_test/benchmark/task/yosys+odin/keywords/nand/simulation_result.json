@@ -52,7 +52,7 @@
             "[OUTPUT_BLIF] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Too few vectors in regression_test/benchmark/verilog/yosys_compatible_verilogs/keywords/nand/range_nand_ultra_wide_output"
+            "[OUTPUT_BLIF] Too few vectors in regression_test/benchmark/verilog/keywords/nand/range_nand_ultra_wide_yosys_output"
         ]
     },
     "nand/range_nand_wide/no_arch": {

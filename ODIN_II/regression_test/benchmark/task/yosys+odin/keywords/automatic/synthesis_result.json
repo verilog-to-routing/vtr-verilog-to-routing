@@ -2,7 +2,10 @@
     "automatic/recursive_function/no_arch": {
         "test_name": "automatic/recursive_function/no_arch",
         "verilog": "recursive_function.v",
-        "exit": 6
+        "exit": 6,
+        "errors": [
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ]
     },
     "automatic/recursive_task/no_arch": {
         "test_name": "automatic/recursive_task/no_arch",

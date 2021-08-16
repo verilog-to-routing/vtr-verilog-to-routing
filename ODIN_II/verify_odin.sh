@@ -980,7 +980,6 @@ function sim() {
 
         # check if elaborator is yosys, then look up for Yosys sim vectors
         if [[ "$_local_synthesis_params" == *"$ELABORATOR_YOSYS"* ]]; then
-            echo "=======================>${_local_synthesis_params}"
             # lookup for input and output vector files to do comparison
             input_vector_file="${circuits_dir}/${circuit_name}_yosys_input"
             output_vector_file="${circuits_dir}/${circuit_name}_yosys_output"
@@ -1168,7 +1167,6 @@ function sim() {
 					&& [ -f "${input_vector_file}" ] \
 					&& [ -f "${output_vector_file}" ]
 					then
-                        echo "############### in:${input_vector_file} out:${output_vector_file}"
 						simulation_command="${simulation_command} -t ${input_vector_file} -T ${output_vector_file}"
 						simulation_wrapper_file_name="${simulation_wrapper_predefined_io_file_name}"
 					elif [ "_${_generate_bench}" == "_off" ] \
