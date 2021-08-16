@@ -967,7 +967,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const DeviceGrid& grid,
     const RouterLookahead& router_lookahead,
     const t_rr_graph_storage& rr_nodes,
-    RRGraphView* rr_graph,
+    const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const std::vector<t_rr_switch_inf>& rr_switch_inf,
     std::vector<t_rr_node_route_inf>& rr_node_route_inf) {

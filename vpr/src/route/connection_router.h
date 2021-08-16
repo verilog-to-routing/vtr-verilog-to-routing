@@ -28,7 +28,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const DeviceGrid& grid,
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
-        RRGraphView* rr_graph,
+        const RRGraphView* rr_graph,
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const std::vector<t_rr_switch_inf>& rr_switch_inf,
         std::vector<t_rr_node_route_inf>& rr_node_route_inf)
@@ -248,7 +248,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const DeviceGrid& grid_;
     const RouterLookahead& router_lookahead_;
     const t_rr_graph_view rr_nodes_;
-    RRGraphView* rr_graph_;
+    const RRGraphView* rr_graph_;
     vtr::array_view<const t_rr_rc_data> rr_rc_data_;
     vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;
     vtr::array_view<t_rr_node_route_inf> rr_node_route_inf_;
@@ -267,7 +267,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const DeviceGrid& grid,
     const RouterLookahead& router_lookahead,
     const t_rr_graph_storage& rr_nodes,
-    RRGraphView* rr_graph,
+    const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const std::vector<t_rr_switch_inf>& rr_switch_inf,
     std::vector<t_rr_node_route_inf>& rr_node_route_inf);
