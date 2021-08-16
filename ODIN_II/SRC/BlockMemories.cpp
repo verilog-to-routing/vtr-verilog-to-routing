@@ -1187,8 +1187,8 @@ void map_rom_to_mem_hardblocks(block_memory_t* rom, netlist_t* netlist) {
     t_model* lutram_model = find_hard_block(LUTRAM_string);
 
     if (lutram_model != NULL
-        && (LUTRAM_MIN_THRESHOLD_AREA <= rom_relative_area)
-        && (rom_relative_area <= LUTRAM_MAX_THRESHOLD_AREA)) {
+        && (LUTRAM_INFERENCE_THRESHOLD_MIN <= rom_relative_area)
+        && (rom_relative_area <= LUTRAM_INFERENCE_THRESHOLD_MAX)) {
         /* map to LUTRAM */
         // nnode_t* lutram = NULL;
         /* TODO */
@@ -1237,8 +1237,8 @@ void map_bram_to_mem_hardblocks(block_memory_t* bram, netlist_t* netlist) {
     t_model* lutram_model = find_hard_block(LUTRAM_string);
 
     if (lutram_model != NULL
-        && (LUTRAM_MIN_THRESHOLD_AREA <= bram_relative_area)
-        && (bram_relative_area <= LUTRAM_MAX_THRESHOLD_AREA)) {
+        && (LUTRAM_INFERENCE_THRESHOLD_MIN <= bram_relative_area)
+        && (bram_relative_area <= LUTRAM_INFERENCE_THRESHOLD_MAX)) {
         /* map to LUTRAM */
         // nnode_t* lutram = NULL;
         /* TODO */

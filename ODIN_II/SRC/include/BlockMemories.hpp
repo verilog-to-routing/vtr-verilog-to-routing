@@ -31,10 +31,9 @@
 
 #include <unordered_map>
 
-const int REG_INFERENCE_THRESHOLD_WIDTH = 32; // Width threshold for register array inference
-const int REG_INFERENCE_THRESHOLD_DEPTH = 20; // Depth threshold for register array inference
-const int LUTRAM_MAX_THRESHOLD_AREA = 2560;   // Maximum area threshold for LUTRAM inference
-const int LUTRAM_MIN_THRESHOLD_AREA = 640;    // Minimum area threshold for LUTRAM inference
+const int REG_INFERENCE_THRESHOLD_MAX = 80;     // Max number of bits for register of array inference
+const int LUTRAM_INFERENCE_THRESHOLD_MIN = 80;  // Max number of bits for LUTRAM inference
+const int LUTRAM_INFERENCE_THRESHOLD_MAX = 640; // Min number of bits for LUTRAM inference
 
 /*
  * Contains a pointer to the block memory node as well as other
@@ -67,8 +66,19 @@ extern block_memory_hashtable block_memories;
  */
 struct block_memory_information_t {
     /**
-     * block memory linked list, required for iterations 
-     * in optimization and mapping phase.
+     * block_memory_list and read-only_memory_list linked lists
+     * include the corresponding memory instances. Each instance
+     * comprises memory signal lists, location, memory id and the
+     * corresponding netlist node. These linked lists are used in
+     * optimization iteration, including signal pruning, REG/LUTRAM
+     * threshold checking and mapping to VTR memory blocks. Once the
+     * optimization iteration is done, these linked lists are not 
+     * valid anymore.
+     * 
+     * [NOTE] Block memories and read-only memory both use the same
+     * structure (block_memory_t*). They only differ in terms of 
+     * their member variables initialization. The naming convention
+     * is only due to the ease of the coding process.
      */
     vtr::t_linked_vptr* block_memory_list;
     vtr::t_linked_vptr* read_only_memory_list;

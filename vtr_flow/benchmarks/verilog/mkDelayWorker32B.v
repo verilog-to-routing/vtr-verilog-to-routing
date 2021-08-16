@@ -3883,8 +3883,13 @@ output FULL_N;
 
 
 
-wire fulln;
-wire emptyn;
+wire full;
+wire empty;
+wire full_n;
+wire empty_n;
+wire full_n_r;
+wire empty_n_r;
+wire [1:0] level;
 
 wire always_one;
 wire always_zero;
@@ -3900,10 +3905,15 @@ generic_fifo_sc_a fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
+ .full(full),
+ .empty(empty),
+ .full_n(full_n),
+ .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (fulln),
- .empty_n_r (emptyn)
+ .full_n_r (full_n_r),
+ .empty_n_r (empty_n_r),
+ .level(level)
  );
  
 
@@ -4275,8 +4285,13 @@ output FULL_N;
 
 
 
-wire fulln;
-wire emptyn;
+wire full;
+wire empty;
+wire full_n;
+wire empty_n;
+wire full_n_r;
+wire empty_n_r;
+wire [1:0] level;
 
 wire always_one;
 wire always_zero;
@@ -4292,10 +4307,15 @@ generic_fifo_sc_b fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
+ .full(full),
+ .empty(empty),
+ .full_n(full_n),
+ .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (fulln),
- .empty_n_r (emptyn)
+ .full_n_r (full_n_r),
+ .empty_n_r (empty_n_r),
+ .level(level)
  );
  
 
@@ -4667,8 +4687,13 @@ output FULL_N;
 
 
 
-wire fulln;
-wire emptyn;
+wire full;
+wire empty;
+wire full_n;
+wire empty_n;
+wire full_n_r;
+wire empty_n_r;
+wire [1:0] level;
 
 wire always_one;
 wire always_zero;
@@ -4684,10 +4709,15 @@ generic_fifo_sc_c fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
+ .full(full),
+ .empty(empty),
+ .full_n(full_n),
+ .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (fulln),
- .empty_n_r (emptyn)
+ .full_n_r (full_n_r),
+ .empty_n_r (empty_n_r),
+ .level(level)
  );
  
 
@@ -5062,8 +5092,13 @@ output FULL_N;
 
 
 
-wire fulln;
-wire emptyn;
+wire full;
+wire empty;
+wire full_n;
+wire empty_n;
+wire full_n_r;
+wire empty_n_r;
+wire [1:0] level;
 
 wire always_one;
 wire always_zero;
@@ -5079,10 +5114,15 @@ generic_fifo_sc_d fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
+ .full(full),
+ .empty(empty),
+ .full_n(full_n),
+ .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (fulln),
- .empty_n_r (emptyn)
+ .full_n_r (full_n_r),
+ .empty_n_r (empty_n_r),
+ .level(level)
  );
  
 
@@ -5456,8 +5496,13 @@ output	EMPTY_N;
 
 
 
-wire fulln;
-wire emptyn;
+wire full;
+wire empty;
+wire full_n;
+wire empty_n;
+wire full_n_r;
+wire empty_n_r;
+wire [1:0] level;
 
 wire always_one;
 wire always_zero;
@@ -5473,10 +5518,15 @@ generic_fifo_sc_f fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
+ .full(full),
+ .empty(empty),
+ .full_n(full_n),
+ .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (fulln),
- .empty_n_r (emptyn)
+ .full_n_r (full_n_r),
+ .empty_n_r (empty_n_r),
+ .level(level)
  );
  
 
@@ -5848,8 +5898,13 @@ output	EMPTY_N;
 
 
 
-wire fulln;
-wire emptyn;
+wire full;
+wire empty;
+wire full_n;
+wire empty_n;
+wire full_n_r;
+wire empty_n_r;
+wire [1:0] level;
 
 wire always_one;
 wire always_zero;
@@ -5865,10 +5920,15 @@ generic_fifo_sc_g fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
+ .full(full),
+ .empty(empty),
+ .full_n(full_n),
+ .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (fulln),
- .empty_n_r (emptyn)
+ .full_n_r (full_n_r),
+ .empty_n_r (empty_n_r),
+ .level(level)
  );
  
 
@@ -6243,8 +6303,13 @@ output	EMPTY_N;
 
 
 
-wire fulln;
-wire emptyn;
+wire full;
+wire empty;
+wire full_n;
+wire empty_n;
+wire full_n_r;
+wire empty_n_r;
+wire [1:0] level;
 
 wire always_one;
 wire always_zero;
@@ -6260,10 +6325,15 @@ generic_fifo_sc_x fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
+ .full(full),
+ .empty(empty),
+ .full_n(full_n),
+ .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (fulln),
- .empty_n_r (emptyn)
+ .full_n_r (full_n_r),
+ .empty_n_r (empty_n_r),
+ .level(level)
  );
  
 
