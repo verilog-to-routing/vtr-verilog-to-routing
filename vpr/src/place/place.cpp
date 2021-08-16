@@ -1347,6 +1347,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         draw_manual_moves_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 
+        move_type = e_move_type::MANUAL_MOVE;
         create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
 #endif //NO_GRAPHICS
     } else {
