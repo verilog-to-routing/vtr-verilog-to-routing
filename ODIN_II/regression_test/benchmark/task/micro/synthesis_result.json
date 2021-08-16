@@ -23,7 +23,7 @@
         "verilog": "adder_hard_block.v",
         "exit": 134,
         "errors": [
-            "adder_hard_block.v:10:1 [AST] Can't find module name adder"
+            "adder_hard_block.v:12:1 [AST] Can't find module name adder"
         ]
     },
     "micro/adder_hard_block/k6_N10_mem32K_40nm": {
@@ -32,7 +32,7 @@
         "verilog": "adder_hard_block.v",
         "exit": 134,
         "errors": [
-            "adder_hard_block.v:10:1 [AST] Can't find module name adder"
+            "adder_hard_block.v:12:1 [AST] Can't find module name adder"
         ]
     },
     "micro/adder_hard_block/no_arch": {
@@ -40,7 +40,7 @@
         "verilog": "adder_hard_block.v",
         "exit": 134,
         "errors": [
-            "adder_hard_block.v:10:1 [AST] Can't find module name adder"
+            "adder_hard_block.v:12:1 [AST] Can't find module name adder"
         ]
     },
     "micro/bm_add_lpm/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -4731,8 +4731,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "generate.v",
         "warnings": [
-            "generate.v:10:1 [AST] Odin does not handle signed GENVAR (i)",
-            "generate.v:11:1 [AST] Odin does not handle signed GENVAR (j)"
+            "generate.v:7:1 [AST] Odin does not handle signed GENVAR (i)",
+            "generate.v:8:1 [AST] Odin does not handle signed GENVAR (j)"
         ],
         "max_rss(MiB)": 29.5,
         "exec_time(ms)": 43.2,
@@ -4757,8 +4757,8 @@
         "architecture": "k6_N10_40nm.xml",
         "verilog": "generate.v",
         "warnings": [
-            "generate.v:10:1 [AST] Odin does not handle signed GENVAR (i)",
-            "generate.v:11:1 [AST] Odin does not handle signed GENVAR (j)"
+            "generate.v:7:1 [AST] Odin does not handle signed GENVAR (i)",
+            "generate.v:8:1 [AST] Odin does not handle signed GENVAR (j)"
         ],
         "max_rss(MiB)": 20,
         "exec_time(ms)": 15.8,
@@ -4782,8 +4782,8 @@
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "generate.v",
         "warnings": [
-            "generate.v:10:1 [AST] Odin does not handle signed GENVAR (i)",
-            "generate.v:11:1 [AST] Odin does not handle signed GENVAR (j)"
+            "generate.v:7:1 [AST] Odin does not handle signed GENVAR (i)",
+            "generate.v:8:1 [AST] Odin does not handle signed GENVAR (j)"
         ],
         "max_rss(MiB)": 29.2,
         "exec_time(ms)": 52,
@@ -4806,8 +4806,8 @@
         "test_name": "micro/generate/no_arch",
         "verilog": "generate.v",
         "warnings": [
-            "generate.v:10:1 [AST] Odin does not handle signed GENVAR (i)",
-            "generate.v:11:1 [AST] Odin does not handle signed GENVAR (j)"
+            "generate.v:7:1 [AST] Odin does not handle signed GENVAR (i)",
+            "generate.v:8:1 [AST] Odin does not handle signed GENVAR (j)"
         ],
         "max_rss(MiB)": 17.7,
         "exec_time(ms)": 13.6,
@@ -4904,7 +4904,7 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "multiply_hard_block.v",
         "warnings": [
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 25.3,
         "exec_time(ms)": 43.8,
@@ -4926,7 +4926,7 @@
         "verilog": "multiply_hard_block.v",
         "exit": 134,
         "errors": [
-            "multiply_hard_block.v:8:1 [AST] Can't find module name multiply"
+            "multiply_hard_block.v:9:1 [AST] Can't find module name multiply"
         ]
     },
     "micro/multiply_hard_block/k6_N10_mem32K_40nm": {
@@ -4934,7 +4934,7 @@
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "multiply_hard_block.v",
         "warnings": [
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 24.4,
         "exec_time(ms)": 37,
@@ -4955,7 +4955,7 @@
         "verilog": "multiply_hard_block.v",
         "exit": 134,
         "errors": [
-            "multiply_hard_block.v:8:1 [AST] Can't find module name multiply"
+            "multiply_hard_block.v:9:1 [AST] Can't find module name multiply"
         ]
     },
     "micro/parameter_2/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -5203,7 +5203,7 @@
         "verilog": "hard_adder_cin_propagation.v",
         "exit": 134,
         "errors": [
-            "hard_adder_cin_propagation.v:9:1 [AST] Can't find module name adder"
+            "hard_adder_cin_propagation.v:10:1 [AST] Can't find module name adder"
         ]
     },
     "micro/hard_adder_cin_propagation/k6_N10_mem32K_40nm": {
@@ -5212,7 +5212,7 @@
         "verilog": "hard_adder_cin_propagation.v",
         "exit": 134,
         "errors": [
-            "hard_adder_cin_propagation.v:9:1 [AST] Can't find module name adder"
+            "hard_adder_cin_propagation.v:10:1 [AST] Can't find module name adder"
         ]
     },
     "micro/hard_adder_cin_propagation/no_arch": {
@@ -5220,7 +5220,7 @@
         "verilog": "hard_adder_cin_propagation.v",
         "exit": 134,
         "errors": [
-            "hard_adder_cin_propagation.v:9:1 [AST] Can't find module name adder"
+            "hard_adder_cin_propagation.v:10:1 [AST] Can't find module name adder"
         ]
     },
     "DEFAULT": {
