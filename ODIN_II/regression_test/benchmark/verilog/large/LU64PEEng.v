@@ -3084,16 +3084,19 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 2048'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
-.clk (clk),
-.we1(wren),
-.we2(1'b0),
-.data1(data),
-.data2(uselessdata),
-.out1(value_out),
-.out2(subwire),
-.addr1(wraddress),
-.addr2(rdaddress));
+    .clk (clk),
+    .we1(wren),
+    .we2(1'b0),
+    .data1(data),
+    .data2(uselessdata),
+    .out1(value_out),
+    .out2(subwire),
+    .addr1(wraddress),
+    .addr2(rdaddress));
 
 
 endmodule
@@ -3124,6 +3127,9 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 2048'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -3164,6 +3170,9 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 2048'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -3204,6 +3213,9 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 2048'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -3243,16 +3255,19 @@ module top_ram (
 	assign q = sub_wire0 | dummy;
 	wire[32-1:0] dummy;
 	assign dummy = junk_output & 32'b0;
- dual_port_ram inst2(
- .clk (clk),
- .we1(wren),
- .we2(1'b0),
- .data1(data),
- .data2(data),
- .out1(junk_output),
- .out2(sub_wire0),
- .addr1(wraddress),
- .addr2(rdaddress));
+
+    defparam inst2.ADDR_WIDTH = 14;
+    defparam inst2.DATA_WIDTH = 32;  
+    dual_port_ram inst2(
+    .clk (clk),
+    .we1(wren),
+    .we2(1'b0),
+    .data1(data),
+    .data2(data),
+    .out1(junk_output),
+    .out2(sub_wire0),
+    .addr1(wraddress),
+    .addr2(rdaddress));
 
 endmodule
 
@@ -3834,16 +3849,19 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 64 ))
 		status_cnt <= status_cnt + 1'b1;
 end 
+
+  defparam ram_addr.ADDR_WIDTH = `rFIFORSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `rFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
-.we1      (wrreq)      , // write enable
- .we2      (rdreq)       , // Read enable
-.addr1 (wr_pointer) , // address_0 input 
-.addr2 (rd_pointer) , // address_q input  
-.data1    (data)    , // data_0 bi-directional
-.data2    (junk_input),   // data_1 bi-directional
-.clk(clk),
-.out1	(data_ram),
-.out2	(junk_output)
+    .we1      (wrreq)      , // write enable
+    .we2      (rdreq)       , // Read enable
+    .addr1 (wr_pointer) , // address_0 input 
+    .addr2 (rd_pointer) , // address_q input  
+    .data1    (data)    , // data_0 bi-directional
+    .data2    (junk_input),   // data_1 bi-directional
+    .clk(clk),
+    .out1	(data_ram),
+    .out2	(junk_output)
  ); 
 
 
@@ -3975,17 +3993,20 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1'b1;
 end 
 assign usedw = status_cnt[`wFIFOSIZEWIDTH-1:0];
+
+  defparam ram_addr.ADDR_WIDTH = `wFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `wFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
-.we1      (wrreq)      , // write enable
- .we2      (rdreq)       , // Read enable
-.addr1 (wr_pointer) , // address_0 input 
-.addr2 (rd_pointer) , // address_q input  
-.data1    (data)    , // data_0 bi-directional
-.data2    (junk_input),   // data_1 bi-directional
-.clk(clk),
-.out1	(data_ram),
-.out2	(junk_output)
- ); 
+    .we1      (wrreq)      , // write enable
+    .we2      (rdreq)       , // Read enable
+    .addr1 (wr_pointer) , // address_0 input 
+    .addr2 (rd_pointer) , // address_q input  
+    .data1    (data)    , // data_0 bi-directional
+    .data2    (junk_input),   // data_1 bi-directional
+    .clk(clk),
+    .out1	(data_ram),
+    .out2	(junk_output)
+    ); 
 
 
 endmodule
@@ -4049,17 +4070,20 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 5'b10000))
 		status_cnt <= status_cnt + 1;
 end
+
+  defparam ram_addr.ADDR_WIDTH = `aFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `aFIFOWIDTH;
   dual_port_ram ram_addr(
-.we1      (wrreq)      , // write enable
- .we2      (rdreq)       , // Read enable
-.addr1 (wr_pointer) , // address_0 input 
-.addr2 (rd_pointer) , // address_q input  
-.data1    (data)    , // data_0 bi-directional
-.data2    (junk_input),   // data_1 bi-directional
-.clk(clk),
-.out1	(data_ram),
-.out2	(junk_output)
- ); 
+    .we1      (wrreq)      , // write enable
+    .we2      (rdreq)       , // Read enable
+    .addr1 (wr_pointer) , // address_0 input 
+    .addr2 (rd_pointer) , // address_q input  
+    .data1    (data)    , // data_0 bi-directional
+    .data2    (junk_input),   // data_1 bi-directional
+    .clk(clk),
+    .out1	(data_ram),
+    .out2	(junk_output)
+    ); 
 
 
 endmodule
@@ -4119,16 +4143,18 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 16 ))
 		status_cnt <= status_cnt + 1'b1;
 end
+    defparam ram_addr.ADDR_WIDTH = `mFIFOSIZEWIDTH;
+    defparam ram_addr.DATA_WIDTH = `mFIFOWIDTH;
 	dual_port_ram ram_addr(
-	.we1      (wrreq)      , // write enable
-	.we2      (rdreq)       , // Read enable
-	.addr1 (wr_pointer) , // address_0 input
-	.addr2 (rd_pointer) , // address_q input
-	.data1    (data)    , // data_0 bi-directional
-	.data2    (junk_input),   // data_1 bi-directional
-	.clk(clk),
-	.out1	(data_ram),
-	.out2	(junk_output));
+        .we1      (wrreq)      , // write enable
+        .we2      (rdreq)       , // Read enable
+        .addr1 (wr_pointer) , // address_0 input
+        .addr2 (rd_pointer) , // address_q input
+        .data1    (data)    , // data_0 bi-directional
+        .data2    (junk_input),   // data_1 bi-directional
+        .clk(clk),
+        .out1	(data_ram),
+        .out2	(junk_output));
 
 
 endmodule
@@ -5141,7 +5167,7 @@ module fpmul(clk, a, b, y_out, control, flags) ;
   
     flag		flager(invalid, overflow, inexact_or_shiftloss,  
 			shiftloss_or_inexact, 
-			/* tiny */ stilltiny_or_tiny_and_denormround,  
+			/* tiny */ still_tiny_or_tiny_and_denormround,  
 			specialcase, flags);  
 	  
  
@@ -6006,4 +6032,4 @@ module assemble(roundprod, special, y, sign, specialsign,
 				(overflow ? overflowvalue[`WIDTH-2:0] : 
 				rounded[`WIDTH-2:0]); 
  
-endmodule 
+endmodule
