@@ -216,9 +216,7 @@ def run(
     )
 
     #Extra options to fine-tune AddressSanitizer (ASAN) behaviour.
-    environ["ASAN_OPTIONS"] = "suppressions={} exitcode=23".format(
-        str(paths.asan_supp)
-    )
+    environ["ASAN_OPTIONS"] = "suppressions={} exitcode=23".format(str(paths.asan_supp))
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
     )
