@@ -1,5 +1,5 @@
 #AddressSanitizer suppression file for VPR
 
-#Leaks from TBB library, which
-#allows VPR to run with parallelism
-interceptor_via_lib:libtbb
+#Suppress known errors from the TBB library
+#These are some errors from the library that we can't fix and suspect are spurious
+interceptor_via_lib:libtbb.so
