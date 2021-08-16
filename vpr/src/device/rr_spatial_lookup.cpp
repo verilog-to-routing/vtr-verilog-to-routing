@@ -288,7 +288,6 @@ void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order) 
             }
         }
     }
-
 }
 
 void RRSpatialLookup::clear() {
