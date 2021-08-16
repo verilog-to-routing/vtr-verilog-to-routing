@@ -18,8 +18,7 @@
         "verilog": "signed_to_unsigned.v",
         "exit": 134,
         "errors": [
-            "signed_to_unsigned.v:3 syntax error, unexpected TOK_ID, expecting ',' or '=' or ';' or '['",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "signed_unsigned/unsigned_to_signed/no_arch": {
@@ -27,8 +26,7 @@
         "verilog": "unsigned_to_signed.v",
         "exit": 134,
         "errors": [
-            "unsigned_to_signed.v:2 syntax error, unexpected TOK_ID, expecting ',' or '=' or ';' or '['",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "signed_unsigned/unsigned_to_unsigned/no_arch": {
@@ -36,8 +34,7 @@
         "verilog": "unsigned_to_unsigned.v",
         "exit": 134,
         "errors": [
-            "unsigned_to_unsigned.v:2 syntax error, unexpected TOK_ID, expecting ',' or '=' or ';' or '['",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "DEFAULT": {

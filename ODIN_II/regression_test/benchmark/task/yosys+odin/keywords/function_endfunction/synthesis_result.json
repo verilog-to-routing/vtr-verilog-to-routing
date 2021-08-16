@@ -32,8 +32,7 @@
         "verilog": "function_input_failure.v",
         "exit": 134,
         "errors": [
-            "function_input_failure.v:6 syntax error, unexpected '(', expecting TOK_ID or '#'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "function_endfunction/inside_port/no_arch": {
@@ -86,8 +85,7 @@
         "verilog": "time_control_failure.v",
         "exit": 134,
         "errors": [
-            "time_control_failure.v:8 syntax error, unexpected '(', expecting TOK_ID or '#'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "DEFAULT": {

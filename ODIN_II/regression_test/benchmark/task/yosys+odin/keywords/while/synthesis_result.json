@@ -4,8 +4,7 @@
         "verilog": "while_loop.v",
         "exit": 134,
         "errors": [
-            "while_loop.v:0 While loops are only allowed in constant functions!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "DEFAULT": {

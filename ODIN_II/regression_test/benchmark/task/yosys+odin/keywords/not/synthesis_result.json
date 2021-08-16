@@ -87,26 +87,17 @@
     "not/replicate_not_int_wide/no_arch": {
         "test_name": "not/replicate_not_int_wide/no_arch",
         "verilog": "replicate_not_int_wide.vh",
-        "exit": 134,
-        "errors": [
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
-        ]
+        "exit": 6
     },
     "not/replicate_not_ultra_wide/no_arch": {
         "test_name": "not/replicate_not_ultra_wide/no_arch",
         "verilog": "replicate_not_ultra_wide.vh",
-        "exit": 134,
-        "errors": [
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
-        ]
+        "exit": 6
     },
     "not/replicate_not_wide/no_arch": {
         "test_name": "not/replicate_not_wide/no_arch",
         "verilog": "replicate_not_wide.vh",
-        "exit": 134,
-        "errors": [
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
-        ]
+        "exit": 6
     },
     "DEFAULT": {
         "test_name": "n/a",

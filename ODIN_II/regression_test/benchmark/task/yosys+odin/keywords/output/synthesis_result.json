@@ -4,8 +4,7 @@
         "verilog": "multiple_declarations.v",
         "exit": 134,
         "errors": [
-            "multiple_declarations.v:4 syntax error, unexpected TOK_ID, expecting ',' or '=' or ';' or '['",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "output/output_port_failure/no_arch": {
@@ -13,8 +12,7 @@
         "verilog": "output_port_failure.v",
         "exit": 134,
         "errors": [
-            "output_port_failure.v:5 Module port `\\b' is not declared in module header.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "DEFAULT": {

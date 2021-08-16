@@ -318,7 +318,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case CLOCK_NODE:
         case GENERIC:
         default:
-            error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
+            error_message(BLIF_ELABORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;
     }
 }
@@ -363,7 +363,7 @@ static void resolve_logical_nodes(nnode_t* node, uintptr_t traverse_mark_number,
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type is not among Odin's logical types [GTE, LTE, GT, LT, OR, AND, NOT, NOR, NAND, XOR, XNOR, EQUAL and NOT_EQUAL]\n", node->name);
             break;
         }
@@ -396,7 +396,7 @@ static void resolve_shift_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type (%s) is not among Odin's latch types [SL, SR, ASL and ASR]\n", node->name, node->type);
             break;
         }
@@ -434,7 +434,7 @@ static void resolve_case_equal_nodes(nnode_t* node, uintptr_t traverse_mark_numb
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type (%s) is not among Odin's latch types \n", node->name, node->type);
             break;
         }
@@ -512,7 +512,7 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type is not among Odin's arithmetic types [ADD, MINUS and MULTIPLY]\n", node->name);
             break;
         }
@@ -561,11 +561,11 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
         case MUX_2:  //fallthrough
         case SMUX_2: //fallthrough
         case MULTI_PORT_MUX: {
-            error_message(BLIF_ELBORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
+            error_message(BLIF_ELABORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type (%s) is not among Odin's latch types [PMUX, MULTIPORT_nBIT_SMUX, MULTI_BIT_MUX_2, MUX_2, MULTI_PORT_MUX]\n", node->name, node->type);
             break;
         }
@@ -608,7 +608,7 @@ static void resolve_latch_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type (%s) is not among Odin's latch types [dlatch, asynchronous-dlatch]\n", node->name, node->type);
             break;
         }
@@ -680,7 +680,7 @@ static void resolve_ff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netl
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type (%s) is not among Odin's latch types [dff, adff, sdff, dffe, adffe, sdffe, dffsr, dffsre]\n", node->name, node->type);
             break;
         }
@@ -742,7 +742,7 @@ static void resolve_memory_nodes(nnode_t* node, uintptr_t traverse_mark_number, 
             break;
         }
         default: {
-            error_message(BLIF_ELBORATION, node->loc,
+            error_message(BLIF_ELABORATION, node->loc,
                           "The node(%s) type (%s) is not among Odin's latch types [SPRAM, DPRAM, ROM and BRAM(RW)]\n", node->name, node->type);
             break;
         }

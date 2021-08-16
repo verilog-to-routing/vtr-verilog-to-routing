@@ -4,8 +4,7 @@
         "verilog": "macromodules_modules.v",
         "exit": 134,
         "errors": [
-            "macromodules_modules.v:20 syntax error, unexpected TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "macromodule/missing_endmodule_failure/no_arch": {
@@ -13,8 +12,7 @@
         "verilog": "missing_endmodule_failure.v",
         "exit": 134,
         "errors": [
-            "missing_endmodule_failure.v:1 syntax error, unexpected TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "macromodule/multiple_macromodules/no_arch": {
@@ -22,8 +20,7 @@
         "verilog": "multiple_macromodules.v",
         "exit": 134,
         "errors": [
-            "multiple_macromodules.v:4 syntax error, unexpected TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "macromodule/multiple_topmodules/no_arch": {
@@ -31,8 +28,7 @@
         "verilog": "multiple_topmodules.v",
         "exit": 134,
         "errors": [
-            "multiple_topmodules.v:4 syntax error, unexpected TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "macromodule/repeated_macromodule_failure/no_arch": {
@@ -40,8 +36,7 @@
         "verilog": "repeated_macromodule_failure.v",
         "exit": 134,
         "errors": [
-            "repeated_macromodule_failure.v:4 syntax error, unexpected TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "DEFAULT": {

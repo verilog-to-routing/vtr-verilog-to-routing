@@ -21,8 +21,7 @@
         "verilog": "specparam_failure.v",
         "exit": 134,
         "errors": [
-            "specparam_failure.v:1 syntax error, unexpected TOK_SPECPARAM",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "specparam/specparam_inside/no_arch": {

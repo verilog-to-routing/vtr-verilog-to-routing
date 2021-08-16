@@ -2,18 +2,14 @@
     "automatic/recursive_function/no_arch": {
         "test_name": "automatic/recursive_function/no_arch",
         "verilog": "recursive_function.v",
-        "exit": 134,
-        "errors": [
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
-        ]
+        "exit": 6
     },
     "automatic/recursive_task/no_arch": {
         "test_name": "automatic/recursive_task/no_arch",
         "verilog": "recursive_task.v",
         "exit": 134,
         "errors": [
-            "recursive_task.v:9 syntax error, unexpected TOK_INTEGER, expecting TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "DEFAULT": {

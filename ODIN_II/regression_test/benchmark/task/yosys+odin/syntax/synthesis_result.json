@@ -201,8 +201,7 @@
         "verilog": "basic_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "basic_expression_in_function_port.v:20 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/basic_expression_in_function_port/no_arch": {
@@ -210,8 +209,7 @@
         "verilog": "basic_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "basic_expression_in_function_port.v:20 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/basic_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -257,8 +255,7 @@
         "verilog": "basic_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "basic_expression_in_task_port.v:12 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/basic_expression_in_task_port/no_arch": {
@@ -266,8 +263,7 @@
         "verilog": "basic_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "basic_expression_in_task_port.v:12 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_function_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -276,8 +272,7 @@
         "verilog": "bitwise_op_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "bitwise_op_expression_in_function_port.v:22 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_function_port/no_arch": {
@@ -285,8 +280,7 @@
         "verilog": "bitwise_op_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "bitwise_op_expression_in_function_port.v:22 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -332,8 +326,7 @@
         "verilog": "bitwise_op_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "bitwise_op_expression_in_task_port.v:12 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_task_port/no_arch": {
@@ -341,8 +334,7 @@
         "verilog": "bitwise_op_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "bitwise_op_expression_in_task_port.v:12 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_dag5_mod/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -618,8 +610,7 @@
         "verilog": "bm_function_1.v",
         "exit": 134,
         "errors": [
-            "Multiple edge sensitive events found for this signal!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_function_1/no_arch": {
@@ -627,8 +618,7 @@
         "verilog": "bm_function_1.v",
         "exit": 134,
         "errors": [
-            "Multiple edge sensitive events found for this signal!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_function_2/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -637,8 +627,7 @@
         "verilog": "bm_function_2.v",
         "exit": 134,
         "errors": [
-            "Multiple edge sensitive events found for this signal!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_function_2/no_arch": {
@@ -646,8 +635,7 @@
         "verilog": "bm_function_2.v",
         "exit": 134,
         "errors": [
-            "Multiple edge sensitive events found for this signal!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -916,8 +904,7 @@
         "verilog": "conditional_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "conditional_expression_in_function_port.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/conditional_expression_in_function_port/no_arch": {
@@ -925,8 +912,7 @@
         "verilog": "conditional_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "conditional_expression_in_function_port.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/conditional_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -972,8 +958,7 @@
         "verilog": "conditional_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "conditional_expression_in_task_port.v:12 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/conditional_expression_in_task_port/no_arch": {
@@ -981,8 +966,7 @@
         "verilog": "conditional_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "conditional_expression_in_task_port.v:12 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/constant_module_inst/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1027,8 +1011,7 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "deassign.v:19 syntax error, unexpected TOK_ASSIGN",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/deassign/no_arch": {
@@ -1036,8 +1019,7 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "deassign.v:19 syntax error, unexpected TOK_ASSIGN",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/delay_syntax/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1205,8 +1187,7 @@
         "verilog": "fir_scu_rtl_restructured_for_cmm_exp.v",
         "exit": 134,
         "errors": [
-            "fir_scu_rtl_restructured_for_cmm_exp.v:94 syntax error, unexpected TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/fir_scu_rtl_restructured_for_cmm_exp/no_arch": {
@@ -1214,8 +1195,7 @@
         "verilog": "fir_scu_rtl_restructured_for_cmm_exp.v",
         "exit": 134,
         "errors": [
-            "fir_scu_rtl_restructured_for_cmm_exp.v:94 syntax error, unexpected TOK_ID",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1789,8 +1769,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_function_invalid_1.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_invalid_1/no_arch": {
@@ -1798,8 +1777,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_function_invalid_1.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1808,8 +1786,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_function_invalid.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_invalid/no_arch": {
@@ -1817,8 +1794,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_function_invalid.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1868,8 +1844,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_task_invalid_1.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_invalid_1/no_arch": {
@@ -1877,8 +1852,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_task_invalid_1.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1887,8 +1861,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_task_invalid.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_invalid/no_arch": {
@@ -1896,8 +1869,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "instantiated_by_name_task_invalid.v:21 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1936,8 +1908,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Module `and2' referenced in module `top' in cell `a1' does not have a port named 'in3'.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid_1/no_arch": {
@@ -1945,8 +1916,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Module `and2' referenced in module `top' in cell `a1' does not have a port named 'in3'.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1955,8 +1925,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "Module `and2' referenced in module `top' in cell `a1' does not have a port named 'in3'.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1965,8 +1934,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "instantiating_by_name_invalid_mix_ports.v:13 Mix of positional and named cell ports.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/no_arch": {
@@ -1974,8 +1942,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "instantiating_by_name_invalid_mix_ports.v:13 Mix of positional and named cell ports.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid/no_arch": {
@@ -1983,8 +1950,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "Module `and2' referenced in module `top' in cell `a1' does not have a port named 'in3'.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2105,8 +2071,7 @@
         "verilog": "matrix_multiplication.v",
         "exit": 134,
         "errors": [
-            "matrix_multiplication.v:125 Identifier `\\tmp1' does map to an unexpanded memory!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/matrix_multiplication/no_arch": {
@@ -2114,8 +2079,7 @@
         "verilog": "matrix_multiplication.v",
         "exit": 134,
         "errors": [
-            "matrix_multiplication.v:125 Identifier `\\tmp1' does map to an unexpanded memory!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2207,8 +2171,7 @@
         "verilog": "mix_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "mix_expression_in_function_port.v:20 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/mix_expression_in_function_port/no_arch": {
@@ -2216,8 +2179,7 @@
         "verilog": "mix_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "mix_expression_in_function_port.v:20 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/mix_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2300,8 +2262,7 @@
         "verilog": "mix_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "mix_expression_in_task_port.v:11 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/mix_expression_in_task_port/no_arch": {
@@ -2309,8 +2270,7 @@
         "verilog": "mix_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "mix_expression_in_task_port.v:11 syntax error, unexpected '.'",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2680,8 +2640,7 @@
         "verilog": "preprocessor_complex_define.v",
         "exit": 134,
         "errors": [
-            "preprocessor_complex_define.v:34 Unimplemented compiler directive or undefined macro `ADDITION_num.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_complex_define/no_arch": {
@@ -2689,8 +2648,7 @@
         "verilog": "preprocessor_complex_define.v",
         "exit": 134,
         "errors": [
-            "preprocessor_complex_define.v:34 Unimplemented compiler directive or undefined macro `ADDITION_num.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2699,8 +2657,7 @@
         "verilog": "preprocessor_define.v",
         "exit": 134,
         "errors": [
-            "preprocessor_define.v:29 Unimplemented compiler directive or undefined macro `ADDITION_num.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define/no_arch": {
@@ -2708,8 +2665,7 @@
         "verilog": "preprocessor_define.v",
         "exit": 134,
         "errors": [
-            "preprocessor_define.v:29 Unimplemented compiler directive or undefined macro `ADDITION_num.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define_with_comment/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2718,8 +2674,7 @@
         "verilog": "preprocessor_define_with_comment.v",
         "exit": 134,
         "errors": [
-            "preprocessor_define_with_comment.v:30 Unimplemented compiler directive or undefined macro `ADDITION_num.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define_with_comment/no_arch": {
@@ -2727,8 +2682,7 @@
         "verilog": "preprocessor_define_with_comment.v",
         "exit": 134,
         "errors": [
-            "preprocessor_define_with_comment.v:30 Unimplemented compiler directive or undefined macro `ADDITION_num.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -3111,8 +3065,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "Module `\\and_primitive' referenced in module `\\top_and' in cell `\\and4' is not part of the design.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/top_and/no_arch": {
@@ -3120,8 +3073,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "Module `\\and_primitive' referenced in module `\\top_and' in cell `\\and4' is not part of the design.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/unconnected_input/k6_frac_N10_frac_chain_mem32K_40nm": {

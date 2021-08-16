@@ -37,6 +37,10 @@
  */
 
 #include <cstdlib>
+#include <fstream>    // ostream
+#include <unistd.h>   // fork
+#include <sys/wait.h> // wait
+
 #include "YYosys.hpp"
 #include "config_t.h"   // configuration
 #include "odin_util.h"  // get_directory
@@ -44,9 +48,16 @@
 
 #ifdef ODIN_USE_YOSYS
 #    include "kernel/yosys.h" // Yosys
-using namespace Yosys;
+USING_YOSYS_NAMESPACE
+#    define YOSYS_ELABORATION_ERROR                        \
+        "\n\tERROR: Yosys failed to perform elaboration, " \
+        "Please look at the log file for the failure cause or pass \'--show_yosys_log\' to Odin-II to see the logs.\n"
+#    define YOSYS_FORK_ERROR \
+        "\n\tERROR: Yosys child process failed to be created\n"
 #else
-#    define YOSYS_INSTALLATION_ERROR "It seems Yosys is not installed in the VTR repository. Please compile the VTR with (" ODIN_USE_YOSYS_STR ") flag.\n"
+#    define YOSYS_INSTALLATION_ERROR                                    \
+        "ERROR: It seems Yosys is not installed in the VTR repository." \
+        " Please compile the VTR with (" ODIN_USE_YOSYS_STR ") flag.\n"
 #endif
 
 /**
@@ -60,19 +71,10 @@ YYosys::YYosys() {
 #else
     /* set Yosys+Odin default variables */
     this->set_default_variables();
-    /* specify the yosys logs output stream */
-    yosys_log_stream = (configuration.show_yosys_log) ? &std::cout : new std::ofstream(this->log_file);
-    log_streams.push_back(yosys_log_stream);
-    log_error_stderr = true;
 
-    yosys_setup();
-    yosys_banner();
-
-    /* Read VTR baseline library first */
-    run_pass(std::string("read_verilog -nomem2reg " + this->vtr_primitives_file));
-    run_pass(std::string("setattr -mod -set keep_hierarchy 1 " + std::string(SINGLE_PORT_RAM_string)));
-    run_pass(std::string("setattr -mod -set keep_hierarchy 1 " + std::string(DUAL_PORT_RAM_string)));
-
+    /* create Yosys child process */
+    if ((this->yosys_pid = fork()) < 0)
+        error_message(UTIL, unknown_location, "%s", YOSYS_FORK_ERROR);
 #endif
 }
 
@@ -84,13 +86,16 @@ YYosys::~YYosys() {
 #ifndef ODIN_USE_YOSYS
     error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
 #else
-    /* exit from Yosys executable */
-    yosys_shutdown();
-    // CLEAN UP
-    std::ofstream* ptr = NULL;
-    if (!configuration.show_yosys_log && (ptr = dynamic_cast<std::ofstream*>(yosys_log_stream))) {
-        ptr->close();
-        delete ptr;
+    /* execute only in child process */
+    if (this->yosys_pid == 0) {
+        /* exit from Yosys executable */
+        yosys_shutdown();
+        // CLEAN UP
+        std::ofstream* ptr = NULL;
+        if (!configuration.show_yosys_log && (ptr = dynamic_cast<std::ofstream*>(yosys_log_stream))) {
+            ptr->close();
+            delete ptr;
+        }
     }
 #endif
 }
@@ -108,9 +113,56 @@ void YYosys::perform_elaboration() {
 #else
     /* elaborator type validation */
     oassert(configuration.elaborator_type == elaborator_e::_YOSYS);
+    /* execute only in child process */
+    if (this->yosys_pid == 0) {
+        /* initalize Yosys */
+        this->init_yosys();
+        /* perform elaboration using Yosys API */
+        this->elaborate();
 
-    /* perform elaboration using Yosys API */
-    this->elaborate();
+        /* exit successfully */
+        _exit(EXIT_SUCCESS);
+    }
+    /* parent process, i.e., Odin-II */
+    else {
+        /* wait for the Yosys child process */
+        auto yosys_status = -1; // the status of the Yosys fork
+        waitpid(0, &yosys_status, 0);
+        int yosys_exit_status = WEXITSTATUS(yosys_status);
+
+        if (yosys_exit_status != 0) {
+            error_message(PARSER, unknown_location, "%s", YOSYS_ELABORATION_ERROR);
+        }
+        /* Yosys successfully generated coarse-grain BLIF file */
+        this->re_initialize_odin_globals();
+    }
+#endif
+}
+
+/**
+ * ---------------------------------------------------------------------------------------------
+ * (function: init_yosys)
+ * 
+ * @brief Initialize Yosys
+ * -------------------------------------------------------------------------------------------*/
+void YYosys::init_yosys() {
+#ifndef ODIN_USE_YOSYS
+    error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
+#else
+    /* must only be performed in the Yosys child process */
+    oassert(this->yosys_pid == 0);
+
+    /* specify the yosys logs output stream */
+    yosys_log_stream = (configuration.show_yosys_log) ? &std::cout : new std::ofstream(this->log_file);
+    log_streams.push_back(yosys_log_stream);
+
+    yosys_setup();
+    yosys_banner();
+
+    /* Read VTR baseline library first */
+    run_pass(std::string("read_verilog -nomem2reg " + this->vtr_primitives_file));
+    run_pass(std::string("setattr -mod -set keep_hierarchy 1 " + std::string(SINGLE_PORT_RAM_string)));
+    run_pass(std::string("setattr -mod -set keep_hierarchy 1 " + std::string(DUAL_PORT_RAM_string)));
 #endif
 }
 
@@ -150,6 +202,9 @@ void YYosys::execute() {
 #ifndef ODIN_USE_YOSYS
     error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
 #else
+    /* must only be performed in the Yosys child process */
+    oassert(this->yosys_pid == 0);
+
     // Read the hardware decription Verilog circuits
     // FOR loop enables include feature for Yosys+Odin (multiple Verilog input files)
     for (auto verilog_circuit : this->verilog_circuits)
@@ -179,7 +234,7 @@ void YYosys::execute() {
      * [NOTE] : Yosys complains about expression width more than 24 bits.
      * E.g.[63 : 0] memory[18 : 0] == > ERROR : Expression width 33554432 exceeds implementation limit of 16777216 !
      * Therfore, Yosys internal memory cells will be handled inside Odin-II as YMEM cell type.
-     * 
+     *
      * The following commands transform Yosys internal memories into BRAMs/ROMs defined in the Odin-II techlib
      * However, due to the above-mentioned reason they are commented.
      *  Yosys::run_pass(std::string("memory_bram -rules ", this->odin_techlib, "/mem_rules.txt"))
@@ -208,30 +263,15 @@ void YYosys::execute() {
  * file with the Yosys generated output BLIF file
  * -------------------------------------------------------------------------------------------*/
 void YYosys::elaborate() {
-    try {
-        /* execute coarse-grain elaboration steps */
-        this->execute();
-        printf("Successful Elaboration of the design by Yosys\n");
-        /* ask Yosys to generate the output BLIF file */
-        this->output_blif();
-        printf("\tCoarse-grain netlist is available at: %s\n\n", this->coarse_grain_blif.c_str());
+    /* must only be performed in the Yosys child process */
+    oassert(this->yosys_pid == 0);
 
-        /* set Odin-II globals */
-        global_args.coarsen.set(true, argparse::Provenance::SPECIFIED);
-        global_args.blif_file.set(this->coarse_grain_blif, argparse::Provenance::SPECIFIED);
-        /* modify Odin-II configurations to run through the techmap flow with a coarse-grain netlist */
-        configuration.coarsen = true;
-        coarsen_cleanup = true;
-        /* erase list of inputs to add yosys generated BLIF instead */
-        configuration.list_of_file_names.erase(
-            configuration.list_of_file_names.begin(), configuration.list_of_file_names.end());
-        /* add Yosys generated BLIF */
-        configuration.list_of_file_names = {std::string(global_args.blif_file)};
-        configuration.input_file_type = file_type_e::_BLIF;
-
-    } catch (vtr::VtrError& vtr_error) {
-        error_message(PARSE_ARGS, unknown_location, "%s", vtr_error.what());
-    }
+    /* execute coarse-grain elaboration steps */
+    this->execute();
+    printf("Successful Elaboration of the design by Yosys\n");
+    /* ask Yosys to generate the output BLIF file */
+    this->output_blif();
+    printf("\tCoarse-grain netlist is available at: %s\n\n", this->coarse_grain_blif.c_str());
 }
 
 /**
@@ -245,8 +285,35 @@ void YYosys::output_blif() {
 #ifndef ODIN_USE_YOSYS
     error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
 #else
+    /* must only be performed in the Yosys child process */
+    oassert(this->yosys_pid == 0);
+
     // "-param" is to print non-standard cells parameters
     // "-impltf" is to not show the definition of primary netlist ports, i.e., VCC, GND and PAD, in the output.
     run_pass(std::string("write_blif -param -impltf " + this->coarse_grain_blif));
 #endif
+}
+
+/**
+ * ---------------------------------------------------------------------------------------------
+ * (function: re_initialize_odin_globals)
+ * 
+ * @brief Modify Odin-II global variables to activate the techmap flow
+ * -------------------------------------------------------------------------------------------*/
+void YYosys::re_initialize_odin_globals() {
+    /* must NOT be performed in the Yosys child process */
+    oassert(this->yosys_pid != 0);
+
+    /* set Odin-II globals */
+    global_args.coarsen.set(true, argparse::Provenance::SPECIFIED);
+    global_args.blif_file.set(this->coarse_grain_blif, argparse::Provenance::SPECIFIED);
+    /* modify Odin-II configurations to run through the techmap flow with a coarse-grain netlist */
+    configuration.coarsen = true;
+    coarsen_cleanup = true;
+    /* erase list of inputs to add yosys generated BLIF instead */
+    configuration.list_of_file_names.erase(
+        configuration.list_of_file_names.begin(), configuration.list_of_file_names.end());
+    /* add Yosys generated BLIF */
+    configuration.list_of_file_names = {std::string(global_args.blif_file)};
+    configuration.input_file_type = file_type_e::_BLIF;
 }

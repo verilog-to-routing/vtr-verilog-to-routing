@@ -55,8 +55,7 @@
         "verilog": "replicate_xor_int_wide.vh",
         "exit": 134,
         "errors": [
-            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2178.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "xor/replicate_xor_ultra_wide/no_arch": {
@@ -64,8 +63,7 @@
         "verilog": "replicate_xor_ultra_wide.vh",
         "exit": 134,
         "errors": [
-            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2178.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "xor/replicate_xor_wide/no_arch": {
@@ -73,8 +71,7 @@
         "verilog": "replicate_xor_wide.vh",
         "exit": 134,
         "errors": [
-            "Assert `new_cell->children.at(0)->type == AST_CELLTYPE' failed in frontends/ast/simplify.cc:2178.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "xor/xor_indexed_port/no_arch": {

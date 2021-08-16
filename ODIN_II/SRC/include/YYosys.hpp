@@ -38,6 +38,7 @@
 
 #include <string>
 #include <stdlib.h>
+#include <sys/types.h> // pid_t
 
 #define ODIN_USE_YOSYS_STR "-DODIN_USE_YOSYS=ON"
 
@@ -73,11 +74,19 @@ class YYosys {
     std::string coarse_grain_blif; // Yosys coarse-grain output BLIF
 
   private:
+    pid_t yosys_pid;                           // the fork pid created to run Yosys
     std::string odin_techlib;                  // the path od Odin-II techlib
     std::ostream* yosys_log_stream;            // Yosys log output stream
     std::string vtr_primitives_file;           // the path of VTR primitives Verilog file
     std::vector<std::string> verilog_circuits; // Odin-II input Verilog files
 
+    /**
+     * ---------------------------------------------------------------------------------------------
+     * (function: set_default_variables)
+     * 
+     * @brief Initialize Yosys
+     * -------------------------------------------------------------------------------------------*/
+    void init_yosys();
     /**
      * ---------------------------------------------------------------------------------------------
      * (function: set_default_variables)
@@ -108,6 +117,13 @@ class YYosys {
      * the path specified in this->coarse_grain_blif
      * -------------------------------------------------------------------------------------------*/
     void output_blif();
+    /**
+     * ---------------------------------------------------------------------------------------------
+     * (function: re_initialize_odin_globals)
+     * 
+     * @brief Modify Odin-II global variables to activate the techmap flow
+     * -------------------------------------------------------------------------------------------*/
+    void re_initialize_odin_globals();
 };
 
 #endif //__YYOSYS_H__

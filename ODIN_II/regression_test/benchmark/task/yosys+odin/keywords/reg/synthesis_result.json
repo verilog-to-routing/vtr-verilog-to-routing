@@ -4,8 +4,7 @@
         "verilog": "reg_failure.v",
         "exit": 134,
         "errors": [
-            "reg_failure.v:3 Input port `\\a' is declared as register.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "reg/reg/no_arch": {

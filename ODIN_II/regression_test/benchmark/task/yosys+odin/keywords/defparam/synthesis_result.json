@@ -4,8 +4,7 @@
         "verilog": "defparam_depth_1_failure.v",
         "exit": 134,
         "errors": [
-            "Module `assg' referenced in module `simple_op' in cell `m2' does not have a parameter named 'width'.",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam_depth_1/no_arch": {
@@ -41,8 +40,7 @@
         "verilog": "defparam_failure.v",
         "exit": 134,
         "errors": [
-            "defparam_failure.v:0 Can't find object for defparam `simple_op.m1.width`!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam/no_arch": {
@@ -50,8 +48,7 @@
         "verilog": "defparam.v",
         "exit": 134,
         "errors": [
-            "defparam.v:0 Can't find object for defparam `simple_op.m1.width`!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam_simple_failure/no_arch": {
@@ -59,8 +56,7 @@
         "verilog": "defparam_simple_failure.v",
         "exit": 134,
         "errors": [
-            "defparam_simple_failure.v:0 Can't find object for defparam `simple_op.m1.width`!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam_string/no_arch": {
@@ -68,8 +64,7 @@
         "verilog": "defparam_string.v",
         "exit": 134,
         "errors": [
-            "defparam_string.v:0 Can't find object for defparam `simple_op.msg`!",
-            "[PARSE_ARGS] Yosys failed to perform elaboration"
+            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/override_same_param_name/no_arch": {
