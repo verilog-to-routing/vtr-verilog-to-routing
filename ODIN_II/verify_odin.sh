@@ -9,6 +9,7 @@ REGRESSION_DIR="${THIS_DIR}/regression_test"
 REG_LIB="${REGRESSION_DIR}/.library"
 PARSER_DIR="${REGRESSION_DIR}/parse_result"
 PARSER_EXEC="${PARSER_DIR}/parse_result.py"
+ELABORATOR_YOSYS="--elaborator yosys"
 
 source "${REG_LIB}/handle_exit.sh"
 source "${REG_LIB}/helper.sh"
@@ -977,9 +978,21 @@ function sim() {
 		circuit_name="${circuit_file%.*}"
 
 
-		# lookup for input and output vector files to do comparison
-		input_vector_file="${circuits_dir}/${circuit_name}_input"
-		output_vector_file="${circuits_dir}/${circuit_name}_output"
+        # check if elaborator is yosys, then look up for Yosys sim vectors
+        if [[ "$_local_synthesis_params" == *"$ELABORATOR_YOSYS"* ]]; then
+            echo "=======================>${_local_synthesis_params}"
+            # lookup for input and output vector files to do comparison
+            input_vector_file="${circuits_dir}/${circuit_name}_yosys_input"
+            output_vector_file="${circuits_dir}/${circuit_name}_yosys_output"
+
+        # otherwise, Odin-II vectors should be retrieved
+        else
+            # lookup for input and output vector files to do comparison
+            input_vector_file="${circuits_dir}/${circuit_name}_odin_input"
+            output_vector_file="${circuits_dir}/${circuit_name}_odin_output"
+        fi
+
+		
 
 		for arches in "${_arch_list[@]}"
 		do
@@ -1155,6 +1168,7 @@ function sim() {
 					&& [ -f "${input_vector_file}" ] \
 					&& [ -f "${output_vector_file}" ]
 					then
+                        echo "############### in:${input_vector_file} out:${output_vector_file}"
 						simulation_command="${simulation_command} -t ${input_vector_file} -T ${output_vector_file}"
 						simulation_wrapper_file_name="${simulation_wrapper_predefined_io_file_name}"
 					elif [ "_${_generate_bench}" == "_off" ] \
