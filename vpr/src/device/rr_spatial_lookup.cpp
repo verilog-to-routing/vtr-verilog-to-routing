@@ -1,8 +1,7 @@
 #include "vtr_assert.h"
 #include "rr_spatial_lookup.h"
 
-RRSpatialLookup::RRSpatialLookup(t_rr_node_indices& rr_node_indices)
-    : rr_node_indices_(rr_node_indices) {
+RRSpatialLookup::RRSpatialLookup() {
 }
 
 RRNodeId RRSpatialLookup::find_node(int x,
@@ -271,5 +270,29 @@ void RRSpatialLookup::resize_nodes(int x,
         rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0), size_t(x) + 1),
                                        std::max(rr_node_indices_[type].dim_size(1), size_t(y) + 1),
                                        std::max(rr_node_indices_[type].dim_size(2), size_t(side) + 1)});
+    }
+}
+
+void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order) {
+    // update rr_node_indices, a map to optimize rr_index lookups
+    for (auto& grid : rr_node_indices_) {
+        for (size_t x = 0; x < grid.dim_size(0); x++) {
+            for (size_t y = 0; y < grid.dim_size(1); y++) {
+                for (size_t s = 0; s < grid.dim_size(2); s++) {
+                    for (auto& node : grid[x][y][s]) {
+                        if (node != OPEN) {
+                            node = size_t(dest_order[RRNodeId(node)]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+void RRSpatialLookup::clear() {
+    for (auto& data : rr_node_indices_) {
+        data.clear();
     }
 }

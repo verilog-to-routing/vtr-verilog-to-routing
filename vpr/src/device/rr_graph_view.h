@@ -1,8 +1,7 @@
 #ifndef RR_GRAPH_VIEW_H
 #define RR_GRAPH_VIEW_H
 
-#include "rr_graph_storage.h"
-#include "rr_spatial_lookup.h"
+#include "rr_graph_builder.h"
 
 /* An read-only routing resource graph
  * which is an unified object including pointors to
