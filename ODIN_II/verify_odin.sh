@@ -979,7 +979,7 @@ function sim() {
 
 
         # check if elaborator is yosys, then look up for Yosys sim vectors
-        if [[ "$_local_synthesis_params" == *"$ELABORATOR_YOSYS"* ]]; then
+        if [[ "$_synthesis_params" == *"$ELABORATOR_YOSYS"* ]]; then
             # lookup for input and output vector files to do comparison
             input_vector_file="${circuits_dir}/${circuit_name}_yosys_input"
             output_vector_file="${circuits_dir}/${circuit_name}_yosys_output"
