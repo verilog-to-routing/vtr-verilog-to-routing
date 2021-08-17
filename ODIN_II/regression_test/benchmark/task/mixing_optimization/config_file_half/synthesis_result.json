@@ -302,7 +302,7 @@
         "verilog": "multiply_hard_block.v",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:",
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 55.8,
         "exec_time(ms)": 57.1,
@@ -326,7 +326,7 @@
         "verilog": "multiply_hard_block.v",
         "exit": 134,
         "errors": [
-            "multiply_hard_block.v:8:1 [AST] Can't find module name multiply"
+            "multiply_hard_block.v:9:1 [AST] Can't find module name multiply"
         ],
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
@@ -396,7 +396,6 @@
         "logic element": 376,
         "latch": 71,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 24,
         "Average Path": 4,
@@ -419,7 +418,6 @@
         "logic element": 376,
         "latch": 71,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 24,
         "Average Path": 4,
@@ -442,7 +440,6 @@
         "logic element": 1631,
         "latch": 72,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 73,
         "Average Path": 4,
@@ -465,7 +462,6 @@
         "logic element": 1631,
         "latch": 72,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 73,
         "Average Path": 4,
@@ -488,7 +484,6 @@
         "logic element": 782,
         "latch": 54,
         "Multiplier": 2,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 30,
         "Average Path": 5,
@@ -511,7 +506,6 @@
         "logic element": 782,
         "latch": 54,
         "Multiplier": 2,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 30,
         "Average Path": 5,
@@ -533,8 +527,6 @@
         "Po": 54,
         "logic element": 321,
         "latch": 54,
-        "Multiplier": 0,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 57,
         "Average Path": 4,
@@ -556,8 +548,6 @@
         "Po": 54,
         "logic element": 321,
         "latch": 54,
-        "Multiplier": 0,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 57,
         "Average Path": 4,
@@ -580,7 +570,6 @@
         "logic element": 530,
         "latch": 108,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 47,
         "Average Path": 4,
@@ -603,7 +592,6 @@
         "logic element": 530,
         "latch": 108,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 47,
         "Average Path": 4,
@@ -626,7 +614,6 @@
         "logic element": 928,
         "latch": 54,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 31,
         "Average Path": 4,
@@ -649,7 +636,6 @@
         "logic element": 928,
         "latch": 54,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 31,
         "Average Path": 4,
@@ -662,7 +648,7 @@
         "verilog": "multiply_hard_block.v",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:",
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 6,
         "exec_time(ms)": 17.8,
@@ -671,7 +657,6 @@
         "Po": 8,
         "logic element": 9,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 6,
         "Average Path": 3,
@@ -684,7 +669,7 @@
         "verilog": "multiply_hard_block.v",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:",
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 5.9,
         "exec_time(ms)": 14.3,
@@ -693,7 +678,6 @@
         "Po": 8,
         "logic element": 9,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 6,
         "Average Path": 3,
@@ -715,8 +699,6 @@
         "Po": 5,
         "logic element": 16,
         "latch": 4,
-        "Multiplier": 0,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 8,
         "Average Path": 4,
@@ -738,8 +720,6 @@
         "Po": 5,
         "logic element": 16,
         "latch": 4,
-        "Multiplier": 0,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 8,
         "Average Path": 4,

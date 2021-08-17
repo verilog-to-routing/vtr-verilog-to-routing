@@ -256,7 +256,7 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "multiply_hard_block.v",
         "warnings": [
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 56,
         "exec_time(ms)": 70.8,
@@ -278,7 +278,7 @@
         "verilog": "multiply_hard_block.v",
         "exit": 134,
         "errors": [
-            "multiply_hard_block.v:8:1 [AST] Can't find module name multiply"
+            "multiply_hard_block.v:9:1 [AST] Can't find module name multiply"
         ]
     },
     "mults_auto_full/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -337,7 +337,6 @@
         "logic element": 32,
         "latch": 71,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 8,
         "Average Path": 3,
@@ -357,7 +356,6 @@
         "logic element": 32,
         "latch": 71,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 8,
         "Average Path": 3,
@@ -376,7 +374,6 @@
         "Po": 144,
         "latch": 72,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 4,
         "Average Path": 3,
@@ -394,7 +391,6 @@
         "Po": 144,
         "latch": 72,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 4,
         "Average Path": 3,
@@ -413,7 +409,6 @@
         "logic element": 316,
         "latch": 54,
         "Multiplier": 4,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 24,
         "Average Path": 4,
@@ -433,7 +428,6 @@
         "logic element": 316,
         "latch": 54,
         "Multiplier": 4,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 24,
         "Average Path": 4,
@@ -453,7 +447,6 @@
         "logic element": 88,
         "latch": 54,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 57,
         "Average Path": 4,
@@ -473,7 +466,6 @@
         "logic element": 88,
         "latch": 54,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 57,
         "Average Path": 4,
@@ -493,7 +485,6 @@
         "logic element": 142,
         "latch": 108,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 41,
         "Average Path": 3,
@@ -513,7 +504,6 @@
         "logic element": 142,
         "latch": 108,
         "Multiplier": 3,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 41,
         "Average Path": 3,
@@ -533,7 +523,6 @@
         "logic element": 229,
         "latch": 54,
         "Multiplier": 6,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 26,
         "Average Path": 4,
@@ -553,7 +542,6 @@
         "logic element": 229,
         "latch": 54,
         "Multiplier": 6,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 26,
         "Average Path": 4,
@@ -565,7 +553,7 @@
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
         "verilog": "multiply_hard_block.v",
         "warnings": [
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 5.9,
         "exec_time(ms)": 17.7,
@@ -573,7 +561,6 @@
         "Pi": 8,
         "Po": 8,
         "Multiplier": 2,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 3,
         "Average Path": 3,
@@ -584,7 +571,7 @@
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "multiply_hard_block.v",
         "warnings": [
-            "multiply_hard_block.v:9:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "multiply_hard_block.v:10:2 [AST] Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 5.8,
         "exec_time(ms)": 16.4,
@@ -592,7 +579,6 @@
         "Pi": 8,
         "Po": 8,
         "Multiplier": 2,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 3,
         "Average Path": 3,
@@ -611,7 +597,6 @@
         "logic element": 7,
         "latch": 4,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 5,
         "Longest Path": 7,
         "Average Path": 4,
@@ -631,7 +616,6 @@
         "logic element": 7,
         "latch": 4,
         "Multiplier": 1,
-        "Memory": 0,
         "generic logic size": 6,
         "Longest Path": 7,
         "Average Path": 4,
