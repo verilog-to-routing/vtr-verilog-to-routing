@@ -1,10 +1,10 @@
 #VPR Routing Metrics
 routed_wirelength;vpr.out;\s*Total wirelength: (.*), average .*
 
-total_nets_routed;vpr.out;total_nets_routed: (\d+)
-total_connections_routed;vpr.out;total_connections_routed: (\d+)
-total_heap_pushes;vpr.out;total_heap_pushes: (\d+)
-total_heap_pops;vpr.out;total_heap_pops: (\d+)
+total_nets_routed;vpr.out;Router Stats: total_nets_routed: (\d+) .*
+total_connections_routed;vpr.out;Router Stats: .*total_connections_routed: (\d+) .*
+total_heap_pushes;vpr.out;Router Stats: .*total_heap_pushes: (\d+) .*
+total_heap_pops;vpr.out;Router Stats: .*total_heap_pops: (\d+)
 
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)
