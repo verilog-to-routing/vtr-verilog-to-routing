@@ -264,16 +264,16 @@
         "Latch Drivers": 1,
         "Pi": 35,
         "Po": 356,
-        "logic element": 184107,
-        "latch": 51617,
-        "Adder": 27358,
+        "logic element": 183354,
+        "latch": 51488,
+        "Adder": 27292,
         "Multiplier": 27,
-        "Memory": 348,
+        "Memory": 103,
         "generic logic size": 4,
-        "Longest Path": 19905,
+        "Longest Path": 18529,
         "Average Path": 4,
-        "Estimated LUTs": 192917,
-        "Total Node": 263458
+        "Estimated LUTs": 192164,
+        "Total Node": 262265
     },
     "vtr/mkDelayWorker32B/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vtr/mkDelayWorker32B/k6_frac_N10_frac_chain_mem32K_40nm",

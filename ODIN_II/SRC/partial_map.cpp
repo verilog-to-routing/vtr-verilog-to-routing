@@ -451,7 +451,7 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
                 output_signals[i] = init_signal_list();
 
                 // single_bit_mux->input_pins[i] === selector[i]
-                npin_t* selector_pin = single_bit_mux->input_pins[i];
+                npin_t* selector_pin = single_bit_mux->input_pins[selector_width - i - 1];
 
                 /* iterating over each single bit 2-mux to connect inputs */
                 for (j = 0; j < num_of_muxes; j++) {
