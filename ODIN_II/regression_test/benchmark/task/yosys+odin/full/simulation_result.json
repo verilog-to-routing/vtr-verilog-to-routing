@@ -433,16 +433,16 @@
         "Latch Drivers": 1,
         "Pi": 35,
         "Po": 356,
-        "logic element": 184463,
-        "latch": 51617,
-        "Adder": 27358,
+        "logic element": 183710,
+        "latch": 51488,
+        "Adder": 27292,
         "Multiplier": 27,
-        "Memory": 348,
+        "Memory": 103,
         "generic logic size": 4,
-        "Longest Path": 19603,
+        "Longest Path": 18530,
         "Average Path": 5,
-        "Estimated LUTs": 193273,
-        "Total Node": 263814
+        "Estimated LUTs": 192520,
+        "Total Node": 262621
     },
     "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm",
