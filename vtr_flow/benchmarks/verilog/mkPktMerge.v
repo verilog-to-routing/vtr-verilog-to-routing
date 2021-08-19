@@ -310,13 +310,9 @@ output EMPTY_N;
 output FULL_N;
 
 
-wire full;
-wire empty;
-wire full_n;
-wire empty_n;
-wire full_n_r;
-wire empty_n_r;
-wire [1:0] level;
+
+wire fulln;
+wire emptyn;
 
 wire always_one;
 wire always_zero;
@@ -332,23 +328,18 @@ generic_fifo_sc_a fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
- .full(full),
- .empty(empty),
- .full_n(full_n),
- .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (full_n_r),
- .empty_n_r (empty_n_r),
- .level(level)
+ .full_n_r (fulln),
+ .empty_n_r (emptyn)
  );
-
-
-
-
-
-
  
+
+
+
+
+
+
 
 endmodule
 
@@ -512,11 +503,8 @@ parameter max_size = 1<<aw;
  */
  
 module generic_fifo_sc_a(clk, rst, clr, din, we, dout, re,
-			 full, empty,
-             full_n, empty_n,
-             full_r, empty_r,
-			 full_n_r, empty_n_r,
-             level);
+			 full_r, empty_r,
+			 full_n_r, empty_n_r);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -564,9 +552,7 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 0;
-
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
+ 
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -724,13 +710,9 @@ output EMPTY_N;
 output FULL_N;
 
 
-wire full;
-wire empty;
-wire full_n;
-wire empty_n;
-wire full_n_r;
-wire empty_n_r;
-wire [1:0] level;
+
+wire fulln;
+wire emptyn;
 
 wire always_one;
 wire always_zero;
@@ -746,15 +728,10 @@ generic_fifo_sc_b fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
- .full(full),
- .empty(empty),
- .full_n(full_n),
- .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (full_n_r),
- .empty_n_r (empty_n_r),
- .level(level)
+ .full_n_r (fulln),
+ .empty_n_r (emptyn)
  );
  
 
@@ -923,11 +900,8 @@ parameter max_size = 1<<aw;
  */
  
 module generic_fifo_sc_b(clk, rst, clr, din, we, dout, re,
-			 full, empty,
-             full_n, empty_n,
-             full_r, empty_r,
-			 full_n_r, empty_n_r,
-             level);
+			 full_r, empty_r,
+			 full_n_r, empty_n_r);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -975,9 +949,7 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 0;
-
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
+ 
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -1137,13 +1109,9 @@ output EMPTY_N;
 output FULL_N;
 
 
-wire full;
-wire empty;
-wire full_n;
-wire empty_n;
-wire full_n_r;
-wire empty_n_r;
-wire [1:0] level;
+
+wire fulln;
+wire emptyn;
 
 wire always_one;
 wire always_zero;
@@ -1159,15 +1127,10 @@ generic_fifo_sc_c fifo_1
  .we (ENQ),
  .dout (D_OUT),
  .re (DEQ),
- .full(full),
- .empty(empty),
- .full_n(full_n),
- .empty_n(empty_n),
  .full_r (FULL_N),
  .empty_r(EMPTY_N),
- .full_n_r (full_n_r),
- .empty_n_r (empty_n_r),
- .level(level)
+ .full_n_r (fulln),
+ .empty_n_r (emptyn)
  );
  
 
@@ -1335,11 +1298,8 @@ parameter max_size = 1<<aw;
  */
  
 module generic_fifo_sc_c(clk, rst, clr, din, we, dout, re,
-			 full, empty,
-             full_n, empty_n,
-             full_r, empty_r,
-			 full_n_r, empty_n_r,
-             level);
+			 full_r, empty_r,
+			 full_n_r, empty_n_r);
  /*
 parameter dw=8;
 parameter aw=8;
@@ -1387,9 +1347,7 @@ reg			full_n_r, empty_n_r;
  
  // manually assign
  assign junk_in = 0;
-
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
+ 
 dual_port_ram   ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
@@ -1533,4 +1491,4 @@ begin
 end
 endmodule
 
-
+ 

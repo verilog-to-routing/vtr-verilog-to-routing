@@ -286,10 +286,6 @@ assign raygroupout = raygroupout01 | raygroupout10 ;
     end 
 
     resultcounter rc (resultid, newresult, done, cntreset, pglobalreset, tm3_clk_v0); 
-
-    // global reset as an output should be driven!
-    assign globalreset = pglobalreset;
-    
  endmodule
 
 
@@ -1648,8 +1644,7 @@ reg     temp_datavalid;
 
 
 
-defparam new_ram.ADDR_WIDTH = 10;
-defparam new_ram.DATA_WIDTH = 32;
+
 single_port_ram new_ram(
   .clk (clk),
   .we(we),
