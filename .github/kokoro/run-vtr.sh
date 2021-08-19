@@ -18,7 +18,7 @@ source $SCRIPT_DIR/steps/hostinfo.sh
 source $SCRIPT_DIR/steps/git.sh
 
 if [ $VTR_TEST == "vtr_reg_strong" ] || [ $VTR_TEST == "odin_reg_strong" ] \
-|| [ $VTR_TEST == "odin_tech_strong" ] || [ $VTR_TEST == "vtr_reg_yosys+odin" ]; then
+|| [ $VTR_TEST == "odin_tech_strong" ] || [ $VTR_TEST == "vtr_reg_yosys_odin" ]; then
 	source $SCRIPT_DIR/steps/vtr-min-setup.sh
 else
 	source $SCRIPT_DIR/steps/vtr-full-setup.sh
