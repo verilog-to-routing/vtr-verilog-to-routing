@@ -65,6 +65,7 @@
 #define PORT_NAME 1
 #define PORT_INDEX 2
 
+#define HARD_BLOCK_INSTANCE_DOES_NOT_EXIST -1
 
 
 /* Structure Declarations */ 
@@ -108,12 +109,9 @@ typedef struct s_hard_block_port_info
 */
 typedef struct s_hard_block
 {
-    // indicates the name of the user defined hard block
-    std::string hard_block_name = "";
-
-    // helps keep track of the number of hard block ports we have assigned
-    // a net to 
-    int hard_block_ports_assigned = 0;
+ 
+    // helps keep track of the number of hard block ports we have left to assign a net to
+    int hard_block_ports_not_assigned = 0;
 
     // a reference to the corresponding hard block node that represents this 
     // particular hard block instance
@@ -140,7 +138,7 @@ typedef struct s_hard_block_recog
     // hard block type are stored.
     std::unordered_map<std::string, t_hard_block_port_info> hard_block_type_name_to_port_info;  
 
-    // store each hard blocks instantiated within a 
+    // store each hard block instantiated within a 
     // user design
     std::vector<t_hard_block> hard_block_instances;
 
@@ -148,7 +146,7 @@ typedef struct s_hard_block_recog
        identify the corresponding hard block structure instance.
        We do this by using the map data structure below,
        where a hard block instance name is associated with an index
-       within the hard block instances above. 
+       within the hard block vector above (stores all instances within the design).
     */
     std::unordered_map<std::string, int> hard_block_instance_name_to_index;
 
@@ -191,9 +189,11 @@ typedef struct s_parsed_hard_block_port_info
 *   'hard_block_recog.cpp'
 */
 
-void filter_and_create_hard_blocks(t_module*, t_arch*, std::vector<std::string>*, std::string, std::string);
+void add_hard_blocks_to_netlist(t_module*, t_arch*, std::vector<std::string>*, std::string, std::string);
 
 void initialize_hard_block_models(t_arch*, std::vector<std::string>*, t_hard_block_recog*);
+
+void process_module_nodes_and_create_hard_blocks(t_module*, std::vector<std::string>*, t_hard_block_recog*);
 
 bool create_and_initialize_all_hard_block_ports(t_model*, t_hard_block_recog*);
 
@@ -208,6 +208,18 @@ t_node_port_association* create_unconnected_node_port_association(char*, int ,in
 void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,PORTS, t_array_ref**, int*);
 
 void copy_array_ref(t_array_ref*, t_array_ref*);
+
+int find_hard_block_instance(t_hard_block_recog*, t_parsed_hard_block_port_info*);
+
+int create_new_hard_block_instance(t_array_ref*, t_hard_block_recog*, t_parsed_hard_block_port_info*);
+
+t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info*);
+
+t_node* create_new_hard_block_instance_node(t_array_ref*, t_parsed_hard_block_port_info*);
+
+int store_new_hard_block_instance_info(t_hard_block_recog*, t_hard_block_port_info*, t_node*, t_parsed_hard_block_port_info*);
+
+t_array_ref* create_t_array_ref_from_array(void**, int);
 
 void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>*);
 

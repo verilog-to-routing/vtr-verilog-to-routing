@@ -265,6 +265,8 @@ int main(int argc, char* argv[])
 	//test_extract_hard_block_port_info_from_module_node();
 
 	//test_create_and_initialize_all_hard_block_ports();
+
+	//test_array_ref_initialization();
 	t_blif_model my_model;
 	//holds top-level model data for the .blif netlist
 	//***The primary goal of the program is to populate and dump this structure appropriately.***
@@ -309,12 +311,12 @@ int main(int argc, char* argv[])
 	//verify command-line is correct, populate input variables and global mode flags.
 	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &hard_block_type_name_list);
 
-	std::vector<std::string>::iterator it;
+	/*std::vector<std::string>::iterator it;
 
 	for (it = hard_block_type_name_list.begin(); it != hard_block_type_name_list.end(); it++)
 	{
 		std::cout << *it << "\n";
-	}
+	}*/
 
 	setup_lut_support_map ();	//initialize LUT support for cleanup and elaborate functions
 
@@ -342,13 +344,13 @@ int main(int argc, char* argv[])
     cout << "\n>> Verifying module";
 	verify_module (my_module);
 
-	if (debug_mode){
+	/*if (debug_mode){
 		//Print debug info to "<project_path>_module.echo"
 		construct_filename ( temp_name, project_path.c_str(), "_module.echo" );
 		cout << "\n>> Dumping to output file " << temp_name << endl ;
 		echo_module ( temp_name, source_file.c_str(), my_module );
 		//file contains data read from the .vqm structures.
-	}
+	}*/
 
 	//Parse the architecture file to get full information about the models used.
     //  Note: the architecture file needs to be loaded first, so that it can be used
@@ -368,10 +370,20 @@ int main(int argc, char* argv[])
 
 	VTR_ASSERT((types) && (numTypes > 0));
 	VTR_ASSERT(arch.models != NULL);
+
+	//test_create_unconnected_hard_block_instance_ports(my_module, &arch, &hard_block_type_name_list);
+
+	//test_create_new_hard_block_instance_node(&arch, &hard_block_type_name_list);
+
+	//test_store_new_hard_block_instance_info(&arch, &hard_block_type_name_list);
+
+	//test_create_new_hard_block_instance(my_module, &arch, &hard_block_type_name_list);
+
+	test_find_hard_block_instance(my_module, &arch, &hard_block_type_name_list);
 			
     //Pre-process the netlist
     //  Currently this just 'cleans up' bi-directional inout pins
-    cout << "\n>> Preprocessing Netlist...\n";
+   /* cout << "\n>> Preprocessing Netlist...\n";
     processStart = clock();
 
     preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, elaborate_ram_clocks,
@@ -422,7 +434,7 @@ int main(int argc, char* argv[])
 	{
 		try
 		{
-			filter_and_create_hard_blocks(my_module,&arch,&hard_block_type_name_list, arch_file, source_file);
+			add_hard_blocks_to_netlist(my_module,&arch,&hard_block_type_name_list, arch_file, source_file);
 		}
 		catch(const vtr::VtrError& error)
 		{
@@ -480,7 +492,9 @@ int main(int argc, char* argv[])
 	unsigned long flowEnd = clock();
 	cout << "\n>> VQM->BLIF Total Runtime: " << (float)(flowEnd - flowStart)/CLOCKS_PER_SEC << " seconds.\n" ;
 
-	cout << "\nComplete.\n";
+	cout << "\nComplete.\n";*/
+
+	all_data_cleanup();
 	return 0;
 }
 

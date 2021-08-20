@@ -5,27 +5,34 @@
 #include "hard_block_recog.h"
 
 
-void filter_and_create_hard_blocks(t_module* main_module, t_arch* main_arch, std::vector<std::string>* hard_block_type_names, std::string arch_file_name, std::string vqm_file_name)
+void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::vector<std::string>* list_hard_block_type_names, std::string arch_file_name, std::string vqm_file_name)
 {
-    t_hard_block_recog hard_block_node_refs_and_info;
+    t_hard_block_recog module_hard_block_node_refs_and_info;
 
     try
     {
-        initialize_hard_block_models(main_arch, hard_block_type_names, &hard_block_node_refs_and_info);
+        initialize_hard_block_models(main_arch, list_hard_block_type_names, &module_hard_block_node_refs_and_info);
     }
     catch(const vtr::VtrError& error)
     {
         throw vtr::VtrError((std::string)error.what() + "The FPGA architecture is described in " + arch_file_name + ".");
     }
 
-
+    try
+    {
+        process_module_nodes_and_create_hard_blocks(main_module, list_hard_block_type_names, &module_hard_block_node_refs_and_info);
+    }
+    catch(const vtr::VtrError& error)
+    {
+        throw vtr::VtrError((std::string)error.what() + "The original netlist is described in " + vqm_file_name + ".");
+    }
 
 
 
 
     // need to delete all the dynamic memory used to store 
     // all the hard block port information
-    delete_hard_block_port_info(&(hard_block_node_refs_and_info.hard_block_type_name_to_port_info));
+    delete_hard_block_port_info(&(module_hard_block_node_refs_and_info.hard_block_type_name_to_port_info));
     
     return;
 }
@@ -59,6 +66,59 @@ void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* h
 
     return;
 
+}
+
+void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vector<std::string>* hard_block_type_name_list, t_hard_block_recog* module_hard_block_node_refs_and_info)
+{   
+    // represents a block in the netlist
+    // refer to 'vqm_dll.h' for more info on t_node
+    t_node* curr_module_node = NULL;
+
+    // create a new t_array_ref (refer to 'vqm_dll.h') structure so that we can append new hard block instances we create to the original node array
+    t_array_ref* node_list_with_hard_blocks = create_t_array_ref_from_array((void**)(main_module->array_of_nodes), main_module->number_of_nodes);
+
+    std::string curr_module_node_type = "";
+    std::string curr_node_name = "";
+    
+    int number_of_module_nodes = main_module->number_of_nodes; // before any hard blocks are added
+
+    t_parsed_hard_block_port_info curr_module_node_info;
+
+    int curr_hard_block_instance_index = 0;
+
+    /* iterate through every node in the module and create a new node to represent each and every hard block we identify within the netlist.*/
+    for (int i = 0; i < number_of_module_nodes; i++)
+    {
+
+        curr_module_node = (t_node*)node_list_with_hard_blocks->pointer[i];
+        curr_module_node_type.assign(curr_module_node->type);
+
+        // hard block ports are only represented in nodes that are either a LUT or flip flop block
+        if ((curr_module_node_type.compare("stratix_lcell_comb") == 0) || (curr_module_node_type.compare("dffeas") == 0))
+        {
+
+            curr_module_node_info = extract_hard_block_port_info_from_module_node(curr_module_node, hard_block_type_name_list);
+            
+            // check to see that the current node represents a hard block port
+            // a hard block name would not be created if it wasn't
+            if (!curr_module_node_info.hard_block_name.empty())
+            {
+                
+                // get the index to the current hard block instance we need to work with
+                curr_hard_block_instance_index = find_hard_block_instance(module_hard_block_node_refs_and_info, &curr_module_node_info);
+
+                // check to see whether the hard block instance the current node belongs to exists (remember each node here represents a hard block port)
+                if (curr_hard_block_instance_index == HARD_BLOCK_INSTANCE_DOES_NOT_EXIST)
+                {
+                    // we need to create a new hard block instance, since it does not exists for the port current node represents
+                    curr_hard_block_instance_index = create_new_hard_block_instance(node_list_with_hard_blocks, module_hard_block_node_refs_and_info, &curr_module_node_info);
+                }
+                
+            }
+        }
+    }
+
+    
 }
 
 bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info)
@@ -205,6 +265,192 @@ void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
     }
 
     return;
+}
+
+int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
+{
+    int hard_block_instance_index = 0;
+
+    std::unordered_map<std::string,int>::iterator curr_hard_block_instance_index_ref;
+
+    std::string curr_hard_block_instance_name = curr_module_node_info->hard_block_name;
+
+    /* if we previously found a module node that represented a different port of the same hard block instance, we would have already created the node to represent the hard block instance.
+
+    Search the current list of already created hard block instances for the hard block instance the current node is a part (remember that the current node represents a port for a hard block).
+    We are using hard block names to idetify each instance.*/
+    curr_hard_block_instance_index_ref = module_hard_block_node_refs_and_info->hard_block_instance_name_to_index.find(curr_hard_block_instance_name);
+
+    // now check the search result to see whether the hard block instance the current node is a part of was already created (if it exists in our internal list)
+    if (curr_hard_block_instance_index_ref == module_hard_block_node_refs_and_info->hard_block_instance_name_to_index.end())
+    {
+        // if we are here, then the hard block instance the current node belongs to does not exist
+        // return unique identifier
+        hard_block_instance_index = HARD_BLOCK_INSTANCE_DOES_NOT_EXIST;
+        
+    }
+    else
+    {
+        // if we are here then the the hard block instance the current node is a port of already exists. 
+        //so we store its index to identify it from all the other hard block instaces found in the netlist (all hard block instances are stored in a vector within 't_hard_block_recog')
+        hard_block_instance_index = curr_hard_block_instance_index_ref->second;
+    }
+
+
+    return hard_block_instance_index;
+
+}
+
+int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
+{
+    // index to to the new 't_hard_block' struct being created here that is found within the 'hard_block_instances' vector
+    int created_hard_block_instance_index = 0;
+
+    // storage for the newly created hard block ports
+    t_array_ref* created_hard_block_instance_ports = NULL;
+
+    // storage for the new node within the current module that represents the new hard block instance being created here
+    t_node* hard_block_instance_node = NULL;
+
+    //get the port information for the new hard block instances type
+   t_hard_block_port_info* port_info_for_curr_hard_block_type = &((module_hard_block_node_refs_and_info->hard_block_type_name_to_port_info.find(curr_module_node_info->hard_block_type))->second);
+
+    // create a new set of ports for the new hard block instance
+    created_hard_block_instance_ports = create_unconnected_hard_block_instance_ports(port_info_for_curr_hard_block_type);
+
+    // create a new node for the new hard block instance
+    hard_block_instance_node = create_new_hard_block_instance_node(created_hard_block_instance_ports, curr_module_node_info);
+
+    //store the new hard block instance information created above within a 't_hard_block' struct and get the index to where it is stored
+    created_hard_block_instance_index = store_new_hard_block_instance_info(module_hard_block_node_refs_and_info, port_info_for_curr_hard_block_type, hard_block_instance_node, curr_module_node_info);
+
+    // append the newly created node that represents the new hard block instance to the node list for the module
+    append_array_element((intptr_t)hard_block_instance_node, module_node_list);
+
+    // delete the array ref struct used to store the reference to the newly created hard block instance ports
+    vtr::free(created_hard_block_instance_ports);
+
+    return created_hard_block_instance_index;
+}
+
+t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info* curr_hard_block_type_port_info)
+{
+    t_array_ref* template_for_hard_block_ports = &(curr_hard_block_type_port_info->hard_block_ports);
+    t_array_ref* hard_block_instance_port_array = NULL;
+    int number_of_ports = template_for_hard_block_ports->array_size;
+
+    // temporarily store single port parameters
+    char* port_name = NULL;
+    int port_index = 0;
+    int port_wire_index = 0;
+
+    // store the newly created port
+    t_node_port_association* temp_port = NULL;
+
+    // convert the template hard block ports into a port format
+    t_node_port_association** template_port_array = (t_node_port_association**)template_for_hard_block_ports->pointer;
+
+    // create memory to store the ports for the newly created hard block instance
+    hard_block_instance_port_array = (t_array_ref*)vtr::malloc(sizeof(t_array_ref));
+    
+    hard_block_instance_port_array->pointer = NULL;
+    hard_block_instance_port_array->array_size = 0;
+    hard_block_instance_port_array->allocated_size = 0;
+
+    // go through the template ports, copy their parameters to a new set of ports that will be for the new hard block instance we are creating
+    for (int i = 0; i < number_of_ports; i++)
+    {
+        port_name = template_port_array[i]->port_name;
+        port_index = template_port_array[i]->port_index;
+        port_wire_index = template_port_array[i]->wire_index;
+
+        temp_port = create_unconnected_node_port_association(port_name, port_index, port_wire_index);
+
+        append_array_element((intptr_t)temp_port, hard_block_instance_port_array);
+    }
+
+    return hard_block_instance_port_array;
+
+}
+
+t_node* create_new_hard_block_instance_node(t_array_ref* curr_hard_block_instance_ports, t_parsed_hard_block_port_info* curr_hard_block_instance_info)
+{
+    t_node* new_hard_block_instance = NULL;
+
+    char* hard_block_instance_name = NULL;
+    char* hard_block_instance_type = NULL;
+
+    int hard_block_instance_name_size = strlen((curr_hard_block_instance_info->hard_block_name).c_str()) + 1;
+    int hard_block_instance_type_size = strlen((curr_hard_block_instance_info->hard_block_type).c_str()) + 1;
+
+    // create the node for the new hard block instance
+    new_hard_block_instance = (t_node*)vtr::malloc(sizeof(t_node));
+
+    // assign the ports and their count for the new hard block
+    new_hard_block_instance->array_of_ports = (t_node_port_association**)curr_hard_block_instance_ports->pointer;
+
+    new_hard_block_instance->number_of_ports = curr_hard_block_instance_ports->array_size;
+
+    // hard blocks will not have any parameters so indicate that
+    new_hard_block_instance->number_of_params = 0;
+    new_hard_block_instance->array_of_params = NULL;
+
+    // create storage for the name and type of the current hard block and store their values //
+    
+    hard_block_instance_name = (char*)vtr::malloc(sizeof(char)*hard_block_instance_name_size);
+    hard_block_instance_type = (char*)vtr::malloc(sizeof(char)*hard_block_instance_type_size);
+
+    strcpy(hard_block_instance_name, (curr_hard_block_instance_info->hard_block_name).c_str());
+    strcpy(hard_block_instance_type, (curr_hard_block_instance_info->hard_block_type).c_str());
+
+    new_hard_block_instance->name = hard_block_instance_name;
+    new_hard_block_instance->type = hard_block_instance_type;
+
+    return new_hard_block_instance;
+
+}
+
+int store_new_hard_block_instance_info(t_hard_block_recog* module_hard_block_node_refs_and_info, t_hard_block_port_info* curr_hard_block_type_port_info, t_node* new_hard_block_instance_node, t_parsed_hard_block_port_info* curr_module_node_info)
+{
+    int new_hard_block_instance_index = 0;
+
+    t_hard_block new_hard_block_instance_info;
+
+    // store information regarding the new hard block instance being added to the module node list to a new t_hard_block struct //
+
+    new_hard_block_instance_info.hard_block_instance_node_reference = new_hard_block_instance_node;
+    
+    // initially all ports for the newly created hard block instance are unassigned 
+    new_hard_block_instance_info.hard_block_ports_not_assigned = curr_hard_block_type_port_info->hard_block_ports.array_size;
+
+    // insert the hard block (t_hard_block struct) to the list of all hard block instances
+    module_hard_block_node_refs_and_info->hard_block_instances.push_back(new_hard_block_instance_info);
+
+    // since we added the new hard block instance (t_hard_block struct) at the end of vector, the index will be the last position with the list
+    new_hard_block_instance_index = module_hard_block_node_refs_and_info->hard_block_instances.size() - 1;
+
+    /* now create a mapping between the new hard block instance name and the index it is located in with the list of all hard block instances, so we can find it quicly using just the hard block instance name*/
+    module_hard_block_node_refs_and_info->hard_block_instance_name_to_index.insert(std::pair<std::string,int>(curr_module_node_info->hard_block_name,new_hard_block_instance_index));
+
+    return new_hard_block_instance_index;
+}
+
+t_array_ref* create_t_array_ref_from_array(void** array_to_store, int array_size)
+{   
+    t_array_ref* array_reference = NULL;
+    int array_allocated_size = 0;
+
+    array_reference = (t_array_ref*)vtr::malloc(sizeof(t_array_ref));
+
+    array_allocated_size = calculate_array_size_using_bounds(array_size);
+
+    // assign the array and its corresponding information to the array ref struct
+    array_reference->allocated_size = array_allocated_size;
+    array_reference->array_size = array_size;
+    array_reference->pointer = array_to_store;
+
+    return array_reference;
+
 }
 
 t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node* curr_module_node, std::vector<std::string>* hard_block_type_name_list)
