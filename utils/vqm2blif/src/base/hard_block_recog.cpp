@@ -194,12 +194,8 @@ t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports
     int port_size = hard_block_model_port->size;
 
     //create memory to store the port array
-    port_array = (t_array_ref*)vtr::malloc(sizeof(t_array_ref));
+    port_array = create_and_initialize_t_array_ref_struct();
     
-    port_array->pointer = NULL;
-    port_array->array_size = 0;
-    port_array->allocated_size = 0;
-
     for (int port_index = 0; port_index < port_size; port_index++)
     {
         // hard blocks will not have indexed wire assignments 
@@ -265,6 +261,20 @@ void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
     }
 
     return;
+}
+
+t_array_ref* create_and_initialize_t_array_ref_struct(void)
+{
+    t_array_ref* empty_array = NULL;
+
+    empty_array = (t_array_ref*)vtr::malloc(sizeof(t_array_ref));
+
+    empty_array->pointer = NULL;
+    empty_array->array_size = 0;
+    empty_array->allocated_size = 0;
+
+    return empty_array;
+
 }
 
 int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
@@ -351,11 +361,7 @@ t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info
     t_node_port_association** template_port_array = (t_node_port_association**)template_for_hard_block_ports->pointer;
 
     // create memory to store the ports for the newly created hard block instance
-    hard_block_instance_port_array = (t_array_ref*)vtr::malloc(sizeof(t_array_ref));
-    
-    hard_block_instance_port_array->pointer = NULL;
-    hard_block_instance_port_array->array_size = 0;
-    hard_block_instance_port_array->allocated_size = 0;
+    hard_block_instance_port_array = create_and_initialize_t_array_ref_struct();
 
     // go through the template ports, copy their parameters to a new set of ports that will be for the new hard block instance we are creating
     for (int i = 0; i < number_of_ports; i++)

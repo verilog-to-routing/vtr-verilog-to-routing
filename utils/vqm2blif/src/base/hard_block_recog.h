@@ -209,6 +209,8 @@ void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,PO
 
 void copy_array_ref(t_array_ref*, t_array_ref*);
 
+t_array_ref* create_and_initialize_t_array_ref_struct(void);
+
 int find_hard_block_instance(t_hard_block_recog*, t_parsed_hard_block_port_info*);
 
 int create_new_hard_block_instance(t_array_ref*, t_hard_block_recog*, t_parsed_hard_block_port_info*);
