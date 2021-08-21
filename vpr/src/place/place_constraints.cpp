@@ -11,6 +11,7 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
+#include "grid_tile_lookup.h"
 
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
@@ -412,6 +413,91 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     }
 
     return pr_size_one;
+}
+
+/*void fill_grid_values() {
+	auto& device_ctx = g_vpr_ctx.device();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	ClusterBlockId blk_id(112);
+
+	auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+
+	VTR_LOG("Cluster block type is %s \n", block_type->name);
+
+	int num_rows = device_ctx.grid.height();
+	int num_cols = device_ctx.grid.width();
+	VTR_LOG("Number of rows is %d, number of columns is %d \n", num_rows, num_cols);
+
+	std::vector<vtr::NdMatrix<grid_tile_info, 2>> block_type_matrices;
+
+	vtr::NdMatrix<grid_tile_info, 2> type_count({device_ctx.grid.width(),device_ctx.grid.height()}); /// [0..width-1][0..height-1]
+
+	for (const auto& type : device_ctx.logical_block_types) {
+		block_type_matrices.push_back(create_count_grid(&type));
+	}
+
+	for (int i_col = type_count.dim_size(0) - 1; i_col >= 0; i_col--) {
+		for(int j_row = type_count.dim_size(1) - 1; j_row >= 0; j_row--) {
+			auto& tile = device_ctx.grid[i_col][j_row].type;
+			type_count[i_col][j_row].cumulative_total = 0;
+			type_count[i_col][j_row].st_range.set(0,0);
+			//VTR_LOG(" \n \n At grid location [%d, %d], cumulative total is %d\n", i_col, j_row, type_count[i_col][j_row].cumulative_total);
+
+			if (is_tile_compatible(tile, block_type)) {
+				//VTR_LOG("Tile is compatible");
+				for (const auto& sub_tile : tile->sub_tiles) {
+					if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
+						type_count[i_col][j_row].st_range.set(sub_tile.capacity.low, sub_tile.capacity.high);
+						type_count[i_col][j_row].cumulative_total = sub_tile.capacity.total();
+						//VTR_LOG("Set subtile range from %d to %d \n", type_count[i_col][j_row].st_range.low, type_count[i_col][j_row].st_range.high);
+						//VTR_LOG("Set cumulative total to %d \n", type_count[i_col][j_row].cumulative_total);
+					}
+				}
+			}
+
+            if(i_col < num_cols - 1) {
+            	type_count[i_col][j_row].cumulative_total += type_count[i_col + 1][j_row].cumulative_total;
+            	//VTR_LOG("1. Updated cumulative total to %d based on grid at [%d, %d] \n", type_count[i_col][j_row].cumulative_total,
+            			//i_col + 1, j_row);
+            }
+            if (j_row < num_rows - 1) {
+            	type_count[i_col][j_row].cumulative_total += type_count[i_col][j_row + 1].cumulative_total;
+            	//VTR_LOG("2. Updated cumulative total to %d based on grid at [%d, %d] \n", type_count[i_col][j_row].cumulative_total,
+            			//i_col, j_row + 1);
+            }
+            if (i_col < (num_cols - 1) && j_row < (num_rows - 1)) {
+            	type_count[i_col][j_row].cumulative_total -= type_count[i_col + 1][j_row + 1].cumulative_total;
+            	//VTR_LOG("3. Updated cumulative total to %d based on grid at [%d, %d] \n", type_count[i_col][j_row].cumulative_total,
+            			//i_col + 1, j_row + 1);
+            }
+
+            VTR_LOG("%d ", type_count[i_col][j_row].cumulative_total);
+		}
+		VTR_LOG("\n");
+	}
+}*/
+
+/*const vtr::NdMatrix<grid_tile_info, 2>& create_count_grid(t_logical_block_type_ptr block_type) {
+
+	vtr::NdMatrix<grid_tile_info, 2> matrix;
+	return matrix;
+}*/
+
+void create_tile_count_matrices() {
+	auto& device_ctx = g_vpr_ctx.device();
+
+	//Initialize data structures
+	GridTileLookup grid_tiles;
+	grid_tiles.initialize_grid_tile_matrices();
+
+	//Print grid for each tile type
+	for(unsigned int i = 0; i < device_ctx.logical_block_types.size(); i++) {
+		t_logical_block_type block_type = device_ctx.logical_block_types[i];
+
+		VTR_LOG("Print grid for type %s: \n", block_type.name);
+		grid_tiles.print_type_matrix(grid_tiles.get_type_grid(&block_type));
+	}
 }
 
 int get_region_size(const Region& reg, t_logical_block_type_ptr block_type) {

@@ -8,6 +8,8 @@
 #include "move_transactions.h"
 #include "region.h"
 #include "clustered_netlist_utils.h"
+#include "partition_region.h"
+#include "place_macro.h"
 
 #ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
 #    define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
@@ -95,6 +97,11 @@ void load_cluster_constraints();
  */
 void mark_fixed_blocks();
 
+//function where I fill how many values are there of each type at each grid location
+//void fill_grid_values();
+
+//const vtr::NdMatrix<grid_tile_info, 2>& create_count_grid(t_logical_block_type_ptr block_type);
+
 /*
  * Returns the number of tiles covered by a floorplan region.
  * The return value of this routine will either be 0, 1, or 2. This
@@ -112,6 +119,8 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  * and loc is updated with the location covered by the PartitionRegion
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
+
+void create_tile_count_matrices();
 
 /*
  * Returns the number of grid tiles that are covered by the region and compatible

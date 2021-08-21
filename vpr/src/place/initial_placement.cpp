@@ -441,10 +441,18 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
      */
     propagate_place_constraints();
 
+
+
+    create_tile_count_matrices();
+
+
+
+
     //Sort blocks and placement macros according to how difficult they are to place
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
     std::vector<t_pl_macro> sorted_macros = sort_macros(block_scores);
+
 
     // Loading legal placement locations
     zero_initialize_grid_blocks();
