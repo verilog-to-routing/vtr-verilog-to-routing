@@ -275,9 +275,9 @@ nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int wid
 
 /**
  * ---------------------------------------------------------------------------------------------
- * (function: make or chain)
+ * (function: make chain)
  * 
- * @brief create a chain of TYPE gates for the given pins
+ * @brief create a chain of the given TYPE gates for the given pins
  * 
  * @param inputs signal list of pins
  * @param node netlist node that input pins come from it
@@ -448,7 +448,7 @@ nnode_t* make_mult_block(nnode_t* node, short mark) {
 /**
  * (function: make_ff_node)
  * 
- * @brief smux pins based on the selector polarity
+ * @brief make a flip-flop, if Q is null it will create a new pin
  * 
  * @param D input
  * @param clk clock

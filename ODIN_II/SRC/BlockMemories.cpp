@@ -67,7 +67,7 @@ static void create_rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 static void create_r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 static void create_2rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
-static void create_nrnw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
+static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 
 static nnode_t* ymem_to_rom(nnode_t* node, uintptr_t traverse_mark_number);
 static nnode_t* ymem_to_bram(nnode_t* node, uintptr_t traverse_mark_number);
@@ -433,15 +433,15 @@ static void create_2r_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
  * (function: create_nr_single_port_ram)
  * 
  * @brief multiple read ports are multiplexed using read enable.
- * Then, the bram will be mapped to a SPRAM
+ * Then, the rom will be mapped to a SPRAM
  * 
- * @param bram pointing to a bram node node
+ * @param rom pointing to a rom node node
  * @param netlist pointer to the current netlist file
  */
-static void create_nr_single_port_ram(block_memory_t* bram, netlist_t* netlist) {
-    nnode_t* old_node = bram->node;
-    int data_width = bram->node->attributes->DBITS;
-    int addr_width = bram->node->attributes->ABITS;
+static void create_nr_single_port_ram(block_memory_t* rom, netlist_t* netlist) {
+    nnode_t* old_node = rom->node;
+    int data_width = rom->node->attributes->DBITS;
+    int addr_width = rom->node->attributes->ABITS;
     int num_rd_ports = old_node->attributes->RD_PORTS;
     int num_wr_ports = old_node->attributes->WR_PORTS;
 
@@ -454,21 +454,21 @@ static void create_nr_single_port_ram(block_memory_t* bram, netlist_t* netlist) 
     signal_list_t* selectors = NULL;
 
     /* INPUTS */
-    selectors = copy_input_signals(bram->read_en);
+    selectors = copy_input_signals(rom->read_en);
     /* adding the muxed read addrs as spram address */
-    signals->addr = split_cascade_port(bram->read_addr,
+    signals->addr = split_cascade_port(rom->read_addr,
                                        selectors,
                                        addr_width,
                                        old_node,
                                        netlist);
 
     /* add clk singnal */
-    signals->clk = bram->clk->pins[0];
+    signals->clk = rom->clk->pins[0];
 
     /**
-     * bram->write_data is already initialized with pad pins in bram init
+     * rom->write_data is already initialized with pad pins in rom init
      */
-    signals->data = copy_input_signals(bram->write_data);
+    signals->data = copy_input_signals(rom->write_data);
 
     /* there is no write data to set any we, so it will be connected to GND */
     signals->we = get_zero_pin(netlist);
@@ -485,10 +485,10 @@ static void create_nr_single_port_ram(block_memory_t* bram, netlist_t* netlist) 
         add_pin_to_signal_list(spram_outputs, spram->output_pins[i]);
     }
 
-    /* decode the spram outputs to the n bram output ports */
-    decode_out_port(spram_outputs, bram->read_data, bram->read_en, old_node, netlist);
+    /* decode the spram outputs to the n rom output ports */
+    decode_out_port(spram_outputs, rom->read_data, rom->read_en, old_node, netlist);
 
-    // CLEAN UP bram src node
+    // CLEAN UP rom src node
     free_signal_list(selectors);
     free_signal_list(spram_outputs);
 
@@ -500,8 +500,8 @@ static void create_nr_single_port_ram(block_memory_t* bram, netlist_t* netlist) 
  * (function: create_rw_single_port_ram)
  * 
  * @brief creates a single port ram for a block memory 
- * with one read and one write port that has the addr 
- * for both read and write
+ * with one read and one write port that has the same  
+ * addr for both read and write
  * 
  * @param bram pointing to a bram node node
  * @param netlist pointer to the current netlist file
@@ -649,7 +649,7 @@ static void create_rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
 }
 
 /**
- * (function: create_dual_port_ram_signals)
+ * (function: create_r2w_dual_port_ram)
  * 
  * @brief in this case one write port MUST have the 
  * same address of the single read port.
@@ -720,7 +720,7 @@ static void create_r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
             free_signal_list(wr_data2);
 
             /* all ports have different address */
-            create_nrnw_dual_port_ram(bram, netlist);
+            create_nrmw_dual_port_ram(bram, netlist);
             return;
         }
     }
@@ -872,7 +872,7 @@ static void create_2rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
             free_signal_list(rd_data2);
 
             /* all ports have different address */
-            create_nrnw_dual_port_ram(bram, netlist);
+            create_nrmw_dual_port_ram(bram, netlist);
             return;
         }
     }
@@ -916,11 +916,10 @@ static void create_2rw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
 }
 
 /**
- * (function: create_dual_port_ram_signals)
+ * (function: create_2r2w_dual_port_ram)
  * 
- * @brief in this case one write port MUST have the 
- * same address of the single read port.
- * Will be instantiated into a DPRAM.
+ * @brief creates a dual port ram. The given bram should have
+ * two pairs of read addr and write addr with the same addrs
  * 
  * @param bram pointer to the block memory
  * @param netlist pointer to the current netlist file
@@ -1007,7 +1006,7 @@ static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
         free_signal_list(rd_data2);
 
         /* all ports have different address */
-        create_nrnw_dual_port_ram(bram, netlist);
+        create_nrmw_dual_port_ram(bram, netlist);
         return;
     }
 
@@ -1061,7 +1060,7 @@ static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
 }
 
 /**
- * (function: create_nrnw_dual_port_ram)
+ * (function: create_nrmw_dual_port_ram)
  * 
  * @brief multiple read ports are multiplexed using read enable.
  * multiple write ports are multiplexed using write enable.
@@ -1070,7 +1069,7 @@ static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
  * @param bram pointing to a bram node node
  * @param netlist pointer to the current netlist file
  */
-static void create_nrnw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
+static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) {
     int i;
     nnode_t* old_node = bram->node;
     int data_width = bram->node->attributes->DBITS;
@@ -1267,7 +1266,7 @@ void map_bram_to_mem_hardblocks(block_memory_t* bram, netlist_t* netlist) {
 
         } else {
             /* create a dual port ram and muxed all read together and all writes together */
-            create_nrnw_dual_port_ram(bram, netlist);
+            create_nrmw_dual_port_ram(bram, netlist);
         }
     }
 }
@@ -1354,9 +1353,9 @@ void resolve_ymem_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
 }
 
 /**
- * (function: resolve_bram_node)
+ * (function: iterate_block_memories)
  * 
- * @brief create, verify and shrink the bram node
+ * @brief iterate over block memories to map them to DP/SPRAMs
  * 
  * @param netlist pointer to the current netlist file
  */
@@ -1385,7 +1384,7 @@ void iterate_block_memories(netlist_t* netlist) {
 }
 
 /**
- * (function: create_dual_port_ram_signals)
+ * (function: check_same_addrs)
  * 
  * @brief this function is to check if the read addr
  *  and write addr is the same or not.
@@ -1803,12 +1802,9 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
 }
 
 /**
- * (function: split_cascade_port)
+ * (function: decode_out_port)
  * 
- * @brief split the given signal list into chunks of desired_width size. 
- * Then, mux each chunk with pad pins using with selectors pin. In this 
- * function, assumed that the order of selectors is matched to the order
- * of signals
+ * @brief decode the memory outputs to the n output ports
  * 
  * @param src the mux input that will pass if en is 1
  * @param outs list of signals (like write data)
@@ -1904,7 +1900,7 @@ static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list
 }
 
 /**
- * (function: detach_pins_fbram_old_node)
+ * (function: cleanup_block_memory_old_node)
  * 
  * @brief Frees memory used for indexing block memories.
  * 
@@ -1951,11 +1947,13 @@ void free_block_memories() {
 }
 
 /**
- * (function: free_block_memory_index_and_finalize_memories)
+ * (function: free_block_memory_index)
  * 
  * @brief Frees memory used for indexing block memories. Finalises each
  * memory, making sure it has the right ports, and collapsing
  * the memory if possible.
+ * 
+ * @param to_free to be freed block memory hashtable
  */
 void free_block_memory_index(block_memory_hashtable to_free) {
     if (!to_free.empty()) {
@@ -1972,6 +1970,8 @@ void free_block_memory_index(block_memory_hashtable to_free) {
  * @brief Frees memory used for indexing block memories. Finalises each
  * memory, making sure it has the right ports, and collapsing
  * the memory if possible.
+ * 
+ * @param to_free to be freed block memory structure
  */
 static void free_block_memory(block_memory_t* to_free) {
     free_signal_list(to_free->read_addr);

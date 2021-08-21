@@ -41,16 +41,16 @@ GenericReader::GenericReader()
 
 GenericReader::~GenericReader() = default;
 
-inline void* GenericReader::__read() {
+inline void* GenericReader::_read() {
     void* netlist = NULL;
 
     switch (configuration.input_file_type) {
         case (file_type_e::_VERILOG): {
-            netlist = this->_read_verilog();
+            netlist = this->read_verilog();
             break;
         }
         case (file_type_e::_BLIF): {
-            netlist = this->_read_blif();
+            netlist = this->read_blif();
             break;
         }
         /**
@@ -73,9 +73,9 @@ inline void* GenericReader::__read() {
     return static_cast<void*>(netlist);
 }
 
-inline void* GenericReader::_read_verilog() {
+inline void* GenericReader::read_verilog() {
     this->verilog_reader = new Verilog::Reader();
-    void* to_return = this->verilog_reader->__read();
+    void* to_return = this->verilog_reader->_read();
 
     if (this->verilog_reader)
         delete this->verilog_reader;
@@ -83,9 +83,9 @@ inline void* GenericReader::_read_verilog() {
     return to_return;
 }
 
-inline void* GenericReader::_read_blif() {
+inline void* GenericReader::read_blif() {
     this->blif_reader = new BLIF::Reader();
-    void* to_return = this->blif_reader->__read();
+    void* to_return = this->blif_reader->_read();
 
     if (this->blif_reader)
         delete this->blif_reader;

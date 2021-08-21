@@ -41,7 +41,7 @@
  * (function: resolve_dlatch_node)
  * 
  * @brief split the dlatch node read from yosys blif to
- * latch nodes with input/output width one
+ * latch nodes with single bit input/output
  * 
  * @param node pointing to the dlatch node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -87,7 +87,7 @@ void resolve_dlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
  * (function: resolve_adlatch_node)
  * 
  * @brief split the adlatch node read from yosys blif to
- * latch nodes with input/output width one
+ * latch nodes with single bit input/output
  * 
  * @param node pointing to the adlatch node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -201,7 +201,7 @@ void resolve_adlatch_node(nnode_t* node, uintptr_t traverse_mark_number, netlist
 /**
  * (function: resolve_sr_node)
  * 
- * @brief resolving the sr node using 
+ * @brief resolving the set/clear node 
  * 
  * @param node pointing to a sr node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass

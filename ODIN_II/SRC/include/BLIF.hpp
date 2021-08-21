@@ -159,10 +159,10 @@ class BLIF {
          */
         ~Reader();
 
-        void* __read();
+        void* _read();
 
         /* No need to have writer in Generic Reader */
-        void __write(const netlist_t* /* netlist */) {
+        void _write(const netlist_t* /* netlist */) {
             error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
         }
 
@@ -281,165 +281,247 @@ class BLIF {
          * -------------------------------------------------------------------------------------------
          */
         hard_block_model* read_hard_block_model(char* name_subckt, operation_list type, hard_block_ports* ports);
-        /*
+        /**
          * ---------------------------------------------------------------------------------------------
-         * function: Creates the drivers for the top module
-         * Top module is :
+         * (function: rb_create_top_driver_nets)
+         *
+         * @brief Creates the drivers for the top module
          * Special as all inputs are actually drivers.
          * Also make the 0 and 1 constant nodes at this point.
+         *
+         * @param instance_name_prefix the prefix of the instance name
          * ---------------------------------------------------------------------------------------------
          */
         static void rb_create_top_driver_nets(const char* instance_name_prefix);
         /**
          * ---------------------------------------------------------------------------------------------
-         * (function: look_for_clocks)
+         * (function: rb_look_for_clocks)
+         *
+         * @brief looking for clock nodes in the blif file by 
+         * going through tthe clock driver of ff nodes
          * ---------------------------------------------------------------------------------------------
          */
         static void rb_look_for_clocks();
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: dum_parse)
+         *
+         * @brief continue reading file to the end
          * ---------------------------------------------------------------------------------------------
          */
         static void dum_parse(char* buffer);
         /**
          * ---------------------------------------------------------------------------------------------
-         * function:assign_node_type_from_node_name(char *)
-         * This function tries to assign the node->type by looking at the name
-         * Else return GENERIC
-         * function will decide the node->type of the given node
+         * (function:assign_node_type_from_node_name)
+         *
+         * @brief This function tries to assign the node->type by looking at the name
+         * Else return GENERIC. function will decide the node->type of the given node
+         *
+         * @param output_name the node name
          * ---------------------------------------------------------------------------------------------
          */
         static operation_list assign_node_type_from_node_name(char* output_name);
         /**
          * ---------------------------------------------------------------------------------------------
-         * function: read_bit_map_find_unknown_gate
-         * read the bit map for simulation
+         * (function: read_bit_map_find_unknown_gate)
+         * 
+         * @brief read the bit map for simulation
+         *
+         * @param input_count number of inputs
+         * @param node pointer to the netlist node
          * ---------------------------------------------------------------------------------------------
          */
         static operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node);
         /**
          * ---------------------------------------------------------------------------------------------
-         * function:create_latch_node_and_driver
-         * to create an ff node and driver from that node
-         * format .latch <input> <output> [<type> <control/clock>] <initial val>
+         * (function: create_latch_node_and_driver)
+         * 
+         * @brief to create an ff node and driver from that node format
+         * .latch <input> <output> [<type> <control/clock>] <initial val>
          * ---------------------------------------------------------------------------------------------
          */
         static void create_latch_node_and_driver();
         /**
          * ---------------------------------------------------------------------------------------------
-         * function: search_clock_name
-         * to search the clock if the control in the latch
+         * (function: search_clock_name)
+         * 
+         * @brief to search the clock if the control in the latch
          * is not mentioned
          * ---------------------------------------------------------------------------------------------
          */
         static char* search_clock_name();
         /**
          * ---------------------------------------------------------------------------------------------
-         * Gets the text in the given string which occurs
+         * (funtion: get_hard_block_port_name)
+         *
+         * @brief Gets the text in the given string which occurs
          * before the first instance of "[". The string is
          * presumably of the form "port[pin_number]"
          *
          * The retuned string is strduped and must be freed.
          * The original string is unaffected.
+         *
+         * @param name the cstring of the port name
          * ---------------------------------------------------------------------------------------------
          */
         static char* get_hard_block_port_name(char* name);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Parses a port name of the form port[pin_number]
+         * (function: get_hard_block_pin_number)
+         * 
+         * @brief Parses a port name of the form port[pin_number]
          * and returns the pin number as a long. Returns -1
          * if there is no [pin_number] in the name. Throws an
          * error if pin_number is not parsable as a long.
-         *
          * The original string is unaffected.
+         *
+         * @param original_name
          * ---------------------------------------------------------------------------------------------
          */
         static long get_hard_block_pin_number(char* original_name);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Callback function for qsort which compares pin names
+         * (function: compare_hard_block_pin_names)
+         *
+         * @brief Callback function for qsort which compares pin names
          * of the form port_name[pin_number] primarily
          * on the port_name, and on the pin_number if the port_names
          * are identical.
+         *
+         * @param p1 pin name 1
+         * @param p2 pin name 2
          * ---------------------------------------------------------------------------------------------
          */
         static int compare_hard_block_pin_names(const void* p1, const void* p2);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Organises the given strings representing pin names on a hard block
-         * model into ports, and indexes the ports by name. Returns the organised
-         * ports as a hard_block_ports struct.
+         * (function: get_hard_block_ports)
+         * 
+         * @brief Organises the given strings representing pin names on a hard block
+         * model into ports, and indexes the ports by name. 
+         *
+         * @param pins list of hard block pins
+         * @param count number of hard block pins
+         *
+         * @return the organised ports as a hard_block_ports struct.
          * ---------------------------------------------------------------------------------------------
          */
         static hard_block_ports* get_hard_block_ports(char** pins, int count);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Creates a hashtable index for an array of strings of
+         * (function: index_names)
+         *
+         * @brief Creates a hashtable index for an array of strings of
          * the form names[i]=>i.
+         *
+         * @param names the list of names
+         * @param count the number of names
          * ---------------------------------------------------------------------------------------------
          */
         static Hashtable* index_names(char** names, int count);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Create an associative index of names1[i]=>names2[i]
+         * (function: associate_names)
+         *
+         * @brief Create an associative index of names1[i]=>names2[i]
+         * NOTE: the size of both lists should be the same
+         *
+         * @param names1 the first list of names
+         * @param names2 the second list of names
+         * @param count the number of names
          * ---------------------------------------------------------------------------------------------
          */
         static Hashtable* associate_names(char** names1, char** names2, int count);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Looks up a hard block model by name. Returns null if the
+         * (function: get_hard_block_model)
+         *
+         * @brief Looks up a hard block model by name. Returns null if the
          * model is not found.
+         *
+         * @param name hard block model name
+         * @param ports list of the hard block's ports
+         * @param models list of all hard block models
          * ---------------------------------------------------------------------------------------------
          */
         static hard_block_model* get_hard_block_model(char* name, hard_block_ports* ports, hard_block_models* models);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Adds the given model to the hard block model cache.
+         * (function: add_hard_block_model)
+         *
+         * @brief Adds the given model to the hard block model cache.
+         *
+         * @param m the hard block model
+         * @param ports list of the hard block's ports
+         * @param models list of all hard block models
          * ---------------------------------------------------------------------------------------------
          */
         static void add_hard_block_model(hard_block_model* m, hard_block_ports* ports, hard_block_models* models);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Generates string which represents the geometry of the given hard block ports.
+         * (function: generate_hard_block_ports_signature)
+         *
+         * @brief Generates string which represents the geometry of the given hard block ports.
+         *
+         * @param ports list of the hard block's ports
          * ---------------------------------------------------------------------------------------------
          */
         static char* generate_hard_block_ports_signature(hard_block_ports* ports);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Creates a new hard block model cache.
+         * (function: create_hard_block_models)
+         * 
+         * @brief Creates a new hard block model cache.
          * ---------------------------------------------------------------------------------------------
          */
         static hard_block_models* create_hard_block_models();
         /**
          * ---------------------------------------------------------------------------------------------
-         * Counts the number of lines in the given blif file
+         * (function: count_blif_lines)
+         * 
+         * @brief Counts the number of lines in the given blif file
          * before a .end token is hit.
          * ---------------------------------------------------------------------------------------------
          */
         static int count_blif_lines();
         /**
          * ---------------------------------------------------------------------------------------------
-         * Frees the hard block model cache, freeing
+         * (function: free_hard_block_models)
+         *
+         * @brief Frees the hard block model cache, freeing
          * all encapsulated hard block models.
+         *
+         * @param models list of all hard block models
          * ---------------------------------------------------------------------------------------------
          */
         static void free_hard_block_models(hard_block_models* models);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Frees a hard_block_model.
+         * (function: free_hard_block_model)
+         *
+         * @brief Frees a hard_block_model.
+         * 
+         * @param models list of all hard block models
          * ---------------------------------------------------------------------------------------------
          */
         static void free_hard_block_model(hard_block_model* model);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Frees hard_block_pins
+         * (function: free_hard_block_pins)
+         *
+         * @brief Frees hard_block_pins
+         *
+         * @param p list of hard block pins
          * ---------------------------------------------------------------------------------------------
          */
         static void free_hard_block_pins(hard_block_pins* p);
         /**
          * ---------------------------------------------------------------------------------------------
-         * Frees hard_block_ports
+         * (free_hard_block_ports)
+         *
+         * @brief Frees hard_block_ports
+         *
+         * @param p list of hard block ports
          * ---------------------------------------------------------------------------------------------
          */
         static void free_hard_block_ports(hard_block_ports* p);
@@ -519,13 +601,13 @@ class BLIF {
         ~Writer();
 
         /* No need to have reader in Generic Writer */
-        void* __read() {
+        void* _read() {
             error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
             return NULL;
         }
 
-        void __write(const netlist_t* netlist);
-        void __create_file(const file_type_e file_type);
+        void _write(const netlist_t* netlist);
+        void _create_file(const file_type_e file_type);
 
       protected:
         /**

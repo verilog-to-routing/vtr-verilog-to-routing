@@ -22,7 +22,7 @@
  *
  * @file: definition of BLIF Writer routine to generate a BLIF output 
  * file. Unlike other tools that print each BLIF record in a single 
- * line, Odin-IIBLIF Writer prints BLIF records in a specified size. 
+ * line, Odin-II BLIF Writer prints BLIF records in a specified size. 
  * That means it makes the BLIF file more readable by splitting the 
  * line by the specified threshold. 
  */
@@ -70,17 +70,21 @@ BLIF::Writer::Writer()
 
 BLIF::Writer::~Writer() = default;
 
-inline void BLIF::Writer::__write(const netlist_t* netlist) {
+inline void BLIF::Writer::_write(const netlist_t* netlist) {
     output_blif(this->output_file, netlist);
 }
 
-inline void BLIF::Writer::__create_file(const file_type_e /* file_type */) {
+inline void BLIF::Writer::_create_file(const file_type_e /* file_type */) {
     this->output_file = create_blif(global_args.output_file.value().c_str());
 }
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: warn_undriven)
- * 	to check is a net undriven
+ * 	
+ * @brief to check is a net undriven
+ * 
+ * @param node pointer to the netlist node
+ * @param net pointer to the net 
  *---------------------------------------------------------------------------------------------
  */
 bool BLIF::Writer::warn_undriven(nnode_t* node, nnet_t* net) {
@@ -115,10 +119,17 @@ bool BLIF::Writer::warn_undriven(nnode_t* node, nnet_t* net) {
  * }
  * }
  * } */
+
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: print_net_driver)
- * 	The function that prints the driver of a given net
+ * 
+ * @brief The function that prints the driver of a given net
+ *
+ * @param out the output blif file
+ * @param node pointer to the netlist node
+ * @param net pointer to the net
+ * @param driver_idx index of the driver pin
  *---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long driver_idx) {
@@ -148,7 +159,12 @@ void BLIF::Writer::print_net_driver(FILE* out, nnode_t* node, nnet_t* net, long 
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: print_input_single_driver)
- * 	The function that prints the single input pin driver 
+ * 
+ * @brief The function that prints the single input pin driver 
+ * 
+ * @param out the output blif file
+ * @param node pointer to the netlist node
+ * @param pin_idx index of the driver pin
  *---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::print_input_single_driver(FILE* out, nnode_t* node, long pin_idx) {
@@ -164,7 +180,11 @@ void BLIF::Writer::print_input_single_driver(FILE* out, nnode_t* node, long pin_
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: print_output_pin)
- * 	The function that prints the output pins of a given node
+ * 
+ * @brief The function that prints the output pins of a given node
+ *
+ * @param out the output blif file
+ * @param node pointer to the netlist node
  *---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::print_output_pin(FILE* out, nnode_t* node) {
@@ -181,7 +201,11 @@ void BLIF::Writer::print_output_pin(FILE* out, nnode_t* node) {
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: print_dot_names_header)
- * 	The function that prints .model, .inputs, .outputs, etc.
+ * 
+ * @brief The function that prints .model, .inputs, .outputs, etc.
+ *
+ * @param out the output blif file
+ * @param node pointer to the netlist node
  *---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::print_dot_names_header(FILE* out, nnode_t* node) {
@@ -222,7 +246,10 @@ void BLIF::Writer::print_dot_names_header(FILE* out, nnode_t* node) {
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: create_blif)
- * 	The function that creates the output blif file
+ * 
+ * @brief The function that creates the output blif file
+ *
+ * @param file_name cstring of the output blif file name
  *---------------------------------------------------------------------------------------------
  */
 FILE* BLIF::Writer::create_blif(const char* file_name) {
@@ -246,7 +273,11 @@ FILE* BLIF::Writer::create_blif(const char* file_name) {
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: output_blif)
- * 	The function that prints out the details for a blif formatted file
+ * 
+ * @brief The function that prints out the details for a blif formatted file
+ *
+ * @param out the output blif file
+ * @param netlist pointer to the netlist
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
@@ -329,6 +360,12 @@ void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: depth_first_traversal_to_parital_map()
+ *
+ * @brief traverse the netlist to output the blif file
+ *
+ * @param marker_value unique traversal mark for output blif pass
+ * @param fp the output blif file
+ * @param netlist pointer to the netlist
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp, const netlist_t* netlist) {
@@ -357,6 +394,12 @@ void BLIF::Writer::depth_first_traversal_to_output(short marker_value, FILE* fp,
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
+ *
+ * @brief traverse the netlist to output the blif file
+ *
+ * @param node pointer to the netlist node
+ * @param traverse_mark_number unique traversal mark for output blif pass
+ * @param fp the output blif file
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_mark_number, FILE* fp) {
@@ -397,7 +440,12 @@ void BLIF::Writer::depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: output_node)
- * 	Depending on node type, figures out what to print for this node
+ * 	
+ * @brief Depending on node type, figures out what to print for this node
+ *
+ * @param node pointer to the netlist node
+ * @param traverse_number unique traversal mark for output blif pass
+ * @param fp the output blif file
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
@@ -505,6 +553,11 @@ void BLIF::Writer::output_node(nnode_t* node, short /*traverse_number*/, FILE* f
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: define_logical_function)
+ * 
+ * @brief print out the bit map of a logical function
+ *
+ * @param node pointer to the netlist node
+ * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::define_logical_function(nnode_t* node, FILE* out) {
@@ -596,6 +649,12 @@ void BLIF::Writer::define_logical_function(nnode_t* node, FILE* out) {
 /** 
  * ---------------------------------------------------------------------------------------------
  * (function: define_set_input_logical_function)
+ *
+ * @brief print out the given bit map
+ *
+ * @param node pointer to the netlist node
+ * @param bit_output given bit map
+ * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::define_set_input_logical_function(nnode_t* node, const char* bit_output, FILE* out) {
@@ -613,6 +672,11 @@ void BLIF::Writer::define_set_input_logical_function(nnode_t* node, const char* 
 /** 
  * ---------------------------------------------------------------------------------------------
  * (function: define_clock)
+ * 
+ * @brief print out the clock node record
+ *
+ * @param node pointer to the netlist node
+ * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::define_clock(nnode_t* node, FILE* out) {
@@ -631,6 +695,11 @@ void BLIF::Writer::define_clock(nnode_t* node, FILE* out) {
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: define_ff)
+ * 
+ * @brief print out the FF node record
+ *
+ * @param node pointer to the netlist node
+ * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::define_ff(nnode_t* node, FILE* out) {
@@ -665,6 +734,11 @@ void BLIF::Writer::define_ff(nnode_t* node, FILE* out) {
 /**
  * ---------------------------------------------------------------------------------------------
  * (function: define_decoded_mux)
+ * 
+ * @brief print out the decoded mux node record
+ *
+ * @param node pointer to the netlist node
+ * @param out the output blif file
  * ---------------------------------------------------------------------------------------------
  */
 void BLIF::Writer::define_decoded_mux(nnode_t* node, FILE* out) {

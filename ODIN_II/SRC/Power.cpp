@@ -42,9 +42,9 @@ static void implement_non_constant_exponentiation(nnode_t* node, uintptr_t trave
  *-------------------------------------------------------------------------------------------
  * (function: resolve_power_node )
  * 
- * @brief if base is power of two this function will a shift operation
- * as exponentation. Otherwise it will cascade multipications to 
- * implement the exponeniation. 
+ * @brief if the base is power of two this function will perform a shift
+ * operation as the exponentation. Otherwise it will cascade multipications 
+ * nodes to implement the exponeniation. 
  * 
  * @param node pointing to the pow node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -105,9 +105,8 @@ void resolve_power_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
  *-------------------------------------------------------------------------------------------
  * (function: implement_constant_exponentiation )
  * 
- * @brief if base is power of two this function will a shift operation
- * as exponentation. Otherwise it will cascade multipications to 
- * implement the exponeniation. 
+ * @brief instantiating multipication nodes as much 
+ * as needed for exponention operation 
  * 
  * @param node pointing to the pow node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -252,9 +251,9 @@ static void implement_constant_exponentiation(nnode_t* node, uintptr_t traverse_
  *-------------------------------------------------------------------------------------------
  * (function: implement_non_constant_exponentiation )
  * 
- * @brief if base is power of two this function will a shift operation
- * as exponentation. Otherwise it will cascade multipications to 
- * implement the exponeniation. 
+ * @brief implements a chain of multipliers to calculate different 
+ * possible exponentiation values and output the one which is needed
+ * using multiplexer with the exponent port as the selector
  * 
  * @param node pointing to the pow node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass

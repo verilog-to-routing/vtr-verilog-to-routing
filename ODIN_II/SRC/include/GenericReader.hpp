@@ -47,9 +47,9 @@ class GenericReader : public GenericIO {
      */
     ~GenericReader();
 
-    void* __read();
-    void* _read_verilog();
-    void* _read_blif();
+    void* _read();
+    void* read_verilog();
+    void* read_blif();
     /**
      * [TODO]
      * void* read_systemverilog();
@@ -57,7 +57,7 @@ class GenericReader : public GenericIO {
      */
 
     /* No need to have writer in Generic Reader */
-    void __write(const netlist_t* /* netlist */) {
+    void _write(const netlist_t* /* netlist */) {
         error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
     }
 
@@ -71,4 +71,4 @@ class GenericReader : public GenericIO {
      */
 };
 
-#endif
+#endif //__GENERIC_READER_H__

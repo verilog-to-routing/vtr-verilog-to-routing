@@ -27,8 +27,7 @@
  * Division operation using shift and subtraction nodes. To utilize
  * this routine of this file, a high-level RTL DIV node is required
  * with port order according to what is mentioned in resolve_div_node.
- * Currently, this file is highly used by Yosys generated division
- * sub-circuit.
+ * Currently, this file is used by Yosys generated division sub-circuit.
  */
 
 #include "Division.hpp"
@@ -48,7 +47,7 @@ static void connect_div_output_pins(nnode_t* node, signal_list_t** output_signal
  * 
  * @brief this function resolves a high-level RTL divison node.
  * the node should follow the same port ordering as mentioned below.
- * This functin first modifies the divison node signals to check the 
+ * This function first modifies the divison node signals to check the 
  * required restriction, then it implements division circuitry and 
  * connects outputs accordingly.
  *
@@ -158,9 +157,9 @@ static signal_list_t** modify_div_signal_sizes(nnode_t* node, netlist_t* netlist
  * (function: implement_division)
  * 
  * @brief creating division node (A / B)
- * In high-level, the division implementsusing a series of shift and subtractors.
+ * In high-level, the division is implemented using series of shift and subtractors.
  * After shifting the quotient, it is deducted from the the dividend and the remainder.
- * properly trasferred to the next level. With n bit divisor the divison is performed 
+ * properly transferred to the next level. With n bit divisor the divison is performed 
  * in n-steps.
  * 
  * @note this should perfom before partial mapping since

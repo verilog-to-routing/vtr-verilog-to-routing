@@ -46,10 +46,10 @@ GenericWriter::~GenericWriter() {
         delete this->blif_writer;
 }
 
-inline void GenericWriter::__write(const netlist_t* netlist) {
+inline void GenericWriter::_write(const netlist_t* netlist) {
     switch (configuration.output_file_type) {
         case (file_type_e::_BLIF): {
-            this->_write_blif(netlist);
+            this->write_blif(netlist);
             break;
         }
         /**
@@ -74,17 +74,17 @@ inline void GenericWriter::__write(const netlist_t* netlist) {
     }
 }
 
-inline void GenericWriter::_write_blif(const netlist_t* netlist) {
+inline void GenericWriter::write_blif(const netlist_t* netlist) {
     oassert(this->blif_writer);
-    this->blif_writer->__write(netlist);
+    this->blif_writer->_write(netlist);
 }
 
-inline void GenericWriter::__create_file(const file_type_e file_type) {
+inline void GenericWriter::_create_file(const file_type_e file_type) {
     switch (file_type) {
         case (file_type_e::_BLIF): {
             if (!this->blif_writer) {
                 this->blif_writer = new BLIF::Writer();
-                this->blif_writer->__create_file(file_type);
+                this->blif_writer->_create_file(file_type);
             }
             break;
         }
@@ -92,17 +92,17 @@ inline void GenericWriter::__create_file(const file_type_e file_type) {
          * [TODO]
          *  case (file_type_e::_VERILOG): {
          * this->verilog_writer = new VERILOG::Writer();
-         * this->verilog_writer->__create_file();
+         * this->verilog_writer->_create_file();
          * break;
          * }
          *  case (file_type_e::_EBLIF): {
          * this->eblif_writer = new EBLIF::Writer();
-         * this->eblif_writer->__create_file();
+         * this->eblif_writer->_create_file();
          * break;
          * }
          *  case (file_type_e::_SYSTEM_VERILOG): {
          * this->sverilog_writer = new SVERILOG::Writer();
-         * this->sverilog_writer->__create_file();
+         * this->sverilog_writer->_create_file();
          * break;
          * }
          */

@@ -23,7 +23,7 @@ extern STRING_CACHE* module_names_to_idx;
 extern STRING_CACHE* output_nets_sc;
 extern STRING_CACHE* input_nets_sc;
 
-extern netlist_t* global_netlist;
+extern netlist_t* syn_netlist;
 
 extern nnode_t** top_input_nodes;
 extern long num_top_input_nodes;
@@ -46,17 +46,14 @@ extern short physical_lut_size;
 /* ACTIVATION ESTIMATION GLOBALS */
 extern netlist_t* blif_netlist;
 
-/* Global variable for read_blif function call */
-extern netlist_t* read_blif_netlist;
-
 /* logic optimization mixer, once ODIN is classy, could remove that
  * and pass as member variable
  */
 extern HardSoftLogicMixer* mixer;
 
 /**
- * a global var to specify the need for cleanup after receiving
- * coarsen BLIF as the input.
+ * a global var to specify the need for cleanup after
+ * receiving a coarsen BLIF file as the input.
  */
 extern bool coarsen_cleanup;
 

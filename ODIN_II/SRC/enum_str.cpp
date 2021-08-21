@@ -98,8 +98,6 @@ const char* operation_list_STR[][2] = {
                                        // [START] operations to cover yosys subckt
     {"MULTI_BIT_MUX_2", "nbMUX"},      // like MUX_2 but with n-bit input/output
     {"MULTIPORT_nBIT_SMUX", "npbMUX"}, // n-bit input/output in multi port mux
-    {"HARD_ADD", "hADD"},              // VTR Adder hard block
-    {"HARD_MULTIPLY", "hMUL"},         // VTR Multiply hard block
     {"PMUX", "pMUX"},                  // Multiplexer with many inputs using one-hot select signal
     {"SDFF", "sDFF"},                  // data, S to reset value and output port
     {"DFFE", "DFFe"},                  // data, enable to output port
@@ -222,7 +220,7 @@ strmap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILANG},
                                       {"eblif", file_type_e::_EBLIF},
                                       {"undef", file_type_e::_UNDEFINED}});
 
-/* available synthesizers for Odin-II techmap */
+/* available elaborators for Odin-II techmap */
 strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
                                         {"yosys", elaborator_e::_YOSYS}});
 
@@ -454,8 +452,8 @@ strmap<operation_list> yosys_subckt_strmap({
     {"$reduce_and", BITWISE_AND},            // (A, Y)
     {"$reduce_bool", BITWISE_OR},            // (A, Y)
     {"$reduce_or", BITWISE_OR},              // (A, Y)
-    {"$reduce_xnor", BITWISE_XOR},           // (A, Y)
-    {"$reduce_xor", BITWISE_XNOR},           // (A, Y)
+    {"$reduce_xnor", BITWISE_XNOR},          // (A, Y)
+    {"$reduce_xor", BITWISE_XOR},            // (A, Y)
     {"$sdff", SDFF},                         // (CLK, SRST, D, Q)
     {"$sdffce", SDFFCE},                     // (CLK, SRST, EN, D, Q)
     {"$sdffe", SDFFE},                       // (CLK, SRST, EN, D, Q)
@@ -482,9 +480,9 @@ strmap<operation_list> yosys_subckt_strmap({
     {"LUT_K", operation_list_END},             // (in, out)
     {"DFF", FF_NODE},                          // (clock, D, Q)
     {"fpga_interconnect", operation_list_END}, // (datain, dataout)
-    {"mux", MULTI_BIT_MUX_2},                  // (select, x, y, z)
-    {"adder", HARD_ADD},                       // (a, b, out)
-    {"multiply", HARD_MULTIPLY},               // (a, b, cin, cout, sumout)
+    {"mux", SMUX_2},                           // (select, x, y, z)
+    {"adder", ADD},                            // (a, b, out)
+    {"multiply", MULTIPLY},                    // (a, b, cin, cout, sumout)
     {"single_port_ram", SPRAM},                // (clock, addr, data, we, out)
     {"dual_port_ram", DPRAM}                   // (clock, addr1, addr2, data1, data2, we1, we2, out1, out2)
 });

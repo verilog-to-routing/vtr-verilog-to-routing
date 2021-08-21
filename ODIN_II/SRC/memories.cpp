@@ -1356,7 +1356,7 @@ bool is_blif_dp_ram(nnode_t* node) {
 }
 
 bool is_ast_sp_ram(ast_node_t* node) {
-    bool is_ram = true;
+    bool is_ram;
     ast_node_t* instance = node->children[0];
     is_ram = (!strcmp(node->identifier_node->types.identifier, SINGLE_PORT_RAM_string))
              && (instance->children[0]->num_children == 5);
@@ -1558,9 +1558,9 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
         /* Check that the input pin is driven */
         oassert(
             address_pin->net->num_driver_pins
-            || address_pin->net == global_netlist->zero_net
-            || address_pin->net == global_netlist->one_net
-            || address_pin->net == global_netlist->pad_net);
+            || address_pin->net == syn_netlist->zero_net
+            || address_pin->net == syn_netlist->one_net
+            || address_pin->net == syn_netlist->pad_net);
 
         // An AND gate to enable and disable writing.
         nnode_t* and_g = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1586,9 +1586,9 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
             /* Check that the input pin is driven */
             oassert(
                 address_pin->net->num_driver_pins
-                || address_pin->net == global_netlist->zero_net
-                || address_pin->net == global_netlist->one_net
-                || address_pin->net == global_netlist->pad_net);
+                || address_pin->net == syn_netlist->zero_net
+                || address_pin->net == syn_netlist->one_net
+                || address_pin->net == syn_netlist->pad_net);
 
             // A multiplexer switches between accepting incoming data and keeping existing data.
             nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1671,14 +1671,14 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 
         oassert(
             addr1_pin->net->num_driver_pins
-            || addr1_pin->net == global_netlist->zero_net
-            || addr1_pin->net == global_netlist->one_net
-            || addr1_pin->net == global_netlist->pad_net);
+            || addr1_pin->net == syn_netlist->zero_net
+            || addr1_pin->net == syn_netlist->one_net
+            || addr1_pin->net == syn_netlist->pad_net);
         oassert(
             addr2_pin->net->num_driver_pins
-            || addr2_pin->net == global_netlist->zero_net
-            || addr2_pin->net == global_netlist->one_net
-            || addr2_pin->net == global_netlist->pad_net);
+            || addr2_pin->net == syn_netlist->zero_net
+            || addr2_pin->net == syn_netlist->one_net
+            || addr2_pin->net == syn_netlist->pad_net);
 
         // Write enable and gate for address 1.
         nnode_t* and1 = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1724,14 +1724,14 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 
             oassert(
                 addr1_pin->net->num_driver_pins
-                || addr1_pin->net == global_netlist->zero_net
-                || addr1_pin->net == global_netlist->one_net
-                || addr1_pin->net == global_netlist->pad_net);
+                || addr1_pin->net == syn_netlist->zero_net
+                || addr1_pin->net == syn_netlist->one_net
+                || addr1_pin->net == syn_netlist->pad_net);
             oassert(
                 addr2_pin->net->num_driver_pins
-                || addr2_pin->net == global_netlist->zero_net
-                || addr2_pin->net == global_netlist->one_net
-                || addr2_pin->net == global_netlist->pad_net);
+                || addr2_pin->net == syn_netlist->zero_net
+                || addr2_pin->net == syn_netlist->one_net
+                || addr2_pin->net == syn_netlist->pad_net);
 
             // The data mux selects between the two data lines for this address.
             nnode_t* data_mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1825,11 +1825,11 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
     signal_list_t* not_gates = init_signal_list();
     for (long i = 0; i < num_inputs; i++) {
         if (!input_list->pins[i]->net->num_driver_pins
-            && input_list->pins[i]->net != global_netlist->zero_net
-            && input_list->pins[i]->net != global_netlist->one_net
-            && input_list->pins[i]->net != global_netlist->pad_net) {
+            && input_list->pins[i]->net != syn_netlist->zero_net
+            && input_list->pins[i]->net != syn_netlist->one_net
+            && input_list->pins[i]->net != syn_netlist->pad_net) {
             warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
-            add_fanout_pin_to_net(global_netlist->zero_net, input_list->pins[i]);
+            add_fanout_pin_to_net(syn_netlist->zero_net, input_list->pins[i]);
         }
 
         nnode_t* not_g = make_not_gate(node, mark);
@@ -1893,7 +1893,8 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
 /**
  * (function: create_single_port_rom)
  * 
- * @brief create a single
+ * @brief create a single port ram with the given spram signals
+ *
  * @param signals spram signals
  * @param node corresponding netlist node
  * 
@@ -1959,7 +1960,7 @@ nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node) {
     /* register the SPRAM in arch model to have the related model in BLIF for simulation */
     register_memory_model(spram);
 
-    // CLEAN YP
+    // CLEAN UP
     free_signal_list(we);
     free_signal_list(clk);
 
@@ -2063,7 +2064,7 @@ nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
     /* register the DPRAM in arch model to have the related model in BLIF for simulation */
     register_memory_model(dpram);
 
-    // CLEAN YP
+    // CLEAN UP
     free_signal_list(we1);
     free_signal_list(we2);
     free_signal_list(clk);
@@ -2072,11 +2073,10 @@ nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
 }
 
 /**
- * (function: free_block_memory_index_and_finalize_memories)
+ * (function: register_memory_model)
  * 
- * @brief Frees memory used for indexing block memories. Finalises each
- * memory, making sure it has the right ports, and collapsing
- * the memory if possible.
+ * @brief register the corresponding memory hard if any is 
+ * available in the given architecture
  * 
  * @param mem pointing to the memory node
  */

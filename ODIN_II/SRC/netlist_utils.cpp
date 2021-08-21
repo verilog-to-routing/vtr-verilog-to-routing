@@ -546,14 +546,14 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
 
     /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
     if (strstr(full_name, ONE_VCC_CNS)) {
-        join_nets(global_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        input_nets_sc->data[sc_spot_input_old] = (void*)global_netlist->one_net;
+        join_nets(syn_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)syn_netlist->one_net;
     } else if (strstr(full_name, ZERO_GND_ZERO)) {
-        join_nets(global_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        input_nets_sc->data[sc_spot_input_old] = (void*)global_netlist->zero_net;
+        join_nets(syn_netlist->zero_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)syn_netlist->zero_net;
     } else if (strstr(full_name, ZERO_PAD_ZERO)) {
-        join_nets(global_netlist->pad_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
-        input_nets_sc->data[sc_spot_input_old] = (void*)global_netlist->pad_net;
+        join_nets(syn_netlist->pad_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
+        input_nets_sc->data[sc_spot_input_old] = (void*)syn_netlist->pad_net;
     }
     /* check if the instantiation pin exists. */
     else if ((sc_spot_output = sc_lookup_string(output_nets_sc, full_name)) == -1) {
@@ -575,7 +575,7 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
             }
         } else {
             /* already exists so we'll join the nets */
-            combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], global_netlist);
+            combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], syn_netlist);
             input_nets_sc->data[sc_spot_input_old] = NULL;
         }
     } else {
@@ -590,7 +590,7 @@ void integrate_nets(char* alias_name, char* full_name, nnet_t* driver_net) {
             input_nets_sc->data[sc_spot_input_old] = (void*)out_net;
         } else if ((out_net != in_net) && (out_net->combined == false)) {
             // merge the out_net into the in_net and alter related string cache data for all nets driven by the out_net
-            combine_nets_with_spot_copy(out_net, in_net, sc_spot_output, global_netlist);
+            combine_nets_with_spot_copy(out_net, in_net, sc_spot_output, syn_netlist);
         }
     }
 }
@@ -667,9 +667,12 @@ void connect_nodes(nnode_t* out_node, int out_idx, nnode_t* in_node, int in_idx)
     }
 }
 
-/*---------------------------------------------------------------------------------------------
+/**
+ * -------------------------------------------------------------------------------------------
  * (function: init_attribute_structure)
- * 	Initializes the netlist node attributes including edge sensitivies and reset value
+ * 
+ * @brief Initializes the netlist node attributes 
+ * including edge sensitivies and reset value
  *-------------------------------------------------------------------------------------------*/
 attr_t* init_attribute() {
     attr_t* attribute;
@@ -706,9 +709,15 @@ attr_t* init_attribute() {
     return (attribute);
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: init_attribute_structure)
- * 	Initializes the netlist node attributes including edge sensitivies and reset value
+/**
+ * -------------------------------------------------------------------------------------------
+ * (function: copy_attribute)
+ * 
+ * @brief copy an attribute to another one. If the second
+ * attribute is null, it will creates one
+ * 
+ * @param to will copy to this attr
+ * @param copy the attr that will be copied
  *-------------------------------------------------------------------------------------------*/
 void copy_attribute(attr_t* to, attr_t* copy) {
     if (to == NULL)
@@ -743,9 +752,15 @@ void copy_attribute(attr_t* to, attr_t* copy) {
     to->ABITS = copy->ABITS;
 }
 
-/*---------------------------------------------------------------------------------------------
+/**
+ * -------------------------------------------------------------------------------------------
  * (function: copy_signedness)
- * 	Initializes the netlist node attributes including edge sensitivies and reset value
+ * 
+ * @brief copy the signedness variables of an attribute to another
+ * one. If the second attribute is null, it will creates one
+ * 
+ * @param to will copy to this attr
+ * @param copy the attr that will be copied
  *-------------------------------------------------------------------------------------------*/
 void copy_signedness(attr_t* to, attr_t* copy) {
     if (to == NULL)
@@ -803,7 +818,7 @@ bool is_constant_signal(signal_list_t* signal, netlist_t* netlist) {
  *---------------------------------------------------------------------------------------------
  * (function: constant_signal_value)
  *
- * @brief calculating the value of a constant siignal list
+ * @brief calculating the value of a constant signal list
  * 
  * @param signal list of pins
  * @param netlist pointer to the current netlist file
@@ -1133,8 +1148,13 @@ void free_signal_list(signal_list_t* list) {
     list = NULL;
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: clean_attribute_structure)
+/**
+ * -------------------------------------------------------------------------------------------
+ * (function: free_attribute)
+ *
+ * @brief clean the given attribute structure to avoid mem leaks
+ *
+ * @param attribute the given attribute structure
  *-------------------------------------------------------------------------------------------*/
 void free_attribute(attr_t* attribute) {
     if (attribute) {
@@ -1468,7 +1488,7 @@ int get_input_port_index_from_mapping(nnode_t* node, const char* name) {
 /**
  * (function: legalize_polarity)
  * 
- * @brief legalize latch polarity to RE
+ * @brief legalize pin polarity to RE
  * 
  * @param pin first pin
  * @param pin_polarity first pin polarity

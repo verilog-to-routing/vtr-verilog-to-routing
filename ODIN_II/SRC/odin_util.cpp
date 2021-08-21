@@ -631,10 +631,10 @@ char* get_hard_block_node_name(char* name) {
  * (function: get_stripped_name)
  * 
  * @brief find the sub-circuit name in an altered sub-circuit name
- * In yosys cases, it appears when there is instantiated parameterized 
- * module, so Yosys changes the ne name to avoid name collision.
- * For Odin-II, it looks for the pattern specified as names of supported
- * hard blocks, such as mult_XXX
+ * In yosys cases, it appears when there is an instantiated parameterized 
+ * module, so Yosys changes the name to avoid name collision. For Odin-II,
+ * it looks for the pattern specified as names of supported hard blocks, 
+ * such as mult_XXX
  * 
  * @param subcircuit_name complete name
  * 
@@ -1128,7 +1128,7 @@ char* str_collate(char* str1, char* str2) {
 /**
  * (function: print_input_files_info)
  * 
- * @brief This shows the name of niput file, whether Verilog or BLIF
+ * @brief This shows the name of input file, whether Verilog or BLIF
  */
 void print_input_files_info() {
     if (configuration.input_file_type == file_type_e::_VERILOG) {

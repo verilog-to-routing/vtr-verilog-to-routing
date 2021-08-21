@@ -82,8 +82,8 @@ void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
 /**
  * (function: resolve_sdff_node)
  * 
- * @brief resolving the sdff node by connecting 
- * the multiplexing the D input with reset value
+ * @brief resolving the sdff node by multiplexing
+ * the D input with reset value
  * 
  * @param node pointing to a dffe node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -156,8 +156,8 @@ void resolve_sdff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
 /**
  * (function: resolve_dffe_node)
  * 
- * @brief resolving the dffe node by connecting 
- * multiplexed D input with Q as the output 
+ * @brief resolving the dffe node by multiplexing 
+ * the D input with Q as the output 
  * 
  * @param node pointing to a dffe node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -230,7 +230,7 @@ void resolve_dffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
 /**
  * (function: resolve_sdffe_node)
  * 
- * @brief resolving the sdffe node by multiplexing the D input with pad
+ * @brief resolving the sdffe node by multiplexing the D input with Q
  * using enable as selector and then multiplexing the result with reset value 
  * 
  * @param node pointing to a sdffe node 
@@ -333,7 +333,7 @@ void resolve_sdffe_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
  * (function: resolve_sdffce_node)
  * 
  * @brief resolving the sdffce node by multiplexing the D input with
- * reset value and multiplexing the result with pad using enable as selector
+ * reset value and multiplexing the result with Q using enable as selector
  * 
  * @param node pointing to a sdffe node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -437,8 +437,7 @@ void resolve_sdffce_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
  * (function: resolve_dffsr_node)
  * 
  * @brief resolving the dffsr node by connecting 
- * the ouput pins[1..n] to GND/VCC/D based on 
- * the clr/set edge 
+ * the ouput pins to GND/VCC/D based on the clr/set edge 
  * 
  * @param node pointing to a dffsr node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -529,7 +528,7 @@ void resolve_dffsr_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t
 /**
  * (function: resolve_dffsre_node)
  * 
- * @brief resolving the dffsr node by connecting 
+ * @brief resolving the dffsre node by connecting 
  * the ouput pins[1..n] to GND/VCC/D based on 
  * the clr/set edge and adding enable mux
  * 

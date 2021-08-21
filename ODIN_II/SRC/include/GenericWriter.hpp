@@ -22,7 +22,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  *
- * @file: Odin-II Generic Reader class declaration
+ * @file: Odin-II Generic Writer class declaration
  */
 
 #ifndef __GENERIC_WRITER_H__
@@ -31,7 +31,7 @@
 #include "GenericIO.hpp"
 
 /**
- * @brief A class to provide the general object of an input file reader
+ * @brief A class to provide the general object of an input file writer
  */
 class GenericWriter : public GenericIO {
   public:
@@ -47,13 +47,13 @@ class GenericWriter : public GenericIO {
     ~GenericWriter();
 
     /* No need to have reader in Generic Writer */
-    void* __read() {
+    void* _read() {
         error_message(UTIL, unknown_location, "%s is not available in Generic Writer\n", __PRETTY_FUNCTION__);
         return (NULL);
     }
 
-    void __write(const netlist_t* netlist);
-    void _write_blif(const netlist_t* netlist);
+    void _write(const netlist_t* netlist);
+    void write_blif(const netlist_t* netlist);
     /**
      * [TODO]
      * void  write_verilog(const netlist_t* netlist, FILE* output_file);
@@ -62,7 +62,7 @@ class GenericWriter : public GenericIO {
      */
 
     /* to create the output file */
-    void __create_file(const file_type_e file_type);
+    void _create_file(const file_type_e file_type);
 
   protected:
     FILE* output_file;
@@ -77,4 +77,4 @@ class GenericWriter : public GenericIO {
      */
 };
 
-#endif
+#endif //__GENERIC_WRITER_H__

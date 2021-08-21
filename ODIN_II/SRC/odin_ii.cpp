@@ -78,10 +78,10 @@ std::vector<t_logical_block_type> logical_block_types;
 short physical_lut_size = -1;
 int block_tag = -1;
 ids default_net_type = WIRE;
-GenericReader* generic_reader;
-GenericWriter* generic_writer;
 HardSoftLogicMixer* mixer;
 
+static GenericReader generic_reader;
+static GenericWriter generic_writer;
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
 static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
 static void set_physical_lut_size();
@@ -101,7 +101,7 @@ static void elaborate() {
     switch (configuration.elaborator_type) {
         case (elaborator_e::_ODIN): {
             /* parse Verilog/BLIF files */
-            global_netlist = static_cast<netlist_t*>(generic_reader->__read());
+            syn_netlist = static_cast<netlist_t*>(generic_reader._read());
             break;
         }
         case (elaborator_e::_YOSYS): {
@@ -109,7 +109,7 @@ static void elaborate() {
             /* perform elaboration */
             yosys.perform_elaboration();
             /* parse yosys generated BLIF file */
-            global_netlist = static_cast<netlist_t*>(generic_reader->__read());
+            syn_netlist = static_cast<netlist_t*>(generic_reader._read());
             break;
         }
         default: {
@@ -118,7 +118,7 @@ static void elaborate() {
         }
     }
 
-    if (!global_netlist) {
+    if (!syn_netlist) {
         printf("Empty BLIF generated, Empty input or no module declared\n");
     }
 
@@ -131,9 +131,9 @@ static void elaborate() {
 static void optimization() {
     double optimization_time = wall_time();
 
-    if (global_netlist) {
+    if (syn_netlist) {
         // Can't levelize yet since the large muxes can look like combinational loops when they're not
-        check_netlist(global_netlist);
+        check_netlist(syn_netlist);
 
         //START ################# NETLIST OPTIMIZATION ############################
 
@@ -141,39 +141,39 @@ static void optimization() {
         printf("Performing Optimization on the Netlist\n");
         if (hard_multipliers) {
             /* Perform a splitting of the multipliers for hard block mults */
-            reduce_operations(global_netlist, MULTIPLY);
-            iterate_multipliers(global_netlist);
+            reduce_operations(syn_netlist, MULTIPLY);
+            iterate_multipliers(syn_netlist);
             clean_multipliers();
         }
 
         if (block_memories_info.read_only_memory_list || block_memories_info.block_memory_list) {
             /* Perform a hard block registration and splitting in width */
-            iterate_block_memories(global_netlist);
+            iterate_block_memories(syn_netlist);
             free_block_memories();
         }
 
         if (single_port_rams || dual_port_rams) {
             /* Perform a splitting of any hard block memories */
-            iterate_memories(global_netlist);
+            iterate_memories(syn_netlist);
             free_memory_lists();
         }
 
         if (hard_adders) {
             /* Perform a splitting of the adders for hard block add */
-            reduce_operations(global_netlist, ADD);
-            iterate_adders(global_netlist);
+            reduce_operations(syn_netlist, ADD);
+            iterate_adders(syn_netlist);
             clean_adders();
 
             /* Perform a splitting of the adders for hard block sub */
-            reduce_operations(global_netlist, MINUS);
-            iterate_adders_for_sub(global_netlist);
+            reduce_operations(syn_netlist, MINUS);
+            iterate_adders_for_sub(syn_netlist);
             clean_adders_for_sub();
         }
 
         //END ################# NETLIST OPTIMIZATION ############################
 
         if (configuration.output_netlist_graphs)
-            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, global_netlist); /* Path is where we are */
+            graphVizOutputNetlist(configuration.debug_output_path, "optimized", 2, syn_netlist); /* Path is where we are */
     }
 
     optimization_time = wall_time() - optimization_time;
@@ -185,14 +185,14 @@ static void optimization() {
 static void techmap() {
     double techmap_time = wall_time();
 
-    if (global_netlist) {
+    if (syn_netlist) {
         /* point where we convert netlist to FPGA or other hardware target compatible format */
         printf("Performing Partial Technology Mapping to the target device\n");
-        partial_map_top(global_netlist);
-        mixer->perform_optimizations(global_netlist);
+        partial_map_top(syn_netlist);
+        mixer->perform_optimizations(syn_netlist);
 
         /* Find any unused logic in the netlist and remove it */
-        remove_unused_logic(global_netlist);
+        remove_unused_logic(syn_netlist);
     }
 
     techmap_time = wall_time() - techmap_time;
@@ -203,16 +203,16 @@ static void techmap() {
 
 static void output() {
     /* creating the output file */
-    generic_writer->__create_file(configuration.output_file_type);
+    generic_writer._create_file(configuration.output_file_type);
 
-    if (global_netlist) {
+    if (syn_netlist) {
         /**
          * point for outputs.  This includes soft and hard mapping all structures to the
          * target format.  Some of these could be considred optimizations
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        generic_writer->__write(global_netlist);
+        generic_writer._write(syn_netlist);
 
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
@@ -222,11 +222,11 @@ static void output() {
         report_add_distribution();
         report_sub_distribution();
 
-        compute_statistics(global_netlist, true);
+        compute_statistics(syn_netlist, true);
 
         deregister_hard_blocks();
         //cleanup netlist
-        free_netlist(global_netlist);
+        free_netlist(syn_netlist);
     }
 }
 
@@ -300,8 +300,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         set_default_config();
 
         /* Intantiating the generic reader and writer */
-        generic_reader = new GenericReader();
-        generic_writer = new GenericWriter();
+        generic_reader = GenericReader();
+        generic_writer = GenericWriter();
 
         /* get the command line options */
         get_options(argc, argv);
@@ -365,7 +365,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     /*************************************************************
      * begin simulation section
      */
-    netlist_t* odin_netlist = NULL;
+    netlist_t* sim_netlist = NULL;
     if ((global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED && !coarsen_cleanup)
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
@@ -399,7 +399,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
              * The blif file for simulation should follow odin_ii blif style 
              * So, here we call odin_ii's read_blif
              */
-            odin_netlist = static_cast<netlist_t*>(generic_reader->__read());
+            sim_netlist = static_cast<netlist_t*>(generic_reader._read());
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load BLIF file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
             exit(ERROR_PARSE_BLIF);
@@ -407,15 +407,15 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     }
 
     /* Simulate netlist */
-    if (odin_netlist && !global_args.interactive_simulation
+    if (sim_netlist && !global_args.interactive_simulation
         && (global_args.sim_num_test_vectors || (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED))) {
         printf("Netlist Simulation Begin\n");
         create_directory(global_args.sim_directory);
 
-        simulate_netlist(odin_netlist);
+        simulate_netlist(sim_netlist);
     }
 
-    compute_statistics(odin_netlist, true);
+    compute_statistics(sim_netlist, true);
 
     printf("--------------------------------------------------------------------\n");
     total_time = wall_time() - total_time;
@@ -425,7 +425,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     printf("Odin ran with exit status: %d\n", SUCCESS);
     fflush(stdout);
     delete mixer;
-    return odin_netlist;
+    return sim_netlist;
 }
 
 int terminate_odin_ii(netlist_t* odin_netlist) {
@@ -863,7 +863,4 @@ static void cleanup_odin() {
         vtr::free(zero_string);
     if (pad_string)
         vtr::free(pad_string);
-
-    delete generic_writer;
-    delete generic_reader;
 }

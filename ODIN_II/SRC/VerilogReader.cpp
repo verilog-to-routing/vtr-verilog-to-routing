@@ -24,7 +24,7 @@
  *
  * @file: includes the definition of VERILOG Reader class to read a 
  * given Verilog or Verilog Header file. Odin-II utilizes Bison and
- * Flex to parse input Verilog file. After parsing a Verilog file, 
+ * Flex to parse input Verilog files. After parsing a Verilog file, 
  * Odin-II uses an abstract syntax tree to perform elaboration.
  * It should mention that Odin-II currently does not have extensive
  * Verilog 2005 standard support.
@@ -41,7 +41,7 @@ Verilog::Reader::Reader()
 
 Verilog::Reader::~Reader() = default;
 
-void* Verilog::Reader::__read() {
+void* Verilog::Reader::_read() {
     /* parse to abstract syntax tree */
     printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
     verilog_ast = init_parser();
@@ -63,5 +63,5 @@ void* Verilog::Reader::__read() {
     printf("Converting AST into a Netlist. Note this netlist can be viewed using GraphViz (see documentation)\n");
     create_netlist(verilog_ast);
 
-    return static_cast<void*>(global_netlist);
+    return static_cast<void*>(syn_netlist);
 }

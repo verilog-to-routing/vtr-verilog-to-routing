@@ -35,8 +35,8 @@
 /**
  * (function: prune_logical_node_outputs)
  * 
- * @brief resolving the logical nodes by 
- * connecting the ouput pins[1..n] to GND
+ * @brief prune output pins[1..n] by driving them 
+ * using GND and keep only the first output pin
  * 
  * @param node pointing to a logical node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -120,8 +120,7 @@ void prune_logical_node_outputs(nnode_t* node, uintptr_t traverse_mark_number, n
 /**
  * (function: split_in_single_bit_logic)
  * 
- * @brief resolving the logical nodes by splitting 
- * them into single bit logical nodes
+ * @brief splitting the logical node into single bit logical nodes
  * 
  * @param node pointing to a logical node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass

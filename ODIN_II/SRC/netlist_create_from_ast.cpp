@@ -70,7 +70,7 @@ char* one_string;
 char* zero_string;
 char* pad_string;
 
-netlist_t* global_netlist;
+netlist_t* syn_netlist;
 
 circuit_type_e type_of_circuit;
 edge_type_e circuit_edge;
@@ -170,13 +170,13 @@ void create_netlist(ast_t* ast) {
         output_nets_sc = sc_new_string_cache();
         input_nets_sc = sc_new_string_cache();
         /* initialize the storage of the top level drivers.  Assigned in create_top_driver_nets */
-        global_netlist = allocate_netlist();
+        syn_netlist = allocate_netlist();
 
         sc_hierarchy* top_sc_list = top_module->types.hierarchy;
         oassert(top_sc_list);
         top_sc_list->instance_name_prefix = vtr::strdup(top_module->identifier_node->types.identifier);
         top_sc_list->scope_id = vtr::strdup(top_module->identifier_node->types.identifier);
-        global_netlist->identifier = vtr::strdup(top_module->identifier_node->types.identifier);
+        syn_netlist->identifier = vtr::strdup(top_module->identifier_node->types.identifier);
         /* elaboration */
         resolve_top_module_parameters(top_module, top_sc_list);
         simplify_ast_module(&top_module, top_sc_list);
@@ -192,7 +192,7 @@ void create_netlist(ast_t* ast) {
         free_sc_hierarchy(top_sc_list);
 
         /* now look for high-level signals */
-        look_for_clocks(global_netlist);
+        look_for_clocks(syn_netlist);
     }
 }
 
@@ -797,71 +797,71 @@ void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_h
     }
 
     /* create the constant nets */
-    global_netlist->zero_net = allocate_nnet();
-    global_netlist->gnd_node = allocate_nnode(module->loc);
-    global_netlist->gnd_node->type = GND_NODE;
-    allocate_more_output_pins(global_netlist->gnd_node, 1);
-    add_output_port_information(global_netlist->gnd_node, 1);
+    syn_netlist->zero_net = allocate_nnet();
+    syn_netlist->gnd_node = allocate_nnode(module->loc);
+    syn_netlist->gnd_node->type = GND_NODE;
+    allocate_more_output_pins(syn_netlist->gnd_node, 1);
+    add_output_port_information(syn_netlist->gnd_node, 1);
     new_pin = allocate_npin();
-    add_output_pin_to_node(global_netlist->gnd_node, new_pin, 0);
-    add_driver_pin_to_net(global_netlist->zero_net, new_pin);
+    add_output_pin_to_node(syn_netlist->gnd_node, new_pin, 0);
+    add_driver_pin_to_net(syn_netlist->zero_net, new_pin);
 
-    global_netlist->one_net = allocate_nnet();
-    global_netlist->vcc_node = allocate_nnode(module->loc);
-    global_netlist->vcc_node->type = VCC_NODE;
-    allocate_more_output_pins(global_netlist->vcc_node, 1);
-    add_output_port_information(global_netlist->vcc_node, 1);
+    syn_netlist->one_net = allocate_nnet();
+    syn_netlist->vcc_node = allocate_nnode(module->loc);
+    syn_netlist->vcc_node->type = VCC_NODE;
+    allocate_more_output_pins(syn_netlist->vcc_node, 1);
+    add_output_port_information(syn_netlist->vcc_node, 1);
     new_pin = allocate_npin();
-    add_output_pin_to_node(global_netlist->vcc_node, new_pin, 0);
-    add_driver_pin_to_net(global_netlist->one_net, new_pin);
+    add_output_pin_to_node(syn_netlist->vcc_node, new_pin, 0);
+    add_driver_pin_to_net(syn_netlist->one_net, new_pin);
 
-    global_netlist->pad_net = allocate_nnet();
-    global_netlist->pad_node = allocate_nnode(module->loc);
-    global_netlist->pad_node->type = PAD_NODE;
-    allocate_more_output_pins(global_netlist->pad_node, 1);
-    add_output_port_information(global_netlist->pad_node, 1);
+    syn_netlist->pad_net = allocate_nnet();
+    syn_netlist->pad_node = allocate_nnode(module->loc);
+    syn_netlist->pad_node->type = PAD_NODE;
+    allocate_more_output_pins(syn_netlist->pad_node, 1);
+    add_output_port_information(syn_netlist->pad_node, 1);
     new_pin = allocate_npin();
-    add_output_pin_to_node(global_netlist->pad_node, new_pin, 0);
-    add_driver_pin_to_net(global_netlist->pad_net, new_pin);
+    add_output_pin_to_node(syn_netlist->pad_node, new_pin, 0);
+    add_driver_pin_to_net(syn_netlist->pad_net, new_pin);
 
     /* CREATE the driver for the ZERO */
-    global_netlist->gnd_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
+    syn_netlist->gnd_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
     vtr::free(zero_string);
-    zero_string = global_netlist->gnd_node->name;
+    zero_string = syn_netlist->gnd_node->name;
 
     sc_spot = sc_add_string(output_nets_sc, zero_string);
     if (output_nets_sc->data[sc_spot] != NULL) {
         error_message(NETLIST, module_items->loc, "%s", "Error in Odin\n");
     }
     /* store the data which is an idx here */
-    output_nets_sc->data[sc_spot] = (void*)global_netlist->zero_net;
-    global_netlist->zero_net->name = zero_string;
+    output_nets_sc->data[sc_spot] = (void*)syn_netlist->zero_net;
+    syn_netlist->zero_net->name = zero_string;
 
     /* CREATE the driver for the ONE and store twice */
-    global_netlist->vcc_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
+    syn_netlist->vcc_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
     vtr::free(one_string);
-    one_string = global_netlist->vcc_node->name;
+    one_string = syn_netlist->vcc_node->name;
 
     sc_spot = sc_add_string(output_nets_sc, one_string);
     if (output_nets_sc->data[sc_spot] != NULL) {
         error_message(NETLIST, module_items->loc, "%s", "Error in Odin\n");
     }
     /* store the data which is an idx here */
-    output_nets_sc->data[sc_spot] = (void*)global_netlist->one_net;
-    global_netlist->one_net->name = one_string;
+    output_nets_sc->data[sc_spot] = (void*)syn_netlist->one_net;
+    syn_netlist->one_net->name = one_string;
 
     /* CREATE the driver for the PAD */
-    global_netlist->pad_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
+    syn_netlist->pad_node->name = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
     vtr::free(pad_string);
-    pad_string = global_netlist->pad_node->name;
+    pad_string = syn_netlist->pad_node->name;
 
     sc_spot = sc_add_string(output_nets_sc, pad_string);
     if (output_nets_sc->data[sc_spot] != NULL) {
         error_message(NETLIST, module_items->loc, "%s", "Error in Odin\n");
     }
     /* store the data which is an idx here */
-    output_nets_sc->data[sc_spot] = (void*)global_netlist->pad_net;
-    global_netlist->pad_net->name = pad_string;
+    output_nets_sc->data[sc_spot] = (void*)syn_netlist->pad_net;
+    syn_netlist->pad_net->name = pad_string;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -919,9 +919,9 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
                     add_input_pin_to_node(new_node, new_pin, 0);
 
                     /* record this node */
-                    global_netlist->top_output_nodes = (nnode_t**)vtr::realloc(global_netlist->top_output_nodes, sizeof(nnode_t*) * (global_netlist->num_top_output_nodes + 1));
-                    global_netlist->top_output_nodes[global_netlist->num_top_output_nodes] = new_node;
-                    global_netlist->num_top_output_nodes++;
+                    syn_netlist->top_output_nodes = (nnode_t**)vtr::realloc(syn_netlist->top_output_nodes, sizeof(nnode_t*) * (syn_netlist->num_top_output_nodes + 1));
+                    syn_netlist->top_output_nodes[syn_netlist->num_top_output_nodes] = new_node;
+                    syn_netlist->num_top_output_nodes++;
                 } else if (var_declare->children[2] == NULL) {
                     ast_node_t* node_max = var_declare->children[0];
                     ast_node_t* node_min = var_declare->children[1];
@@ -967,9 +967,9 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
                         add_input_pin_to_node(new_node, new_pin, 0);
 
                         /* record this node */
-                        global_netlist->top_output_nodes = (nnode_t**)vtr::realloc(global_netlist->top_output_nodes, sizeof(nnode_t*) * (global_netlist->num_top_output_nodes + 1));
-                        global_netlist->top_output_nodes[global_netlist->num_top_output_nodes] = new_node;
-                        global_netlist->num_top_output_nodes++;
+                        syn_netlist->top_output_nodes = (nnode_t**)vtr::realloc(syn_netlist->top_output_nodes, sizeof(nnode_t*) * (syn_netlist->num_top_output_nodes + 1));
+                        syn_netlist->top_output_nodes[syn_netlist->num_top_output_nodes] = new_node;
+                        syn_netlist->num_top_output_nodes++;
                     }
                 } else {
                     /* Implicit memory */
@@ -1164,9 +1164,9 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instanc
         add_driver_pin_to_net(new_net, new_pin);
 
         /* store it in the list of input nodes */
-        global_netlist->top_input_nodes = (nnode_t**)vtr::realloc(global_netlist->top_input_nodes, sizeof(nnode_t*) * (global_netlist->num_top_input_nodes + 1));
-        global_netlist->top_input_nodes[global_netlist->num_top_input_nodes] = new_node;
-        global_netlist->num_top_input_nodes++;
+        syn_netlist->top_input_nodes = (nnode_t**)vtr::realloc(syn_netlist->top_input_nodes, sizeof(nnode_t*) * (syn_netlist->num_top_input_nodes + 1));
+        syn_netlist->top_input_nodes[syn_netlist->num_top_input_nodes] = new_node;
+        syn_netlist->num_top_input_nodes++;
     } else if (var_declare->children[2] == NULL) {
         /* FOR array driver  since sport 3 and 4 are NULL */
         ast_node_t* node_max = var_declare->children[0];
@@ -1219,9 +1219,9 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instanc
             add_driver_pin_to_net(new_net, new_pin);
 
             /* store it in the list of input nodes */
-            global_netlist->top_input_nodes = (nnode_t**)vtr::realloc(global_netlist->top_input_nodes, sizeof(nnode_t*) * (global_netlist->num_top_input_nodes + 1));
-            global_netlist->top_input_nodes[global_netlist->num_top_input_nodes] = new_node;
-            global_netlist->num_top_input_nodes++;
+            syn_netlist->top_input_nodes = (nnode_t**)vtr::realloc(syn_netlist->top_input_nodes, sizeof(nnode_t*) * (syn_netlist->num_top_input_nodes + 1));
+            syn_netlist->top_input_nodes[syn_netlist->num_top_input_nodes] = new_node;
+            syn_netlist->num_top_input_nodes++;
         }
     } else if (var_declare->types.variable.is_memory) {
         /* Implicit memory */
@@ -1511,7 +1511,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char* instance_name_prefi
                         input_nets_sc->data[sc_spot_input_new] = input_nets_sc->data[sc_spot_input_old];
                     } else {
                         /* already exists so we'll join the nets */
-                        combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], global_netlist);
+                        combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], syn_netlist);
                         input_nets_sc->data[sc_spot_input_old] = NULL;
                     }
                 } else {
@@ -1523,7 +1523,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char* instance_name_prefi
                     /* if they haven't been combined already,
                      * then join the inputs and output */
                     in_net->name = net->name;
-                    combine_nets(net, in_net, global_netlist);
+                    combine_nets(net, in_net, syn_netlist);
                     net = NULL;
 
                     /* since the driver net is deleted,
@@ -1650,7 +1650,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char* instance_name_p
                         input_nets_sc->data[sc_spot_input_new] = input_nets_sc->data[sc_spot_input_old];
                     } else {
                         /* already exists so we'll join the nets */
-                        combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], global_netlist);
+                        combine_nets((nnet_t*)input_nets_sc->data[sc_spot_input_old], (nnet_t*)input_nets_sc->data[sc_spot_input_new], syn_netlist);
                         input_nets_sc->data[sc_spot_input_old] = NULL;
                     }
                 } else {
@@ -1663,7 +1663,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char* instance_name_p
                      * then join the inputs and output */
                     if (in_net != NULL) {
                         in_net->name = net->name;
-                        combine_nets(net, in_net, global_netlist);
+                        combine_nets(net, in_net, syn_netlist);
                         net = NULL;
 
                         /* since the driver net is deleted,
@@ -1822,7 +1822,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                              */
                             warning_message(NETLIST, module_instance_var_node->loc,
                                             "The driver width of the port (%s) in module (%s) is less than the actual port width. Will be connected to gnd net.\n", port_name, module_instance->identifier_node->types.identifier);
-                            npin_t* gnd_pin = get_zero_pin(global_netlist);
+                            npin_t* gnd_pin = get_zero_pin(syn_netlist);
                             input_signal_net = gnd_pin->net;
                         } else {
                             // keeping the input signal net, which has resolved with a circuitry, for future usage
@@ -2150,7 +2150,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
                          */
                         warning_message(NETLIST, function_instance_var_node->loc,
                                         "The driver width of the port (%s) in function (%s) is less than the actual port width. Will be connected to gnd net.\n", port_name, function_instance->identifier_node->types.identifier);
-                        npin_t* gnd_pin = get_zero_pin(global_netlist);
+                        npin_t* gnd_pin = get_zero_pin(syn_netlist);
                         input_signal_net = gnd_pin->net;
                     } else {
                         // keeping the input signal net, which has resolved with a circuitry, for future usage
@@ -2487,7 +2487,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
                          */
                         warning_message(NETLIST, task_instance_var_node->loc,
                                         "The driver width of the port (%s) in task (%s) is less than the actual port width. Will be connected to gnd net.\n", port_name, task_instance->identifier_node->types.identifier);
-                        npin_t* gnd_pin = get_zero_pin(global_netlist);
+                        npin_t* gnd_pin = get_zero_pin(syn_netlist);
                         input_signal_net = gnd_pin->net;
                     } else {
                         // keeping the input signal net, which has resolved with a circuitry, for future usage
@@ -2683,13 +2683,13 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
 
         /* check if the instantiation pin exists. */
         if (strstr(pin_lists->strings[i], ONE_VCC_CNS)) {
-            add_fanout_pin_to_net(global_netlist->one_net, new_pin);
+            add_fanout_pin_to_net(syn_netlist->one_net, new_pin);
             sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
-            input_nets_sc->data[sc_spot] = (void*)global_netlist->one_net;
+            input_nets_sc->data[sc_spot] = (void*)syn_netlist->one_net;
         } else if (strstr(pin_lists->strings[i], ZERO_GND_ZERO)) {
-            add_fanout_pin_to_net(global_netlist->zero_net, new_pin);
+            add_fanout_pin_to_net(syn_netlist->zero_net, new_pin);
             sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
-            input_nets_sc->data[sc_spot] = (void*)global_netlist->zero_net;
+            input_nets_sc->data[sc_spot] = (void*)syn_netlist->zero_net;
         } else {
             /* search for the input name  if already exists...needs to be added to
              * string cache in case it's an input pin */
@@ -2709,7 +2709,7 @@ signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_n
                 } else if ((net != (nnet_t*)input_nets_sc->data[sc_spot]) && !net->combined) {
                     /* IF - the input and output nets don't match, then they need to be joined */
 
-                    combine_nets(net, (nnet_t*)input_nets_sc->data[sc_spot], global_netlist);
+                    combine_nets(net, (nnet_t*)input_nets_sc->data[sc_spot], syn_netlist);
                     net = NULL;
                     /* since the driver net is deleted, copy the spot of the in_net over */
                     output_nets_sc->data[sc_spot_output] = (void*)input_nets_sc->data[sc_spot];
@@ -2810,7 +2810,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                 }
 
                 while (address->count < right_memory->addr_width)
-                    add_pin_to_signal_list(address, get_zero_pin(global_netlist));
+                    add_pin_to_signal_list(address, get_zero_pin(syn_netlist));
 
                 address->count = right_memory->addr_width;
             }
@@ -2947,7 +2947,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                     }
 
                     while (address->count < left_memory->addr_width)
-                        add_pin_to_signal_list(address, get_zero_pin(global_netlist));
+                        add_pin_to_signal_list(address, get_zero_pin(syn_netlist));
 
                     address->count = left_memory->addr_width;
                 }
@@ -3017,14 +3017,14 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                 // Pad/shrink the data to the width of the memory.
                 if (data) {
                     while (data->count < left_memory->data_width)
-                        add_pin_to_signal_list(data, get_zero_pin(global_netlist));
+                        add_pin_to_signal_list(data, get_zero_pin(syn_netlist));
 
                     data->count = left_memory->data_width;
 
                     add_input_port_to_implicit_memory(left_memory, data, data_port);
 
                     signal_list_t* we = init_signal_list();
-                    add_pin_to_signal_list(we, get_one_pin(global_netlist));
+                    add_pin_to_signal_list(we, get_one_pin(syn_netlist));
                     add_input_port_to_implicit_memory(left_memory, we, we_port);
 
                     in_1 = init_signal_list();
@@ -3287,9 +3287,9 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
 
             add_driver_pin_to_net(net, ff_output_pin);
 
-            global_netlist->ff_nodes = (nnode_t**)vtr::realloc(global_netlist->ff_nodes, sizeof(nnode_t*) * (global_netlist->num_ff_nodes + 1));
-            global_netlist->ff_nodes[global_netlist->num_ff_nodes] = ff_node;
-            global_netlist->num_ff_nodes++;
+            syn_netlist->ff_nodes = (nnode_t**)vtr::realloc(syn_netlist->ff_nodes, sizeof(nnode_t*) * (syn_netlist->num_ff_nodes + 1));
+            syn_netlist->ff_nodes[syn_netlist->num_ff_nodes] = ff_node;
+            syn_netlist->num_ff_nodes++;
         }
     }
 
@@ -3433,7 +3433,7 @@ int alias_output_assign_pins_to_inputs(char_list_t* output_list, signal_list_t* 
                 warning_message(NETLIST, node->loc,
                                 "More nets to drive than drivers, padding with ZEROs for driver %s\n", output_list->strings[i]);
 
-            add_pin_to_signal_list(input_list, get_zero_pin(global_netlist));
+            add_pin_to_signal_list(input_list, get_zero_pin(syn_netlist));
         }
 
         if (input_list->pins[i]->name)
@@ -3492,7 +3492,7 @@ signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hier
             add_output_port_information(gate_node, 1);
 
             /* hookup the input pins */
-            hookup_input_pins_from_signal_list(gate_node, 0, in_1, 0, 1, global_netlist);
+            hookup_input_pins_from_signal_list(gate_node, 0, in_1, 0, 1, syn_netlist);
             /* hookup the output pins */
             hookup_output_pins_from_signal_list(gate_node, 0, out_1, 0, 1);
 
@@ -3537,7 +3537,7 @@ signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hier
 
             /* hookup the input pins */
             for (long i = 0; i < gate_instance->num_children - 1; i++) {
-                hookup_input_pins_from_signal_list(gate_node, i, in[i], 0, 1, global_netlist);
+                hookup_input_pins_from_signal_list(gate_node, i, in[i], 0, 1, syn_netlist);
             }
 
             /* hookup the output pins */
@@ -3721,7 +3721,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                 /* record this port size */
                 add_input_port_information(operation_node, input_port_width);
                 /* hookup the input pins */
-                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[k], 0, input_port_width, global_netlist);
+                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[k], 0, input_port_width, syn_netlist);
                 current_idx += input_port_width;
             }
 
@@ -3739,7 +3739,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                         if (i < output_port_width) {
                             // connect 0 to lower outputs
                             npin_t* zero_pin = allocate_npin();
-                            add_fanout_pin_to_net(global_netlist->zero_net, zero_pin);
+                            add_fanout_pin_to_net(syn_netlist->zero_net, zero_pin);
 
                             add_pin_to_signal_list(return_list, zero_pin);
                             zero_pin->node = NULL;
@@ -3753,7 +3753,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                             add_pin_to_signal_list(return_list, input_lists[0]->pins[i]);
                             input_lists[0]->pins[i]->node = NULL;
                         } else {
-                            npin_t* extension_pin = get_zero_pin(global_netlist);
+                            npin_t* extension_pin = get_zero_pin(syn_netlist);
 
                             add_pin_to_signal_list(return_list, extension_pin);
                             extension_pin->node = NULL;
@@ -3777,7 +3777,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                         if (op->children[0]->types.variable.signedness == SIGNED && operation_node->type == ASR) {
                             extension_pin = copy_input_npin(input_lists[0]->pins[pad_bit]);
                         } else {
-                            extension_pin = get_zero_pin(global_netlist);
+                            extension_pin = get_zero_pin(syn_netlist);
                         }
 
                         add_pin_to_signal_list(return_list, extension_pin);
@@ -3809,7 +3809,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                 add_input_port_information(operation_node, input_port_width);
 
                 /* hookup the input pins = will do padding of zeros for smaller port */
-                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_port_width, global_netlist);
+                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_port_width, syn_netlist);
                 current_idx += input_port_width;
             } else {
                 /* ELSE if taking the port widths as they are */
@@ -3819,7 +3819,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
                 add_input_port_information(operation_node, input_lists[i]->count);
 
                 /* hookup the input pins */
-                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_lists[i]->count, global_netlist);
+                hookup_input_pins_from_signal_list(operation_node, current_idx, input_lists[i], 0, input_lists[i]->count, syn_netlist);
 
                 current_idx += input_lists[i]->count;
             }
@@ -4302,12 +4302,12 @@ signal_list_t* create_mux_statements(signal_list_t** statement_lists, nnode_t* m
                         /* implied signal for mux */
                         if (lookup_implicit_memory_input(pin->name)) {
                             // If the mux feeds an implicit memory, imply zero.
-                            add_input_pin_to_node(mux_node, get_zero_pin(global_netlist), pin_index);
+                            add_input_pin_to_node(mux_node, get_zero_pin(syn_netlist), pin_index);
                         } else {
                             /* lookup this driver name */
                             signal_list_t* this_pin_list = create_pins(NULL, pin->name, instance_name_prefix, local_ref);
                             oassert(this_pin_list->count == 1);
-                            //add_a_input_pin_to_node_spot_idx(mux_node, get_zero_pin(global_netlist), pin_index);
+                            //add_a_input_pin_to_node_spot_idx(mux_node, get_zero_pin(syn_netlist), pin_index);
                             add_input_pin_to_node(mux_node, this_pin_list->pins[0], pin_index);
                             /* clean up */
                             free_signal_list(this_pin_list);
@@ -4316,7 +4316,7 @@ signal_list_t* create_mux_statements(signal_list_t** statement_lists, nnode_t* m
                     }
                     case ASYNCHRONOUS_SENSITIVITY: {
                         /* DON'T CARE - so hookup zero */
-                        add_input_pin_to_node(mux_node, get_zero_pin(global_netlist), pin_index);
+                        add_input_pin_to_node(mux_node, get_zero_pin(syn_netlist), pin_index);
                         // Allows the simulator to be aware of the implied nature of this signal.
                         mux_node->input_pins[pin_index]->is_implied = true;
                         break;
@@ -4398,7 +4398,7 @@ signal_list_t* create_mux_expressions(signal_list_t** expression_lists, nnode_t*
                 /* Don't match, so this signal is an IMPLIED SIGNAL !!! */
                 /* implied signal for mux */
                 /* DON'T CARE - so hookup zero */
-                add_input_pin_to_node(mux_node, get_zero_pin(global_netlist), pin_index);
+                add_input_pin_to_node(mux_node, get_zero_pin(syn_netlist), pin_index);
             }
         }
     }
@@ -4472,7 +4472,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t* list, int pad_size, char* /
             if (global_args.all_warnings)
                 warning_message(NETLIST, node->loc, "%s",
                                 "Padding an input port with 0 for operation (likely compare)\n");
-            add_pin_to_signal_list(list, get_zero_pin(global_netlist));
+            add_pin_to_signal_list(list, get_zero_pin(syn_netlist));
         }
     } else if (pad_size < list->count) {
         if (global_args.all_warnings)
@@ -4563,7 +4563,7 @@ signal_list_t* create_dual_port_ram_block(ast_node_t* block, char* instance_name
             add_input_port_information(block_node, port_size);
 
             /* hookup the input pins */
-            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, global_netlist);
+            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, syn_netlist);
 
             /* Name any grounded ports in the block mapping */
             for (j = port_size; j < port_size; j++)
@@ -4748,7 +4748,7 @@ signal_list_t* create_single_port_ram_block(ast_node_t* block, char* instance_na
             add_input_port_information(block_node, port_size);
 
             /* hookup the input pins */
-            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, global_netlist);
+            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, syn_netlist);
 
             /* Name any grounded ports in the block mapping */
             for (j = port_size; j < port_size; j++)
@@ -4877,7 +4877,7 @@ signal_list_t* create_soft_single_port_ram_block(ast_node_t* block, char* instan
             add_input_port_information(block_node, port_size);
 
             // hookup the input pins
-            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, global_netlist);
+            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, syn_netlist);
 
             // Name any grounded ports in the block mapping
             for (j = port_size; j < port_size; j++)
@@ -5021,7 +5021,7 @@ signal_list_t* create_soft_dual_port_ram_block(ast_node_t* block, char* instance
             add_input_port_information(block_node, port_size);
 
             // hookup the input pins
-            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, global_netlist);
+            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, syn_netlist);
 
             // Name any grounded ports in the block mapping
             for (j = port_size; j < port_size; j++)
@@ -5252,7 +5252,7 @@ signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, 
             add_input_port_information(block_node, port_size);
 
             /* hookup the input pins */
-            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, global_netlist);
+            hookup_hb_input_pins_from_signal_list(block_node, current_idx, in_list[i], 0, port_size, syn_netlist);
 
             /* Name any grounded ports in the block mapping */
             for (j = min_size; j < port_size; j++)

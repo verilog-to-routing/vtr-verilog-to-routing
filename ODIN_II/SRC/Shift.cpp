@@ -35,10 +35,10 @@
 /**
  * (function: constant_shift)
  * 
- * @brief performing constant shift operation on given signal_list
+ * @brief performing constant shift operation on a given signal_list
  * 
  * @param input_signals input to be shifted 
- * @param shift_size vonstant shift size
+ * @param shift_size constant shift size
  * @param shift_type shift type: SL, SR, ASL or ASR
  * @param assignment_size width of the output
  * @param netlist pointer to the current netlist file

@@ -249,10 +249,9 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
 
 /**
  * --------------------------------------------------------------------------
- * (function: is_constant_multipication)
+ * (function: implement_constant_multipication)
  * 
- * @brief checking multipication ports to specify whether it 
- * is a constant multipication or not 
+ * @brief implementing constant multipication utilizing shift and ADD operations
  * 
  * @note this function should call before partial mapping phase
  * since some logic need to be softened
@@ -459,11 +458,11 @@ static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_
  * --------------------------------------------------------------------------
  * (function: connect_constant_mult_outputs)
  * 
- * @brief connecting the calculated pins from constant 
- * multipication to the main mult node
+ * @brief connecting the constant multipication
+ * pins to the main mult node
  * 
  * @param node pointer to the multipication netlist node
- * @param output_signal_list list of calculated pins
+ * @param output_signal_list list of pins
  * @param netlist pointer to the current netlist file
  * -------------------------------------------------------------------------*/
 void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list) {
@@ -478,9 +477,9 @@ void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_l
         /* join nets of the output pin and the calculated pin */
         nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, node->traverse_visited);
 
-        /* connect the calculatd quotient pin as buf node driver */
+        /* connect the mults output pins as buf node driver */
         add_input_pin_to_node(buf_node, pin, 0);
-        /* remap the main div output pin to the buf node output pin */
+        /* remap the main mult output pin to the buf node output pin */
         remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
     }
 

@@ -232,7 +232,7 @@ enum init_value_e {
  * In the synthesis flow, most operations are resolved or mapped
  * to an operation mode that has instantiation procedure in the 
  * partial mapping. However, for techmap flow, nodes are elaborated
- * into the partial mapper supported operation in BLIF elaboration.
+ * into the partial mapper supported operations in BLIF elaboration.
  * Technically, each Odin-II node should have one of the following
  * operation type. To add support for a new type you would need to
  * start from here to see how each operation mode is being resolved.
@@ -295,8 +295,6 @@ enum operation_list {
                          // [START] operations to cover yosys subckt
     MULTI_BIT_MUX_2,     // like MUX_2 but with n-bit input/output
     MULTIPORT_nBIT_SMUX, // n-bit input/output in multiple ports
-    HARD_ADD,            // VTR Adder hard block
-    HARD_MULTIPLY,       // VTR Multiply hard block
     PMUX,                // Multiplexer with many inputs using one-hot select signal
     SDFF,                // data, S to reset value and output port
     DFFE,                // data, enable to output port

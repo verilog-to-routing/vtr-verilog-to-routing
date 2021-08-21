@@ -326,8 +326,8 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
 /**
  * (function: resolve_logical_nodes)
  * 
- * @brief resolving the logical nodes by 
- * connecting the ouput pins[1..n] to GND
+ * @brief resolving the logical nodes by connecting the ouput pins[1..n] 
+ * to GND or splitting them into single bit nodes
  * 
  * @param node pointing to a logical node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -344,7 +344,7 @@ static void resolve_logical_nodes(nnode_t* node, uintptr_t traverse_mark_number,
         case LOGICAL_EQUAL: //fallthrough
         case NOT_EQUAL: {
             /**
-             * remove extra output pins and only keeo the first output pin
+             * drive extra output pins by GND and only keep the first output pin connected
              */
             prune_logical_node_outputs(node, traverse_mark_number, netlist);
             break;
@@ -357,7 +357,7 @@ static void resolve_logical_nodes(nnode_t* node, uintptr_t traverse_mark_number,
         case LOGICAL_XOR:  //fallthrough
         case LOGICAL_XNOR: {
             /**
-             * split logical node into single bit logical node
+             * split logical node into single bit logical nodes
              */
             split_in_single_bit_logic(node, traverse_mark_number, netlist);
             break;
@@ -407,8 +407,7 @@ static void resolve_shift_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
  *-------------------------------------------------------------------------------------------
  * (function: resolve_case_equal_nodes )
  * 
- * @brief resolving flip flop nodes by exloding them into RTL desing 
- * with set, reset, clear signals (synchronoush and asynchronous)
+ * @brief resolving case equal nodes by instantiating XNOR, AND and invertor gates
  * 
  * @param node pointing to the netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -445,8 +444,8 @@ static void resolve_case_equal_nodes(nnode_t* node, uintptr_t traverse_mark_numb
  *-------------------------------------------------------------------------------------------
  * (function: resolve_arithmetic_nodes )
  * 
- * @brief check for missing ports such as carry-in/out in case of 
- * dealing with generated netlist from other blif files such Yosys.
+ * @brief resolving arithmetic nodes by checking for missed port, 
+ * equalizing pors if needed, or instantiating them (pow, div and mod)
  * 
  * @param node pointing to the netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -523,8 +522,8 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
  *-------------------------------------------------------------------------------------------
  * (function: resolve_mux_nodes )
  * 
- * @brief resolving flip flop nodes by exloding them into RTL desing 
- * with set, reset, clear signals (synchronoush and asynchronous)
+ * @brief resolving multiplexer nodes depending on their types, 
+ * and making the selector as the first port
  * 
  * @param node pointing to the netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -576,7 +575,8 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
  *-------------------------------------------------------------------------------------------
  * (function: resolve_latch_nodes )
  * 
- * @brief resolving the data latch or asynchrounoush data latch nodes
+ * @brief resolving the data latch or asynchronous data latch nodes
+ * and dealing with setclr nodes
  * 
  * @param node pointing to the netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -619,8 +619,8 @@ static void resolve_latch_nodes(nnode_t* node, uintptr_t traverse_mark_number, n
  *-------------------------------------------------------------------------------------------
  * (function: resolve_ff_nodes )
  * 
- * @brief resolving flip flop nodes by exloding them into RTL desing 
- * with set, reset, clear signals (synchronoush and asynchronous)
+ * @brief resolving flip flop nodes by exploding them into low-level
+ * logic with set, reset, and clear signals (synchronous)
  * 
  * @param node pointing to the netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -691,8 +691,9 @@ static void resolve_ff_nodes(nnode_t* node, uintptr_t traverse_mark_number, netl
  *-------------------------------------------------------------------------------------------
  * (function: resolve_memory_nodes )
  * 
- * @brief resolving flip flop nodes by exloding them into RTL desing 
- * with set, reset, clear signals (synchronoush and asynchronous)
+ * @brief resolving different types of memory, like single/dual port ram, 
+ * initializing block memories structure and handling yosys internal memory
+ * (inferred implicit memory) to make them ready for partial mapping phase.
  * 
  * @param node pointing to the netlist node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
@@ -757,14 +758,14 @@ static void resolve_memory_nodes(nnode_t* node, uintptr_t traverse_mark_number, 
  * 
  * @brief going through all FF nodes looking for the clock signals.
  * If they are not clock type, they should be altered to a clock node. 
- * Since BUF nodes be removed in the partial mapping, the driver of 
- * the BUF nodes should be considered as a clock node. 
+ * Since BUF nodes will be removed in the partial mapping, the driver 
+ * of the BUF nodes should be considered as a clock node. 
  * 
  * @param netlist pointer to the current netlist file
  */
 static void look_for_clocks(netlist_t* netlist) {
     int i;
-    /* looking for the global sim clock among top netlist inputsto change its type if needed */
+    /* looking for the global sim clock among top netlist inputs to change its type if needed */
     for (i = 0; i < netlist->num_top_input_nodes; i++) {
         nnode_t* input_node = netlist->top_input_nodes[i];
         if (!strcmp(input_node->name, DEFAULT_CLOCK_NAME))

@@ -64,10 +64,10 @@ class Verilog {
          */
         ~Reader();
 
-        void* __read();
+        void* _read();
 
         /* No need to have writer in Generic Reader */
-        void __write(const netlist_t* /* netlist */) {
+        void _write(const netlist_t* /* netlist */) {
             error_message(UTIL, unknown_location, "%s is not available in Generic Reader\n", __PRETTY_FUNCTION__);
         }
 
@@ -94,8 +94,8 @@ class Verilog {
             return NULL;
         }
 
-        void __write(const netlist_t* netlist);
-        void __create_file(const file_type_e file_type);
+        void _write(const netlist_t* netlist);
+        void _create_file(const file_type_e file_type);
 
       protected:
     };

@@ -38,7 +38,7 @@
 /**
  * (function: resolve_modulo_node)
  * 
- * @brief resolving module node by 
+ * @brief resolving module node by utilizing div node resolving process
  * 
  * @param node pointing to a mod node 
  * @param traverse_mark_number unique traversal mark for blif elaboration pass
