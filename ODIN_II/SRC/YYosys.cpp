@@ -75,6 +75,11 @@ YYosys::YYosys() {
     /* create Yosys child process */
     if ((this->yosys_pid = fork()) < 0)
         error_message(UTIL, unknown_location, "%s", YOSYS_FORK_ERROR);
+    else {
+        /* set up VTR_ROOT path environment variable */
+        set_env("VTR_ROOT", std::string(global_args.program_root + "/..").c_str(), 1);
+    }
+
 #endif
 }
 
@@ -205,52 +210,57 @@ void YYosys::execute() {
     /* must only be performed in the Yosys child process */
     oassert(this->yosys_pid == 0);
 
-    // Read the hardware decription Verilog circuits
-    // FOR loop enables include feature for Yosys+Odin (multiple Verilog input files)
-    for (auto verilog_circuit : this->verilog_circuits)
-        run_pass(std::string("read_verilog -nomem2reg -nolatches " + verilog_circuit));
+    if (configuration.tcl_file != "") {
+        // run the tcl file by yosys
+        run_pass(std::string("tcl " + configuration.tcl_file));
+    } else {
+        // Read the hardware decription Verilog circuits
+        // FOR loop enables include feature for Yosys+Odin (multiple Verilog input files)
+        for (auto verilog_circuit : this->verilog_circuits)
+            run_pass(std::string("read_verilog -nomem2reg -nolatches " + verilog_circuit));
 
-    // Check whether cells match libraries and find top module
-    run_pass(std::string("hierarchy -check -auto-top"));
+        // Check whether cells match libraries and find top module
+        run_pass(std::string("hierarchy -check -auto-top"));
 
-    // Use a readable name convention
-    run_pass(std::string("autoname"));
-    // Translate processes to netlist components such as MUXs, FFs and latches
-    run_pass(std::string("proc; opt;"));
-    // Extraction and optimization of finite state machines
-    run_pass(std::string("fsm; opt;"));
-    // Collects memories, their port and create multiport memory cells
-    run_pass(std::string("memory_collect; memory_dff; opt;"));
+        // Use a readable name convention
+        run_pass(std::string("autoname"));
+        // Translate processes to netlist components such as MUXs, FFs and latches
+        run_pass(std::string("proc; opt;"));
+        // Extraction and optimization of finite state machines
+        run_pass(std::string("fsm; opt;"));
+        // Collects memories, their port and create multiport memory cells
+        run_pass(std::string("memory_collect; memory_dff; opt;"));
 
-    // Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
-    run_pass(std::string("check"));
-    // Transform asynchronous dffs to synchronous dffs using techlib files provided by Yosys
-    run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
-    run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
+        // Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
+        run_pass(std::string("check"));
+        // Transform asynchronous dffs to synchronous dffs using techlib files provided by Yosys
+        run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
+        run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
 
-    /**
-     * convert yosys mem blocks to BRAMs / ROMs
-     *
-     * [NOTE] : Yosys complains about expression width more than 24 bits.
-     * E.g.[63 : 0] memory[18 : 0] == > ERROR : Expression width 33554432 exceeds implementation limit of 16777216 !
-     * Therfore, Yosys internal memory cells will be handled inside Odin-II as YMEM cell type.
-     *
-     * The following commands transform Yosys internal memories into BRAMs/ROMs defined in the Odin-II techlib
-     * However, due to the above-mentioned reason they are commented.
-     *  Yosys::run_pass(std::string("memory_bram -rules ", this->odin_techlib, "/mem_rules.txt"))
-     *  Yosys::run_pass(std::string("techmap -map ", this->odin_techlib, "/mem_map.v"));
-     */
+        /**
+         * convert yosys mem blocks to BRAMs / ROMs
+         *
+         * [NOTE] : Yosys complains about expression width more than 24 bits.
+         * E.g.[63 : 0] memory[18 : 0] == > ERROR : Expression width 33554432 exceeds implementation limit of 16777216 !
+         * Therfore, Yosys internal memory cells will be handled inside Odin-II as YMEM cell type.
+         *
+         * The following commands transform Yosys internal memories into BRAMs/ROMs defined in the Odin-II techlib
+         * However, due to the above-mentioned reason they are commented.
+         *  Yosys::run_pass(std::string("memory_bram -rules ", this->odin_techlib, "/mem_rules.txt"))
+         *  Yosys::run_pass(std::string("techmap -map ", this->odin_techlib, "/mem_map.v"));
+         */
 
-    // Transform the design into a new one with single top module
-    run_pass(std::string("flatten"));
-    // Transforms PMUXes into trees of regular multiplexers
-    run_pass(std::string("pmuxtree"));
-    // "-undirven" to ensure there is no wire without drive
-    run_pass(std::string("opt -undriven -full")); // -noff #potential option to remove all sdffXX and etc. Only dff will remain
-    // Use a readable name convention
-    run_pass(std::string("autoname"));
-    // Print statistics
-    run_pass(std::string("stat"));
+        // Transform the design into a new one with single top module
+        run_pass(std::string("flatten"));
+        // Transforms PMUXes into trees of regular multiplexers
+        run_pass(std::string("pmuxtree"));
+        // "-undirven" to ensure there is no wire without drive
+        run_pass(std::string("opt -undriven -full")); // -noff #potential option to remove all sdffXX and etc. Only dff will remain
+        // Use a readable name convention
+        run_pass(std::string("autoname"));
+        // Print statistics
+        run_pass(std::string("stat"));
+    }
 
 #endif
 }

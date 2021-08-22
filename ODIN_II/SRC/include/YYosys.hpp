@@ -44,6 +44,13 @@
 
 #include "odin_globals.h" // global_args
 
+/* to set local environment variable */
+#ifdef WIN32
+#    define set_env _setenv
+#else
+#    define set_env setenv
+#endif
+
 /**
  * @brief A class to provide the general object of Yosys synthezier
  */

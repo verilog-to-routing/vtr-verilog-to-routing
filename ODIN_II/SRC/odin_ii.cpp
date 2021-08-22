@@ -344,7 +344,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     printf("Using Lut input width of: %d\n", physical_lut_size);
 
     /* do High level Synthesis */
-    if (!configuration.list_of_file_names.empty()) {
+    if (!configuration.list_of_file_names.empty() || !configuration.tcl_file.empty()) {
         ODIN_ERROR_CODE error_code;
 
         print_input_files_info();
@@ -481,7 +481,7 @@ void get_options(int argc, char** argv) {
     get_current_path();
     // get Odin-II program name
     global_args.program_name = parser.prog();
-    // getting Odin-II path and program name
+    // getting Odin-II path
     global_args.program_root = get_directory(std::string(argv[0]));
 
     auto& input_grp = parser.add_argument_group("input files");
@@ -524,6 +524,14 @@ void get_options(int argc, char** argv) {
         .default_value("false")
         .action(argparse::Action::STORE_TRUE)
         .metavar("INPUT_BLIF_FLATNESS");
+
+    ext_elaborator_group.add_argument(global_args.tcl_file, "-S")
+        .help("TCL file")
+        .metavar("TCL_FILE");
+
+    ext_elaborator_group.add_argument(global_args.tcl_file, "--tcl")
+        .help("TCL file")
+        .metavar("TCL_FILE");
 
     auto& other_grp = parser.add_argument_group("other options");
 
@@ -699,10 +707,11 @@ void get_options(int argc, char** argv) {
     if (!only_one_is_true({
             global_args.config_file.provenance() == argparse::Provenance::SPECIFIED, //have a config file
             global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED,   //have a BLIF file
+            global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED,    //have a TCL file that includes HDL designs
             global_args.verilog_files.value().size() > 0                             //have a Verilog input list
         })) {
         parser.print_usage();
-        warning_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta BLIF file(-b)\n\ta Verilog file(-V)\nUnless is used for infrastructure directly\n");
+        warning_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta BLIF file(-b)\n\ta Verilog file(-V)\n\ta TCL file including HDL designs(-S)\nUnless is used for infrastructure directly\n");
     }
 
     //adjust thread count
@@ -733,6 +742,14 @@ void get_options(int argc, char** argv) {
 
     if (global_args.show_yosys_log.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.show_yosys_log = global_args.show_yosys_log;
+    }
+
+    if (global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.tcl_file = global_args.tcl_file;
+
+        coarsen_cleanup = true;
+        configuration.coarsen = true;
+        configuration.elaborator_type = elaborator_e::_YOSYS;
     }
 
     if (global_args.write_netlist_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
@@ -792,6 +809,7 @@ void set_default_config() {
     configuration.coarsen = false;
     configuration.fflegalize = false;
     configuration.show_yosys_log = false;
+    configuration.tcl_file = "";
     configuration.output_file_type = file_type_e::_BLIF;
     configuration.elaborator_type = elaborator_e::_ODIN;
     configuration.output_ast_graphs = 0;

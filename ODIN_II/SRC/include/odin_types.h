@@ -96,8 +96,9 @@ struct global_args_t {
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
     argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file
+    argparse::ArgValue<std::string> tcl_file;    // TCL file to be run by yosys elaborator
     argparse::ArgValue<std::string> elaborator;  // Name of the external elaborator tool, currently Yosys is supported, default is Odin
-    argparse::ArgValue<bool> permissive;         //turn possible_errors into warnings
+    argparse::ArgValue<bool> permissive;         // turn possible_errors into warnings
     argparse::ArgValue<bool> print_parse_tokens; // print the tokens as they are parsed byt the parser
 
     argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
