@@ -197,7 +197,7 @@ struct t_draw_state {
     int sequence_number = 0;
     float net_alpha = 0.1;
     float pres_fac = 1.;
-    ManualMovesGlobals manual_moves_global;
+    ManualMovesState manual_moves_state;
 
     std::vector<Breakpoint> list_of_breakpoints;
 

@@ -14,7 +14,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             VTR_LOG("Probability of Critical_uniform_move : %f \n", placer_opts.place_static_move_prob[6]);
             move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
             move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
-            //manual_move_generator = std::make_unique<ManualMoveGenerator>(placer_opts.place_static_move_prob);
         } else { //Non-timing driven placement
             VTR_LOG("Using static probabilities for choosing each move type\n");
             VTR_LOG("Probability of Uniform_move : %f \n", placer_opts.place_static_notiming_move_prob[0]);
@@ -22,7 +21,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             VTR_LOG("Probability of Centroid_move : %f \n", placer_opts.place_static_notiming_move_prob[2]);
             move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_notiming_move_prob);
             move_generator2 = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_notiming_move_prob);
-            //manual_move_generator = std::make_unique<ManualMoveGenerator>(placer_opts.place_static_notiming_move_prob);
         }
     } else { //RL based placement
         /* For the non timing driven placecment: the agent has a single state  *

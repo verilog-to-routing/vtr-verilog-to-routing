@@ -274,7 +274,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
-                              bool manual_move_flag);
+                              bool manual_move_enabled);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
@@ -1043,14 +1043,14 @@ static void placement_inner_loop(const t_annealing_state* state,
 
     inner_crit_iter_count = 1;
 
-    bool manual_move_flag = false;
+    bool manual_move_enabled = false;
 
     /* Inner loop begins */
     for (inner_iter = 0; inner_iter < state->move_lim; inner_iter++) {
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
-                                             placer_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_flag);
+                                             placer_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1190,15 +1190,15 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     int move_lim = std::min(state->move_lim_max,
                             (int)cluster_ctx.clb_nlist.blocks().size());
 
-    bool manual_move_flag = false;
+    bool manual_move_enabled = false;
 
     for (int i = 0; i < move_lim; i++) {
 #ifndef NO_GRAPHICS
         //Checks manual move flag for manual move feature
         t_draw_state* draw_state = get_draw_state_vars();
-        //std::cout << &draw_state->manual_moves_global << std::endl;
-        if (draw_state->show_graphics)
-            manual_move_flag = get_manual_move_flag();
+        if(draw_state->show_graphics) {
+            manual_move_enabled = manual_move_is_selected();
+        }
 #endif /*NO_GRAPHICS*/
 
         //Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
@@ -1206,7 +1206,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, move_type_stat, placer_opts.place_algorithm,
-                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_flag);
+                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
@@ -1303,7 +1303,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
-                              bool manual_move_flag) {
+                              bool manual_move_enabled) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1342,13 +1342,13 @@ static e_move_result try_swap(const t_annealing_state* state,
     e_create_move create_move_outcome;
 
     //When manual move toggle button is active, the manual move window asks the user for input.
-    if (manual_move_flag) {
+   if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
-        draw_manual_moves_window("");
-        update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+		draw_manual_moves_window("");
+		update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 
-        move_type = e_move_type::MANUAL_MOVE;
-        create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+		move_type = e_move_type::MANUAL_MOVE;
+		create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
 #endif //NO_GRAPHICS
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1439,15 +1439,10 @@ static e_move_result try_swap(const t_annealing_state* state,
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, state->t);
 
-        //Updates the manaul_move_global members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
+        //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
-        if (manual_move_flag) {
-            t_draw_state* draw_state = get_draw_state_vars();
-            update_manual_move_costs(delta_c, timing_delta_c, bb_delta_c, move_outcome);
-            cost_summary_dialog();
-
-            //User accepts or rejects the move.
-            move_outcome = draw_state->manual_moves_global.manual_move_info.user_move_outcome;
+        if (manual_move_enabled) {
+		move_outcome = pl_do_manual_move(delta_c, timing_delta_c, bb_delta_c, move_outcome);
         }
 #endif //NO_GRAPHICS
 
@@ -1488,7 +1483,9 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             //Highlights the new block when manual move is selected.
 #ifndef NO_GRAPHICS
-            highlight_new_block_location();
+           if(manual_move_enabled) {
+	    	manual_move_highlight_new_block_location();
+	   }
 #endif //NO_GRAPHICS
 
         } else {

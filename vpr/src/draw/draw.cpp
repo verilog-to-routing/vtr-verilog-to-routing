@@ -227,7 +227,6 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 ezgl::application::settings settings("/ezgl/main.ui", "MainWindow", "MainCanvas", "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()), setup_default_ezgl_callbacks);
 ezgl::application application(settings);
 
-//bool mm_window = false;
 bool window_mode = false;
 bool window_point_1_collected = false;
 ezgl::point2d point_1(0, 0);
@@ -4375,9 +4374,9 @@ static void highlight_blocks(double x, double y) {
 
     //If manual moves is activated, then user can select block from the grid.
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->manual_moves_global.manual_move_flag) {
-        draw_state->manual_moves_global.user_highlighted_block = true;
-        if (!draw_state->manual_moves_global.mm_window_is_open) {
+    if (draw_state->manual_moves_state.manual_move_enabled) {
+        draw_state->manual_moves_state.user_highlighted_block = true;
+        if (!draw_state->manual_moves_state.manual_move_window_is_open) {
             draw_manual_moves_window(std::to_string(size_t(clb_index)));
         }
     }

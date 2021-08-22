@@ -2,11 +2,16 @@
  * @file 	manual_move_generator.cpp
  * @author	Paula Perdomo
  * @date 	2021-07-19
- * @brief 	Contains the ManualMoveGenerator class memeber definitions.
+ * @brief 	Contains the ManualMoveGenerator class memeber definitions. The ManualMoveGenerator class inherits from the MoveGenerator class. The class contains a propose_move function that checks if the block requested to move by the user exists and determines whether the manual move is VALID/ABORTED by the placer. If the manual move is determined VALID, the move is created. A manual move is ABORTED if the block requested is not found or movable and if there aren't any compatible subtiles. 
  */
 
 #include "manual_move_generator.h"
 #include "manual_moves.h"
+
+#ifndef NO_GRAPHICS
+#include "draw.h"
+#endif //NO_GRAPHICS
+
 
 ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
     avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
@@ -38,9 +43,10 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_pl_loc to;
 
 #ifndef NO_GRAPHICS
-    block_id = return_block_id();
-    to = return_to_loc();
-#endif /*NO_GRAPHICS*/
+    t_draw_state* draw_state = get_draw_state_vars();
+    block_id = draw_state->manual_moves_state.manual_move_info.blockID;
+    to = draw_state->manual_moves_state.manual_move_info.to_location;
+#endif //NO_GRAPHICS
 
     ClusterBlockId b_from = ClusterBlockId(block_id);
 
@@ -58,7 +64,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = device_ctx.grid[from.x][from.y].type;
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
-
+  
     //Retrieving the compressed block grid for this block type
     const auto& compressed_block_grid = place_ctx.compressed_block_grids[cluster_from_type->index];
     //Checking if the block has a compatible subtile.
