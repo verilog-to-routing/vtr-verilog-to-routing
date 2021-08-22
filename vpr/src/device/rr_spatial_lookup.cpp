@@ -122,6 +122,15 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int x,
         return nodes;
     }
 
+    /* Reserve space to avoid memory fragmentation */
+    size_t num_nodes = 0;
+    for (const auto& node : rr_node_indices_[type][node_x][node_y][side]) {
+        if (RRNodeId(node)) {
+            num_nodes++;
+        }
+    }
+
+    nodes.reserve(num_nodes);
     for (const auto& node : rr_node_indices_[type][node_x][node_y][side]) {
         if (RRNodeId(node)) {
             nodes.push_back(RRNodeId(node));
@@ -142,11 +151,6 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int x,
     return find_nodes(x, y, type);
 }
 
-std::vector<RRNodeId> RRSpatialLookup::find_sink_nodes(int x,
-                                                       int y) const {
-    return find_nodes(x, y, SINK);
-}
-
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
                                                                int y,
                                                                t_rr_type rr_type,
@@ -155,6 +159,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
 
     /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
     if (rr_type == IPIN || rr_type == OPIN) {
+        indices.reserve(NUM_SIDES);
         //For pins we need to look at all the sides of the current grid tile
         for (e_side side : SIDES) {
             RRNodeId rr_node_index = find_node(x, y, rr_type, ptc, side);
@@ -162,6 +167,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
                 indices.push_back(rr_node_index);
             }
         }
+        indices.shrink_to_fit();
     } else {
         //Sides do not effect non-pins so there should only be one per ptc
         RRNodeId rr_node_index = find_node(x, y, rr_type, ptc);
@@ -171,6 +177,46 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int x,
     }
 
     return indices;
+}
+
+std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int x,
+                                                                    int y,
+                                                                    t_rr_type rr_type) const {
+    VTR_ASSERT(rr_type == SOURCE || rr_type == OPIN || rr_type == IPIN || rr_type == SINK);
+    if (rr_type == SOURCE || rr_type == SINK) {
+        return find_nodes(x, y, rr_type);
+    }
+
+    std::vector<RRNodeId> nodes;
+    /* Reserve space to avoid memory fragmentation */
+    size_t num_nodes = 0;
+    for (e_side node_side : SIDES) {
+        num_nodes += find_nodes(x, y, rr_type, node_side).size();
+    }
+
+    nodes.reserve(num_nodes);
+    for (e_side node_side : SIDES) {
+        std::vector<RRNodeId> temp_nodes = find_nodes(x, y, rr_type, node_side);
+        nodes.insert(nodes.end(), temp_nodes.begin(), temp_nodes.end());
+    }
+    return nodes;
+}
+
+void RRSpatialLookup::reserve_nodes(int x,
+                                    int y,
+                                    t_rr_type type,
+                                    int num_nodes,
+                                    e_side side) {
+    VTR_ASSERT_SAFE(3 == rr_node_indices_[type].ndims());
+
+    /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
+    if (type != IPIN && type != OPIN) {
+        VTR_ASSERT(side == SIDES[0]);
+    }
+
+    resize_nodes(x, y, type, side);
+
+    rr_node_indices_[type][x][y][side].reserve(num_nodes);
 }
 
 void RRSpatialLookup::add_node(RRNodeId node,

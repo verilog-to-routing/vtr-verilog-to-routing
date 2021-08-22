@@ -577,7 +577,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         if (rcv_path_manager.is_enabled() && current->path_data) {
             next_ptr->path_data->path_rr = current->path_data->path_rr;
             next_ptr->path_data->edge = current->path_data->edge;
-            next_ptr->path_data->path_rr.emplace_back(from_node);
+            next_ptr->path_data->path_rr.emplace_back(RRNodeId(from_node));
             next_ptr->path_data->edge.emplace_back(from_edge);
         }
 
