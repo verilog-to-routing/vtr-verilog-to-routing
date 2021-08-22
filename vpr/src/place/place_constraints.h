@@ -124,6 +124,9 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
 /*
  * Returns the number of grid tiles that are covered by the region and compatible
  * with the cluster's block type.
+ * No subtile case (most common case) complexity: O(1)
+ * Specific subtile case complexity: calls get_region_with_subtile_size(), which has complexity
+ * O(region_size)
  */
 int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
@@ -132,6 +135,7 @@ int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, Grid
  * with the cluster's block type, in the case where the floorplan region has a
  * subtile specified. An extra check has to be done to see whether the subtile is
  * compatible with the block type at each of the locations with the region.
+ * Complexity: O(region_size)
  */
 int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 

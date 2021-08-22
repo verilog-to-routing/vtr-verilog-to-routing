@@ -414,6 +414,13 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     return pr_size_one;
 }
 
+/*
+ * This routine uses pre-computed values from the GridTileLookup class to get the number of grid tiles
+ * covered by a region.
+ * For a region with no subtiles specified, the number of grid tiles can be calculated by adding
+ * and subtracting four values from within/at the edge of the reigon.
+ * The region with subtile case is taken care of by a helper routine, get_region_with_subtile_size().
+ */
 int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
     vtr::Rect<int> reg_rect = reg.get_region_rect();
     int subtile = reg.get_sub_tile();
@@ -450,6 +457,12 @@ int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, Grid
     return num_tiles;
 }
 
+/*
+ * This routine is for the subtile specified case; an O(region_size) scan needs to be done to check whether each grid
+ * location in the region is compatible for the block at the subtile specified. When the GridTileLookup
+ * class is initialized, the subtile range for the block type is stored at each grid location, making
+ * it easy to check whether the subtile is compatible or not.
+ */
 int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
     int num_sub_tiles = 0;
     vtr::Rect<int> reg_rect = reg.get_region_rect();

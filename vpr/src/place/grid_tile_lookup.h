@@ -1,10 +1,10 @@
 /*
- * grid_tile_lookup.h
- *
- *  Created on: Aug. 19, 2021
- *      Author: khalid88
+ * This class is used to stores a grid for each logical block type. The grid stores the number of cumulative
+ * tiles that are available for this block type at each grid location. At each grid location, it also stores
+ * the range of compatible subtiles for the block type.
+ * This lookup class is used during initial placement when sorting blocks by the size of their floorplan constraint
+ * regions.
  */
-
 #ifndef VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_
 #define VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_
 

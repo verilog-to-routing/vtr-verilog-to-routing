@@ -1,9 +1,3 @@
-/*
- * grid_tile_loopkup.cpp
- *
- *  Created on: Aug. 19, 2021
- *      Author: khalid88
- */
 #include "grid_tile_lookup.h"
 
 void GridTileLookup::initialize_grid_tile_matrices() {

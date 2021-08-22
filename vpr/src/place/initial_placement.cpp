@@ -20,8 +20,6 @@ struct t_block_score {
      * difficult the block is to place.
      */
     int tiles_outside_of_floorplan_constraints = 0;
-
-    int num_equivalent_tiles = 1; //num of physical locations at which this block could be placed
 };
 
 /* The maximum number of tries when trying to place a carry chain at a    *
@@ -48,13 +46,13 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
  * Used for relative placement, so that the blocks that are more difficult to place can be placed first during initial placement.
  * A higher score indicates that the block is more difficult to place.
  */
-vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
+static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 
 //Sort the blocks according to how difficult they are to place, prior to initial placement
-std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
+static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 //Sort the macros according to how difficult they are to place, prior to initial placement
-std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
+static std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
@@ -335,7 +333,7 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
     return nullptr;
 }
 
-vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
+static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplan_ctx = g_vpr_ctx.floorplanning();
@@ -343,14 +341,13 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     int num_grid_tiles = device_ctx.grid.height() * device_ctx.grid.width();
 
-    auto blocks = cluster_ctx.clb_nlist.blocks();
     auto& pl_macros = place_ctx.pl_macros;
 
     t_block_score score;
 
     vtr::vector<ClusterBlockId, t_block_score> block_scores;
 
-    block_scores.resize(blocks.size());
+    block_scores.resize(cluster_ctx.clb_nlist.blocks().size());
 
     //Fill the grid tiles data structure
     GridTileLookup grid_tiles;
@@ -363,7 +360,7 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
      */
 
     //go through all blocks and store floorplan constraints and num equivalent tiles
-    for (auto blk_id : blocks) {
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (is_cluster_constrained(blk_id)) {
             PartitionRegion pr = floorplan_ctx.cluster_constraints[blk_id];
             auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -378,9 +375,6 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
             }
             block_scores[blk_id].tiles_outside_of_floorplan_constraints = num_grid_tiles - num_floorplan_tiles;
         }
-        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto num_tiles = logical_block->equivalent_tiles.size();
-        block_scores[blk_id].num_equivalent_tiles = num_tiles;
     }
 
     //go through placement macros and store size of macro for each block
@@ -394,16 +388,24 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     return block_scores;
 }
 
-std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
+static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto blocks = cluster_ctx.clb_nlist.blocks();
 
     std::vector<ClusterBlockId> sorted_blocks(blocks.begin(), blocks.end());
 
+    /*
+     * The criteria considers blocks that belong to a macro or to a floorplan region more difficult to place.
+     * The bigger the macro, and/or the tighter the floorplan constraint, the earlier the block will be in
+     * the list of sorted blocks.
+     * The tiles_outside_of_floorplan_constraints will dominate the criteria, since the number of tiles will
+     * likely be significantly bigger than the macro size. This is okay since the floorplan constraints give
+     * a more accurate picture of how difficult a block is to place.
+     */
     auto criteria = [block_scores](ClusterBlockId lhs, ClusterBlockId rhs) {
-        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].tiles_outside_of_floorplan_constraints + 10 / (block_scores[lhs].num_equivalent_tiles);
-        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].tiles_outside_of_floorplan_constraints + 10 / (block_scores[rhs].num_equivalent_tiles);
+        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].tiles_outside_of_floorplan_constraints;
+        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].tiles_outside_of_floorplan_constraints;
 
         return lhs_score > rhs_score;
     };
@@ -414,7 +416,7 @@ std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_bloc
     return sorted_blocks;
 }
 
-std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
+static std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     auto& pl_macros = place_ctx.pl_macros;
@@ -423,8 +425,8 @@ std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_sc
     std::vector<t_pl_macro> sorted_pl_macros(pl_macros.begin(), pl_macros.end());
 
     auto criteria = [block_scores](const t_pl_macro lhs, t_pl_macro rhs) {
-        int lhs_score = 10 * block_scores[lhs.members[0].blk_index].macro_size + block_scores[lhs.members[0].blk_index].tiles_outside_of_floorplan_constraints + 10 / (block_scores[lhs.members[0].blk_index].num_equivalent_tiles);
-        int rhs_score = 10 * block_scores[rhs.members[0].blk_index].macro_size + block_scores[rhs.members[0].blk_index].tiles_outside_of_floorplan_constraints + 10 / (block_scores[rhs.members[0].blk_index].num_equivalent_tiles);
+        int lhs_score = 10 * block_scores[lhs.members[0].blk_index].macro_size + block_scores[lhs.members[0].blk_index].tiles_outside_of_floorplan_constraints;
+        int rhs_score = 10 * block_scores[rhs.members[0].blk_index].macro_size + block_scores[rhs.members[0].blk_index].tiles_outside_of_floorplan_constraints;
 
         return lhs_score > rhs_score;
     };
@@ -437,7 +439,7 @@ std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_sc
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     VTR_LOG("\nPrinting sorted blocks: \n");
     for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
-        VTR_LOG("Block_Id: %zu, Macro size: %d, Num tiles outside floorplan constraints: %d, Num equivalent tiles %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].tiles_outside_of_floorplan_constraints, block_scores[sorted_blocks[i]].num_equivalent_tiles);
+        VTR_LOG("Block_Id: %zu, Macro size: %d, Num tiles outside floorplan constraints: %d\n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].tiles_outside_of_floorplan_constraints);
     }
 }
 
