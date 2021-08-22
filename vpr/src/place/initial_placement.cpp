@@ -349,7 +349,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     block_scores.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    //Fill the grid tiles data structure
+    //GridTileLookup class provides info needed for calculating number of tiles covered by a region
     GridTileLookup grid_tiles;
     grid_tiles.initialize_grid_tile_matrices();
 
@@ -418,7 +418,6 @@ static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId,
 
 static std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     auto& place_ctx = g_vpr_ctx.placement();
-
     auto& pl_macros = place_ctx.pl_macros;
 
     // Sorting blocks to place to have most constricted ones to be placed first
