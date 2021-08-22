@@ -10,6 +10,7 @@
 #include "clustered_netlist_utils.h"
 #include "partition_region.h"
 #include "place_macro.h"
+#include "grid_tile_lookup.h"
 
 #ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
 #    define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
@@ -120,13 +121,19 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
-void create_tile_count_matrices();
-
 /*
  * Returns the number of grid tiles that are covered by the region and compatible
  * with the cluster's block type.
  */
-int get_region_size(const Region& reg, t_logical_block_type_ptr block_type);
+int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
+
+/*
+ * Returns the number of grid tiles that are covered by the region and compatible
+ * with the cluster's block type, in the case where the floorplan region has a
+ * subtile specified. An extra check has to be done to see whether the subtile is
+ * compatible with the block type at each of the locations with the region.
+ */
+int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
 /*
  * Returns the number of grid tiles that are covered by the partition region and
@@ -134,6 +141,6 @@ int get_region_size(const Region& reg, t_logical_block_type_ptr block_type);
  * Used prior to initial placement to help sort blocks based on how difficult they
  * are to place.
  */
-int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type);
+int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

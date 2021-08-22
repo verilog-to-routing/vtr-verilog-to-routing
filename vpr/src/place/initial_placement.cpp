@@ -352,6 +352,10 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     block_scores.resize(blocks.size());
 
+    //Fill the grid tiles data structure
+    GridTileLookup grid_tiles;
+    grid_tiles.initialize_grid_tile_matrices();
+
     /*
      * For the blocks with no floorplan constraints, and the blocks that are not part of macros,
      * the block scores will remain at their default values assigned by the constructor
@@ -363,7 +367,16 @@ vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
         if (is_cluster_constrained(blk_id)) {
             PartitionRegion pr = floorplan_ctx.cluster_constraints[blk_id];
             auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-            block_scores[blk_id].tiles_outside_of_floorplan_constraints = num_grid_tiles - get_part_reg_size(pr, block_type);
+            int num_floorplan_tiles = get_part_reg_size(pr, block_type, grid_tiles);
+            if (num_floorplan_tiles == 0) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                                "Initial placement failed.\n"
+                                "The specified floorplan region for block %s (# %d) has no available locations for its type. \n"
+                                "Please specify a different floorplan region for the block. Note that if the region has a specified subtile, "
+                                "an incompatible subtile location may be the cause of the floorplan region failure. \n",
+                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
+            }
+            block_scores[blk_id].tiles_outside_of_floorplan_constraints = num_grid_tiles - num_floorplan_tiles;
         }
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto num_tiles = logical_block->equivalent_tiles.size();
@@ -424,7 +437,7 @@ std::vector<t_pl_macro> sort_macros(const vtr::vector<ClusterBlockId, t_block_sc
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     VTR_LOG("\nPrinting sorted blocks: \n");
     for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
-        VTR_LOG("Block_Id: %zu, Macro size: %d, Num floorplan constraints tiles: %d, Num equivalent tiles %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].tiles_outside_of_floorplan_constraints, block_scores[sorted_blocks[i]].num_equivalent_tiles);
+        VTR_LOG("Block_Id: %zu, Macro size: %d, Num tiles outside floorplan constraints: %d, Num equivalent tiles %d \n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].tiles_outside_of_floorplan_constraints, block_scores[sorted_blocks[i]].num_equivalent_tiles);
     }
 }
 
@@ -441,18 +454,10 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
      */
     propagate_place_constraints();
 
-
-
-    create_tile_count_matrices();
-
-
-
-
     //Sort blocks and placement macros according to how difficult they are to place
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
     std::vector<t_pl_macro> sorted_macros = sort_macros(block_scores);
-
 
     // Loading legal placement locations
     zero_initialize_grid_blocks();

@@ -11,7 +11,6 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
-#include "grid_tile_lookup.h"
 
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
@@ -415,136 +414,70 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     return pr_size_one;
 }
 
-/*void fill_grid_values() {
-	auto& device_ctx = g_vpr_ctx.device();
-	auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	ClusterBlockId blk_id(112);
-
-	auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-
-	VTR_LOG("Cluster block type is %s \n", block_type->name);
-
-	int num_rows = device_ctx.grid.height();
-	int num_cols = device_ctx.grid.width();
-	VTR_LOG("Number of rows is %d, number of columns is %d \n", num_rows, num_cols);
-
-	std::vector<vtr::NdMatrix<grid_tile_info, 2>> block_type_matrices;
-
-	vtr::NdMatrix<grid_tile_info, 2> type_count({device_ctx.grid.width(),device_ctx.grid.height()}); /// [0..width-1][0..height-1]
-
-	for (const auto& type : device_ctx.logical_block_types) {
-		block_type_matrices.push_back(create_count_grid(&type));
-	}
-
-	for (int i_col = type_count.dim_size(0) - 1; i_col >= 0; i_col--) {
-		for(int j_row = type_count.dim_size(1) - 1; j_row >= 0; j_row--) {
-			auto& tile = device_ctx.grid[i_col][j_row].type;
-			type_count[i_col][j_row].cumulative_total = 0;
-			type_count[i_col][j_row].st_range.set(0,0);
-			//VTR_LOG(" \n \n At grid location [%d, %d], cumulative total is %d\n", i_col, j_row, type_count[i_col][j_row].cumulative_total);
-
-			if (is_tile_compatible(tile, block_type)) {
-				//VTR_LOG("Tile is compatible");
-				for (const auto& sub_tile : tile->sub_tiles) {
-					if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
-						type_count[i_col][j_row].st_range.set(sub_tile.capacity.low, sub_tile.capacity.high);
-						type_count[i_col][j_row].cumulative_total = sub_tile.capacity.total();
-						//VTR_LOG("Set subtile range from %d to %d \n", type_count[i_col][j_row].st_range.low, type_count[i_col][j_row].st_range.high);
-						//VTR_LOG("Set cumulative total to %d \n", type_count[i_col][j_row].cumulative_total);
-					}
-				}
-			}
-
-            if(i_col < num_cols - 1) {
-            	type_count[i_col][j_row].cumulative_total += type_count[i_col + 1][j_row].cumulative_total;
-            	//VTR_LOG("1. Updated cumulative total to %d based on grid at [%d, %d] \n", type_count[i_col][j_row].cumulative_total,
-            			//i_col + 1, j_row);
-            }
-            if (j_row < num_rows - 1) {
-            	type_count[i_col][j_row].cumulative_total += type_count[i_col][j_row + 1].cumulative_total;
-            	//VTR_LOG("2. Updated cumulative total to %d based on grid at [%d, %d] \n", type_count[i_col][j_row].cumulative_total,
-            			//i_col, j_row + 1);
-            }
-            if (i_col < (num_cols - 1) && j_row < (num_rows - 1)) {
-            	type_count[i_col][j_row].cumulative_total -= type_count[i_col + 1][j_row + 1].cumulative_total;
-            	//VTR_LOG("3. Updated cumulative total to %d based on grid at [%d, %d] \n", type_count[i_col][j_row].cumulative_total,
-            			//i_col + 1, j_row + 1);
-            }
-
-            VTR_LOG("%d ", type_count[i_col][j_row].cumulative_total);
-		}
-		VTR_LOG("\n");
-	}
-}*/
-
-/*const vtr::NdMatrix<grid_tile_info, 2>& create_count_grid(t_logical_block_type_ptr block_type) {
-
-	vtr::NdMatrix<grid_tile_info, 2> matrix;
-	return matrix;
-}*/
-
-void create_tile_count_matrices() {
-	auto& device_ctx = g_vpr_ctx.device();
-
-	//Initialize data structures
-	GridTileLookup grid_tiles;
-	grid_tiles.initialize_grid_tile_matrices();
-
-	//Print grid for each tile type
-	for(unsigned int i = 0; i < device_ctx.logical_block_types.size(); i++) {
-		t_logical_block_type block_type = device_ctx.logical_block_types[i];
-
-		VTR_LOG("Print grid for type %s: \n", block_type.name);
-		grid_tiles.print_type_matrix(grid_tiles.get_type_grid(&block_type));
-	}
-}
-
-int get_region_size(const Region& reg, t_logical_block_type_ptr block_type) {
-    auto& device_ctx = g_vpr_ctx.device();
+int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
     vtr::Rect<int> reg_rect = reg.get_region_rect();
+    int subtile = reg.get_sub_tile();
 
-    int xdim = reg_rect.xmax() - reg_rect.xmin() + 1;
-    int ydim = reg_rect.ymax() - reg_rect.ymin() + 1;
+    int xmin = reg_rect.xmin();
+    int ymin = reg_rect.ymin();
+    int xmax = reg_rect.xmax();
+    int ymax = reg_rect.ymax();
+    auto grid = grid_tiles.get_type_grid(block_type);
 
-    std::vector<std::vector<int>> region_grid(xdim, std::vector<int>(ydim, 0));
+    int xdim = grid.dim_size(0);
+    int ydim = grid.dim_size(1);
 
-    for (int i_col = region_grid.size() - 1; i_col >= 0; i_col--) {
-        for (int j_row = region_grid[i_col].size() - 1; j_row >= 0; j_row--) {
-            auto& tile = device_ctx.grid[i_col + reg_rect.xmin()][j_row + reg_rect.ymin()].type;
+    int num_tiles = 0;
 
-            if (is_tile_compatible(tile, block_type)) {
-                if (reg.get_sub_tile() != NO_SUBTILE) {
-                    if (is_sub_tile_compatible(tile, block_type, reg.get_sub_tile())) {
-                        region_grid[i_col][j_row] = 1;
-                    }
-                } else {
-                    region_grid[i_col][j_row] = 1;
-                }
-            }
+    if (subtile == NO_SUBTILE) {
+        num_tiles = grid[xmin][ymin].cumulative_total;
 
-            if (i_col < signed(region_grid.size() - 1)) {
-                region_grid[i_col][j_row] += region_grid[i_col + 1][j_row];
-            }
-            if (j_row < signed(region_grid[i_col].size() - 1)) {
-                region_grid[i_col][j_row] += region_grid[i_col][j_row + 1];
-            }
-            if (i_col < signed(region_grid.size()) - 1 && j_row < signed(region_grid[i_col].size() - 1)) {
-                region_grid[i_col][j_row] -= region_grid[i_col + 1][j_row + 1];
-            }
+        if ((ymax + 1) < ydim) {
+            num_tiles -= grid[xmin][ymax + 1].cumulative_total;
         }
+
+        if ((xmax + 1) < xdim) {
+            num_tiles -= grid[xmax + 1][ymin].cumulative_total;
+        }
+
+        if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
+            num_tiles += grid[xmax + 1][ymax + 1].cumulative_total;
+        }
+    } else {
+        num_tiles = get_region_with_subtile_size(reg, block_type, grid_tiles);
     }
-    int num_tiles = region_grid[0][0];
 
     return num_tiles;
 }
 
-int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type) {
+int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+    int num_sub_tiles = 0;
+    vtr::Rect<int> reg_rect = reg.get_region_rect();
+    int subtile = reg.get_sub_tile();
+
+    int xmin = reg_rect.xmin();
+    int ymin = reg_rect.ymin();
+    int xmax = reg_rect.xmax();
+    int ymax = reg_rect.ymax();
+    auto grid = grid_tiles.get_type_grid(block_type);
+
+    for (int i = xmax; i >= xmin; i--) {
+        for (int j = ymax; j >= ymin; j--) {
+            if (grid[i][j].st_range.is_in_range(subtile)) {
+                num_sub_tiles++;
+            }
+        }
+    }
+
+    return num_sub_tiles;
+}
+
+int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
     std::vector<Region> part_reg = pr.get_partition_region();
     int num_tiles = 0;
 
     for (unsigned int i_reg = 0; i_reg < part_reg.size(); i_reg++) {
-        num_tiles += get_region_size(part_reg[i_reg], block_type);
+        num_tiles += get_region_size(part_reg[i_reg], block_type, grid_tiles);
     }
 
     return num_tiles;
