@@ -1523,8 +1523,8 @@ wire [255:0] dp_out_not_used2;
 //	  .DATA_WIDTH(32'b1056),
 //	  .MEMSIZE(11'b1024)) mesgWF_memory(
 
- defparam dpram1.ADDR_WIDTH = 10;
- defparam dpram1.DATA_WIDTH = 256;  
+ defparam dpram2.ADDR_WIDTH = 10;
+ defparam dpram2.DATA_WIDTH = 256;  
  dual_port_ram dpram2   (
 						.clk(wciS0_Clk),
 					    .addr1(mesgWF_memory__ADDRA),

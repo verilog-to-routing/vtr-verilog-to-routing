@@ -255,17 +255,17 @@
         "techmap_time(ms)": 45,
         "synthesis_time(ms)": 4208.9,
         "Latch Drivers": 1,
-        "Pi": 505,
+        "Pi": 510,
         "Po": 553,
-        "logic element": 13647,
+        "logic element": 13897,
         "latch": 2309,
         "Adder": 768,
-        "Memory": 1074,
+        "Memory": 1336,
         "generic logic size": 4,
         "Longest Path": 319,
         "Average Path": 4,
-        "Estimated LUTs": 13971,
-        "Total Node": 17799
+        "Estimated LUTs": 14663,
+        "Total Node": 18311
     },
     "large/mkSMAdapter4B/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/mkSMAdapter4B/k6_frac_N10_frac_chain_mem32K_40nm",
