@@ -98,11 +98,6 @@ void load_cluster_constraints();
  */
 void mark_fixed_blocks();
 
-//function where I fill how many values are there of each type at each grid location
-//void fill_grid_values();
-
-//const vtr::NdMatrix<grid_tile_info, 2>& create_count_grid(t_logical_block_type_ptr block_type);
-
 /*
  * Returns the number of tiles covered by a floorplan region.
  * The return value of this routine will either be 0, 1, or 2. This
