@@ -188,11 +188,19 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
 
     /* Macros are harder to place.  Do them first */
     for (auto pl_macro : sorted_pl_macros) {
+
         // Every macro are not placed in the beginnning
         macro_placed = false;
 
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macro.members[0].blk_index;
+
+        if (place_ctx.block_locs[blk_id].loc.x != -1) {
+            //put VTR assert
+            macro_placed = true;
+            continue;
+        }
+
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
         for (auto tile_type : block_type->equivalent_tiles) { //Try each possible tile type
