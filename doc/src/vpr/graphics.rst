@@ -213,4 +213,33 @@ Button Description Table
 |                   |                   |                              | FPGA                         |
 +-------------------+-------------------+------------------------------+------------------------------+
 
+Manual Moves
+------------
+
+The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
+
+.. figure:: https://www.verilogtorouting.org/img/manual_move_toggle_button.png
+   :align: center
+
+To enable the feature, active the Manual Move toggle button and press Proceed. Alternatively, the user can active the Manual Move toggle button and click on the block to be moved.
+
+.. figure:: https://www.verilogtorouting.org/img/draw_manual_moves_window.png
+   :align: center
+   
+On the manual move window, the user can specify the Block ID/Block name of the block to move and the To location, with the x position, y position and subtile position. For the manual move to be valid:
+
+- The To location requested by the user should be within the grid's dimensions.
+- The block to be moved is found, valid and not fixed.
+- The blocks to be swapped are compatible.
+- The location choosen by the user is different from the block's current location.
+
+Once all the manual move is legal, the cost summary window is displaying showing the user the Delta Cost, Delta Timing, Delta Bounding Box Cost and the Placer's Annealing Decision. 
+
+.. figure:: https://www.verilogtorouting.org/img/manual_move_cost_dialog.png
+   :align: center
+   
+The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown. 
+   
+
+
 
