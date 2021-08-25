@@ -19,7 +19,7 @@ enum e_agent_state {
  * It returns a unique pointer for each move generator in move_generator and move_generator2
  * move_lim: represents the num of moves per temp.
  */
-void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, std::unique_ptr<ManualMoveGenerator>& manual_move_generator, const t_placer_opts& placer_opts, int move_lim);
+void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, const t_placer_opts& placer_opts, int move_lim);
 
 /**
  * @brief copy one of the available move_generators to be the current move_generator that would be used in the placement based on the placer_options and the agent state

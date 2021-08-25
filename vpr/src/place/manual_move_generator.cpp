@@ -9,33 +9,8 @@
 #include "manual_moves.h"
 
 #ifndef NO_GRAPHICS
-#include "draw.h"
+#    include "draw.h"
 #endif //NO_GRAPHICS
-
-
-ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent) {
-    avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<CentroidMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedMedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<CriticalUniformMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<FeasibleRegionMoveGenerator>()));
-
-    karmed_bandit_agent = std::move(agent);
-}
-
-ManualMoveGenerator::ManualMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent) {
-    avail_moves.push_back(std::move(std::make_unique<UniformMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<MedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<CentroidMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedCentroidMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<WeightedMedianMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<CriticalUniformMoveGenerator>()));
-    avail_moves.push_back(std::move(std::make_unique<FeasibleRegionMoveGenerator>()));
-
-    karmed_bandit_agent = std::move(agent);
-}
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float /*rlim*/, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
@@ -64,7 +39,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = device_ctx.grid[from.x][from.y].type;
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
-  
+
     //Retrieving the compressed block grid for this block type
     const auto& compressed_block_grid = place_ctx.compressed_block_grids[cluster_from_type->index];
     //Checking if the block has a compatible subtile.

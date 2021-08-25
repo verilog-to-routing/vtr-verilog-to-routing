@@ -207,6 +207,8 @@ void manual_move_cost_summary_dialog() {
                                          GTK_RESPONSE_REJECT,
                                          NULL);
 
+    gtk_window_set_transient_for((GtkWindow*)dialog, (GtkWindow*)draw_state->manual_moves_state.manual_move_window);
+
     //Create elements for the dialog and printing costs to the user.
     GtkWidget* title_label = gtk_label_new(NULL);
     gtk_label_set_markup((GtkLabel*)title_label, "<b>Move Costs and Outcomes</b>");
@@ -288,24 +290,19 @@ bool string_is_a_number(std::string block_id) {
     return true;
 }
 
-
-
-//Updates ManualMovesInfo cost and placer move outcome variables. User_move_outcome is also updated. 
+//Updates ManualMovesInfo cost and placer move outcome variables. User_move_outcome is also updated.
 e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome) {
-
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->manual_moves_state.manual_move_info.delta_cost = d_cost;
     draw_state->manual_moves_state.manual_move_info.delta_timing = d_timing;
     draw_state->manual_moves_state.manual_move_info.delta_bounding_box = d_bounding_box;
     draw_state->manual_moves_state.manual_move_info.placer_move_outcome = move_outcome;
 
-    //Displays the delta cost to the user. 
+    //Displays the delta cost to the user.
     manual_move_cost_summary_dialog();
     //User accepts or rejects the move.
     move_outcome = draw_state->manual_moves_state.manual_move_info.user_move_outcome;
     return move_outcome;
 }
-
-
 
 #endif /*NO_GRAPHICS*/

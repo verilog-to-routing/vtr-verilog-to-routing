@@ -27,7 +27,7 @@ enum class e_move_type {
     W_MEDIAN,
     CRIT_UNIFORM,
     FEASIBLE_REGION,
-    MANUAL_MOVE
+    MANUAL_MOVE,
 };
 
 enum class e_create_move {

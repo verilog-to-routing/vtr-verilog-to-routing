@@ -462,6 +462,8 @@ void try_place(const t_placer_opts& placer_opts,
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
 
+    manual_move_generator = std::make_unique<ManualMoveGenerator>();
+
     t_pl_blocks_to_be_moved blocks_affected(
         cluster_ctx.clb_nlist.blocks().size());
 
@@ -491,8 +493,7 @@ void try_place(const t_placer_opts& placer_opts,
                      * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
-    create_move_generators(move_generator, move_generator2,
-                           manual_move_generator, placer_opts, move_lim);
+    create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
 
     width_fac = placer_opts.place_chan_width;
 
@@ -699,12 +700,12 @@ void try_place(const t_placer_opts& placer_opts,
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
-    move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size(),
+    move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size() + 1,
                                     0);
     move_type_stat.accepted_moves.resize(
-        placer_opts.place_static_move_prob.size(), 0);
+        placer_opts.place_static_move_prob.size() + 1, 0);
     move_type_stat.aborted_moves.resize(
-        placer_opts.place_static_move_prob.size(), 0);
+        placer_opts.place_static_move_prob.size() + 1, 0);
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -1196,7 +1197,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
 #ifndef NO_GRAPHICS
         //Checks manual move flag for manual move feature
         t_draw_state* draw_state = get_draw_state_vars();
-        if(draw_state->show_graphics) {
+        if (draw_state->show_graphics) {
             manual_move_enabled = manual_move_is_selected();
         }
 #endif /*NO_GRAPHICS*/
@@ -1342,13 +1343,13 @@ static e_move_result try_swap(const t_annealing_state* state,
     e_create_move create_move_outcome;
 
     //When manual move toggle button is active, the manual move window asks the user for input.
-   if (manual_move_enabled) {
+    if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
-		draw_manual_moves_window("");
-		update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+        draw_manual_moves_window("");
+        update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
 
-		move_type = e_move_type::MANUAL_MOVE;
-		create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+        move_type = e_move_type::MANUAL_MOVE;
+        create_move_outcome = manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
 #endif //NO_GRAPHICS
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1442,7 +1443,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
         if (manual_move_enabled) {
-		move_outcome = pl_do_manual_move(delta_c, timing_delta_c, bb_delta_c, move_outcome);
+            move_outcome = pl_do_manual_move(delta_c, timing_delta_c, bb_delta_c, move_outcome);
         }
 #endif //NO_GRAPHICS
 
@@ -1483,9 +1484,9 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             //Highlights the new block when manual move is selected.
 #ifndef NO_GRAPHICS
-           if(manual_move_enabled) {
-	    	manual_move_highlight_new_block_location();
-	   }
+            if (manual_move_enabled) {
+                manual_move_highlight_new_block_location();
+            }
 #endif //NO_GRAPHICS
 
         } else {
