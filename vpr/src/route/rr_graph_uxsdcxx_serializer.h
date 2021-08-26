@@ -686,10 +686,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline float get_node_timing_C(const t_rr_node& node) final {
-        return node.C();
+        return rr_graph_->node_C(node.id());
     }
     inline float get_node_timing_R(const t_rr_node& node) final {
-        return node.R();
+        return rr_graph_->node_R(node.id());
     }
 
     /** Generated for complex type "node_segment":

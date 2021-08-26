@@ -77,6 +77,21 @@ class RRGraphView {
         return node_storage_.node_direction_string(node);
     }
 
+    /* Get the capacitance of a routing resource node. This function is inlined for runtime optimization. */
+    inline float node_C(RRNodeId node) const {
+        return node_storage_.node_C(node);
+    }
+
+    /* Get the resistance of a routing resource node. This function is inlined for runtime optimization. */
+    inline float node_R(RRNodeId node) const {
+        return node_storage_.node_R(node);
+    }
+
+    /* Get the rc_index of a routing resource node. This function is inlined for runtime optimization. */
+    inline int16_t node_rc_index(RRNodeId node) const {
+        return node_storage_.node_rc_index(node);
+    }
+
     /* Get the fan in of a routing resource node. This function is inlined for runtime optimization. */
     inline t_edge_size node_fan_in(RRNodeId node) const {
         return node_storage_.fan_in(node);

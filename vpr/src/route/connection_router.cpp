@@ -577,7 +577,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         if (rcv_path_manager.is_enabled() && current->path_data) {
             next_ptr->path_data->path_rr = current->path_data->path_rr;
             next_ptr->path_data->edge = current->path_data->edge;
-            next_ptr->path_data->path_rr.emplace_back(from_node);
+            next_ptr->path_data->path_rr.emplace_back(RRNodeId(from_node));
             next_ptr->path_data->edge.emplace_back(from_edge);
         }
 
@@ -686,12 +686,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     //To node info
-    auto rc_index = rr_nodes_.node_rc_index(RRNodeId(to_node));
+    auto rc_index = rr_graph_->node_rc_index(RRNodeId(to_node));
     float node_C = rr_rc_data_[rc_index].C;
     float node_R = rr_rc_data_[rc_index].R;
 
     //From node info
-    float from_node_R = rr_rc_data_[rr_nodes_.node_rc_index(RRNodeId(from_node))].R;
+    float from_node_R = rr_rc_data_[rr_graph_->node_rc_index(RRNodeId(from_node))].R;
 
     //Update R_upstream
     if (switch_buffered) {
@@ -967,6 +967,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const DeviceGrid& grid,
     const RouterLookahead& router_lookahead,
     const t_rr_graph_storage& rr_nodes,
+    const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const std::vector<t_rr_switch_inf>& rr_switch_inf,
     std::vector<t_rr_node_route_inf>& rr_node_route_inf) {
@@ -976,6 +977,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 grid,
                 router_lookahead,
                 rr_nodes,
+                rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
                 rr_node_route_inf);
@@ -984,6 +986,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 grid,
                 router_lookahead,
                 rr_nodes,
+                rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
                 rr_node_route_inf);

@@ -510,8 +510,8 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     }
 
     /* Check that the capacitance and resistance are reasonable. */
-    C = device_ctx.rr_nodes[inode].C();
-    R = device_ctx.rr_nodes[inode].R();
+    C = rr_graph.node_C(RRNodeId(inode));
+    R = rr_graph.node_R(RRNodeId(inode));
 
     if (rr_type == CHANX || rr_type == CHANY) {
         if (C < 0. || R < 0.) {
