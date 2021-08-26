@@ -92,7 +92,6 @@ class t_rr_node {
     short edge_switch(t_edge_size iedge) const;
 
     bool edge_is_configurable(t_edge_size iedge) const;
-    t_edge_size fan_in() const;
 
     short xlow() const;
     short ylow() const;
@@ -107,13 +106,8 @@ class t_rr_node {
 
     short cost_index() const;
     short rc_index() const;
-    e_direction direction() const;
-    const char* direction_string() const;
 
     bool is_node_on_specific_side(e_side side) const;
-
-    float R() const;
-    float C() const;
 
     bool validate() const;
 
@@ -132,7 +126,7 @@ class t_rr_node {
     void set_cost_index(size_t);
     void set_rc_index(short);
 
-    void set_direction(e_direction);
+    void set_direction(Direction);
     void set_side(e_side);
     void add_side(e_side);
 

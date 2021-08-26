@@ -30,7 +30,7 @@ void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::uni
                                                       t_rr_edge_info_set* rr_edges_to_create) {
     // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
-        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, rr_node_indices_, rr_edges_to_create, num_segments);
+        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, *rr_graph_builder_, rr_edges_to_create, num_segments);
     }
 
     // Reduce the capacity of rr_nodes for performance
@@ -181,8 +181,8 @@ size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {
 }
 
 void ClockRRGraphBuilder::add_edge(t_rr_edge_info_set* rr_edges_to_create,
-                                   int src_node,
-                                   int sink_node,
+                                   RRNodeId src_node,
+                                   RRNodeId sink_node,
                                    int arch_switch_idx) const {
     const auto& device_ctx = g_vpr_ctx.device();
     VTR_ASSERT(arch_switch_idx < device_ctx.num_arch_switches);

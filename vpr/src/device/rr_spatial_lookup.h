@@ -63,8 +63,53 @@ class RRSpatialLookup {
                        int ptc,
                        e_side side = NUM_SIDES) const;
 
+    /**
+     * Returns the indices of the specified routing resource nodes,
+     * representing routing tracks in a channel.  
+     * - (x, y) are the coordinate of the routing channel within the FPGA
+     * - rr_type specifies the type of routing channel, either x-direction or y-direction
+     *
+     * Note: 
+     * - Return an empty list if there are no routing channel at the given (x, y) location
+     * - The node list returned only contain valid ids
+     *   For example, if the 2nd routing track does not exist in a routing channel at (x, y) location,
+     *   while the 3rd routing track does exist in a routing channel at (x, y) location,
+     *   the node list will not contain the node for the 2nd routing track, but the 2nd element in the list
+     *   will be the node for the 3rd routing track
+     */
+    std::vector<RRNodeId> find_channel_nodes(int x,
+                                             int y,
+                                             t_rr_type type) const;
+
+    /**
+     * Like find_node() but returns all matching nodes on all the sides.
+     * This is particularly useful for getting all instances
+     * of a specific IPIN/OPIN at a specific grid tile (x,y) location.
+     */
+    std::vector<RRNodeId> find_nodes_at_all_sides(int x,
+                                                  int y,
+                                                  t_rr_type rr_type,
+                                                  int ptc) const;
+
+    /**
+     * Returns all matching nodes on all the sides at a specific grid tile (x,y) location.
+     * As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN
+     */
+    std::vector<RRNodeId> find_grid_nodes_at_all_sides(int x,
+                                                       int y,
+                                                       t_rr_type rr_type) const;
+
     /* -- Mutators -- */
   public:
+    /**
+     * Reserve the memory for a list of nodes at (x, y) location with given type and side
+     */
+    void reserve_nodes(int x,
+                       int y,
+                       t_rr_type type,
+                       int num_nodes,
+                       e_side side = SIDES[0]);
+
     /**
      * Register a node in the fast look-up 
      * - You must have a valid node id to register the node in the lookup
@@ -90,7 +135,7 @@ class RRSpatialLookup {
                   int y,
                   t_rr_type type,
                   int ptc,
-                  e_side side);
+                  e_side side = SIDES[0]);
 
     /**
      * Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
@@ -140,6 +185,18 @@ class RRSpatialLookup {
                       t_rr_type type,
                       e_side side);
 
+    /* -- Internal data queries -- */
+  private:
+    /* An internal API to find all the nodes in a specific location with a given type
+     * For OPIN/IPIN nodes that may exist on multiple sides, a specific side must be provided  
+     * This API is NOT public because its too powerful for developers with very limited sanity checks 
+     * But it is used to build the public APIs find_channel_nodes() etc., where sufficient sanity checks are applied
+     */
+    std::vector<RRNodeId> find_nodes(int x,
+                                     int y,
+                                     t_rr_type type,
+                                     e_side side = SIDES[0]) const;
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
@@ -151,7 +208,7 @@ class RRSpatialLookup {
      * or inside the data structures to be changed later.
      * That explains why the reference is used here temporarily
      */
-    /* Fast look-up */
+    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional arrqay mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices& rr_node_indices_;
 };
 

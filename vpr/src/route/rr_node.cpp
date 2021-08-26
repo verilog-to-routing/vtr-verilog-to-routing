@@ -13,19 +13,6 @@ const char* t_rr_node::type_string() const {
     return rr_node_typename[g_vpr_ctx.device().rr_graph.node_type(id_)];
 }
 
-const char* t_rr_node::direction_string() const {
-    if (direction() == INC_DIRECTION) {
-        return "INC_DIR";
-    } else if (direction() == DEC_DIRECTION) {
-        return "DEC_DIR";
-    } else if (direction() == BI_DIRECTION) {
-        return "BI_DIR";
-    }
-
-    VTR_ASSERT(direction() == NO_DIRECTION);
-    return "NO_DIR";
-}
-
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
     return std::max(
@@ -39,17 +26,6 @@ bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
     auto& device_ctx = g_vpr_ctx.device();
 
     return device_ctx.rr_switch_inf[iswitch].configurable();
-}
-
-float t_rr_node::R() const {
-    auto& device_ctx = g_vpr_ctx.device();
-    return device_ctx.rr_rc_data[rc_index()].R;
-}
-
-float t_rr_node::C() const {
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT(rc_index() < (short)device_ctx.rr_rc_data.size());
-    return device_ctx.rr_rc_data[rc_index()].C;
 }
 
 bool t_rr_node::validate() const {
@@ -115,7 +91,7 @@ void t_rr_node::set_capacity(short new_capacity) {
     storage_->set_node_capacity(id_, new_capacity);
 }
 
-void t_rr_node::set_direction(e_direction new_direction) {
+void t_rr_node::set_direction(Direction new_direction) {
     storage_->set_node_direction(id_, new_direction);
 }
 

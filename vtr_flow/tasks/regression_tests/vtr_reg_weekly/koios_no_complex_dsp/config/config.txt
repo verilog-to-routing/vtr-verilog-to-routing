@@ -1,0 +1,42 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/verilog/koios
+
+# Path to directory of architectures to use
+archs_dir=arch/COFFE_22nm
+
+# Add circuits to list to sweep.
+# Some of these benchmarks are designs with complex_dsp blocks 
+# but in this task, we're running them without enabling these
+# blocks (that is, the macro `complex_dsp` is not defined).
+# Equivalent functionality is obtained through behavioral logic 
+# that gets mapped to soft logic.
+circuit_list_add=clstm_like.small.v
+circuit_list_add=clstm_like.medium.v
+circuit_list_add=clstm_like.large.v
+circuit_list_add=lstm.v
+circuit_list_add=gemm_layer.v
+circuit_list_add=tpu_like.medium.v
+circuit_list_add=tiny_darknet_like.small.v
+circuit_list_add=tiny_darknet_like.medium.v
+circuit_list_add=dla_like.medium.v
+
+# Add architectures to list to sweep
+arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+#Script parameters
+script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300
+

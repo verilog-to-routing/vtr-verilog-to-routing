@@ -102,6 +102,7 @@ static void do_one_route(int source_node, int sink_node,
             device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_nodes,
+            &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
             device_ctx.rr_switch_inf,
             g_vpr_ctx.mutable_routing().rr_node_route_inf);
@@ -170,7 +171,7 @@ static void profile_source(int source_rr_node,
             for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
 
-                int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc));
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists
@@ -215,12 +216,12 @@ static void profile_source(int source_rr_node,
     VTR_LOG("\n");
 }
 
-
 static t_chan_width setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
 
+    t_graph_type graph_directionality;
     int width_fac;
 
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
@@ -236,7 +237,13 @@ static t_chan_width setup_chan_width(t_router_opts router_opts,
         width_fac = router_opts.fixed_channel_width;
     }
 
-    return init_chan(width_fac, chan_width_dist);
+    if (router_opts.route_type == GLOBAL) {
+        graph_directionality = GRAPH_BIDIR;
+    } else {
+        graph_directionality = GRAPH_UNIDIR;
+    }
+
+    return init_chan(width_fac, chan_width_dist, graph_directionality);
 }
 
 t_route_util_options read_route_util_options(int argc, const char** argv) {
@@ -288,7 +295,6 @@ int main(int argc, const char **argv) {
         vpr_create_device_grid(vpr_setup, Arch);
 
         vpr_setup_clock_networks(vpr_setup, Arch);
-
 
         t_chan_width chan_width = setup_chan_width(
                 vpr_setup.RouterOpts,

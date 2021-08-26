@@ -48,6 +48,7 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_nodes,
+        &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
         g_vpr_ctx.mutable_routing().rr_node_route_inf);
@@ -127,7 +128,17 @@ TEST_CASE("connection_router", "[vpr]") {
 
     vpr_create_device_grid(vpr_setup, arch);
     vpr_setup_clock_networks(vpr_setup, arch);
-    auto chan_width = init_chan(vpr_setup.RouterOpts.fixed_channel_width, arch.Chans);
+    auto det_routing_arch = &vpr_setup.RoutingArch;
+    auto& router_opts = vpr_setup.RouterOpts;
+    t_graph_type graph_directionality;
+
+    if (router_opts.route_type == GLOBAL) {
+        graph_directionality = GRAPH_BIDIR;
+    } else {
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+    }
+
+    auto chan_width = init_chan(vpr_setup.RouterOpts.fixed_channel_width, arch.Chans, graph_directionality);
 
     alloc_routing_structs(
         chan_width,

@@ -82,14 +82,9 @@ else:
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
 
-# Support rendering Markdown docs
-source_parsers = {
-    ".md": "markdown_code_symlinks.LinkParser",
-}
-
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-source_suffix = [".rst", ".md"]
+source_suffix = [".rst"]
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -377,6 +372,21 @@ if shutil.which("doxygen"):
     else:
         for prjname, prjdir in breathe_projects.items():
             assert os.path.exists(prjdir) == True, "Regenerate doxygen XML for {}".format(prjname)
+
+
+def recommonmark_setup(app):
+    """Initialize Sphinx extension."""
+    import sphinx
+
+    if sphinx.version_info >= (1, 8):
+        app.add_source_suffix(".md", "markdown")
+        app.add_source_parser(LinkParser)
+
+    return {"version": recommonmark.__version__, "parallel_read_safe": True}
+
+
+# Override recommonmark setup
+recommonmark.setup = recommonmark_setup
 
 
 def setup(app):

@@ -90,8 +90,8 @@ static t_trace_branch traceback_branch(int node, int target_net_pin_index, std::
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
 
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
-static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const RRGraphView& rr_graph);
+static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const RRGraphView& rr_graph);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_acc_cost(int inode, int add_or_sub, float acc_fac);
@@ -207,14 +207,17 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     t_graph_type graph_type;
+    t_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
+        graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
     /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
+    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
 
     /* Free any old routing graph, if one exists. */
     free_rr_graph();
@@ -256,14 +259,17 @@ bool try_route(int width_fac,
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_graph_type graph_type;
+    t_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
         graph_type = GRAPH_GLOBAL;
+        graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
     /* Set the channel widths */
-    t_chan_width chan_width = init_chan(width_fac, chan_width_dist);
+    t_chan_width chan_width = init_chan(width_fac, chan_width_dist, graph_directionality);
 
     /* Set up the routing resource graph defined by this FPGA architecture. */
     int warning_count;
@@ -480,10 +486,10 @@ void init_route_structs(int bb_factor) {
     route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
 
     //Various look-ups
-    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
+    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph);
     route_ctx.is_clock_net = load_is_clock_net();
     route_ctx.route_bb = load_route_bb(bb_factor);
-    route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
+    route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
 }
@@ -969,7 +975,7 @@ void reset_rr_node_route_structs() {
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const RRGraphView& rr_graph) {
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -996,9 +1002,9 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
 
             int iclass = type->pin_class[phys_pin];
 
-            int inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                          iclass);
-            net_rr_terminals[net_id][pin_count] = inode;
+            RRNodeId inode = rr_graph.node_lookup().find_node(i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+                                                              iclass);
+            net_rr_terminals[net_id][pin_count] = size_t(inode);
             pin_count++;
         }
     }
@@ -1011,10 +1017,10 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
  * they are used only to reserve pins for locally used OPINs in the router. *
  * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
  * The values for blocks that are padsare NOT valid.                        */
-static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices) {
+static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const RRGraphView& rr_graph) {
     vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source;
 
-    int i, j, iclass, inode;
+    int i, j, iclass;
     t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1039,8 +1045,8 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
                 else
                     rr_type = SINK;
 
-                inode = get_rr_node_index(L_rr_node_indices, i, j, rr_type, iclass);
-                rr_blk_source[blk_id][iclass] = inode;
+                RRNodeId inode = rr_graph.node_lookup().find_node(i, j, rr_type, iclass);
+                rr_blk_source[blk_id][iclass] = size_t(inode);
             } else {
                 rr_blk_source[blk_id][iclass] = OPEN;
             }

@@ -19,19 +19,16 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         BUILD_TYPE: release
-      run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
+      run: ./.github/scripts/build.sh
 
 
   Format:
@@ -46,17 +43,14 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
-      run: |
-        source .github/travis/common.sh
-        ./dev/${{ matrix.script }}
+      run: ./dev/${{ matrix.script }}
 
 
   UniTests:
@@ -64,20 +58,16 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-      run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
-        ./.github/travis/unittest.sh
+      run: ./.github/scripts/unittest.sh
 
 
   Warnings:
@@ -85,21 +75,18 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         #In order to get compilation warnings produced per source file, we must do a non-IPO build
         #We also turn warnings into errors for this target by doing a strict compile
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
-      run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
+      run: ./.github/scripts/build.sh
 
 
   Regression:
@@ -137,19 +124,17 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
       run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
+        ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
 
@@ -164,12 +149,11 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
@@ -177,30 +161,28 @@ jobs:
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
+        ./.github/scripts/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
+
 
   ODINII:
     name: 'ODIN-II Basic Tests'
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
         BUILD_TYPE: debug
       run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
+        ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
 
 
@@ -221,21 +203,18 @@ jobs:
     name: 'B: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         MATRIX_EVAL: ${{ matrix.eval }}
         BUILD_TYPE: ${{ matrix.build }}
-      run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
+      run: ./.github/scripts/build.sh
 
 
   Coverity:
@@ -252,18 +231,15 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
 
-    - uses: actions/checkout@v2
-    - run: ./.github/gha/install_dependencies.sh
     - uses: actions/setup-python@v2
       with:
         python-version: 3.6
-    - run: pip install -r requirements.txt
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
         _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
         _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
-      run: |
-        source .github/travis/common.sh
-        ./.github/travis/build.sh
+      run: ./.github/scripts/build.sh
