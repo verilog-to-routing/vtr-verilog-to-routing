@@ -33,7 +33,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
 static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro, std::vector<std::vector<int>>& free_locations);
 static void place_a_macro(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations, t_pl_macro pl_macro);
 
-static void mark_macro_member(ClusterBlockId blk_id, int x, int y, int subtile, std::vector<std::vector<int>>& free_locations);
+static void mark_macro_member(ClusterBlockId blk_id, int x, int y, std::vector<std::vector<int>>& free_locations);
 
 static void place_a_block(ClusterBlockId blk_id, std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type);
 
@@ -158,7 +158,7 @@ static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_mac
             place_ctx.grid_blocks[member_pos.x][member_pos.y].usage++;
 
             //update the legal_pos and free_locations data structures where the macro member is placed
-            mark_macro_member(iblk, member_pos.x, member_pos.y, member_pos.sub_tile, free_locations);
+            mark_macro_member(iblk, member_pos.x, member_pos.y, free_locations);
 
         } // Finish placing all the members in the macro
 
@@ -167,9 +167,9 @@ static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_mac
     return (macro_placed);
 }
 
-static void mark_macro_member(ClusterBlockId blk_id, int x, int y, int subtile, std::vector<std::vector<int>>& free_locations) {
+static void mark_macro_member(ClusterBlockId blk_id, int x, int y, std::vector<std::vector<int>>& free_locations) {
     auto& device_ctx = g_vpr_ctx.device();
-
+    auto& place_ctx = g_vpr_ctx.placement();
     int itype = device_ctx.grid[x][y].type->index;
     int isub_tile = get_sub_tile_index(blk_id);
     int ipos;
@@ -179,20 +179,20 @@ static void mark_macro_member(ClusterBlockId blk_id, int x, int y, int subtile, 
         t_pl_loc pos = legal_pos[itype][isub_tile][ipos];
 
         // Check if that location is occupied.  If it is, remove from legal_pos
-        /*if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != INVALID_BLOCK_ID) {
-         * legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1];
-         * free_locations[itype][isub_tile]--;
-         *
-         * // After the move, I need to check this particular entry again
-         * ipos--;
-         * continue;
-         * }*/
+        if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != INVALID_BLOCK_ID) {
+          legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1];
+          free_locations[itype][isub_tile]--;
 
-        if (pos.x == x && pos.y == y && pos.sub_tile == subtile) {
+          // After the move, I need to check this particular entry again
+          ipos--;
+          continue;
+        }
+
+        /*if (pos.x == x && pos.y == y && pos.sub_tile == subtile) {
             legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1];
             free_locations[itype][isub_tile]--;
             break;
-        }
+        }*/
     }
 }
 
