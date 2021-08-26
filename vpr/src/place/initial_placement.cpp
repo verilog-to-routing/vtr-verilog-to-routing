@@ -158,7 +158,7 @@ static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_mac
             place_ctx.grid_blocks[member_pos.x][member_pos.y].usage++;
 
             //update the legal_pos and free_locations data structures where the macro member is placed
-            mark_macro_member(iblk, member_pos.x, member_pos.y, free_locations);
+            //mark_macro_member(iblk, member_pos.x, member_pos.y, free_locations);
 
         } // Finish placing all the members in the macro
 
@@ -438,6 +438,10 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              std::vector<std::vector<int>>& free_locations,
                              enum e_pad_loc_type pad_loc_type) {
     auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    int num_macros = place_ctx.pl_macros.size();
+    int num_macros_placed = 0;
+    int itype; int ipos;
 
     for (auto blk_id : sorted_blocks) {
         //Check if macro has already been placed
@@ -452,9 +456,35 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
             t_pl_macro pl_macro;
             pl_macro = place_ctx.pl_macros[imacro];
             place_a_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations, pl_macro);
-
+            num_macros_placed++;
         } else {
             place_a_block(blk_id, free_locations, pad_loc_type);
+        }
+
+        if (num_macros_placed == num_macros) {
+            // All the macros are placed, update the legal_pos[][] array and free_locations[] array
+            for (const auto& type : device_ctx.physical_tile_types) {
+                itype = type.index;
+
+                for (auto sub_tile : type.sub_tiles) {
+                    int isub_tile = sub_tile.index;
+
+                    VTR_ASSERT(free_locations[itype][isub_tile] >= 0);
+                    for (ipos = 0; ipos < free_locations[itype][isub_tile]; ipos++) {
+                        t_pl_loc pos = legal_pos[itype][isub_tile][ipos];
+
+                        // Check if that location is occupied.  If it is, remove from legal_pos
+                        if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != INVALID_BLOCK_ID) {
+                            legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1];
+                            free_locations[itype][isub_tile]--;
+
+                            // After the move, I need to check this particular entry again
+                            ipos--;
+                            continue;
+                        }
+                    }
+                }
+            } // Finish updating the legal_pos[][] and free_locations[] array
         }
     }
 }
