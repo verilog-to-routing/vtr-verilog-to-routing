@@ -367,8 +367,8 @@ static void load_rr_indexed_data_T_values() {
         VTR_ASSERT(num_switches > 0);
 
         num_nodes_of_index[cost_index]++;
-        C_total[cost_index].push_back(rr_nodes[inode].C());
-        R_total[cost_index].push_back(rr_nodes[inode].R());
+        C_total[cost_index].push_back(rr_graph.node_C(RRNodeId(inode)));
+        R_total[cost_index].push_back(rr_graph.node_R(RRNodeId(inode)));
 
         switch_R_total[cost_index].push_back(avg_switch_R);
         switch_T_total[cost_index].push_back(avg_switch_T);

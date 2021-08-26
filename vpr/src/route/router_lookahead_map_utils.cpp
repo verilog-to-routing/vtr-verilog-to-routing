@@ -70,6 +70,7 @@ PQ_Entry::PQ_Entry(
     this->rr_node = set_rr_node;
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     this->delay = parent_delay;
     this->congestion_upstream = parent_congestion_upstream;
     this->R_upstream = parent_R_upstream;
@@ -78,8 +79,8 @@ PQ_Entry::PQ_Entry(
         Tsw += Tsw_adjust;
         VTR_ASSERT(Tsw >= 0.f);
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
-        float Cnode = device_ctx.rr_nodes[size_t(set_rr_node)].C();
-        float Rnode = device_ctx.rr_nodes[size_t(set_rr_node)].R();
+        float Cnode = rr_graph.node_C(set_rr_node);
+        float Rnode = rr_graph.node_R(set_rr_node);
 
         float T_linear = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
@@ -112,10 +113,11 @@ util::PQ_Entry_Delay::PQ_Entry_Delay(
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
+        const auto& rr_graph = device_ctx.rr_graph;
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
-        float Cnode = device_ctx.rr_nodes[size_t(set_rr_node)].C();
-        float Rnode = device_ctx.rr_nodes[size_t(set_rr_node)].R();
+        float Cnode = rr_graph.node_C(set_rr_node);
+        float Rnode = rr_graph.node_R(set_rr_node);
 
         float T_linear = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {

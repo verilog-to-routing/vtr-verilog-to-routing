@@ -434,12 +434,6 @@ class RRGraph {
      */
     e_side node_side(const RRNodeId& node) const;
 
-    /* Get resistance of a node, used to built RC tree for timing analysis */
-    float node_R(const RRNodeId& node) const;
-
-    /* Get capacitance of a node, used to built RC tree for timing analysis */
-    float node_C(const RRNodeId& node) const;
-
     /* Get segment id of a node, containing the information of the routing
      * segment that the node represents. See more details in the data structure t_segment_inf
      */
