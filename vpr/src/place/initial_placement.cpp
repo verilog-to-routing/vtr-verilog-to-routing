@@ -339,8 +339,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     auto& floorplan_ctx = g_vpr_ctx.floorplanning();
     auto& device_ctx = g_vpr_ctx.device();
 
-    int num_grid_tiles = device_ctx.grid.height() * device_ctx.grid.width();
-
     auto& pl_macros = place_ctx.pl_macros;
 
     t_block_score score;
@@ -364,16 +362,8 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
         if (is_cluster_constrained(blk_id)) {
             PartitionRegion pr = floorplan_ctx.cluster_constraints[blk_id];
             auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-            int num_floorplan_tiles = get_part_reg_size(pr, block_type, grid_tiles);
-            if (num_floorplan_tiles == 0) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "The specified floorplan region for block %s (# %d) has no available locations for its type. \n"
-                                "Please specify a different floorplan region for the block. Note that if the region has a specified subtile, "
-                                "an incompatible subtile location may be the cause of the floorplan region failure. \n",
-                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
-            }
-            block_scores[blk_id].tiles_outside_of_floorplan_constraints = num_grid_tiles - num_floorplan_tiles;
+            int floorplan_score = get_floorplan_score(blk_id, pr, block_type, grid_tiles);
+            block_scores[blk_id].tiles_outside_of_floorplan_constraints = floorplan_score;
         }
     }
 

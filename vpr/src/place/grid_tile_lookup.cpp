@@ -3,6 +3,9 @@
 void GridTileLookup::initialize_grid_tile_matrices() {
     auto& device_ctx = g_vpr_ctx.device();
 
+    //Will store the max number of tile locations for each logical block type
+    max_tile_counts.resize(device_ctx.logical_block_types.size());
+
     for (const auto& type : device_ctx.logical_block_types) {
         vtr::NdMatrix<grid_tile_info, 2> type_count({device_ctx.grid.width(), device_ctx.grid.height()});
         fill_type_matrix(&type, type_count);
@@ -26,7 +29,7 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
                 for (const auto& sub_tile : tile->sub_tiles) {
                     if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
                         type_count[i_col][j_row].st_range.set(sub_tile.capacity.low, sub_tile.capacity.high);
-                        type_count[i_col][j_row].cumulative_total = 1;
+                        type_count[i_col][j_row].cumulative_total = sub_tile.capacity.total();
                     }
                 }
             }
@@ -42,10 +45,17 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
             }
         }
     }
+
+    //The total number of subtiles for the block type will be at [0][0]
+    max_tile_counts[block_type->index] = type_count[0][0].cumulative_total;
 }
 
 vtr::NdMatrix<grid_tile_info, 2>& GridTileLookup::get_type_grid(t_logical_block_type_ptr block_type) {
     return block_type_matrices[block_type->index];
+}
+
+int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) {
+	return max_tile_counts[block_type->index];
 }
 
 void GridTileLookup::print_type_matrix(vtr::NdMatrix<grid_tile_info, 2>& type_count) {

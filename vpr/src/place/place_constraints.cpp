@@ -495,3 +495,23 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
 
     return num_tiles;
 }
+
+int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);
+
+    if (num_pr_tiles == 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                        "Initial placement failed.\n"
+                        "The specified floorplan region for block %s (# %d) has no available locations for its type. \n"
+                        "Please specify a different floorplan region for the block. Note that if the region has a specified subtile, "
+                        "an incompatible subtile location may be the cause of the floorplan region failure. \n",
+                        cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
+    }
+
+	int total_type_tiles = grid_tiles.total_type_tiles(block_type);
+
+	return total_type_tiles - num_pr_tiles;
+
+}

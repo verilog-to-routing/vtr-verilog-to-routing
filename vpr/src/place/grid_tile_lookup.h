@@ -26,8 +26,12 @@ class GridTileLookup {
 
     void print_type_matrix(vtr::NdMatrix<grid_tile_info, 2>& type_count);
 
+    int total_type_tiles(t_logical_block_type_ptr block_type);
+
   private:
     std::vector<vtr::NdMatrix<grid_tile_info, 2>> block_type_matrices;
+
+    std::vector<int> max_tile_counts;
 };
 
 #endif /* VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_ */

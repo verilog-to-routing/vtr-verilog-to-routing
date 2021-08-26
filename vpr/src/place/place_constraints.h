@@ -142,4 +142,6 @@ int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr blo
  */
 int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
+int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
+
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */
