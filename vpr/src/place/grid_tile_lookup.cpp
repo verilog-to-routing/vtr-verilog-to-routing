@@ -4,7 +4,7 @@ void GridTileLookup::initialize_grid_tile_matrices() {
     auto& device_ctx = g_vpr_ctx.device();
 
     //Will store the max number of tile locations for each logical block type
-    max_tile_counts.resize(device_ctx.logical_block_types.size());
+    max_placement_locations.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
         vtr::NdMatrix<int, 2> type_count({device_ctx.grid.width(), device_ctx.grid.height()});
@@ -24,7 +24,7 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
      * the correct type at each location. For each location, we store the cumulative
      * number of tiles of the type up to that location - meaning we store the number of
      * subtiles at the location, plus the number of subtiles at the locations above and to
-     * the left of it.
+     * the right of it.
      */
     for (int i_col = type_count.dim_size(0) - 1; i_col >= 0; i_col--) {
         for (int j_row = type_count.dim_size(1) - 1; j_row >= 0; j_row--) {
@@ -52,7 +52,7 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
     }
 
     //The total number of subtiles for the block type will be at [0][0]
-    max_tile_counts[block_type->index] = type_count[0][0];
+    max_placement_locations[block_type->index] = type_count[0][0];
 }
 
 vtr::NdMatrix<int, 2>& GridTileLookup::get_type_grid(t_logical_block_type_ptr block_type) {
@@ -60,7 +60,7 @@ vtr::NdMatrix<int, 2>& GridTileLookup::get_type_grid(t_logical_block_type_ptr bl
 }
 
 int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) {
-    return max_tile_counts[block_type->index];
+    return max_placement_locations[block_type->index];
 }
 
 /*
