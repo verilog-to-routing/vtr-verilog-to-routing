@@ -170,9 +170,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                     to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                     /* Ignore any uninitialized rr_graph nodes */
-                    if ((rr_graph.node_type(RRNodeId(to_node)) == SOURCE)
-                        && (rr_graph.node_xlow(RRNodeId(to_node)) == 0) && (rr_graph.node_ylow(RRNodeId(to_node)) == 0)
-                        && (rr_graph.node_xhigh(RRNodeId(to_node)) == 0) && (rr_graph.node_yhigh(RRNodeId(to_node)) == 0)) {
+                    if (!rr_graph.node_is_initialized(RRNodeId(to_node))) {
                         continue;
                     }
 
@@ -369,9 +367,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                     to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                     /* Ignore any uninitialized rr_graph nodes */
-                    if ((rr_graph.node_type(RRNodeId(to_node)) == SOURCE)
-                        && (rr_graph.node_xlow(RRNodeId(to_node)) == 0) && (rr_graph.node_ylow(RRNodeId(to_node)) == 0)
-                        && (rr_graph.node_xhigh(RRNodeId(to_node)) == 0) && (rr_graph.node_yhigh(RRNodeId(to_node)) == 0)) {
+                    if (!rr_graph.node_is_initialized(RRNodeId(to_node))) {
                         continue;
                     }
 

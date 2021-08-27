@@ -310,8 +310,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
 
         else if (curr_type == CHANX || curr_type == CHANY) {
             segments++;
-            length += 1 + rr_graph.node_xhigh(RRNodeId(inode)) - rr_graph.node_xlow(RRNodeId(inode))
-                      + rr_graph.node_yhigh(RRNodeId(inode)) - rr_graph.node_ylow(RRNodeId(inode));
+            length += rr_graph.node_length(RRNodeId(inode));
 
             if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
                 bends++;

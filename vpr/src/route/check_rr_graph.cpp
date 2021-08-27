@@ -60,9 +60,7 @@ void check_rr_graph(const t_graph_type graph_type,
         device_ctx.rr_nodes[inode].validate();
 
         /* Ignore any uninitialized rr_graph nodes */
-        if ((rr_graph.node_type(RRNodeId(inode)) == SOURCE)
-            && (rr_graph.node_xlow(RRNodeId(inode)) == 0) && (rr_graph.node_ylow(RRNodeId(inode)) == 0)
-            && (rr_graph.node_xhigh(RRNodeId(inode)) == 0) && (rr_graph.node_yhigh(RRNodeId(inode)) == 0)) {
+        if (!rr_graph.node_is_initialized(RRNodeId(inode))) {
             continue;
         }
 

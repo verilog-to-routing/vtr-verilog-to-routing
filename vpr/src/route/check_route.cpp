@@ -472,27 +472,14 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
     /* Returns 1 if the specified CHANX and CHANY nodes are adjacent, 0         *
      * otherwise.                                                               */
 
-    int chanx_y, chanx_xlow, chanx_xhigh;
-    int chany_x, chany_ylow, chany_yhigh;
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    chanx_y = rr_graph.node_ylow(RRNodeId(chanx_node));
-    chanx_xlow = rr_graph.node_xlow(RRNodeId(chanx_node));
-    chanx_xhigh = rr_graph.node_xhigh(RRNodeId(chanx_node));
-
-    chany_x = rr_graph.node_xlow(RRNodeId(chany_node));
-    chany_ylow = rr_graph.node_ylow(RRNodeId(chany_node));
-    chany_yhigh = rr_graph.node_yhigh(RRNodeId(chany_node));
-
-    if (chany_ylow > chanx_y + 1 || chany_yhigh < chanx_y)
+    if (rr_graph.nodes_are_adjacent(RRNodeId(chanx_node), RRNodeId(chany_node))) {
+        return (1);
+    } else {
         return (0);
-
-    if (chanx_xlow > chany_x + 1 || chanx_xhigh < chany_x)
-        return (0);
-
-    return (1);
+    }
 }
 
 void recompute_occupancy_from_scratch() {

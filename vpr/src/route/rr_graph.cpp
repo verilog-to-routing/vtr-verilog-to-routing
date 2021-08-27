@@ -2938,8 +2938,8 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const t_rr_graph_storage
 
         for (RRNodeId to_rr : candidate_rr_nodes) {
             VTR_ASSERT(rr_graph.node_type(to_rr) == IPIN);
-            float to_dist = std::abs(rr_nodes.node_xlow(from_rr) - rr_nodes.node_xlow(to_rr))
-                            + std::abs(rr_nodes.node_ylow(from_rr) - rr_nodes.node_ylow(to_rr));
+            float to_dist = std::abs(rr_graph.node_xlow(from_rr) - rr_graph.node_xlow(to_rr))
+                            + std::abs(rr_graph.node_ylow(from_rr) - rr_graph.node_ylow(to_rr));
 
             for (const e_side& to_side : SIDES) {
                 /* Bypass those side where the node does not appear */

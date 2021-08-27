@@ -117,6 +117,40 @@ class RRGraphView {
         return node_storage_.node_yhigh(node);
     }
 
+    /* Get the length of a routing resource node. This function is inlined for runtime optimization. */
+    inline int node_length(RRNodeId node) const {
+        return 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
+    }
+
+    /* Check if routing resource node is initialized. This function is inlined for runtime optimization. */
+    inline bool node_is_initialized(RRNodeId node) const {
+        return !((node_type(node) == SOURCE)
+                 && (node_xlow(node) == 0) && (node_ylow(node) == 0)
+                 && (node_xhigh(node) == 0) && (node_yhigh(node) == 0));
+    }
+
+    /* Get the yhigh of a routing resource node. This function is inlined for runtime optimization. */
+    inline bool nodes_are_adjacent(RRNodeId first_node, RRNodeId second_node) const {
+        int chanx_y, chanx_xlow, chanx_xhigh;
+        int chany_x, chany_ylow, chany_yhigh;
+
+        chanx_y = node_ylow(first_node);
+        chanx_xlow = node_xlow(first_node);
+        chanx_xhigh = node_xhigh(first_node);
+
+        chany_x = node_xlow(second_node);
+        chany_ylow = node_ylow(second_node);
+        chany_yhigh = node_yhigh(second_node);
+
+        if (chany_ylow > chanx_y + 1 || chany_yhigh < chanx_y)
+            return false;
+
+        if (chanx_xlow > chany_x + 1 || chanx_xhigh < chany_x)
+            return false;
+
+        return true;
+    }
+
     /* Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
