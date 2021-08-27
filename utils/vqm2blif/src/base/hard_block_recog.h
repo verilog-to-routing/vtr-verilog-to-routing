@@ -67,6 +67,19 @@
 
 #define HARD_BLOCK_INSTANCE_DOES_NOT_EXIST -1
 
+// define how flip flops and LUT will be identified within a given node type (within t_node struct)
+#define LUT_TYPE "stratix_lcell_comb"
+#define DFF_TYPE "dffeas" 
+
+// define the number of ports a LUT that represents a hard block instance output port would have 
+#define LUT_OUTPUT_PORT_SIZE 1
+
+// names of the output port for a LUT and DFF
+#define LUT_OUTPUT_PORT "combout"
+#define DFF_OUTPUT_PORT "q"
+
+
+
 
 /* Structure Declarations */ 
 
@@ -81,11 +94,11 @@
 typedef struct s_hard_block_port_info
 {
     // mapping structure to quickly identify where a specific port begins
-    std::unordered_map<std::string, int> port_name_to_port_start_index;
-    
-    // mapping structure to quickly identify the direction of a port
-    std::unordered_map<std::string, PORTS> port_name_to_port_dir;
+    std::unordered_map<std::string,int> port_name_to_port_start_index;
 
+    // mapping structure to determine the size of each port
+    std::unordered_map<std::string,int> port_name_to_port_size;
+    
     // An array of all the ports within the hard block is stored here
     // refer to 'vqm_dll.h' for more information
     t_array_ref hard_block_ports;
@@ -205,13 +218,21 @@ t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports
 
 t_node_port_association* create_unconnected_node_port_association(char*, int ,int);
 
-void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,PORTS, t_array_ref**, int*);
+void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,t_array_ref**, int*);
 
 void copy_array_ref(t_array_ref*, t_array_ref*);
 
 t_array_ref* create_and_initialize_t_array_ref_struct(void);
 
 int find_hard_block_instance(t_hard_block_recog*, t_parsed_hard_block_port_info*);
+
+void assign_net_to_hard_block_instance_port(t_node*, t_parsed_hard_block_port_info*, t_hard_block_recog*, int);
+
+t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node*);
+
+int identify_port_index_within_hard_block_model_port_array(t_hard_block_port_info*, t_parsed_hard_block_port_info*, t_node*);
+
+bool is_hard_block_port_legal(t_node*);
 
 int create_new_hard_block_instance(t_array_ref*, t_hard_block_recog*, t_parsed_hard_block_port_info*);
 

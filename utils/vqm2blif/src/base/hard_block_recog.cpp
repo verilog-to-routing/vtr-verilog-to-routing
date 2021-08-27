@@ -94,25 +94,38 @@ void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vec
         curr_module_node_type.assign(curr_module_node->type);
 
         // hard block ports are only represented in nodes that are either a LUT or flip flop block
-        if ((curr_module_node_type.compare("stratix_lcell_comb") == 0) || (curr_module_node_type.compare("dffeas") == 0))
+        if ((curr_module_node_type.compare(LUT_TYPE) == 0) || (curr_module_node_type.compare(DFF_TYPE) == 0))
         {
 
             curr_module_node_info = extract_hard_block_port_info_from_module_node(curr_module_node, hard_block_type_name_list);
             
             // check to see that the current node represents a hard block port
-            // a hard block name would not be created if it wasn't
+            // a hard block instance name would not have bee found if it wasn't a hard block port
             if (!curr_module_node_info.hard_block_name.empty())
             {
                 
-                // get the index to the current hard block instance we need to work with
-                curr_hard_block_instance_index = find_hard_block_instance(module_hard_block_node_refs_and_info, &curr_module_node_info);
+                // if we are here, the current node is a LUT or DFF node that represents a hard block instance port //
 
-                // check to see whether the hard block instance the current node belongs to exists (remember each node here represents a hard block port)
-                if (curr_hard_block_instance_index == HARD_BLOCK_INSTANCE_DOES_NOT_EXIST)
+                /* referring to the diagram at the top, if the node is a lut that represents an output port, its connected net is an internal connection, which is not a legal netlist connection, so we cannot process the node any further. Therefore we only process nodes that are LUTs representing input ports or DFFs. */
+                if (is_hard_block_port_legal(curr_module_node))
                 {
-                    // we need to create a new hard block instance, since it does not exists for the port current node represents
-                    curr_hard_block_instance_index = create_new_hard_block_instance(node_list_with_hard_blocks, module_hard_block_node_refs_and_info, &curr_module_node_info);
+
+                    // get the index to the current hard block instance we need to work with
+                    curr_hard_block_instance_index = find_hard_block_instance(module_hard_block_node_refs_and_info, &curr_module_node_info);
+
+                    // check to see whether the hard block instance the current node belongs to exists (remember each node here represents a hard block port)
+                    if (curr_hard_block_instance_index == HARD_BLOCK_INSTANCE_DOES_NOT_EXIST)
+                    {
+                        // we need to create a new hard block instance, since it does not exists for the port the current node represents
+                        curr_hard_block_instance_index = create_new_hard_block_instance(node_list_with_hard_blocks, module_hard_block_node_refs_and_info, &curr_module_node_info);
+                    }
+                    
+                    /* the remaining steps below assign the net currently connected to the node being processed (a flip-flop or a LUT) to the hard block instance port the current node represents. The correspponding hard block instance and the specific port were found previously.*/
+                    assign_net_to_hard_block_instance_port(curr_module_node, &curr_module_node_info, module_hard_block_node_refs_and_info, curr_hard_block_instance_index);
                 }
+
+                /* in this if clause, the current node represents a hard block port, so we cannot have this node be written to the output netlist, so we need to add it to the nodes to delete list */
+                module_hard_block_node_refs_and_info->luts_dffeas_nodes_to_remove.push_back(curr_module_node);
                 
             }
         }
@@ -172,7 +185,7 @@ int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard
     {
         equivalent_hard_block_node_port_array = convert_hard_block_model_port_to_hard_block_node_port(curr_hard_block_model_port);
 
-        store_hard_block_port_info(storage_of_hard_block_info, curr_hard_block_type_name, curr_hard_block_model_port->name, curr_hard_block_model_port->dir, &equivalent_hard_block_node_port_array, &port_index);
+        store_hard_block_port_info(storage_of_hard_block_info, curr_hard_block_type_name, curr_hard_block_model_port->name, &equivalent_hard_block_node_port_array, &port_index);
 
         curr_hard_block_model_port = curr_hard_block_model_port->next;
 
@@ -228,7 +241,7 @@ t_node_port_association* create_unconnected_node_port_association(char *port_nam
 }
 
 // need the hard block name itself
-void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_type_name,std::string curr_port_name, PORTS current_port_dir,t_array_ref** curr_port_array, int* port_index)
+void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_type_name,std::string curr_port_name, t_array_ref** curr_port_array, int* port_index)
 {
        
     std::unordered_map<std::string,t_hard_block_port_info>::iterator curr_port_info = ((storage_of_hard_block_port_info->hard_block_type_name_to_port_info).find(curr_hard_block_type_name));
@@ -236,12 +249,12 @@ void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_i
     copy_array_ref(*curr_port_array, &(curr_port_info->second).hard_block_ports);
     
     // insert the port name to the current index
-    (curr_port_info->second).port_name_to_port_start_index.insert({curr_port_name, *port_index});
-
-    //insert the port direction of the current port
-    (curr_port_info->second).port_name_to_port_dir.insert({curr_port_name, current_port_dir});
+    (curr_port_info->second).port_name_to_port_start_index.insert(std::pair<std::string,int>(curr_port_name, *port_index));
 
     *port_index += (*curr_port_array)->array_size;
+
+    // store the current port size
+    (curr_port_info->second).port_name_to_port_size.insert(std::pair<std::string,int>(curr_port_name, (*curr_port_array)->array_size));
 
     vtr::free((*curr_port_array)->pointer);
     vtr::free(*curr_port_array);
@@ -341,6 +354,187 @@ int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_r
     vtr::free(created_hard_block_instance_ports);
 
     return created_hard_block_instance_index;
+}
+
+void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_hard_block_port_info* curr_module_node_info, t_hard_block_recog* module_hard_block_node_refs_and_info, int curr_hard_block_instance_index)
+{
+    t_hard_block* curr_hard_block_instance = &(module_hard_block_node_refs_and_info->hard_block_instances[curr_hard_block_instance_index]);
+
+    std::unordered_map<std::string,t_hard_block_port_info>::iterator curr_hard_block_type_port_info = module_hard_block_node_refs_and_info->hard_block_type_name_to_port_info.find(curr_module_node_info->hard_block_type);
+
+    int port_to_assign_index = 0;
+
+    t_pin_def* net_to_assign = get_net_to_assign_to_hard_block_instance_port(curr_module_node);
+
+    port_to_assign_index = identify_port_index_within_hard_block_model_port_array(&(curr_hard_block_type_port_info->second), curr_module_node_info, curr_module_node);
+
+    // assign the net to tocrresponding hard block instance port
+    curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index]->associated_net = net_to_assign;
+
+    return;
+}
+
+t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node* curr_module_node)
+{
+    t_pin_def* net_to_assign = NULL;
+    t_node_port_association* port_connected_to_net = NULL;
+
+    int number_of_ports_in_node = curr_module_node->number_of_ports;
+
+    std::string curr_module_node_type = curr_module_node->type;
+    std::string curr_module_node_name = curr_module_node->name;
+
+    std::string curr_port_name;
+
+    // store what type of port we expect the net to be connected to 
+    std::string expected_port_type;
+
+    /* for a detailed error message, we identify what type of port
+    the net we want should be connected to for the module node */
+
+    if (!(curr_module_node_type.compare(LUT_TYPE)))
+    {
+
+        // we are here if the current node is LUT
+
+        // if the current node is a LUT, then the LUT represents an input port and so the LUT input should be connected to the net
+        expected_port_type.assign(INPUT_PORTS);
+    }
+    else
+    {
+        // we are here if the current node is a DFF
+
+        // if the current node is a DFF, then the DFF represents an output port and so the DFF output should be connected to the net
+        expected_port_type.assign(OUTPUT_PORTS);
+    }
+
+    for (int i = 0; i < number_of_ports_in_node; i++)
+    {
+
+        curr_port_name.assign(curr_module_node->array_of_ports[i]->port_name);
+
+        if (!(curr_module_node_type.compare(LUT_TYPE)))
+        {
+            // if the node is a LUT //
+            if (curr_port_name.compare(LUT_OUTPUT_PORT))
+            {
+                // if the port is not the LUT output ie. "combout" port //
+
+                /* if we are here then we know that the LUT the current node
+                represents mus be an input port for hard block instance it is part of. We also know that this type of LUT only has an input and output port in the vqm netlist. Finally we know that the current port must be an input, so its connected net is what we want to assign to the hard block instance port. */
+                port_connected_to_net = curr_module_node->array_of_ports[i];
+
+                break;
+            }
+
+        }
+        else
+        {
+            // if the node is a flip flop //
+            if (!(curr_port_name.compare(DFF_OUTPUT_PORT)))
+            {
+                // if the port is a D flip flop output ie. "q" port //
+
+                /* if we are here then we know that the DFF the current node
+                represents mus be an output port for hard block instance it is part of. Finally we know that the current port must be an output, so its connected net is what we want to assign to the hard block instance port. */
+                port_connected_to_net = curr_module_node->array_of_ports[i];
+
+                break;
+            }
+        }
+    }
+
+    if (port_connected_to_net != NULL)
+    {
+        net_to_assign = port_connected_to_net->associated_net;
+    }
+    else
+    {
+        /* we did not find any ports that fit the conditions above
+        and this means that the current node, which represents a hard block 
+        instance port does not have an accompanying net. This should never happen, so throw an error and indicate to the user */
+        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' does not have an " + expected_port_type + " port.");
+
+    }
+
+    return net_to_assign;
+}
+
+int identify_port_index_within_hard_block_model_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node)
+{
+    int identified_port_index = 0;
+    
+
+    int port_end_index = 0;
+
+    // error related identifiers
+    std::string curr_module_node_name = curr_module_node->name;
+    
+    // identifier to store the port size of the current port
+    std::unordered_map<std::string,int>::iterator found_port_size;
+
+    /* use the mapping structure within the hard block port info struct
+    to find the index the port can be found in within the port array of a given hard block. If the port is vectored, then the index returned is the beginning of the vectored port (ie. vectored_port[0])*/
+    std::unordered_map<std::string,int>::iterator found_port_start_index = curr_hard_block_type_port_info->port_name_to_port_start_index.find(curr_module_node_info->hard_block_port_name);
+
+    // check to see whether the port name exists
+    if (found_port_start_index == (curr_hard_block_type_port_info->port_name_to_port_start_index.end()))
+    {
+        // port does not exist, so throw and error and indicate it to the user
+        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port:" + curr_module_node_info->hard_block_port_name +" within hard block model:" + curr_module_node_info->hard_block_type + ". But this port does not exist within the given hard block model as described in the architecture file.");
+    }
+
+
+    // at this point the port belongs to the hard block model //
+
+    /* now we assign the found base port index and increment it by the parsed index from the node name (ie hard_block_port_index from t_parsed_hard_block_port_info). 
+    
+    For example support a port array is arranged as follows:
+    index:         0           1           2            3
+    port_array: port_1[0]  port_1[1]   port_1[2]    port_1[2]
+
+    Now if we want the index of port_1[1], the base port index would be 0, then we need to increment by 1. This is why the increment is requried.
+
+    If the port is not vectored, the increment value would be 0. So the case is handled
+    */
+   identified_port_index = found_port_start_index->second;
+   identified_port_index += curr_module_node_info->hard_block_port_index;
+
+   // now we check whether the port index is within the port range //
+
+   // finf the port size of the current port (using internal mapping structure found in the hard block port info struct)
+   // this should result in a valid value as we already verfied whether the port exists
+   found_port_size = curr_hard_block_type_port_info->port_name_to_port_size.find(curr_module_node_info->hard_block_port_name);
+
+   // calculate port end index
+   port_end_index = found_port_start_index->second + (found_port_size->second - 1);
+
+   // verify if the current port index is out of ranged by chekcing if it is larger than the maximum index for the port
+   if (identified_port_index > port_end_index)
+   {
+       // port index is out of range, so throw and error and indicate it to the user
+        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port:" + curr_module_node_info->hard_block_port_name +" at index:" + std::to_string(curr_module_node_info->hard_block_port_index) + " hard block model:" + curr_module_node_info->hard_block_type + ". But this port index is out of range in the given hard block model as described in the architecture file.");
+   }
+
+   return identified_port_index;
+
+}
+
+bool is_hard_block_port_legal(t_node* curr_module_node)
+{
+
+    bool result = false;
+
+    std::string curr_module_node_type = curr_module_node->type;
+
+    // now we check the direction of the port as input or whether the node is a DFF
+    if ((curr_module_node->number_of_ports == LUT_OUTPUT_PORT_SIZE) || (!(curr_module_node_type.compare(DFF_TYPE))))
+    {
+        result = true;
+    }
+
+    return result;
+
 }
 
 t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info* curr_hard_block_type_port_info)
