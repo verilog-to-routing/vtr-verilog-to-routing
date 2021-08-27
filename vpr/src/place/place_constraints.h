@@ -117,24 +117,6 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
 
 /*
- * Returns the number of grid tiles that are covered by the region and compatible
- * with the cluster's block type.
- * No subtile case (most common case) complexity: O(1)
- * Specific subtile case complexity: calls get_region_with_subtile_size(), which has complexity
- * O(region_size)
- */
-int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
-
-/*
- * Returns the number of grid tiles that are covered by the region and compatible
- * with the cluster's block type, in the case where the floorplan region has a
- * subtile specified. An extra check has to be done to see whether the subtile is
- * compatible with the block type at each of the locations with the region.
- * Complexity: O(region_size)
- */
-int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
-
-/*
  * Returns the number of grid tiles that are covered by the partition region and
  * compatible with the cluster's block type.
  * Used prior to initial placement to help sort blocks based on how difficult they
@@ -142,6 +124,12 @@ int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr blo
  */
 int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
+/*
+ * Return the floorplan score that will be used for sorting blocks during initial placement. This score is the
+ * total number of subtilesfor the block type in the grid, minus the number of subtiles in the block's floorplan PartitionRegion.
+ * The resulting number is the number of tiles outside the block's floorplan region, meaning the higher
+ * it is, the more difficult the block is to place.
+ */
 int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

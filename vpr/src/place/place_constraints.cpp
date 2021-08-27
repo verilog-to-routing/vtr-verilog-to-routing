@@ -414,92 +414,21 @@ bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_
     return pr_size_one;
 }
 
-/*
- * This routine uses pre-computed values from the GridTileLookup class to get the number of grid tiles
- * covered by a region.
- * For a region with no subtiles specified, the number of grid tiles can be calculated by adding
- * and subtracting four values from within/at the edge of the reigon.
- * The region with subtile case is taken care of by a helper routine, get_region_with_subtile_size().
- */
-int get_region_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
-    vtr::Rect<int> reg_rect = reg.get_region_rect();
-    int subtile = reg.get_sub_tile();
-
-    int xmin = reg_rect.xmin();
-    int ymin = reg_rect.ymin();
-    int xmax = reg_rect.xmax();
-    int ymax = reg_rect.ymax();
-    auto grid = grid_tiles.get_type_grid(block_type);
-
-    int xdim = grid.dim_size(0);
-    int ydim = grid.dim_size(1);
-
-    int num_tiles = 0;
-
-    if (subtile == NO_SUBTILE) {
-        num_tiles = grid[xmin][ymin].cumulative_total;
-
-        if ((ymax + 1) < ydim) {
-            num_tiles -= grid[xmin][ymax + 1].cumulative_total;
-        }
-
-        if ((xmax + 1) < xdim) {
-            num_tiles -= grid[xmax + 1][ymin].cumulative_total;
-        }
-
-        if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
-            num_tiles += grid[xmax + 1][ymax + 1].cumulative_total;
-        }
-    } else {
-        num_tiles = get_region_with_subtile_size(reg, block_type, grid_tiles);
-    }
-
-    return num_tiles;
-}
-
-/*
- * This routine is for the subtile specified case; an O(region_size) scan needs to be done to check whether each grid
- * location in the region is compatible for the block at the subtile specified. When the GridTileLookup
- * class is initialized, the subtile range for the block type is stored at each grid location, making
- * it easy to check whether the subtile is compatible or not.
- */
-int get_region_with_subtile_size(const Region& reg, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
-    int num_sub_tiles = 0;
-    vtr::Rect<int> reg_rect = reg.get_region_rect();
-    int subtile = reg.get_sub_tile();
-
-    int xmin = reg_rect.xmin();
-    int ymin = reg_rect.ymin();
-    int xmax = reg_rect.xmax();
-    int ymax = reg_rect.ymax();
-    auto grid = grid_tiles.get_type_grid(block_type);
-
-    for (int i = xmax; i >= xmin; i--) {
-        for (int j = ymax; j >= ymin; j--) {
-            if (grid[i][j].st_range.is_in_range(subtile)) {
-                num_sub_tiles++;
-            }
-        }
-    }
-
-    return num_sub_tiles;
-}
-
 int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
     std::vector<Region> part_reg = pr.get_partition_region();
     int num_tiles = 0;
 
     for (unsigned int i_reg = 0; i_reg < part_reg.size(); i_reg++) {
-        num_tiles += get_region_size(part_reg[i_reg], block_type, grid_tiles);
+        num_tiles += grid_tiles.region_tile_count(part_reg[i_reg], block_type);
     }
 
     return num_tiles;
 }
 
 int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
-	auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);
+    int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);
 
     if (num_pr_tiles == 0) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
@@ -510,8 +439,7 @@ int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_bl
                         cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
     }
 
-	int total_type_tiles = grid_tiles.total_type_tiles(block_type);
+    int total_type_tiles = grid_tiles.total_type_tiles(block_type);
 
-	return total_type_tiles - num_pr_tiles;
-
+    return total_type_tiles - num_pr_tiles;
 }

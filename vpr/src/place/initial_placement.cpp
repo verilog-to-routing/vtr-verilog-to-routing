@@ -337,7 +337,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& floorplan_ctx = g_vpr_ctx.floorplanning();
-    auto& device_ctx = g_vpr_ctx.device();
 
     auto& pl_macros = place_ctx.pl_macros;
 

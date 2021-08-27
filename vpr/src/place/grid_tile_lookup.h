@@ -1,7 +1,9 @@
 /*
- * This class is used to stores a grid for each logical block type. The grid stores the number of cumulative
- * tiles that are available for this block type at each grid location. At each grid location, it also stores
- * the range of compatible subtiles for the block type.
+ * This class is used to store a grid for each logical block type that stores the cumulative number of subtiles
+ * for that type available at each location in the grid. The cumulative number of subtiles is the subtiles at the
+ * location plus the subtiles available at the grid locations above and to the left of the locations.
+ * Having these grids allows for O(1) lookups about the number of subtiles available for a given type of block
+ * in a rectangular region.
  * This lookup class is used during initial placement when sorting blocks by the size of their floorplan constraint
  * regions.
  */
@@ -11,25 +13,24 @@
 #include "place_util.h"
 #include "globals.h"
 
-struct grid_tile_info {
-    t_capacity_range st_range;
-    int cumulative_total;
-};
-
 class GridTileLookup {
   public:
-    vtr::NdMatrix<grid_tile_info, 2>& get_type_grid(t_logical_block_type_ptr block_type);
+    vtr::NdMatrix<int, 2>& get_type_grid(t_logical_block_type_ptr block_type);
 
     void initialize_grid_tile_matrices();
 
-    void fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<grid_tile_info, 2>& type_count);
+    void fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 2>& type_count);
 
-    void print_type_matrix(vtr::NdMatrix<grid_tile_info, 2>& type_count);
+    void print_type_matrix(vtr::NdMatrix<int, 2>& type_count);
+
+    int region_tile_count(const Region& reg, t_logical_block_type_ptr block_type);
+
+    int region_with_subtile_count(const Region& reg, t_logical_block_type_ptr block_type);
 
     int total_type_tiles(t_logical_block_type_ptr block_type);
 
   private:
-    std::vector<vtr::NdMatrix<grid_tile_info, 2>> block_type_matrices;
+    std::vector<vtr::NdMatrix<int, 2>> block_type_matrices;
 
     std::vector<int> max_tile_counts;
 };
