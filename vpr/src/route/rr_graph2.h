@@ -5,6 +5,7 @@
 #include "build_switchblocks.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_util.h"
+#include "rr_graph_view.h"
 #include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
@@ -27,7 +28,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y);
 
-bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes);
+bool verify_rr_node_indices(const DeviceGrid& grid,
+                            const RRGraphView& rr_graph,
+                            const t_rr_graph_storage& rr_nodes);
 
 //Returns all x-channel or y-channel wires at the specified location
 std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,

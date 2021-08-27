@@ -19,8 +19,7 @@ class RRGraphBuilder {
     /* -- Constructors -- */
   public:
     /* See detailed comments about the data structures in the internal data storage section of this file */
-    RRGraphBuilder(t_rr_graph_storage* node_storage,
-                   RRSpatialLookup* node_lookup);
+    RRGraphBuilder(t_rr_graph_storage* node_storage);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -49,6 +48,9 @@ class RRGraphBuilder {
      */
     void add_node_to_all_locs(RRNodeId node);
 
+    /* Clear all the underlying data storage */
+    void clear();
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
@@ -63,7 +65,7 @@ class RRGraphBuilder {
     /* node-level storage including edge storages */
     t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
-    RRSpatialLookup& node_lookup_;
+    RRSpatialLookup node_lookup_;
 };
 
 #endif
