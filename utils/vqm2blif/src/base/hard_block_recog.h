@@ -68,7 +68,7 @@
 #define HARD_BLOCK_INSTANCE_DOES_NOT_EXIST -1
 
 // define how flip flops and LUT will be identified within a given node type (within t_node struct)
-#define LUT_TYPE "stratix_lcell_comb"
+#define LUT_TYPE "stratixiv_lcell_comb"
 #define DFF_TYPE "dffeas" 
 
 // define the number of ports a LUT that represents a hard block instance output port would have 
@@ -230,7 +230,7 @@ void assign_net_to_hard_block_instance_port(t_node*, t_parsed_hard_block_port_in
 
 t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node*);
 
-int identify_port_index_within_hard_block_model_port_array(t_hard_block_port_info*, t_parsed_hard_block_port_info*, t_node*);
+int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info*, t_parsed_hard_block_port_info*, t_node*);
 
 bool is_hard_block_port_legal(t_node*);
 
