@@ -735,20 +735,20 @@ class t_rr_graph_view {
     int16_t node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
-    /*
-     * short node_xlow(RRNodeId id) const {
-     * return node_storage_[id].xlow_;
-     * }
-     * short node_ylow(RRNodeId id) const {
-     * return node_storage_[id].ylow_;
-     * }
-     * short node_xhigh(RRNodeId id) const {
-     * return node_storage_[id].xhigh_;
-     * }
-     * short node_yhigh(RRNodeId id) const {
-     * return node_storage_[id].yhigh_;
-     * }
-     */
+
+    short node_xlow(RRNodeId id) const {
+        return node_storage_[id].xlow_;
+    }
+    short node_ylow(RRNodeId id) const {
+        return node_storage_[id].ylow_;
+    }
+    short node_xhigh(RRNodeId id) const {
+        return node_storage_[id].xhigh_;
+    }
+    short node_yhigh(RRNodeId id) const {
+        return node_storage_[id].yhigh_;
+    }
+
     short node_capacity(RRNodeId id) const {
         return node_storage_[id].capacity_;
     }

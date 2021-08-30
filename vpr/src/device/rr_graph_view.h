@@ -129,7 +129,7 @@ class RRGraphView {
                  && (node_xhigh(node) == 0) && (node_yhigh(node) == 0));
     }
 
-    /* Get the yhigh of a routing resource node. This function is inlined for runtime optimization. */
+    /* Check if two routing resource nodes are adjacent. This function is inlined for runtime optimization. */
     inline bool nodes_are_adjacent(RRNodeId first_node, RRNodeId second_node) const {
         int chanx_y, chanx_xlow, chanx_xhigh;
         int chany_x, chany_ylow, chany_yhigh;
