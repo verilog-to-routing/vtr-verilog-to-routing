@@ -363,7 +363,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
-    verify_rr_node_indices(grid, device_ctx.rr_node_indices, device_ctx.rr_nodes);
+    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_nodes);
 
     print_rr_graph_stats();
 
@@ -1342,11 +1342,9 @@ void free_rr_graph() {
 
     device_ctx.read_rr_graph_filename.clear();
 
-    for (auto& data : device_ctx.rr_node_indices) {
-        data.clear();
-    }
-
     device_ctx.rr_nodes.clear();
+
+    device_ctx.rr_graph_builder.clear();
 
     device_ctx.rr_indexed_data.clear();
 
@@ -2423,6 +2421,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
     return track_to_pin_lookup;
 }
 
+/* TODO: This function should adapt RRNodeId */
 std::string describe_rr_node(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;

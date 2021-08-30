@@ -157,20 +157,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
 
     graph.reorder(dest_order, src_order);
 
-    // update rr_node_indices, a map to optimize rr_index lookups
-    for (auto& grid : device_ctx.rr_node_indices) {
-        for (size_t x = 0; x < grid.dim_size(0); x++) {
-            for (size_t y = 0; y < grid.dim_size(1); y++) {
-                for (size_t s = 0; s < grid.dim_size(2); s++) {
-                    for (auto& node : grid[x][y][s]) {
-                        if (node != OPEN) {
-                            node = size_t(dest_order[RRNodeId(node)]);
-                        }
-                    }
-                }
-            }
-        }
-    }
+    device_ctx.rr_graph_builder.node_lookup().reorder(dest_order);
 
     device_ctx.rr_node_metadata.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
     device_ctx.rr_edge_metadata.remap_keys([&](std::tuple<int, int, short> edge) {
