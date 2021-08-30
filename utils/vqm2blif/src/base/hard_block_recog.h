@@ -232,6 +232,8 @@ t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node*);
 
 int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info*, t_parsed_hard_block_port_info*, t_node*);
 
+void handle_net_assignment(t_node*, t_hard_block*, int, t_pin_def*, t_parsed_hard_block_port_info*);
+
 bool is_hard_block_port_legal(t_node*);
 
 int create_new_hard_block_instance(t_array_ref*, t_hard_block_recog*, t_parsed_hard_block_port_info*);

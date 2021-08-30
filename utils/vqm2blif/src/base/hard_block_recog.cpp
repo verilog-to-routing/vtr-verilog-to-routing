@@ -368,8 +368,10 @@ void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_h
 
     port_to_assign_index = identify_port_index_within_hard_block_type_port_array(&(curr_hard_block_type_port_info->second), curr_module_node_info, curr_module_node);
 
-    // assign the net to tocrresponding hard block instance port
-    curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index]->associated_net = net_to_assign;
+    // assign the net to tocrresponding hard block instance port //
+    handle_net_assignment(curr_module_node, curr_hard_block_instance, port_to_assign_index, net_to_assign, curr_module_node_info);
+
+    //curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index]->associated_net = net_to_assign;
 
     return;
 }
@@ -517,6 +519,32 @@ int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info
 
    return identified_port_index;
 
+}
+
+void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_block_instance, int port_to_assign_index, t_pin_def* net_to_assign, t_parsed_hard_block_port_info* curr_module_node_info)
+{
+    std::string curr_module_node_name = curr_module_node->name;
+
+    t_node_port_association* port_to_assign = curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index];
+
+    // need to check whether the current port was previouly assigned to a net
+    if ((port_to_assign->associated_net) == NULL)
+    {
+        // port was not assigned to a net previously //
+
+        // assign the net to the port ("connect" them)
+        // since we just connected a port, we have one less port to assign, so update the "ports left to assign" tracker
+        port_to_assign->associated_net = net_to_assign;
+        curr_hard_block_instance->hard_block_ports_not_assigned -= 1;
+    }
+    else
+    {
+        // the port was already assigned previouly, this is an error, since we cannot have multiple nets connected to the same port
+        // so report an error
+        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port:" + curr_module_node_info->hard_block_port_name +" within hard block model:" + curr_module_node_info->hard_block_type + ". But this port was already represented previously, therefore the current netlist node is a duplication of the port. A port can only have one netlist node representing it.");
+    }
+
+    return;
 }
 
 bool is_hard_block_port_legal(t_node* curr_module_node)
