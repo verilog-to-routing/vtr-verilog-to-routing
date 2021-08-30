@@ -50,7 +50,7 @@ void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* h
 
         if (hard_block_model == NULL)
         {         
-            throw vtr::VtrError("The provided hard block model '" + *hard_block_type_name_traverser + "' was not found within the corresponding FPGA architecture.");
+            throw vtr::VtrError("The provided hard block model: '" + *hard_block_type_name_traverser + "' was not found within the corresponding FPGA architecture.");
         }
         else
         { 
@@ -58,7 +58,7 @@ void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* h
 
             if (!single_hard_block_init_result)
             {
-                throw vtr::VtrError("Hard block model '" + *hard_block_type_name_traverser + "' found in the architecture has no input/output ports.");
+                throw vtr::VtrError("Hard block model: '" + *hard_block_type_name_traverser + "' found in the architecture has no input/output ports.");
             }
         }
 
@@ -482,7 +482,7 @@ int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info
     if (found_port_start_index == (curr_hard_block_type_port_info->port_name_to_port_start_index.end()))
     {
         // port does not exist, so throw and error and indicate it to the user
-        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port:" + curr_module_node_info->hard_block_port_name +" within hard block model:" + curr_module_node_info->hard_block_type + ". But this port does not exist within the given hard block model as described in the architecture file.");
+        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port: '" + curr_module_node_info->hard_block_port_name +"' within hard block model: '" + curr_module_node_info->hard_block_type + "'. But this port does not exist within the given hard block model as described in the architecture file.");
     }
 
 
@@ -514,7 +514,7 @@ int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info
    if (identified_port_index > port_end_index)
    {
        // port index is out of range, so throw and error and indicate it to the user
-        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port:" + curr_module_node_info->hard_block_port_name +" at index:" + std::to_string(curr_module_node_info->hard_block_port_index) + " hard block model:" + curr_module_node_info->hard_block_type + ". But this port index is out of range in the given hard block model as described in the architecture file.");
+        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port: '" + curr_module_node_info->hard_block_port_name +"' at index: " + std::to_string(curr_module_node_info->hard_block_port_index) + ", within hard block model: '" + curr_module_node_info->hard_block_type + "'. But this port index is out of range in the given hard block model as described in the architecture file.");
    }
 
    return identified_port_index;
@@ -541,7 +541,7 @@ void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_blo
     {
         // the port was already assigned previouly, this is an error, since we cannot have multiple nets connected to the same port
         // so report an error
-        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port:" + curr_module_node_info->hard_block_port_name +" within hard block model:" + curr_module_node_info->hard_block_type + ". But this port was already represented previously, therefore the current netlist node is a duplication of the port. A port can only have one netlist node representing it.");
+        throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port: '" + curr_module_node_info->hard_block_port_name +"' within hard block model: '" + curr_module_node_info->hard_block_type + "'. But this port was already represented previously, therefore the current netlist node is a duplication of the port. A port can only have one netlist node representing it.");
     }
 
     return;
