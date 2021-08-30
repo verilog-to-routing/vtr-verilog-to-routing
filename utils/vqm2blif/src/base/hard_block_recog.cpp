@@ -366,7 +366,7 @@ void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_h
 
     t_pin_def* net_to_assign = get_net_to_assign_to_hard_block_instance_port(curr_module_node);
 
-    port_to_assign_index = identify_port_index_within_hard_block_model_port_array(&(curr_hard_block_type_port_info->second), curr_module_node_info, curr_module_node);
+    port_to_assign_index = identify_port_index_within_hard_block_type_port_array(&(curr_hard_block_type_port_info->second), curr_module_node_info, curr_module_node);
 
     // assign the net to tocrresponding hard block instance port
     curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index]->associated_net = net_to_assign;
@@ -421,7 +421,7 @@ t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node* curr_module_nod
                 // if the port is not the LUT output ie. "combout" port //
 
                 /* if we are here then we know that the LUT the current node
-                represents mus be an input port for hard block instance it is part of. We also know that this type of LUT only has an input and output port in the vqm netlist. Finally we know that the current port must be an input, so its connected net is what we want to assign to the hard block instance port. */
+                represents must be an input port for hard block instance it is part of. We also know that this type of LUT only has an input and output port in the vqm netlist. Finally we know that the current port must be an input, so it's connected net is what we want to assign to the hard block instance port. */
                 port_connected_to_net = curr_module_node->array_of_ports[i];
 
                 break;
@@ -460,11 +460,10 @@ t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node* curr_module_nod
     return net_to_assign;
 }
 
-int identify_port_index_within_hard_block_model_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node)
+int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node)
 {
     int identified_port_index = 0;
     
-
     int port_end_index = 0;
 
     // error related identifiers
@@ -528,7 +527,7 @@ bool is_hard_block_port_legal(t_node* curr_module_node)
     std::string curr_module_node_type = curr_module_node->type;
 
     // now we check the direction of the port as input or whether the node is a DFF
-    if ((curr_module_node->number_of_ports == LUT_OUTPUT_PORT_SIZE) || (!(curr_module_node_type.compare(DFF_TYPE))))
+    if ((curr_module_node->number_of_ports != LUT_OUTPUT_PORT_SIZE) || (!(curr_module_node_type.compare(DFF_TYPE))))
     {
         result = true;
     }
