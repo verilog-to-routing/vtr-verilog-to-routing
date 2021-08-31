@@ -1,11 +1,8 @@
 #ifndef RR_SPATIAL_LOOKUP_H
 #define RR_SPATIAL_LOOKUP_H
 
-#include "vtr_geometry.h"
-#include "vtr_vector.h"
-#include "vpr_types.h"
-
 /** 
+ * @file
  * @brief This RRSpatialLookup class encapsulates 
  *        the node-lookup for a routing resource graph
  *
@@ -18,6 +15,10 @@
  *   - Update the look-up with new nodes
  *   - Find the id of a node with given information, e.g., x, y, type etc.
  */
+#include "vtr_geometry.h"
+#include "vtr_vector.h"
+#include "vpr_types.h"
+
 class RRSpatialLookup {
     /* -- Constructors -- */
   public:
