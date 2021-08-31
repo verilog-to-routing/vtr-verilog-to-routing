@@ -6,17 +6,17 @@
 #include "vpr_types.h"
 
 /** 
- * @file
- * @brief This files defines the RRSpatialLookup class which encapsulates 
+ * @brief This RRSpatialLookup class encapsulates 
  *        the node-lookup for a routing resource graph
  *
  * A data structure built to find the id of an routing resource node 
  * (rr_node) given information about its physical position and type.
- * The data structure is mostly needed during rr_graph building
+ * The data structure is mostly needed during building a routing resource graph
  *
  * The data structure allows users to 
- * - Update the look-up with new nodes
- * - Find the id of a node with given information, e.g., x, y, type etc.
+ *
+ *   - Update the look-up with new nodes
+ *   - Find the id of a node with given information, e.g., x, y, type etc.
  */
 class RRSpatialLookup {
     /* -- Constructors -- */
@@ -75,7 +75,7 @@ class RRSpatialLookup {
      * - (x, y) are the coordinate of the routing channel within the FPGA
      * - rr_type specifies the type of routing channel, either x-direction or y-direction
      *
-     * Note: 
+     * @note 
      * - Return an empty list if there are no routing channel at the given (x, y) location
      * - The node list returned only contain valid ids
      *   For example, if the 2nd routing track does not exist in a routing channel at (x, y) location,
@@ -128,7 +128,7 @@ class RRSpatialLookup {
      *   - track index in a routing channel when type is CHANX/CHANY
      * - side is the side of node on the tile, applicable to OPIN/IPIN 
      *
-     * Note that a node added with this call will not create a node in the rr_graph_storage node list
+     * @note a node added with this call will not create a node in the rr_graph_storage node list
      * You MUST add the node in the rr_graph_storage so that the node is valid  
      *
      * TODO: Consider to try to return a reference to *this so that we can do chain calls
@@ -148,7 +148,9 @@ class RRSpatialLookup {
      * SOURCE and SINK nodes are indexable in any location inside the boundry.
      *
      * An example of usage: 
-     * 
+     *
+     *
+     * ``` 
      *   // Create a empty lookup
      *   RRSpatialLookup rr_lookup;
      *   // Adding other nodes ...
@@ -157,14 +159,20 @@ class RRSpatialLookup {
      *                          vtr::Point<int>(1, 2),
      *                          SOURCE,
      *                          TOP);
+     * ```
      *
-     * Note: currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
+     * @note currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
      * depending on needs
      *
      * TODO: Consider to make a high-level API to duplicate the nodes for large blocks. 
      * Then this API can become a private one
      * For example, 
+     *
+     *
+     * ```
      *   expand_nodes(source_coordinate, bounding_box_coordinate, type, side);
+     * ```
+     *
      * Alternatively, we can rework the ``find_node()`` API so that we always search the lowest (x,y) 
      * corner when dealing with large blocks. But this may require the data structure to be dependent 
      * on DeviceGrid information (it needs to identify if a grid has height > 1 as well as width > 1)
@@ -179,7 +187,7 @@ class RRSpatialLookup {
      *
      * This function will keep any existing data
      *
-     * Strongly recommend to use when the sizes of dimensions are deterministic
+     * @note Strongly recommend to use when the sizes of dimensions are deterministic
      *
      * TODO: should have a reserve function but vtd::ndmatrix does not have such API
      *       as a result, resize can be an internal one while reserve function is a public mutator
