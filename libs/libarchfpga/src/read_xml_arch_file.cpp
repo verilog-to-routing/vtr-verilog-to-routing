@@ -3682,23 +3682,20 @@ static void ProcessSegments(pugi::xml_node Parent,
         Segs[i].Rmetal = get_attribute(Node, "Rmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
         Segs[i].Cmetal = get_attribute(Node, "Cmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
 
-
         /*Get parallel axis*/
 
         Segs[i].parallel_axis = BOTH_AXIS; /*DEFAULT value if no axis is specified*/
-        tmp= get_attribute(Node, "axis",loc_data,ReqOpt::OPTIONAL).as_string(nullptr);
-        if (tmp){
-            if (strcmp(tmp,"x")==0) {
-                Segs[i].parallel_axis=X_AXIS;
-            } else if (strcmp(tmp, "y")==0){
-                Segs[i].parallel_axis=Y_AXIS;
+        tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+        if (tmp) {
+            if (strcmp(tmp, "x") == 0) {
+                Segs[i].parallel_axis = X_AXIS;
+            } else if (strcmp(tmp, "y") == 0) {
+                Segs[i].parallel_axis = Y_AXIS;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
             }
         }
 
-
-        
         /* Get Power info */
         /*
          * (*Segs)[i].Cmetal_per_m = get_attribute(Node, "Cmetal_per_m", false,
