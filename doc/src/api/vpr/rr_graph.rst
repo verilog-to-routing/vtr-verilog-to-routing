@@ -9,12 +9,20 @@ RRGraphView
    :project: vpr
    :sections: detaileddescription
 
+.. doxygenclass:: RRGraphView
+   :project: vpr
+   :members:
+
 RRGraphBuilder
 --------------
 
 .. doxygenfile:: rr_graph_builder.h
    :project: vpr
    :sections: detaileddescription
+
+.. doxygenclass:: RRGraphBuilder
+   :project: vpr
+   :members:
 
 RRSpatialLookup
 ---------------
