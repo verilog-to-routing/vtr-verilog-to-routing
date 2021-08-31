@@ -5,7 +5,9 @@
 #include "vtr_vector.h"
 #include "vpr_types.h"
 
-/******************************************************************** 
+/** 
+ * @brief This object encapsulates the node-lookup for a routing resource graph
+ *
  * A data structure built to find the id of an routing resource node 
  * (rr_node) given information about its physical position and type.
  * The data structure is mostly needed during rr_graph building
@@ -13,7 +15,7 @@
  * The data structure allows users to 
  * - Update the look-up with new nodes
  * - Find the id of a node with given information, e.g., x, y, type etc.
- ********************************************************************/
+ */
 class RRSpatialLookup {
     /* -- Constructors -- */
   public:
@@ -32,7 +34,8 @@ class RRSpatialLookup {
     /* -- Accessors -- */
   public:
     /**
-     * Returns the index of the specified routing resource node.  
+     * @ brief Returns the index of the specified routing resource node.  
+     *
      * - (x, y) are the grid location within the FPGA
      * - rr_type specifies the type of resource,
      * - ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
@@ -65,8 +68,8 @@ class RRSpatialLookup {
                        e_side side = NUM_SIDES) const;
 
     /**
-     * Returns the indices of the specified routing resource nodes,
-     * representing routing tracks in a channel.  
+     * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  
+     *
      * - (x, y) are the coordinate of the routing channel within the FPGA
      * - rr_type specifies the type of routing channel, either x-direction or y-direction
      *
@@ -83,7 +86,8 @@ class RRSpatialLookup {
                                              t_rr_type type) const;
 
     /**
-     * Like find_node() but returns all matching nodes on all the sides.
+     * @brief Like find_node() but returns all matching nodes on all the sides.
+     *
      * This is particularly useful for getting all instances
      * of a specific IPIN/OPIN at a specific grid tile (x,y) location.
      */
@@ -93,7 +97,8 @@ class RRSpatialLookup {
                                                   int ptc) const;
 
     /**
-     * Returns all matching nodes on all the sides at a specific grid tile (x,y) location.
+     * @brief Returns all matching nodes on all the sides at a specific grid tile (x,y) location.
+     *
      * As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN
      */
     std::vector<RRNodeId> find_grid_nodes_at_all_sides(int x,
@@ -102,9 +107,7 @@ class RRSpatialLookup {
 
     /* -- Mutators -- */
   public:
-    /**
-     * Reserve the memory for a list of nodes at (x, y) location with given type and side
-     */
+    /** @brief Reserve the memory for a list of nodes at (x, y) location with given type and side */
     void reserve_nodes(int x,
                        int y,
                        t_rr_type type,
@@ -112,7 +115,8 @@ class RRSpatialLookup {
                        e_side side = SIDES[0]);
 
     /**
-     * Register a node in the fast look-up 
+     * @brief Register a node in the fast look-up 
+     *
      * - You must have a valid node id to register the node in the lookup
      * - (x, y) are the coordinate of the node to be indexable in the fast look-up
      * - type is the type of a node
@@ -139,8 +143,9 @@ class RRSpatialLookup {
                   e_side side = SIDES[0]);
 
     /**
-     * Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
+     * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
      * a destination coordinate.
+     *
      * This function is mostly need by SOURCE and SINK nodes which are indexable in multiple locations.
      * Considering a bounding box (x, y)->(x + width, y + height) of a multi-height and multi-width grid, 
      * SOURCE and SINK nodes are indexable in any location inside the boundry.
@@ -173,7 +178,8 @@ class RRSpatialLookup {
                       e_side side);
 
     /**
-     * Resize the given 3 dimensions (x, y, side) of the RRSpatialLookup data structure for the given type
+     * @brief Resize the given 3 dimensions (x, y, side) of the RRSpatialLookup data structure for the given type
+     *
      * This function will keep any existing data
      *
      * Strongly recommend to use when the sizes of dimensions are deterministic
@@ -186,10 +192,10 @@ class RRSpatialLookup {
                       t_rr_type type,
                       e_side side);
 
-    /* Reorder the internal look up to be more memory efficient */
+    /** @brief Reorder the internal look up to be more memory efficient */
     void reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order);
 
-    /* Clear all the data inside */
+    /** @brief Clear all the data inside */
     void clear();
 
     /* -- Internal data queries -- */
