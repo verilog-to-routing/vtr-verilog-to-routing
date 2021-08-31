@@ -39,25 +39,26 @@ class RRSpatialLookup {
     /**
      * @brief Returns the index of the specified routing resource node.  
      *
-     * - (x, y) are the grid location within the FPGA
-     * - rr_type specifies the type of resource,
-     * - ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
-     *   All ptcs start at 0 and are positive.
-     *   Depending on what type of resource this is, ptc can be 
-     *     - the class number of a common SINK/SOURCE node of grid, 
-     *       starting at 0 and go up to class_inf size - 1 of SOURCEs + SINKs in a grid
-     *     - pin number of an input/output pin of a grid. They would normally start at 0
-     *       and go to the number of pins on a block at that (x, y) location
-     *     - track number of a routing wire in a channel. They would normally go from 0
-     *       to channel_width - 1 at that (x,y)
+     *   @param (x, y) are the grid location within the FPGA
+     *   @oaram rr_type specifies the type of resource,
+     *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
      *
-     * An invalid id will be returned if the node does not exist
+     * @note All ptcs start at 0 and are positive.
+     *       Depending on what type of resource this is, ptc can be 
+     *         - the class number of a common SINK/SOURCE node of grid, 
+     *           starting at 0 and go up to class_inf size - 1 of SOURCEs + SINKs in a grid
+     *         - pin number of an input/output pin of a grid. They would normally start at 0
+     *           and go to the number of pins on a block at that (x, y) location
+     *         - track number of a routing wire in a channel. They would normally go from 0
+     *           to channel_width - 1 at that (x,y)
      *
-     * Note that for segments (CHANX and CHANY) of length > 1, the segment is
+     * @note An invalid id will be returned if the node does not exist
+     *
+     * @note For segments (CHANX and CHANY) of length > 1, the segment is
      * given an rr_index based on the (x,y) location at which it starts (i.e.
      * lowest (x,y) location at which this segment exists).
      *
-     * The 'side' argument only applies to IPIN/OPIN types, and specifies which
+     * @note The 'side' argument only applies to IPIN/OPIN types, and specifies which
      * side of the grid tile the node should be located on. The value is ignored
      * for non-IPIN/OPIN types
      *
