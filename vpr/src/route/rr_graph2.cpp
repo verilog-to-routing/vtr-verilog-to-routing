@@ -369,9 +369,9 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y) {
     chan_details_x = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details, seg_details, SEG_DETAILS_X);
+                                       num_seg_details, seg_details, X_AXIS);
     chan_details_y = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details, seg_details, SEG_DETAILS_Y);
+                                       num_seg_details, seg_details, Y_AXIS);
 
     /* Adjust segment start/end based on obstructed channels, if any */
     adjust_chan_details(grid, nodes_per_chan,
@@ -382,7 +382,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const t_chan_width* nodes_per_chan,
                                  const int num_seg_details,
                                  const t_seg_details* seg_details,
-                                 const enum e_seg_details_type seg_details_type) {
+                                 const enum e_parallel_axis seg_parallel_axis) {
     VTR_ASSERT(num_seg_details <= nodes_per_chan->max);
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
@@ -396,11 +396,11 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 int seg_start = -1;
                 int seg_end = -1;
 
-                if (seg_details_type == SEG_DETAILS_X) {
+                if (seg_parallel_axis == X_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, y, x);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, y, grid.width() - 2); //-2 for no perim channels
                 }
-                if (seg_details_type == SEG_DETAILS_Y) {
+                if (seg_parallel_axis == Y_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, x, y);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, x, grid.height() - 2); //-2 for no perim channels
                 }
@@ -408,12 +408,12 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 p_seg_details[i].set_seg_start(seg_start);
                 p_seg_details[i].set_seg_end(seg_end);
 
-                if (seg_details_type == SEG_DETAILS_X) {
+                if (seg_parallel_axis == X_AXIS) {
                     if (i >= nodes_per_chan->x_list[y]) {
                         p_seg_details[i].set_length(0);
                     }
                 }
-                if (seg_details_type == SEG_DETAILS_Y) {
+                if (seg_parallel_axis == Y_AXIS) {
                     if (i >= nodes_per_chan->y_list[x]) {
                         p_seg_details[i].set_length(0);
                     }
@@ -436,7 +436,7 @@ void adjust_chan_details(const DeviceGrid& grid,
                 continue;
 
             adjust_seg_details(x, y, grid, nodes_per_chan,
-                               chan_details_x, SEG_DETAILS_X);
+                               chan_details_x, X_AXIS);
         }
     }
 
@@ -448,7 +448,7 @@ void adjust_chan_details(const DeviceGrid& grid,
                 continue;
 
             adjust_seg_details(x, y, grid, nodes_per_chan,
-                               chan_details_y, SEG_DETAILS_Y);
+                               chan_details_y, Y_AXIS);
         }
     }
 }
@@ -458,34 +458,34 @@ void adjust_seg_details(const int x,
                         const DeviceGrid& grid,
                         const t_chan_width* nodes_per_chan,
                         t_chan_details& chan_details,
-                        const enum e_seg_details_type seg_details_type) {
-    int seg_index = (seg_details_type == SEG_DETAILS_X ? x : y);
+                        const enum e_parallel_axis seg_parallel_axis) {
+    int seg_index = (seg_parallel_axis == X_AXIS ? x : y);
 
     for (int track = 0; track < nodes_per_chan->max; ++track) {
-        int lx = (seg_details_type == SEG_DETAILS_X ? x - 1 : x);
-        int ly = (seg_details_type == SEG_DETAILS_X ? y : y - 1);
+        int lx = (seg_parallel_axis == X_AXIS ? x - 1 : x);
+        int ly = (seg_parallel_axis == X_AXIS ? y : y - 1);
         if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
             continue;
 
         while (chan_details[lx][ly][track].seg_end() >= seg_index) {
             chan_details[lx][ly][track].set_seg_end(seg_index - 1);
-            lx = (seg_details_type == SEG_DETAILS_X ? lx - 1 : lx);
-            ly = (seg_details_type == SEG_DETAILS_X ? ly : ly - 1);
+            lx = (seg_parallel_axis == X_AXIS ? lx - 1 : lx);
+            ly = (seg_parallel_axis == X_AXIS ? ly : ly - 1);
             if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
                 break;
         }
     }
 
     for (int track = 0; track < nodes_per_chan->max; ++track) {
-        size_t lx = (seg_details_type == SEG_DETAILS_X ? x + 1 : x);
-        size_t ly = (seg_details_type == SEG_DETAILS_X ? y : y + 1);
+        size_t lx = (seg_parallel_axis == X_AXIS ? x + 1 : x);
+        size_t ly = (seg_parallel_axis == X_AXIS ? y : y + 1);
         if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
             continue;
 
         while (chan_details[lx][ly][track].seg_start() <= seg_index) {
             chan_details[lx][ly][track].set_seg_start(seg_index + 1);
-            lx = (seg_details_type == SEG_DETAILS_X ? lx + 1 : lx);
-            ly = (seg_details_type == SEG_DETAILS_X ? ly : ly + 1);
+            lx = (seg_parallel_axis == X_AXIS ? lx + 1 : lx);
+            ly = (seg_parallel_axis == X_AXIS ? ly : ly + 1);
             if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
                 break;
         }
