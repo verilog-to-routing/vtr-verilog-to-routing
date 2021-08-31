@@ -23,3 +23,7 @@ RRSpatialLookup
    :project: vpr
    :sections: detaileddescription
 
+.. doxygenclass:: RRSpatialLookup
+   :project: vpr
+   :members:
+
