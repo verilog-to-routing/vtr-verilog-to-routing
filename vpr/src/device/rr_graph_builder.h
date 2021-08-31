@@ -1,22 +1,21 @@
 #ifndef RR_GRAPH_BUILDER_H
 #define RR_GRAPH_BUILDER_H
 
-#include "rr_graph_storage.h"
-#include "rr_spatial_lookup.h"
-
 /**
  * @file 
  * @brief This file defines the RRGraphBuilder data structure which allows data modification on a routing resource graph 
  *
- * Note that the builder does not own the storage
- * It serves a virtual protocol for
- * - node_storage: store the node list 
- * - node_lookup: store a fast look-up for the nodes
+ * The builder does not own the storage but it serves a virtual protocol for
+ *   - node_storage: store the node list 
+ *   - node_lookup: store a fast look-up for the nodes
  *
- * Note:
+ * @note
  * - This is the only data structre allowed to modify a routing resource graph
  *
  */
+#include "rr_graph_storage.h"
+#include "rr_spatial_lookup.h"
+
 class RRGraphBuilder {
     /* -- Constructors -- */
   public:
@@ -43,12 +42,13 @@ class RRGraphBuilder {
      *
      * The node will be added to the lookup for every side it is on (for OPINs and IPINs) 
      * and for every (x,y) location at which it exists (for wires that span more than one (x,y)).
+     *
      * This function requires a valid node which has already been allocated in the node storage, with
-     * - a valid node id
-     * - valid geometry information: xlow/ylow/xhigh/yhigh
-     * - a valid node type
-     * - a valid node ptc number
-     * - a valid side (applicable to OPIN and IPIN nodes only
+     *   - a valid node id
+     *   - valid geometry information: xlow/ylow/xhigh/yhigh
+     *   - a valid node type
+     *   - a valid node ptc number
+     *   - a valid side (applicable to OPIN and IPIN nodes only
      */
     void add_node_to_all_locs(RRNodeId node);
 
