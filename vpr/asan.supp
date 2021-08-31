@@ -1,0 +1,5 @@
+#AddressSanitizer suppression file for VPR
+
+#Suppress known errors from the TBB library
+#These are some errors from the library that we can't fix and suspect are spurious
+interceptor_via_lib:libtbb.so

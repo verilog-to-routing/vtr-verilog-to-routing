@@ -50,3 +50,4 @@ restore_multiclock_latch_old_script_path = scripts_path / "restore_multiclock_la
 restore_multiclock_latch_script_path = scripts_path / "restore_multiclock_latch.pl"
 valgrind_supp = vpr_path / "valgrind.supp"
 lsan_supp = vpr_path / "lsan.supp"
+asan_supp = vpr_path / "asan.supp"
