@@ -137,12 +137,7 @@ class RRSpatialLookup {
      *   - .add_node(...)
      *   As such, multiple node addition could be efficiently implemented
      */
-    void add_node(RRNodeId node,
-                  int x,
-                  int y,
-                  t_rr_type type,
-                  int ptc,
-                  e_side side = SIDES[0]);
+    void add_node(RRNodeId node, int x, int y, t_rr_type type, int ptc, e_side side = SIDES[0]);
 
     /**
      * @brief Mirror the last dimension of a look-up, i.e., a list of nodes, from a source coordinate to 
