@@ -40,7 +40,7 @@ class RRSpatialLookup {
      * @brief Returns the index of the specified routing resource node.  
      *
      *   @param (x, y) are the grid location within the FPGA
-     *   @oaram rr_type specifies the type of resource,
+     *   @param rr_type specifies the type of resource,
      *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (x,y).
      *
      * @note All ptcs start at 0 and are positive.
@@ -74,8 +74,8 @@ class RRSpatialLookup {
     /**
      * @brief Returns the indices of the specified routing resource nodes, representing routing tracks in a channel.  
      *
-     * - (x, y) are the coordinate of the routing channel within the FPGA
-     * - rr_type specifies the type of routing channel, either x-direction or y-direction
+     *   @param (x, y) are the coordinate of the routing channel within the FPGA
+     *   @param rr_type specifies the type of routing channel, either x-direction or y-direction
      *
      * @note 
      * - Return an empty list if there are no routing channel at the given (x, y) location
@@ -121,14 +121,15 @@ class RRSpatialLookup {
     /**
      * @brief Register a node in the fast look-up 
      *
-     * - You must have a valid node id to register the node in the lookup
-     * - (x, y) are the coordinate of the node to be indexable in the fast look-up
-     * - type is the type of a node
-     * - ptc is a feature number of a node, which can be
-     *   - the class number of a common SINK/SOURCE node of grid, 
-     *   - pin index in a tile when type is OPIN/IPIN
-     *   - track index in a routing channel when type is CHANX/CHANY
-     * - side is the side of node on the tile, applicable to OPIN/IPIN 
+     * @note You must have a valid node id to register the node in the lookup
+     *
+     *   @param (x, y) are the coordinate of the node to be indexable in the fast look-up
+     *   @param type is the type of a node
+     *   @param ptc is a feature number of a node, which can be
+     *     - the class number of a common SINK/SOURCE node of grid, 
+     *     - pin index in a tile when type is OPIN/IPIN
+     *     - track index in a routing channel when type is CHANX/CHANY
+     *   @param side is the side of node on the tile, applicable to OPIN/IPIN 
      *
      * @note a node added with this call will not create a node in the rr_graph_storage node list
      * You MUST add the node in the rr_graph_storage so that the node is valid  
