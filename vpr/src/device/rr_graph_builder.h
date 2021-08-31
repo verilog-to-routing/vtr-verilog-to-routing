@@ -4,7 +4,8 @@
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
 
-/* A data structure allows data modification on a routing resource graph 
+/** 
+ * @brief A data structure allows data modification on a routing resource graph 
  *
  * Note that the builder does not own the storage
  * It serves a virtual protocol for
@@ -32,11 +33,13 @@ class RRGraphBuilder {
 
     /* -- Mutators -- */
   public:
-    /* Return a writable object for rr_nodes */
+    /** @brief Return a writable object for rr_nodes */
     t_rr_graph_storage& node_storage();
-    /* Return a writable object for update the fast look-up of rr_node */
+    /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
-    /* Add an existing rr_node in the node storage to the node look-up
+    /**
+     * @brief Add an existing rr_node in the node storage to the node look-up
+     *
      * The node will be added to the lookup for every side it is on (for OPINs and IPINs) 
      * and for every (x,y) location at which it exists (for wires that span more than one (x,y)).
      * This function requires a valid node which has already been allocated in the node storage, with
@@ -48,7 +51,7 @@ class RRGraphBuilder {
      */
     void add_node_to_all_locs(RRNodeId node);
 
-    /* Clear all the underlying data storage */
+    /** @brief Clear all the underlying data storage */
     void clear();
 
     /* -- Internal data storage -- */
