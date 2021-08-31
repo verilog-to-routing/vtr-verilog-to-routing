@@ -19,7 +19,7 @@ RRGraphBuilder
 RRSpatialLookup
 ---------------
 
-.. doxygenfile:: rr_spatial_lookup.h
+.. doxygenclass:: RRSpatialLookup
    :project: vpr
-   :sections: detaileddescription
+   :memebers:
 
