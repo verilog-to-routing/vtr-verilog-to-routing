@@ -4,8 +4,9 @@
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
 
-/** 
- * @brief A data structure allows data modification on a routing resource graph 
+/**
+ * @file 
+ * @brief This file defines the RRGraphBuilder data structure which allows data modification on a routing resource graph 
  *
  * Note that the builder does not own the storage
  * It serves a virtual protocol for

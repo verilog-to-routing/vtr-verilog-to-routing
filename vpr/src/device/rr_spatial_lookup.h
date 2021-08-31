@@ -6,7 +6,9 @@
 #include "vpr_types.h"
 
 /** 
- * @brief This object encapsulates the node-lookup for a routing resource graph
+ * @file
+ * @brief This files defines the RRSpatialLookup class which encapsulates 
+ *        the node-lookup for a routing resource graph
  *
  * A data structure built to find the id of an routing resource node 
  * (rr_node) given information about its physical position and type.
@@ -34,7 +36,7 @@ class RRSpatialLookup {
     /* -- Accessors -- */
   public:
     /**
-     * @ brief Returns the index of the specified routing resource node.  
+     * @brief Returns the index of the specified routing resource node.  
      *
      * - (x, y) are the grid location within the FPGA
      * - rr_type specifies the type of resource,
