@@ -155,7 +155,6 @@ e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_boundin
 
 e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator, t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
 
-
 #endif /*NO_GRAPHICS*/
 
 #endif /* MANUAL_MOVES_H */
