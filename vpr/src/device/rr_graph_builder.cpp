@@ -1,10 +1,8 @@
 #include "vtr_log.h"
 #include "rr_graph_builder.h"
 
-RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage,
-                               RRSpatialLookup* node_lookup)
-    : node_storage_(*node_storage)
-    , node_lookup_(*node_lookup) {
+RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage)
+    : node_storage_(*node_storage) {
 }
 
 t_rr_graph_storage& RRGraphBuilder::node_storage() {
@@ -47,4 +45,8 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
             }
         }
     }
+}
+
+void RRGraphBuilder::clear() {
+    node_lookup_.clear();
 }

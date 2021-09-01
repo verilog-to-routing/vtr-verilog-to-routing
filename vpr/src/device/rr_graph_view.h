@@ -1,8 +1,7 @@
 #ifndef RR_GRAPH_VIEW_H
 #define RR_GRAPH_VIEW_H
 
-#include "rr_graph_storage.h"
-#include "rr_spatial_lookup.h"
+#include "rr_graph_builder.h"
 
 /* An read-only routing resource graph
  * which is an unified object including pointors to
@@ -75,6 +74,21 @@ class RRGraphView {
     /* Get the direction string of a routing resource node. This function is inlined for runtime optimization. */
     inline const std::string& node_direction_string(RRNodeId node) const {
         return node_storage_.node_direction_string(node);
+    }
+
+    /* Get the capacitance of a routing resource node. This function is inlined for runtime optimization. */
+    inline float node_C(RRNodeId node) const {
+        return node_storage_.node_C(node);
+    }
+
+    /* Get the resistance of a routing resource node. This function is inlined for runtime optimization. */
+    inline float node_R(RRNodeId node) const {
+        return node_storage_.node_R(node);
+    }
+
+    /* Get the rc_index of a routing resource node. This function is inlined for runtime optimization. */
+    inline int16_t node_rc_index(RRNodeId node) const {
+        return node_storage_.node_rc_index(node);
     }
 
     /* Get the fan in of a routing resource node. This function is inlined for runtime optimization. */

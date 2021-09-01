@@ -2,6 +2,7 @@
 #define RR_SPATIAL_LOOKUP_H
 
 #include "vtr_geometry.h"
+#include "vtr_vector.h"
 #include "vpr_types.h"
 
 /******************************************************************** 
@@ -17,7 +18,7 @@ class RRSpatialLookup {
     /* -- Constructors -- */
   public:
     /* Explicitly define the only way to create an object */
-    explicit RRSpatialLookup(t_rr_node_indices& rr_node_indices);
+    explicit RRSpatialLookup();
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -185,6 +186,12 @@ class RRSpatialLookup {
                       t_rr_type type,
                       e_side side);
 
+    /* Reorder the internal look up to be more memory efficient */
+    void reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order);
+
+    /* Clear all the data inside */
+    void clear();
+
     /* -- Internal data queries -- */
   private:
     /* An internal API to find all the nodes in a specific location with a given type
@@ -199,17 +206,8 @@ class RRSpatialLookup {
 
     /* -- Internal data storage -- */
   private:
-    /* TODO: When the refactoring effort finishes, 
-     * the data structure will be the owner of the data storages. 
-     * That is why the reference is used here.
-     * It can avoid a lot of code changes once the refactoring is finished 
-     * (there is no function get data directly through the rr_node_indices in DeviceContext).
-     * If pointers are used, it may cause many codes in client functions 
-     * or inside the data structures to be changed later.
-     * That explains why the reference is used here temporarily
-     */
     /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional arrqay mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
-    t_rr_node_indices& rr_node_indices_;
+    t_rr_node_indices rr_node_indices_;
 };
 
 #endif
