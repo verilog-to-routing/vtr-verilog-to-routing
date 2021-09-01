@@ -3641,9 +3641,9 @@ static void ProcessSegments(pugi::xml_node Parent,
     Node = get_first_child(Parent, "segment", loc_data);
 
     /*Keep track of the type of axis of the segments loaded*/
-    bool both_axis_segs=false;
-    bool x_axis_segs=false;
-    bool y_axis_segs=false; 
+    bool both_axis_segs = false;
+    bool x_axis_segs = false;
+    bool y_axis_segs = false;
 
     for (i = 0; i < NumSegs; ++i) {
         /* Get segment name */
@@ -3696,16 +3696,15 @@ static void ProcessSegments(pugi::xml_node Parent,
         if (tmp) {
             if (strcmp(tmp, "x") == 0) {
                 Segs[i].parallel_axis = X_AXIS;
-                x_axis_segs=true;  
+                x_axis_segs = true;
             } else if (strcmp(tmp, "y") == 0) {
                 Segs[i].parallel_axis = Y_AXIS;
-                y_axis_segs=true; 
+                y_axis_segs = true;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
             }
-        }
-        else {
-            both_axis_segs=true;  
+        } else {
+            both_axis_segs = true;
         }
 
         /* Get Power info */
@@ -3826,9 +3825,9 @@ static void ProcessSegments(pugi::xml_node Parent,
         Node = Node.next_sibling(Node.name());
     }
     /*if no segment with default axis option isn't provided, atleast 1 segment along each x & y axes is needed */
-    if (!both_axis_segs && !(x_axis_segs && y_axis_segs && true)){
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), 
-        "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exists.");
+    if (!both_axis_segs && !(x_axis_segs && y_axis_segs && true)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exists.");
     }
 }
 
