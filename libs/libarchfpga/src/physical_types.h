@@ -1445,7 +1445,7 @@ struct t_segment_inf {
 };
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
-    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.cb == b.cb && a.sb == b.sb;
+    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
 }
 
 enum class SwitchType {

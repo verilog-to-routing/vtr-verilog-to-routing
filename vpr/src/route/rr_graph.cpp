@@ -268,7 +268,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const int max_pins,
                                                               const std::vector<t_segment_inf>& segment_inf,
                                                               const int* sets_per_seg_type,
-                                                              const int max_chan_width,
+                                                              const t_chan_width* nodes_per_chan,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
                                                               bool* Fc_clipped);
@@ -433,8 +433,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /* Global routing uses a single longwire track */
-    int max_chan_width = (is_global_graph ? 1 : nodes_per_chan.max);
-    VTR_ASSERT(max_chan_width > 0);
+    int max_chan_width=nodes_per_chan.max; 
+    int max_chan_width_x =(is_global_graph ? 1 : nodes_per_chan.x_max);
+    int max_chan_width_y= (is_global_graph ? 1 :nodes_per_chan.y_max); 
+
+    VTR_ASSERT(max_chan_width_x > 0 && max_chan_width_y > 0);
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -446,8 +449,14 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     /* START SEG_DETAILS */
     device_ctx.rr_segments = segment_inf;
-    int num_seg_details = 0;
+
+    int num_seg_details=0; 
+    int num_seg_details_x = 0;
+    int num_seg_details_y= 0; 
+
     t_seg_details* seg_details = nullptr;
+    t_seg_details* seg_details_x=nullptr; 
+    t_seg_details* seg_details_y=nullptr; 
 
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
@@ -456,16 +465,35 @@ static void build_rr_graph(const t_graph_type graph_type,
         /* Setup segments including distrubuting tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be
          * changed. Warning should be singled to caller if this happens. */
+
+        /* Need to setup segments along x & y axis seperately, due to different 
+           max_channel_widths and segment specifications. */
+
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
-        seg_details = alloc_and_load_seg_details(&max_chan_width,
-                                                 max_dim, segment_inf,
-                                                 use_full_seg_groups, is_global_graph, directionality,
-                                                 &num_seg_details);
-        if (nodes_per_chan.max != max_chan_width) {
-            nodes_per_chan.max = max_chan_width;
-            *Warnings |= RR_GRAPH_WARN_CHAN_WIDTH_CHANGED;
+        /*Get x & y segments seperately*/
+        std::vector<t_segment_inf> segment_inf_x=get_parallel_segs(segment_inf,X_AXIS);
+        std::vector<t_segment_inf> segment_inf_y=get_parallel_segs(segment_inf,Y_AXIS);
+
+        seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
+                                                 max_dim, segment_inf_x,
+                                                 use_full_seg_groups, directionality,
+                                                 &num_seg_details_x);
+        
+        seg_details_y = alloc_and_load_seg_details(&max_chan_width_y,
+                                                 max_dim, segment_inf_y,
+                                                 use_full_seg_groups, directionality,
+                                                 &num_seg_details_y);
+        
+        if (nodes_per_chan.x_max != max_chan_width_x || nodes_per_chan.y_max != max_chan_width_y) {
+            nodes_per_chan.x_max = max_chan_width_x;
+            *Warnings |= RR_GRAPH_WARN_CHAN_X_WIDTH_CHANGED;
+
+        }else if (nodes_per_chan.y_max != max_chan_width_y ){
+            nodes_per_chan.y_max=max_chan_width_y; 
+            *Warnings |= RR_GRAPH_WARN_CHAN_Y_WIDTH_CHANGED; 
         }
+
 
         //TODO: Fix
         //if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SEG_DETAILS)) {
@@ -476,16 +504,19 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* END SEG_DETAILS */
 
     /* START CHAN_DETAILS */
+
+    
     t_chan_details chan_details_x;
     t_chan_details chan_details_y;
 
     alloc_and_load_chan_details(grid, &nodes_per_chan,
-                                num_seg_details, seg_details,
+                                num_seg_details_x,num_seg_details_y,
+                                seg_details_x,seg_details_y,
                                 chan_details_x, chan_details_y);
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CHAN_DETAILS)) {
-        dump_chan_details(chan_details_x, chan_details_y, max_chan_width, grid,
-                          getEchoFileName(E_ECHO_CHAN_DETAILS));
+        dump_chan_details(chan_details_x, chan_details_y, &nodes_per_chan,
+         grid,getEchoFileName(E_ECHO_CHAN_DETAILS));
     }
     /* END CHAN_DETAILS */
 
@@ -521,13 +552,13 @@ static void build_rr_graph(const t_graph_type graph_type,
         Fc_out = std::vector<vtr::Matrix<int>>(types.size(), ones);
     } else {
         bool Fc_clipped = false;
-        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), max_chan_width,
+        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), &nodes_per_chan,
                                          e_fc_type::IN, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
-        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), max_chan_width,
+        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), &nodes_per_chan,
                                           e_fc_type::OUT, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -992,7 +1023,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const int max_pins,
                                                               const std::vector<t_segment_inf>& segment_inf,
                                                               const int* sets_per_seg_type,
-                                                              const int max_chan_width,
+                                                              const t_chan_width* nodes_per_chan,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
                                                               bool* Fc_clipped) {
@@ -1008,7 +1039,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
         fac = 2;
     }
 
-    VTR_ASSERT((max_chan_width % fac) == 0);
+    VTR_ASSERT((nodes_per_chan->x_max % fac) == 0 && (nodes_per_chan->y_max % fac ) == 0 );
 
     for (const auto& type : types) { //Skip EMPTY
         int itype = type.index;
