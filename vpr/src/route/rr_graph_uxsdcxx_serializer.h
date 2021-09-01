@@ -615,20 +615,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return node.ptc_num();
     }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
-        const auto& rr_graph = (*rr_graph_);
-        return rr_graph.node_xhigh(node.id());
+        return rr_graph_->node_xhigh(node.id());
     }
     inline int get_node_loc_xlow(const t_rr_node& node) final {
-        const auto& rr_graph = (*rr_graph_);
-        return rr_graph.node_xlow(node.id());
+        return rr_graph_->node_xlow(node.id());
     }
     inline int get_node_loc_yhigh(const t_rr_node& node) final {
-        const auto& rr_graph = (*rr_graph_);
-        return rr_graph.node_yhigh(node.id());
+        return rr_graph_->node_yhigh(node.id());
     }
     inline int get_node_loc_ylow(const t_rr_node& node) final {
-        const auto& rr_graph = (*rr_graph_);
-        return rr_graph.node_ylow(node.id());
+        return rr_graph_->node_ylow(node.id());
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {

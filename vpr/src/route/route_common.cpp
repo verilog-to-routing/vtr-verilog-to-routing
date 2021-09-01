@@ -1143,31 +1143,29 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
     int max_dim = std::max<int>(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
     bb_factor = std::min(bb_factor, max_dim);
 
-    int driver_rr = route_ctx.net_rr_terminals[net_id][0];
-    const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
-    VTR_ASSERT(rr_graph.node_type(RRNodeId(driver_rr)) == SOURCE);
+    RRNodeId driver_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][0]);
+    VTR_ASSERT(rr_graph.node_type(driver_rr) == SOURCE);
 
-    VTR_ASSERT(rr_graph.node_xlow(source_node.id()) <= rr_graph.node_xhigh(source_node.id()));
-    VTR_ASSERT(rr_graph.node_ylow(source_node.id()) <= rr_graph.node_yhigh(source_node.id()));
+    VTR_ASSERT(rr_graph.node_xlow(driver_rr) <= rr_graph.node_xhigh(driver_rr));
+    VTR_ASSERT(rr_graph.node_ylow(driver_rr) <= rr_graph.node_yhigh(driver_rr));
 
-    int xmin = rr_graph.node_xlow(source_node.id());
-    int ymin = rr_graph.node_ylow(source_node.id());
-    int xmax = rr_graph.node_xhigh(source_node.id());
-    int ymax = rr_graph.node_yhigh(source_node.id());
+    int xmin = rr_graph.node_xlow(driver_rr);
+    int ymin = rr_graph.node_ylow(driver_rr);
+    int xmax = rr_graph.node_xhigh(driver_rr);
+    int ymax = rr_graph.node_yhigh(driver_rr);
 
     auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
-        int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
-        const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
-        VTR_ASSERT(rr_graph.node_type(RRNodeId(sink_rr)) == SINK);
+        RRNodeId sink_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][ipin]);
+        VTR_ASSERT(rr_graph.node_type(sink_rr) == SINK);
 
-        VTR_ASSERT(rr_graph.node_xlow(sink_node.id()) <= rr_graph.node_xhigh(sink_node.id()));
-        VTR_ASSERT(rr_graph.node_ylow(sink_node.id()) <= rr_graph.node_yhigh(sink_node.id()));
+        VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
+        VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
-        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_node.id()));
-        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_node.id()));
-        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_node.id()));
-        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_node.id()));
+        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
+        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
+        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
+        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
     }
 
     /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */

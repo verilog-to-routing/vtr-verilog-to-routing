@@ -117,37 +117,49 @@ class RRGraphView {
     }
 
     /* Get the length of a routing resource node. This function is inlined for runtime optimization. */
+    /* node_length() only applies to CHANX or CHANY and is always a positive number*/
     inline int node_length(RRNodeId node) const {
-        return 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
+        VTR_ASSERT(node_type(node) == CHANX || node_type(node) == CHANY);
+        int length = 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
+        VTR_ASSERT_SAFE(length > 0);
+        return length;
     }
 
     /* Check if routing resource node is initialized. This function is inlined for runtime optimization. */
     inline bool node_is_initialized(RRNodeId node) const {
-        return !((node_type(node) == SOURCE)
-                 && (node_xlow(node) == 0) && (node_ylow(node) == 0)
-                 && (node_xhigh(node) == 0) && (node_yhigh(node) == 0));
+        return !((node_type(node) == NUM_RR_TYPES)
+                 && (node_xlow(node) == -1) && (node_ylow(node) == -1)
+                 && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
 
-    /* Check if two routing resource nodes are adjacent. This function is inlined for runtime optimization. */
-    inline bool nodes_are_adjacent(RRNodeId first_node, RRNodeId second_node) const {
-        int chanx_y, chanx_xlow, chanx_xhigh;
-        int chany_x, chany_ylow, chany_yhigh;
-
-        chanx_y = node_ylow(first_node);
-        chanx_xlow = node_xlow(first_node);
-        chanx_xhigh = node_xhigh(first_node);
-
-        chany_x = node_xlow(second_node);
-        chany_ylow = node_ylow(second_node);
-        chany_yhigh = node_yhigh(second_node);
-
-        if (chany_ylow > chanx_y + 1 || chany_yhigh < chanx_y)
+    /* Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). This function is inlined for runtime optimization. */
+    inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
+        VTR_ASSERT(node_type(chanx_node) == CHANX && node_type(chany_node) == CHANY);
+        if (node_ylow(chany_node) > node_ylow(chanx_node) + 1 || // verifies that chany_node is not more than one unit above chanx_node
+            node_yhigh(chany_node) < node_ylow(chanx_node))      // verifies that chany_node is not more than one unit beneath chanx_node
             return false;
-
-        if (chanx_xlow > chany_x + 1 || chanx_xhigh < chany_x)
+        if (node_xlow(chanx_node) > node_xlow(chany_node) + 1 || // verifies that chany_node is not more than one unit to the left of chanx_node
+            node_xhigh(chanx_node) < node_xlow(chany_node))      // verifies that chany_node is not more than one unit to the right of chanx_node
             return false;
-
         return true;
+    }
+
+    /* Check if node is within bounding box. This function is inlined for runtime optimization. */
+    inline bool node_is_inside_bounding_box(RRNodeId node, vtr::Rect<int> bounding_box) const {
+        return (node_xhigh(node) <= bounding_box.xmax()
+                && node_xlow(node) >= bounding_box.xmin()
+                && node_yhigh(node) <= bounding_box.ymax()
+                && node_ylow(node) >= bounding_box.ymin());
+    }
+
+    /* Check if x is within node x range. This function is inlined for runtime optimization. */
+    inline bool x_in_node_range(int x, RRNodeId node) const {
+        return !(x < node_xlow(node) || x > node_xhigh(node));
+    }
+
+    /* Check if y is within node y range. This function is inlined for runtime optimization. */
+    inline bool y_in_node_range(int y, RRNodeId node) const {
+        return !(y < node_ylow(node) || y > node_yhigh(node));
     }
 
     /* Return the fast look-up data structure for queries from client functions */

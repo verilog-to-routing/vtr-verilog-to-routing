@@ -345,6 +345,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
             net_component.type_name += start_x + start_y; //Write the starting coordinates
             net_component.type_name += arrow;             //Indicate the direction
             net_component.type_name += end_x + end_y;     //Write the end coordiates
+
             if (node->parent_node) {
                 net_component.delay = tatum::Time(node->Tdel - node->parent_node->Tdel); // add the incremental delay
             } else {

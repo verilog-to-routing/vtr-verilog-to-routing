@@ -1671,10 +1671,7 @@ static size_t calculate_wirelength_available() {
     for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
         const t_rr_type channel_type = rr_graph.node_type(RRNodeId(i));
         if (channel_type == CHANX || channel_type == CHANY) {
-            size_t length_x = rr_graph.node_xhigh(RRNodeId(i)) - rr_graph.node_xlow(RRNodeId(i));
-            size_t length_y = rr_graph.node_yhigh(RRNodeId(i)) - rr_graph.node_ylow(RRNodeId(i));
-
-            available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * (length_x + length_y + 1);
+            available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * rr_graph.node_length(RRNodeId(i));
         }
     }
     return available_wirelength;

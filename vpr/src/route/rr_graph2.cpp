@@ -1212,7 +1212,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
 
-                        if (x < rr_graph.node_xlow(rr_node.id()) || x > rr_graph.node_xhigh(rr_node.id())) {
+                        if (!rr_graph.x_in_node_range(x, rr_node.id())) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                       rr_graph.node_xlow(rr_node.id()),
                                       rr_graph.node_xlow(rr_node.id()),
@@ -1229,7 +1229,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
 
-                        if (y < rr_graph.node_ylow(rr_node.id()) || y > rr_graph.node_yhigh(rr_node.id())) {
+                        if (!rr_graph.y_in_node_range(y, rr_node.id())) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                       rr_graph.node_ylow(rr_node.id()),
                                       rr_graph.node_ylow(rr_node.id()),
@@ -1238,7 +1238,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                         }
                     } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
                         //Sources have co-ordintes covering the entire block they are in
-                        if (x < rr_graph.node_xlow(rr_node.id()) || x > rr_graph.node_xhigh(rr_node.id())) {
+                        if (!rr_graph.x_in_node_range(x, rr_node.id())) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                       rr_graph.node_xlow(rr_node.id()),
                                       rr_graph.node_xlow(rr_node.id()),
@@ -1246,7 +1246,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
 
-                        if (y < rr_graph.node_ylow(rr_node.id()) || y > rr_graph.node_yhigh(rr_node.id())) {
+                        if (!rr_graph.y_in_node_range(y, rr_node.id())) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                       rr_graph.node_ylow(rr_node.id()),
                                       rr_graph.node_ylow(rr_node.id()),

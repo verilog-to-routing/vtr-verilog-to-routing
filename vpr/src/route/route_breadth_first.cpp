@@ -390,11 +390,11 @@ static void breadth_first_expand_neighbours(BinaryHeap& heap, int inode, float p
     for (RREdgeId from_edge : device_ctx.rr_nodes.edge_range(RRNodeId(inode))) {
         RRNodeId to_node = device_ctx.rr_nodes.edge_sink_node(from_edge);
 
-        if (rr_graph.node_xhigh(to_node) < route_ctx.route_bb[net_id].xmin
-            || rr_graph.node_xlow(to_node) > route_ctx.route_bb[net_id].xmax
-            || rr_graph.node_yhigh(to_node) < route_ctx.route_bb[net_id].ymin
-            || rr_graph.node_ylow(to_node) > route_ctx.route_bb[net_id].ymax)
-            continue; /* Node is outside (expanded) bounding box. */
+        vtr::Point<int> lower_left(route_ctx.route_bb[net_id].xmin, route_ctx.route_bb[net_id].ymin);
+        vtr::Point<int> upper_right(route_ctx.route_bb[net_id].xmax, route_ctx.route_bb[net_id].ymax);
+        vtr::Rect<int> bounding_box(lower_left, upper_right);
+
+        if (!rr_graph.node_is_inside_bounding_box(to_node, bounding_box)) continue;
 
         breadth_first_add_to_heap(heap, pcost, bend_cost, inode, to_node, from_edge, pres_fac);
     }
