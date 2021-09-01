@@ -4,7 +4,7 @@
  * @date 	2021-07-19
  * @brief 	Contains the function prototypes needed for manual moves feature.
  *
- * Includes the data structures sed and gtk function for manual moves. The Manual Move Generator class is defined  manual_move_generator.h/cpp.
+ * Includes the data structures and gtk function for manual moves. The Manual Move Generator class is defined  manual_move_generator.h/cpp.
  */
 
 #ifndef MANUAL_MOVES_H
@@ -15,6 +15,7 @@
 
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
+#    include "manual_move_generator.h"
 
 #    include "move_utils.h"
 #    include <cstdio>
@@ -30,7 +31,7 @@
  * Contains information about the block, location, validity of user input, timing variables, and placer outcomes.
  *
  * GUI writes to:
- * blockID: Stores the block ID of the block requested to move by the user. 
+ * blockID: Stores the block ID of the block requested to move by the user. This block is the from block in the move generator.
  * x_pos: Stores the x position of the block requested to move by the user. 
  * y_pos: Stores the y position of the block requested to move by the user. 
  * subtile: Stores the subtile of the block requested to move by the user.
@@ -89,7 +90,7 @@ bool manual_move_is_selected();
 /**
  * @brief Draws the manual move window.
  *
- * Window prompts the user for input: block id/name, s position, y position, and subtile position.
+ * Window prompts the user for input: block id/name used as the from block in the move generator, x position, y position, and subtile position.
  * @param block_id: The block id is passed in if the user decides to highlight the block in the UI. If the user decides to manually input the block ID in the manual move window, the string will be empty and the block ID will later be assigned to ManualMovesState struct.
  */
 void draw_manual_moves_window(std::string block_id);
@@ -107,7 +108,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid);
  * @brief In -detail checking of the user's input.
  *
  * Checks if the user input is between the grid's dimensions, block comptaibility, if the block requested to move is valid, if the block is fixed, and if the curent location of the block is different from the location requested by the user.
- * @param block_id: The ID of the block to move.
+ * @param block_id: The ID of the block to move used as the from block in the move generator).
  * @param to: Location of where the user wants to move the block.
  *
  * @return True if all conditions are met, false otherwise.
@@ -129,7 +130,7 @@ void manual_move_cost_summary_dialog();
 void manual_move_highlight_new_block_location();
 
 /**
- * @brief Disables the mm_window_is_open boolean and destroys the window
+ * @brief Disables the manual_move_window_is_open boolean and destroys the window
  */
 void close_manual_moves_window();
 
@@ -151,6 +152,9 @@ bool string_is_a_number(std::string block_id);
  * Helper function used in place.cpp. The ManualMovesState variable are updated and the manual_move_cost_summary_dialog is called to display the cost members to the user in the UI and waits for the user to either ACCPET/REJECT the manual move. 
  */
 e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome);
+
+e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator, t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
+
 
 #endif /*NO_GRAPHICS*/
 

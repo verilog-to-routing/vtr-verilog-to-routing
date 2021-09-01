@@ -305,4 +305,12 @@ e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_boundin
     return move_outcome;
 }
 
+e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_generator, t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+	draw_manual_moves_window("");
+        update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+        move_type = e_move_type::MANUAL_MOVE;
+	return  manual_move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
+}
+
+
 #endif /*NO_GRAPHICS*/
