@@ -10,7 +10,7 @@
  *   - node_lookup: store a fast look-up for the nodes
  *
  * @note
- * - This is the only data structre allowed to modify a routing resource graph
+ * - This is the only data structure allowed to modify a routing resource graph
  *
  */
 #include "rr_graph_storage.h"

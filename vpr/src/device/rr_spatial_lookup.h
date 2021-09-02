@@ -133,7 +133,8 @@ class RRSpatialLookup {
      *
      * @note a node added with this call will not create a node in the rr_graph_storage node list
      * You MUST add the node in the rr_graph_storage so that the node is valid  
-     *
+     */
+    /*
      * TODO: Consider to try to return a reference to *this so that we can do chain calls
      *   - .add_node(...)
      *   - .add_node(...)
@@ -171,7 +172,8 @@ class RRSpatialLookup {
      *
      * @note currently this function only accepts SOURCE/SINK nodes. May unlock for the other types 
      * depending on needs
-     *
+     */
+    /*
      * TODO: Consider to make a high-level API to duplicate the nodes for large blocks. 
      * Then this API can become a private one
      * For example, 
@@ -196,7 +198,8 @@ class RRSpatialLookup {
      * This function will keep any existing data
      *
      * @note Strongly recommend to use when the sizes of dimensions are deterministic
-     *
+     */
+    /*
      * TODO: should have a reserve function but vtd::ndmatrix does not have such API
      *       as a result, resize can be an internal one while reserve function is a public mutator
      */
