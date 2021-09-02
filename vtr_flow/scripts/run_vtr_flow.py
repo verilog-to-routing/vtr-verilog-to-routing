@@ -184,7 +184,7 @@ def vtr_command_argparser(prog=None):
 
     house_keeping.add_argument(
         "-track_memory_usage",
-        default=False,
+        default=True,
         action="store_true",
         dest="track_memory_usage",
         help="Track the memory usage for each stage."
@@ -406,7 +406,7 @@ def vtr_command_main(arg_list, prog=None):
         temp_dir = Path(args.temp_dir)
     # Specify how command should be run
     command_runner = vtr.CommandRunner(
-        track_memory=True,
+        track_memory=args.track_memory_usage,
         max_memory_mb=args.limit_memory_usage,
         timeout_sec=args.timeout,
         verbose=args.verbose,
