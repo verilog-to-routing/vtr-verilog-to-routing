@@ -11,6 +11,8 @@
 #include "move_utils.h"
 #include "region.h"
 
+#include "echo_files.h"
+
 #include <chrono>
 #include <time.h>
 //Used to assign each block a score for how difficult it is to place
@@ -138,6 +140,12 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
     }
 
     compressed_grid_to_loc(block_type, cx_to, cy_to, loc);
+
+    auto& grid = g_vpr_ctx.device().grid;
+
+    //VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
+    VTR_ASSERT_MSG(grid[loc.x][loc.y].width_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid[loc.x][loc.y].height_offset == 0, "Should be at block base location");
 
 	return legal;
 }
@@ -749,6 +757,20 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     /* Restore legal_pos */
     alloc_and_load_legal_placement_locations(legal_pos);
+
+    VTR_LOG("Printing initial placement\n");
+    VTR_LOG("Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
+    VTR_LOG("#block name\tx\ty\tsubblk\tblock number\n");
+    VTR_LOG("#----------\t--\t--\t------\t------------\n");
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    	VTR_LOG( "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+        if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
+        	VTR_LOG( "\t");
+
+        VTR_LOG( "%d\t%d\t%d", place_ctx.block_locs[blk_id].loc.x, place_ctx.block_locs[blk_id].loc.y, place_ctx.block_locs[blk_id].loc.sub_tile);
+        VTR_LOG( "\t#%zu\n", size_t(blk_id));
+    }
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");

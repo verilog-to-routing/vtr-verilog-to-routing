@@ -548,6 +548,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
 
     //Determine the coordinates in the compressed grid space of the current block
+    VTR_LOG("Uniform: x: %d, y: %d, block type: %s\n", from.x, from.y, type->name);
     int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from.x);
     int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from.y);
 
@@ -602,6 +603,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
     //Determine the coordinates in the compressed grid space of the current block
+    VTR_LOG("Median: x: %d, y: %d, block type: %s\n", from_loc.x, from_loc.y, blk_type->name);
     int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from_loc.x);
     int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from_loc.y);
 
@@ -659,6 +661,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
     //Determine the coordinates in the compressed grid space of the current block
+    VTR_LOG("Centroid: x: %d, y: %d, block type: %s\n", from_loc.x, from_loc.y, blk_type->name);
     int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from_loc.x);
     int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from_loc.y);
 
