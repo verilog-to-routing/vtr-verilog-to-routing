@@ -2057,7 +2057,6 @@ static void alloc_and_load_try_swap_structs() {
     ts_nets_to_update.resize(num_nets, ClusterNetId::INVALID());
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_LOG("LOADING COMPRESSED GRID\n");
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 }
 
