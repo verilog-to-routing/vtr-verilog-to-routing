@@ -1382,6 +1382,9 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+/* X_AXIS: Assigned to a segment's  parallel_axis data member if segment is parallel to the x-axis. Defined in arch file as: axis="x"           *
+ * Y_AXIS: Assigned to a segment's  parallel_axis data amember if segment is parallel to the y-axis. Defined in arch file as: axis="y"          *     
+ * BOTH_AXIS: Assigned to a segment's parallel axis data member if segment's parallel axis is not specified (default is it parallel to both).   */        
 enum e_parallel_axis {
     X_AXIS,
     Y_AXIS,
@@ -1420,6 +1423,8 @@ enum e_Fc_type {
  * frac_sb:  The fraction of the length + 1 switch blocks along the segment  *
  *           to which the segment can connect.  Segments that aren't long    *
  *           lines must connect to at least two switch boxes.                *
+ * parallel_axis:   Defines what axis the segment is parallel to. See        *
+ *                  e_parallel_axis comments for more details on the values. *
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
