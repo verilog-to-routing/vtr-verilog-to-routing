@@ -17,7 +17,7 @@ typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const int max_chan_width,
+                                    const t_chan_width*  nodes_per_chan,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,

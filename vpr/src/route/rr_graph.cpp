@@ -433,9 +433,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /* Global routing uses a single longwire track */
-    int max_chan_width=nodes_per_chan.max; 
+    int max_chan_width = (is_global_graph ? 1:nodes_per_chan.max); 
     int max_chan_width_x =(is_global_graph ? 1 : nodes_per_chan.x_max);
-    int max_chan_width_y= (is_global_graph ? 1 :nodes_per_chan.y_max); 
+    int max_chan_width_y = (is_global_graph ? 1 :nodes_per_chan.y_max); 
 
     VTR_ASSERT(max_chan_width_x > 0 && max_chan_width_y > 0);
 
@@ -601,7 +601,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     int num_rr_nodes = 0;
 
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
-                                   max_chan_width, grid,
+                                   &nodes_per_chan, grid,
                                    &num_rr_nodes, chan_details_x, chan_details_y);
 
     size_t expected_node_count = num_rr_nodes;

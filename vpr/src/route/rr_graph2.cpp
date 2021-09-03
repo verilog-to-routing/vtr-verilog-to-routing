@@ -844,11 +844,15 @@ void dump_chan_details(const t_chan_details& chan_details_x,
                        const char* fname) {
     FILE* fp = vtr::fopen(fname, "w");
     if (fp) {
+        fprintf(fp, "************************\n");
+        fprintf(fp, "max_chan_width= %d | max_chan_width_y= %d | max_chan_width_x= %d" , nodes_per_chan->max, nodes_per_chan->y_max, nodes_per_chan->x_max);
+        fprintf(fp, "************************\n");
         for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
             for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
-
+               
                 fprintf(fp, "========================\n");
-                fprintf(fp, "chan_details_x: [%zu][%zu]\n", x, y);
+                fprintf(fp, "chan_details_x: [%zu][%zu]\n", x, y);  
+                fprintf(fp, "channel_width: %d\n",nodes_per_chan->x_list[y]) ;             
                 fprintf(fp, "========================\n");
 
                 const t_chan_seg_details* seg_details = chan_details_x[x][y].data();
@@ -860,6 +864,7 @@ void dump_chan_details(const t_chan_details& chan_details_x,
 
                 fprintf(fp, "========================\n");
                 fprintf(fp, "chan_details_y: [%zu][%zu]\n", x, y);
+                fprintf(fp, "channel_width: %d\n",nodes_per_chan->y_list[x]) ;
                 fprintf(fp, "========================\n");
 
                 const t_chan_seg_details* seg_details = chan_details_y[x][y].data();
@@ -1169,7 +1174,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
  *         of this function
  */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const int max_chan_width,
+                                    const t_chan_width* nodes_per_chan,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
@@ -1191,9 +1196,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     load_block_rr_indices(rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
+    load_chan_rr_indices(nodes_per_chan->x_max, grid.width(), grid.height(),
                          CHANX, chan_details_x, rr_graph_builder, index);
-    load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
+    load_chan_rr_indices(nodes_per_chan->y_max, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
 }
 
