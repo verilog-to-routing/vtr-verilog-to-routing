@@ -3641,15 +3641,10 @@ static void ProcessSegments(pugi::xml_node Parent,
     Node = get_first_child(Parent, "segment", loc_data);
 
     /*Keep track of the type of axis of the segments loaded*/
-<<<<<<< HEAD
-    bool both_axis_segs = false;
-    bool x_axis_segs = false;
-    bool y_axis_segs = false;
-=======
 
     bool x_axis_seg_found=false;
     bool y_axis_seg_found=false; 
->>>>>>> 111ffc197 (addressing comments on PR)
+
 
     for (i = 0; i < NumSegs; ++i) {
         /* Get segment name */
@@ -3702,29 +3697,16 @@ static void ProcessSegments(pugi::xml_node Parent,
         if (tmp) {
             if (strcmp(tmp, "x") == 0) {
                 Segs[i].parallel_axis = X_AXIS;
-<<<<<<< HEAD
-                x_axis_segs = true;
+                x_axis_seg_found = true;
             } else if (strcmp(tmp, "y") == 0) {
                 Segs[i].parallel_axis = Y_AXIS;
-                y_axis_segs = true;
+                y_axis_seg_found = true;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
             }
         } else {
-            both_axis_segs = true;
-=======
-                x_axis_seg_found=true;  
-            } else if (strcmp(tmp, "y") == 0) {
-                Segs[i].parallel_axis = Y_AXIS;
-                y_axis_seg_found=true; 
-            } else {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
-            }
-        }
-        else {
-            x_axis_seg_found=true;
-            y_axis_seg_found=true;  
->>>>>>> 111ffc197 (addressing comments on PR)
+            x_axis_seg_found = true;
+            y_axis_seg_found = true;
         }
 
         /* Get Power info */
@@ -3845,15 +3827,10 @@ static void ProcessSegments(pugi::xml_node Parent,
         Node = Node.next_sibling(Node.name());
     }
     /*if no segment with default axis option isn't provided, atleast 1 segment along each x & y axes is needed */
-<<<<<<< HEAD
-    if (!both_axis_segs && !(x_axis_segs && y_axis_segs && true)) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                       "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exists.");
-=======
+
     if (!x_axis_seg_found || !y_axis_seg_found){
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), 
         "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.");
->>>>>>> 111ffc197 (addressing comments on PR)
     }
 }
 
