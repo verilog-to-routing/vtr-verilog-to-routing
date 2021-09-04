@@ -1193,8 +1193,6 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                 for (RRNodeId inode : nodes_from_lookup) {
                     rr_node_counts[inode]++;
 
-                    auto& rr_node = rr_nodes[size_t(inode)];
-
                     if (rr_graph.node_type(inode) != rr_type) {
                         VPR_ERROR(VPR_ERROR_ROUTE, "RR node type does not match between rr_nodes and rr_node_indices (%s/%s): %s",
                                   rr_node_typename[rr_graph.node_type(inode)],
