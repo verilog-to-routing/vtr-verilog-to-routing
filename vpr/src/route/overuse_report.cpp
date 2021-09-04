@@ -193,19 +193,12 @@ static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     os << "Track number = " << device_ctx.rr_nodes.node_track_num(node_id) << '\n';
-    os << "Direction = " << rr_graph.node_direction_string(node_id) << "\n\n";
-
-    //CHANX/CHANY rr nodes span across several grid locations.
-    //Need to print out their starting and ending locations.
-    os << "Grid location: " << '\n';
-    os << "Xlow = " << rr_graph.node_xlow(node_id) << ", ";
-    os << "Ylow = " << rr_graph.node_ylow(node_id) << '\n';
-    os << "Xhigh = " << rr_graph.node_xhigh(node_id) << ", ";
-    os << "Yhigh = " << rr_graph.node_yhigh(node_id) << '\n';
-
     //Print out associated RC characteristics as they will be non-zero
     os << "Resistance = " << rr_graph.node_R(node_id) << '\n';
     os << "Capacitance = " << rr_graph.node_C(node_id) << '\n';
+
+    // print out type, side, x_low, x_high, y_low, y_high, length, direction
+    os << rr_graph.node_coordinate_to_string(node_id) << '\n';
 }
 
 ///@brief Print out information specific to SOURCE/SINK type rr nodes

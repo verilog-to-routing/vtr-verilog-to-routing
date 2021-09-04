@@ -2430,13 +2430,6 @@ std::string describe_rr_node(int inode) {
 
     auto rr_node = device_ctx.rr_nodes[inode];
 
-    msg += vtr::string_fmt(" type: %s", rr_node.type_string());
-
-    msg += vtr::string_fmt(" location: (%d,%d)", rr_graph.node_xlow(rr_node.id()), rr_graph.node_ylow(rr_node.id()));
-    if (rr_graph.node_xlow(rr_node.id()) != rr_graph.node_xhigh(rr_node.id()) || rr_graph.node_ylow(rr_node.id()) != rr_graph.node_yhigh(rr_node.id())) {
-        msg += vtr::string_fmt(" <-> (%d,%d)", rr_graph.node_xhigh(rr_node.id()), rr_graph.node_yhigh(rr_node.id()));
-    }
-
     if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
         int cost_index = rr_node.cost_index();
 
@@ -2444,18 +2437,13 @@ std::string describe_rr_node(int inode) {
         std::string rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
 
         if (seg_index < (int)device_ctx.rr_segments.size()) {
-            msg += vtr::string_fmt(" track: %d len: %d longline: %d seg_type: %s dir: %s",
+            msg += vtr::string_fmt(" track: %d longline: %d",
                                    rr_node.track_num(),
-                                   rr_node.length(),
-                                   device_ctx.rr_segments[seg_index].longline,
-                                   device_ctx.rr_segments[seg_index].name.c_str(),
-                                   rr_node_direction_string.c_str());
+                                   device_ctx.rr_segments[seg_index].longline);
         } else {
-            msg += vtr::string_fmt(" track: %d len: %d seg_type: ILLEGAL_SEG_INDEX %d dir: %s",
+            msg += vtr::string_fmt(" track: %d seg_type: ILLEGAL_SEG_INDEX %d",
                                    rr_node.track_num(),
-                                   rr_node.length(),
-                                   seg_index,
-                                   rr_node_direction_string.c_str());
+                                   seg_index);
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
         auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
@@ -2473,6 +2461,8 @@ std::string describe_rr_node(int inode) {
     msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-in: %d", rr_graph.node_fan_in(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-out: %d", rr_node.num_edges());
+
+    msg += rr_graph.node_coordinate_to_string(RRNodeId(inode));
 
     return msg;
 }

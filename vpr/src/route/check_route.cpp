@@ -19,7 +19,7 @@
 
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
-static void check_source(int inode, ClusterNetId net_id);
+static void check_source(RRNodeId inode, ClusterNetId net_id);
 static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done);
 static void check_switch(t_trace* tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
@@ -102,7 +102,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         check_switch(tptr, num_switches);
         connected_to_route[inode] = true; /* Mark as in path. */
 
-        check_source(inode, net_id);
+        check_source(RRNodeId(inode), net_id);
         pin_done[0] = true;
 
         prev_node = inode;
@@ -199,22 +199,22 @@ static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* 
 }
 
 /* Checks that the node passed in is a valid source for this net. */
-static void check_source(int inode, ClusterNetId net_id) {
+static void check_source(RRNodeId inode, ClusterNetId net_id) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
+    t_rr_type rr_type = rr_graph.node_type(inode);
     if (rr_type != SOURCE) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
     }
 
-    int i = rr_graph.node_xlow(RRNodeId(inode));
-    int j = rr_graph.node_ylow(RRNodeId(inode));
+    int i = rr_graph.node_xlow(inode);
+    int j = rr_graph.node_ylow(inode);
     /* for sinks and sources, ptc_num is class */
-    int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
+    int ptc_num = device_ctx.rr_nodes[size_t(inode)].ptc_num();
     /* First node_block for net is the source */
     ClusterBlockId blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
     auto type = device_ctx.grid[i][j].type;
