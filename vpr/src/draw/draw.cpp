@@ -2076,11 +2076,11 @@ static void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, int t
 
     g->draw_line({x1, y1}, {x2, y2});
 
-    if (draw_state->draw_rr_toggle == DRAW_ALL_RR 
+    if (draw_state->draw_rr_toggle == DRAW_ALL_RR
         || draw_state->draw_rr_node[size_t(from_node)].node_highlighted) {
-        draw_rr_switch(x1, y1, x2, y2, 
-                        device_ctx.rr_switch_inf[switch_type].buffered(),
-                        device_ctx.rr_switch_inf[switch_type].configurable(), g);
+        draw_rr_switch(x1, y1, x2, y2,
+                       device_ctx.rr_switch_inf[switch_type].buffered(),
+                       device_ctx.rr_switch_inf[switch_type].configurable(), g);
     }
 }
 
