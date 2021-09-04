@@ -1459,8 +1459,8 @@ void draw_rr(ezgl::renderer* g) {
     g->set_line_dash(ezgl::line_dash::none);
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        RRNodeId rr_node = RRNodeId(inode);
         if (!draw_state->draw_rr_node[inode].node_highlighted) {
-            RRNodeId rr_node = RRNodeId(inode);
             /* If not highlighted node, assign color based on type. */
             switch (rr_graph.node_type(rr_node)) {
                 case CHANX:
@@ -2166,16 +2166,11 @@ static void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, int t
     /* UDSD Modification by WMF End */
     g->draw_line({x1, y1}, {x2, y2});
 
-<<<<<<< HEAD
-    if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[size_t(from_node)].node_highlighted) {
-        draw_rr_switch(x1, y1, x2, y2, device_ctx.rr_switch_inf[switch_type].buffered(), device_ctx.rr_switch_inf[switch_type].configurable(), g);
-=======
     if (draw_state->draw_rr_toggle == DRAW_ALL_RR
-        || draw_state->draw_rr_node[from_node].node_highlighted) {
+        || draw_state->draw_rr_node[size_t(from_node)].node_highlighted) {
         draw_rr_switch(x1, y1, x2, y2,
                        device_ctx.rr_switch_inf[switch_type].buffered(),
                        device_ctx.rr_switch_inf[switch_type].configurable(), g);
->>>>>>> vtr/master
     }
 }
 
@@ -2379,7 +2374,7 @@ static void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, floa
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto RRNodeId rr_node = node.id();
+    RRNodeId rr_node = node.id();
     t_physical_tile_type_ptr tile_type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
 
     //Number of classes (i.e. src/sinks) we need to draw
