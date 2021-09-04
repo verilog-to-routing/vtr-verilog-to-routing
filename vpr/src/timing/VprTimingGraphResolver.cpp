@@ -291,7 +291,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
             tatum::DelayComponent net_component; //declare a new instance of DelayComponent
 
             net_component.type_name = rr_graph.node_coordinate_to_string(RRNodeId(node->inode));
-            
+
             if (node->parent_node) {
                 net_component.delay = tatum::Time(node->Tdel - node->parent_node->Tdel); // add the incremental delay
             } else {

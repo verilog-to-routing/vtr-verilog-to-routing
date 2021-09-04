@@ -60,10 +60,9 @@ class RRGraphView {
     }
 
     /** @brief Get the type string of a routing resource node. This function is inlined for runtime optimization. */
-    inline const char* node_type_string(RRNodeId node) const{
+    inline const char* node_type_string(RRNodeId node) const {
         return node_storage_.node_type_string(node);
     }
-
 
     /** @brief Get the capacity of a routing resource node. This function is inlined for runtime optimization. */
     inline short node_capacity(RRNodeId node) const {
@@ -183,13 +182,13 @@ class RRGraphView {
      * This function is inlined for runtime optimization.
      */
     inline const std::string node_coordinate_to_string(RRNodeId node) const {
-        std::string start_x; //start x-coordinate
-        std::string start_y; //start y-coordinate
-        std::string end_x;   //end x-coordinate
-        std::string end_y;   //end y-coordinate
-        std::string arrow;   //direction arrow
-        std::string coordinate_string = node_type_string(node); //write the component's type as a routing resource node
-        coordinate_string += ":" + std::to_string(size_t(node)) + " ";       //add the index of the routing resource node
+        std::string start_x;                                           //start x-coordinate
+        std::string start_y;                                           //start y-coordinate
+        std::string end_x;                                             //end x-coordinate
+        std::string end_y;                                             //end y-coordinate
+        std::string arrow;                                             //direction arrow
+        std::string coordinate_string = node_type_string(node);        //write the component's type as a routing resource node
+        coordinate_string += ":" + std::to_string(size_t(node)) + " "; //add the index of the routing resource node
         if (node_type(node) == OPIN || node_type(node) == IPIN) {
             coordinate_string += "side: ("; //add the side of the routing resource node
             for (const e_side& node_side : SIDES) {
@@ -210,7 +209,7 @@ class RRGraphView {
         if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             int cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
-            coordinate_string += rr_segments_[seg_index].name; //Write the segment name
+            coordinate_string += rr_segments_[seg_index].name;                   //Write the segment name
             coordinate_string += " length:" + std::to_string(node_length(node)); //add the length of the segment
             //Figure out the starting and ending coordinate of the segment depending on the direction
 
@@ -223,7 +222,7 @@ class RRGraphView {
                 end_y = std::to_string(node_ylow(node)) + ")";
             }
 
-            else {                                                                                // signal travels in increasing direction, stays at same point, or can travel both directions
+            else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
                 start_y = std::to_string(node_ylow(node)) + ")";
                 end_x = "(" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
@@ -249,7 +248,6 @@ class RRGraphView {
     inline short node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
     }
-     
 
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
