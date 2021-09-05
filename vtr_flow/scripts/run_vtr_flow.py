@@ -19,7 +19,7 @@ import vtr
 
 BASIC_VERBOSITY = 1
 
-VTR_STAGES = ["odin", "abc", "ace", "vpr"]
+VTR_STAGES = ["odin", "yosys", "abc", "ace", "vpr"]
 
 # pylint: disable=too-few-public-methods
 class VtrStageArgparseAction(argparse.Action):
@@ -30,6 +30,8 @@ class VtrStageArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         if value == "odin":
             setattr(namespace, self.dest, vtr.VtrStage.ODIN)
+        elif value == "yosys":
+            setattr(namespace, self.dest, vtr.VtrStage.YOSYS)
         elif value == "abc":
             setattr(namespace, self.dest, vtr.VtrStage.ABC)
         elif value == "vpr":
@@ -352,6 +354,16 @@ def vtr_command_argparser(prog=None):
         + "(Odin-II synthesis flow generates rising edge FFs by default)",
     )
     #
+    # YOSYS arguments
+    #
+    yosys = parser.add_argument_group("Yosys", description="Arguments to be passed to Yosys")
+    yosys.add_argument(
+        "-yosys_script",
+        default=None,
+        dest="yosys_script",
+        help="Supplies Yosys with a .ys script file (similar to Tcl script), including synthesis steps.",
+    )
+    #
     # VPR arguments
     #
     vpr = parser.add_argument_group(
@@ -483,11 +495,13 @@ def vtr_command_main(arg_list, prog=None):
             vpr_args=vpr_args,
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
+            yosys_args=process_yosys_args(args),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
             min_hard_adder_size=args.min_hard_adder_size,
             odin_config=args.odin_config,
+            yosys_script=args.yosys_script,
             check_equivalent=args.check_equivalent,
             check_incremental_sta_consistency=args.check_incremental_sta_consistency,
             use_old_abc_script=args.use_old_abc_script,
@@ -631,6 +645,14 @@ def process_odin_args(args):
 
     return odin_args
 
+
+def process_yosys_args(args):
+    """
+    Finds arguments needed in the YOSYS stage of the flow
+    """
+    yosys_args = OrderedDict()
+
+    return yosys_args
 
 def process_vpr_args(args, prog, temp_dir, vpr_args):
     """

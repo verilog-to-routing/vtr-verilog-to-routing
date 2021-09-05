@@ -1,0 +1,70 @@
+# XXX is replaced with filename by run_vtr_flow.pl
+read_verilog -nolatches XXX
+
+# These commands follow the generic `synth'
+# command script inside Yosys
+# The -libdir argument allows Yosys to search the current 
+# directory for any definitions to modules it doesn't know
+# about, such as hand-instantiated (not inferred) memories
+hierarchy -check -auto-top -libdir . -libdir TTT
+proc
+
+# Check that there are no combinational loops
+scc -select
+select -assert-none %
+select -clear
+
+opt
+wreduce
+# Do not transform $add/$mul ops to $alu and $macc cells
+#alumacc
+share
+opt
+fsm
+opt -fast
+memory -nomap
+opt_clean
+# But instead of using the `memory_map' command, 
+# we map any memories, multipliers, and adders into 
+# VTR primitives (e.g. single_port_ram)
+opt -full
+
+# Transform all async FFs into synchronous ones
+techmap -map +/adff2dff.v
+# Map multipliers, DSPs, and add/subtracts according to yosys_models.v
+techmap -map YYY */t:$mul */t:$mem */t:$sub */t:$add
+memory_map
+# Taking care to remove any undefined muxes that
+# are introduced to promote resource sharing
+opt -full
+# Then techmap all other `complex' blocks into basic
+# (lookup table) logic
+techmap 
+opt -fast
+
+flatten
+# Perform technology-mapping using ABC
+techmap -map YYY */t:$lut 
+opt -fast
+
+# Turn all DFFs into simple latches
+dffunmap
+
+# We read the definitions for all the VTR primitives
+# as blackboxes
+read_verilog -lib TTT/adder.v
+read_verilog -lib TTT/multiply.v
+read_verilog -lib -ignore_redef TTT/single_port_ram.v
+read_verilog -lib -ignore_redef TTT/dual_port_ram.v
+
+# Lastly, check the hierarchy for any unknown modules,
+# and purge all modules (including blackboxes) that
+# aren't used
+hierarchy -check -purge_lib
+tee -o /dev/stdout stat
+
+# Then write it out as a blif file, remembering to call
+# the internal `$true'/`$false' signals vcc/gnd, but
+# switch `-impltf' doesn't output them
+# ZZZ will be replaced by run_vtr_flow.pl
+write_blif -true - vcc -false - gnd -undef - unconn -blackbox ZZZ
