@@ -16,6 +16,12 @@ FILE_TYPES = {
     ".lib": "Liberty", ".ys": "RTLIL"
 }
 
+YOSYS_LIB_FILES = {
+    "YSMDL": "yosys_models.v", "SPRAM": "single_port_ram.v",
+    "DPRAM": "dual_port_ram.v", "SPRAMR": "spram_rename.v",
+    "DPRAMR": "dpram_rename.v"
+    }
+
 
 def create_circuits_list(main_circuit, include_files):
     """Create a list of all (.v) and (.vh) files"""
@@ -37,6 +43,10 @@ def create_circuits_list(main_circuit, include_files):
 def init_script_file(
     yosys_script_full_path,
     yosys_models_full_path,
+    yosys_spram_full_path,
+    yosys_dpram_full_path,
+    yosys_spram_rename_full_path,
+    yosys_dpram_rename_full_path,
     circuit_list,
     output_netlist,
     memory_addr_width,
@@ -57,7 +67,11 @@ def init_script_file(
         yosys_script_full_path,
         {
             "XXX": circuit_list[0],
-            "YYY": "./yosys_models.v",
+            "YYY": "./" + YOSYS_LIB_FILES["YSMDL"],
+            "SSS": "./" + YOSYS_LIB_FILES["SPRAM"],
+            "DDD": "./" + YOSYS_LIB_FILES["DPRAM"],
+            "SSR": "./" + YOSYS_LIB_FILES["SPRAMR"],
+            "DDR": "./" + YOSYS_LIB_FILES["DPRAMR"],
             "TTT": str(vtr.paths.yosys_lib_path),
             "ZZZ": output_netlist
         },
@@ -73,6 +87,12 @@ def init_script_file(
 
         },
     )
+
+    # Update the config file files
+    vtr.file_replace(yosys_spram_full_path, {"PPP": memory_addr_width})
+    vtr.file_replace(yosys_dpram_full_path, {"PPP": memory_addr_width})
+    vtr.file_replace(yosys_spram_rename_full_path, {"PPP": memory_addr_width})
+    vtr.file_replace(yosys_dpram_rename_full_path, {"PPP": memory_addr_width})
 
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -152,10 +172,28 @@ def run(
     shutil.copyfile(yosys_base_script, yosys_script_full_path)
 
     # Copy the yosys models file
-    yosys_models = "yosys_models.v"
-    yosys_base_models = str(vtr.paths.yosys_lib_path / "yosys_models.v")
+    yosys_models = YOSYS_LIB_FILES["YSMDL"]
+    yosys_base_models = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["YSMDL"])
     yosys_models_full_path = str(temp_dir / yosys_models)
     shutil.copyfile(yosys_base_models, yosys_models_full_path)
+
+    # Copy the VTR memory blocks file
+    yosys_spram = YOSYS_LIB_FILES["SPRAM"]
+    yosys_dpram = YOSYS_LIB_FILES["DPRAM"]
+    yosys_spram_rename = YOSYS_LIB_FILES["SPRAMR"]
+    yosys_dpram_rename = YOSYS_LIB_FILES["DPRAMR"]
+    yosys_base_spram = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["SPRAM"])
+    yosys_base_dpram = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["DPRAM"])
+    yosys_base_spram_rename = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["SPRAMR"])
+    yosys_base_dpram_rename = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["DPRAMR"])
+    yosys_spram_full_path = str(temp_dir / yosys_spram)
+    yosys_dpram_full_path = str(temp_dir / yosys_dpram)
+    yosys_spram_rename_full_path = str(temp_dir / yosys_spram_rename)
+    yosys_dpram_rename_full_path = str(temp_dir / yosys_dpram_rename)
+    shutil.copyfile(yosys_base_spram, yosys_spram_full_path)
+    shutil.copyfile(yosys_base_dpram, yosys_dpram_full_path)
+    shutil.copyfile(yosys_base_spram_rename, yosys_spram_rename_full_path)
+    shutil.copyfile(yosys_base_dpram_rename, yosys_dpram_rename_full_path)
 
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
@@ -163,6 +201,10 @@ def run(
     init_script_file(
         yosys_script_full_path,
         yosys_models_full_path,
+        yosys_spram_full_path,
+        yosys_dpram_full_path,
+        yosys_spram_rename_full_path,
+        yosys_dpram_rename_full_path,
         circuit_list,
         output_netlist.name,
         vtr.determine_memory_addr_width(str(architecture_file)),

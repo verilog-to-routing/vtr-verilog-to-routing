@@ -194,8 +194,8 @@ endmodule  // Max
 
 
 
-// SimpleDualPortRAM_generic : 4 RAM banks ( = no. of actions) with a depth of 12 ( = no. of states). Writes during training. Reads during inferfence.
-module SimpleDualPortRAM_generic
+// Simpledual_port_ram_generic : 4 RAM banks ( = no. of actions) with a depth of 12 ( = no. of states). Writes during training. Reads during inferfence.
+module Simpledual_port_ram_generic
           (clk,
            enb,
            wr_din,
@@ -275,7 +275,7 @@ dual_port_ram u_dual_port_ram(
 
 assign rd_dout = data_int;
 
-endmodule  // SimpleDualPortRAM_generic
+endmodule  // Simpledual_port_ram_generic
 
 // Q_Hw: connects all the blocks and incorporates pipelining for appropriate syncing. 
 module Q_HW
@@ -545,7 +545,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
              .out0(Max_out1),  // int16
              .clk(clk));
 
-  SimpleDualPortRAM_generic #(.AddrWidth(4),
+  Simpledual_port_ram_generic #(.AddrWidth(4),
                               .DataWidth(32)
                               )
                             u_Simple_Dual_Port_RAM_System_bank3 (.clk(clk),
@@ -557,7 +557,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
                                                                  .rd_dout(pre_rd_out)
                                                                  );
 
-  SimpleDualPortRAM_generic #(.AddrWidth(4),
+  Simpledual_port_ram_generic #(.AddrWidth(4),
                               .DataWidth(32)
                               )
                             u_Simple_Dual_Port_RAM_System_bank2 (.clk(clk),
@@ -569,7 +569,7 @@ assign Data_Type_Conversion_out1_3 = Data_Type_Conversion_out1_3;
                                                                  .rd_dout(pre_rd_out_1)
                                                                  );
 
-  SimpleDualPortRAM_generic #(.AddrWidth(4),
+  Simpledual_port_ram_generic #(.AddrWidth(4),
                               .DataWidth(32)
                               )
                             u_Simple_Dual_Port_RAM_System_bank1 (.clk(clk),

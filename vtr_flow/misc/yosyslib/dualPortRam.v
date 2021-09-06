@@ -4,7 +4,7 @@
 `define MEM_MAXDATA 36
 
 // depth and data may need to be splited
-module dual_port_ram(clk, we1, we2, addr1, addr2, data1, data2, out1, out2);
+module dualPortRam(clk, we1, we2, addr1, addr2, data1, data2, out1, out2);
     parameter ADDR_WIDTH = 1;
     parameter DATA_WIDTH = 1;
 
@@ -30,7 +30,7 @@ module dual_port_ram(clk, we1, we2, addr1, addr2, data1, data2, out1, out2);
 
             defparam uut_h.ADDR_WIDTH = ADDR_WIDTH-1;
             defparam uut_h.DATA_WIDTH = DATA_WIDTH;
-            dual_port_ram uut_h (
+            dualPortRam uut_h (
                 .clk(clk), 
                 .we1(we1), 
                 .we2(we2), 
@@ -44,7 +44,7 @@ module dual_port_ram(clk, we1, we2, addr1, addr2, data1, data2, out1, out2);
 
             defparam uut_l.ADDR_WIDTH = ADDR_WIDTH-1;
             defparam uut_l.DATA_WIDTH = DATA_WIDTH;
-            dual_port_ram uut_l (
+            dualPortRam uut_l (
                 .clk(clk), 
                 .we1(we1), 
                 .we2(we2), 
@@ -63,7 +63,7 @@ module dual_port_ram(clk, we1, we2, addr1, addr2, data1, data2, out1, out2);
 
         end	else begin
             for (i = 0; i < DATA_WIDTH; i = i + 1) begin:single_bit_data
-                dualPortRam uut (
+                dual_port_ram uut (
                     .clk(clk), 
                     .we1(we1), 
                     .we2(we2), 
@@ -83,7 +83,7 @@ endmodule
 
 
 (* blackbox *)
-module dualPortRam(clk, data2, data1, addr2, addr1, we2, we1, out2, out1);
+module dual_port_ram(clk, data2, data1, addr2, addr1, we2, we1, out2, out1);
     localparam ADDR_WIDTH = `MEM_MAXADDR;
     localparam DATA_WIDTH = 1;
 

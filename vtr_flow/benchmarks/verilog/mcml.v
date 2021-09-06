@@ -18329,7 +18329,7 @@ single_port_ram sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1
 
 defparam cosp_replace.ADDR_WIDTH = 10;
 defparam cosp_replace.DATA_WIDTH = 32;
-single_port_ram cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
+singlePortRam cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
 
 			
 endmodule

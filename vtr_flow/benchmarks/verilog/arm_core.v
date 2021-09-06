@@ -21,14 +21,15 @@ module single_port_ram_21_8(
      
     reg 	[`DATA_WIDTH_21_8-1:0] 	RAM[255:0];
      
-    always @ (posedge clk) 
-    begin 
-        if (we) 
-	begin
-	RAM[addr] <= data;
-        out <= RAM[addr]; 
-	end
-    end 
+    defparam sram_replace_21_8.ADDR_WIDTH = `ADDR_WIDTH_21_8;
+    defparam sram_replace_21_8.DATA_WIDTH = `DATA_WIDTH_21_8;
+    single_port_ram sram_replace_21_8 (
+        .clk (clk), 
+        .addr (addr), 
+        .data (data), 
+        .we (we), 
+        .out (out)
+    );
      
 endmodule
 
@@ -55,15 +56,16 @@ module single_port_ram_128_8(
      
     reg 	[`DATA_WIDTH_128_8-1:0] 	RAM[255:0];
      
-    always @ (posedge clk) 
-    begin 
-        if (we) 
-	begin
-	RAM[addr] <= data;
-        out <= RAM[addr]; 
-	end
-    end 
-     
+    defparam sram_replace_128_8.ADDR_WIDTH = `ADDR_WIDTH_128_8;
+    defparam sram_replace_128_8.DATA_WIDTH = `DATA_WIDTH_128_8;
+    single_port_ram sram_replace_128_8 (
+        .clk (clk), 
+        .addr (addr), 
+        .data (data), 
+        .we (we), 
+        .out (out)
+    );
+
 endmodule
 
 
@@ -240,9 +242,9 @@ localparam [3:0] CS_INIT            = 4'd0,
 //reg                              o_stall; //jing+
 //reg     [127:0]                  o_read_data; //jing+                                                      
 
-reg  [3:0]                  c_state    = 4'd1 ;   // c_state    = CS_IDLE
-reg  [C_STATES-1:0]         source_sel = 4'b10;   //1'd1 << C_CORE 
-reg  [CACHE_ADDR_WIDTH:0]   init_count = 9'd0;
+reg  [3:0]                  c_state    ;   // c_state    = CS_IDLE
+reg  [C_STATES-1:0]         source_sel;   //1'd1 << C_CORE 
+reg  [CACHE_ADDR_WIDTH:0]   init_count;
  
 wire [TAG_WIDTH-1:0]        tag_rdata_way0; 
 wire [TAG_WIDTH-1:0]        tag_rdata_way1; 
@@ -255,11 +257,11 @@ wire [CACHE_LINE_WIDTH-1:0] data_rdata_way3;
 wire [WAYS-1:0]             data_wenable_way; 
 wire [WAYS-1:0]             data_hit_way; 
 wire [WAYS-1:0]             tag_wenable_way; 
-reg  [WAYS-1:0]             select_way = 4'd0; 
+reg  [WAYS-1:0]             select_way; 
 wire [WAYS-1:0]             next_way; 
-reg  [WAYS-1:0]             valid_bits_r = 4'd0;
+reg  [WAYS-1:0]             valid_bits_r;
  
-reg  [3:0]                  random_num = 4'hf;
+reg  [3:0]                  random_num;
  
 wire [CACHE_ADDR_WIDTH-1:0] tag_address; 
 wire [TAG_WIDTH-1:0]        tag_wdata; 
@@ -274,7 +276,7 @@ wire                        read_miss_fill;
 wire                        invalid_read; 
 wire                        fill_state; 
  
-reg  [31:0]                 miss_address = 32'd0;
+reg  [31:0]                 miss_address;
 wire [CACHE_LINE_WIDTH-1:0] hit_rdata; 
  
 wire                        cache_busy_stall; 
@@ -283,9 +285,9 @@ wire                        read_stall;
 wire                        enable; 
 wire [CACHE_ADDR_WIDTH-1:0] address; 
 wire [31:0]                 address_c; 
-reg  [31:0]                 address_r = 32'd0;
+reg  [31:0]                 address_r ;
  
-reg  [31:0]                 wb_address = 32'd0;
+reg  [31:0]                 wb_address;
 wire                        wb_hit; //jing - add wire -> reg
 wire                        read_buf_hit; //jing - add wire -> reg
 reg  [127:0]                read_buf_data_r;
@@ -734,7 +736,7 @@ wire                        uncached_instruction_read;
 wire                        address_cachable; 
 wire                         icache_wb_req; 	
 wire                        wait_wb; 
-reg                         wb_req_r = 1'd0;
+reg                         wb_req_r;
 wire    [31:0]              wb_rdata32; 
 
 
@@ -1032,59 +1034,59 @@ output                  o_rd_use_read;
 
 /*********************** Signal Declarations *******************/
 
-reg     [31:0]      o_imm32 = 32'd0;
-reg     [4:0]       o_imm_shift_amount = 5'd0;
-reg           	    o_shift_imm_zero = 1'd0;
-reg     [3:0]       o_condition = 4'he;             // 4'he = al
-reg                 o_decode_exclusive = 1'd0;       // exclusive access request ( swap instruction )
-reg           	    o_decode_iaccess = 1'd1;        // Indicates an instruction access
-reg           	    o_decode_daccess = 1'd0;         // Indicates a data access
-reg     [1:0]       o_status_bits_mode = 2'b11;     // SVC
-reg          	    o_status_bits_irq_mask = 1'd1;
-reg           	    o_status_bits_firq_mask = 1'd1;
+reg     [31:0]      o_imm32 ;
+reg     [4:0]       o_imm_shift_amount ;
+reg           	    o_shift_imm_zero ;
+reg     [3:0]       o_condition ;             // 4'he = al
+reg                 o_decode_exclusive ;       // exclusive access request ( swap instruction )
+reg           	    o_decode_iaccess ;        // Indicates an instruction access
+reg           	    o_decode_daccess ;         // Indicates a data access
+reg     [1:0]       o_status_bits_mode ;     // SVC
+reg          	    o_status_bits_irq_mask ;
+reg           	    o_status_bits_firq_mask ;
  
-reg     [3:0]       o_rm_sel  = 4'd0;
-reg     [3:0]       o_rs_sel  = 4'd0;
-reg     [7:0]       o_load_rd = 8'd0;                // [7] load flags with PC
+reg     [3:0]       o_rm_sel  ;
+reg     [3:0]       o_rs_sel  ;
+reg     [7:0]       o_load_rd ;                // [7] load flags with PC
                                                             
-reg     [3:0]       o_rn_sel  = 4'd0;
-reg     [1:0]       o_barrel_shift_amount_sel = 2'd0;
-reg     [1:0]       o_barrel_shift_data_sel = 2'd0;
-reg     [1:0]       o_barrel_shift_function = 2'd0;
-reg     [8:0]       o_alu_function = 9'd0;
-reg     [1:0] 	    o_multiply_function = 2'd0;
-reg     [2:0]       o_interrupt_vector_sel = 3'd0;
-reg     [3:0]       o_iaddress_sel = 4'd2;
-reg     [3:0]       o_daddress_sel = 4'd2;
-reg     [2:0]       o_pc_sel = 3'd2;
-reg     [1:0]       o_byte_enable_sel = 2'd0;        // byte, halfword or word write
-reg     [2:0]       o_status_bits_sel = 3'd0;
+reg     [3:0]       o_rn_sel  ;
+reg     [1:0]       o_barrel_shift_amount_sel ;
+reg     [1:0]       o_barrel_shift_data_sel ;
+reg     [1:0]       o_barrel_shift_function ;
+reg     [8:0]       o_alu_function ;
+reg     [1:0] 	    o_multiply_function ;
+reg     [2:0]       o_interrupt_vector_sel ;
+reg     [3:0]       o_iaddress_sel ;
+reg     [3:0]       o_daddress_sel ;
+reg     [2:0]       o_pc_sel ;
+reg     [1:0]       o_byte_enable_sel ;        // byte, halfword or word write
+reg     [2:0]       o_status_bits_sel ;
 reg     [2:0]       o_reg_write_sel;
 reg           	    o_user_mode_regs_store_nxt;
 reg           	    o_firq_not_user_mode;
  
-reg           	    o_write_data_wen = 1'd0;
-reg           	    o_base_address_wen = 1'd0;       // save ldm base address register
+reg           	    o_write_data_wen;
+reg           	    o_base_address_wen;       // save ldm base address register
                                                             // in case of data abort
-reg           	    o_pc_wen = 1'd1;
-reg     [14:0]      o_reg_bank_wen = 15'd0;
-reg           	    o_status_bits_flags_wen = 1'd0;
-reg           	    o_status_bits_mode_wen = 1'd0;
-reg           	    o_status_bits_irq_mask_wen = 1'd0;
-reg           	    o_status_bits_firq_mask_wen = 1'd0;
+reg           	    o_pc_wen ;
+reg     [14:0]      o_reg_bank_wen ;
+reg           	    o_status_bits_flags_wen ;
+reg           	    o_status_bits_mode_wen ;
+reg           	    o_status_bits_irq_mask_wen ;
+reg           	    o_status_bits_firq_mask_wen ;
  
 // --------------------------------------------------
 // Co-Processor interface
 // --------------------------------------------------
-reg     [2:0]       o_copro_opcode1 = 3'd0;
-reg     [2:0]       o_copro_opcode2 = 3'd0;
-reg     [3:0]       o_copro_crn = 4'd0;    
-reg     [3:0]       o_copro_crm = 4'd0;
-reg     [3:0]       o_copro_num = 4'd0;
-reg     [1:0]       o_copro_operation = 2'd0; // 0 = no operation, 
+reg     [2:0]       o_copro_opcode1 ;
+reg     [2:0]       o_copro_opcode2 ;
+reg     [3:0]       o_copro_crn ;    
+reg     [3:0]       o_copro_crm ;
+reg     [3:0]       o_copro_num ;
+reg     [1:0]       o_copro_operation ; // 0 = no operation, 
                                                      // 1 = Move to Amber Core Register from Coprocessor
                                                      // 2 = Move to Coprocessor from Amber Core Register
-reg           o_copro_write_data_wen = 1'd0;
+reg           o_copro_write_data_wen;
 reg           o_rn_use_read;
 reg           o_rm_use_read;
 reg           o_rs_use_read;
@@ -1217,7 +1219,7 @@ wire                   store_op;
 wire                   write_pc;
 wire                   current_write_pc;
 reg                    load_pc_nxt;
-reg                    load_pc_r = 1'd0;
+reg                    load_pc_r;
 wire                   immediate_shift_op;
 wire                   rds_use_rs;
 wire                   branch;
@@ -1279,36 +1281,36 @@ reg     [4:0]          control_state_nxt;
  
  
 wire                   dabt;
-reg                    dabt_reg = 1'd0;
+reg                    dabt_reg;
 reg                    dabt_reg_d1;
-reg                    iabt_reg = 1'd0;
-reg                    adex_reg = 1'd0;
-reg     [31:0]         fetch_address_r = 32'd0;
-reg     [7:0]          abt_status_reg = 8'd0;
-reg     [31:0]         fetch_instruction_r = 32'd0;
-reg     [3:0]          fetch_instruction_type_r = 4'd0;
-reg     [31:0]         saved_current_instruction = 32'd0;
-reg     [3:0]          saved_current_instruction_type = 4'd0;
-reg                    saved_current_instruction_iabt = 1'd0;          // access abort flag
-reg                    saved_current_instruction_adex = 1'd0;          // address exception
-reg     [31:0]         saved_current_instruction_address = 32'd0;       // virtual address of abort instruction
-reg     [7:0]          saved_current_instruction_iabt_status = 8'd0;   // status of abort instruction
-reg     [31:0]         pre_fetch_instruction = 32'd0;
-reg     [3:0]          pre_fetch_instruction_type = 4'd0;
-reg                    pre_fetch_instruction_iabt = 1'd0;              // access abort flag
-reg                    pre_fetch_instruction_adex = 1'd0;              // address exception
-reg     [31:0]         pre_fetch_instruction_address = 32'd0;           // virtual address of abort instruction
-reg     [7:0]          pre_fetch_instruction_iabt_status = 8'd0;       // status of abort instruction
-reg     [31:0]         hold_instruction = 32'd0;
-reg     [3:0]          hold_instruction_type = 4'd0;
-reg                    hold_instruction_iabt = 1'd0;                   // access abort flag
-reg                    hold_instruction_adex = 1'd0;                   // address exception
-reg     [31:0]         hold_instruction_address = 32'd0;                // virtual address of abort instruction
-reg     [7:0]          hold_instruction_iabt_status = 8'd0;            // status of abort instruction
+reg                    iabt_reg ;
+reg                    adex_reg ;
+reg     [31:0]         fetch_address_r ;
+reg     [7:0]          abt_status_reg ;
+reg     [31:0]         fetch_instruction_r ;
+reg     [3:0]          fetch_instruction_type_r ;
+reg     [31:0]         saved_current_instruction ;
+reg     [3:0]          saved_current_instruction_type ;
+reg                    saved_current_instruction_iabt ;          // access abort flag
+reg                    saved_current_instruction_adex ;          // address exception
+reg     [31:0]         saved_current_instruction_address ;       // virtual address of abort instruction
+reg     [7:0]          saved_current_instruction_iabt_status ;   // status of abort instruction
+reg     [31:0]         pre_fetch_instruction ;
+reg     [3:0]          pre_fetch_instruction_type ;
+reg                    pre_fetch_instruction_iabt ;              // access abort flag
+reg                    pre_fetch_instruction_adex ;              // address exception
+reg     [31:0]         pre_fetch_instruction_address ;           // virtual address of abort instruction
+reg     [7:0]          pre_fetch_instruction_iabt_status ;       // status of abort instruction
+reg     [31:0]         hold_instruction ;
+reg     [3:0]          hold_instruction_type ;
+reg                    hold_instruction_iabt ;                   // access abort flag
+reg                    hold_instruction_adex ;                   // address exception
+reg     [31:0]         hold_instruction_address ;                // virtual address of abort instruction
+reg     [7:0]          hold_instruction_iabt_status ;            // status of abort instruction
  
 wire                   instruction_valid;
 wire                   instruction_execute;
-reg                    instruction_execute_r = 1'd0;
+reg                    instruction_execute_r;
  
 reg     [3:0]          mtrans_reg1;             // the current register being accessed as part of stm/ldm
 reg     [3:0]          mtrans_reg2;             // the next register being accessed as part of stm/ldm
@@ -1324,15 +1326,15 @@ wire                   interrupt;
 wire                   interrupt_or_conflict;
 wire   [1:0]           interrupt_mode;
 wire   [2:0]           next_interrupt;
-reg                    irq = 1'd0;
-reg                    firq = 1'd0;
+reg                    irq;
+reg                    firq;
 wire		       firq_request;
 wire                   irq_request;
 wire                   swi_request;
 wire                   und_request;
 wire                   dabt_request;
 reg    [1:0]           copro_operation_nxt;
-reg                    restore_base_address = 1'd0;
+reg                    restore_base_address;
 reg                    restore_base_address_nxt;
  
 wire                   regop_set_flags;
@@ -1343,7 +1345,7 @@ wire                   ldm_user_mode;
 wire                   ldm_status_bits; 
 wire                   ldm_flags; 
 wire    [6:0]          load_rd_d1_nxt;
-reg     [6:0]          load_rd_d1 = 7'd0;  // MSB is the valid bit
+reg     [6:0]          load_rd_d1;  // MSB is the valid bit
  
 wire                   rn_valid;
 wire                   rm_valid;
@@ -1365,11 +1367,11 @@ wire                   stm_conflict2b;
 wire                   conflict1;          // Register conflict1 with ldr operation
 wire                   conflict2;          // Register conflict1 with ldr operation
 wire                   conflict;           // Register conflict1 with ldr operation
-reg                    conflict_r = 1'd0;
-reg                    rn_conflict1_r = 1'd0;
-reg                    rm_conflict1_r = 1'd0;
-reg                    rs_conflict1_r = 1'd0;
-reg                    rd_conflict1_r = 1'd0;
+reg                    conflict_r;
+reg                    rn_conflict1_r;
+reg                    rm_conflict1_r;
+reg                    rs_conflict1_r;
+reg                    rd_conflict1_r;
 wire	[11:0]	       i_fetch; 
  
 // ========================================================
@@ -3784,9 +3786,9 @@ wire [31:0] quick_out;
 wire        quick_carry_out;
 wire [31:0] full_out;
 wire        full_carry_out;
-reg  [31:0] full_out_r       = 32'd0;
-reg         full_carry_out_r = 1'd0;
-reg         use_quick_r      = 1'd1;
+reg  [31:0] full_out_r       ;
+reg         full_carry_out_r ;
+reg         use_quick_r      ;
  
  
 assign o_stall      = (|i_shift_amount[7:2]) & use_quick_r;
@@ -4033,22 +4035,22 @@ reg  	    [31:0]          o_rs;  //
 reg   	    [31:0]          o_rd;  //
 
 // User Mode Registers
-reg  [31:0] r0  = 32'hdeadbeef;
-reg  [31:0] r1  = 32'hdeadbeef;
-reg  [31:0] r2  = 32'hdeadbeef;
-reg  [31:0] r3  = 32'hdeadbeef;
-reg  [31:0] r4  = 32'hdeadbeef;
-reg  [31:0] r5  = 32'hdeadbeef;
-reg  [31:0] r6  = 32'hdeadbeef;
-reg  [31:0] r7  = 32'hdeadbeef;
-reg  [31:0] r8  = 32'hdeadbeef;
-reg  [31:0] r9  = 32'hdeadbeef;
-reg  [31:0] r10 = 32'hdeadbeef;
-reg  [31:0] r11 = 32'hdeadbeef;
-reg  [31:0] r12 = 32'hdeadbeef;
-reg  [31:0] r13 = 32'hdeadbeef;
-reg  [31:0] r14 = 32'hdeadbeef;
-reg  [23:0] r15 = 24'hc0ffee;
+reg  [31:0] r0 ;
+reg  [31:0] r1 ;
+reg  [31:0] r2 ;
+reg  [31:0] r3 ;
+reg  [31:0] r4 ;
+reg  [31:0] r5 ;
+reg  [31:0] r6 ;
+reg  [31:0] r7 ;
+reg  [31:0] r8 ;
+reg  [31:0] r9 ;
+reg  [31:0] r10;
+reg  [31:0] r11;
+reg  [31:0] r12;
+reg  [31:0] r13;
+reg  [31:0] r14;
+reg  [23:0] r15;
  
 wire  [31:0] r0_out;
 wire  [31:0] r1_out;
@@ -4078,21 +4080,21 @@ wire  [31:0] r13_rds;
 wire  [31:0] r14_rds;
  
 // Supervisor Mode Registers
-reg  [31:0] r13_svc = 32'hdeadbeef;
-reg  [31:0] r14_svc = 32'hdeadbeef;
+reg  [31:0] r13_svc;
+reg  [31:0] r14_svc;
  
 // Interrupt Mode Registers
-reg  [31:0] r13_irq = 32'hdeadbeef;
-reg  [31:0] r14_irq = 32'hdeadbeef;
+reg  [31:0] r13_irq;
+reg  [31:0] r14_irq;
  
 // Fast Interrupt Mode Registers
-reg  [31:0] r8_firq  = 32'hdeadbeef;
-reg  [31:0] r9_firq  = 32'hdeadbeef;
-reg  [31:0] r10_firq = 32'hdeadbeef;
-reg  [31:0] r11_firq = 32'hdeadbeef;
-reg  [31:0] r12_firq = 32'hdeadbeef;
-reg  [31:0] r13_firq = 32'hdeadbeef;
-reg  [31:0] r14_firq = 32'hdeadbeef;
+reg  [31:0] r8_firq ;
+reg  [31:0] r9_firq ;
+reg  [31:0] r10_firq;
+reg  [31:0] r11_firq;
+reg  [31:0] r12_firq;
+reg  [31:0] r13_firq;
+reg  [31:0] r14_firq;
  
 wire        usr_exec;
 wire        svc_exec;
@@ -4416,7 +4418,7 @@ output      [31:0]          o_out;
 output      [1:0]           o_flags;        // [1] = N, [0] = Z
 output                      o_done;   // goes high 2 cycles before completion    
  
-reg         o_done = 1'd0;
+reg         o_done;
 wire	    enable;
 wire        accumulate;
 wire [33:0] multiplier;
@@ -4424,9 +4426,9 @@ wire [33:0] multiplier_bar;
 wire [33:0] sum;
 wire [33:0] sum34_b;
  
-reg  [5:0]  count = 6'd0;
+reg  [5:0]  count;
 reg  [5:0]  count_nxt;
-reg  [67:0] product = 68'd0;
+reg  [67:0] product;
 reg  [67:0] product_nxt;
 reg  [1:0]  flags_nxt;
 wire [32:0] sum_acc1;           // the MSB is the carry out for the upper 32 bit addition
@@ -4876,20 +4878,20 @@ input                       i_rd_use_read;
 
 
 
-reg    [31:0]        o_copro_write_data = 32'd0;
-reg    [31:0]        o_write_data = 32'd0;
-reg    [31:0]        o_iaddress = 32'hdeaddead;
+reg    [31:0]        o_copro_write_data;
+reg    [31:0]        o_write_data;
+reg    [31:0]        o_iaddress;
 
-reg           	     o_iaddress_valid = 1'd0;     // High when instruction address is valid
-reg    [31:0]        o_daddress = 32'h0;         // Address to data cache
+reg           	     o_iaddress_valid;     // High when instruction address is valid
+reg    [31:0]        o_daddress;         // Address to data cache
 
-reg   	             o_daddress_valid = 1'd0;     // High when data address is valid
-reg            	     o_adex = 1'd0;               // Address Exception
-reg            	     o_priviledged = 1'd0;        // Priviledged access
-reg                  o_exclusive = 1'd0;          // swap access
-reg                  o_write_enable = 1'd0;
-reg    [3:0]         o_byte_enable = 4'd0;
-reg    [8:0]         o_exec_load_rd = 9'd0;       // The destination register for a load instruction
+reg   	             o_daddress_valid;     // High when data address is valid
+reg            	     o_adex;               // Address Exception
+reg            	     o_priviledged;        // Priviledged access
+reg                  o_exclusive;          // swap access
+reg                  o_write_enable;
+reg    [3:0]         o_byte_enable;
+reg    [8:0]         o_exec_load_rd;       // The destination register for a load instruction
 
  
 // ========================================================
@@ -4922,19 +4924,19 @@ wire                barrel_shift_carry;
 wire                barrel_shift_stall;
  
 wire [3:0]          status_bits_flags_nxt;
-reg  [3:0]          status_bits_flags = 4'd0;
+reg  [3:0]          status_bits_flags;
 wire [1:0]          status_bits_mode_nxt;
-reg  [1:0]          status_bits_mode = 2'b11;    //SVC  =  2'b11
+reg  [1:0]          status_bits_mode;    //SVC  =  2'b11
                     // one-hot encoded rs select
 wire [3:0]          status_bits_mode_rds_oh_nxt;
 
 //reg  [3:0]          status_bits_mode_rds_oh = 1'd1 << OH_SVC;
-reg  [3:0]          status_bits_mode_rds_oh = 4'b1000;
+reg  [3:0]          status_bits_mode_rds_oh;
 wire                status_bits_mode_rds_oh_update;
 wire                status_bits_irq_mask_nxt;
-reg                 status_bits_irq_mask = 1'd1;
+reg                 status_bits_irq_mask;
 wire                status_bits_firq_mask_nxt;
-reg                 status_bits_firq_mask = 1'd1;
+reg                 status_bits_firq_mask;
 wire [8:0]          exec_load_rd_nxt;
  
 wire                execute;                    // high when condition execution is true
@@ -4943,13 +4945,13 @@ wire                pc_wen;
 wire [14:0]         reg_bank_wen;
 wire [31:0]         multiply_out;
 wire [1:0]          multiply_flags;
-reg  [31:0]         base_address = 32'd0;             // Saves base address during LDM instruction in 
+reg  [31:0]         base_address;             // Saves base address during LDM instruction in 
                                                     // case of data abort
 wire [31:0]         read_data_filtered1;
 wire [31:0]         read_data_filtered;
 wire [31:0]         read_data_filtered_c;
-reg  [31:0]         read_data_filtered_r = 32'd0;
-reg  [3:0]          load_rd_r = 4'd0;
+reg  [31:0]         read_data_filtered_r;
+reg  [3:0]          load_rd_r;
 wire [3:0]          load_rd_c;
  
 wire                write_enable_nxt;
@@ -5742,10 +5744,10 @@ localparam [3:0] CS_INIT               = 4'd0,
                  CS_EX_DELETE          = 4'd8;
  
  
-reg  [3:0]                  c_state    = CS_IDLE;
+reg  [3:0]                  c_state;
 //reg  [C_STATES-1:0]         source_sel = 4'd1 << C_CORE;
-reg  [C_STATES-1:0]         source_sel = 4'b10;
-reg  [CACHE_ADDR_WIDTH:0]   init_count = 9'd0;
+reg  [C_STATES-1:0]         source_sel;
+reg  [CACHE_ADDR_WIDTH:0]   init_count;
  
 wire [TAG_WIDTH-1:0]        tag_rdata_way0;
 wire [TAG_WIDTH-1:0]        tag_rdata_way1;
@@ -5757,13 +5759,13 @@ wire [CACHE_LINE_WIDTH-1:0] data_rdata_way2;
 wire [CACHE_LINE_WIDTH-1:0] data_rdata_way3;
 wire [WAYS-1:0]             data_wenable_way;
 wire [WAYS-1:0]             data_hit_way;
-reg  [WAYS-1:0]             data_hit_way_r = 4'd0;
+reg  [WAYS-1:0]             data_hit_way_r;
 wire [WAYS-1:0]             tag_wenable_way;
-reg  [WAYS-1:0]             select_way = 4'd0;
+reg  [WAYS-1:0]             select_way;
 wire [WAYS-1:0]             next_way;
-reg  [WAYS-1:0]             valid_bits_r = 4'd0;
+reg  [WAYS-1:0]             valid_bits_r;
  
-reg  [3:0]                  random_num = 4'hf;
+reg  [3:0]                  random_num;
  
 wire [CACHE_ADDR_WIDTH-1:0] tag_address;
 wire [TAG_WIDTH-1:0]        tag_wdata;
@@ -5771,7 +5773,7 @@ wire                        tag_wenable;
  
 wire [CACHE_LINE_WIDTH-1:0] read_miss_wdata;
 wire [CACHE_LINE_WIDTH-1:0] write_hit_wdata;
-reg  [CACHE_LINE_WIDTH-1:0] data_wdata_r = 128'd0;
+reg  [CACHE_LINE_WIDTH-1:0] data_wdata_r;
 wire [CACHE_LINE_WIDTH-1:0] consecutive_write_wdata;
 wire [CACHE_LINE_WIDTH-1:0] data_wdata;
 wire [CACHE_ADDR_WIDTH-1:0] data_address;
@@ -5784,7 +5786,7 @@ wire                        write_hit;
 wire                        consecutive_write;
 wire                        fill_state;
  
-reg  [31:0]                 miss_address = 32'd0;
+reg  [31:0]                 miss_address;
 wire [CACHE_LINE_WIDTH-1:0] hit_rdata;
  
 wire                        read_stall;
@@ -5795,19 +5797,19 @@ wire                        write_state;
  
 wire                        request_pulse;
 wire                        request_hold;
-reg                         request_r = 1'd0;
+reg                         request_r;
 wire [CACHE_ADDR_WIDTH-1:0] address;
-reg  [CACHE_LINE_WIDTH-1:0] wb_rdata_burst = 128'd0;
+reg  [CACHE_LINE_WIDTH-1:0] wb_rdata_burst;
  
 wire                        exclusive_access;
 wire                        ex_read_hit;
-reg                         ex_read_hit_r = 1'd0;
-reg  [WAYS-1:0]             ex_read_hit_way = 4'd0;
+reg                         ex_read_hit_r;
+reg  [WAYS-1:0]             ex_read_hit_way;
 reg  [CACHE_ADDR_WIDTH-1:0] ex_read_address;
 wire                        ex_read_hit_clear;
 wire                        ex_read_cache_busy;
  
-reg  [31:0]                 wb_address = 32'd0;
+reg  [31:0]                 wb_address;
 //wire                        rbuf_hit = 1'd0;
 wire                        wb_hit;
 wire [127:0]                read_data128;
@@ -6768,23 +6770,23 @@ wire                        uncached_data_access;
 wire                        uncached_data_access_p;
 wire                        cache_stall;
 wire                        uncached_wb_wait;
-reg                         uncached_wb_req_r = 1'd0;
-reg                         uncached_wb_stop_r = 1'd0;
-reg                         cached_wb_stop_r = 1'd0;
+reg                         uncached_wb_req_r;
+reg                         uncached_wb_stop_r;
+reg                         cached_wb_stop_r;
 wire                        daddress_valid_p;  // pulse
-reg      [31:0]             mem_read_data_r = 32'd0;
-reg                         mem_read_data_valid_r = 1'd0;
-reg      [10:0]             mem_load_rd_r = 11'd0;
+reg      [31:0]             mem_read_data_r;
+reg                         mem_read_data_valid_r;
+reg      [10:0]             mem_load_rd_r ;
 wire     [10:0]             mem_load_rd_c;
 wire     [31:0]             mem_read_data_c;
 wire                        mem_read_data_valid_c;
-reg                         mem_stall_r = 1'd0;
+reg                         mem_stall_r ;
 wire                        use_mem_reg;
-reg                         fetch_only_stall_r = 1'd0;
+reg                         fetch_only_stall_r;
 wire                        fetch_only_stall;
 wire                        void_output;
 wire                        wb_stop;
-reg                         daddress_valid_stop_r = 1'd0;
+reg                         daddress_valid_stop_r;
 wire     [31:0]             wb_rdata32;
  
 // ======================================
@@ -7097,9 +7099,9 @@ output      [10:0]          o_wb_load_rd;              // Rd for data reads
 input       [31:0]          i_daddress;
 //input                       i_daddress_valid;
  
-reg  [31:0]         mem_read_data_r = 32'd0;          // Register read data from Data Cache
-reg                 mem_read_data_valid_r = 1'd0;    // Register read data from Data Cache
-reg  [10:0]         mem_load_rd_r = 11'd0;            // Register the Rd value for loads
+reg  [31:0]         mem_read_data_r;          // Register read data from Data Cache
+reg                 mem_read_data_valid_r;    // Register read data from Data Cache
+reg  [10:0]         mem_load_rd_r;            // Register the Rd value for loads
  
 assign o_wb_read_data       = mem_read_data_r;
 assign o_wb_read_data_valid = mem_read_data_valid_r;
@@ -7117,7 +7119,7 @@ always @( posedge i_clk )
  
 // Used by a25_decompile.v, so simulation only
 //synopsys translate_off    
-reg  [31:0]         daddress_r = 32'd0;               // Register read data from Data Cache
+reg  [31:0]         daddress_r;               // Register read data from Data Cache
 always @( posedge i_clk )
     if ( !i_mem_stall )
         daddress_r              <= i_daddress;
@@ -7174,7 +7176,7 @@ input                       i_rdata_valid;
 // ----------------------------------------------------
 // Signals
 // ----------------------------------------------------
-reg  [1:0]                  wbuf_used_r     = 2'd0;
+reg  [1:0]                  wbuf_used_r;
 //reg  [31:0]                 wbuf_addr_r     [1:0]; 
 reg  [31:0]                 wbuf_addr_r0;
 reg  [31:0]                 wbuf_addr_r1;
@@ -7184,13 +7186,13 @@ reg  [127:0]                wbuf_wdata_r1;
 //reg  [15:0]                 wbuf_be_r       [1:0]; 
 reg  [15:0]                 wbuf_be_r0;
 reg  [15:0]                 wbuf_be_r1;
-reg  [1:0]                  wbuf_write_r    = 2'd0;
-reg                         wbuf_wp_r       = 1'd0;        // write buf write pointer
-reg                         wbuf_rp_r       = 1'd0;        // write buf read pointer
-reg                         busy_reading_r  = 1'd0;
-reg                         wait_rdata_valid_r = 1'd0;
+reg  [1:0]                  wbuf_write_r    ;
+reg                         wbuf_wp_r       ;        // write buf write pointer
+reg                         wbuf_rp_r       ;        // write buf read pointer
+reg                         busy_reading_r  ;
+reg                         wait_rdata_valid_r;
 wire                        in_wreq;
-reg                         ack_owed_r      = 1'd0;
+reg                         ack_owed_r      ;
 reg			    push;  //wire to reg	
 reg			    pop;	//wire to reg
  
@@ -7371,12 +7373,12 @@ input                       i_wb_ack;
 // Signals
 // ----------------------------------------------------
 
-reg        		    o_wb_adr = 32'd0;
-reg             	    o_wb_sel = 16'd0;
-reg                         o_wb_we  = 1'd0;
-reg        		    o_wb_dat = 128'd0;
-reg     	            o_wb_cyc = 1'd0;
-reg        	            o_wb_stb = 1'd0;
+reg        		    o_wb_adr;
+reg             	    o_wb_sel ;
+reg                         o_wb_we  ;
+reg        		    o_wb_dat ;
+reg     	            o_wb_cyc;
+reg        	            o_wb_stb;
 wire [WBUF-1:0]             wbuf_valid;
 wire [WBUF-1:0]             wbuf_accepted;
 wire [WBUF-1:0]             wbuf_write;
@@ -7394,7 +7396,7 @@ wire [31:0]                 wbuf_addr1;
 wire [31:0]                 wbuf_addr2;
 wire [WBUF-1:0]             wbuf_rdata_valid;
 wire                        new_access;
-reg  [WBUF-1:0]             serving_port = 3'd0;
+reg  [WBUF-1:0]             serving_port;
  
 
 // ----------------------------------------------------
@@ -7598,26 +7600,26 @@ reg      [31:0]          o_copro_read_data;
 // Bit 0 - Cache on(1)/off
 // Bit 1 - Shared (1) or seperate User/Supervisor address space
 // Bit 2 - address monitor mode(1)
-reg [2:0]  cache_control = 3'b000;
+reg [2:0]  cache_control;
  
 // Bit 0 - 2MB memory from 0 to 0x01fffff cacheable(1)/not cachable
 // Bit 1 - next 2MB region etc.
-reg [31:0] cacheable_area = 32'h0;
+reg [31:0] cacheable_area;
  
 // Marks memory regions as read only so writes are ignored by the cache
 // Bit 0 - 2MB memory from 0 to 0x01fffff updateable(1)/not updateable
 // Bit 1 - next 2MB region etc.
-reg [31:0] updateable_area = 32'h0;
+reg [31:0] updateable_area;
  
 // Accesses to a region with a flag set in this register cause the
 // cache to flush
 // Bit 0 - 2MB memory from 0 to 0x01fffff
 // Bit 1 - next 2MB region etc.
-reg [31:0] disruptive_area = 32'h0;
+reg [31:0] disruptive_area ;
  
  
-reg [7:0]  fault_status  = 8'd0;
-reg [31:0] fault_address = 32'b0;  // the address that caused the fault
+reg [7:0]  fault_status;
+reg [31:0] fault_address;  // the address that caused the fault
  
 wire       copro15_reg1_write;
  

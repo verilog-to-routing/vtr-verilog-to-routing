@@ -4,7 +4,7 @@
 `define MEM_MAXDATA 36
 
 // depth and data may need to be splited
-module single_port_ram(clk, we, addr, data, out);
+module singlePortRam(clk, we, addr, data, out);
 
     parameter ADDR_WIDTH = 1;
     parameter DATA_WIDTH = 1;
@@ -28,7 +28,7 @@ module single_port_ram(clk, we, addr, data, out);
 
             defparam uut_h.ADDR_WIDTH = ADDR_WIDTH-1;
             defparam uut_h.DATA_WIDTH = DATA_WIDTH;
-            single_port_ram uut_h (
+            singlePortRam uut_h (
                 .clk(clk), 
                 .we(we), 
                 .addr(new_addr), 
@@ -38,7 +38,7 @@ module single_port_ram(clk, we, addr, data, out);
 
             defparam uut_l.ADDR_WIDTH = ADDR_WIDTH-1;
             defparam uut_l.DATA_WIDTH = DATA_WIDTH;
-            single_port_ram uut_l (
+            singlePortRam uut_l (
                 .clk(clk), 
                 .we(we), 
                 .addr(new_addr), 
@@ -52,7 +52,7 @@ module single_port_ram(clk, we, addr, data, out);
 
         end	else begin
             for (i = 0; i < DATA_WIDTH; i = i + 1) begin:single_bit_data
-                singlePortRam uut (
+                single_port_ram uut (
                     .clk(clk), 
                     .we(we), 
                     .addr(addr), 
@@ -66,7 +66,7 @@ module single_port_ram(clk, we, addr, data, out);
 endmodule
 
 (* blackbox *)
-module singlePortRam(clk, data, addr, we, out);
+module single_port_ram(clk, data, addr, we, out);
 
     localparam ADDR_WIDTH = `MEM_MAXADDR;
     localparam DATA_WIDTH = 1;
