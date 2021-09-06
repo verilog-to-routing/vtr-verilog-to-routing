@@ -64,4 +64,6 @@ int grid_to_compressed(const std::vector<int>& coords, int point);
  */
 int grid_to_compressed_approx(const std::vector<int>& coords, int point);
 
+void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_grid>& comp_grids);
+
 #endif

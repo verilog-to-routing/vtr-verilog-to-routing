@@ -30,7 +30,7 @@ struct t_block_score {
  * random location before trying exhaustive placement - find the fist     *
  * legal position and place it during initial placement.                  */
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
-#define MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY 4
+#define MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY 7
 
 static std::vector<std::vector<std::vector<t_pl_loc>>> legal_pos; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1][0..num_sub_tiles - 1] */
 
@@ -119,7 +119,6 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
     Region reg = regions[region_index];
 
     vtr::Rect<int> rect = reg.get_region_rect();
-    //VTR_LOG("xmin is: %d, ymin is: %d, xmax is: %d, ymax is: %d \n", rect.xmin(), rect.xmax(), rect.ymin(), rect.ymax());
 
     int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
     int min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
@@ -133,13 +132,13 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
     int cy_to;
 
     legal = find_compatible_compressed_loc_in_range(block_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
-
     if (!legal) {
         //No valid position found
         return false;
     }
 
     compressed_grid_to_loc(block_type, cx_to, cy_to, loc);
+    //VTR_LOG("Random selector: Actual grid loc is (%d, %d) \n", loc.x, loc.y);
 
     auto& grid = g_vpr_ctx.device().grid;
 
@@ -171,6 +170,9 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	    for (int x = xmin; x <= xmax; x++) {
 	    	for(int y = ymin; y <= ymax; y++) {
 	    		auto& tile = device_ctx.grid[x][y].type;
+	    		if (device_ctx.grid[x][y].width_offset != 0 || device_ctx.grid[x][y].height_offset != 0) {
+	    			continue;
+	    		}
 	    		if(!is_tile_compatible(tile, block_type)) {
 	    			continue;
 	    		}
@@ -198,26 +200,29 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	    	            if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
 	    	                st_low = sub_tile.capacity.low;
 	    	                st_high = sub_tile.capacity.high;
-	    	                break;
+
+	    		    		for(int st = st_low; st <= st_high; st++) {
+	    		    			to.x = x; to.y = y; to.sub_tile = st;
+	    						if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
+	    							//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
+	    							set_block_location(blk_id, to);
+	    							placed = true;
+
+	    							if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
+	    								place_ctx.block_locs[blk_id].is_fixed = true;
+	    							}
+
+	    							if (placed) {
+	    								break;
+	    							}
+	    						}
+	    		    		}
 	    	            }
+						if (placed) {
+							break;
+						}
 	    	        }
 
-		    		for(int st = st_low; st <= st_high; st++) {
-		    			to.x = x; to.y = y; to.sub_tile = st;
-						if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
-							//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-							set_block_location(blk_id, to);
-							placed = true;
-
-							if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-								place_ctx.block_locs[blk_id].is_fixed = true;
-							}
-
-							if (placed) {
-								break;
-							}
-						}
-		    		}
 	    		}
 
 	    		if(placed) {
@@ -443,6 +448,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, std::
 
     bool placed = false;
     while (!placed) {
+    	VTR_LOG("Placing block %s (# %d) \n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
         /* -1 is a sentinel for a non-placed block, which the code in this routine will choose a location for.
          * If the x value is not -1, we assume something else has already placed this block and we should leave it there.
          * For example, if the user constrained it to a certain location, the block has already been placed.
@@ -506,6 +512,8 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, std::
                                 "Could not place  block %s (#%zu); not enough free locations of type(s) %s.\n",
                                 cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name);
         	}
+
+        	VTR_LOG("Placed by exhaustion \n");
         }
 
     }
@@ -683,6 +691,15 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
 
 void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
+    //auto& place_ctx = g_vpr_ctx.placement();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    /*
+     * echo the compressed grid
+     */
+    /*if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPRESSED_GRIDS)) {
+    	echo_compressed_grids(getEchoFileName(E_ECHO_COMPRESSED_GRIDS), place_ctx.compressed_block_grids);
+    }*/
 
     /* Randomly places the blocks to create an initial placement. We rely on
      * the legal_pos array already being loaded.  That legal_pos[itype] is an
@@ -711,7 +728,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
                                                    */
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    //auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     free_locations.resize(device_ctx.physical_tile_types.size());
     for (const auto& type : device_ctx.physical_tile_types) {
@@ -758,7 +775,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     /* Restore legal_pos */
     alloc_and_load_legal_placement_locations(legal_pos);
 
-    VTR_LOG("Printing initial placement\n");
+    /*VTR_LOG("Printing initial placement\n");
     VTR_LOG("Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
     VTR_LOG("#block name\tx\ty\tsubblk\tblock number\n");
     VTR_LOG("#----------\t--\t--\t------\t------------\n");
@@ -770,7 +787,14 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
         VTR_LOG( "%d\t%d\t%d", place_ctx.block_locs[blk_id].loc.x, place_ctx.block_locs[blk_id].loc.y, place_ctx.block_locs[blk_id].loc.sub_tile);
         VTR_LOG( "\t#%zu\n", size_t(blk_id));
-    }
+    }*/
+
+    /*
+     * echo the compressed grid again after initial placement
+     */
+    /*if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPRESSED_GRIDS_2)) {
+    	echo_compressed_grids(getEchoFileName(E_ECHO_COMPRESSED_GRIDS_2), place_ctx.compressed_block_grids);
+    }*/
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
