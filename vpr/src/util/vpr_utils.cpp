@@ -216,7 +216,7 @@ std::string rr_node_arch_name(int inode) {
     } else {
         VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY);
         //Wire segment name
-        auto cost_index = rr_node.cost_index();
+        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
         rr_node_arch_name += device_ctx.rr_segments[seg_index].name;

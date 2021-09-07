@@ -61,7 +61,7 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
         int num_segs_ortho_dir = 0;
         int num_segs_same_dir = get_expected_segs_to_target(node, target_node, &num_segs_ortho_dir);
 
-        int cost_index = device_ctx.rr_nodes.node_cost_index(node);
+        int cost_index = rr_graph.node_cost_index(node);
         int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
         const auto& same_data = device_ctx.rr_indexed_data[cost_index];
@@ -120,7 +120,7 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
     target_x = rr_graph.node_xlow(target_node);
     target_y = rr_graph.node_ylow(target_node);
 
-    cost_index = device_ctx.rr_nodes.node_cost_index(inode);
+    cost_index = rr_graph.node_cost_index(inode);
     inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
     ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
     ortho_inv_length = device_ctx.rr_indexed_data[ortho_cost_index].inv_length;

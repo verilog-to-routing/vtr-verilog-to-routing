@@ -118,10 +118,6 @@ inline short t_rr_node::class_num() const {
     return storage_->node_class_num(id_);
 }
 
-inline short t_rr_node::cost_index() const {
-    return storage_->node_cost_index(id_);
-}
-
 inline bool t_rr_node::is_node_on_specific_side(e_side side) const {
     return storage_->is_node_on_specific_side(id_, side);
 }

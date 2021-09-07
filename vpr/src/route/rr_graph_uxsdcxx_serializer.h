@@ -706,23 +706,23 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             node.set_cost_index(0);
         } else if (rr_graph.node_type(node.id()) == CHANX) {
             node.set_cost_index(CHANX_COST_INDEX_START + segment_id);
-            seg_index_[node.cost_index()] = segment_id;
+            seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == CHANY) {
             node.set_cost_index(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id);
-            seg_index_[node.cost_index()] = segment_id;
+            seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
         return inode;
     }
     inline void finish_node_segment(int& /*inode*/) final {}
     inline int get_node_segment_segment_id(const t_rr_node& node) final {
-        return (*rr_indexed_data_)[node.cost_index()].seg_index;
+        return (*rr_indexed_data_)[(*rr_graph_).node_cost_index(node.id())].seg_index;
     }
 
     inline const t_rr_node get_node_segment(const t_rr_node& node) final {
         return node;
     }
     inline bool has_node_segment(const t_rr_node& node) final {
-        return (*rr_indexed_data_)[node.cost_index()].seg_index != -1;
+        return (*rr_indexed_data_)[(*rr_graph_).node_cost_index(node.id())].seg_index != -1;
     }
 
     inline MetadataBind init_node_metadata(int& inode) final {

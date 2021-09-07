@@ -2431,7 +2431,7 @@ std::string describe_rr_node(int inode) {
     auto rr_node = device_ctx.rr_nodes[inode];
 
     if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
-        int cost_index = rr_node.cost_index();
+        int cost_index = rr_graph.node_cost_index(RRNodeId(inode));
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
         std::string rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
