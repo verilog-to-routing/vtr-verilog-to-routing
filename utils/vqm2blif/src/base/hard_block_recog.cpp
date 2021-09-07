@@ -228,6 +228,12 @@ t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports
         append_array_element((intptr_t)curr_hard_block_node_port, port_array);
     }
 
+    // handle the case where the port is not bussed
+    if (port_size == PORT_NOT_BUS)
+    {
+        curr_hard_block_node_port->port_index = PORT_WIRE_NOT_INDEXED;
+    }
+
     return port_array;
 
 }
