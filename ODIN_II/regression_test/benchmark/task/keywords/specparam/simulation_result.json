@@ -1,7 +1,7 @@
 {
     "specparam/specparam_define_check/no_arch": {
         "test_name": "specparam/specparam_define_check/no_arch",
-        "blif": "specparam_define_check.blif",
+        "generated_blif": "specparam_define_check_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 2.9,
         "simulation_time(ms)": 0.2,
@@ -17,7 +17,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

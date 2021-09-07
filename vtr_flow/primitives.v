@@ -148,22 +148,22 @@ endmodule
 module DFF #(
     parameter INITIAL_VALUE=1'b0    
 ) (
-    input clock,
+    input clk,
     input D,
     output reg Q
 );
 
     specify
-        (clock => Q) = "";
-        $setup(D, posedge clock, "");
-        $hold(posedge clock, D, "");
+        (clk => Q) = "";
+        $setup(D, posedge clk, "");
+        $hold(posedge clk, D, "");
     endspecify
 
     initial begin
         Q <= INITIAL_VALUE;
     end
 
-    always@(posedge clock) begin
+    always@(posedge clk) begin
         Q <= D;
     end
 endmodule
@@ -238,14 +238,15 @@ module multiply #(
 endmodule // mult
 
 //single_port_ram module
+(* keep_hierarchy *)
 module single_port_ram #(
     parameter ADDR_WIDTH = 1,
     parameter DATA_WIDTH = 1
 ) (
+    input clk,
     input [ADDR_WIDTH-1:0] addr,
     input [DATA_WIDTH-1:0] data,
     input we,
-    input clock,
     output reg [DATA_WIDTH-1:0] out
 );
 
@@ -254,16 +255,16 @@ module single_port_ram #(
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-        (clock*>out)="";
-        $setup(addr, posedge clock, "");
-        $setup(data, posedge clock, "");
-        $setup(we, posedge clock, "");
-        $hold(posedge clock, addr, "");
-        $hold(posedge clock, data, "");
-        $hold(posedge clock, we, "");
+        (clk*>out)="";
+        $setup(addr, posedge clk, "");
+        $setup(data, posedge clk, "");
+        $setup(we, posedge clk, "");
+        $hold(posedge clk, addr, "");
+        $hold(posedge clk, data, "");
+        $hold(posedge clk, we, "");
     endspecify
    
-    always@(posedge clock) begin
+    always@(posedge clk) begin
         if(we) begin
             Mem[addr] = data;
         end
@@ -273,11 +274,12 @@ module single_port_ram #(
 endmodule // single_port_RAM
 
 //dual_port_ram module
+(* keep_hierarchy *)
 module dual_port_ram #(
     parameter ADDR_WIDTH = 1,
     parameter DATA_WIDTH = 1
 ) (
-    input clock,
+    input clk,
 
     input [ADDR_WIDTH-1:0] addr1,
     input [ADDR_WIDTH-1:0] addr2,
@@ -294,30 +296,30 @@ module dual_port_ram #(
     reg [DATA_WIDTH-1:0] Mem[MEM_DEPTH-1:0];
 
     specify
-        (clock*>out1)="";
-        (clock*>out2)="";
-        $setup(addr1, posedge clock, "");
-        $setup(addr2, posedge clock, "");
-        $setup(data1, posedge clock, "");
-        $setup(data2, posedge clock, "");
-        $setup(we1, posedge clock, "");
-        $setup(we2, posedge clock, "");
-        $hold(posedge clock, addr1, "");
-        $hold(posedge clock, addr2, "");
-        $hold(posedge clock, data1, "");
-        $hold(posedge clock, data2, "");
-        $hold(posedge clock, we1, "");
-        $hold(posedge clock, we2, "");
+        (clk*>out1)="";
+        (clk*>out2)="";
+        $setup(addr1, posedge clk, "");
+        $setup(addr2, posedge clk, "");
+        $setup(data1, posedge clk, "");
+        $setup(data2, posedge clk, "");
+        $setup(we1, posedge clk, "");
+        $setup(we2, posedge clk, "");
+        $hold(posedge clk, addr1, "");
+        $hold(posedge clk, addr2, "");
+        $hold(posedge clk, data1, "");
+        $hold(posedge clk, data2, "");
+        $hold(posedge clk, we1, "");
+        $hold(posedge clk, we2, "");
     endspecify
    
-    always@(posedge clock) begin //Port 1
+    always@(posedge clk) begin //Port 1
         if(we1) begin
             Mem[addr1] = data1;
         end
         out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
     end
 
-    always@(posedge clock) begin //Port 2
+    always@(posedge clk) begin //Port 2
         if(we2) begin
             Mem[addr2] = data2;
         end

@@ -118,43 +118,46 @@ void depth_first_traverse_visualize(nnode_t* node, FILE* fp, uintptr_t traverse_
 
             next_net = node->output_pins[i]->net;
             for (j = 0; j < next_net->num_fanout_pins; j++) {
-                next_node = next_net->fanout_pins[j]->node;
-                if (next_node == NULL)
-                    continue;
-                // To see just combinational stuff...also comment above triangels and box
-                //				if ((next_node->type == FF_NODE) || (next_node->type == INPUT_NODE) || (next_node->type == OUTPUT_NODE))
-                //					continue;
-                //				if ((node->type == FF_NODE) || (node->type == INPUT_NODE) || (node->type == OUTPUT_NODE))
-                //					continue;
+                npin_t* pin = next_net->fanout_pins[j];
+                if (pin) {
+                    next_node = pin->node;
+                    if (next_node == NULL)
+                        continue;
+                    // To see just combinational stuff...also comment above triangels and box
+                    //				if ((next_node->type == FF_NODE) || (next_node->type == INPUT_NODE) || (next_node->type == OUTPUT_NODE))
+                    //					continue;
+                    //				if ((node->type == FF_NODE) || (node->type == INPUT_NODE) || (node->type == OUTPUT_NODE))
+                    //					continue;
 
-                temp_string = vtr::strdup(make_simple_name(node->name, "^-+.", '_').c_str());
-                temp_string2 = vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
-                /* renaming for output nodes */
-                if (node->type == OUTPUT_NODE) {
+                    temp_string = vtr::strdup(make_simple_name(node->name, "^-+.", '_').c_str());
+                    temp_string2 = vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
                     /* renaming for output nodes */
-                    char* temp_string_old = temp_string;
-                    temp_string = (char*)vtr::malloc(sizeof(char) * strlen(temp_string) + 1 + 2);
-                    odin_sprintf(temp_string, "%s_O", temp_string_old);
-                    free(temp_string_old);
+                    if (node->type == OUTPUT_NODE) {
+                        /* renaming for output nodes */
+                        char* temp_string_old = temp_string;
+                        temp_string = (char*)vtr::malloc(sizeof(char) * strlen(temp_string) + 1 + 2);
+                        odin_sprintf(temp_string, "%s_O", temp_string_old);
+                        free(temp_string_old);
+                    }
+                    if (next_node->type == OUTPUT_NODE) {
+                        /* renaming for output nodes */
+                        char* temp_string2_old = temp_string2;
+                        temp_string2 = (char*)vtr::malloc(sizeof(char) * strlen(temp_string2) + 1 + 2);
+                        odin_sprintf(temp_string2, "%s_O", temp_string2_old);
+                        free(temp_string2_old);
+                    }
+
+                    fprintf(fp, "\t\"%s\" -> \"%s\"", temp_string, temp_string2);
+                    if (next_net->fanout_pins[j]->name)
+                        fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
+                    fprintf(fp, ";\n");
+
+                    vtr::free(temp_string);
+                    vtr::free(temp_string2);
+
+                    /* recursive call point */
+                    depth_first_traverse_visualize(next_node, fp, traverse_mark_number);
                 }
-                if (next_node->type == OUTPUT_NODE) {
-                    /* renaming for output nodes */
-                    char* temp_string2_old = temp_string2;
-                    temp_string2 = (char*)vtr::malloc(sizeof(char) * strlen(temp_string2) + 1 + 2);
-                    odin_sprintf(temp_string2, "%s_O", temp_string2_old);
-                    free(temp_string2_old);
-                }
-
-                fprintf(fp, "\t\"%s\" -> \"%s\"", temp_string, temp_string2);
-                if (next_net->fanout_pins[j]->name)
-                    fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
-                fprintf(fp, ";\n");
-
-                vtr::free(temp_string);
-                vtr::free(temp_string2);
-
-                /* recursive call point */
-                depth_first_traverse_visualize(next_node, fp, traverse_mark_number);
             }
         }
     }

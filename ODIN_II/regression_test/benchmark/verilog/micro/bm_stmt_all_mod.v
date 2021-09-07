@@ -5,16 +5,16 @@ module 	bm_stmt_all_mod(clock,
 		reset_n, 
 		a_in, 
 		b_in,
-		out1,
 		out0,
+		out1,
 		out3,
 		out4,
 		out5,
 		out6,
 		out7,
 		out8,
-		out10,
-		out9);
+		out9,
+		out10);
 
 // SIGNAL DECLARATIONS
 input	clock;

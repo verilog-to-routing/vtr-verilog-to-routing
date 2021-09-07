@@ -1,7 +1,7 @@
 /* pg 405 - up down counter */
 
 module bm_DL_4_bit_updown_counter(R, Clock, L, E, up_down, Q);
-	parameter [1:0] n=2'b10, [1:0] c = 2'b11;
+	parameter [1:0] n=2'b10, c = 2'b11;
 	parameter [1:0] m=2'b01, b=2'b00;
 	input [n-1:0] R;
 	input Clock, L, E, up_down;

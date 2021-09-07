@@ -1,4 +1,4 @@
-module and2 (in1,in2,out);
+module and2 (in1,in2,clk,out);
 input in1,in2;
 input clk;
 output out;

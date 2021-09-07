@@ -4,12 +4,12 @@
 
 module 	bm_base_memory(clock, 
 		we, 
+		value_in,
 		address_in,
 		address_out,
 		value_out,
 		out1,
-		out2,
-		value_in
+		out2
 		);
 
 // SIGNAL DECLARATIONS

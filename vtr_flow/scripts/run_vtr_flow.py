@@ -323,11 +323,33 @@ def vtr_command_argparser(prog=None):
         help="Supplies Odin with a custom config file for optimizations.",
     )
     odin.add_argument(
+        "-elaborator",
+        nargs=None,
+        default="odin",
+        dest="elaborator",
+        help="Specify the elaborator of the synthesis flow for Odin-II",
+    )
+    odin.add_argument(
         "-include",
         nargs="*",
         default=None,
         dest="include_list_file",
         help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
+    )
+    odin.add_argument(
+        "-coarsen",
+        default=False,
+        action="store_true",
+        dest="coarsen",
+        help="Notify Odin if the input BLIF is coarse-grain",
+    )
+    odin.add_argument(
+        "-fflegalize",
+        default=False,
+        action="store_true",
+        dest="fflegalize",
+        help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
+        + "(Odin-II synthesis flow generates rising edge FFs by default)",
     )
     #
     # VPR arguments
@@ -567,6 +589,7 @@ def process_odin_args(args):
     """
     odin_args = OrderedDict()
     odin_args["adder_type"] = args.adder_type
+    odin_args["elaborator"] = args.elaborator
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True
@@ -576,6 +599,12 @@ def process_odin_args(args):
 
     if args.use_odin_simulation:
         odin_args["use_odin_simulation"] = True
+
+    if args.coarsen:
+        odin_args["coarsen"] = True
+
+    if args.fflegalize:
+        odin_args["fflegalize"] = True
 
     return odin_args
 

@@ -566,6 +566,8 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
 	 end
 //changed to odin 2 ram specifications
 
+defparam new_ram.ADDR_WIDTH = 8;
+defparam new_ram.DATA_WIDTH = 21;
 single_port_ram new_ram(
   .clk (clk),
   .we(we),
