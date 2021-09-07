@@ -131,6 +131,14 @@ void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vec
         }
     }
 
+    // update the node list for the current module
+    main_module->number_of_nodes = node_list_with_hard_blocks->array_size;
+    main_module->array_of_nodes = (t_node**)(node_list_with_hard_blocks->pointer);
+
+    // we also need to delete the dynamic memory we created
+    vtr::free(node_list_with_hard_blocks);
+
+    return;
     
 }
 
