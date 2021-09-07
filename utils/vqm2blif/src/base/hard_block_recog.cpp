@@ -33,7 +33,7 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
     // need to delete all the dynamic memory used to store 
     // all the hard block port information
     delete_hard_block_port_info(&(module_hard_block_node_refs_and_info.hard_block_type_name_to_port_info));
-    
+
     return;
 }
 
@@ -213,7 +213,7 @@ t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports
     {
         // hard blocks will not have indexed wire assignments 
         // doesnt do anything different I think
-        curr_hard_block_node_port = create_unconnected_node_port_association(curr_hard_block_model_port_name, port_index, WIRE_NOT_INDEXED);
+        curr_hard_block_node_port = create_unconnected_node_port_association(curr_hard_block_model_port_name, port_index, PORT_WIRE_NOT_INDEXED);
 
         // store the newly created specific port index within the entire port
         // array
@@ -364,22 +364,19 @@ void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_h
 
     int port_to_assign_index = 0;
 
-    t_pin_def* net_to_assign = get_net_to_assign_to_hard_block_instance_port(curr_module_node);
+    t_node_port_association* curr_module_node_port_connected_to_hard_block_instance_net = get_lut_dffeas_port_connected_to_hard_block_instance_net(curr_module_node);
 
     port_to_assign_index = identify_port_index_within_hard_block_type_port_array(&(curr_hard_block_type_port_info->second), curr_module_node_info, curr_module_node);
 
-    // assign the net to tocrresponding hard block instance port //
-    handle_net_assignment(curr_module_node, curr_hard_block_instance, port_to_assign_index, net_to_assign, curr_module_node_info);
-
-    //curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index]->associated_net = net_to_assign;
+    // assign the net to the crresponding hard block instance port //
+    handle_net_assignment(curr_module_node, curr_hard_block_instance, port_to_assign_index, curr_module_node_port_connected_to_hard_block_instance_net, curr_module_node_info);
 
     return;
 }
 
-t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node* curr_module_node)
+t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node)
 {
-    t_pin_def* net_to_assign = NULL;
-    t_node_port_association* port_connected_to_net = NULL;
+    t_node_port_association* port_connected_to_hard_block_instance_net = NULL;
 
     int number_of_ports_in_node = curr_module_node->number_of_ports;
 
@@ -390,9 +387,6 @@ t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node* curr_module_nod
 
     // store what type of port we expect the net to be connected to 
     std::string expected_port_type;
-
-    /* for a detailed error message, we identify what type of port
-    the net we want should be connected to for the module node */
 
     if (!(curr_module_node_type.compare(LUT_TYPE)))
     {
@@ -424,7 +418,7 @@ t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node* curr_module_nod
 
                 /* if we are here then we know that the LUT the current node
                 represents must be an input port for hard block instance it is part of. We also know that this type of LUT only has an input and output port in the vqm netlist. Finally we know that the current port must be an input, so it's connected net is what we want to assign to the hard block instance port. */
-                port_connected_to_net = curr_module_node->array_of_ports[i];
+                port_connected_to_hard_block_instance_net = curr_module_node->array_of_ports[i];
 
                 break;
             }
@@ -439,27 +433,22 @@ t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node* curr_module_nod
 
                 /* if we are here then we know that the DFF the current node
                 represents mus be an output port for hard block instance it is part of. Finally we know that the current port must be an output, so its connected net is what we want to assign to the hard block instance port. */
-                port_connected_to_net = curr_module_node->array_of_ports[i];
+                port_connected_to_hard_block_instance_net = curr_module_node->array_of_ports[i];
 
                 break;
             }
         }
     }
 
-    if (port_connected_to_net != NULL)
+    if (port_connected_to_hard_block_instance_net == NULL)
     {
-        net_to_assign = port_connected_to_net->associated_net;
-    }
-    else
-    {
-        /* we did not find any ports that fit the conditions above
+         /* we did not find any ports that fit the conditions above
         and this means that the current node, which represents a hard block 
         instance port does not have an accompanying net. This should never happen, so throw an error and indicate to the user */
         throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' does not have an " + expected_port_type + " port.");
-
     }
-
-    return net_to_assign;
+    
+    return port_connected_to_hard_block_instance_net;
 }
 
 int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node)
@@ -521,9 +510,11 @@ int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info
 
 }
 
-void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_block_instance, int port_to_assign_index, t_pin_def* net_to_assign, t_parsed_hard_block_port_info* curr_module_node_info)
+void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_block_instance, int port_to_assign_index, t_node_port_association* port_connected_to_hard_block_instance_net, t_parsed_hard_block_port_info* curr_module_node_info)
 {
     std::string curr_module_node_name = curr_module_node->name;
+
+    t_pin_def* net_to_assign = port_connected_to_hard_block_instance_net->associated_net;
 
     t_node_port_association* port_to_assign = curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index];
 
@@ -536,6 +527,9 @@ void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_blo
         // since we just connected a port, we have one less port to assign, so update the "ports left to assign" tracker
         port_to_assign->associated_net = net_to_assign;
         curr_hard_block_instance->hard_block_ports_not_assigned -= 1;
+
+        // assign the wire index of the net that we connect to the hard block port
+        port_to_assign->wire_index = port_connected_to_hard_block_instance_net->wire_index;
     }
     else
     {

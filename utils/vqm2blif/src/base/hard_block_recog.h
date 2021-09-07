@@ -46,7 +46,7 @@
 #define TOP_LEVEL 0
 #define SECOND_LEVEL 1
 
-#define WIRE_NOT_INDEXED -1
+#define PORT_WIRE_NOT_INDEXED -1
 
 #define INPUT_PORTS "input"
 #define OUTPUT_PORTS "output"
@@ -61,6 +61,8 @@
 // for example we can have the following name: \router_interconnect:test_router_interconnect|router:noc_router|id[2]~QIC_DANGLING_PORT_I (this has 3 hierarchy levels)
 // each level of hierarchy (module within module) is seperated by the delimiter character defined below. The last level of hierarchy is the output net of the block 
 #define VQM_NODE_NAME_DELIMITER "|"
+
+#define PORT_NOT_BUS 1
 
 #define PORT_NAME 1
 #define PORT_INDEX 2
@@ -228,11 +230,11 @@ int find_hard_block_instance(t_hard_block_recog*, t_parsed_hard_block_port_info*
 
 void assign_net_to_hard_block_instance_port(t_node*, t_parsed_hard_block_port_info*, t_hard_block_recog*, int);
 
-t_pin_def* get_net_to_assign_to_hard_block_instance_port(t_node*);
+t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node*);
 
 int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info*, t_parsed_hard_block_port_info*, t_node*);
 
-void handle_net_assignment(t_node*, t_hard_block*, int, t_pin_def*, t_parsed_hard_block_port_info*);
+void handle_net_assignment(t_node*, t_hard_block*, int, t_node_port_association*, t_parsed_hard_block_port_info*);
 
 bool is_hard_block_port_legal(t_node*);
 
