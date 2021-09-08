@@ -129,7 +129,7 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 	return legal;
 }
 
-static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
+/*static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
 	auto& place_ctx = g_vpr_ctx.mutable_placement();
 	auto& device_ctx = g_vpr_ctx.device();
 
@@ -220,9 +220,90 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	}
 
 	return placed;
+}*/
+
+static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
+	const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+	auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+	std::vector<Region> regions = pr.get_partition_region();
+
+	bool placed = false;
+
+	t_pl_loc to_loc;
+
+	for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
+		vtr::Rect<int> rect = regions[reg].get_region_rect();
+
+	    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
+	    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
+
+	    for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
+
+            auto y_lower_iter = compressed_block_grid.grid[cx].begin();
+            auto y_upper_iter = compressed_block_grid.grid[cx].end();
+
+            int y_range = std::distance(y_lower_iter, y_upper_iter);
+
+            for (int dy = 0; dy < y_range && placed == false; dy++) {
+
+                int cy = (y_lower_iter + dy)->first;
+
+                to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
+                to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
+
+                auto& grid = g_vpr_ctx.device().grid;
+                auto tile_type = grid[to_loc.x][to_loc.y].type;
+
+                if (regions[reg].get_sub_tile() != NO_SUBTILE) {
+	    			int subtile = regions[reg].get_sub_tile();
+
+	    			to_loc.sub_tile = subtile;
+					if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
+						//VTR_LOG("1. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
+						set_block_location(blk_id, to_loc);
+						placed = true;
+
+						if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
+							place_ctx.block_locs[blk_id].is_fixed = true;
+						}
+					}
+                } else {
+
+					for (const auto& sub_tile : tile_type->sub_tiles) {
+						if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
+							int st_low = sub_tile.capacity.low;
+							int st_high = sub_tile.capacity.high;
+
+							for(int st = st_low; st <= st_high && placed == false; st++) {
+								to_loc.sub_tile = st;
+								if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
+									//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
+									set_block_location(blk_id, to_loc);
+									placed = true;
+
+									if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
+										place_ctx.block_locs[blk_id].is_fixed = true;
+									}
+
+								}
+							}
+						}
+
+						if (placed) {
+							break;
+						}
+
+					}
+                }
+            }
+	    }
+	}
+
+	return placed;
 }
 
-static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
+/*static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
 	auto& place_ctx = g_vpr_ctx.mutable_placement();
 	auto& device_ctx = g_vpr_ctx.device();
 
@@ -259,9 +340,9 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
 						//VTR_LOG("1. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
 						placed = try_place_macro(to, pl_macro);
 
-						/*if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-							place_ctx.block_locs[blk_id].is_fixed = true;
-						}*/
+						//if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
+						//	place_ctx.block_locs[blk_id].is_fixed = true;
+						//}
 
 						if (placed) {
 							break;
@@ -279,9 +360,9 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
 	    							//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
 	    							placed = try_place_macro(to, pl_macro);
 
-	    							/*if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-	    								place_ctx.block_locs[blk_id].is_fixed = true;
-	    							}*/
+	    							//if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
+	    							//	place_ctx.block_locs[blk_id].is_fixed = true;
+	    							//}
 
 	    							if (placed) {
 	    								break;
@@ -308,6 +389,78 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
 	    	break;
 	    }
 
+	}
+
+	return placed;
+}*/
+
+static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
+	const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+	auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+	std::vector<Region> regions = pr.get_partition_region();
+
+	bool placed = false;
+
+	t_pl_loc to_loc;
+
+	for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
+		vtr::Rect<int> rect = regions[reg].get_region_rect();
+
+	    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
+	    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
+
+	    for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
+
+            auto y_lower_iter = compressed_block_grid.grid[cx].begin();
+            auto y_upper_iter = compressed_block_grid.grid[cx].end();
+
+            int y_range = std::distance(y_lower_iter, y_upper_iter);
+
+            for (int dy = 0; dy < y_range && placed == false; dy++) {
+
+                int cy = (y_lower_iter + dy)->first;
+
+                to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
+                to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
+
+                auto& grid = g_vpr_ctx.device().grid;
+                auto tile_type = grid[to_loc.x][to_loc.y].type;
+
+                if (regions[reg].get_sub_tile() != NO_SUBTILE) {
+	    			int subtile = regions[reg].get_sub_tile();
+
+	    			to_loc.sub_tile = subtile;
+					if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+						//VTR_LOG("1. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
+						placed = try_place_macro(to_loc, pl_macro);
+
+					}
+                } else {
+
+					for (const auto& sub_tile : tile_type->sub_tiles) {
+						if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
+							int st_low = sub_tile.capacity.low;
+							int st_high = sub_tile.capacity.high;
+
+							for(int st = st_low; st <= st_high && placed == false; st++) {
+								to_loc.sub_tile = st;
+								if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+									//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
+									placed = try_place_macro(to_loc, pl_macro);
+
+								}
+							}
+						}
+
+						if (placed) {
+							break;
+						}
+
+					}
+                }
+            }
+	    }
 	}
 
 	return placed;
