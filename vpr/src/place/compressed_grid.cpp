@@ -155,7 +155,7 @@ void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "\n");
 
-    for (int i = 0; i < comp_grids.size(); i++) {
+    for (int i = 0; i < (int)comp_grids.size(); i++) {
     	fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
 
     	fprintf(fp, "X coordinates: \n");
