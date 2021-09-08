@@ -102,19 +102,6 @@ inline short t_rr_node::edge_switch(t_edge_size iedge) const {
     return storage_->edge_switch(id_, iedge);
 }
 
-inline short t_rr_node::xlow() const {
-    return storage_->node_xlow(id_);
-}
-inline short t_rr_node::ylow() const {
-    return storage_->node_ylow(id_);
-}
-inline short t_rr_node::xhigh() const {
-    return storage_->node_xhigh(id_);
-}
-inline short t_rr_node::yhigh() const {
-    return storage_->node_yhigh(id_);
-}
-
 inline short t_rr_node::ptc_num() const {
     return storage_->node_ptc_num(id_);
 }

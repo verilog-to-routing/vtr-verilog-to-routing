@@ -186,10 +186,11 @@ which block pins are used from the "FASM perspective".
 */
 static std::string get_pin_feature (size_t inode) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     // Get tile physical tile and the pin number
-    int ilow = device_ctx.rr_nodes[inode].xlow();
-    int jlow = device_ctx.rr_nodes[inode].ylow();
+    int ilow = rr_graph.node_xlow(RRNodeId(inode));
+    int jlow = rr_graph.node_ylow(RRNodeId(inode));
     auto physical_tile = device_ctx.grid[ilow][jlow].type;
     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
 
