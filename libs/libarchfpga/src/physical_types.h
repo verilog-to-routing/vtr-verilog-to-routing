@@ -1382,6 +1382,14 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+/* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
+ * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
+ * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
+enum e_parallel_axis {
+    X_AXIS,
+    Y_AXIS,
+    BOTH_AXIS
+};
 enum e_switch_block_type {
     SUBSET,
     WILTON,
@@ -1415,6 +1423,8 @@ enum e_Fc_type {
  * frac_sb:  The fraction of the length + 1 switch blocks along the segment  *
  *           to which the segment can connect.  Segments that aren't long    *
  *           lines must connect to at least two switch boxes.                *
+ * parallel_axis:   Defines what axis the segment is parallel to. See        *
+ *                  e_parallel_axis comments for more details on the values. *
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
@@ -1432,8 +1442,10 @@ struct t_segment_inf {
     float Rmetal;
     float Cmetal;
     enum e_directionality directionality;
+    enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
+
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 

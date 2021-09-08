@@ -12,11 +12,6 @@
 
 /******************* Types shared by rr_graph2 functions *********************/
 
-enum e_seg_details_type {
-    SEG_DETAILS_X,
-    SEG_DETAILS_Y
-};
-
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
 /******************* Subroutines exported by rr_graph2.c *********************/
@@ -71,7 +66,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const t_chan_width* nodes_per_chan,
                                  const int num_seg_details,
                                  const t_seg_details* seg_details,
-                                 const enum e_seg_details_type seg_details_type);
+                                 const enum e_parallel_axis seg_details_type);
 void adjust_chan_details(const DeviceGrid& grid,
                          const t_chan_width* nodes_per_chan,
                          t_chan_details& chan_details_x,
@@ -81,7 +76,7 @@ void adjust_seg_details(const int x,
                         const DeviceGrid& grid,
                         const t_chan_width* nodes_per_chan,
                         t_chan_details& chan_details,
-                        const enum e_seg_details_type seg_details_type);
+                        const enum e_parallel_axis seg_details_type);
 
 void free_chan_details(t_chan_details& chan_details_x,
                        t_chan_details& chan_details_y);
