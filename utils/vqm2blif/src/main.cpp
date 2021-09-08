@@ -82,7 +82,6 @@
 #include "vtr_error.h"
 #include "physical_types.h"
 #include "hard_block_recog.h"
-#include "hard_block_recog_test.h"
 
 #include <sys/stat.h>
 
@@ -150,12 +149,6 @@ t_boolean identify_and_instantiate_custom_hard_blocks; // user-set flag. Which i
 //============================================================================================
 //			FUNCTION DECLARATIONS
 //============================================================================================
-
-// Srivatsan, test function to better understand how the module data structure /works
-
-void print_module(t_module* my_module);
-
-void print_arch_modules(t_arch* my_arch, std::vector<t_logical_block_type>* my_logical_types);
 
 //Setup Functions
 void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
@@ -244,29 +237,7 @@ void echo_blif_model (char* echo_file, const char* vqm_filename,
 
 int main(int argc, char* argv[])
 {
-	//char* test = "test";
-	//char* test_two = "test_two";
-	//test_copy_array_ref(10000);
-	//test_create_unconnected_node_port_association(10, -1, test);
-	//test_create_hard_block_port_info_structure(test);
-	//test_convert_hard_block_model_port_to_hard_block_node_port(test, 25);
-	//test_store_hard_block_port_info(test,test_two,"router", 45);
-	//test_extract_and_store_hard_block_model_port(test, test_two, 500, 1000, "router");
 
-	//test_delete_hard_block_port_info(test, "router", 10000);
-	//test_initialize_hard_block_models();
-
-	//test_identify_hard_block_type();
-	//test_identify_hard_block_port_name_and_index();
-	
-	//test_split_node_name();
-	//test_construct_hard_block_name();
-
-	//test_extract_hard_block_port_info_from_module_node();
-
-	//test_create_and_initialize_all_hard_block_ports();
-
-	//test_array_ref_initialization();
 	t_blif_model my_model;
 	//holds top-level model data for the .blif netlist
 	//***The primary goal of the program is to populate and dump this structure appropriately.***
@@ -298,7 +269,7 @@ int main(int argc, char* argv[])
 	//used to construct output filenames from project name 
 	//char* filename necessitated by vqm_parse_file()
 
-	// a list which stores all the user supplied custom hard block names
+	// a list which stores all the user supplied custom hard block type names
 	std::vector<std::string> hard_block_type_name_list;
 
 //*************************************************************************************************
@@ -310,13 +281,6 @@ int main(int argc, char* argv[])
 	
 	//verify command-line is correct, populate input variables and global mode flags.
 	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &hard_block_type_name_list);
-
-	/*std::vector<std::string>::iterator it;
-
-	for (it = hard_block_type_name_list.begin(); it != hard_block_type_name_list.end(); it++)
-	{
-		std::cout << *it << "\n";
-	}*/
 
 	setup_lut_support_map ();	//initialize LUT support for cleanup and elaborate functions
 
@@ -336,21 +300,19 @@ int main(int argc, char* argv[])
     //VQM Parser Call, requires char* filename
     my_module = vqm_parse_file(temp_name);
 
-	//print_module(my_module);
-
 	unsigned long processEnd = clock();
 	cout << "\n>> VQM Parsing took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
 
     cout << "\n>> Verifying module";
 	verify_module (my_module);
 
-	/*if (debug_mode){
+	if (debug_mode){
 		//Print debug info to "<project_path>_module.echo"
 		construct_filename ( temp_name, project_path.c_str(), "_module.echo" );
 		cout << "\n>> Dumping to output file " << temp_name << endl ;
 		echo_module ( temp_name, source_file.c_str(), my_module );
 		//file contains data read from the .vqm structures.
-	}*/
+	}
 
 	//Parse the architecture file to get full information about the models used.
     //  Note: the architecture file needs to be loaded first, so that it can be used
@@ -370,20 +332,10 @@ int main(int argc, char* argv[])
 
 	VTR_ASSERT((types) && (numTypes > 0));
 	VTR_ASSERT(arch.models != NULL);
-
-	//test_create_unconnected_hard_block_instance_ports(my_module, &arch, &hard_block_type_name_list);
-
-	//test_create_new_hard_block_instance_node(&arch, &hard_block_type_name_list);
-
-	//test_store_new_hard_block_instance_info(&arch, &hard_block_type_name_list);
-
-	//test_create_new_hard_block_instance(my_module, &arch, &hard_block_type_name_list);
-
-	test_find_hard_block_instance(my_module, &arch, &hard_block_type_name_list);
 			
     //Pre-process the netlist
     //  Currently this just 'cleans up' bi-directional inout pins
-   /* cout << "\n>> Preprocessing Netlist...\n";
+    cout << "\n>> Preprocessing Netlist...\n";
     processStart = clock();
 
     preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, elaborate_ram_clocks,
@@ -427,8 +379,6 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//print_arch_modules(&arch, &logical_block_types);
-	
 	// only process the netlist for any custom hard blocks if the user provided valid hard block names
 	if (identify_and_instantiate_custom_hard_blocks)
 	{
@@ -492,9 +442,7 @@ int main(int argc, char* argv[])
 	unsigned long flowEnd = clock();
 	cout << "\n>> VQM->BLIF Total Runtime: " << (float)(flowEnd - flowStart)/CLOCKS_PER_SEC << " seconds.\n" ;
 
-	cout << "\nComplete.\n";*/
-
-	all_data_cleanup();
+	cout << "\nComplete.\n";
 	return 0;
 }
 
@@ -670,7 +618,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                     eblif_format = T_TRUE;
                     break;
 				case OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS:
-					// first check whether an accompanying hard block type name was supplied (user provides the names of all the various types of custom hard blocks within the design, essentially this is the module name)
+					// first check whether an accompanying hard block type name was supplied (user provides the names of all the various types of custom hard blocks within the design, essentially this is the module names in their HDL design)
 					if ( i+1 == argc ){
 						// no hard block type name was supplied so throw an error
 						cout << "ERROR: Missing Hard Block Module Names.\n" ;
@@ -2319,98 +2267,6 @@ void echo_blif_model (char* echo_file, const char* vqm_filename,
 	
 	// Close file.
 	model_out.close();
-}
-
-// this is a test function to see how the t_module data structure works (by printing everything)
-
-void print_module(t_module* my_module)
-{
-	t_node* temp_node = NULL;
-	t_node_port_association* temp_ports = NULL;
-	// go through all the nodes in the design
-	for (auto i = 0; i < my_module->number_of_nodes; i++)
-	{
-		temp_node = my_module->array_of_nodes[i];
-
-		for (auto j = 0; j < temp_node->number_of_ports; j++)
-		{
-			temp_ports = temp_node->array_of_ports[j];	
-		} 
-	}
-
-	return;
-}
-
-// this is a test function to see how the t_arch data structure works
-// For the hard block functionality we just care about the modules
-// so print information regarding that
-void print_arch_modules(t_arch* my_arch, std::vector<t_logical_block_type>* my_logical_types)
-{
-	t_model* temp = my_arch->models;
-	t_model_ports* temp_input_ports = NULL;
-	t_model_ports* temp_output_ports = NULL;
-
-	std::string temp_name;
-
-	char* output_port_name = NULL;
-	char* input_port_name  = NULL;
-
-	// iterator to traverse the logical_types
-	std::vector<t_logical_block_type>::iterator it;
-
-	// code related to the logical types
-	t_pb_type* temp_logical_type = NULL;
-	t_port* temp_port = NULL;
-
-	while (temp != NULL)
-	{
-		temp_input_ports = temp->inputs;
-		temp_output_ports = temp->outputs;
-
-		temp_name = temp->name;
-
-		/*if(temp_name.compare("stratixiv_ram_block.opmode{dual_port}.output_type{reg}.port_a_address_width{2}.port_b_address_width{2}") == 0)
-		{
-			// breakpoint here
-			std::cout << "test" << "\n";
-		}*/
-
-		if(temp_name.compare("router") == 0)
-		{
-			// breakpoint here
-			std::cout << "test" << "\n";
-		}
-
-		// lets go through all the ports
-		while (temp_input_ports != NULL)
-		{
-			input_port_name = temp_input_ports->name;
-
-			temp_input_ports = temp_input_ports->next;
-		}
-
-		while (temp_output_ports != NULL)
-		{
-			output_port_name = temp_output_ports->name;
-
-			temp_output_ports = temp_output_ports->next;
-		}
-
-		temp = temp->next;
-	}
-	
-	// we now traverse the logical types
-	for(it = my_logical_types->begin(); it != my_logical_types->end(); it++)
-	{
-		temp_logical_type = it->pb_type;
-
-		for (int i = 0; i < temp_logical_type->num_ports; i++)
-		{
-			temp_port = &(temp_logical_type->ports[i]);
-		}
-	}
-	
-	return;
 }
 
 //============================================================================================
