@@ -293,7 +293,6 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
     auto parent = start_node;
     for (auto it = path.rbegin(); it != path.rend(); it++) {
         RRNodeId this_node(*it);
-        auto& here = device_ctx.rr_nodes[*it];
         int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(this_node)].seg_index;
 
         int from_x = rr_graph.node_xlow(this_node);
