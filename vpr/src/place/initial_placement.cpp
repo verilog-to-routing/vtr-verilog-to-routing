@@ -486,8 +486,6 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
                                 "Could not place  block %s (#%zu); not enough free locations of type(s) %s.\n",
                                 cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name);
             }
-
-            VTR_LOG("Placed by exhaustion \n");
         }
     }
 }
@@ -589,7 +587,6 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
             t_pl_macro pl_macro;
             pl_macro = place_ctx.pl_macros[imacro];
             place_a_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro);
-            //num_macros_placed++;
         } else {
             place_a_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type);
         }
