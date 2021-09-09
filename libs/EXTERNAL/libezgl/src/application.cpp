@@ -18,9 +18,17 @@
 
 #include "ezgl/application.hpp"
 
-namespace ezgl {
+#ifdef ECE297
 // A flag to disable event loop (default is false)
 bool disable_event_loop = false;
+#endif
+
+namespace ezgl {
+
+#ifndef ECE297
+// A flag to disable event loop (default is false)
+bool disable_event_loop = false;
+#endif
 
 void application::startup(GtkApplication *, gpointer user_data)
 {
@@ -29,10 +37,19 @@ void application::startup(GtkApplication *, gpointer user_data)
 
   char const *main_ui_resource = ezgl_app->m_main_ui.c_str();
 
-  // Build the main user interface from the XML resource.
-  GError *error = nullptr;
-  if(gtk_builder_add_from_resource(ezgl_app->m_builder, main_ui_resource, &error) == 0) {
-    g_error("%s.", error->message);
+  if (!build_ui_from_file) {
+    // Build the main user interface from the XML resource.
+    GError *error = nullptr;
+    if(gtk_builder_add_from_resource(ezgl_app->m_builder, main_ui_resource, &error) == 0) {
+      g_error("%s.", error->message);
+    }
+  }
+  else {
+    // Build the main user interface from the XML file.
+    GError *error = nullptr;
+    if(gtk_builder_add_from_file(ezgl_app->m_builder, main_ui_resource, &error) == 0) {
+      g_error("%s.", error->message);
+    }
   }
 
   for(auto &c_pair : ezgl_app->m_canvases) {
@@ -307,6 +324,9 @@ void application::create_button(const char *button_text,
   // create the new button with the given label
   GtkWidget *new_button = gtk_button_new_with_label(button_text);
 
+  // set can_focus property to false
+  gtk_widget_set_focus_on_click(new_button, false);
+
   // connect the buttons clicked event to the callback
   if(button_func != NULL) {
     g_signal_connect(G_OBJECT(new_button), "clicked", G_CALLBACK(button_func), this);
@@ -456,8 +476,17 @@ renderer *application::get_renderer()
   return cnv->create_animation_renderer();
 }
 
+#ifndef ECE297
 void set_disable_event_loop(bool new_setting)
 {
   disable_event_loop = new_setting;
 }
+#endif
 }
+
+#ifdef ECE297
+void set_disable_event_loop(bool new_setting)
+{
+  disable_event_loop = new_setting;
+}
+#endif
