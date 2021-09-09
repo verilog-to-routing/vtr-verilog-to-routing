@@ -278,6 +278,9 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
                                 ---->
                                 |
                                 ---->
+	Change Log:
+		- Srivatsan Srinivasan, August 2021:
+			- Moved the incrementing of the "oneluts_elim" variable to this fuction from the "remove_node" function. The purpose of this change was to localise any vairable attached to removing one lut nodes within this function. Additionally, now the "remove_node" function is generalized and is not limited to be only used by "remove_one_lut_nodes".
 */
 	oneluts_elim = 0;
 
@@ -344,6 +347,9 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 
 					//Free the LUT
 					remove_node(source_node, nodes, original_num_nodes);
+					
+					// increment the count of the number of one lut nodes we eliminiated
+					oneluts_elim++;
 
 				}
 			}
@@ -829,6 +835,12 @@ bool is_feeder_onelut ( t_node* node ) {
 void remove_node ( t_node* node, t_node** nodes, int original_num_nodes ) {
 	//Free node and assign it to NULL on the spot
 	//Array will be re-organized to fill in the gaps later
+	/*
+		Change Log:
+		- Srivatsan Srinivasan, August 2021:
+			- Orirignally, the "oneluts_elim" variable (which is used to keep track of the number of one lut nodes removed from the node list) was incremented here. This incrementation has been moved to the "remove_one_lut_nodes" function.
+			- This purpose of this change is that now this function is not limited to just be used by "remove_one_lut_nodes".
+	*/
 
 	VTR_ASSERT(node != NULL);
 	VTR_ASSERT(nodes != NULL);
@@ -848,7 +860,6 @@ void remove_node ( t_node* node, t_node** nodes, int original_num_nodes ) {
 	}
 	
 	VTR_ASSERT(found);
-	oneluts_elim++;
 }
 
 //============================================================================================
