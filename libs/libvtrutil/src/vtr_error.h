@@ -13,7 +13,6 @@
  * Error information can be displayed using the information stored within this container.
  * 
  */
- 
 
 namespace vtr {
 
