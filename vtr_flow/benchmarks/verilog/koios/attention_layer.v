@@ -2405,7 +2405,7 @@ module logunit (fpin, fpout, status, clk, reset, mode5_stage3_run, mode5_stage2_
 `ifdef complex_dsp
 adder_fp_clk u_add(.clk(clk), .a(fxout1_reg), .b(fxout2_reg), .out(fpout_f));
 `else
-FPAddSub u_FPAddSub (.clk(), .rst(1'b0), .a(fxout1_reg), .b(fxout2_reg), .operation(1'b0), .result(fpout_f), .flags());
+FPAddSub u_FPAddSub (.clk(clk), .rst(1'b0), .a(fxout1_reg), .b(fxout2_reg), .operation(1'b0), .result(fpout_f), .flags());
 `endif
   
   float_to_int_fp16 float_int (.input_a(fpout_f_reg),.output_z(fpout));

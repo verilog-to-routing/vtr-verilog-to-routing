@@ -1,7 +1,7 @@
 {
     "negedge/negedge/no_arch": {
         "test_name": "negedge/negedge/no_arch",
-        "blif": "negedge.blif",
+        "generated_blif": "negedge_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 3.6,
         "simulation_time(ms)": 0.4,
@@ -19,7 +19,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

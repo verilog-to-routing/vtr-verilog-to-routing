@@ -5239,7 +5239,7 @@ assign pc_wen       = (i_pc_wen || !execute) && !i_conflict;
  
 // only update register bank if current instruction executes
 //assign reg_bank_wen = {{15{execute}} & i_reg_bank_wen};
- assign reg_bank_wen = execute ==1'd1? {15'b111111111111111 & i_reg_bank_wen}   :
+ assign reg_bank_wen = (execute == 1'd1) ? {15'b111111111111111 & i_reg_bank_wen}   :
 					{15'b0 & i_reg_bank_wen};
  
 // ========================================================

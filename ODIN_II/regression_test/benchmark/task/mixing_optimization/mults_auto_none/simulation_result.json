@@ -2,7 +2,7 @@
     "mults_auto_none/bm_base_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_base_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "max_rss(MiB)": 143.5,
         "exec_time(ms)": 1623.1,
         "simulation_time(ms)": 1479.1,
@@ -21,7 +21,7 @@
     "mults_auto_none/bm_base_multiply/k6_N10_40nm": {
         "test_name": "mults_auto_none/bm_base_multiply/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "max_rss(MiB)": 144.5,
         "exec_time(ms)": 1789.8,
         "simulation_time(ms)": 1693.6,
@@ -40,7 +40,7 @@
     "mults_auto_none/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "max_rss(MiB)": 334.2,
         "exec_time(ms)": 3093.5,
         "simulation_time(ms)": 2880.7,
@@ -59,7 +59,7 @@
     "mults_auto_none/bm_match1_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_none/bm_match1_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "max_rss(MiB)": 612.5,
         "exec_time(ms)": 4793,
         "simulation_time(ms)": 4555.6,
@@ -78,7 +78,7 @@
     "mults_auto_none/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "max_rss(MiB)": 249.8,
         "exec_time(ms)": 2880,
         "simulation_time(ms)": 2640.6,
@@ -98,7 +98,7 @@
     "mults_auto_none/bm_match2_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_none/bm_match2_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "max_rss(MiB)": 489.7,
         "exec_time(ms)": 4139.2,
         "simulation_time(ms)": 3946.5,
@@ -117,7 +117,7 @@
     "mults_auto_none/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "max_rss(MiB)": 119.1,
         "exec_time(ms)": 1052.8,
         "simulation_time(ms)": 817,
@@ -137,7 +137,7 @@
     "mults_auto_none/bm_match3_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_none/bm_match3_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "max_rss(MiB)": 90.9,
         "exec_time(ms)": 725.6,
         "simulation_time(ms)": 673.1,
@@ -156,7 +156,7 @@
     "mults_auto_none/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "max_rss(MiB)": 217.5,
         "exec_time(ms)": 2459.1,
         "simulation_time(ms)": 2170.1,
@@ -176,7 +176,7 @@
     "mults_auto_none/bm_match4_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_none/bm_match4_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "max_rss(MiB)": 238.4,
         "exec_time(ms)": 2527.9,
         "simulation_time(ms)": 2407.6,
@@ -195,7 +195,7 @@
     "mults_auto_none/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "max_rss(MiB)": 288.1,
         "exec_time(ms)": 2865.8,
         "simulation_time(ms)": 2571.8,
@@ -215,7 +215,7 @@
     "mults_auto_none/bm_match5_str_arch/k6_N10_40nm": {
         "test_name": "mults_auto_none/bm_match5_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "max_rss(MiB)": 319.7,
         "exec_time(ms)": 3560,
         "simulation_time(ms)": 3432,
@@ -234,7 +234,7 @@
     "mults_auto_none/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "multiply_hard_block.blif",
+        "generated_blif": "multiply_hard_block_generated.blif",
         "max_rss(MiB)": 55.6,
         "exec_time(ms)": 124.7,
         "simulation_time(ms)": 17,
@@ -251,7 +251,7 @@
     "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "max_rss(MiB)": 54.8,
         "exec_time(ms)": 112,
         "simulation_time(ms)": 5.6,
@@ -270,7 +270,7 @@
     "mults_auto_none/twobits_arithmetic_multiply/k6_N10_40nm": {
         "test_name": "mults_auto_none/twobits_arithmetic_multiply/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "max_rss(MiB)": 37.6,
         "exec_time(ms)": 23.4,
         "simulation_time(ms)": 5.6,
@@ -289,7 +289,7 @@
     "mults_auto_none/bm_base_multiply/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_base_multiply/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "max_rss(MiB)": 10,
         "exec_time(ms)": 689.2,
         "simulation_time(ms)": 656.9,
@@ -308,7 +308,7 @@
     "mults_auto_none/bm_base_multiply/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_base_multiply/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "max_rss(MiB)": 9.9,
         "exec_time(ms)": 686.4,
         "simulation_time(ms)": 656.2,
@@ -327,7 +327,7 @@
     "mults_auto_none/bm_match1_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match1_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "max_rss(MiB)": 12,
         "exec_time(ms)": 1983.1,
         "simulation_time(ms)": 1935.7,
@@ -346,7 +346,7 @@
     "mults_auto_none/bm_match1_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match1_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "max_rss(MiB)": 12.2,
         "exec_time(ms)": 2021.4,
         "simulation_time(ms)": 1975.7,
@@ -365,7 +365,7 @@
     "mults_auto_none/bm_match2_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match2_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "max_rss(MiB)": 11,
         "exec_time(ms)": 1250.4,
         "simulation_time(ms)": 1220.9,
@@ -384,7 +384,7 @@
     "mults_auto_none/bm_match2_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match2_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "max_rss(MiB)": 11.1,
         "exec_time(ms)": 1281.3,
         "simulation_time(ms)": 1243,
@@ -403,7 +403,7 @@
     "mults_auto_none/bm_match3_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match3_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "max_rss(MiB)": 9.5,
         "exec_time(ms)": 404.9,
         "simulation_time(ms)": 380.3,
@@ -422,7 +422,7 @@
     "mults_auto_none/bm_match3_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match3_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "max_rss(MiB)": 9.5,
         "exec_time(ms)": 427.6,
         "simulation_time(ms)": 401.7,
@@ -441,7 +441,7 @@
     "mults_auto_none/bm_match4_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match4_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "max_rss(MiB)": 10.9,
         "exec_time(ms)": 1125.9,
         "simulation_time(ms)": 1087,
@@ -460,7 +460,7 @@
     "mults_auto_none/bm_match4_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match4_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "max_rss(MiB)": 10.5,
         "exec_time(ms)": 1110.6,
         "simulation_time(ms)": 1078.1,
@@ -479,7 +479,7 @@
     "mults_auto_none/bm_match5_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match5_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "max_rss(MiB)": 11.5,
         "exec_time(ms)": 1406.7,
         "simulation_time(ms)": 1370.5,
@@ -498,7 +498,7 @@
     "mults_auto_none/bm_match5_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/bm_match5_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "max_rss(MiB)": 11.6,
         "exec_time(ms)": 1271.1,
         "simulation_time(ms)": 1235.1,
@@ -517,7 +517,7 @@
     "mults_auto_none/multiply_hard_block/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/multiply_hard_block/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "multiply_hard_block.blif",
+        "generated_blif": "multiply_hard_block_generated.blif",
         "max_rss(MiB)": 9,
         "exec_time(ms)": 27.9,
         "simulation_time(ms)": 9.2,
@@ -534,7 +534,7 @@
     "mults_auto_none/multiply_hard_block/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/multiply_hard_block/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "multiply_hard_block.blif",
+        "generated_blif": "multiply_hard_block_generated.blif",
         "max_rss(MiB)": 8.9,
         "exec_time(ms)": 27.4,
         "simulation_time(ms)": 8.9,
@@ -551,7 +551,7 @@
     "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "max_rss(MiB)": 9,
         "exec_time(ms)": 21.7,
         "simulation_time(ms)": 3.5,
@@ -570,7 +570,7 @@
     "mults_auto_none/twobits_arithmetic_multiply/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "max_rss(MiB)": 8.9,
         "exec_time(ms)": 21.8,
         "simulation_time(ms)": 2.9,
@@ -589,7 +589,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

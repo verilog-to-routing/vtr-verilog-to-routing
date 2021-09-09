@@ -1,0 +1,9 @@
+########################
+# run yosys config
+########################
+
+# setup the circuits
+circuits_dir=regression_test/benchmark/_VERILOG/syntax
+
+# circuits' name
+circuit_list_add=*.v

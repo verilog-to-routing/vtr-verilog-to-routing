@@ -1,7 +1,7 @@
 {
     "module_endmodule/multiple_modules/no_arch": {
         "test_name": "module_endmodule/multiple_modules/no_arch",
-        "blif": "multiple_modules.blif",
+        "generated_blif": "multiple_modules_generated.blif",
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 4.1,
         "simulation_time(ms)": 0.7,
@@ -17,7 +17,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

@@ -1,7 +1,7 @@
 {
     "function_endfunction/multiple_inputs/no_arch": {
         "test_name": "function_endfunction/multiple_inputs/no_arch",
-        "blif": "multiple_inputs.blif",
+        "generated_blif": "multiple_inputs_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 4.5,
         "simulation_time(ms)": 0.4,
@@ -16,7 +16,7 @@
     },
     "function_endfunction/outside_port/no_arch": {
         "test_name": "function_endfunction/outside_port/no_arch",
-        "blif": "outside_port.blif",
+        "generated_blif": "outside_port_generated.blif",
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 5.4,
         "simulation_time(ms)": 0.7,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],
