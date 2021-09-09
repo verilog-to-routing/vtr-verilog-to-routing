@@ -5,22 +5,27 @@ import os
 import shutil
 from collections import OrderedDict
 from pathlib import Path
-import xml.etree.ElementTree as ET
 import vtr
 
 # supported input file type by Yosys
 FILE_TYPES = {
-    ".v": "Verilog", ".vh": "Verilog",
-    ".sv": "SystemVerilog", ".blif": "BLIF",
-    ".aig": "aiger", ".json": "JSON",
-    ".lib": "Liberty", ".ys": "RTLIL"
+    ".v": "Verilog",
+    ".vh": "Verilog",
+    ".sv": "SystemVerilog",
+    ".blif": "BLIF",
+    ".aig": "aiger",
+    ".json": "JSON",
+    ".lib": "Liberty",
+    ".ys": "RTLIL",
 }
 
 YOSYS_LIB_FILES = {
-    "YSMDL": "yosys_models.v", "SPRAM": "single_port_ram.v",
-    "DPRAM": "dual_port_ram.v", "SPRAMR": "spram_rename.v",
-    "DPRAMR": "dpram_rename.v"
-    }
+    "YSMDL": "yosys_models.v",
+    "SPRAM": "single_port_ram.v",
+    "DPRAM": "dual_port_ram.v",
+    "SPRAMR": "spram_rename.v",
+    "DPRAMR": "dpram_rename.v",
+}
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -51,16 +56,14 @@ def init_script_file(
     output_netlist,
     memory_addr_width,
     min_hard_mult_size,
-    min_hard_adder_size
+    min_hard_adder_size,
 ):
     """initializing the raw yosys script file"""
     # specify the input files type
     for circuit in circuit_list:
         file_extension = os.path.splitext(circuit)[-1]
         if file_extension not in FILE_TYPES:
-            raise vtr.VtrError(
-                "Inavlid input file type '{}'".format(file_extension)
-                )
+            raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
 
     # Update the config file
     vtr.file_replace(
@@ -73,19 +76,14 @@ def init_script_file(
             "SSR": "./" + YOSYS_LIB_FILES["SPRAMR"],
             "DDR": "./" + YOSYS_LIB_FILES["DPRAMR"],
             "TTT": str(vtr.paths.yosys_lib_path),
-            "ZZZ": output_netlist
+            "ZZZ": output_netlist,
         },
     )
 
     # Update the config file
     vtr.file_replace(
         yosys_models_full_path,
-        {
-            "PPP": memory_addr_width,
-            "MMM": min_hard_mult_size,
-            "AAA": min_hard_adder_size
-
-        },
+        {"PPP": memory_addr_width, "MMM": min_hard_mult_size, "AAA": min_hard_adder_size},
     )
 
     # Update the config file files
@@ -103,12 +101,12 @@ def run(
     output_netlist,
     command_runner=vtr.CommandRunner(),
     temp_dir=Path("."),
-    yosys_args="--adder_type default",
+    yosys_args="",
     log_filename="yosys.out",
     yosys_exec=None,
     yosys_script=None,
     min_hard_mult_size=3,
-    min_hard_adder_size=1
+    min_hard_adder_size=1,
 ):
     """
     Runs YOSYS on the specified architecture file and circuit file
@@ -209,7 +207,7 @@ def run(
         output_netlist.name,
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
-        min_hard_adder_size
+        min_hard_adder_size,
     )
 
     cmd = [yosys_exec]

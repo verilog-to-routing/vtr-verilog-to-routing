@@ -361,7 +361,8 @@ def vtr_command_argparser(prog=None):
         "-yosys_script",
         default=None,
         dest="yosys_script",
-        help="Supplies Yosys with a .ys script file (similar to Tcl script), including synthesis steps.",
+        help="Supplies Yosys with a .ys script file (similar to Tcl script)"
+        + ", including synthesis steps.",
     )
     #
     # VPR arguments
@@ -495,7 +496,7 @@ def vtr_command_main(arg_list, prog=None):
             vpr_args=vpr_args,
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
-            yosys_args=process_yosys_args(args),
+            yosys_args=process_yosys_args(),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
@@ -646,13 +647,14 @@ def process_odin_args(args):
     return odin_args
 
 
-def process_yosys_args(args):
+def process_yosys_args():
     """
     Finds arguments needed in the YOSYS stage of the flow
     """
     yosys_args = OrderedDict()
 
     return yosys_args
+
 
 def process_vpr_args(args, prog, temp_dir, vpr_args):
     """
