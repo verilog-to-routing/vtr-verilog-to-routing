@@ -19,6 +19,8 @@ extern int buffers_elim, inverts_elim, oneluts_elim;
 
 void netlist_cleanup (t_module* module);
 
+void reorganize_module_node_list(int, int, t_node**, t_module*);
+
 //============================================================================================
 //				STRUCTURES & TYPEDEFS
 //============================================================================================
