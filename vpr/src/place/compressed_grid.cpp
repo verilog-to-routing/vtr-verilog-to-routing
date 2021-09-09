@@ -156,25 +156,25 @@ void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_
     fprintf(fp, "\n");
 
     for (int i = 0; i < (int)comp_grids.size(); i++) {
-    	fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
+        fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
 
-    	fprintf(fp, "X coordinates: \n");
-    	for(int j = 0; j < (int)comp_grids[i].compressed_to_grid_x.size(); j++) {
-    		fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_x[j]);
-    	}
-    	fprintf(fp,"\n");
+        fprintf(fp, "X coordinates: \n");
+        for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x.size(); j++) {
+            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_x[j]);
+        }
+        fprintf(fp, "\n");
 
-    	fprintf(fp, "Y coordinates: \n");
-    	for(int k = 0; k < (int)comp_grids[i].compressed_to_grid_y.size(); k++) {
-    		fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[k]);
-    	}
-    	fprintf(fp,"\n");
+        fprintf(fp, "Y coordinates: \n");
+        for (int k = 0; k < (int)comp_grids[i].compressed_to_grid_y.size(); k++) {
+            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[k]);
+        }
+        fprintf(fp, "\n");
 
-    	fprintf(fp, "Subtiles: \n");
-    	for(int s = 0; s < (int)comp_grids[i].compatible_sub_tiles_for_tile.size(); s++) {
-    		fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[s]);
-    	}
-    	fprintf(fp,"\n");
+        fprintf(fp, "Subtiles: \n");
+        for (int s = 0; s < (int)comp_grids[i].compatible_sub_tiles_for_tile.size(); s++) {
+            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[s]);
+        }
+        fprintf(fp, "\n");
     }
 
     fclose(fp);

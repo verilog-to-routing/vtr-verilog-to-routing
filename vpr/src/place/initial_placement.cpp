@@ -52,7 +52,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 //Get a legal placement position for the block
-static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type) ;
+static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type);
 
 static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
@@ -64,36 +64,22 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              const vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              enum e_pad_loc_type pad_loc_type);
 
-/*static std::vector<int> get_possible_sub_tile_indices(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block) {
-    std::vector<int> sub_tile_indices;
-
-    for (auto sub_tile : physical_tile->sub_tiles) {
-        auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
-        if (result != sub_tile.equivalent_sites.end()) {
-            sub_tile_indices.push_back(sub_tile.index);
-        }
-    }
-
-    VTR_ASSERT(sub_tile_indices.size() > 0);
-    return sub_tile_indices;
-}*/
-
 static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type) {
-	const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
-	bool legal;
+    bool legal;
 
-	int cx_from = -1;
-	int cy_from = -1;
+    int cx_from = -1;
+    int cy_from = -1;
 
-	int region_index;
+    int region_index;
 
-	std::vector<Region> regions = pr.get_partition_region();
+    std::vector<Region> regions = pr.get_partition_region();
 
     if (regions.size() > 1) {
-    	region_index = vtr::irand(regions.size() - 1);
+        region_index = vtr::irand(regions.size() - 1);
     } else {
-    	region_index = 0;
+        region_index = 0;
     }
 
     Region reg = regions[region_index];
@@ -118,118 +104,38 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
     }
 
     compressed_grid_to_loc(block_type, cx_to, cy_to, loc);
-    //VTR_LOG("Random selector: Actual grid loc is (%d, %d) \n", loc.x, loc.y);
 
     auto& grid = g_vpr_ctx.device().grid;
 
-    //VTR_ASSERT_MSG(is_tile_compatible(to_type, blk_type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[loc.x][loc.y].width_offset == 0, "Should be at block base location");
     VTR_ASSERT_MSG(grid[loc.x][loc.y].height_offset == 0, "Should be at block base location");
 
-	return legal;
+    return legal;
 }
-
-/*static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
-	auto& place_ctx = g_vpr_ctx.mutable_placement();
-	auto& device_ctx = g_vpr_ctx.device();
-
-	std::vector<Region> regions = pr.get_partition_region();
-
-	t_pl_loc to;
-	bool placed = false;
-	int st_low, st_high;
-
-	for (unsigned int i = 0; i < regions.size() && placed == false; i++) {
-		vtr::Rect<int> rect = regions[i].get_region_rect();
-	    int xmin = rect.xmin();
-	    int ymin = rect.ymin();
-
-	    int xmax = rect.xmax();
-	    int ymax = rect.ymax();
-
-	    for (int x = xmin; x <= xmax && placed == false; x++) {
-	    	for(int y = ymin; y <= ymax && placed == false; y++) {
-	    		auto& tile = device_ctx.grid[x][y].type;
-	    		if (device_ctx.grid[x][y].width_offset != 0 || device_ctx.grid[x][y].height_offset != 0) {
-	    			continue;
-	    		}
-	    		if(!is_tile_compatible(tile, block_type)) {
-	    			continue;
-	    		}
-	    		int subtile;
-
-	    		if(regions[i].get_sub_tile() != NO_SUBTILE) {
-	    			subtile = regions[i].get_sub_tile();
-
-	    			to.x = x; to.y = y; to.sub_tile = subtile;
-					if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
-						//VTR_LOG("1. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-						set_block_location(blk_id, to);
-						placed = true;
-
-						if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-							place_ctx.block_locs[blk_id].is_fixed = true;
-						}
-
-					}
-	    		} else {
-	    	        for (const auto& sub_tile : tile->sub_tiles) {
-	    	            if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
-	    	                st_low = sub_tile.capacity.low;
-	    	                st_high = sub_tile.capacity.high;
-
-	    		    		for(int st = st_low; st <= st_high && placed == false; st++) {
-	    		    			to.x = x; to.y = y; to.sub_tile = st;
-	    						if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
-	    							//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-	    							set_block_location(blk_id, to);
-	    							placed = true;
-
-	    							if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-	    								place_ctx.block_locs[blk_id].is_fixed = true;
-	    							}
-
-	    						}
-	    		    		}
-	    	            }
-						if (placed) {
-							break;
-						}
-	    	        }
-
-	    		}
-	    	}
-	    }
-	}
-
-	return placed;
-}*/
 
 static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
-	const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-	auto& place_ctx = g_vpr_ctx.mutable_placement();
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-	std::vector<Region> regions = pr.get_partition_region();
+    std::vector<Region> regions = pr.get_partition_region();
 
-	bool placed = false;
+    bool placed = false;
 
-	t_pl_loc to_loc;
+    t_pl_loc to_loc;
 
-	for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
-		vtr::Rect<int> rect = regions[reg].get_region_rect();
+    for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
+        vtr::Rect<int> rect = regions[reg].get_region_rect();
 
-	    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-	    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
+        int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
+        int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
 
-	    for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
-
+        for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
             auto y_lower_iter = compressed_block_grid.grid[cx].begin();
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
-
                 int cy = (y_lower_iter + dy)->first;
 
                 to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
@@ -239,153 +145,71 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
                 auto tile_type = grid[to_loc.x][to_loc.y].type;
 
                 if (regions[reg].get_sub_tile() != NO_SUBTILE) {
-	    			int subtile = regions[reg].get_sub_tile();
+                    int subtile = regions[reg].get_sub_tile();
 
-	    			to_loc.sub_tile = subtile;
-					if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
-						//VTR_LOG("1. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-						set_block_location(blk_id, to_loc);
-						placed = true;
+                    to_loc.sub_tile = subtile;
+                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
+                        set_block_location(blk_id, to_loc);
+                        placed = true;
 
-						if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-							place_ctx.block_locs[blk_id].is_fixed = true;
-						}
-					}
+                        if (is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
+                            place_ctx.block_locs[blk_id].is_fixed = true;
+                        }
+                    }
                 } else {
+                    for (const auto& sub_tile : tile_type->sub_tiles) {
+                        if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
+                            int st_low = sub_tile.capacity.low;
+                            int st_high = sub_tile.capacity.high;
 
-					for (const auto& sub_tile : tile_type->sub_tiles) {
-						if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
-							int st_low = sub_tile.capacity.low;
-							int st_high = sub_tile.capacity.high;
+                            for (int st = st_low; st <= st_high && placed == false; st++) {
+                                to_loc.sub_tile = st;
+                                if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
+                                    set_block_location(blk_id, to_loc);
+                                    placed = true;
 
-							for(int st = st_low; st <= st_high && placed == false; st++) {
-								to_loc.sub_tile = st;
-								if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
-									//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-									set_block_location(blk_id, to_loc);
-									placed = true;
+                                    if (is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
+                                        place_ctx.block_locs[blk_id].is_fixed = true;
+                                    }
+                                }
+                            }
+                        }
 
-									if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-										place_ctx.block_locs[blk_id].is_fixed = true;
-									}
-
-								}
-							}
-						}
-
-						if (placed) {
-							break;
-						}
-
-					}
+                        if (placed) {
+                            break;
+                        }
+                    }
                 }
             }
-	    }
-	}
+        }
+    }
 
-	return placed;
+    return placed;
 }
 
-/*static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
-	auto& place_ctx = g_vpr_ctx.mutable_placement();
-	auto& device_ctx = g_vpr_ctx.device();
-
-	std::vector<Region> regions = pr.get_partition_region();
-
-	t_pl_loc to;
-	bool placed = false;
-	int st_low, st_high;
-
-	for (unsigned int i = 0; i < regions.size() && placed == false; i++) {
-		vtr::Rect<int> rect = regions[i].get_region_rect();
-	    int xmin = rect.xmin();
-	    int ymin = rect.ymin();
-
-	    int xmax = rect.xmax();
-	    int ymax = rect.ymax();
-
-	    for (int x = xmin; x <= xmax && placed == false; x++) {
-	    	for(int y = ymin; y <= ymax && placed == false; y++) {
-	    		auto& tile = device_ctx.grid[x][y].type;
-	    		if (device_ctx.grid[x][y].width_offset != 0 || device_ctx.grid[x][y].height_offset != 0) {
-	    			continue;
-	    		}
-	    		if(!is_tile_compatible(tile, block_type)) {
-	    			continue;
-	    		}
-	    		int subtile;
-
-	    		if(regions[i].get_sub_tile() != NO_SUBTILE) {
-	    			subtile = regions[i].get_sub_tile();
-
-	    			to.x = x; to.y = y; to.sub_tile = subtile;
-					if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
-						//VTR_LOG("1. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-						placed = try_place_macro(to, pl_macro);
-
-						//if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-						//	place_ctx.block_locs[blk_id].is_fixed = true;
-						//}
-
-					}
-	    		} else {
-	    	        for (const auto& sub_tile : tile->sub_tiles) {
-	    	            if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
-	    	                st_low = sub_tile.capacity.low;
-	    	                st_high = sub_tile.capacity.high;
-
-	    		    		for(int st = st_low; st <= st_high && placed == false; st++) {
-	    		    			to.x = x; to.y = y; to.sub_tile = st;
-	    						if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
-	    							//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-	    							placed = try_place_macro(to, pl_macro);
-
-	    							//if(is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-	    							//	place_ctx.block_locs[blk_id].is_fixed = true;
-	    							//}
-
-	    						}
-	    		    		}
-	    	            }
-						if (placed) {
-							break;
-						}
-	    	        }
-
-	    		}
-	    	}
-	    }
-
-	}
-
-	return placed;
-}*/
-
 static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
-	const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-	auto& place_ctx = g_vpr_ctx.mutable_placement();
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-	std::vector<Region> regions = pr.get_partition_region();
+    std::vector<Region> regions = pr.get_partition_region();
 
-	bool placed = false;
+    bool placed = false;
 
-	t_pl_loc to_loc;
+    t_pl_loc to_loc;
 
-	for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
-		vtr::Rect<int> rect = regions[reg].get_region_rect();
+    for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
+        vtr::Rect<int> rect = regions[reg].get_region_rect();
 
-	    int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-	    int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
+        int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
+        int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
 
-	    for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
-
+        for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
             auto y_lower_iter = compressed_block_grid.grid[cx].begin();
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
-
                 int cy = (y_lower_iter + dy)->first;
 
                 to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
@@ -395,42 +219,36 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                 auto tile_type = grid[to_loc.x][to_loc.y].type;
 
                 if (regions[reg].get_sub_tile() != NO_SUBTILE) {
-	    			int subtile = regions[reg].get_sub_tile();
+                    int subtile = regions[reg].get_sub_tile();
 
-	    			to_loc.sub_tile = subtile;
-					if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-						//VTR_LOG("1. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-						placed = try_place_macro(to_loc, pl_macro);
-
-					}
+                    to_loc.sub_tile = subtile;
+                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                        placed = try_place_macro(to_loc, pl_macro);
+                    }
                 } else {
+                    for (const auto& sub_tile : tile_type->sub_tiles) {
+                        if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
+                            int st_low = sub_tile.capacity.low;
+                            int st_high = sub_tile.capacity.high;
 
-					for (const auto& sub_tile : tile_type->sub_tiles) {
-						if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
-							int st_low = sub_tile.capacity.low;
-							int st_high = sub_tile.capacity.high;
+                            for (int st = st_low; st <= st_high && placed == false; st++) {
+                                to_loc.sub_tile = st;
+                                if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                                    placed = try_place_macro(to_loc, pl_macro);
+                                }
+                            }
+                        }
 
-							for(int st = st_low; st <= st_high && placed == false; st++) {
-								to_loc.sub_tile = st;
-								if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-									//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
-									placed = try_place_macro(to_loc, pl_macro);
-
-								}
-							}
-						}
-
-						if (placed) {
-							break;
-						}
-
-					}
+                        if (placed) {
+                            break;
+                        }
+                    }
                 }
             }
-	    }
-	}
+        }
+    }
 
-	return placed;
+    return placed;
 }
 
 static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
@@ -541,45 +359,43 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
 
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
-		//Choose a random location for the head
-		t_pl_loc head_pos;
-		PartitionRegion pr;
-		bool found_legal_location = false;
+        //Choose a random location for the head
+        t_pl_loc head_pos;
+        PartitionRegion pr;
+        bool found_legal_location = false;
 
-		if(is_cluster_constrained(blk_id)) {
-			pr = floorplanning_ctx.cluster_constraints[blk_id];
-		} else {
-			Region reg;
-			reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-			reg.set_sub_tile(NO_SUBTILE);
-			pr.add_to_part_region(reg);
-		}
+        if (is_cluster_constrained(blk_id)) {
+            pr = floorplanning_ctx.cluster_constraints[blk_id];
+        } else {
+            Region reg;
+            reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+            reg.set_sub_tile(NO_SUBTILE);
+            pr.add_to_part_region(reg);
+        }
 
-		// Try to place the macro first, if can be placed - place them, otherwise try again
-		for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
+        // Try to place the macro first, if can be placed - place them, otherwise try again
+        for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
+            found_legal_location = get_legal_placement_loc(pr, head_pos, block_type);
 
-			found_legal_location = get_legal_placement_loc(pr, head_pos, block_type);
+            // Try to place the macro
+            if (found_legal_location) {
+                macro_placed = try_place_macro(head_pos, pl_macro);
+            }
 
-			// Try to place the macro
-			if (found_legal_location) {
-				macro_placed = try_place_macro(head_pos, pl_macro);
-			}
+        } // Finished all tries
 
-		} // Finished all tries
+        if (macro_placed == false) {
+            // if a macro still could not be placed after macros_max_num_tries times,
+            // go through the chip exhaustively to find a legal placement for the macro
+            // place the macro on the first location that is legal
+            // then set macro_placed = true;
+            // if there are no legal positions, error out
 
-		if (macro_placed == false) {
-			// if a macro still could not be placed after macros_max_num_tries times,
-			// go through the chip exhaustively to find a legal placement for the macro
-			// place the macro on the first location that is legal
-			// then set macro_placed = true;
-			// if there are no legal positions, error out
+            // Exhaustive placement of carry macros
+            macro_placed = try_all_part_region_locations_macro(pl_macro, pr, block_type);
 
-			// Exhaustive placement of carry macros
-			macro_placed = try_all_part_region_locations_macro(pl_macro, pr, block_type);
-
-			// If macro could not be placed after exhaustive placement, error out
-		}
-
+            // If macro could not be placed after exhaustive placement, error out
+        }
 
         if (macro_placed == false) {
             std::vector<std::string> tried_types;
@@ -601,7 +417,6 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
 static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type) {
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -624,58 +439,56 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
         t_pl_loc to;
         PartitionRegion pr;
 
-        if(is_cluster_constrained(blk_id)) {
-        	pr = floorplanning_ctx.cluster_constraints[blk_id];
+        if (is_cluster_constrained(blk_id)) {
+            pr = floorplanning_ctx.cluster_constraints[blk_id];
         } else {
-        	Region reg;
-        	reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-        	reg.set_sub_tile(NO_SUBTILE);
-        	pr.add_to_part_region(reg);
+            Region reg;
+            reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+            reg.set_sub_tile(NO_SUBTILE);
+            pr.add_to_part_region(reg);
         }
         bool found_legal_place = false;
         bool floorplanning_good = false;
 
         for (int itry = 0; itry < blocks_max_num_tries && placed == false; itry++) {
-        	found_legal_place = get_legal_placement_loc(pr, to, logical_block);
+            found_legal_place = get_legal_placement_loc(pr, to, logical_block);
 
-        	if(found_legal_place) {
-        		floorplanning_good = cluster_floorplanning_legal(blk_id, to);
-				if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID && floorplanning_good) {
-					set_block_location(blk_id, to);
-					placed = true;
+            if (found_legal_place) {
+                floorplanning_good = cluster_floorplanning_legal(blk_id, to);
+                if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID && floorplanning_good) {
+                    set_block_location(blk_id, to);
+                    placed = true;
 
-					if(is_io_type(pick_physical_type(logical_block)) && pad_loc_type == RANDOM) {
-						place_ctx.block_locs[blk_id].is_fixed = true;
-					}
+                    if (is_io_type(pick_physical_type(logical_block)) && pad_loc_type == RANDOM) {
+                        place_ctx.block_locs[blk_id].is_fixed = true;
+                    }
 
-					break;
-				}
-        	}
+                    break;
+                }
+            }
 
         } // Finished all tries
 
         if (placed == false) {
-        	/*
-        	 * If a block could still not be placed after blocks_max_num_tries attempts,
-        	 * go through the region exhaustively to find a legal placement for the block.
-        	 * Place the blocks on the first location that is legal and available then
-        	 * set placed = true;
-        	 * If there are no legal positions, error out
-        	 */
-        	placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type);
+            /*
+             * If a block could still not be placed after blocks_max_num_tries attempts,
+             * go through the region exhaustively to find a legal placement for the block.
+             * Place the blocks on the first location that is legal and available then
+             * set placed = true;
+             * If there are no legal positions, error out
+             */
+            placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type);
 
-
-        	// If block could not be placed after exhaustive placement, error out
-        	if (placed == false) {
+            // If block could not be placed after exhaustive placement, error out
+            if (placed == false) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                                 "Initial placement failed.\n"
                                 "Could not place  block %s (#%zu); not enough free locations of type(s) %s.\n",
                                 cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name);
-        	}
+            }
 
-        	VTR_LOG("Placed by exhaustion \n");
+            VTR_LOG("Placed by exhaustion \n");
         }
-
     }
 }
 
@@ -780,21 +593,12 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
         } else {
             place_a_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type);
         }
-
     }
 }
 
 void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
-    //auto& place_ctx = g_vpr_ctx.placement();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    /*
-     * echo the compressed grid
-     */
-    /*if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPRESSED_GRIDS)) {
-    	echo_compressed_grids(getEchoFileName(E_ECHO_COMPRESSED_GRIDS), place_ctx.compressed_block_grids);
-    }*/
 
     /* Go through cluster blocks to calculate the tightest placement
      * floorplan constraint for each constrained block
@@ -843,27 +647,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     //Place the blocks in sorted order
     place_the_blocks(sorted_blocks, block_scores, pad_loc_type);
-
-    /*VTR_LOG("Printing initial placement\n");
-    VTR_LOG("Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
-    VTR_LOG("#block name\tx\ty\tsubblk\tblock number\n");
-    VTR_LOG("#----------\t--\t--\t------\t------------\n");
-
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-    	VTR_LOG( "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
-        if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
-        	VTR_LOG( "\t");
-
-        VTR_LOG( "%d\t%d\t%d", place_ctx.block_locs[blk_id].loc.x, place_ctx.block_locs[blk_id].loc.y, place_ctx.block_locs[blk_id].loc.sub_tile);
-        VTR_LOG( "\t#%zu\n", size_t(blk_id));
-    }*/
-
-    /*
-     * echo the compressed grid again after initial placement
-     */
-    /*if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_COMPRESSED_GRIDS_2)) {
-    	echo_compressed_grids(getEchoFileName(E_ECHO_COMPRESSED_GRIDS_2), place_ctx.compressed_block_grids);
-    }*/
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
