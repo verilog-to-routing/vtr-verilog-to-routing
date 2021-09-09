@@ -139,7 +139,7 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 	bool placed = false;
 	int st_low, st_high;
 
-	for (unsigned int i = 0; i < regions.size(); i++) {
+	for (unsigned int i = 0; i < regions.size() && placed == false; i++) {
 		vtr::Rect<int> rect = regions[i].get_region_rect();
 	    int xmin = rect.xmin();
 	    int ymin = rect.ymin();
@@ -147,8 +147,8 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 	    int xmax = rect.xmax();
 	    int ymax = rect.ymax();
 
-	    for (int x = xmin; x <= xmax; x++) {
-	    	for(int y = ymin; y <= ymax; y++) {
+	    for (int x = xmin; x <= xmax && placed == false; x++) {
+	    	for(int y = ymin; y <= ymax && placed == false; y++) {
 	    		auto& tile = device_ctx.grid[x][y].type;
 	    		if (device_ctx.grid[x][y].width_offset != 0 || device_ctx.grid[x][y].height_offset != 0) {
 	    			continue;
@@ -171,9 +171,6 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 							place_ctx.block_locs[blk_id].is_fixed = true;
 						}
 
-						if (placed) {
-							break;
-						}
 					}
 	    		} else {
 	    	        for (const auto& sub_tile : tile->sub_tiles) {
@@ -181,7 +178,7 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 	    	                st_low = sub_tile.capacity.low;
 	    	                st_high = sub_tile.capacity.high;
 
-	    		    		for(int st = st_low; st <= st_high; st++) {
+	    		    		for(int st = st_low; st <= st_high && placed == false; st++) {
 	    		    			to.x = x; to.y = y; to.sub_tile = st;
 	    						if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
 	    							//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
@@ -192,9 +189,6 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 	    								place_ctx.block_locs[blk_id].is_fixed = true;
 	    							}
 
-	    							if (placed) {
-	    								break;
-	    							}
 	    						}
 	    		    		}
 	    	            }
@@ -204,19 +198,8 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 	    	        }
 
 	    		}
-
-	    		if(placed) {
-	    			break;
-	    		}
-	    	}
-	    	if (placed) {
-	    		break;
 	    	}
 	    }
-	    if (placed) {
-	    	break;
-	    }
-
 	}
 
 	return placed;
@@ -313,7 +296,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	bool placed = false;
 	int st_low, st_high;
 
-	for (unsigned int i = 0; i < regions.size(); i++) {
+	for (unsigned int i = 0; i < regions.size() && placed == false; i++) {
 		vtr::Rect<int> rect = regions[i].get_region_rect();
 	    int xmin = rect.xmin();
 	    int ymin = rect.ymin();
@@ -321,8 +304,8 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	    int xmax = rect.xmax();
 	    int ymax = rect.ymax();
 
-	    for (int x = xmin; x <= xmax; x++) {
-	    	for(int y = ymin; y <= ymax; y++) {
+	    for (int x = xmin; x <= xmax && placed == false; x++) {
+	    	for(int y = ymin; y <= ymax && placed == false; y++) {
 	    		auto& tile = device_ctx.grid[x][y].type;
 	    		if (device_ctx.grid[x][y].width_offset != 0 || device_ctx.grid[x][y].height_offset != 0) {
 	    			continue;
@@ -344,9 +327,6 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 						//	place_ctx.block_locs[blk_id].is_fixed = true;
 						//}
 
-						if (placed) {
-							break;
-						}
 					}
 	    		} else {
 	    	        for (const auto& sub_tile : tile->sub_tiles) {
@@ -354,7 +334,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	    	                st_low = sub_tile.capacity.low;
 	    	                st_high = sub_tile.capacity.high;
 
-	    		    		for(int st = st_low; st <= st_high; st++) {
+	    		    		for(int st = st_low; st <= st_high && placed == false; st++) {
 	    		    			to.x = x; to.y = y; to.sub_tile = st;
 	    						if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
 	    							//VTR_LOG("2. Exhaustive loc x: %d, y: %d, subtile: %d\n", to.x, to.y, to.sub_tile);
@@ -364,9 +344,6 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	    							//	place_ctx.block_locs[blk_id].is_fixed = true;
 	    							//}
 
-	    							if (placed) {
-	    								break;
-	    							}
 	    						}
 	    		    		}
 	    	            }
@@ -376,17 +353,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
 	    	        }
 
 	    		}
-
-	    		if(placed) {
-	    			break;
-	    		}
 	    	}
-	    	if (placed) {
-	    		break;
-	    	}
-	    }
-	    if (placed) {
-	    	break;
 	    }
 
 	}
