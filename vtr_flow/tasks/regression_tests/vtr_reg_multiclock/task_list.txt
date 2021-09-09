@@ -1,4 +1,0 @@
-func_multiclock/once
-func_multiclock/iterative
-func_multiclock/vanilla
-func_multiclock/blanket

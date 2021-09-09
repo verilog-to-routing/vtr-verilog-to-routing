@@ -1,9 +1,0 @@
-#Pass requirements specific to the VTR benchmarks
-#
-#These are standard post-packed blocks used with 
-#standard VTR architectures, and the VTR benchmarks
-
-num_clb;Range(0.90,1.10)
-num_io;Range(0.95,1.05)
-num_memories;Range(0.9,1.10)
-num_mult;Range(0.9,1.10)

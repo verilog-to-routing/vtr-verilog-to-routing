@@ -1,8 +1,0 @@
-(\d+)(.*)sec (.*) ns  (.*) \(.*\n.*\n.*\n\s+IPIN: (.*) %\n\s+OPIN: (.*) %\n\s+CHANX: (.*) %\n\s+CHANY: (.*) %
-time (s);
-critpath (ns);
-congestion;log
-ipin cong contribution;percent
-opin cong contribution;percent
-chanx cong contribution;percent
-chany cong contribution;percent

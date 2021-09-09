@@ -1,3 +1,0 @@
-critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
-vpr_status;output.txt;vpr_status=(.*)
-error;output.txt;error=(.*)

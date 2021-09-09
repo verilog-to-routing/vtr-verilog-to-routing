@@ -1,5 +1,0 @@
-%include "vpr_standard.txt"
-
-#General Routing Metrics
-num_global_nets;vpr.out;Number of global nets: (.*)
-num_routed_nets;vpr.out;Number of routed nets \(nonglobal\): (.*)

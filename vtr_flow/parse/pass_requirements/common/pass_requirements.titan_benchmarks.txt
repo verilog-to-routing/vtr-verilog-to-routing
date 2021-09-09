@@ -1,8 +1,0 @@
-#Pass requirements specific to the Titan benchmarks
-
-num_io;Range(0.95,1.05)
-num_LAB;Range(0.95,1.05)
-num_DSP;Range(0.95,1.05)
-num_M9K;Range(0.95,1.05)
-num_M144K;Range(0.95,1.05)
-num_PLL;Range(0.95,1.05)

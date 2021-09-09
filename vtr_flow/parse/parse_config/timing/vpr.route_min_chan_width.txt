@@ -1,1 +1,0 @@
-%include "../common/vpr.route_min_chan_width.txt"

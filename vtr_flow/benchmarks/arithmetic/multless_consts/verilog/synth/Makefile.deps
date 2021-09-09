@@ -1,1 +1,0 @@
-synth_main.o: synth.cpp synth_main.cpp bhm.cpp

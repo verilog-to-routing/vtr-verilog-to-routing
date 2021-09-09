@@ -1,5 +1,0 @@
-#VTR benchmark packing metrics
-num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
-num_io;vpr.out;Netlist inputs pins:\s*(\d+)
-num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
-num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)

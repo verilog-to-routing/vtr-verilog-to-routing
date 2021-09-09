@@ -1,9 +1,0 @@
-This directory contains parse configuration files used to extract metrics from
-VTR flow runs.
-
-The .txt files in this directory are suitable for use with the VTR 'Task'
-infrastructure (i.e. as parse_files in the task's config.txt).
-
-Note that to avoid duplication many common metrics have been
-factored out into sub-files under the 'common' and 'timing' directories.
-They are then included into the relveant files using '%include' directives.

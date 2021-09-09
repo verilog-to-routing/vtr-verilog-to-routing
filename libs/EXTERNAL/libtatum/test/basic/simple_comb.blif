@@ -1,9 +1,0 @@
-.model top
-.inputs i_a i_b
-.outputs o_c
-
-#Combinational logic
-.names i_a i_b o_c
-11 1
-
-.end

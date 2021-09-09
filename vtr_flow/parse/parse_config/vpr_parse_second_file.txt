@@ -1,1 +1,0 @@
-%include "vpr_fixed_chan_width.txt"

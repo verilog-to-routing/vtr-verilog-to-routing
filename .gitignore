@@ -1,113 +1,41 @@
-#
-#Executables and generated files
-#
-*.exe
-
-#Install
-bin/
-
-#
-# Cmake build system
-#
-CMakeCache.txt
-CMakeFiles
-build
-
-#
-#VTR Tasks
-#
-vtr_flow/tasks/**/run[0-9]*
-vtr_flow/tasks/**/run_latest
-vtr_flow/tasks/**/latest
-vtr_flow/tasks/**/qor_geomean.txt
-vtr_flow/tasks/**/task_summary/
-quick_test/*
-
-#
-# Titan benchmarks
-#
-#   We ignore the Titan netlists because of thier large size, and the
-#   Titan architectures since they need to be kept in sync with the
-#   netlists.
-#
-titan_release*.tar.gz
-vtr_flow/arch/titan/*.xml
-vtr_flow/benchmarks/titan_blif/*.blif
-vtr_flow/benchmarks/titan_other_blif/*.blif
-
-
-#
-# ISPD benchmarks
-#
-#   We ignore the ISPD netlists because of thier large size.
-#
-ispd_benchmarks_vtr*.tar.gz
-vtr_flow/benchmarks/ispd_blif/*.blif
-
-#
-# Cloud9 Directory
-#
-.c9/
-.buildconfig
-
-#
-# Log Files
-#
-*.log
-*.log.sh
-vgcore*
-
-#
-# VPR Result files
-#
-*.net
-*.place
-*.route
-*.out
-
-#
-#Odin test outputs
-#
-ODIN_II/log
-ODIN_II/regression_test/run[0-9]*
-ODIN_II/temp/*
-ODIN_II/usefull_tools/**/run[0-9]*
-ODIN_II/usefull_tools/**/track_completed
-#
-#C/C++
-#
+# Prerequisites
 *.d
+
+# Compiled Object files
+*.slo
+*.lo
 *.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
 *.a
+*.lib
 
-#
-#Python
-#
-*.pyc
+# Executables
+*.exe
+*.out
+*.app
 
-#
-#Vim
-#
-[._]*.s[a-w][a-z]
-[._]s[a-w][a-z]
-*.un~
-Session.vim
-.netrwhist
-*~
+# Build Directories
+cmake-build*
 
-#
-# LibreOffice
-#
-\.~lock*\#
+# Vim
+.swp
 
-#
-#Ctags
-#
-.tags*
-tags
-
-#
-# VS Code
-#
-.vscode
-.history
+# IDE Files and Folders
+.idea

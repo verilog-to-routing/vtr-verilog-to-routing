@@ -1,5 +1,0 @@
-#Ignore any generated report files
-*.rpt
-
-#Ignore generated RR graph file
-test_fasm_rrgraph.xml

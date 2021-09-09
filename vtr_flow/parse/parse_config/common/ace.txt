@@ -1,5 +1,0 @@
-#ACE Run-time Metrics
-ace_time;ace.out;ACE took (.*) seconds
-
-#Memory usage
-max_ace_mem;ace.out;Maximum resident set size \(kbytes\): (\d+)

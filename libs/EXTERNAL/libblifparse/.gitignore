@@ -1,9 +1,0 @@
-build
-blifparse_test
-libblifparse.a
-obj/
-src/blif_lexer.gen.c
-src/blif_lexer.gen.h
-src/blif_parser.gen.c
-src/blif_parser.gen.h
-src/stack.hh

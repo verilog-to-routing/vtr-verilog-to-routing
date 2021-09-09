@@ -1,7 +1,0 @@
-%include "vpr_standard.txt"
-
-#Power related
-total_power;*.power;^Total\s+(.*?)\s+
-routing_power_perc;*.power;^\s+Routing\s+\S+\s+(.*?)\s+
-clock_power_perc;*.power;^\s+Clock\s+\S+\s+(.*?)\s+
-tile_power_perc;*.power;^\s+PB Types\s+\S+\s+(.*?)\s+

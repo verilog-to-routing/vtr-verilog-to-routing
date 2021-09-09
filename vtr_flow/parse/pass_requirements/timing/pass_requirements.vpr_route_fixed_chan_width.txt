@@ -1,9 +1,0 @@
-#VPR metrics at fixed channel width with timing
-%include "../common/pass_requirements.vpr_route_fixed_chan_width.txt"
-
-#Timing metrics
-critical_path_delay;Range(0.80,1.40)
-setup_TNS;Range(0.80,1.40)
-setup_WNS;Range(0.80,1.40)
-#hold_TNS;Range(0.05,20.00)
-#hold_WNS;Range(0.05,20.00)

@@ -1,1 +1,0 @@
-regression_tests/vtr_reg_valgrind_small/valgrind_small

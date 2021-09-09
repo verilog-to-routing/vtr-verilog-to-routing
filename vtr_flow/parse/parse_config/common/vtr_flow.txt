@@ -1,3 +1,0 @@
-#Flow Run-time Metrics
-vtr_flow_elapsed_time;vtr_flow.out;.* \(took (.*) seconds\)
-error;output.txt;error=(.*)

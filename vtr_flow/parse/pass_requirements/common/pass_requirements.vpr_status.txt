@@ -1,9 +1,0 @@
-#Common VPR status metrics
-vpr_status;Equal()
-error;Equal()
-
-#Peak memory
-#We set a 100MiB minimum threshold since the memory 
-#alloctor (e.g. TBB vs glibc) can cause a difference
-#particularly on small benchmarks
-max_vpr_mem;RangeAbs(0.8,1.2,102400)

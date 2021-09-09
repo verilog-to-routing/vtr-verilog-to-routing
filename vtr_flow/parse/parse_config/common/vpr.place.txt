@@ -1,5 +1,0 @@
-#VPR Place Metrics
-placed_wirelength_est;vpr.out;BB estimate of min-dist \(placement\) wire length: (\d+)
-
-#VPR Run-time Metrics
-place_time;vpr.out;^#*\s*Placement took (.*) seconds

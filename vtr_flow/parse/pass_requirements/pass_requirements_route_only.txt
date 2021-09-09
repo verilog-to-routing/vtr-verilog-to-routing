@@ -1,7 +1,0 @@
-%include "common/pass_requirements.vpr_status.txt"
-
-routed_wirelength;Equal()
-crit_path_route_success_iteration;Equal()
-critical_path_delay;Equal()
-setup_TNS;Equal()
-setup_WNS;Equal()

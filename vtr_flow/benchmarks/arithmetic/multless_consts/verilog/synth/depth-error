@@ -1,1 +1,0 @@
-./synth -v 6  -b 18 -maxdepth 0  -nofs -expensive -aux 6443 123613 125563 190415 203059

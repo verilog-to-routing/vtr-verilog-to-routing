@@ -1,2 +1,0 @@
-#VPR metrics at minimum channel width with timing
-%include "../common/pass_requirements.vpr_route_min_chan_width.txt"

@@ -1,5 +1,0 @@
-%include "common/pass_requirements.vpr_status.txt"
-%include "timing/pass_requirements.vpr_pack_place.txt"
-%include "timing/pass_requirements.vpr_route_fixed_chan_width.txt"
-
-%include "common/pass_requirements.vtr_benchmarks.txt"

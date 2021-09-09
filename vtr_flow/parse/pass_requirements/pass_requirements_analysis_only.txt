@@ -1,5 +1,0 @@
-%include "common/pass_requirements.vpr_status.txt"
-
-critical_path_delay;Equal()
-setup_TNS;Equal()
-setup_WNS;Equal()
