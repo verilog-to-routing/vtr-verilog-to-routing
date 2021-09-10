@@ -23,7 +23,6 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_has
 void print_all_nets ( busvec* buses, const char* filename );
 
 bool is_feeder_onelut ( t_node* node );
-void remove_node ( t_node* node, t_node** nodes, int original_num_nodes );
 
 //============================================================================================
 //============================================================================================
