@@ -8,7 +8,7 @@
  * @file
  * @brief A utility container that can be used to identify VTR execution errors.
  * 
- * The recommended usage is to store error information within this container during an error event and handling the error with exceptions. If the exception is not handled (exception is not caught), this will result in the termination of the program.
+ * The recommended usage is to store information in this container about the error during an error event and and then throwing an exception with the container. If the exception is not handled (exception is not caught), this will result in the termination of the program.
  * 
  * Error information can be displayed using the information stored within this container.
  * 
