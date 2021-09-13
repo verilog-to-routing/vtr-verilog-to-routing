@@ -760,9 +760,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const auto& rr_graph = (*rr_graph_);
         rr_nodes_->make_room_for_node(RRNodeId(id));
         auto node = (*rr_nodes_)[id];
+        RRNodeId node_id = node.id();
 
         node.set_capacity(capacity);
-        node.set_type(from_uxsd_node_type(type));
+        rr_graph_builder_->set_node_type(node_id, from_uxsd_node_type(type));
 
         switch (rr_graph.node_type(node.id())) {
             case CHANX:

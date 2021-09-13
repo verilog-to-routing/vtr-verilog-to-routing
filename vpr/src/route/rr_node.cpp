@@ -51,10 +51,6 @@ bool t_rr_node::validate() const {
     return true;
 }
 
-void t_rr_node::set_type(t_rr_type new_type) {
-    storage_->set_node_type(id_, new_type);
-}
-
 /*
  * Pass in two coordinate variables describing location of node.
  * They do not have to be in any particular order.

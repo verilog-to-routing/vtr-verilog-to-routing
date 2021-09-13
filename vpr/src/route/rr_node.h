@@ -108,8 +108,6 @@ class t_rr_node {
     bool validate() const;
 
   public: //Mutators
-    void set_type(t_rr_type new_type);
-
     void set_coordinates(short x1, short y1, short x2, short y2);
 
     void set_capacity(short);

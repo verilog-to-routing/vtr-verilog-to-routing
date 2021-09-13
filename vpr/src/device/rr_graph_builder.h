@@ -37,6 +37,8 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
+    /** @brief Set the type of a node with a given valid id */
+    void set_node_type(RRNodeId id, t_rr_type type);
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
