@@ -992,7 +992,7 @@ void RRGraph::set_node_class_num(const RRNodeId& node, const short& class_id) {
 
 void RRGraph::set_node_cost_index(const RRNodeId& node, const RRIndexedDataId& cost_index) {
     VTR_ASSERT(valid_node_id(node));
-    node_cost_indices_[node] = (size_t) cost_index;
+    node_cost_indices_[node] = (size_t)cost_index;
 }
 
 void RRGraph::set_node_direction(const RRNodeId& node, const Direction& direction) {

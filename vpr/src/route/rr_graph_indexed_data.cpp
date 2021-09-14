@@ -425,7 +425,7 @@ static void load_rr_indexed_data_T_values() {
                 // multiplication by the second term by 0.5 is the result of the Rnode being distributed halfway along a
                 // wire segment's length times the total capacitance.
                 rr_indexed_data[RRIndexedDataId(cost_index)].T_linear = Tsw + Rsw * (Cinternalsw + Cnode)
-                                                       + 0.5 * Rnode * (Cnode + Cinternalsw);
+                                                                        + 0.5 * Rnode * (Cnode + Cinternalsw);
                 rr_indexed_data[RRIndexedDataId(cost_index)].T_quadratic = 0.;
                 rr_indexed_data[RRIndexedDataId(cost_index)].C_load = 0.;
             } else { /* Pass transistor, does not have an internal capacitance*/
@@ -435,7 +435,7 @@ static void load_rr_indexed_data_T_values() {
 
                 rr_indexed_data[RRIndexedDataId(cost_index)].T_linear = Tsw + 0.5 * Rsw * Cnode;
                 rr_indexed_data[RRIndexedDataId(cost_index)].T_quadratic = (Rsw + Rnode) * 0.5
-                                                          * Cnode;
+                                                                           * Cnode;
             }
         }
     }
