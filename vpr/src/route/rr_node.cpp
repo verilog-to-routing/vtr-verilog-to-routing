@@ -79,7 +79,7 @@ void t_rr_node::set_class_num(short new_class_num) {
     storage_->set_node_class_num(id_, new_class_num);
 }
 
-void t_rr_node::set_cost_index(size_t new_cost_index) {
+void t_rr_node::set_cost_index(RRIndexedDataId new_cost_index) {
     storage_->set_node_cost_index(id_, new_cost_index);
 }
 

@@ -37,7 +37,7 @@ class RRGraphView {
     /* See detailed comments about the data structures in the internal data storage section of this file */
     RRGraphView(const t_rr_graph_storage& node_storage,
                 const RRSpatialLookup& node_lookup,
-                const std::vector<t_rr_indexed_data>& rr_indexed_data,
+                const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const std::vector<t_segment_inf>& rr_segments);
 
     /* Disable copy constructors and copy assignment operator
@@ -207,7 +207,7 @@ class RRGraphView {
             arrow = "";
         }
         if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
-            int cost_index = node_cost_index(node);
+            RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
             coordinate_string += rr_segments_[seg_index].name;                   //Write the segment name
             coordinate_string += " length:" + std::to_string(node_length(node)); //add the length of the segment
@@ -245,7 +245,7 @@ class RRGraphView {
     }
 
     /** @brief Get the cost index of a routing resource node. This function is inlined for runtime optimization. */
-    inline short node_cost_index(RRNodeId node) const {
+    RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
     }
 
@@ -263,7 +263,7 @@ class RRGraphView {
     const RRSpatialLookup& node_lookup_;
 
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
-    const std::vector<t_rr_indexed_data>& rr_indexed_data_;
+    const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
     /* Segment info for rr nodes */
     const std::vector<t_segment_inf>& rr_segments_;

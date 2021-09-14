@@ -20,7 +20,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
      * are counted as full-length segments (e.g. length 4 even if the last 2    *
      * units of wire were chopped off by the chip edge).                        */
 
-    int length, max_segment_length, cost_index;
+    int length, max_segment_length;
+    RRIndexedDataId cost_index;
     int *seg_occ_by_length, *seg_cap_by_length; /* [0..max_segment_length] */
     int *seg_occ_by_type, *seg_cap_by_type;     /* [0..num_segment-1]      */
     float utilization;

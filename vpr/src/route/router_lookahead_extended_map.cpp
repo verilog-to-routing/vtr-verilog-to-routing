@@ -586,7 +586,7 @@ float ExtendedMapLookahead::get_expected_cost(
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         // This is to return only the cost between the IPIN and SINK. No need to
         // query the cost map, as the routing of this connection is almost done.
-        return device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost;
+        return device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost;
     } else { /* Change this if you want to investigate route-throughs */
         return 0.;
     }

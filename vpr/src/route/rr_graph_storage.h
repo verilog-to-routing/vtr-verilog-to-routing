@@ -185,8 +185,8 @@ class t_rr_graph_storage {
     short node_capacity(RRNodeId id) const {
         return node_storage_[id].capacity_;
     }
-    short node_cost_index(RRNodeId id) const {
-        return node_storage_[id].cost_index_;
+    RRIndexedDataId node_cost_index(RRNodeId id) const {
+        return RRIndexedDataId(node_storage_[id].cost_index_);
     }
 
     Direction node_direction(RRNodeId id) const {
@@ -472,7 +472,7 @@ class t_rr_graph_storage {
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
-    void set_node_cost_index(RRNodeId, size_t new_cost_index);
+    void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
     void set_node_rc_index(RRNodeId, short new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
@@ -752,8 +752,8 @@ class t_rr_graph_view {
     short node_capacity(RRNodeId id) const {
         return node_storage_[id].capacity_;
     }
-    short node_cost_index(RRNodeId id) const {
-        return node_storage_[id].cost_index_;
+    RRIndexedDataId node_cost_index(RRNodeId id) const {
+        return RRIndexedDataId(node_storage_[id].cost_index_);
     }
 
     Direction node_direction(RRNodeId id) const {

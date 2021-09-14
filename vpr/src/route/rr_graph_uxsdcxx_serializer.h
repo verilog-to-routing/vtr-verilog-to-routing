@@ -262,7 +262,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         RRGraphBuilder* rr_graph_builder,
         RRGraphView* rr_graph,
         std::vector<t_rr_switch_inf>* rr_switch_inf,
-        std::vector<t_rr_indexed_data>* rr_indexed_data,
+        vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
         const std::vector<t_segment_inf>& segment_inf,
@@ -703,12 +703,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         auto node = (*rr_nodes_)[inode];
         if (GRAPH_GLOBAL == graph_type_) {
-            node.set_cost_index(0);
+            node.set_cost_index(RRIndexedDataId(0));
         } else if (rr_graph.node_type(node.id()) == CHANX) {
-            node.set_cost_index(CHANX_COST_INDEX_START + segment_id);
+            node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + segment_id));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == CHANY) {
-            node.set_cost_index(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id);
+            node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
         return inode;
@@ -770,16 +770,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case CHANY:
                 break;
             case SOURCE:
-                node.set_cost_index(SOURCE_COST_INDEX);
+                node.set_cost_index(RRIndexedDataId(SOURCE_COST_INDEX));
                 break;
             case SINK:
-                node.set_cost_index(SINK_COST_INDEX);
+                node.set_cost_index(RRIndexedDataId(SINK_COST_INDEX));
                 break;
             case OPIN:
-                node.set_cost_index(OPIN_COST_INDEX);
+                node.set_cost_index(RRIndexedDataId(OPIN_COST_INDEX));
                 break;
             case IPIN:
-                node.set_cost_index(IPIN_COST_INDEX);
+                node.set_cost_index(RRIndexedDataId(IPIN_COST_INDEX));
                 break;
             default:
                 report_error(
@@ -1550,7 +1550,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {
-            (*rr_indexed_data_)[i].seg_index = seg_index_[i];
+            (*rr_indexed_data_)[RRIndexedDataId(i)].seg_index = seg_index_[RRIndexedDataId(i)];
         }
 
         VTR_ASSERT(read_rr_graph_filename_ != nullptr);
@@ -1839,7 +1839,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     // Temporary storage
-    std::vector<int> seg_index_;
+    vtr::vector<RRIndexedDataId, short> seg_index_;
     std::string temp_string_;
 
     // Constant mapping which is frequently used
@@ -1852,7 +1852,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     RRGraphBuilder* rr_graph_builder_;
     RRGraphView* rr_graph_;
     std::vector<t_rr_switch_inf>* rr_switch_inf_;
-    std::vector<t_rr_indexed_data>* rr_indexed_data_;
+    vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
 

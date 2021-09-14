@@ -151,7 +151,7 @@ class PQ_Entry {
         this->congestion_upstream = parent_congestion_upstream;
         this->R_upstream = parent_R_upstream;
         if (!starting_node) {
-            int cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
+            auto cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
             //this->delay += rr_graph.node_C(RRNodeId(set_rr_node)) * (g_rr_switch_inf[switch_ind].R + 0.5*rr_graph.node_R(RRNodeId(set_rr_node))) +
             //              g_rr_switch_inf[switch_ind].Tdel;
 
@@ -244,7 +244,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
         std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
         return delay_cost + cong_cost;
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+        return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return (0.);
     }
@@ -336,7 +336,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
-        int from_cost_index = temp_rr_graph.node_cost_index(from_node);
+        auto from_cost_index = temp_rr_graph.node_cost_index(from_node);
         int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
 
         VTR_ASSERT(from_seg_index >= 0);
@@ -356,7 +356,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                             describe_rr_node(size_t(from_node)).c_str())
                                 .c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
-        return std::make_pair(0., device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+        return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);
     }
@@ -479,8 +479,8 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 auto rr_type = temp_rr_graph.node_type(rr_node);
                 if (rr_type != chan_type) continue;
 
-                int cost_index = temp_rr_graph.node_cost_index(rr_node);
-                VTR_ASSERT(cost_index != OPEN);
+                auto cost_index = temp_rr_graph.node_cost_index(rr_node);
+                VTR_ASSERT(cost_index != RRIndexedDataId(OPEN));
 
                 int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
@@ -568,7 +568,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
         VTR_ASSERT(rr_graph.node_type(node_id) == rr_type);
 
         Direction node_direction = rr_graph.node_direction(node_id);
-        int node_cost_ind = rr_graph.node_cost_index(node_id);
+        auto node_cost_ind = rr_graph.node_cost_index(node_id);
         int node_seg_ind = device_ctx.rr_indexed_data[node_cost_ind].seg_index;
 
         if ((node_direction == direction || node_direction == Direction::BIDIR) && node_seg_ind == seg_index) {

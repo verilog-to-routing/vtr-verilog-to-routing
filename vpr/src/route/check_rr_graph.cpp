@@ -295,7 +295,8 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
     t_rr_type rr_type;
     t_physical_tile_type_ptr type;
-    int nodes_per_chan, tracks_per_node, num_edges, cost_index;
+    int nodes_per_chan, tracks_per_node, num_edges;
+    RRIndexedDataId cost_index;
     float C, R;
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
@@ -326,7 +327,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                   "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
     }
 
-    if (cost_index < 0 || cost_index >= (int)device_ctx.rr_indexed_data.size()) {
+    if ((size_t) cost_index < 0 || (size_t) cost_index >= (int)device_ctx.rr_indexed_data.size()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_rr_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
     }
