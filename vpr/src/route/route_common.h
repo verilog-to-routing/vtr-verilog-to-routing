@@ -65,7 +65,7 @@ inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
 /* Returns the congestion cost of using this rr_node,
  * *ignoring* non-configurable edges */
 inline float get_single_rr_cong_cost(int inode, float pres_fac) {
-	VTR_LOG("In get_single_rr_cong_cost\n");
+    VTR_LOG("In get_single_rr_cong_cost\n");
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
