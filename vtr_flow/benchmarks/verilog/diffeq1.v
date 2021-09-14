@@ -20,7 +20,7 @@
        reg looping; 
  
 assign temp = u_var * DXport;
-    always @(posedge clk or posedge reset)
+    always @(posedge clk)
     begin
 		if (reset == 1'b1)
 		begin

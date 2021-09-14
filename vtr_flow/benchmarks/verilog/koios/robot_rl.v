@@ -11,12 +11,16 @@ Problem statement: There are 12 robots on a board with 12 regions. The aim is fo
 Q learning accelerator generated using HDL coder (Simulink / MATLAB)
 4 actions
 12 states
+
 The design consists of 2 policy generators. 
 A random number generator is used as a ploicy generator during training .(mode = 0)
 A policy generator where the action is based on the Maximum value of Q is used during inference. (mode = 1)
+
+
 Misc: 
 ufix6_En4 : 6 bit fixed point number --> 2 bits for integer, 4 bits for the fractional part.
 alpha = gamma = 0.5
+
 */
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -137,19 +141,26 @@ module Max
   wire  [31:0] in0 [0:3];  // int32 [4]
   wire  [31:0] Max_stage1_val [0:1];  // int32 [2]
   wire  [31:0] Max_stage2_val;  // int32
+
+
   assign in0[0] = in0_0;
   assign in0[1] = in0_1;
   assign in0[2] = in0_2;
   assign in0[3] = in0_3;
+
   // ---- Tree max implementation ----
   // ---- Tree max stage 1 ----
   assign Max_stage1_val[0] = (in0[0] >= in0[1] ? in0[0] :
               in0[1]);
   assign Max_stage1_val[1] = (in0[2] >= in0[3] ? in0[2] :
               in0[3]);
+
+
+
   // ---- Tree max stage 2 ----
   assign Max_stage2_val = (Max_stage1_val[0] >= Max_stage1_val[1] ? Max_stage1_val[0] :
               Max_stage1_val[1]);
+
 */
 
 //wire  [31:0] in0[0:3];  // int32 [4]
@@ -224,6 +235,7 @@ module SimpleDualPortRAM_generic
     ram[2] = 32'h00000000;
     ram[1] = 32'h00000000;
     ram[0] = 32'h00000000;
+
     data_int = 32'h00000000;
   end
 */
@@ -5076,5 +5088,6 @@ robot_high_level robot_11 ( 4'd10, clk, reset, mode, Q_11);
 robot_high_level robot_12 ( 4'd11, clk, reset, mode, Q_12);
 
 endmodule
+
 
 
