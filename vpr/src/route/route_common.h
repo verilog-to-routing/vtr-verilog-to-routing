@@ -65,7 +65,6 @@ inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
 /* Returns the congestion cost of using this rr_node,
  * *ignoring* non-configurable edges */
 inline float get_single_rr_cong_cost(int inode, float pres_fac) {
-    VTR_LOG("In get_single_rr_cong_cost\n");
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -83,15 +82,9 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
 
     float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
 
-    VTR_LOG("Cost is %d \n", cost);
-    VTR_LOG("Calculated cost is %d \n", get_single_rr_cong_base_cost(inode) * get_single_rr_cong_base_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac));
-
     VTR_ASSERT_DEBUG_MSG(
         cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_base_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac),
         "Single rr node congestion cost is inaccurate");
-
-    VTR_LOG("After assertion - Cost is %d \n", cost);
-    VTR_LOG("After assertion - Calculated cost is %d \n", get_single_rr_cong_base_cost(inode) * get_single_rr_cong_base_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac));
 
     return cost;
 }
