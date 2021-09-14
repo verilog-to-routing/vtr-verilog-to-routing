@@ -107,8 +107,8 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 
     auto& grid = g_vpr_ctx.device().grid;
 
-    VTR_ASSERT_MSG(grid[loc.x][loc.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid[loc.x][loc.y].height_offset == 0, "Should be at block base location");
+    //VTR_ASSERT_MSG(grid[loc.x][loc.y].width_offset == 0, "Should be at block base location");
+    //VTR_ASSERT_MSG(grid[loc.x][loc.y].height_offset == 0, "Should be at block base location");
 
     return legal;
 }
