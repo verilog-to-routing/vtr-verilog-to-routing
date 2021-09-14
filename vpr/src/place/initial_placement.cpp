@@ -107,8 +107,8 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 
     auto& grid = g_vpr_ctx.device().grid;
 
-    //VTR_ASSERT_MSG(grid[loc.x][loc.y].width_offset == 0, "Should be at block base location");
-    //VTR_ASSERT_MSG(grid[loc.x][loc.y].height_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid[loc.x][loc.y].width_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid[loc.x][loc.y].height_offset == 0, "Should be at block base location");
 
     return legal;
 }
@@ -134,6 +134,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
+            VTR_ASSERT(y_range >= 0);
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
                 int cy = (y_lower_iter + dy)->first;
@@ -208,6 +209,7 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
+            VTR_ASSERT(y_range >= 0);
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
                 int cy = (y_lower_iter + dy)->first;
