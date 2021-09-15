@@ -1184,10 +1184,12 @@ static bool timing_driven_pre_route_to_clock_root(
     t_rt_node* rt_root,
     SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats) {
+        
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device(); 
+
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
 
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(sink_node, device_ctx).c_str());
@@ -1282,16 +1284,17 @@ static bool timing_driven_route_sink(
     RouterStats& router_stats,
     route_budgets& budgeting_inf,
     const RoutingPredictor& routing_predictor) {
-     auto& device_ctx = g_vpr_ctx.device(); 
+     
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device(); 
 
     profiling::sink_criticality_start();
 
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node,device_ctx).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node, device_ctx).c_str());
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
