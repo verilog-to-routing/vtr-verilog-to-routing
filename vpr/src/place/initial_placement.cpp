@@ -355,7 +355,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macro.members[0].blk_index;
 
-        if (circuit_name.find(circuit) != std::string::npos) {
+        if (circuit_name == "test") {
             VTR_LOG("In place_a_macro, placing macro with head block %s (%d)\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
         }
 
@@ -432,7 +432,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
 
     std::string circuit = "test.v";
 
-    if (circuit_name.find(circuit) != std::string::npos) {
+    if (circuit_name == "test") {
         VTR_LOG("In place_a_block, placing block %s (%d)\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
     }
 
@@ -614,7 +614,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     std::string circuit = "test.v";
 
     VTR_LOG("Circuit name is %s\n", circuit_name.c_str());
-    if (circuit_name.find(circuit) != std::string::npos) {
+    if (circuit_name == "test") {
         VTR_LOG("In main initial placement routine\n");
     }
 
@@ -626,7 +626,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
      */
     propagate_place_constraints();
 
-    if (circuit_name.find(circuit) != std::string::npos) {
+    if (circuit_name == "test") {
         VTR_LOG("Finished propagating placement constraints\n");
     }
 
@@ -634,7 +634,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
 
-    if (circuit_name.find(circuit) != std::string::npos) {
+    if (circuit_name == "test") {
         VTR_LOG("Finished sorting blocks\n");
     }
 
@@ -665,7 +665,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
-    if (circuit_name.find(circuit) != std::string::npos) {
+    if (circuit_name == "test") {
         VTR_LOG("Finished initializing place context\n");
     }
 
@@ -678,14 +678,14 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
      * as fixed so they do not get moved during initial placement or during simulated annealing*/
     mark_fixed_blocks();
 
-    if (circuit_name.find(circuit) != std::string::npos) {
+    if (circuit_name == "test") {
         VTR_LOG("Finished marking fixed blocks\n");
     }
 
     //Place the blocks in sorted order
     place_the_blocks(sorted_blocks, block_scores, pad_loc_type, circuit_name);
 
-    if (circuit_name.find(circuit) != std::string::npos) {
+    if (circuit_name == "test") {
         VTR_LOG("Finished placing blocks\n");
     }
 
