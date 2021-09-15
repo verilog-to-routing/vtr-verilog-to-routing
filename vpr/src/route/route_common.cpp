@@ -1615,7 +1615,7 @@ void print_invalid_routing_info() {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(RRNodeId(inode));
         if (occ > cap) {
-            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode,device_ctx).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode, device_ctx).c_str(), occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
@@ -1732,8 +1732,8 @@ std::string describe_unrouteable_connection(const int source_node, const int sin
     std::string msg = vtr::string_fmt(
         "Cannot route from %s (%s) to "
         "%s (%s) -- no possible path",
-        rr_node_arch_name(source_node).c_str(), describe_rr_node(source_node,device_ctx).c_str(),
-        rr_node_arch_name(sink_node).c_str(), describe_rr_node(sink_node,device_ctx).c_str());
+        rr_node_arch_name(source_node).c_str(), describe_rr_node(source_node, device_ctx).c_str(),
+        rr_node_arch_name(sink_node).c_str(), describe_rr_node(sink_node, device_ctx).c_str());
 
     return msg;
 }

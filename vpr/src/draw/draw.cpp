@@ -2962,7 +2962,7 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
         if (hit_node != OPEN) {
             //Update message
 
-            std::string info = describe_rr_node(hit_node,device_ctx);
+            std::string info = describe_rr_node(hit_node, device_ctx);
             std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
             app->update_message(msg.c_str());
         } else {
