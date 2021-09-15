@@ -777,8 +777,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
         //until we find a legal swap, or have exhuasted all possiblites
         cx_to = min_cx + vtr::irand(delta_cx);
 
-        VTR_ASSERT(cx_to >= min_cx);
-        VTR_ASSERT(cx_to <= max_cx);
+        VTR_ASSERT_MSG(cx_to >= min_cx, "cx_to should be greater than min_cx");
+        VTR_ASSERT_MSG(cx_to <= max_cx, "cx_to should be less than max_cx");
 
         //Record this x location as tried
         auto res = tried_cx_to.insert(cx_to);
@@ -816,7 +816,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
-        VTR_ASSERT(y_range >= 0);
+        VTR_ASSERT_MSG(y_range >= 0, "y range should be greater than or equal to 0");
 
         //At this point we know y_lower_iter and y_upper_iter
         //bound the range of valid blocks at this x-location, which
@@ -835,8 +835,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
             //Key in the y-dimension is the compressed index location
             cy_to = (y_lower_iter + dy)->first;
 
-            VTR_ASSERT(cy_to >= min_cy);
-            VTR_ASSERT(cy_to <= max_cy);
+            VTR_ASSERT_MSG(cy_to >= min_cy, "cy_to should be greater than min_cy");
+            VTR_ASSERT_MSG(cy_to <= max_cy, "cy_to should be less than max_cy");
 
             if (cx_from == cx_to && cy_from == cy_to) {
                 continue; //Same from/to location -- try again for new y-position

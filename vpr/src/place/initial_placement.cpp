@@ -52,11 +52,11 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 //Get a legal placement position for the block
-static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type);
+static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type, std::string circuit_name);
 
-static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
+static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, std::string circuit_name);
 
-static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type);
+static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, std::string circuit_name);
 
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
@@ -65,7 +65,11 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type,
                              std::string circuit_name);
 
-static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type) {
+static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type, std::string circuit_name) {
+    if (circuit_name == "test") {
+        VTR_LOG("In get random legal placement routine\n");
+    }
+
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
     bool legal;
@@ -114,8 +118,13 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
     return legal;
 }
 
-static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
+static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, std::string circuit_name) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+
+    if (circuit_name == "test") {
+        VTR_LOG("In regular block exhaustive placement routine\n");
+    }
+
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     std::vector<Region> regions = pr.get_partition_region();
@@ -135,7 +144,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
-            VTR_ASSERT(y_range >= 0);
+            VTR_ASSERT_MSG(y_range >= 0, "y range should be greater than or equal to zero");
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
                 int cy = (y_lower_iter + dy)->first;
@@ -189,7 +198,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
     return placed;
 }
 
-static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
+static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, std::string circuit_name) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -198,6 +207,10 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
     bool placed = false;
 
     t_pl_loc to_loc;
+
+    if (circuit_name == "test") {
+        VTR_LOG("In macro exhaustive placement routine\n");
+    }
 
     for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
         vtr::Rect<int> rect = regions[reg].get_region_rect();
@@ -210,7 +223,7 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
-            VTR_ASSERT(y_range >= 0);
+            VTR_ASSERT_MSG(y_range >= 0, "y range should be greater than or equal to zero");
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
                 int cy = (y_lower_iter + dy)->first;
@@ -383,7 +396,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
 
         // Try to place the macro first, if can be placed - place them, otherwise try again
         for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-            found_legal_location = get_legal_placement_loc(pr, head_pos, block_type);
+            found_legal_location = get_legal_placement_loc(pr, head_pos, block_type, circuit_name);
 
             // Try to place the macro
             if (found_legal_location) {
@@ -400,7 +413,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
             // if there are no legal positions, error out
 
             // Exhaustive placement of carry macros
-            macro_placed = try_all_part_region_locations_macro(pl_macro, pr, block_type);
+            macro_placed = try_all_part_region_locations_macro(pl_macro, pr, block_type, circuit_name);
 
             // If macro could not be placed after exhaustive placement, error out
         }
@@ -465,7 +478,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
         bool floorplanning_good = false;
 
         for (int itry = 0; itry < blocks_max_num_tries && placed == false; itry++) {
-            found_legal_place = get_legal_placement_loc(pr, to, logical_block);
+            found_legal_place = get_legal_placement_loc(pr, to, logical_block, circuit_name);
 
             if (found_legal_place) {
                 floorplanning_good = cluster_floorplanning_legal(blk_id, to);
@@ -491,7 +504,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
              * set placed = true;
              * If there are no legal positions, error out
              */
-            placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type);
+            placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type, circuit_name);
 
             // If block could not be placed after exhaustive placement, error out
             if (placed == false) {
