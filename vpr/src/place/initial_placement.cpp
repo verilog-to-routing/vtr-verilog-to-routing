@@ -33,7 +33,7 @@ struct t_block_score {
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 6
 #define MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY 10
 
-static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
+static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std::string circuit_name);
 
 static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string circuit_name);
 
@@ -304,14 +304,22 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
     return placed;
 }
 
-static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
+static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std::string circuit_name) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    if (circuit_name == "test") {
+        VTR_LOG("In check_macro_can_be_placed \n");
+    }
+
     //Get block type of head member
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
+
+    if (circuit_name == "test") {
+        VTR_LOG("Got block type \n");
+    }
 
     // Every macro can be placed until proven otherwise
     int macro_can_be_placed = true;
@@ -319,9 +327,17 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
     //Check whether macro contains blocks with floorplan constraints
     bool macro_constrained = is_macro_constrained(pl_macro);
 
+    if (circuit_name == "test") {
+        VTR_LOG("Checked whether macro is constrained \n");
+    }
+
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
+
+        if (circuit_name == "test") {
+            VTR_LOG("Member pos is x: %d, y: %d, subtile: %d \n", member_pos.x, member_pos.y, member_pos.sub_tile);
+        }
 
         /*
          * If the macro is constrained, check that the head member is in a legal position from
@@ -332,6 +348,9 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
          */
         if (macro_constrained && imember == 0) {
             bool member_loc_good = cluster_floorplanning_legal(pl_macro.members[imember].blk_index, member_pos);
+            if (circuit_name == "test") {
+                VTR_LOG("Checked member floorplanning legal \n");
+            }
             if (!member_loc_good) {
                 macro_can_be_placed = false;
                 break;
@@ -346,14 +365,26 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
             && is_tile_compatible(device_ctx.grid[member_pos.x][member_pos.y].type, block_type)
             && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] == EMPTY_BLOCK_ID) {
             // Can still accommodate blocks here, check the next position
+            if (circuit_name == "test") {
+                VTR_LOG("Position can accommodate blocks \n");
+            }
             continue;
         } else {
             // Cant be placed here - skip to the next try
+            if (circuit_name == "test") {
+                VTR_LOG("Position cannot accommodate more blocks \n");
+            }
             macro_can_be_placed = false;
             break;
         }
+        if (circuit_name == "test") {
+            VTR_LOG("Checked whether this position can still accomodate blocks \n");
+        }
     }
 
+    if (circuit_name == "test") {
+        VTR_LOG("Returning macro_can_be_placed is %d \n", macro_can_be_placed);
+    }
     return (macro_can_be_placed);
 }
 
@@ -371,7 +402,12 @@ static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string c
         return (macro_placed);
     }
 
-    int macro_can_be_placed = check_macro_can_be_placed(pl_macro, head_pos);
+    if (circuit_name == "test") {
+        VTR_LOG("checked location, not occupied\n");
+    }
+
+    int macro_can_be_placed = check_macro_can_be_placed(pl_macro, head_pos, circuit_name);
+
     if (circuit_name == "test") {
         VTR_LOG("Macro can be placed returned %d \n", macro_can_be_placed);
     }
@@ -393,6 +429,9 @@ static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string c
 
     } // End of this choice of legal_pos
 
+    if (circuit_name == "test") {
+        VTR_LOG("Returning macro_placed as %d \n", macro_placed);
+    }
     return (macro_placed);
 }
 
