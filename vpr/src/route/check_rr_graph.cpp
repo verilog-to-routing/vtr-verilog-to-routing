@@ -327,7 +327,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                   "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
     }
 
-    if (rr_graph.cost_index_is_invalid(rr_node) || (size_t)cost_index >= (int)device_ctx.rr_indexed_data.size()) {
+    if (rr_graph.cost_index_is_invalid(rr_node) || (size_t)cost_index >= (size_t)device_ctx.rr_indexed_data.size()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_rr_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
     }
