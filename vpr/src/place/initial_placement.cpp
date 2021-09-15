@@ -218,15 +218,34 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
         int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
         int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
 
+        if (circuit_name == "test") {
+            VTR_LOG("min_cx is %d, max_cx is %d\n", min_cx, max_cx);
+        }
+
         for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
+            if (circuit_name == "test") {
+                VTR_LOG("trying cx %d\n", cx);
+            }
+
             auto y_lower_iter = compressed_block_grid.grid[cx].begin();
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
+            if (circuit_name == "test") {
+                VTR_LOG("y_range is %d\n", y_range);
+            }
             VTR_ASSERT_MSG(y_range >= 0, "y range should be greater than or equal to zero");
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
+                if (circuit_name == "test") {
+                    VTR_LOG("dy is %d\n", dy);
+                }
+
                 int cy = (y_lower_iter + dy)->first;
+
+                if (circuit_name == "test") {
+                    VTR_LOG("trying cy %d\n", cy);
+                }
 
                 to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
                 to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
@@ -237,8 +256,16 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                 if (regions[reg].get_sub_tile() != NO_SUBTILE) {
                     int subtile = regions[reg].get_sub_tile();
 
+                    if (circuit_name == "test") {
+                        VTR_LOG("trying subtile %d\n", subtile);
+                    }
+
                     to_loc.sub_tile = subtile;
                     if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                        if (circuit_name == "test") {
+                            VTR_LOG("trying to place macro\n");
+                        }
+
                         placed = try_place_macro(to_loc, pl_macro);
                     }
                 } else {
@@ -248,8 +275,14 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                             int st_high = sub_tile.capacity.high;
 
                             for (int st = st_low; st <= st_high && placed == false; st++) {
+                                if (circuit_name == "test") {
+                                    VTR_LOG("trying subtile %d\n", st);
+                                }
                                 to_loc.sub_tile = st;
                                 if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
+                                    if (circuit_name == "test") {
+                                        VTR_LOG("trying to place macro\n");
+                                    }
                                     placed = try_place_macro(to_loc, pl_macro);
                                 }
                             }
