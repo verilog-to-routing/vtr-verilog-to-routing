@@ -617,6 +617,8 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     if (circuit_name.find(circuit) != std::string::npos) {
         VTR_LOG("In main initial placement routine\n");
     }
+
+    VTR_LOG("In main initial placement routine\n");
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Go through cluster blocks to calculate the tightest placement
