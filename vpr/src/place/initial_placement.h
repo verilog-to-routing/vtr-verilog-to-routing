@@ -3,6 +3,6 @@
 
 #include "vpr_types.h"
 
-void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file);
+void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, std::string circuit_name);
 
 #endif

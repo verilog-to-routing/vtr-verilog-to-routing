@@ -411,7 +411,8 @@ void try_place(const t_placer_opts& placer_opts,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_direct_inf* directs,
-               int num_directs) {
+               int num_directs,
+               std::string circuit_name) {
     /* Does almost all the work of placing a circuit.  Width_fac gives the   *
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
@@ -495,7 +496,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
-    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
+    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str(), circuit_name);
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
