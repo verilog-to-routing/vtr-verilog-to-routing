@@ -1183,7 +1183,7 @@ static bool timing_driven_pre_route_to_clock_root(
     int high_fanout_threshold,
     t_rt_node* rt_root,
     SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats) {  
+    RouterStats& router_stats) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
@@ -1282,7 +1282,7 @@ static bool timing_driven_route_sink(
     SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats,
     route_budgets& budgeting_inf,
-    const RoutingPredictor& routing_predictor) { 
+    const RoutingPredictor& routing_predictor) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
