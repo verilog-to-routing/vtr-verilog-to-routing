@@ -99,7 +99,7 @@ do
 
         echo "ERROR: The generated blif file \"$TEST_BLIF_FILE_NAME\" did not match the golden reference \"$GOLDEN_BLIF_OUTPUT_FILE_NAME.blif\"."
         echo "The differences are shown below:"
-        echo "------------------------------------------------------------------------------------------------------------------------------------------"
+        echo "-------------------------------------------------------------------------------------------------------------------------------------------------------"
 
         diff $GOLDEN_BLIF_OUTPUT $VQM_OUTPUT
 
@@ -128,7 +128,7 @@ else
 fi
 
 #find all the newly created blif files above (used for verification) and delete them (don't need them anymore)
-find $TEST_FOLDER -name "*.test.blif" -type f -delete
+find $TEST_FOLDER -name "*$VQM_OUTPUT_EXT" -type f -delete
 
 # exit with the status of the test (failure=1 and pass=0)
 exit $TEST_STATUS
