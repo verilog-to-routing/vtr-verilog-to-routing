@@ -511,7 +511,6 @@ void try_place(const t_placer_opts& placer_opts,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
-
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str(), circuit_name);
 
 #ifdef ENABLE_ANALYTIC_PLACE
