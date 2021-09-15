@@ -374,6 +374,67 @@ char* fgets(char* buf, int max_size, FILE* fp) {
     return nullptr;
 }
 
+/**
+ * @brief to get an arbitrary long input line and cut off any
+ * comment part 
+ * 
+ * the getline function is exaly like the __get_delim function 
+ * in GNU with '\n' delimiter. As a result, to make the function 
+ * behaviour identical for Windows (\r\n) and Linux (\n) compiler 
+ * macros for checking operating systems have been used.
+ * 
+ * @note user need to take care of the given pointer,
+ * which will be dynamically allocated by getdelim
+ */
+char* getline(char*& _lineptr, FILE* _stream) {
+    int i;
+    int ch;
+    size_t _n = 0;
+    ssize_t nread;
+
+#if defined(__unix__)
+    nread = getdelim(&_lineptr, &_n, '\n', _stream);
+#elif defined(_WIN32)
+#    define __WIN_NLTK "\r\n"
+    nread = getdelim(&_lineptr, &_n, __WIN_NLTK, _stream);
+#endif
+
+    if (nread == -1) {
+        int errsv = errno;
+        std::string error_msg;
+
+        if (errsv == EINVAL)
+            error_msg = string_fmt("[%s] Bad arguments (_lineptr is NULL, or _stream is not valid).", strerror(errsv));
+        else if (errsv == ENOMEM)
+            error_msg = string_fmt("[%s] Allocation or reallocation of the line buffer failed.", strerror(errsv));
+        else
+            /* end of file so it will return null */
+            return nullptr;
+
+        /* getline was unsuccessful, so error */
+        throw VtrError(string_fmt("Error -- %s\n",
+                                  error_msg.c_str()),
+                       __FILE__, __LINE__);
+        return nullptr;
+    }
+
+    cont = 0;           /* line continued? */
+    file_line_number++; /* global variable */
+
+    for (i = 0; i < nread; i++) { /* Keep going until the line finishes */
+
+        ch = _lineptr[i];
+
+        if (ch == '#') { /* comment */
+            _lineptr[i] = '\0';
+            /* skip the rest of the line */
+            break;
+        }
+    }
+
+    return (_lineptr);
+}
+
 ///@brief Returns line number of last opened and read file
 int get_file_line_number_of_last_opened_file() {
     return file_line_number;

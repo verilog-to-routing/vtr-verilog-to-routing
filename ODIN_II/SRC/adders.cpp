@@ -40,6 +40,7 @@
 #include "subtractions.h"
 
 #include "vtr_memory.h"
+#include "vtr_util.h"
 
 #include "vtr_list.h"
 
@@ -58,6 +59,7 @@ netlist_t* the_netlist;
 
 void record_add_distribution(nnode_t* node);
 void init_split_adder(nnode_t* node, nnode_t* ptr, int a, int sizea, int b, int sizeb, int cin, int cout, int index, int flag, netlist_t* netlist);
+static void cleanup_add_old_node(nnode_t* nodeo, netlist_t* netlist);
 
 /*---------------------------------------------------------------------------
  * (function: init_add_distribution)
@@ -774,15 +776,17 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
         }
     }
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(nodeo->name);
-    vtr::free(nodeo->input_port_sizes);
-    vtr::free(nodeo->output_port_sizes);
+    for (i = offset; configuration.coarsen && i < count - 1; i++) {
+        for (j = 0; j < node[i]->num_output_pins - 1; j++) {
+            char* new_output_pin_name = (char*)vtr::malloc((strlen(node[i]->name) + 20) * sizeof(char)); /* 6 chars for pin idx */
+            odin_sprintf(new_output_pin_name, "%s[1]", node[i]->name);
+            node[i]->output_pins[1]->name = new_output_pin_name;
+        }
+    }
 
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(nodeo->input_pins);
-    vtr::free(nodeo->output_pins);
-    vtr::free(nodeo);
+    /* Freeing the old node! */
+    cleanup_add_old_node(nodeo, netlist);
+
     vtr::free(node);
     return;
 }
@@ -807,7 +811,7 @@ void iterate_adders(netlist_t* netlist) {
     // start of the adder chain to feed the first cin with gnd
     const int offset = (configuration.adder_cin_global) ? 0 : 1;
 
-    /* Can only perform the optimisation if hard adders exist! */
+    /* Can only perform the optimization if hard adders exist! */
     if (hard_adders == NULL)
         return;
     //In hard block adder, the summand and addend are same size.
@@ -960,7 +964,8 @@ int match_ports(nnode_t* node, nnode_t* next_node, operation_list oper) {
     char* component_o[2] = {0};
     ast_node = node->related_ast_node;
     ast_node_next = next_node->related_ast_node;
-    if (ast_node->types.operation.op == oper) {
+    /* in case of coarsen blifs, there is no related ast node, so we skip this part */
+    if (ast_node && ast_node->types.operation.op == oper) {
         traverse_operation_node(ast_node, component_s, oper, &sign);
         if (sign != 1) {
             traverse_operation_node(ast_node_next, component_o, oper, &sign);
@@ -1151,11 +1156,13 @@ static void connect_output_pin_to_node(int* width, int current_pin, int output_p
         remap_pin_to_new_node(node->output_pins[current_pin], current_adder, output_pin_id);
     } else {
         npin_t* node_pin_select = node->output_pins[(node->num_input_port_sizes == 2) ? current_pin : (current_pin < width[output_pin_id] - 1) ? current_pin + 1 : 0];
-        if (node_pin_select->type != NO_ID || (node->num_input_port_sizes == 2)) {
-            remap_pin_to_new_node(node_pin_select, current_adder, output_pin_id);
-        } else {
-            current_adder->output_pins[output_pin_id] = allocate_npin();
-            current_adder->output_pins[output_pin_id]->name = append_string("", "%s~dummy_output~%d", current_adder->name, output_pin_id);
+        if (node_pin_select) {
+            if (node_pin_select->type != NO_ID || (node->num_input_port_sizes == 2)) {
+                remap_pin_to_new_node(node_pin_select, current_adder, output_pin_id);
+            } else {
+                current_adder->output_pins[output_pin_id] = allocate_npin();
+                current_adder->output_pins[output_pin_id]->name = append_string("", "%s~dummy_output~%d", current_adder->name, output_pin_id);
+            }
         }
     }
 }
@@ -1279,4 +1286,152 @@ bool is_ast_adder(ast_node_t* node) {
     }
 
     return is_adder;
+}
+
+/**
+ * -------------------------------------------------------------------------
+ * (function: cleanup_add_old_node)
+ *
+ * @brief <clean up nodeo, a high level ADD node> 
+ * In split_adder function, nodeo is splitted to small adders, 
+ * while because of the complexity of input pin connections they have not been 
+ * remapped to new nodes, they just copied and added to new nodes. This function 
+ * will detach input pins from the nodeo. Moreover, it will connect the net of 
+ * unconnected output signals to the GND node, detach the pin from nodeo and 
+ * free the output pins to avoid memory leak.
+ * 
+ * @param nodeo representing the old adder node
+ * @param netlist representing the current netlist
+ *-----------------------------------------------------------------------*/
+static void cleanup_add_old_node(nnode_t* nodeo, netlist_t* netlist) {
+    int i;
+    /* Disconnecting input pins from the old node side */
+    for (i = 0; i < nodeo->num_input_pins; i++) {
+        nodeo->input_pins[i] = NULL;
+    }
+
+    /* connecting the extra output pins to the gnd node */
+    for (i = 0; i < nodeo->num_output_pins; i++) {
+        npin_t* output_pin = nodeo->output_pins[i];
+
+        if (output_pin && output_pin->node) {
+            /* for now we just pass the signals directly through */
+            npin_t* zero_pin = get_zero_pin(netlist);
+            int idx_2_buffer = zero_pin->pin_net_idx;
+
+            // Dont eliminate the buffer if there are multiple drivers or the AST included it
+            if (output_pin->net->num_driver_pins <= 1) {
+                /* join all fanouts of the output net with the input pins net */
+                join_nets(zero_pin->net, output_pin->net);
+
+                /* erase the pointer to this buffer */
+                zero_pin->net->fanout_pins[idx_2_buffer] = NULL;
+            }
+
+            free_npin(zero_pin);
+            free_npin(output_pin);
+
+            /* Disconnecting output pins from the old node side */
+            nodeo->output_pins[i] = NULL;
+        }
+    }
+
+    // CLEAN UP
+    free_nnode(nodeo);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: check_missing_ports )
+ * 
+ * @brief check for missing ports such as carry-in/out in case of 
+ * dealing with generated netlist from Yosys blif file.
+ * 
+ * @param node pointing to the netlist node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+nnode_t* check_missing_ports(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    nnode_t* new_node = NULL;
+    int num_input_port = node->num_input_port_sizes;
+
+    /* check for operations that has 2 operands */
+    if (num_input_port == 2) {
+        int i;
+        int in_port1_size = node->input_port_sizes[0];
+        int in_port2_size = node->input_port_sizes[1];
+        int out_port_size = (in_port1_size >= in_port2_size) ? in_port1_size + 1 : in_port2_size + 1;
+
+        new_node = make_3port_gate(node->type, in_port1_size, in_port2_size, 1,
+                                   out_port_size,
+                                   node, traverse_mark_number);
+
+        /* copy attributes */
+        copy_attribute(new_node->attributes, node->attributes);
+
+        for (i = 0; i < in_port1_size; i++) {
+            remap_pin_to_new_node(node->input_pins[i],
+                                  new_node,
+                                  i);
+        }
+
+        for (i = 0; i < in_port2_size; i++) {
+            remap_pin_to_new_node(node->input_pins[i + in_port1_size],
+                                  new_node,
+                                  i + in_port1_size);
+        }
+
+        /* adding a cin connected to GND */
+        npin_t* cin_pin = get_zero_pin(netlist);
+        cin_pin->type = INPUT;
+        cin_pin->mapping = vtr::strdup("cin");
+
+        add_input_pin_to_node(new_node, cin_pin, new_node->num_input_pins - 1);
+
+        // moving the output pins to the new node
+        for (i = 0; i < out_port_size; i++) {
+            if (i < node->num_output_pins) {
+                remap_pin_to_new_node(node->output_pins[i],
+                                      new_node,
+                                      i);
+            } else {
+                npin_t* new_pin1 = allocate_npin();
+                npin_t* new_pin2 = allocate_npin();
+                nnet_t* new_net = allocate_nnet();
+                new_net->name = make_full_ref_name(NULL, NULL, NULL, new_node->name, i);
+                /* hook the output pin into the node */
+                add_output_pin_to_node(new_node, new_pin1, i);
+                /* hook up new pin 1 into the new net */
+                add_driver_pin_to_net(new_net, new_pin1);
+                /* hook up the new pin 2 to this new net */
+                add_fanout_pin_to_net(new_net, new_pin2);
+            }
+        }
+
+        /**
+         * if number of output pins is greater than the max of input pins, 
+         * here we connect the exceeded pins to the GND 
+         */
+        for (i = out_port_size; i < node->num_output_pins; i++) {
+            /* creating a buf node */
+            nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, traverse_mark_number);
+            /* adding the GND input pin to the buf node */
+            add_input_pin_to_node(buf_node,
+                                  get_zero_pin(netlist),
+                                  0);
+            /* remapping the outpin to buf node */
+            remap_pin_to_new_node(node->output_pins[i],
+                                  buf_node,
+                                  0);
+        }
+
+        // CLEAN UP
+        free_nnode(node);
+    }
+    /* otherwise there is unary minus, like -A. no need for any change */
+    else if (num_input_port == 1) {
+        new_node = node;
+    }
+
+    return new_node;
 }

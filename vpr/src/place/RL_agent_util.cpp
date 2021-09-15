@@ -1,4 +1,5 @@
 #include "RL_agent_util.h"
+#include "manual_move_generator.h"
 
 void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std::unique_ptr<MoveGenerator>& move_generator2, const t_placer_opts& placer_opts, int move_lim) {
     if (placer_opts.RL_agent_placement == false) {
@@ -42,7 +43,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
                 karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_1ST_STATE_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
-
                 //agent's 2nd state
                 karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
@@ -52,7 +52,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
                 karmed_bandit_agent1 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
-
                 //agent's 2nd state
                 karmed_bandit_agent2 = std::make_unique<EpsilonGreedyAgent>(NUM_PL_NONTIMING_MOVE_TYPES, placer_opts.place_agent_epsilon);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);

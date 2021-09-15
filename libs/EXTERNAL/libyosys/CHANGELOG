@@ -1,0 +1,798 @@
+
+List of major changes and improvements between releases
+=======================================================
+
+
+Yosys 0.9 .. Yosys 0.9-dev
+--------------------------
+
+ * Various
+    - Added "write_xaiger" backend
+    - Added "abc9" pass for timing-aware techmapping (experimental, FPGA only)
+    - Added "synth_xilinx -abc9" (experimental)
+    - Added "synth_ice40 -abc9" (experimental)
+    - Added "synth -abc9" (experimental)
+    - Added "script -scriptwire"
+    - Added "synth_xilinx -nocarry"
+    - Added "synth_xilinx -nowidelut"
+    - Added "synth_ecp5 -nowidelut"
+    - "synth_xilinx" to now infer wide multiplexers (-widemux <min> to enable)
+    - Renamed labels/options in synth_ice40 (e.g. dram -> map_lutram; -nodram -> -nolutram)
+    - Renamed labels/options in synth_ecp5 (e.g. dram -> map_lutram; -nodram -> -nolutram)
+    - Renamed labels in synth_intel (e.g. bram -> map_bram)
+    - Renamed labels/options in synth_xilinx (e.g. dram -> map_lutram; -nodram -> -nolutram)
+    - Added automatic gzip decompression for frontends
+    - Added $_NMUX_ cell type
+    - Added automatic gzip compression (based on filename extension) for backends
+    - Improve attribute and parameter encoding in JSON to avoid ambiguities between
+      bit vectors and strings containing [01xz]*
+    - Added "clkbufmap" pass
+    - Added "extractinv" pass and "invertible_pin" attribute
+    - Added "synth_xilinx -family xc6s" for Spartan 6 support (experimental)
+    - Added "synth_xilinx -ise" (experimental)
+    - Added "synth_xilinx -iopad"
+    - "synth_xilinx" now automatically inserts clock buffers (add -noclkbuf to disable)
+    - Improvements in pmgen: subpattern and recursive matches
+    - Added "opt_share" pass, run as part of "opt -full"
+    - Added "ice40_wrapcarry" to encapsulate SB_LUT+SB_CARRY pairs for techmapping
+    - Removed "ice40_unlut"
+    - Improvements in pmgen: slices, choices, define, generate
+    - Added "xilinx_srl" for Xilinx shift register extraction
+    - Removed "shregmap -tech xilinx" (superseded by "xilinx_srl")
+    - Added "_TECHMAP_WIREINIT_*_" parameter and "_TECHMAP_REMOVEINIT_*_" wire for "techmap" pass
+    - Added "-match-init" option to "dff2dffs" pass
+    - Added "techmap_autopurge" support to techmap
+    - Added "add -mod <modname[s]>"
+    - Added +/mul2dsp.v for decomposing wide multipliers to custom-sized ones
+    - Added "ice40_dsp" for Lattice iCE40 DSP packing
+    - Added "xilinx_dsp" for Xilinx DSP packing
+    - "synth_xilinx" to now infer DSP blocks (-nodsp to disable)
+    - "synth_ecp5" to now infer DSP blocks (-nodsp to disable, experimental)
+    - "synth_ice40 -dsp" to infer DSP blocks
+    - Added latch support to synth_xilinx
+    - Added support for flip-flops with synchronous reset to synth_xilinx
+    - Added support for flip-flops with reset and enable to synth_xilinx
+    - Added "check -mapped"
+    - Added checking of SystemVerilog always block types (always_comb,
+      always_latch and always_ff)
+    - Added support for SystemVerilog wildcard port connections (.*)
+    - Added "xilinx_dffopt" pass
+    - Added "scratchpad" pass
+    - Added "synth_xilinx -dff"
+    - Improved support of $readmem[hb] Memory Content File inclusion
+    - Added "opt_lut_ins" pass
+    - Added "logger" pass
+    - Added "design -delete"
+    - Added "select -unset"
+    - Use YosysHQ/abc instead of upstream berkeley-abc/abc
+    - Added $divfloor and $modfloor cells
+    - Added $adffe, $dffsre, $sdff, $sdffe, $sdffce, $adlatch cells
+    - Added "dfflegalize" pass
+    - Added "_TECHMAP_CELLNAME_" parameter for "techmap" pass
+    - Merged "dffsr2dff", "opt_rmdff", "dff2dffe", "dff2dffs", "peepopt.dffmux" passes into a new "opt_dff" pass
+    - Added $meminit_v2 cells (with support for write mask)
+
+Yosys 0.8 .. Yosys 0.9
+----------------------
+
+ * Various
+    - Many bugfixes and small improvements
+    - Added support for SystemVerilog interfaces and modports
+    - Added "write_edif -attrprop"
+    - Added "opt_lut" pass
+    - Added "gate2lut.v" techmap rule
+    - Added "rename -src"
+    - Added "equiv_opt" pass
+    - Added "flowmap" LUT mapping pass
+    - Added "rename -wire" to rename cells based on the wires they drive
+    - Added "bugpoint" for creating minimised testcases
+    - Added "write_edif -gndvccy"
+    - "write_verilog" to escape Verilog keywords
+    - Fixed sign handling of real constants
+    - "write_verilog" to write initial statement for initial flop state
+    - Added pmgen pattern matcher generator
+    - Fixed opt_rmdff handling of $_DFFSR_???_ and $_DLATCHSR_???_
+    - Added "setundef -params" to replace undefined cell parameters
+    - Renamed "yosys -D" to "yosys -U", added "yosys -D" to set Verilog defines
+    - Fixed handling of defparam when default_nettype is none
+    - Fixed "wreduce" flipflop handling
+    - Fixed FIRRTL to Verilog process instance subfield assignment
+    - Added "write_verilog -siminit"
+    - Several fixes and improvements for mem2reg memories
+    - Fixed handling of task output ports in clocked always blocks
+    - Improved handling of and-with-1 and or-with-0 in "opt_expr"
+    - Added "read_aiger" frontend
+    - Added "mutate" pass
+    - Added "hdlname" attribute
+    - Added "rename -output"
+    - Added "read_ilang -lib"
+    - Improved "proc" full_case detection and handling
+    - Added "whitebox" and "lib_whitebox" attributes
+    - Added "read_verilog -nowb", "flatten -wb" and "wbflip"
+    - Added Python bindings and support for Python plug-ins
+    - Added "pmux2shiftx"
+    - Added log_debug framework for reduced default verbosity
+    - Improved "opt_expr" and "opt_clean" handling of (partially) undriven and/or unused wires
+    - Added "peepopt" peephole optimisation pass using pmgen
+    - Added approximate support for SystemVerilog "var" keyword
+    - Added parsing of "specify" blocks into $specrule and $specify[23]
+    - Added support for attributes on parameters and localparams
+    - Added support for parsing attributes on port connections
+    - Added "wreduce -keepdc"
+    - Added support for optimising $dffe and $_DFFE_* cells in "opt_rmdff"
+    - Added Verilog wand/wor wire type support
+    - Added support for elaboration system tasks
+    - Added "muxcover -mux{4,8,16}=<cost>"
+    - Added "muxcover -dmux=<cost>"
+    - Added "muxcover -nopartial"
+    - Added "muxpack" pass
+    - Added "pmux2shiftx -norange"
+    - Added support for "~" in filename parsing
+    - Added "read_verilog -pwires" feature to turn parameters into wires
+    - Fixed sign extension of unsized constants with 'bx and 'bz MSB
+    - Fixed genvar to be a signed type
+    - Added support for attributes on case rules
+    - Added "upto" and "offset" to JSON frontend and backend
+    - Several liberty file parser improvements
+    - Fixed handling of more complex BRAM patterns
+    - Add "write_aiger -I -O -B"
+
+ * Formal Verification
+    - Added $changed support to read_verilog
+    - Added "read_verilog -noassert -noassume -assert-assumes"
+    - Added btor ops for $mul, $div, $mod and $concat
+    - Added yosys-smtbmc support for btor witnesses
+    - Added "supercover" pass
+    - Fixed $global_clock handling vs autowire
+    - Added $dffsr support to "async2sync"
+    - Added "fmcombine" pass
+    - Added memory init support in "write_btor"
+    - Added "cutpoint" pass
+    - Changed "ne" to "neq" in btor2 output
+    - Added support for SVA "final" keyword
+    - Added "fmcombine -initeq -anyeq"
+    - Added timescale and generated-by header to yosys-smtbmc vcd output
+    - Improved BTOR2 handling of undriven wires
+
+ * Verific support
+    - Enabled Verific flags vhdl_support_variable_slice and veri_elaborate_top_level_modules_having_interface_ports
+    - Improved support for asymmetric memories
+    - Added "verific -chparam"
+    - Fixed "verific -extnets" for more complex situations
+    - Added "read -verific" and "read -noverific"
+    - Added "hierarchy -chparam"
+
+ * New back-ends
+    - Added initial Anlogic support
+    - Added initial SmartFusion2 and IGLOO2 support
+
+ * ECP5 support
+    - Added "synth_ecp5 -nowidelut"
+    - Added BRAM inference support to "synth_ecp5"
+    - Added support for transforming Diamond IO and flipflop primitives
+
+ * iCE40 support
+    - Added "ice40_unlut" pass
+    - Added "synth_ice40 -relut"
+    - Added "synth_ice40 -noabc"
+    - Added "synth_ice40 -dffe_min_ce_use"
+    - Added DSP inference support using pmgen
+    - Added support for initialising BRAM primitives from a file
+    - Added iCE40 Ultra RGB LED driver cells
+
+ * Xilinx support
+    - Use "write_edif -pvector bra" for Xilinx EDIF files
+    - Fixes for VPR place and route support with "synth_xilinx"
+    - Added more cell simulation models
+    - Added "synth_xilinx -family"
+    - Added "stat -tech xilinx" to estimate logic cell usage
+    - Added "synth_xilinx -nocarry"
+    - Added "synth_xilinx -nowidelut"
+    - "synth_xilinx" to now infer hard shift registers (-nosrl to disable)
+    - Added support for mapping RAM32X1D
+
+Yosys 0.7 .. Yosys 0.8
+----------------------
+
+ * Various
+    - Many bugfixes and small improvements
+    - Strip debug symbols from installed binary
+    - Replace -ignore_redef with -[no]overwrite in front-ends
+    - Added write_verilog hex dump support, add -nohex option
+    - Added "write_verilog -decimal"
+    - Added "scc -set_attr"
+    - Added "verilog_defines" command
+    - Remember defines from one read_verilog to next
+    - Added support for hierarchical defparam
+    - Added FIRRTL back-end
+    - Improved ABC default scripts
+    - Added "design -reset-vlog"
+    - Added "yosys -W regex", "yosys -w regex", and "yosys -e regex"
+    - Added Verilog $rtoi and $itor support
+    - Added "check -initdrv"
+    - Added "read_blif -wideports"
+    - Added support for SystemVerilog "++" and "--" operators
+    - Added support for SystemVerilog unique, unique0, and priority case
+    - Added "write_edif" options for edif "flavors"
+    - Added support for resetall compiler directive
+    - Added simple C beck-end (bitwise combinatorical only atm)
+    - Added $_ANDNOT_ and $_ORNOT_ cell types
+    - Added cell library aliases to "abc -g"
+    - Added "setundef -anyseq"
+    - Added "chtype" command
+    - Added "design -import"
+    - Added "write_table" command
+    - Added "read_json" command
+    - Added "sim" command
+    - Added "extract_fa" and "extract_reduce" commands
+    - Added "extract_counter" command
+    - Added "opt_demorgan" command
+    - Added support for $size and $bits SystemVerilog functions
+    - Added "blackbox" command
+    - Added "ltp" command
+    - Added support for editline as replacement for readline
+    - Added warnings for driver-driver conflicts between FFs (and other cells) and constants
+    - Added "yosys -E" for creating Makefile dependencies files
+    - Added "synth -noshare"
+    - Added "memory_nordff"
+    - Added "setundef -undef -expose -anyconst"
+    - Added "expose -input"
+    - Added specify/specparam parser support (simply ignore them)
+    - Added "write_blif -inames -iattr"
+    - Added "hierarchy -simcheck"
+    - Added an option to statically link abc into yosys
+    - Added protobuf back-end
+    - Added BLIF parsing support for .conn and .cname
+    - Added read_verilog error checking for reg/wire/logic misuse
+    - Added "make coverage" and ENABLE_GCOV build option
+
+ * Changes in Yosys APIs
+    - Added ConstEval defaultval feature
+    - Added {get,set}_src_attribute() methods on RTLIL::AttrObject
+    - Added SigSpec::is_fully_ones() and Const::is_fully_ones()
+    - Added log_file_warning() and log_file_error() functions
+
+ * Formal Verification
+    - Added "write_aiger"
+    - Added "yosys-smtbmc --aig"
+    - Added "always <positive_int>" to .smtc format
+    - Added $cover cell type and support for cover properties
+    - Added $fair/$live cell type and support for liveness properties
+    - Added smtbmc support for memory vcd dumping
+    - Added "chformal" command
+    - Added "write_smt2 -stbv" and "write_smt2 -stdt"
+    - Fix equiv_simple, old behavior now available with "equiv_simple -short"
+    - Change to Yices2 as default SMT solver (it is GPL now)
+    - Added "yosys-smtbmc --presat" (now default in SymbiYosys)
+    - Added "yosys-smtbmc --smtc-init --smtc-top --noinit"
+    - Added a brand new "write_btor" command for BTOR2
+    - Added clk2fflogic memory support and other improvements
+    - Added "async memory write" support to write_smt2
+    - Simulate clock toggling in yosys-smtbmc VCD output
+    - Added $allseq/$allconst cells for EA-solving
+    - Make -nordff the default in "prep"
+    - Added (* gclk *) attribute
+    - Added "async2sync" pass for single-clock designs with async resets
+
+ * Verific support
+    - Many improvements in Verific front-end
+    - Added proper handling of concurent SVA properties
+    - Map "const" and "rand const" to $anyseq/$anyconst
+    - Added "verific -import -flatten" and "verific -import -extnets"
+    - Added "verific -vlog-incdir -vlog-define -vlog-libdir"
+    - Remove PSL support (because PSL has been removed in upstream Verific)
+    - Improve integration with "hierarchy" command design elaboration
+    - Added YOSYS_NOVERIFIC for running non-verific test cases with verific bin
+    - Added simpilied "read" command that automatically uses verific if available
+    - Added "verific -set-<severity> <msg_id>.."
+    - Added "verific -work <libname>"
+
+ * New back-ends
+    - Added initial Coolrunner-II support
+    - Added initial eASIC support
+    - Added initial ECP5 support
+
+ * GreenPAK Support
+    - Added support for GP_DLATCH, GP_SPI, GP_DCMx, GP_COUNTx, etc.
+
+ * iCE40 Support
+    - Add "synth_ice40 -vpr"
+    - Add "synth_ice40 -nodffe"
+    - Add "synth_ice40 -json"
+    - Add Support for UltraPlus cells
+
+ * MAX10 and Cyclone IV Support
+    - Added initial version of metacommand "synth_intel".
+    - Improved write_verilog command to produce VQM netlist for Quartus Prime.
+    - Added support for MAX10 FPGA family synthesis.
+    - Added support for Cyclone IV family synthesis.
+    - Added example of implementation for DE2i-150 board.
+    - Added example of implementation for MAX10 development kit.
+    - Added LFSR example from Asic World.
+    - Added "dffinit -highlow" for mapping to Intel primitives
+
+
+Yosys 0.6 .. Yosys 0.7
+----------------------
+
+ * Various
+    - Added "yosys -D" feature
+    - Added support for installed plugins in $(DATDIR)/plugins/
+    - Renamed opt_const to opt_expr
+    - Renamed opt_share to opt_merge
+    - Added "prep -flatten" and "synth -flatten"
+    - Added "prep -auto-top" and "synth -auto-top"
+    - Using "mfs" and "lutpack" in ABC lut mapping
+    - Support for abstract modules in chparam
+    - Cleanup abstract modules at end of "hierarchy -top"
+    - Added tristate buffer support to iopadmap
+    - Added opt_expr support for div/mod by power-of-two
+    - Added "select -assert-min <N> -assert-max <N>"
+    - Added "attrmvcp" pass
+    - Added "attrmap" command
+    - Added "tee +INT -INT"
+    - Added "zinit" pass
+    - Added "setparam -type"
+    - Added "shregmap" pass
+    - Added "setundef -init"
+    - Added "nlutmap -assert"
+    - Added $sop cell type and "abc -sop -I <num> -P <num>"
+    - Added "dc2" to default ABC scripts
+    - Added "deminout"
+    - Added "insbuf" command
+    - Added "prep -nomem"
+    - Added "opt_rmdff -keepdc"
+    - Added "prep -nokeepdc"
+    - Added initial version of "synth_gowin"
+    - Added "fsm_expand -full"
+    - Added support for fsm_encoding="user"
+    - Many improvements in GreenPAK4 support
+    - Added black box modules for all Xilinx 7-series lib cells
+    - Added synth_ice40 support for latches via logic loops
+    - Fixed ice40_opt lut unmapping, added "ice40_opt -unlut"
+
+ * Build System
+    - Added ABCEXTERNAL and ABCURL make variables
+    - Added BINDIR, LIBDIR, and DATDIR make variables
+    - Added PKG_CONFIG make variable
+    - Added SEED make variable (for "make test")
+    - Added YOSYS_VER_STR make variable
+    - Updated min GCC requirement to GCC 4.8
+    - Updated required Bison version to Bison 3.x
+
+ * Internal APIs
+    - Added ast.h to exported headers
+    - Added ScriptPass helper class for script-like passes
+    - Added CellEdgesDatabase API
+
+ * Front-ends and Back-ends
+    - Added filename glob support to all front-ends
+    - Added avail (black-box) module params to ilang format
+    - Added $display %m support
+    - Added support for $stop Verilog system task
+    - Added support for SystemVerilog packages
+    - Fixed procedural assignments to non-unique lvalues, e.g. {y,y} = {a,b}
+    - Added support for "active high" and "active low" latches in read_blif and write_blif
+    - Use init value "2" for all uninitialized FFs in BLIF back-end
+    - Added "read_blif -sop"
+    - Added "write_blif -noalias"
+    - Added various write_blif options for VTR support
+    - write_json: also write module attributes.
+    - Added "write_verilog -nodec -nostr -defparam"
+    - Added "read_verilog -norestrict -assume-asserts"
+    - Added support for bus interfaces to "read_liberty -lib"
+    - Added liberty parser support for types within cell decls
+    - Added "write_verilog -renameprefix -v"
+    - Added "write_edif -nogndvcc"
+
+ * Formal Verification
+    - Support for hierarchical designs in smt2 back-end
+    - Yosys-smtbmc: Support for hierarchical VCD dumping
+    - Added $initstate cell type and vlog function
+    - Added $anyconst and $anyseq cell types and vlog functions
+    - Added printing of code loc of failed asserts to yosys-smtbmc
+    - Added memory_memx pass, "memory -memx", and "prep -memx"
+    - Added "proc_mux -ifx"
+    - Added "yosys-smtbmc -g"
+    - Deprecated "write_smt2 -regs" (by default on now)
+    - Made "write_smt2 -bv -mem" default, added "write_smt2 -nobv -nomem"
+    - Added support for memories to smtio.py
+    - Added "yosys-smtbmc --dump-vlogtb"
+    - Added "yosys-smtbmc --smtc --dump-smtc"
+    - Added "yosys-smtbmc --dump-all"
+    - Added assertpmux command
+    - Added "yosys-smtbmc --unroll"
+    - Added $past, $stable, $rose, $fell SVA functions
+    - Added "yosys-smtbmc --noinfo and --dummy"
+    - Added "yosys-smtbmc --noincr"
+    - Added "yosys-smtbmc --cex <filename>"
+    - Added $ff and $_FF_ cell types
+    - Added $global_clock verilog syntax support for creating $ff cells
+    - Added clk2fflogic
+
+
+Yosys 0.5 .. Yosys 0.6
+----------------------
+
+ * Various
+     - Added Contributor Covenant Code of Conduct
+     - Various improvements in dict<> and pool<>
+     - Added hashlib::mfp and refactored SigMap
+     - Improved support for reals as module parameters
+     - Various improvements in SMT2 back-end
+     - Added "keep_hierarchy" attribute
+     - Verilog front-end: define `BLACKBOX in -lib mode
+     - Added API for converting internal cells to AIGs
+     - Added ENABLE_LIBYOSYS Makefile option
+     - Removed "techmap -share_map" (use "-map +/filename" instead)
+     - Switched all Python scripts to Python 3
+     - Added support for $display()/$write() and $finish() to Verilog front-end
+     - Added "yosys-smtbmc" formal verification flow
+     - Added options for clang sanitizers to Makefile
+
+ * New commands and options
+     - Added "scc -expect <N> -nofeedback"
+     - Added "proc_dlatch"
+     - Added "check"
+     - Added "select %xe %cie %coe %M %C %R"
+     - Added "sat -dump_json" (WaveJSON format)
+     - Added "sat -tempinduct-baseonly -tempinduct-inductonly"
+     - Added "sat -stepsize" and "sat -tempinduct-step"
+     - Added "sat -show-regs -show-public -show-all"
+     - Added "write_json" (Native Yosys JSON format)
+     - Added "write_blif -attr"
+     - Added "dffinit"
+     - Added "chparam"
+     - Added "muxcover"
+     - Added "pmuxtree"
+     - Added memory_bram "make_outreg" feature
+     - Added "splice -wires"
+     - Added "dff2dffe -direct-match"
+     - Added simplemap $lut support
+     - Added "read_blif"
+     - Added "opt_share -share_all"
+     - Added "aigmap"
+     - Added "write_smt2 -mem -regs -wires"
+     - Added "memory -nordff"
+     - Added "write_smv"
+     - Added "synth -nordff -noalumacc"
+     - Added "rename -top new_name"
+     - Added "opt_const -clkinv"
+     - Added "synth -nofsm"
+     - Added "miter -assert"
+     - Added "read_verilog -noautowire"
+     - Added "read_verilog -nodpi"
+     - Added "tribuf"
+     - Added "lut2mux"
+     - Added "nlutmap"
+     - Added "qwp"
+     - Added "test_cell -noeval"
+     - Added "edgetypes"
+     - Added "equiv_struct"
+     - Added "equiv_purge"
+     - Added "equiv_mark"
+     - Added "equiv_add -try -cell"
+     - Added "singleton"
+     - Added "abc -g -luts"
+     - Added "torder"
+     - Added "write_blif -cname"
+     - Added "submod -copy"
+     - Added "dffsr2dff"
+     - Added "stat -liberty"
+
+ * Synthesis metacommands
+     - Various improvements in synth_xilinx
+     - Added synth_ice40 and synth_greenpak4
+     - Added "prep" metacommand for "synthesis lite"
+
+ * Cell library changes
+     - Added cell types to "help" system
+     - Added $meminit cell type
+     - Added $assume cell type
+     - Added $_MUX4_, $_MUX8_, and $_MUX16_ cells
+     - Added $tribuf and $_TBUF_ cell types
+     - Added read-enable to memory model
+
+ * YosysJS
+     - Various improvements in emscripten build
+     - Added alternative webworker-based JS API
+     - Added a few example applications
+
+
+Yosys 0.4 .. Yosys 0.5
+----------------------
+
+ * API changes
+     - Added log_warning()
+     - Added eval_select_args() and eval_select_op()
+     - Added cell->known(), cell->input(portname), cell->output(portname)
+     - Skip blackbox modules in design->selected_modules()
+     - Replaced std::map<> and std::set<> with dict<> and pool<>
+     - New SigSpec::extend() is what used to be SigSpec::extend_u0()
+     - Added YS_OVERRIDE, YS_FINAL, YS_ATTRIBUTE, YS_NORETURN
+
+ * Cell library changes
+     - Added flip-flops with enable ($dffe etc.)
+     - Added $equiv cells for equivalence checking framework
+
+ * Various
+     - Updated ABC to hg rev 61ad5f908c03
+     - Added clock domain partitioning to ABC pass
+     - Improved plugin building (see "yosys-config --build")
+     - Added ENABLE_NDEBUG Makefile flag for high-performance builds
+     - Added "yosys -d", "yosys -L" and other driver improvements
+     - Added support for multi-bit (array) cell ports to "write_edif"
+     - Now printing most output to stdout, not stderr
+     - Added "onehot" attribute (set by "fsm_map")
+     - Various performance improvements
+     - Vastly improved Xilinx flow
+     - Added "make unsintall"
+
+ * Equivalence checking
+     - Added equivalence checking commands:
+         equiv_make equiv_simple equiv_status
+	 equiv_induct equiv_miter
+	 equiv_add equiv_remove
+
+ * Block RAM support:
+     - Added "memory_bram" command
+     - Added BRAM support to Xilinx flow
+
+ * Other New Commands and Options
+     - Added "dff2dffe"
+     - Added "fsm -encfile"
+     - Added "dfflibmap -prepare"
+     - Added "write_blid -unbuf -undef -blackbox"
+     - Added "write_smt2" for writing SMT-LIBv2 files
+     - Added "test_cell -w -muxdiv"
+     - Added "select -read"
+
+
+Yosys 0.3.0 .. Yosys 0.4
+------------------------
+
+ * Platform Support
+     - Added support for mxe-based cross-builds for win32
+     - Added sourcecode-export as VisualStudio project
+     - Added experimental EMCC (JavaScript) support
+
+ * Verilog Frontend
+     - Added -sv option for SystemVerilog (and automatic *.sv file support)
+     - Added support for real-valued constants and constant expressions
+     - Added support for non-standard "via_celltype" attribute on task/func
+     - Added support for non-standard "module mod_name(...);" syntax
+     - Added support for non-standard """ macro bodies
+     - Added support for array with more than one dimension
+     - Added support for $readmemh and $readmemb
+     - Added support for DPI functions
+
+ * Changes in internal cell library
+     - Added $shift and $shiftx cell types
+     - Added $alu, $lcu, $fa and $macc cell types
+     - Removed $bu0 and $safe_pmux cell types
+     - $mem/$memwr WR_EN input is now a per-data-bit enable signal
+     - Added $_NAND_ $_NOR_ $_XNOR_ $_AOI3_ $_OAI3_ $_AOI4_ $_OAI4_
+     - Renamed ports of $lut cells (from I->O to A->Y)
+     - Renamed $_INV_ to $_NOT_
+
+ * Changes for simple synthesis flows
+     - There is now a "synth" command with a recommended default script
+     - Many improvements in synthesis of arithmetic functions to gates
+	 - Multipliers and adders with many operands are using carry-save adder trees
+         - Remaining adders are now implemented using Brent-Kung carry look-ahead adders
+     - Various new high-level optimizations on RTL netlist
+     - Various improvements in FSM optimization
+     - Updated ABC to hg 5b5af75f1dda (from 2014-11-07)
+
+ * Changes in internal APIs and RTLIL
+     - Added log_id() and log_cell() helper functions
+     - Added function-like cell creation helpers
+     - Added GetSize() function (like .size() but with int)
+     - Major refactoring of RTLIL::Module and related classes
+     - Major refactoring of RTLIL::SigSpec and related classes
+     - Now RTLIL::IdString is essentially an int
+     - Added macros for code coverage counters
+     - Added some Makefile magic for pretty make logs
+     - Added "kernel/yosys.h" with all the core definitions
+     - Changed a lot of code from FILE* to c++ streams
+     - Added RTLIL::Monitor API and "trace" command
+     - Added "Yosys" C++ namespace
+
+ * Changes relevant to SAT solving
+     - Added ezSAT::keep_cnf() and ezSAT::non_incremental()
+     - Added native ezSAT support for vector shift ops
+     - Updated MiniSAT to git 37dc6c67e2 (from 2013-09-25)
+
+ * New commands (or large improvements to commands)
+     - Added "synth" command with default script
+     - Added "share" (finally some real resource sharing)
+     - Added "memory_share" (reduce number of ports on memories)
+     - Added "wreduce" and "alumacc" commands
+     - Added "opt -keepdc -fine -full -fast"
+     - Added some "test_*" commands
+
+ * Various other changes
+     - Added %D and %c select operators
+     - Added support for labels in yosys scripts
+     - Added support for here-documents in yosys scripts
+     - Support "+/" prefix for files from proc_share_dir
+     - Added "autoidx" statement to ilang language
+     - Switched from "yosys-svgviewer" to "xdot"
+     - Renamed "stdcells.v" to "techmap.v"
+     - Various bug fixes and small improvements
+     - Improved welcome and bye messages
+
+
+Yosys 0.2.0 .. Yosys 0.3.0
+--------------------------
+
+ * Driver program and overall behavior:
+     - Added "design -push" and "design -pop"
+     - Added "tee" command for redirecting log output
+
+ * Changes in the internal cell library:
+     - Added $dlatchsr and $_DLATCHSR_???_ cell types
+
+ * Improvements in Verilog frontend:
+     - Improved support for const functions (case, always, repeat)
+     - The generate..endgenerate keywords are now optional
+     - Added support for arrays of module instances
+     - Added support for "`default_nettype" directive
+     - Added support for "`line" directive
+
+ * Other front- and back-ends:
+     - Various changes to "write_blif" options
+     - Various improvements in EDIF backend
+     - Added "vhdl2verilog" pseudo-front-end
+     - Added "verific" pseudo-front-end
+
+ * Improvements in technology mapping:
+     - Added support for recursive techmap
+     - Added CONSTMSK and CONSTVAL features to techmap
+     - Added _TECHMAP_CONNMAP_*_ feature to techmap
+     - Added _TECHMAP_REPLACE_ feature to techmap
+     - Added "connwrappers" command for wrap-extract-unwrap method
+     - Added "extract -map %<design_name>" feature
+     - Added "extract -ignore_param ..." and "extract -ignore_parameters"
+     - Added "techmap -max_iter" option
+
+ * Improvements to "eval" and "sat" framework:
+     - Now include a copy of Minisat (with build fixes applied)
+     - Switched to Minisat::SimpSolver as SAT back-end
+     - Added "sat -dump_vcd" feature
+     - Added "sat -dump_cnf" feature
+     - Added "sat -initsteps <N>" feature
+     - Added "freduce -stop <N>" feature
+     - Added "freduce -dump <prefix>" feature
+
+ * Integration with ABC:
+     - Updated ABC rev to 7600ffb9340c
+
+ * Improvements in the internal APIs:
+     - Added RTLIL::Module::add... helper methods
+     - Various build fixes for OSX (Darwin) and OpenBSD
+
+
+Yosys 0.1.0 .. Yosys 0.2.0
+--------------------------
+
+ * Changes to the driver program:
+     - Added "yosys -h" and "yosys -H"
+     - Added support for backslash line continuation in scripts
+     - Added support for #-comments in same line as command
+     - Added "echo" and "log" commands
+
+ * Improvements in Verilog frontend:
+     - Added support for local registers in named blocks
+     - Added support for "case" in "generate" blocks
+     - Added support for $clog2 system function
+     - Added support for basic SystemVerilog assert statements
+     - Added preprocessor support for macro arguments
+     - Added preprocessor support for `elsif statement
+     - Added "verilog_defaults" command
+     - Added read_verilog -icells option
+     - Added support for constant sizes from parameters
+     - Added "read_verilog -setattr"
+     - Added support for function returning 'integer'
+     - Added limited support for function calls in parameter values
+     - Added "read_verilog -defer" to suppress evaluation of modules with default parameters
+
+ * Other front- and back-ends:
+     - Added BTOR backend
+     - Added Liberty frontend
+
+ * Improvements in technology mapping:
+     - The "dfflibmap" command now strongly prefers solutions with
+           no inverters in clock paths
+     - The "dfflibmap" command now prefers cells with smaller area
+     - Added support for multiple -map options to techmap
+     - Added "dfflibmap" support for //-comments in liberty files
+     - Added "memory_unpack" command to revert "memory_collect"
+     - Added standard techmap rule "techmap -share_map pmux2mux.v"
+     - Added "iopadmap -bits"
+     - Added "setundef" command
+     - Added "hilomap" command
+
+ * Changes in the internal cell library:
+     - Major rewrite of simlib.v for better compatibility with other tools
+     - Added PRIORITY parameter to $memwr cells
+     - Added TRANSPARENT parameter to $memrd cells
+     - Added RD_TRANSPARENT parameter to $mem cells
+     - Added $bu0 cell (always 0-extend, even undef MSB)
+     - Added $assert cell type
+     - Added $slice and $concat cell types
+
+ * Integration with ABC:
+     - Updated ABC to hg rev 2058c8ccea68
+     - Tighter integration of ABC build with Yosys build. The make
+           targets 'make abc' and 'make install-abc' are now obsolete.
+     - Added support for passing FFs from one clock domain through ABC
+     - Now always use BLIF as exchange format with ABC
+     - Added support for "abc -script +<command_sequence>"
+     - Improved standard ABC recipe
+     - Added support for "keep" attribute to abc command
+     - Added "abc -dff / -clk / -keepff" options
+
+ * Improvements to "eval" and "sat" framework:
+     - Added support for "0" and "~0" in right-hand side -set expressions
+     - Added "eval -set-undef" and "eval -table"
+     - Added "sat -set-init" and "sat -set-init-*" for sequential problems
+     - Added undef support to SAT solver, incl. various new "sat" options
+     - Added correct support for === and !== for "eval" and "sat"
+     - Added "sat -tempinduct" (default -seq is now non-induction sequential)
+     - Added "sat -prove-asserts"
+     - Complete rewrite of the 'freduce' command
+     - Added "miter" command
+     - Added "sat -show-inputs" and "sat -show-outputs"
+     - Added "sat -ignore_unknown_cells" (now produce an error by default)
+     - Added "sat -falsify"
+     - Now "sat -verify" and "sat -falsify" can also be used without "-prove"
+     - Added "expose" command
+     - Added support for @<sel_name> to sat and eval signal expressions
+
+ * Changes in the 'make test' framework and auxiliary test tools:
+     - Added autotest.sh -p and -f options
+     - Replaced autotest.sh ISIM support with XSIM support
+     - Added test cases for SAT framework
+
+ * Added "abbreviated IDs":
+     - Now $<something>$foo can be abbreviated as $foo.
+     - Usually this last part is a unique id (from RTLIL::autoidx)
+     - This abbreviated IDs are now also used in "show" output
+
+ * Other changes to selection framework:
+     - Now */ is optional in */<mode>:<arg> expressions
+     - Added "select -assert-none" and "select -assert-any"
+     - Added support for matching modules by attribute (A:<expr>)
+     - Added "select -none"
+     - Added support for r:<expr> pattern for matching cell parameters
+     - Added support for !=, <, <=, >=, > for attribute and parameter matching
+     - Added support for %s for selecting sub-modules
+     - Added support for %m for expanding selections to whole modules
+     - Added support for i:*, o:* and x:* pattern for selecting module ports
+     - Added support for s:<expr> pattern for matching wire width
+     - Added support for %a operation to select wire aliases
+
+ * Various other changes to commands and options:
+     - The "ls" command now supports wildcards
+     - Added "show -pause" and "show -format dot"
+     - Added "show -color" support for cells
+     - Added "show -label" and "show -notitle"
+     - Added "dump -m" and "dump -n"
+     - Added "history" command
+     - Added "rename -hide"
+     - Added "connect" command
+     - Added "splitnets -driver"
+     - Added "opt_const -mux_undef"
+     - Added "opt_const -mux_bool"
+     - Added "opt_const -undriven"
+     - Added "opt -mux_undef -mux_bool -undriven -purge"
+     - Added "hierarchy -libdir"
+     - Added "hierarchy -purge_lib" (by default now do not remove lib cells)
+     - Added "delete" command
+     - Added "dump -append"
+     - Added "setattr" and "setparam" commands
+     - Added "design -stash/-copy-from/-copy-to"
+     - Added "copy" command
+     - Added "splice" command
+

@@ -117,8 +117,8 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
     int no_need_to_pass_by_clb;
     float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
 
-    target_x = device_ctx.rr_nodes.node_xlow(target_node);
-    target_y = device_ctx.rr_nodes.node_ylow(target_node);
+    target_x = rr_graph.node_xlow(target_node);
+    target_y = rr_graph.node_ylow(target_node);
 
     cost_index = device_ctx.rr_nodes.node_cost_index(inode);
     inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
@@ -127,9 +127,9 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
     rr_type = rr_graph.node_type(inode);
 
     if (rr_type == CHANX) {
-        ylow = device_ctx.rr_nodes.node_ylow(inode);
-        xhigh = device_ctx.rr_nodes.node_xhigh(inode);
-        xlow = device_ctx.rr_nodes.node_xlow(inode);
+        ylow = rr_graph.node_ylow(inode);
+        xhigh = rr_graph.node_xhigh(inode);
+        xlow = rr_graph.node_xlow(inode);
 
         /* Count vertical (orthogonal to inode) segs first. */
 
@@ -154,9 +154,9 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
             num_segs_same_dir = 0;
         }
     } else { /* inode is a CHANY */
-        ylow = device_ctx.rr_nodes.node_ylow(inode);
-        yhigh = device_ctx.rr_nodes.node_yhigh(inode);
-        xlow = device_ctx.rr_nodes.node_xlow(inode);
+        ylow = rr_graph.node_ylow(inode);
+        yhigh = rr_graph.node_yhigh(inode);
+        xlow = rr_graph.node_xlow(inode);
 
         /* Count horizontal (orthogonal to inode) segs first. */
 

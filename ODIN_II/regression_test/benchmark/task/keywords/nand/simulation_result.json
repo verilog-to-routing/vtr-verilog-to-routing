@@ -1,7 +1,7 @@
 {
     "nand/nand_indexed_port/no_arch": {
         "test_name": "nand/nand_indexed_port/no_arch",
-        "blif": "nand_indexed_port.blif",
+        "generated_blif": "nand_indexed_port_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 3.8,
         "simulation_time(ms)": 0.7,
@@ -17,7 +17,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

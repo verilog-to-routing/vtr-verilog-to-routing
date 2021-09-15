@@ -19,8 +19,8 @@
 `define mFIFOWIDTH 6'b011100
 `define aFIFOWIDTH 4'b0101
 
-module LU8PEEng (clk, //ref_clk, global_reset_n,
- start, N, offset, done,
+module LU8PEEng ( //ref_clk, global_reset_n,
+ start, N, offset, clk, done,
 		//mem_addr, mem_ba, mem_cas_n, mem_cke, mem_clk, mem_clk_n, mem_cs_n,
 burst_begin,
 mem_local_be,
@@ -31,8 +31,8 @@ mem_local_write_req,
 mem_local_rdata,
 mem_local_rdata_valid,
 mem_local_ready,
-mem_local_wdata_req,
 reset_n,
+mem_local_wdata_req,
 mem_local_addr
 //Cong: dummy output
 //a_junk,
@@ -2244,16 +2244,20 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+ 
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
-.clk (clk),
-.we1(wren),
-.we2(1'b0),
-.data1(data),
-.data2(uselessdata),
-.out1(value_out),
-.out2(subwire),
-.addr1(wraddress),
-.addr2(rdaddress));
+    .clk (clk),
+    .we1(wren),
+    .we2(1'b0),
+    .data1(data),
+    .data2(uselessdata),
+    .out1(value_out),
+    .out2(subwire),
+    .addr1(wraddress),
+    .addr2(rdaddress)
+);
 
 
 endmodule
@@ -2284,16 +2288,20 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+ 
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
-.clk (clk),
-.we1(wren),
-.we2(1'b0),
-.data1(data),
-.data2(uselessdata),
-.out1(value_out),
-.out2(subwire),
-.addr1(wraddress),
-.addr2(rdaddress));
+    .clk (clk),
+    .we1(wren),
+    .we2(1'b0),
+    .data1(data),
+    .data2(uselessdata),
+    .out1(value_out),
+    .out2(subwire),
+    .addr1(wraddress),
+    .addr2(rdaddress)
+);
 
 
 endmodule
@@ -2324,16 +2332,19 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
-.clk (clk),
-.we1(wren),
-.we2(1'b0),
-.data1(data),
-.data2(uselessdata),
-.out1(value_out),
-.out2(subwire),
-.addr1(wraddress),
-.addr2(rdaddress));
+    .clk (clk),
+    .we1(wren),
+    .we2(1'b0),
+    .data1(data),
+    .data2(uselessdata),
+    .out1(value_out),
+    .out2(subwire),
+    .addr1(wraddress),
+    .addr2(rdaddress)
+);
 
 
 endmodule
@@ -2364,16 +2375,20 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+ 
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
-.clk (clk),
-.we1(wren),
-.we2(1'b0),
-.data1(data),
-.data2(uselessdata),
-.out1(value_out),
-.out2(subwire),
-.addr1(wraddress),
-.addr2(rdaddress));
+    .clk (clk),
+    .we1(wren),
+    .we2(1'b0),
+    .data1(data),
+    .data2(uselessdata),
+    .out1(value_out),
+    .out2(subwire),
+    .addr1(wraddress),
+    .addr2(rdaddress)
+);
 
 
 endmodule
@@ -2403,16 +2418,20 @@ module top_ram (
 	assign q = sub_wire0 | dummy;
 	wire[32-1:0] dummy;
 	assign dummy = junk_output & 32'b0;
+	
+ defparam inst2.ADDR_WIDTH = 8;
+ defparam inst2.DATA_WIDTH = 32;
  dual_port_ram inst2(
- .clk (clk),
- .we1(wren),
- .we2(1'b0),
- .data1(data),
- .data2(data),
- .out1(junk_output),
- .out2(sub_wire0),
- .addr1(wraddress),
- .addr2(rdaddress));
+    .clk (clk),
+    .we1(wren),
+    .we2(1'b0),
+    .data1(data),
+    .data2(data),
+    .out1(junk_output),
+    .out2(sub_wire0),
+    .addr1(wraddress),
+    .addr2(rdaddress)
+);
 
 endmodule
 
@@ -2881,18 +2900,20 @@ begin // : STATUS_COUNTER
 // Write but no read.
 	else if ((wrreq) && (!rdreq) && (status_cnt != 64 ))
 		status_cnt <= status_cnt + 1'b1;
-end 
-  dual_port_ram ram_addr(
-.we1      (wrreq)      , // write enable
- .we2      (rdreq)       , // Read enable
-.addr1 (wr_pointer) , // address_0 input 
-.addr2 (rd_pointer) , // address_q input  
-.data1    (data)    , // data_0 bi-directional
-.data2    (junk_input),   // data_1 bi-directional
-.clk(clk),
-.out1	(data_ram),
-.out2	(junk_output)
- ); 
+end
+	defparam ram_addr.ADDR_WIDTH = `rFIFORSIZEWIDTH;
+	defparam ram_addr.DATA_WIDTH = `rFIFOINPUTWIDTH; 
+    dual_port_ram ram_addr(
+        .we1    (wrreq)      , // write enable
+        .we2    (rdreq)       , // Read enable
+        .addr1  (wr_pointer) , // address_0 input 
+        .addr2  (rd_pointer) , // address_q input  
+        .data1  (data)    , // data_0 bi-directional
+        .data2  (junk_input),   // data_1 bi-directional
+        .clk    (clk),
+        .out1   (data_ram),
+        .out2   (junk_output)
+    ); 
 
 
 endmodule
@@ -2967,17 +2988,19 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1'b1;
 end 
 assign usedw = status_cnt[`wFIFOSIZEWIDTH-1:0];
-  dual_port_ram ram_addr(
-.we1      (wrreq)      , // write enable
- .we2      (rdreq)       , // Read enable
-.addr1 (wr_pointer) , // address_0 input 
-.addr2 (rd_pointer) , // address_q input  
-.data1    (data)    , // data_0 bi-directional
-.data2    (junk_input),   // data_1 bi-directional
-.clk(clk),
-.out1	(data_ram),
-.out2	(junk_output)
- ); 
+	defparam ram_addr.ADDR_WIDTH = `wFIFOSIZEWIDTH;
+	defparam ram_addr.DATA_WIDTH = `wFIFOINPUTWIDTH;
+    dual_port_ram ram_addr(
+        .we1    (wrreq)      , // write enable
+        .we2    (rdreq)       , // Read enable
+        .addr1  (wr_pointer) , // address_0 input 
+        .addr2  (rd_pointer) , // address_q input  
+        .data1  (data)    , // data_0 bi-directional
+        .data2  (junk_input),   // data_1 bi-directional
+        .clk    (clk),
+        .out1	(data_ram),
+        .out2	(junk_output)
+    ); 
 
 
 endmodule
@@ -3041,17 +3064,19 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 5'b10000))
 		status_cnt <= status_cnt + 1;
 end
-  dual_port_ram ram_addr(
-.we1      (wrreq)      , // write enable
- .we2      (rdreq)       , // Read enable
-.addr1 (wr_pointer) , // address_0 input 
-.addr2 (rd_pointer) , // address_q input  
-.data1    (data)    , // data_0 bi-directional
-.data2    (junk_input),   // data_1 bi-directional
-.clk(clk),
-.out1	(data_ram),
-.out2	(junk_output)
- ); 
+	defparam ram_addr.ADDR_WIDTH = `aFIFOSIZEWIDTH;
+	defparam ram_addr.DATA_WIDTH = `aFIFOWIDTH;
+      dual_port_ram ram_addr(
+        .we1    (wrreq)      , // write enable
+        .we2    (rdreq)       , // Read enable
+        .addr1  (wr_pointer) , // address_0 input 
+        .addr2  (rd_pointer) , // address_q input  
+        .data1  (data)    , // data_0 bi-directional
+        .data2  (junk_input),   // data_1 bi-directional
+        .clk    (clk),
+        .out1	(data_ram),
+        .out2	(junk_output)
+    ); 
 
 
 endmodule
@@ -3111,16 +3136,19 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 16 ))
 		status_cnt <= status_cnt + 1'b1;
 end
+	defparam ram_addr.ADDR_WIDTH = `mFIFOSIZEWIDTH;
+	defparam ram_addr.DATA_WIDTH = `mFIFOWIDTH;
 	dual_port_ram ram_addr(
-	.we1      (wrreq)      , // write enable
-	.we2      (rdreq)       , // Read enable
-	.addr1 (wr_pointer) , // address_0 input
-	.addr2 (rd_pointer) , // address_q input
-	.data1    (data)    , // data_0 bi-directional
-	.data2    (junk_input),   // data_1 bi-directional
-	.clk(clk),
-	.out1	(data_ram),
-	.out2	(junk_output));
+        .we1    (wrreq)      , // write enable
+        .we2    (rdreq)       , // Read enable
+        .addr1  (wr_pointer) , // address_0 input
+        .addr2  (rd_pointer) , // address_q input
+        .data1  (data)    , // data_0 bi-directional
+        .data2  (junk_input),   // data_1 bi-directional
+        .clk    (clk),
+        .out1	(data_ram),
+        .out2	(junk_output)
+    );
 
 
 endmodule

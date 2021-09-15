@@ -286,6 +286,10 @@ assign raygroupout = raygroupout01 | raygroupout10 ;
     end 
 
     resultcounter rc (resultid, newresult, done, cntreset, pglobalreset, tm3_clk_v0); 
+
+    // global reset as an output is undriven!
+    assign globalreset = pglobalreset;
+
  endmodule
 
 
@@ -1654,14 +1658,17 @@ reg     temp_datavalid;
 
     assign dataout = mem_block2 ;
 
+
     always @(posedge clk or posedge we)
     begin
-       raddr <= addr ; 
+
        if (we == 1'b1)
        begin
           mem_block1 <= datain ; 
           mem_block2 <= mem_block1 ; 
        end  
+       else
+   	       raddr <= addr ; 
     end 
  endmodule
 

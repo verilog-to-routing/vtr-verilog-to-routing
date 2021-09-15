@@ -10,9 +10,11 @@
 long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc);
 
 std::string get_file_extension(std::string input_file);
+std::string get_directory(std::string input_file);
 void create_directory(std::string path);
 void assert_supported_file_extension(std::string input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
+void get_current_path();
 
 const char* name_based_on_op(operation_list op);
 const char* name_based_on_ids(ids op);
@@ -55,6 +57,8 @@ int is_dont_care_string(char* string);
 
 char* get_pin_name(char* name);
 char* get_port_name(char* name);
+char* get_hard_block_node_name(char* name);
+char* get_stripped_name(const char* subcircuit_name);
 int get_pin_number(char* name);
 short get_bit(char in);
 short get_bit(short in);
@@ -71,5 +75,7 @@ int odin_sprintf(char* s, const char* format, ...);
 char* str_collate(char* str1, char* str2);
 
 void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src);
+
+void print_input_files_info();
 
 #endif

@@ -41,6 +41,7 @@ def drop_entries_on_failure(values):
                 "max_rss(MiB)",
                 "exec_time(ms)",
                 "synthesis_time(ms)",
+                "techmap_time(ms)",
                 "simulation_time(ms)",
                 "Latch Drivers",
                 "Pi",
