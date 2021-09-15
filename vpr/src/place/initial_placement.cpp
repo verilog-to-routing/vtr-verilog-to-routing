@@ -65,6 +65,12 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type,
                              std::string circuit_name);
 
+static bool is_loc_on_chip(t_pl_loc& loc) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    return (loc.x >= 0 && loc.x < int(device_ctx.grid.width()) && loc.y >= 0 && loc.y < int(device_ctx.grid.height()));
+}
+
 static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type, std::string circuit_name) {
     if (circuit_name == "test") {
         VTR_LOG("In get random legal placement routine\n");
@@ -334,6 +340,11 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
+
+        if (!is_loc_on_chip(member_pos)) {
+            macro_can_be_placed = false;
+            break;
+        }
 
         if (circuit_name == "test") {
             VTR_LOG("Member pos is x: %d, y: %d, subtile: %d \n", member_pos.x, member_pos.y, member_pos.sub_tile);
