@@ -1941,7 +1941,7 @@ module b_left_shifter_new (
 input [55:0] shift_in;
 input [5:0] shift_value;
 output [55:0] shift_out;
-reg [47:0] shift_out;
+reg [55:0] shift_out;
 
 always @(shift_value)
 begin
@@ -2599,7 +2599,7 @@ module b_right_shifter_new (
 input [26:0] shift_in;
 input [4:0] shift_value;
 output [26:0] shift_out;
-reg [47:0] shift_out;
+reg [26:0] shift_out;
 
 always @(shift_value)
 begin

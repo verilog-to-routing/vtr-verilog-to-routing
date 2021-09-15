@@ -35,6 +35,7 @@ extern void declare_hard_adder_for_sub(nnode_t* node);
 extern void instantiate_hard_adder_subtraction(nnode_t* node, short mark, netlist_t* netlist);
 extern void split_adder_for_sub(nnode_t* node, int a, int b, int sizea, int sizeb, int cin, int cout, int count, netlist_t* netlist);
 extern void iterate_adders_for_sub(netlist_t* netlist);
+extern void instantiate_sub_w_borrow_block(nnode_t* node, short traverse_mark_number, netlist_t* netlist);
 extern void clean_adders_for_sub();
 
 #endif // SUBS_H

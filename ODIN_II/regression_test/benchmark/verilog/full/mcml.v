@@ -18,7 +18,7 @@
 `define MIN_WEIGHT 9'b011001000 
 
 // From Boundary
-`define BIT_WIDTH   7'b0100000
+`define BIT_WIDTH 7'b0100000
 `define LAYER_WIDTH 6'b000011
 `define INTMAX 32'b01111111111111111111111111111111
 `define INTMIN 32'b10000000000000000000000000000000
@@ -59,8 +59,8 @@
 
 //`define BIT_WIDTH 7'b0100000
 `define BIT_WIDTH_2 8'b01000000
-`define WORD_WIDTH  8'b01000000
-`define ADDR_WIDTH    6'b010000          //256x256=2^8*2^8=2^16
+`define WORD_WIDTH 8'b01000000
+`define ADDR_WIDTH 6'b010000          //256x256=2^8*2^8=2^16
 
 
 //From scatterer:
@@ -103,319 +103,319 @@ module mcml (
 	
 );
 
-	// Total number of constants
-	//parameter LAST_CONSTANT = 104;
-	//parameter NUM_FRESNELS = 128;
-	//parameter NUM_TRIG_ELS = 1024;
-	//parameter ABSORB_ADDR_WIDTH=16;
-	//parameter ABSORB_WORD_WIDTH=64;
-	//parameter BIT_WIDTH = 32;
+// Total number of constants
+//parameter LAST_CONSTANT = 104;
+//parameter NUM_FRESNELS = 128;
+//parameter NUM_TRIG_ELS = 1024;
+//parameter ABSORB_ADDR_WIDTH=16;
+//parameter ABSORB_WORD_WIDTH=64;
+//parameter BIT_WIDTH = 32;
 
-	input				reset;
-	input				clk;
-	input [31:0]		constants;
-	input				read_constants;
-	input				inc_result;
+input				reset;
+input				clk;
+input [31:0]		constants;
+input				read_constants;
+input				inc_result;
 
-	output				calc_in_progress;
-	output [31:0]		result;
-	reg					calc_in_progress;
-	reg [31:0]			result;
-
-
-	//integer i;
-
-	wire [31:0] mem_fres_up, mem_fres_down, mem_sint, mem_cost;
-
-	// photon calculator
-
-	wire reset;
-
-	// Scatterer Reflector memory look-up
-	wire [12:0] tindex;
-	wire [9:0] fresIndex;
-
-	//   DeadOrAlive Module (nothing)
-
-	// Final results
-	wire [16-1:0] absorb_rdaddress, absorb_wraddress;
-	wire absorb_wren;
-	wire [64-1:0] absorb_data;
-	wire [64-1:0] absorb_q;
-
-	// Flag when final results ready
-	wire done;
-	reg enable;
-	reg reset_calculator;
-
-	// Combinational drivers
-	//reg [31:0]			c_const[104 - 1:0];
-	output [31:0] c_const__103;
-	reg [31:0]			c_const__103;
-	output [31:0] c_const__102;
-	reg [31:0]			c_const__102;
-	output [31:0] c_const__101;
-	reg [31:0]			c_const__101;
-	output [31:0] c_const__100;
-	reg [31:0]			c_const__100;
-	output [31:0] c_const__99;
-	reg [31:0]			c_const__99;
-	reg [31:0]			c_const__98;
-	reg [31:0]			c_const__97;
-	reg [31:0]			c_const__96;
-	reg [31:0]			c_const__95;
-	reg [31:0]			c_const__94;
-	reg [31:0]			c_const__93;
-	reg [31:0]			c_const__92;
-	reg [31:0]			c_const__91;
-	reg [31:0]			c_const__90;
-	reg [31:0]			c_const__89;
-	reg [31:0]			c_const__88;
-	reg [31:0]			c_const__87;
-	reg [31:0]			c_const__86;
-	reg [31:0]			c_const__85;
-	reg [31:0]			c_const__84;
-	reg [31:0]			c_const__83;
-	reg [31:0]			c_const__82;
-	reg [31:0]			c_const__81;
-	reg [31:0]			c_const__80;
-	reg [31:0]			c_const__79;
-	reg [31:0]			c_const__78;
-	reg [31:0]			c_const__77;
-	reg [31:0]			c_const__76;
-	reg [31:0]			c_const__75;
-	reg [31:0]			c_const__74;
-	reg [31:0]			c_const__73;
-	reg [31:0]			c_const__72;
-	reg [31:0]			c_const__71;
-	reg [31:0]			c_const__70;
-	reg [31:0]			c_const__69;
-	reg [31:0]			c_const__68;
-	reg [31:0]			c_const__67;
-	reg [31:0]			c_const__66;
-	reg [31:0]			c_const__65;
-	reg [31:0]			c_const__64;
-	reg [31:0]			c_const__63;
-	reg [31:0]			c_const__62;
-	reg [31:0]			c_const__61;
-	reg [31:0]			c_const__60;
-	reg [31:0]			c_const__59;
-	reg [31:0]			c_const__58;
-	reg [31:0]			c_const__57;
-	reg [31:0]			c_const__56;
-	reg [31:0]			c_const__55;
-	reg [31:0]			c_const__54;
-	reg [31:0]			c_const__53;
-	reg [31:0]			c_const__52;
-	reg [31:0]			c_const__51;
-	reg [31:0]			c_const__50;
-	reg [31:0]			c_const__49;
-	reg [31:0]			c_const__48;
-	reg [31:0]			c_const__47;
-	reg [31:0]			c_const__46;
-	reg [31:0]			c_const__45;
-	reg [31:0]			c_const__44;
-	reg [31:0]			c_const__43;
-	reg [31:0]			c_const__42;
-	reg [31:0]			c_const__41;
-	reg [31:0]			c_const__40;
-	reg [31:0]			c_const__39;
-	reg [31:0]			c_const__38;
-	reg [31:0]			c_const__37;
-	reg [31:0]			c_const__36;
-	reg [31:0]			c_const__35;
-	reg [31:0]			c_const__34;
-	reg [31:0]			c_const__33;
-	reg [31:0]			c_const__32;
-	reg [31:0]			c_const__31;
-	reg [31:0]			c_const__30;
-	reg [31:0]			c_const__29;
-	reg [31:0]			c_const__28;
-	reg [31:0]			c_const__27;
-	reg [31:0]			c_const__26;
-	reg [31:0]			c_const__25;
-	reg [31:0]			c_const__24;
-	reg [31:0]			c_const__23;
-	reg [31:0]			c_const__22;
-	reg [31:0]			c_const__21;
-	reg [31:0]			c_const__20;
-	reg [31:0]			c_const__19;
-	reg [31:0]			c_const__18;
-	reg [31:0]			c_const__17;
-	reg [31:0]			c_const__16;
-	reg [31:0]			c_const__15;
-	reg [31:0]			c_const__14;
-	reg [31:0]			c_const__13;
-	reg [31:0]			c_const__12;
-	reg [31:0]			c_const__11;
-	reg [31:0]			c_const__10;
-	reg [31:0]			c_const__9;
-	reg [31:0]			c_const__8;
-	reg [31:0]			c_const__7;
-	reg [31:0]			c_const__6;
-	reg [31:0]			c_const__5;
-	reg [31:0]			c_const__4;
-	reg [31:0]			c_const__3;
-	reg [31:0]			c_const__2;
-	reg [31:0]			c_const__1;
-	reg [31:0]			c_const__0;
-
-	output [12:0] c_counter; 
-	reg [12:0]			c_counter;
-	reg	c_toggle;
+output				calc_in_progress;
+output [31:0]		result;
+reg					calc_in_progress;
+reg [31:0]			result;
 
 
-	output [16-1:0] c_absorb_read_counter, c_absorb_write_counter;
-	output [16-1:0] absorb_rdaddress_mux, absorb_wraddress_mux;
-	output [64-1:0] absorb_data_mux;
-	output absorb_wren_mux;
+//integer i;
 
-	reg [16-1:0] c_absorb_read_counter, c_absorb_write_counter;
-	reg [16-1:0] absorb_rdaddress_mux, absorb_wraddress_mux;
-	reg [64-1:0] absorb_data_mux;
-	reg absorb_wren_mux;
+wire [31:0] mem_fres_up, mem_fres_down, mem_sint, mem_cost;
 
-	output[3:0] r_state; 
-	output[3:0] c_state; 
+// photon calculator
 
-	reg [3:0]			c_state;
+wire reset;
 
-	reg [31:0]			c_result;
-	reg					c_calc_in_progress;
+// Scatterer Reflector memory look-up
+wire [12:0] tindex;
+wire [9:0] fresIndex;
 
-	reg wren_fres_up, wren_fres_down, wren_sinp, wren_cosp, wren_sint, wren_cost;
-	reg [2:0] mem_layer;
+//   DeadOrAlive Module (nothing)
 
-	// Registered drivers
-	//reg [31:0]			r_const[104 - 1:0];
-	reg [31:0]			r_const__103;
-	reg [31:0]			r_const__102;
-	reg [31:0]			r_const__101;
-	reg [31:0]			r_const__100;
-	reg [31:0]			r_const__99;
-	reg [31:0]			r_const__98;
-	reg [31:0]			r_const__97;
-	reg [31:0]			r_const__96;
-	reg [31:0]			r_const__95;
-	reg [31:0]			r_const__94;
-	reg [31:0]			r_const__93;
-	reg [31:0]			r_const__92;
-	reg [31:0]			r_const__91;
-	reg [31:0]			r_const__90;
-	reg [31:0]			r_const__89;
-	reg [31:0]			r_const__88;
-	reg [31:0]			r_const__87;
-	reg [31:0]			r_const__86;
-	reg [31:0]			r_const__85;
-	reg [31:0]			r_const__84;
-	reg [31:0]			r_const__83;
-	reg [31:0]			r_const__82;
-	reg [31:0]			r_const__81;
-	reg [31:0]			r_const__80;
-	reg [31:0]			r_const__79;
-	reg [31:0]			r_const__78;
-	reg [31:0]			r_const__77;
-	reg [31:0]			r_const__76;
-	reg [31:0]			r_const__75;
-	reg [31:0]			r_const__74;
-	reg [31:0]			r_const__73;
-	reg [31:0]			r_const__72;
-	reg [31:0]			r_const__71;
-	reg [31:0]			r_const__70;
-	reg [31:0]			r_const__69;
-	reg [31:0]			r_const__68;
-	reg [31:0]			r_const__67;
-	reg [31:0]			r_const__66;
-	reg [31:0]			r_const__65;
-	reg [31:0]			r_const__64;
-	reg [31:0]			r_const__63;
-	reg [31:0]			r_const__62;
-	reg [31:0]			r_const__61;
-	reg [31:0]			r_const__60;
-	reg [31:0]			r_const__59;
-	reg [31:0]			r_const__58;
-	reg [31:0]			r_const__57;
-	reg [31:0]			r_const__56;
-	reg [31:0]			r_const__55;
-	reg [31:0]			r_const__54;
-	reg [31:0]			r_const__53;
-	reg [31:0]			r_const__52;
-	reg [31:0]			r_const__51;
-	reg [31:0]			r_const__50;
-	reg [31:0]			r_const__49;
-	reg [31:0]			r_const__48;
-	reg [31:0]			r_const__47;
-	reg [31:0]			r_const__46;
-	reg [31:0]			r_const__45;
-	reg [31:0]			r_const__44;
-	reg [31:0]			r_const__43;
-	reg [31:0]			r_const__42;
-	reg [31:0]			r_const__41;
-	reg [31:0]			r_const__40;
-	reg [31:0]			r_const__39;
-	reg [31:0]			r_const__38;
-	reg [31:0]			r_const__37;
-	reg [31:0]			r_const__36;
-	reg [31:0]			r_const__35;
-	reg [31:0]			r_const__34;
-	reg [31:0]			r_const__33;
-	reg [31:0]			r_const__32;
-	reg [31:0]			r_const__31;
-	reg [31:0]			r_const__30;
-	reg [31:0]			r_const__29;
-	reg [31:0]			r_const__28;
-	reg [31:0]			r_const__27;
-	reg [31:0]			r_const__26;
-	reg [31:0]			r_const__25;
-	reg [31:0]			r_const__24;
-	reg [31:0]			r_const__23;
-	reg [31:0]			r_const__22;
-	reg [31:0]			r_const__21;
-	reg [31:0]			r_const__20;
-	reg [31:0]			r_const__19;
-	reg [31:0]			r_const__18;
-	reg [31:0]			r_const__17;
-	reg [31:0]			r_const__16;
-	reg [31:0]			r_const__15;
-	reg [31:0]			r_const__14;
-	reg [31:0]			r_const__13;
-	reg [31:0]			r_const__12;
-	reg [31:0]			r_const__11;
-	reg [31:0]			r_const__10;
-	reg [31:0]			r_const__9;
-	reg [31:0]			r_const__8;
-	reg [31:0]			r_const__7;
-	reg [31:0]			r_const__6;
-	reg [31:0]			r_const__5;
-	reg [31:0]			r_const__4;
-	reg [31:0]			r_const__3;
-	reg [31:0]			r_const__2;
-	reg [31:0]			r_const__1;
-	reg [31:0]			r_const__0;
+// Final results
+wire [16-1:0] absorb_rdaddress, absorb_wraddress;
+wire absorb_wren;
+wire [64-1:0] absorb_data;
+wire [64-1:0] absorb_q;
+
+// Flag when final results ready
+wire done;
+reg enable;
+reg reset_calculator;
+
+// Combinational drivers
+//reg [31:0]			c_const[104 - 1:0];
+output [31:0] c_const__103;
+reg [31:0]			c_const__103;
+output [31:0] c_const__102;
+reg [31:0]			c_const__102;
+output [31:0] c_const__101;
+reg [31:0]			c_const__101;
+output [31:0] c_const__100;
+reg [31:0]			c_const__100;
+output [31:0] c_const__99;
+reg [31:0]			c_const__99;
+reg [31:0]			c_const__98;
+reg [31:0]			c_const__97;
+reg [31:0]			c_const__96;
+reg [31:0]			c_const__95;
+reg [31:0]			c_const__94;
+reg [31:0]			c_const__93;
+reg [31:0]			c_const__92;
+reg [31:0]			c_const__91;
+reg [31:0]			c_const__90;
+reg [31:0]			c_const__89;
+reg [31:0]			c_const__88;
+reg [31:0]			c_const__87;
+reg [31:0]			c_const__86;
+reg [31:0]			c_const__85;
+reg [31:0]			c_const__84;
+reg [31:0]			c_const__83;
+reg [31:0]			c_const__82;
+reg [31:0]			c_const__81;
+reg [31:0]			c_const__80;
+reg [31:0]			c_const__79;
+reg [31:0]			c_const__78;
+reg [31:0]			c_const__77;
+reg [31:0]			c_const__76;
+reg [31:0]			c_const__75;
+reg [31:0]			c_const__74;
+reg [31:0]			c_const__73;
+reg [31:0]			c_const__72;
+reg [31:0]			c_const__71;
+reg [31:0]			c_const__70;
+reg [31:0]			c_const__69;
+reg [31:0]			c_const__68;
+reg [31:0]			c_const__67;
+reg [31:0]			c_const__66;
+reg [31:0]			c_const__65;
+reg [31:0]			c_const__64;
+reg [31:0]			c_const__63;
+reg [31:0]			c_const__62;
+reg [31:0]			c_const__61;
+reg [31:0]			c_const__60;
+reg [31:0]			c_const__59;
+reg [31:0]			c_const__58;
+reg [31:0]			c_const__57;
+reg [31:0]			c_const__56;
+reg [31:0]			c_const__55;
+reg [31:0]			c_const__54;
+reg [31:0]			c_const__53;
+reg [31:0]			c_const__52;
+reg [31:0]			c_const__51;
+reg [31:0]			c_const__50;
+reg [31:0]			c_const__49;
+reg [31:0]			c_const__48;
+reg [31:0]			c_const__47;
+reg [31:0]			c_const__46;
+reg [31:0]			c_const__45;
+reg [31:0]			c_const__44;
+reg [31:0]			c_const__43;
+reg [31:0]			c_const__42;
+reg [31:0]			c_const__41;
+reg [31:0]			c_const__40;
+reg [31:0]			c_const__39;
+reg [31:0]			c_const__38;
+reg [31:0]			c_const__37;
+reg [31:0]			c_const__36;
+reg [31:0]			c_const__35;
+reg [31:0]			c_const__34;
+reg [31:0]			c_const__33;
+reg [31:0]			c_const__32;
+reg [31:0]			c_const__31;
+reg [31:0]			c_const__30;
+reg [31:0]			c_const__29;
+reg [31:0]			c_const__28;
+reg [31:0]			c_const__27;
+reg [31:0]			c_const__26;
+reg [31:0]			c_const__25;
+reg [31:0]			c_const__24;
+reg [31:0]			c_const__23;
+reg [31:0]			c_const__22;
+reg [31:0]			c_const__21;
+reg [31:0]			c_const__20;
+reg [31:0]			c_const__19;
+reg [31:0]			c_const__18;
+reg [31:0]			c_const__17;
+reg [31:0]			c_const__16;
+reg [31:0]			c_const__15;
+reg [31:0]			c_const__14;
+reg [31:0]			c_const__13;
+reg [31:0]			c_const__12;
+reg [31:0]			c_const__11;
+reg [31:0]			c_const__10;
+reg [31:0]			c_const__9;
+reg [31:0]			c_const__8;
+reg [31:0]			c_const__7;
+reg [31:0]			c_const__6;
+reg [31:0]			c_const__5;
+reg [31:0]			c_const__4;
+reg [31:0]			c_const__3;
+reg [31:0]			c_const__2;
+reg [31:0]			c_const__1;
+reg [31:0]			c_const__0;
+
+output [12:0] c_counter; 
+reg [12:0]			c_counter;
+reg	c_toggle;
 
 
-	output [12:0] r_counter; 
-	reg [12:0]			r_counter;
-	reg [16-1:0] r_absorb_read_counter;
-	reg [16-1:0] r_absorb_write_counter;
-	reg [3:0]			r_state;
-	reg	r_toggle;
+output [16-1:0] c_absorb_read_counter, c_absorb_write_counter;
+output [16-1:0] absorb_rdaddress_mux, absorb_wraddress_mux;
+output [64-1:0] absorb_data_mux;
+output absorb_wren_mux;
 
-	// Skeleton program states
-	parameter [3:0] ERROR_ST = 4'b0000, 
-			READ1_ST = 4'b0001, 
-			READ2_ST = 4'b0010, 
-			READ3_ST = 4'b0011, 
-			READ4_ST = 4'b0100, 
-			READ5_ST = 4'b0101, 
-			RESET_MEM_ST = 4'b0110,
-			CALC_ST = 4'b1000, 
-			DONE1_ST = 4'b1001, 
-			DONE2_ST = 4'b1010, 
-			DONE3_ST = 4'b1011, 
-			DONE4_ST = 4'b1100, 
-			DONE5_ST = 4'b1101, 
-			DONE6_ST = 4'b1110;
+reg [16-1:0] c_absorb_read_counter, c_absorb_write_counter;
+reg [16-1:0] absorb_rdaddress_mux, absorb_wraddress_mux;
+reg [64-1:0] absorb_data_mux;
+reg absorb_wren_mux;
+
+output[3:0] r_state; 
+output[3:0] c_state; 
+
+reg [3:0]			c_state;
+
+reg [31:0]			c_result;
+reg					c_calc_in_progress;
+
+reg wren_fres_up, wren_fres_down, wren_sinp, wren_cosp, wren_sint, wren_cost;
+reg [2:0] mem_layer;
+
+// Registered drivers
+//reg [31:0]			r_const[104 - 1:0];
+reg [31:0]			r_const__103;
+reg [31:0]			r_const__102;
+reg [31:0]			r_const__101;
+reg [31:0]			r_const__100;
+reg [31:0]			r_const__99;
+reg [31:0]			r_const__98;
+reg [31:0]			r_const__97;
+reg [31:0]			r_const__96;
+reg [31:0]			r_const__95;
+reg [31:0]			r_const__94;
+reg [31:0]			r_const__93;
+reg [31:0]			r_const__92;
+reg [31:0]			r_const__91;
+reg [31:0]			r_const__90;
+reg [31:0]			r_const__89;
+reg [31:0]			r_const__88;
+reg [31:0]			r_const__87;
+reg [31:0]			r_const__86;
+reg [31:0]			r_const__85;
+reg [31:0]			r_const__84;
+reg [31:0]			r_const__83;
+reg [31:0]			r_const__82;
+reg [31:0]			r_const__81;
+reg [31:0]			r_const__80;
+reg [31:0]			r_const__79;
+reg [31:0]			r_const__78;
+reg [31:0]			r_const__77;
+reg [31:0]			r_const__76;
+reg [31:0]			r_const__75;
+reg [31:0]			r_const__74;
+reg [31:0]			r_const__73;
+reg [31:0]			r_const__72;
+reg [31:0]			r_const__71;
+reg [31:0]			r_const__70;
+reg [31:0]			r_const__69;
+reg [31:0]			r_const__68;
+reg [31:0]			r_const__67;
+reg [31:0]			r_const__66;
+reg [31:0]			r_const__65;
+reg [31:0]			r_const__64;
+reg [31:0]			r_const__63;
+reg [31:0]			r_const__62;
+reg [31:0]			r_const__61;
+reg [31:0]			r_const__60;
+reg [31:0]			r_const__59;
+reg [31:0]			r_const__58;
+reg [31:0]			r_const__57;
+reg [31:0]			r_const__56;
+reg [31:0]			r_const__55;
+reg [31:0]			r_const__54;
+reg [31:0]			r_const__53;
+reg [31:0]			r_const__52;
+reg [31:0]			r_const__51;
+reg [31:0]			r_const__50;
+reg [31:0]			r_const__49;
+reg [31:0]			r_const__48;
+reg [31:0]			r_const__47;
+reg [31:0]			r_const__46;
+reg [31:0]			r_const__45;
+reg [31:0]			r_const__44;
+reg [31:0]			r_const__43;
+reg [31:0]			r_const__42;
+reg [31:0]			r_const__41;
+reg [31:0]			r_const__40;
+reg [31:0]			r_const__39;
+reg [31:0]			r_const__38;
+reg [31:0]			r_const__37;
+reg [31:0]			r_const__36;
+reg [31:0]			r_const__35;
+reg [31:0]			r_const__34;
+reg [31:0]			r_const__33;
+reg [31:0]			r_const__32;
+reg [31:0]			r_const__31;
+reg [31:0]			r_const__30;
+reg [31:0]			r_const__29;
+reg [31:0]			r_const__28;
+reg [31:0]			r_const__27;
+reg [31:0]			r_const__26;
+reg [31:0]			r_const__25;
+reg [31:0]			r_const__24;
+reg [31:0]			r_const__23;
+reg [31:0]			r_const__22;
+reg [31:0]			r_const__21;
+reg [31:0]			r_const__20;
+reg [31:0]			r_const__19;
+reg [31:0]			r_const__18;
+reg [31:0]			r_const__17;
+reg [31:0]			r_const__16;
+reg [31:0]			r_const__15;
+reg [31:0]			r_const__14;
+reg [31:0]			r_const__13;
+reg [31:0]			r_const__12;
+reg [31:0]			r_const__11;
+reg [31:0]			r_const__10;
+reg [31:0]			r_const__9;
+reg [31:0]			r_const__8;
+reg [31:0]			r_const__7;
+reg [31:0]			r_const__6;
+reg [31:0]			r_const__5;
+reg [31:0]			r_const__4;
+reg [31:0]			r_const__3;
+reg [31:0]			r_const__2;
+reg [31:0]			r_const__1;
+reg [31:0]			r_const__0;
+
+
+output [12:0] r_counter; 
+reg [12:0]			r_counter;
+reg [16-1:0] r_absorb_read_counter;
+reg [16-1:0] r_absorb_write_counter;
+reg [3:0]			r_state;
+reg	r_toggle;
+
+// Skeleton program states
+parameter [3:0] ERROR_ST = 4'b0000, 
+				READ1_ST = 4'b0001, 
+				READ2_ST = 4'b0010, 
+				READ3_ST = 4'b0011, 
+				READ4_ST = 4'b0100, 
+				READ5_ST = 4'b0101, 
+				RESET_MEM_ST = 4'b0110,
+				CALC_ST = 4'b1000, 
+				DONE1_ST = 4'b1001, 
+				DONE2_ST = 4'b1010, 
+				DONE3_ST = 4'b1011, 
+				DONE4_ST = 4'b1100, 
+				DONE5_ST = 4'b1101, 
+				DONE6_ST = 4'b1110;
 
 // Instantiate lookup memories
 dual_port_mem_zz u_fres_up(clk, constants, {3'b0, fresIndex}, {3'b0, mem_layer, r_counter[6:0]}, wren_fres_up, mem_fres_up);
@@ -452,12 +452,9 @@ PhotonCalculator u_calc (
 	.initialWeight(32'b00000000000111010100101111111111),
 	
 	//   Mover
-	.OneOver_MutMaxrad_0(r_const__32), .OneOver_MutMaxrad_1(r_const__33), .OneOver_MutMaxrad_2(r_const__34), 
-	.OneOver_MutMaxrad_3(r_const__35), .OneOver_MutMaxrad_4(r_const__36), .OneOver_MutMaxrad_5(r_const__37),
-	.OneOver_MutMaxdep_0(r_const__38), .OneOver_MutMaxdep_1(r_const__39), .OneOver_MutMaxdep_2(r_const__40), 
-	.OneOver_MutMaxdep_3(r_const__41), .OneOver_MutMaxdep_4(r_const__42), .OneOver_MutMaxdep_5(r_const__43),
-	.OneOver_Mut_0(r_const__26), .OneOver_Mut_1(r_const__27), .OneOver_Mut_2(r_const__28), 
-	.OneOver_Mut_3(r_const__29), .OneOver_Mut_4(r_const__30), .OneOver_Mut_5(r_const__31),
+	.OneOver_MutMaxrad_0(r_const__32), .OneOver_MutMaxrad_1(r_const__33), .OneOver_MutMaxrad_2(r_const__34), .OneOver_MutMaxrad_3(r_const__35), .OneOver_MutMaxrad_4(r_const__36), .OneOver_MutMaxrad_5(r_const__37),
+	.OneOver_MutMaxdep_0(r_const__38), .OneOver_MutMaxdep_1(r_const__39), .OneOver_MutMaxdep_2(r_const__40), .OneOver_MutMaxdep_3(r_const__41), .OneOver_MutMaxdep_4(r_const__42), .OneOver_MutMaxdep_5(r_const__43),
+	.OneOver_Mut_0(r_const__26), .OneOver_Mut_1(r_const__27), .OneOver_Mut_2(r_const__28), .OneOver_Mut_3(r_const__29), .OneOver_Mut_4(r_const__30), .OneOver_Mut_5(r_const__31),
 
 	//   BoundaryChecker
 	.z1_0(r_const__50), .z1_1(r_const__51), .z1_2(r_const__52), .z1_3(r_const__53), .z1_4(r_const__54), .z1_5(r_const__55),
@@ -470,17 +467,15 @@ PhotonCalculator u_calc (
 	//   Scatterer Reflector Wrapper
 	.down_niOverNt_1(r_const__69), .down_niOverNt_2(r_const__70), .down_niOverNt_3(r_const__71), .down_niOverNt_4(r_const__72), .down_niOverNt_5(r_const__73),
 	.up_niOverNt_1(r_const__75), .up_niOverNt_2(r_const__76), .up_niOverNt_3(r_const__77), .up_niOverNt_4(r_const__78), .up_niOverNt_5(r_const__79),
-	.down_niOverNt_2_1({r_const__81,r_const__87}), .down_niOverNt_2_2({r_const__82,r_const__88}), 
-	.down_niOverNt_2_3({r_const__83,r_const__89}), .down_niOverNt_2_4({r_const__84,r_const__90}), .down_niOverNt_2_5({r_const__85,r_const__91}),
-	.up_niOverNt_2_1({r_const__93,r_const__99}), .up_niOverNt_2_2({r_const__94,r_const__100}), 
-	.up_niOverNt_2_3({r_const__95,r_const__101}), .up_niOverNt_2_4({r_const__96,r_const__102}), .up_niOverNt_2_5({r_const__97,r_const__103}),
+	.down_niOverNt_2_1({r_const__81,r_const__87}), .down_niOverNt_2_2({r_const__82,r_const__88}), .down_niOverNt_2_3({r_const__83,r_const__89}), .down_niOverNt_2_4({r_const__84,r_const__90}), .down_niOverNt_2_5({r_const__85,r_const__91}),
+	.up_niOverNt_2_1({r_const__93,r_const__99}), .up_niOverNt_2_2({r_const__94,r_const__100}), .up_niOverNt_2_3({r_const__95,r_const__101}), .up_niOverNt_2_4({r_const__96,r_const__102}), .up_niOverNt_2_5({r_const__97,r_const__103}),
 	.downCritAngle_0(r_const__7), .downCritAngle_1(r_const__8), .downCritAngle_2(r_const__9), .downCritAngle_3(r_const__10), .downCritAngle_4(r_const__11),
 	.upCritAngle_0(r_const__13), .upCritAngle_1(r_const__14), .upCritAngle_2(r_const__15), .upCritAngle_3(r_const__16), .upCritAngle_4(r_const__17),
 	.muaFraction1(r_const__57), .muaFraction2(r_const__58), .muaFraction3(r_const__59), .muaFraction4(r_const__60), .muaFraction5(r_const__61),
-	// Interface to memory look-up
-	// From Memories
+	  // Interface to memory look-up
+	    // From Memories
 	.up_rFresnel(mem_fres_up), .down_rFresnel(mem_fres_down), .sint(mem_sint), .cost(mem_cost),
-	// To Memories
+		// To Memories
 	.tindex(tindex), .fresIndex(fresIndex),
 
 	// DeadOrAlive (no Constants)
@@ -491,10 +486,10 @@ PhotonCalculator u_calc (
 
 	// Done signal
 	.done(done)
-);
+	);
 
 // Mux to read the absorbtion array
-always @*
+always @(r_state or done or r_absorb_read_counter or r_absorb_write_counter or absorb_wraddress or absorb_data or absorb_rdaddress or absorb_data or absorb_wren )
 begin
 	if(r_state == RESET_MEM_ST)
 	begin
@@ -523,125 +518,245 @@ end
 //  1.  Read constants
 //  2.  Wait for completion
 //  3.  Write data back
-always @* begin
+always @(r_state or r_absorb_read_counter or r_absorb_write_counter or result or r_toggle or r_counter or read_constants or constants or done
+			or inc_result or mem_cost or mem_sint or absorb_q
+			or r_const__103
+			or r_const__102
+			or r_const__101
+			or r_const__100
+			or r_const__99
+			or r_const__98
+			or r_const__97
+			or r_const__96
+			or r_const__95
+			or r_const__94
+			or r_const__93
+			or r_const__92
+			or r_const__91
+			or r_const__90
+			or r_const__89
+			or r_const__88
+			or r_const__87
+			or r_const__86
+			or r_const__85
+			or r_const__84
+			or r_const__83
+			or r_const__82
+			or r_const__81
+			or r_const__80
+			or r_const__79
+			or r_const__78
+			or r_const__77
+			or r_const__76
+			or r_const__75
+			or r_const__74
+			or r_const__73
+			or r_const__72
+			or r_const__71
+			or r_const__70
+			or r_const__69
+			or r_const__68
+			or r_const__67
+			or r_const__66
+			or r_const__65
+			or r_const__64
+			or r_const__63
+			or r_const__62
+			or r_const__61
+			or r_const__60
+			or r_const__59
+			or r_const__58
+			or r_const__57
+			or r_const__56
+			or r_const__55
+			or r_const__54
+			or r_const__53
+			or r_const__52
+			or r_const__51
+			or r_const__50
+			or r_const__49
+			or r_const__48
+			or r_const__47
+			or r_const__46
+			or r_const__45
+			or r_const__44
+			or r_const__43
+			or r_const__42
+			or r_const__41
+			or r_const__40
+			or r_const__39
+			or r_const__38
+			or r_const__37
+			or r_const__36
+			or r_const__35
+			or r_const__34
+			or r_const__33
+			or r_const__32
+			or r_const__31
+			or r_const__30
+			or r_const__29
+			or r_const__28
+			or r_const__27
+			or r_const__26
+			or r_const__25
+			or r_const__24
+			or r_const__23
+			or r_const__22
+			or r_const__21
+			or r_const__20
+			or r_const__19
+			or r_const__18
+			or r_const__17
+			or r_const__16
+			or r_const__15
+			or r_const__14
+			or r_const__13
+			or r_const__12
+			or r_const__11
+			or r_const__10
+			or r_const__9
+			or r_const__8
+			or r_const__7
+			or r_const__6
+			or r_const__5
+			or r_const__4
+			or r_const__3
+			or r_const__2
+			or r_const__1
+			or r_const__0) begin
 		// Initialize data
 		//for(i = 0; i < 104; i = i + 1) begin
 		//	c_const[i] = r_const[i];
 		//end
 		begin
-			//c_const__103 = r_const__103;
-			c_const__102 = r_const__102;
-			c_const__101 = r_const__101;
-			c_const__100 = r_const__100;
-			c_const__99 = r_const__99;
-			c_const__98 = r_const__98;
-			c_const__97 = r_const__97;
-			c_const__96 = r_const__96;
-			c_const__95 = r_const__95;
-			c_const__94 = r_const__94;
-			c_const__93 = r_const__93;
-			c_const__92 = r_const__92;
-			c_const__91 = r_const__91;
-			c_const__90 = r_const__90;
-			c_const__89 = r_const__89;
-			c_const__88 = r_const__88;
-			c_const__87 = r_const__87;
-			c_const__86 = r_const__86;
-			c_const__85 = r_const__85;
-			c_const__84 = r_const__84;
-			c_const__83 = r_const__83;
-			c_const__82 = r_const__82;
-			c_const__81 = r_const__81;
-			c_const__80 = r_const__80;
-			c_const__79 = r_const__79;
-			c_const__78 = r_const__78;
-			c_const__77 = r_const__77;
-			c_const__76 = r_const__76;
-			c_const__75 = r_const__75;
-			c_const__74 = r_const__74;
-			c_const__73 = r_const__73;
-			c_const__72 = r_const__72;
-			c_const__71 = r_const__71;
-			c_const__70 = r_const__70;
-			c_const__69 = r_const__69;
-			c_const__68 = r_const__68;
-			c_const__67 = r_const__67;
-			c_const__66 = r_const__66;
-			c_const__65 = r_const__65;
-			c_const__64 = r_const__64;
-			c_const__63 = r_const__63;
-			c_const__62 = r_const__62;
-			c_const__61 = r_const__61;
-			c_const__60 = r_const__60;
-			c_const__59 = r_const__59;
-			c_const__58 = r_const__58;
-			c_const__57 = r_const__57;
-			c_const__56 = r_const__56;
-			c_const__55 = r_const__55;
-			c_const__54 = r_const__54;
-			c_const__53 = r_const__53;
-			c_const__52 = r_const__52;
-			c_const__51 = r_const__51;
-			c_const__50 = r_const__50;
-			c_const__49 = r_const__49;
-			c_const__48 = r_const__48;
-			c_const__47 = r_const__47;
-			c_const__46 = r_const__46;
-			c_const__45 = r_const__45;
-			c_const__44 = r_const__44;
-			c_const__43 = r_const__43;
-			c_const__42 = r_const__42;
-			c_const__41 = r_const__41;
-			c_const__40 = r_const__40;
-			c_const__39 = r_const__39;
-			c_const__38 = r_const__38;
-			c_const__37 = r_const__37;
-			c_const__36 = r_const__36;
-			c_const__35 = r_const__35;
-			c_const__34 = r_const__34;
-			c_const__33 = r_const__33;
-			c_const__32 = r_const__32;
-			c_const__31 = r_const__31;
-			c_const__30 = r_const__30;
-			c_const__29 = r_const__29;
-			c_const__28 = r_const__28;
-			c_const__27 = r_const__27;
-			c_const__26 = r_const__26;
-			c_const__25 = r_const__25;
-			c_const__24 = r_const__24;
-			c_const__23 = r_const__23;
-			c_const__22 = r_const__22;
-			c_const__21 = r_const__21;
-			c_const__20 = r_const__20;
-			c_const__19 = r_const__19;
-			c_const__18 = r_const__18;
-			c_const__17 = r_const__17;
-			c_const__16 = r_const__16;
-			c_const__15 = r_const__15;
-			c_const__14 = r_const__14;
-			c_const__13 = r_const__13;
-			c_const__12 = r_const__12;
-			c_const__11 = r_const__11;
-			c_const__10 = r_const__10;
-			c_const__9 = r_const__9;
-			c_const__8 = r_const__8;
-			c_const__7 = r_const__7;
-			c_const__6 = r_const__6;
-			c_const__5 = r_const__5;
-			c_const__4 = r_const__4;
-			c_const__3 = r_const__3;
-			c_const__2 = r_const__2;
-			c_const__1 = r_const__1;
-			c_const__0 = r_const__0;
+//c_const__103 = r_const__103;
+c_const__102 = r_const__102;
+c_const__101 = r_const__101;
+c_const__100 = r_const__100;
+c_const__99 = r_const__99;
+c_const__98 = r_const__98;
+c_const__97 = r_const__97;
+c_const__96 = r_const__96;
+c_const__95 = r_const__95;
+c_const__94 = r_const__94;
+c_const__93 = r_const__93;
+c_const__92 = r_const__92;
+c_const__91 = r_const__91;
+c_const__90 = r_const__90;
+c_const__89 = r_const__89;
+c_const__88 = r_const__88;
+c_const__87 = r_const__87;
+c_const__86 = r_const__86;
+c_const__85 = r_const__85;
+c_const__84 = r_const__84;
+c_const__83 = r_const__83;
+c_const__82 = r_const__82;
+c_const__81 = r_const__81;
+c_const__80 = r_const__80;
+c_const__79 = r_const__79;
+c_const__78 = r_const__78;
+c_const__77 = r_const__77;
+c_const__76 = r_const__76;
+c_const__75 = r_const__75;
+c_const__74 = r_const__74;
+c_const__73 = r_const__73;
+c_const__72 = r_const__72;
+c_const__71 = r_const__71;
+c_const__70 = r_const__70;
+c_const__69 = r_const__69;
+c_const__68 = r_const__68;
+c_const__67 = r_const__67;
+c_const__66 = r_const__66;
+c_const__65 = r_const__65;
+c_const__64 = r_const__64;
+c_const__63 = r_const__63;
+c_const__62 = r_const__62;
+c_const__61 = r_const__61;
+c_const__60 = r_const__60;
+c_const__59 = r_const__59;
+c_const__58 = r_const__58;
+c_const__57 = r_const__57;
+c_const__56 = r_const__56;
+c_const__55 = r_const__55;
+c_const__54 = r_const__54;
+c_const__53 = r_const__53;
+c_const__52 = r_const__52;
+c_const__51 = r_const__51;
+c_const__50 = r_const__50;
+c_const__49 = r_const__49;
+c_const__48 = r_const__48;
+c_const__47 = r_const__47;
+c_const__46 = r_const__46;
+c_const__45 = r_const__45;
+c_const__44 = r_const__44;
+c_const__43 = r_const__43;
+c_const__42 = r_const__42;
+c_const__41 = r_const__41;
+c_const__40 = r_const__40;
+c_const__39 = r_const__39;
+c_const__38 = r_const__38;
+c_const__37 = r_const__37;
+c_const__36 = r_const__36;
+c_const__35 = r_const__35;
+c_const__34 = r_const__34;
+c_const__33 = r_const__33;
+c_const__32 = r_const__32;
+c_const__31 = r_const__31;
+c_const__30 = r_const__30;
+c_const__29 = r_const__29;
+c_const__28 = r_const__28;
+c_const__27 = r_const__27;
+c_const__26 = r_const__26;
+c_const__25 = r_const__25;
+c_const__24 = r_const__24;
+c_const__23 = r_const__23;
+c_const__22 = r_const__22;
+c_const__21 = r_const__21;
+c_const__20 = r_const__20;
+c_const__19 = r_const__19;
+c_const__18 = r_const__18;
+c_const__17 = r_const__17;
+c_const__16 = r_const__16;
+c_const__15 = r_const__15;
+c_const__14 = r_const__14;
+c_const__13 = r_const__13;
+c_const__12 = r_const__12;
+c_const__11 = r_const__11;
+c_const__10 = r_const__10;
+c_const__9 = r_const__9;
+c_const__8 = r_const__8;
+c_const__7 = r_const__7;
+c_const__6 = r_const__6;
+c_const__5 = r_const__5;
+c_const__4 = r_const__4;
+c_const__3 = r_const__3;
+c_const__2 = r_const__2;
+c_const__1 = r_const__1;
+c_const__0 = r_const__0;
 		end
-
+		/*
+		//honourary c_const__103 = r_const__103
+		c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		c_calc_in_progress = 1'b0;
+		c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+		mem_layer = r_counter[12:10];
+*/
 		// Determine next state and which data changes
 		case(r_state)
 			//ERROR_ST:
 			READ1_ST:
 				begin			
 					if(read_constants)
-					begin
+						begin
 						// peter m redoing this to a shift register r_const 104 will shift to r_const 103 etc etc
 						// if its in the read_constants state
 						//	c_const[r_counter] = constants;
@@ -659,56 +774,56 @@ always @* begin
 						c_absorb_write_counter = r_absorb_write_counter;
 						c_toggle = r_toggle;
 						mem_layer = r_counter[12:10];
-					end
+						end
 					else
-					begin
+						begin
 						c_const__103 = r_const__103;
-						if(r_counter >= 104) 
-						begin
-							c_counter = 13'b0000000000000;
-							c_state = READ2_ST;
-							//preventing latches
-							
-							c_absorb_read_counter = r_absorb_read_counter;
-							c_result = result;
-							c_calc_in_progress = 1'b0;
-							wren_fres_up = 1'b0;
-							wren_fres_down = 1'b0;
-							wren_sint = 1'b0;
-							wren_cost = 1'b0;
-							c_absorb_write_counter = r_absorb_write_counter;
-							c_toggle = r_toggle;
-							mem_layer = r_counter[12:10];
-							
+							if(r_counter >= 104) 
+								begin
+									c_counter = 13'b0000000000000;
+									c_state = READ2_ST;
+									//preventing latches
+									
+									c_absorb_read_counter = r_absorb_read_counter;
+									c_result = result;
+									c_calc_in_progress = 1'b0;
+									wren_fres_up = 1'b0;
+									wren_fres_down = 1'b0;
+									wren_sint = 1'b0;
+									wren_cost = 1'b0;
+									c_absorb_write_counter = r_absorb_write_counter;
+									c_toggle = r_toggle;
+									mem_layer = r_counter[12:10];
+									
+								end
+								else
+								begin
+								c_counter = r_counter;
+								c_state = r_state;
+								
+								//preventing latches
+								c_absorb_read_counter = r_absorb_read_counter;
+								c_result = result;
+								c_calc_in_progress = 1'b0;
+								wren_fres_up = 1'b0;
+								wren_fres_down = 1'b0;
+								wren_sint = 1'b0;
+								wren_cost = 1'b0;
+								c_absorb_write_counter = r_absorb_write_counter;
+								c_toggle = r_toggle;
+								mem_layer = r_counter[12:10];
+								end
 						end
-						else
-						begin
-							c_counter = r_counter;
-							c_state = r_state;
-						
-							//preventing latches
-							c_absorb_read_counter = r_absorb_read_counter;
-							c_result = result;
-							c_calc_in_progress = 1'b0;
-							wren_fres_up = 1'b0;
-							wren_fres_down = 1'b0;
-							wren_sint = 1'b0;
-							wren_cost = 1'b0;
-							c_absorb_write_counter = r_absorb_write_counter;
-							c_toggle = r_toggle;
-							mem_layer = r_counter[12:10];
-						end
-					end
 				end
 			READ2_ST:
 				begin		
 					mem_layer = r_counter[9:7];
 					if(read_constants)
-					begin
-						wren_fres_up = 1'b1;
-						c_counter = r_counter + 13'b00000000000001;
+						begin
+							wren_fres_up = 1'b1;
+							c_counter = r_counter + 13'b00000000000001;
 						//prevent latches
-					
+						
 						c_const__103 = r_const__103;
 						c_absorb_read_counter = r_absorb_read_counter;
 						c_result = result;
@@ -719,182 +834,195 @@ always @* begin
 						wren_cost = 1'b0;
 						c_absorb_write_counter = r_absorb_write_counter;
 						c_toggle = r_toggle;
-					end
-					else
-					begin
-						if(r_counter >= 5*128) 
-						begin
-							c_counter = 13'b0000000000000;
-							c_state = READ3_ST;									
-							c_const__103 = r_const__103;				
-							c_absorb_read_counter = r_absorb_read_counter;
-							c_result = result;
-							c_calc_in_progress = 1'b0;	
-							wren_fres_up = 1'b0;
-							wren_fres_down = 1'b0;
-							wren_sint = 1'b0;
-							wren_cost = 1'b0;
-							c_absorb_write_counter = r_absorb_write_counter;
-							c_toggle = r_toggle;	
-						end
-						else
-						begin
-							c_counter = r_counter;
-							c_const__103 = r_const__103;
 		
-							c_absorb_read_counter = r_absorb_read_counter;
-							c_result = result;
-							c_calc_in_progress = 1'b0;
-							c_state = r_state;
-							wren_fres_up = 1'b0;
-							wren_fres_down = 1'b0;
-							wren_sint = 1'b0;
-							wren_cost = 1'b0;
-							c_absorb_write_counter = r_absorb_write_counter;
-							c_toggle = r_toggle;
+		
 						end
-					end
+					else
+						begin
+							if(r_counter >= 5*128) 
+								begin
+									c_counter = 13'b0000000000000;
+									c_state = READ3_ST;
+									
+					c_const__103 = r_const__103;
+				
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		c_calc_in_progress = 1'b0;
+	
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+	
+								end
+								else
+								begin
+		c_counter = r_counter;
+		c_const__103 = r_const__103;
+		
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		c_calc_in_progress = 1'b0;
+		c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+	
+								end
+						end
 				end
 			READ3_ST:
 				begin
-					mem_layer = r_counter[9:7];
-					c_const__103 = r_const__103;
-
-					c_absorb_read_counter = r_absorb_read_counter;
-					c_result = result;
-					c_calc_in_progress = 1'b0;
-
-					wren_fres_up = 1'b0;
-
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					c_toggle = r_toggle;
-
-					//mem_layer = r_counter[12:10];
+			mem_layer = r_counter[9:7];
+			 c_const__103 = r_const__103;
+	
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		c_calc_in_progress = 1'b0;
+		
+		wren_fres_up = 1'b0;
+		
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+	//	mem_layer = r_counter[12:10];
 					if(read_constants)
-					begin
-						wren_fres_down = 1'b1;
-						c_counter = r_counter + 13'b00000000000001;
-						c_state = r_state;
-					end
-					else
-					begin
-						if(r_counter >= 5*128) 
 						begin
-							c_counter = 13'b0000000000000;
-							c_state = READ4_ST;
-							wren_fres_down = 1'b0;
-						end
-						else
-						begin
-							c_counter = r_counter;
+							wren_fres_down = 1'b1;
+							c_counter = r_counter + 13'b00000000000001;
 							c_state = r_state;
-							wren_fres_down = 1'b0;
 						end
-					end
+					else
+						begin
+							if(r_counter >= 5*128) 
+								begin
+									c_counter = 13'b0000000000000;
+									c_state = READ4_ST;
+									wren_fres_down = 1'b0;
+								end
+								else
+								begin
+								c_counter = r_counter;
+								c_state = r_state;
+								wren_fres_down = 1'b0;
+								end
+						end
 				end
 			READ4_ST:
 				begin
-					c_const__103 = r_const__103;
-					//c_counter = r_counter;
-					c_absorb_read_counter = r_absorb_read_counter;
-					c_result = result;
-					c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					//wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					c_toggle = r_toggle;
+		c_const__103 = r_const__103;
+		//c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		//wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
 		
-					mem_layer = r_counter[12:10];
+		mem_layer = r_counter[12:10];
 		
 		
 					if(read_constants)
-					begin
-						wren_cost = 1'b1;
-						c_counter = r_counter + 13'b00000000000001;
-						c_state = r_state;
-					end
-					else
-					begin
-						if(r_counter >= 13'b1010000000000) //5*1024 = 5120
 						begin
-							c_counter = 13'b0000000000000000000000000;
-							c_state = READ5_ST;
-							wren_cost = 1'b0;
-						end
-						else
-						begin
-							c_counter = r_counter;
+							wren_cost = 1'b1;
+							c_counter = r_counter + 13'b00000000000001;
 							c_state = r_state;
-							wren_cost = 1'b0;
 						end
-					end
+					else
+						begin
+							if(r_counter >= 13'b1010000000000) //5*1024 = 5120
+								begin
+									c_counter = 13'b0000000000000000000000000;
+									c_state = READ5_ST;
+									wren_cost = 1'b0;
+								end
+								else
+								begin
+								c_counter = r_counter;
+								c_state = r_state;
+								wren_cost = 1'b0;
+								end
+						end
 				end
 			READ5_ST:
 				begin			
-					c_const__103 = r_const__103;
-					//c_counter = r_counter;
-					//c_absorb_read_counter = r_absorb_read_counter;
-					c_result = result;
-					c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					//wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					c_toggle = r_toggle;
-
-					mem_layer = r_counter[12:10];
+		c_const__103 = r_const__103;
+		//c_counter = r_counter;
+		//c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		//wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+		mem_layer = r_counter[12:10];
 		
 		
 					if(read_constants)
-					begin
-						wren_sint = 1'b1;
-						c_counter = r_counter + 13'b00000000000000000000000001;
-						c_state = r_state;
-						c_absorb_read_counter = r_absorb_read_counter;
+						begin
+							wren_sint = 1'b1;
+							c_counter = r_counter + 13'b00000000000000000000000001;
+							c_state = r_state;
+							c_absorb_read_counter = r_absorb_read_counter;
 					end
 					else
-					begin
-						if(r_counter >= 13'b1010000000000) //5*1024 = 5120
 						begin
-							c_counter = 13'b0000000000000000000000000;
-							c_absorb_read_counter = 16'b0000000000000000000000000; //use to be 13 bit. Error in odin
-							c_state = RESET_MEM_ST;
-							wren_sint = 1'b0;
+							if(r_counter >= 13'b1010000000000) //5*1024 = 5120
+								begin
+									c_counter = 13'b0000000000000000000000000;
+									c_absorb_read_counter = 16'b0000000000000000000000000; //use to be 13 bit. Error in odin
+									c_state = RESET_MEM_ST;
+									wren_sint = 1'b0;
+								end
+								else
+								begin
+								c_counter = r_counter;
+								c_absorb_read_counter = r_absorb_read_counter;
+									c_state = r_state;
+									wren_sint = 1'b0;
+								end
 						end
-						else
-						begin
-							c_counter = r_counter;
-							c_absorb_read_counter = r_absorb_read_counter;
-							c_state = r_state;
-							wren_sint = 1'b0;
-						end
-					end
 				end
 			RESET_MEM_ST:
 				begin
-					c_const__103 = r_const__103;
-					//	c_counter = r_counter;
-					c_absorb_read_counter = r_absorb_read_counter;
-					c_result = result;
-					//c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					//c_absorb_write_counter = r_absorb_write_counter;
-					//c_toggle = r_toggle;
+		 c_const__103 = r_const__103;
+	//	c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		//c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		//c_absorb_write_counter = r_absorb_write_counter;
+		//c_toggle = r_toggle;
+		
+		mem_layer = r_counter[12:10];
+				
 
-					mem_layer = r_counter[12:10];
-					c_counter = r_counter;
-					c_toggle = 1'b0;
+				
+				
+				c_counter = r_counter;
+				
+				    c_toggle = 1'b0;
 					c_calc_in_progress = 1'b1;
 					c_absorb_write_counter = r_absorb_write_counter + 16'b0000000000000001;
 					if(r_absorb_write_counter == 16'b1111111111111111)
@@ -909,132 +1037,149 @@ always @* begin
 				end
 			CALC_ST:
 				begin
-					c_const__103 = r_const__103;
-					//c_counter = r_counter;
-					c_absorb_read_counter = r_absorb_read_counter;
-					c_result = result;
-					//c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					//c_toggle = r_toggle;		
-					mem_layer = r_counter[12:10];
-								
+		c_const__103 = r_const__103;
+		//c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		//c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		//c_toggle = r_toggle;
+		
+		mem_layer = r_counter[12:10];
+				
+				
+				
 					if(done == 1'b0)
-					begin
-						c_calc_in_progress = 1'b1;
-						c_toggle = 1'b0;
-						c_counter = r_counter;
-						c_state = r_state;							
-					end
+						begin
+							c_calc_in_progress = 1'b1;
+							c_toggle = 1'b0;
+							c_counter = r_counter;
+							c_state = r_state;
+								
+						end
 					else
-					begin
-						c_toggle = 1'b0;
-						c_calc_in_progress = 1'b0;
-						c_state = DONE6_ST;
-						c_counter = 13'b0000000000000;
-					end
+						begin
+							c_toggle = 1'b0;
+							c_calc_in_progress = 1'b0;
+							c_state = DONE6_ST;
+							c_counter = 13'b0000000000000;
+						end
 				end
-					// DEBUG STATES BEGIN
+		// DEBUG STATES BEGIN
+		
 			DONE1_ST:
 				begin
-					c_const__103 = r_const__103;
-					//c_counter = r_counter;
-					c_absorb_read_counter = r_absorb_read_counter;
-					//c_result = result;
-					c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					c_toggle = r_toggle;		
-					mem_layer = r_counter[12:10];				
+		c_const__103 = r_const__103;
+		//c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		//c_result = result;
+		c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+		mem_layer = r_counter[12:10];
+				
+				
 					c_result = r_const__103;				
 					//original -c_result = {32'b0,r_const[r_counter]};
 					if(inc_result)
-					begin
-						if(r_counter >= 13'b0000010001100) //104
 						begin
-							c_counter = 13'b0000000000000;
-							c_state = DONE2_ST;
+						if(r_counter >= 13'b0000010001100) //104
+							begin
+								c_counter = 13'b0000000000000;
+								c_state = DONE2_ST;
+							end
+						else
+							begin
+								c_counter = r_counter + 13'b0000000000001;
+								c_state = DONE1_ST;
+							end
 						end
+							
 						else
 						begin
-							c_counter = r_counter + 13'b0000000000001;
-							c_state = DONE1_ST;
-						end
-					end							
-					else
-					begin
 						if(r_counter >= 13'b0000010001100) //104
-						begin
-							c_counter = 13'b0;
-							c_state = DONE2_ST;
-						end
+							begin
+								c_counter = 13'b0;
+								c_state = DONE2_ST;
+							end
 						else
-						begin
-							c_state = DONE1_ST;
-							c_counter = r_counter;
-						end
+							begin
+								c_state = DONE1_ST;
+								c_counter = r_counter;
+							end
 					end
 				end
 			DONE2_ST:
 				begin
-					c_const__103 = r_const__103;
-					//c_counter = r_counter;
-					c_absorb_read_counter = r_absorb_read_counter;
-					//c_result = result;
-					c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					c_toggle = r_toggle;		
-					//mem_layer = r_counter[12:10];				
+		c_const__103 = r_const__103;
+		//c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		//c_result = result;
+		c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+		//mem_layer = r_counter[12:10];
+			
+				
 					mem_layer = r_counter[9:7];
 					//c_result = {32'b00000000000000000000000000000000,mem_fres_up};
 					c_result = 32'b0;
-					if(inc_result)
-					begin
-						c_counter = r_counter + 13'b0000000000001;
-						c_state = DONE1_ST;
-					end
-					else
-					begin
-						if(r_counter >= 13'b0000010001100) //104
+						if(inc_result)
 						begin
-							c_counter = 13'b0000000000000;
-							c_state = DONE2_ST;
+								c_counter = r_counter + 13'b0000000000001;
+								c_state = DONE1_ST;
 						end
 						else
 						begin
-							c_counter = r_counter;
-							c_state = r_state;
+						if(r_counter >= 13'b0000010001100) //104
+							begin
+								c_counter = 13'b0000000000000;
+								c_state = DONE2_ST;
+							end
+						else
+							begin
+								c_counter = r_counter;
+								c_state = r_state;
+							end
 						end
-					end
 				end
 			DONE3_ST:
 				begin
-					c_const__103 = r_const__103;
-					//c_counter = r_counter;
-					c_absorb_read_counter = r_absorb_read_counter;
-					//c_result = result;
-					c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					c_toggle = r_toggle;
-					//mem_layer = r_counter[12:10];
+		c_const__103 = r_const__103;
+		//c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		//c_result = result;
+		c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+		//mem_layer = r_counter[12:10];
+			
+				
+				
+				
 					mem_layer = r_counter[9:7];
 					//c_result = {32'b00000000000000000000000000000000,mem_fres_down};
 					c_result = 32'b0;
@@ -1070,23 +1215,23 @@ always @* begin
 				
 				
 						c_const__103 = r_const__103;
-						//c_counter = r_counter;
-						c_absorb_read_counter = r_absorb_read_counter;
-						//c_result = result;
-						c_calc_in_progress = 1'b0;
-						//c_state = r_state;
-						wren_fres_up = 1'b0;
-						wren_fres_down = 1'b0;
-						wren_sint = 1'b0;
-						wren_cost = 1'b0;
-						c_absorb_write_counter = r_absorb_write_counter;
-						c_toggle = r_toggle;
+		//c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		//c_result = result;
+		c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
 		
-						mem_layer = r_counter[12:10];
+		mem_layer = r_counter[12:10];
 		
 		
-				
-						c_result = mem_cost;
+		
+					c_result = mem_cost;
 					
 				if(inc_result)
 						begin
@@ -1153,20 +1298,23 @@ always @* begin
 			// DEBUG STATES END*/
 			DONE6_ST:
 				begin
-					c_const__103 = r_const__103;
-					c_counter = r_counter;
-					//c_absorb_read_counter = r_absorb_read_counter;
-					//c_result = result;
-					c_calc_in_progress = 1'b0;
-					//c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					//c_toggle = r_toggle;
-					mem_layer = r_counter[12:10];		
-					c_state = DONE6_ST;
+		c_const__103 = r_const__103;
+		c_counter = r_counter;
+		//c_absorb_read_counter = r_absorb_read_counter;
+		//c_result = result;
+		c_calc_in_progress = 1'b0;
+		//c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		//c_toggle = r_toggle;
+		
+		mem_layer = r_counter[12:10];
+				
+				
+									c_state = DONE6_ST;
 
 				
 					if(r_toggle == 1'b0)
@@ -1204,610 +1352,666 @@ always @* begin
 				
 			default:
 				begin
-					c_state = ERROR_ST;
-					c_const__103 = r_const__103;
-					c_counter = r_counter;
-					c_absorb_read_counter = r_absorb_read_counter;
-					c_result = result;
-					c_calc_in_progress = 1'b0;
-					//	c_state = r_state;
-					wren_fres_up = 1'b0;
-					wren_fres_down = 1'b0;
-					wren_sint = 1'b0;
-					wren_cost = 1'b0;
-					c_absorb_write_counter = r_absorb_write_counter;
-					c_toggle = r_toggle;
-
-					mem_layer = r_counter[12:10];
+			c_state = ERROR_ST;
+		c_const__103 = r_const__103;
+		c_counter = r_counter;
+		c_absorb_read_counter = r_absorb_read_counter;
+		c_result = result;
+		c_calc_in_progress = 1'b0;
+	//	c_state = r_state;
+		wren_fres_up = 1'b0;
+		wren_fres_down = 1'b0;
+		wren_sint = 1'b0;
+		wren_cost = 1'b0;
+		c_absorb_write_counter = r_absorb_write_counter;
+		c_toggle = r_toggle;
+		
+		mem_layer = r_counter[12:10];
 				end
 		endcase
 	end // FSM always
 
 
 
-	// Latch Data
-	always @(posedge clk)
+// Latch Data
+always @(posedge clk)
 	begin
 		if(reset)
-		begin
-			r_counter <= 13'b0000000000000000000000000;
-			r_const__103 <= 32'b00000000000000000000000000000000;
-			r_const__102 <= 32'b00000000000000000000000000000000;
-			r_const__101 <= 32'b00000000000000000000000000000000;
-			r_const__100 <= 32'b00000000000000000000000000000000;
-			r_const__99 <= 32'b00000000000000000000000000000000;
-			r_const__98 <= 32'b00000000000000000000000000000000;
-			r_const__97 <= 32'b00000000000000000000000000000000;
-			r_const__96 <= 32'b00000000000000000000000000000000;
-			r_const__95 <= 32'b00000000000000000000000000000000;
-			r_const__94 <= 32'b00000000000000000000000000000000;
-			r_const__93 <= 32'b00000000000000000000000000000000;
-			r_const__92 <= 32'b00000000000000000000000000000000;
-			r_const__91 <= 32'b00000000000000000000000000000000;
-			r_const__90 <= 32'b00000000000000000000000000000000;
-			r_const__89 <= 32'b00000000000000000000000000000000;
-			r_const__88 <= 32'b00000000000000000000000000000000;
-			r_const__87 <= 32'b00000000000000000000000000000000;
-			r_const__86 <= 32'b00000000000000000000000000000000;
-			r_const__85 <= 32'b00000000000000000000000000000000;
-			r_const__84 <= 32'b00000000000000000000000000000000;
-			r_const__83 <= 32'b00000000000000000000000000000000;
-			r_const__82 <= 32'b00000000000000000000000000000000;
-			r_const__81 <= 32'b00000000000000000000000000000000;
-			r_const__80 <= 32'b00000000000000000000000000000000;
-			r_const__79 <= 32'b00000000000000000000000000000000;
-			r_const__78 <= 32'b00000000000000000000000000000000;
-			r_const__77 <= 32'b00000000000000000000000000000000;
-			r_const__76 <= 32'b00000000000000000000000000000000;
-			r_const__75 <= 32'b00000000000000000000000000000000;
-			r_const__74 <= 32'b00000000000000000000000000000000;
-			r_const__73 <= 32'b00000000000000000000000000000000;
-			r_const__72 <= 32'b00000000000000000000000000000000;
-			r_const__71 <= 32'b00000000000000000000000000000000;
-			r_const__70 <= 32'b00000000000000000000000000000000;
-			r_const__69 <= 32'b00000000000000000000000000000000;
-			r_const__68 <= 32'b00000000000000000000000000000000;
-			r_const__67 <= 32'b00000000000000000000000000000000;
-			r_const__66 <= 32'b00000000000000000000000000000000;
-			r_const__65 <= 32'b00000000000000000000000000000000;
-			r_const__64 <= 32'b00000000000000000000000000000000;
-			r_const__63 <= 32'b00000000000000000000000000000000;
-			r_const__62 <= 32'b00000000000000000000000000000000;
-			r_const__61 <= 32'b00000000000000000000000000000000;
-			r_const__60 <= 32'b00000000000000000000000000000000;
-			r_const__59 <= 32'b00000000000000000000000000000000;
-			r_const__58 <= 32'b00000000000000000000000000000000;
-			r_const__57 <= 32'b00000000000000000000000000000000;
-			r_const__56 <= 32'b00000000000000000000000000000000;
-			r_const__55 <= 32'b00000000000000000000000000000000;
-			r_const__54 <= 32'b00000000000000000000000000000000;
-			r_const__53 <= 32'b00000000000000000000000000000000;
-			r_const__52 <= 32'b00000000000000000000000000000000;
-			r_const__51 <= 32'b00000000000000000000000000000000;
-			r_const__50 <= 32'b00000000000000000000000000000000;
-			r_const__49 <= 32'b00000000000000000000000000000000;
-			r_const__48 <= 32'b00000000000000000000000000000000;
-			r_const__47 <= 32'b00000000000000000000000000000000;
-			r_const__46 <= 32'b00000000000000000000000000000000;
-			r_const__45 <= 32'b00000000000000000000000000000000;
-			r_const__44 <= 32'b00000000000000000000000000000000;
-			r_const__43 <= 32'b00000000000000000000000000000000;
-			r_const__42 <= 32'b00000000000000000000000000000000;
-			r_const__41 <= 32'b00000000000000000000000000000000;
-			r_const__40 <= 32'b00000000000000000000000000000000;
-			r_const__39 <= 32'b00000000000000000000000000000000;
-			r_const__38 <= 32'b00000000000000000000000000000000;
-			r_const__37 <= 32'b00000000000000000000000000000000;
-			r_const__36 <= 32'b00000000000000000000000000000000;
-			r_const__35 <= 32'b00000000000000000000000000000000;
-			r_const__34 <= 32'b00000000000000000000000000000000;
-			r_const__33 <= 32'b00000000000000000000000000000000;
-			r_const__32 <= 32'b00000000000000000000000000000000;
-			r_const__31 <= 32'b00000000000000000000000000000000;
-			r_const__30 <= 32'b00000000000000000000000000000000;
-			r_const__29 <= 32'b00000000000000000000000000000000;
-			r_const__28 <= 32'b00000000000000000000000000000000;
-			r_const__27 <= 32'b00000000000000000000000000000000;
-			r_const__26 <= 32'b00000000000000000000000000000000;
-			r_const__25 <= 32'b00000000000000000000000000000000;
-			r_const__24 <= 32'b00000000000000000000000000000000;
-			r_const__23 <= 32'b00000000000000000000000000000000;
-			r_const__22 <= 32'b00000000000000000000000000000000;
-			r_const__21 <= 32'b00000000000000000000000000000000;
-			r_const__20 <= 32'b00000000000000000000000000000000;
-			r_const__19 <= 32'b00000000000000000000000000000000;
-			r_const__18 <= 32'b00000000000000000000000000000000;
-			r_const__17 <= 32'b00000000000000000000000000000000;
-			r_const__16 <= 32'b00000000000000000000000000000000;
-			r_const__15 <= 32'b00000000000000000000000000000000;
-			r_const__14 <= 32'b00000000000000000000000000000000;
-			r_const__13 <= 32'b00000000000000000000000000000000;
-			r_const__12 <= 32'b00000000000000000000000000000000;
-			r_const__11 <= 32'b00000000000000000000000000000000;
-			r_const__10 <= 32'b00000000000000000000000000000000;
-			r_const__9 <= 32'b00000000000000000000000000000000;
-			r_const__8 <= 32'b00000000000000000000000000000000;
-			r_const__7 <= 32'b00000000000000000000000000000000;
-			r_const__6 <= 32'b00000000000000000000000000000000;
-			r_const__5 <= 32'b00000000000000000000000000000000;
-			r_const__4 <= 32'b00000000000000000000000000000000;
-			r_const__3 <= 32'b00000000000000000000000000000000;
-			r_const__2 <= 32'b00000000000000000000000000000000;
-			r_const__1 <= 32'b00000000000000000000000000000000;
-			r_const__0 <= 32'b00000000000000000000000000000000;
-
-			r_state <= READ1_ST;
-			result <= 32'b00000000000000000000000000000000;
-			calc_in_progress <= 1'b0;
-			r_absorb_read_counter <= 16'b0000000000000000;
-			enable <= 1'b0;
-			r_absorb_write_counter <= 16'b0000000000000000;
-			reset_calculator <= 1'b1;
-			r_toggle <= 1'b0;
-		end
-		else
-		begin
-			r_counter <= c_counter;
-			if (c_state == READ1_ST)				
-			begin				
-				//shift register implementation for read-in constant state
-				//first one is from counter				
-				r_const__103 <= c_const__103;
-				// all others shift
-				r_const__102 <= r_const__103;
-				r_const__101 <= r_const__102;
-				r_const__100 <= r_const__101;
-				r_const__99 <= r_const__100;
-				r_const__98 <= r_const__99;
-				r_const__97 <= r_const__98;
-				r_const__96 <= r_const__97;
-				r_const__95 <= r_const__96;
-				r_const__94 <= r_const__95;
-				r_const__93 <= r_const__94;
-				r_const__92 <= r_const__93;
-				r_const__91 <= r_const__92;
-				r_const__90 <= r_const__91;
-				r_const__89 <= r_const__90;
-				r_const__88 <= r_const__89;
-				r_const__87 <= r_const__88;
-				r_const__86 <= r_const__87;
-				r_const__85 <= r_const__86;
-				r_const__84 <= r_const__85;
-				r_const__83 <= r_const__84;
-				r_const__82 <= r_const__83;
-				r_const__81 <= r_const__82;
-				r_const__80 <= r_const__81;
-				r_const__79 <= r_const__80;
-				r_const__78 <= r_const__79;
-				r_const__77 <= r_const__78;
-				r_const__76 <= r_const__77;
-				r_const__75 <= r_const__76;
-				r_const__74 <= r_const__75;
-				r_const__73 <= r_const__74;
-				r_const__72 <= r_const__73;
-				r_const__71 <= r_const__72;
-				r_const__70 <= r_const__71;
-				r_const__69 <= r_const__70;
-				r_const__68 <= r_const__69;
-				r_const__67 <= r_const__68;
-				r_const__66 <= r_const__67;
-				r_const__65 <= r_const__66;
-				r_const__64 <= r_const__65;
-				r_const__63 <= r_const__64;
-				r_const__62 <= r_const__63;
-				r_const__61 <= r_const__62;
-				r_const__60 <= r_const__61;
-				r_const__59 <= r_const__60;
-				r_const__58 <= r_const__59;
-				r_const__57 <= r_const__58;
-				r_const__56 <= r_const__57;
-				r_const__55 <= r_const__56;
-				r_const__54 <= r_const__55;
-				r_const__53 <= r_const__54;
-				r_const__52 <= r_const__53;
-				r_const__51 <= r_const__52;
-				r_const__50 <= r_const__51;
-				r_const__49 <= r_const__50;
-				r_const__48 <= r_const__49;
-				r_const__47 <= r_const__48;
-				r_const__46 <= r_const__47;
-				r_const__45 <= r_const__46;
-				r_const__44 <= r_const__45;
-				r_const__43 <= r_const__44;
-				r_const__42 <= r_const__43;
-				r_const__41 <= r_const__42;
-				r_const__40 <= r_const__41;
-				r_const__39 <= r_const__40;
-				r_const__38 <= r_const__39;
-				r_const__37 <= r_const__38;
-				r_const__36 <= r_const__37;
-				r_const__35 <= r_const__36;
-				r_const__34 <= r_const__35;
-				r_const__33 <= r_const__34;
-				r_const__32 <= r_const__33;
-				r_const__31 <= r_const__32;
-				r_const__30 <= r_const__31;
-				r_const__29 <= r_const__30;
-				r_const__28 <= r_const__29;
-				r_const__27 <= r_const__28;
-				r_const__26 <= r_const__27;
-				r_const__25 <= r_const__26;
-				r_const__24 <= r_const__25;
-				r_const__23 <= r_const__24;
-				r_const__22 <= r_const__23;
-				r_const__21 <= r_const__22;
-				r_const__20 <= r_const__21;
-				r_const__19 <= r_const__20;
-				r_const__18 <= r_const__19;
-				r_const__17 <= r_const__18;
-				r_const__16 <= r_const__17;
-				r_const__15 <= r_const__16;
-				r_const__14 <= r_const__15;
-				r_const__13 <= r_const__14;
-				r_const__12 <= r_const__13;
-				r_const__11 <= r_const__12;
-				r_const__10 <= r_const__11;
-				r_const__9 <= r_const__10;
-				r_const__8 <= r_const__9;
-				r_const__7 <= r_const__8;
-				r_const__6 <= r_const__7;
-				r_const__5 <= r_const__6;
-				r_const__4 <= r_const__5;
-				r_const__3 <= r_const__4;
-				r_const__2 <= r_const__3;
-				r_const__1 <= r_const__2;
-				r_const__0 <= r_const__1;
-			end
-			else
 			begin
-				//original code
-				r_const__103 <= c_const__103;
-				r_const__102 <= c_const__102;
-				r_const__101 <= c_const__101;
-				r_const__100 <= c_const__100;
-				r_const__99 <= c_const__99;
-				r_const__98 <= c_const__98;
-				r_const__97 <= c_const__97;
-				r_const__96 <= c_const__96;
-				r_const__95 <= c_const__95;
-				r_const__94 <= c_const__94;
-				r_const__93 <= c_const__93;
-				r_const__92 <= c_const__92;
-				r_const__91 <= c_const__91;
-				r_const__90 <= c_const__90;
-				r_const__89 <= c_const__89;
-				r_const__88 <= c_const__88;
-				r_const__87 <= c_const__87;
-				r_const__86 <= c_const__86;
-				r_const__85 <= c_const__85;
-				r_const__84 <= c_const__84;
-				r_const__83 <= c_const__83;
-				r_const__82 <= c_const__82;
-				r_const__81 <= c_const__81;
-				r_const__80 <= c_const__80;
-				r_const__79 <= c_const__79;
-				r_const__78 <= c_const__78;
-				r_const__77 <= c_const__77;
-				r_const__76 <= c_const__76;
-				r_const__75 <= c_const__75;
-				r_const__74 <= c_const__74;
-				r_const__73 <= c_const__73;
-				r_const__72 <= c_const__72;
-				r_const__71 <= c_const__71;
-				r_const__70 <= c_const__70;
-				r_const__69 <= c_const__69;
-				r_const__68 <= c_const__68;
-				r_const__67 <= c_const__67;
-				r_const__66 <= c_const__66;
-				r_const__65 <= c_const__65;
-				r_const__64 <= c_const__64;
-				r_const__63 <= c_const__63;
-				r_const__62 <= c_const__62;
-				r_const__61 <= c_const__61;
-				r_const__60 <= c_const__60;
-				r_const__59 <= c_const__59;
-				r_const__58 <= c_const__58;
-				r_const__57 <= c_const__57;
-				r_const__56 <= c_const__56;
-				r_const__55 <= c_const__55;
-				r_const__54 <= c_const__54;
-				r_const__53 <= c_const__53;
-				r_const__52 <= c_const__52;
-				r_const__51 <= c_const__51;
-				r_const__50 <= c_const__50;
-				r_const__49 <= c_const__49;
-				r_const__48 <= c_const__48;
-				r_const__47 <= c_const__47;
-				r_const__46 <= c_const__46;
-				r_const__45 <= c_const__45;
-				r_const__44 <= c_const__44;
-				r_const__43 <= c_const__43;
-				r_const__42 <= c_const__42;
-				r_const__41 <= c_const__41;
-				r_const__40 <= c_const__40;
-				r_const__39 <= c_const__39;
-				r_const__38 <= c_const__38;
-				r_const__37 <= c_const__37;
-				r_const__36 <= c_const__36;
-				r_const__35 <= c_const__35;
-				r_const__34 <= c_const__34;
-				r_const__33 <= c_const__33;
-				r_const__32 <= c_const__32;
-				r_const__31 <= c_const__31;
-				r_const__30 <= c_const__30;
-				r_const__29 <= c_const__29;
-				r_const__28 <= c_const__28;
-				r_const__27 <= c_const__27;
-				r_const__26 <= c_const__26;
-				r_const__25 <= c_const__25;
-				r_const__24 <= c_const__24;
-				r_const__23 <= c_const__23;
-				r_const__22 <= c_const__22;
-				r_const__21 <= c_const__21;
-				r_const__20 <= c_const__20;
-				r_const__19 <= c_const__19;
-				r_const__18 <= c_const__18;
-				r_const__17 <= c_const__17;
-				r_const__16 <= c_const__16;
-				r_const__15 <= c_const__15;
-				r_const__14 <= c_const__14;
-				r_const__13 <= c_const__13;
-				r_const__12 <= c_const__12;
-				r_const__11 <= c_const__11;
-				r_const__10 <= c_const__10;
-				r_const__9 <= c_const__9;
-				r_const__8 <= c_const__8;
-				r_const__7 <= c_const__7;
-				r_const__6 <= c_const__6;
-				r_const__5 <= c_const__5;
-				r_const__4 <= c_const__4;
-				r_const__3 <= c_const__3;
-				r_const__2 <= c_const__2;
-				r_const__1 <= c_const__1;
-				r_const__0 <= c_const__0;
-			end
+	r_counter <= 13'b0000000000000000000000000;
+r_const__103 <= 32'b00000000000000000000000000000000;
+r_const__102 <= 32'b00000000000000000000000000000000;
+r_const__101 <= 32'b00000000000000000000000000000000;
+r_const__100 <= 32'b00000000000000000000000000000000;
+r_const__99 <= 32'b00000000000000000000000000000000;
+r_const__98 <= 32'b00000000000000000000000000000000;
+r_const__97 <= 32'b00000000000000000000000000000000;
+r_const__96 <= 32'b00000000000000000000000000000000;
+r_const__95 <= 32'b00000000000000000000000000000000;
+r_const__94 <= 32'b00000000000000000000000000000000;
+r_const__93 <= 32'b00000000000000000000000000000000;
+r_const__92 <= 32'b00000000000000000000000000000000;
+r_const__91 <= 32'b00000000000000000000000000000000;
+r_const__90 <= 32'b00000000000000000000000000000000;
+r_const__89 <= 32'b00000000000000000000000000000000;
+r_const__88 <= 32'b00000000000000000000000000000000;
+r_const__87 <= 32'b00000000000000000000000000000000;
+r_const__86 <= 32'b00000000000000000000000000000000;
+r_const__85 <= 32'b00000000000000000000000000000000;
+r_const__84 <= 32'b00000000000000000000000000000000;
+r_const__83 <= 32'b00000000000000000000000000000000;
+r_const__82 <= 32'b00000000000000000000000000000000;
+r_const__81 <= 32'b00000000000000000000000000000000;
+r_const__80 <= 32'b00000000000000000000000000000000;
+r_const__79 <= 32'b00000000000000000000000000000000;
+r_const__78 <= 32'b00000000000000000000000000000000;
+r_const__77 <= 32'b00000000000000000000000000000000;
+r_const__76 <= 32'b00000000000000000000000000000000;
+r_const__75 <= 32'b00000000000000000000000000000000;
+r_const__74 <= 32'b00000000000000000000000000000000;
+r_const__73 <= 32'b00000000000000000000000000000000;
+r_const__72 <= 32'b00000000000000000000000000000000;
+r_const__71 <= 32'b00000000000000000000000000000000;
+r_const__70 <= 32'b00000000000000000000000000000000;
+r_const__69 <= 32'b00000000000000000000000000000000;
+r_const__68 <= 32'b00000000000000000000000000000000;
+r_const__67 <= 32'b00000000000000000000000000000000;
+r_const__66 <= 32'b00000000000000000000000000000000;
+r_const__65 <= 32'b00000000000000000000000000000000;
+r_const__64 <= 32'b00000000000000000000000000000000;
+r_const__63 <= 32'b00000000000000000000000000000000;
+r_const__62 <= 32'b00000000000000000000000000000000;
+r_const__61 <= 32'b00000000000000000000000000000000;
+r_const__60 <= 32'b00000000000000000000000000000000;
+r_const__59 <= 32'b00000000000000000000000000000000;
+r_const__58 <= 32'b00000000000000000000000000000000;
+r_const__57 <= 32'b00000000000000000000000000000000;
+r_const__56 <= 32'b00000000000000000000000000000000;
+r_const__55 <= 32'b00000000000000000000000000000000;
+r_const__54 <= 32'b00000000000000000000000000000000;
+r_const__53 <= 32'b00000000000000000000000000000000;
+r_const__52 <= 32'b00000000000000000000000000000000;
+r_const__51 <= 32'b00000000000000000000000000000000;
+r_const__50 <= 32'b00000000000000000000000000000000;
+r_const__49 <= 32'b00000000000000000000000000000000;
+r_const__48 <= 32'b00000000000000000000000000000000;
+r_const__47 <= 32'b00000000000000000000000000000000;
+r_const__46 <= 32'b00000000000000000000000000000000;
+r_const__45 <= 32'b00000000000000000000000000000000;
+r_const__44 <= 32'b00000000000000000000000000000000;
+r_const__43 <= 32'b00000000000000000000000000000000;
+r_const__42 <= 32'b00000000000000000000000000000000;
+r_const__41 <= 32'b00000000000000000000000000000000;
+r_const__40 <= 32'b00000000000000000000000000000000;
+r_const__39 <= 32'b00000000000000000000000000000000;
+r_const__38 <= 32'b00000000000000000000000000000000;
+r_const__37 <= 32'b00000000000000000000000000000000;
+r_const__36 <= 32'b00000000000000000000000000000000;
+r_const__35 <= 32'b00000000000000000000000000000000;
+r_const__34 <= 32'b00000000000000000000000000000000;
+r_const__33 <= 32'b00000000000000000000000000000000;
+r_const__32 <= 32'b00000000000000000000000000000000;
+r_const__31 <= 32'b00000000000000000000000000000000;
+r_const__30 <= 32'b00000000000000000000000000000000;
+r_const__29 <= 32'b00000000000000000000000000000000;
+r_const__28 <= 32'b00000000000000000000000000000000;
+r_const__27 <= 32'b00000000000000000000000000000000;
+r_const__26 <= 32'b00000000000000000000000000000000;
+r_const__25 <= 32'b00000000000000000000000000000000;
+r_const__24 <= 32'b00000000000000000000000000000000;
+r_const__23 <= 32'b00000000000000000000000000000000;
+r_const__22 <= 32'b00000000000000000000000000000000;
+r_const__21 <= 32'b00000000000000000000000000000000;
+r_const__20 <= 32'b00000000000000000000000000000000;
+r_const__19 <= 32'b00000000000000000000000000000000;
+r_const__18 <= 32'b00000000000000000000000000000000;
+r_const__17 <= 32'b00000000000000000000000000000000;
+r_const__16 <= 32'b00000000000000000000000000000000;
+r_const__15 <= 32'b00000000000000000000000000000000;
+r_const__14 <= 32'b00000000000000000000000000000000;
+r_const__13 <= 32'b00000000000000000000000000000000;
+r_const__12 <= 32'b00000000000000000000000000000000;
+r_const__11 <= 32'b00000000000000000000000000000000;
+r_const__10 <= 32'b00000000000000000000000000000000;
+r_const__9 <= 32'b00000000000000000000000000000000;
+r_const__8 <= 32'b00000000000000000000000000000000;
+r_const__7 <= 32'b00000000000000000000000000000000;
+r_const__6 <= 32'b00000000000000000000000000000000;
+r_const__5 <= 32'b00000000000000000000000000000000;
+r_const__4 <= 32'b00000000000000000000000000000000;
+r_const__3 <= 32'b00000000000000000000000000000000;
+r_const__2 <= 32'b00000000000000000000000000000000;
+r_const__1 <= 32'b00000000000000000000000000000000;
+r_const__0 <= 32'b00000000000000000000000000000000;
 
-			r_state <= c_state;
-			result <= c_result;
-			calc_in_progress <= c_calc_in_progress;
-			r_absorb_read_counter <= c_absorb_read_counter;
-			r_absorb_write_counter <= c_absorb_write_counter;
-			r_toggle <= c_toggle;
-			enable <= 1'b1;
-			
-			if(c_state == RESET_MEM_ST) 
-			begin
+				r_state <= READ1_ST;
+				result <= 32'b00000000000000000000000000000000;
+				calc_in_progress <= 1'b0;
+				r_absorb_read_counter <= 16'b0000000000000000;
+				enable <= 1'b0;
+				r_absorb_write_counter <= 16'b0000000000000000;
 				reset_calculator <= 1'b1;
+				r_toggle <= 1'b0;
 			end
-			else
+		else
 			begin
-				reset_calculator <= 1'b0;
+					r_counter <= c_counter;
+			if (c_state == READ1_ST)
+				
+				//for(i = 0; i < 104; i = i + 1) begin
+				//	r_const[i] <= c_const[i];
+				//end
+				begin
+				
+				//shift register implementation for read-in constant state
+
+//first one is from counter				
+r_const__103 <= c_const__103;
+// all others shift
+r_const__102 <= r_const__103;
+r_const__101 <= r_const__102;
+r_const__100 <= r_const__101;
+r_const__99 <= r_const__100;
+r_const__98 <= r_const__99;
+r_const__97 <= r_const__98;
+r_const__96 <= r_const__97;
+r_const__95 <= r_const__96;
+r_const__94 <= r_const__95;
+r_const__93 <= r_const__94;
+r_const__92 <= r_const__93;
+r_const__91 <= r_const__92;
+r_const__90 <= r_const__91;
+r_const__89 <= r_const__90;
+r_const__88 <= r_const__89;
+r_const__87 <= r_const__88;
+r_const__86 <= r_const__87;
+r_const__85 <= r_const__86;
+r_const__84 <= r_const__85;
+r_const__83 <= r_const__84;
+r_const__82 <= r_const__83;
+r_const__81 <= r_const__82;
+r_const__80 <= r_const__81;
+r_const__79 <= r_const__80;
+r_const__78 <= r_const__79;
+r_const__77 <= r_const__78;
+r_const__76 <= r_const__77;
+r_const__75 <= r_const__76;
+r_const__74 <= r_const__75;
+r_const__73 <= r_const__74;
+r_const__72 <= r_const__73;
+r_const__71 <= r_const__72;
+r_const__70 <= r_const__71;
+r_const__69 <= r_const__70;
+r_const__68 <= r_const__69;
+r_const__67 <= r_const__68;
+r_const__66 <= r_const__67;
+r_const__65 <= r_const__66;
+r_const__64 <= r_const__65;
+r_const__63 <= r_const__64;
+r_const__62 <= r_const__63;
+r_const__61 <= r_const__62;
+r_const__60 <= r_const__61;
+r_const__59 <= r_const__60;
+r_const__58 <= r_const__59;
+r_const__57 <= r_const__58;
+r_const__56 <= r_const__57;
+r_const__55 <= r_const__56;
+r_const__54 <= r_const__55;
+r_const__53 <= r_const__54;
+r_const__52 <= r_const__53;
+r_const__51 <= r_const__52;
+r_const__50 <= r_const__51;
+r_const__49 <= r_const__50;
+r_const__48 <= r_const__49;
+r_const__47 <= r_const__48;
+r_const__46 <= r_const__47;
+r_const__45 <= r_const__46;
+r_const__44 <= r_const__45;
+r_const__43 <= r_const__44;
+r_const__42 <= r_const__43;
+r_const__41 <= r_const__42;
+r_const__40 <= r_const__41;
+r_const__39 <= r_const__40;
+r_const__38 <= r_const__39;
+r_const__37 <= r_const__38;
+r_const__36 <= r_const__37;
+r_const__35 <= r_const__36;
+r_const__34 <= r_const__35;
+r_const__33 <= r_const__34;
+r_const__32 <= r_const__33;
+r_const__31 <= r_const__32;
+r_const__30 <= r_const__31;
+r_const__29 <= r_const__30;
+r_const__28 <= r_const__29;
+r_const__27 <= r_const__28;
+r_const__26 <= r_const__27;
+r_const__25 <= r_const__26;
+r_const__24 <= r_const__25;
+r_const__23 <= r_const__24;
+r_const__22 <= r_const__23;
+r_const__21 <= r_const__22;
+r_const__20 <= r_const__21;
+r_const__19 <= r_const__20;
+r_const__18 <= r_const__19;
+r_const__17 <= r_const__18;
+r_const__16 <= r_const__17;
+r_const__15 <= r_const__16;
+r_const__14 <= r_const__15;
+r_const__13 <= r_const__14;
+r_const__12 <= r_const__13;
+r_const__11 <= r_const__12;
+r_const__10 <= r_const__11;
+r_const__9 <= r_const__10;
+r_const__8 <= r_const__9;
+r_const__7 <= r_const__8;
+r_const__6 <= r_const__7;
+r_const__5 <= r_const__6;
+r_const__4 <= r_const__5;
+r_const__3 <= r_const__4;
+r_const__2 <= r_const__3;
+r_const__1 <= r_const__2;
+r_const__0 <= r_const__1;
+end
+else
+begin
+//original code
+r_const__103 <= c_const__103;
+r_const__102 <= c_const__102;
+r_const__101 <= c_const__101;
+r_const__100 <= c_const__100;
+r_const__99 <= c_const__99;
+r_const__98 <= c_const__98;
+r_const__97 <= c_const__97;
+r_const__96 <= c_const__96;
+r_const__95 <= c_const__95;
+r_const__94 <= c_const__94;
+r_const__93 <= c_const__93;
+r_const__92 <= c_const__92;
+r_const__91 <= c_const__91;
+r_const__90 <= c_const__90;
+r_const__89 <= c_const__89;
+r_const__88 <= c_const__88;
+r_const__87 <= c_const__87;
+r_const__86 <= c_const__86;
+r_const__85 <= c_const__85;
+r_const__84 <= c_const__84;
+r_const__83 <= c_const__83;
+r_const__82 <= c_const__82;
+r_const__81 <= c_const__81;
+r_const__80 <= c_const__80;
+r_const__79 <= c_const__79;
+r_const__78 <= c_const__78;
+r_const__77 <= c_const__77;
+r_const__76 <= c_const__76;
+r_const__75 <= c_const__75;
+r_const__74 <= c_const__74;
+r_const__73 <= c_const__73;
+r_const__72 <= c_const__72;
+r_const__71 <= c_const__71;
+r_const__70 <= c_const__70;
+r_const__69 <= c_const__69;
+r_const__68 <= c_const__68;
+r_const__67 <= c_const__67;
+r_const__66 <= c_const__66;
+r_const__65 <= c_const__65;
+r_const__64 <= c_const__64;
+r_const__63 <= c_const__63;
+r_const__62 <= c_const__62;
+r_const__61 <= c_const__61;
+r_const__60 <= c_const__60;
+r_const__59 <= c_const__59;
+r_const__58 <= c_const__58;
+r_const__57 <= c_const__57;
+r_const__56 <= c_const__56;
+r_const__55 <= c_const__55;
+r_const__54 <= c_const__54;
+r_const__53 <= c_const__53;
+r_const__52 <= c_const__52;
+r_const__51 <= c_const__51;
+r_const__50 <= c_const__50;
+r_const__49 <= c_const__49;
+r_const__48 <= c_const__48;
+r_const__47 <= c_const__47;
+r_const__46 <= c_const__46;
+r_const__45 <= c_const__45;
+r_const__44 <= c_const__44;
+r_const__43 <= c_const__43;
+r_const__42 <= c_const__42;
+r_const__41 <= c_const__41;
+r_const__40 <= c_const__40;
+r_const__39 <= c_const__39;
+r_const__38 <= c_const__38;
+r_const__37 <= c_const__37;
+r_const__36 <= c_const__36;
+r_const__35 <= c_const__35;
+r_const__34 <= c_const__34;
+r_const__33 <= c_const__33;
+r_const__32 <= c_const__32;
+r_const__31 <= c_const__31;
+r_const__30 <= c_const__30;
+r_const__29 <= c_const__29;
+r_const__28 <= c_const__28;
+r_const__27 <= c_const__27;
+r_const__26 <= c_const__26;
+r_const__25 <= c_const__25;
+r_const__24 <= c_const__24;
+r_const__23 <= c_const__23;
+r_const__22 <= c_const__22;
+r_const__21 <= c_const__21;
+r_const__20 <= c_const__20;
+r_const__19 <= c_const__19;
+r_const__18 <= c_const__18;
+r_const__17 <= c_const__17;
+r_const__16 <= c_const__16;
+r_const__15 <= c_const__15;
+r_const__14 <= c_const__14;
+r_const__13 <= c_const__13;
+r_const__12 <= c_const__12;
+r_const__11 <= c_const__11;
+r_const__10 <= c_const__10;
+r_const__9 <= c_const__9;
+r_const__8 <= c_const__8;
+r_const__7 <= c_const__7;
+r_const__6 <= c_const__6;
+r_const__5 <= c_const__5;
+r_const__4 <= c_const__4;
+r_const__3 <= c_const__3;
+r_const__2 <= c_const__2;
+r_const__1 <= c_const__1;
+r_const__0 <= c_const__0;
+end
+
+
+
+				
+				r_state <= c_state;
+				result <= c_result;
+				calc_in_progress <= c_calc_in_progress;
+				r_absorb_read_counter <= c_absorb_read_counter;
+				r_absorb_write_counter <= c_absorb_write_counter;
+				r_toggle <= c_toggle;
+				//if(c_state == CALC_ST) 
+				//begin
+					enable <= 1'b1;
+				//end
+				//else
+				//begin
+				//	enable = 1'b0;
+				//end
+				if(c_state == RESET_MEM_ST) 
+				begin
+					reset_calculator <= 1'b1;
+				end
+				else
+				begin
+					reset_calculator <= 1'b0;
+				end
 			end
-		end
 	end
 
 endmodule
-		
+			
+			
+			
+
+
+			
+			
 module dual_port_mem_zz (clk, data, rdaddress, wraddress , wren, q);
-	// 32bit wide
-	// 13bit address
-	input clk;
-	input[31:0] data;
-	input [12:0] rdaddress;
-	input [12:0] wraddress;
-	input wren;
-	output [31:0] q;
 
-	wire const_zero;
-	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+// 32bit wide
+// 13bit address
 
-	assign const_zero = 1'b0;
-	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
+input clk;
+input[31:0] data;
+input [12:0] rdaddress;
+input [12:0] wraddress;
+input wren;
+output [31:0] q;
 
-	dual_port_ram dpram1(	
-		.clk (clk),
-		.we1(wren),
-		.we2(const_zero),
-		.data1(data),
-		.data2(const_zero_data),
-		.out1(dont_care_out),
-		.out2 (q),
-		.addr1(wraddress),
-		.addr2(rdaddress)
-	);
-endmodule
+
+wire const_zero;
+wire [31:0] const_zero_data;
+wire [31:0] dont_care_out;
+
+assign const_zero = 1'b0;
+assign const_zero_data = 32'b00000000000000000000000000000000;
+assign dont_care_out = 32'b00000000000000000000000000000000;
+
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;	
+dual_port_ram dpram1(	
+  .clk (clk),
+  .we1(wren),
+  .we2(const_zero),
+  .data1(data),
+  .data2(const_zero_data),
+  .out1(dont_care_out),
+  .out2 (q),
+  .addr1(wraddress),
+  .addr2(rdaddress));
+  
+  
+  endmodule
   
 module dual_port_mem_yy (clk, data, rdaddress, wraddress , wren, q);
-	// 32bit wide
-	// 13bit address
-	input clk;
-	input[31:0] data;
-	input [12:0] rdaddress;
-	input [12:0] wraddress;
-	input wren;
-	output [31:0] q;
 
-	wire const_zero;
-	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+// 32bit wide
+// 13bit address
 
-	assign const_zero = 1'b0;
-	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
+input clk;
+input[31:0] data;
+input [12:0] rdaddress;
+input [12:0] wraddress;
+input wren;
+output [31:0] q;
 
-	dual_port_ram dpram1(	
-		.clk (clk),
-		.we1(wren),
-		.we2(const_zero),
-		.data1(data),
-		.data2(const_zero_data),
-		.out1(dont_care_out),
-		.out2 (q),
-		.addr1(wraddress),
-		.addr2(rdaddress)
-	);
-endmodule
+
+wire const_zero;
+wire [31:0] const_zero_data;
+wire [31:0] dont_care_out;
+
+assign const_zero = 1'b0;
+assign const_zero_data = 32'b00000000000000000000000000000000;
+assign dont_care_out = 32'b00000000000000000000000000000000;
+	
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;
+dual_port_ram dpram1(	
+  .clk (clk),
+  .we1(wren),
+  .we2(const_zero),
+  .data1(data),
+  .data2(const_zero_data),
+  .out1(dont_care_out),
+  .out2 (q),
+  .addr1(wraddress),
+  .addr2(rdaddress));
+  
+  
+  endmodule
   
 module dual_port_mem_xx (clk, data, rdaddress, wraddress , wren, q);
-	// 32bit wide
-	// 13bit address
-	input clk;
-	input[31:0] data;
-	input [12:0] rdaddress;
-	input [12:0] wraddress;
-	input wren;
-	output [31:0] q;
+
+// 32bit wide
+// 13bit address
+
+input clk;
+input[31:0] data;
+input [12:0] rdaddress;
+input [12:0] wraddress;
+input wren;
+output [31:0] q;
 
 
-	wire const_zero;
-	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+wire const_zero;
+wire [31:0] const_zero_data;
+wire [31:0] dont_care_out;
 
-	assign const_zero = 1'b0;
-	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
-
-	dual_port_ram dpram1(	
-		.clk (clk),
-		.we1(wren),
-		.we2(const_zero),
-		.data1(data),
-		.data2(const_zero_data),
-		.out1(dont_care_out),
-		.out2 (q),
-		.addr1(wraddress),
-		.addr2(rdaddress)
-	);
-endmodule
+assign const_zero = 1'b0;
+assign const_zero_data = 32'b00000000000000000000000000000000;
+assign dont_care_out = 32'b00000000000000000000000000000000;
+	
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;
+dual_port_ram dpram1(	
+  .clk (clk),
+  .we1(wren),
+  .we2(const_zero),
+  .data1(data),
+  .data2(const_zero_data),
+  .out1(dont_care_out),
+  .out2 (q),
+  .addr1(wraddress),
+  .addr2(rdaddress));
+  
+  
+  endmodule
 
 module dual_port_mem_ww (clk, data, rdaddress, wraddress , wren, q);
-	// 32bit wide
-	// 13bit address
-	input clk;
-	input[31:0] data;
-	input [12:0] rdaddress;
-	input [12:0] wraddress;
-	input wren;
-	output [31:0] q;
+
+// 32bit wide
+// 13bit address
+
+input clk;
+input[31:0] data;
+input [12:0] rdaddress;
+input [12:0] wraddress;
+input wren;
+output [31:0] q;
 
 
-	wire const_zero;
-	wire [31:0] const_zero_data;
-	wire [31:0] dont_care_out;
+wire const_zero;
+wire [31:0] const_zero_data;
+wire [31:0] dont_care_out;
 
-	assign const_zero = 1'b0;
-	assign const_zero_data = 32'b00000000000000000000000000000000;
-	assign dont_care_out = 32'b00000000000000000000000000000000;
+assign const_zero = 1'b0;
+assign const_zero_data = 32'b00000000000000000000000000000000;
+assign dont_care_out = 32'b00000000000000000000000000000000;
+	
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;
+dual_port_ram dpram1(	
+  .clk (clk),
+  .we1(wren),
+  .we2(const_zero),
+  .data1(data),
+  .data2(const_zero_data),
+  .out1(dont_care_out),
+  .out2 (q),
+  .addr1(wraddress),
+  .addr2(rdaddress));
+  
+  
+  endmodule
+  module dual (clk, data, rdaddress, wraddress , wren, q);
 
-	dual_port_ram dpram1(	
-		.clk (clk),
-		.we1(wren),
-		.we2(const_zero),
-		.data1(data),
-		.data2(const_zero_data),
-		.out1(dont_care_out),
-		.out2 (q),
-		.addr1(wraddress),
-		.addr2(rdaddress)
-	);
-endmodule
+// 36bit wide
+// 16bit address
 
-module dual (clk, data, rdaddress, wraddress , wren, q);
-	// 36bit wide
-	// 16bit address
-
-	input clk;
-	input[35:0] data;
-	input [15:0] rdaddress;
-	input [15:0] wraddress;
-	input wren;
-	output [35:0] q;
+input clk;
+input[35:0] data;
+input [15:0] rdaddress;
+input [15:0] wraddress;
+input wren;
+output [35:0] q;
 
 
-	wire const_zero;
-	wire [35:0] const_zero_data;
-	wire [35:0] dont_care_out;
+wire const_zero;
+wire [35:0] const_zero_data;
+wire [35:0] dont_care_out;
 
-	assign const_zero = 1'b0;
-	assign const_zero_data = 36'b000000000000000000000000000000000000;
-	assign dont_care_out = 36'b000000000000000000000000000000000000;
+assign const_zero = 1'b0;
+assign const_zero_data = 36'b000000000000000000000000000000000000;
+assign dont_care_out = 36'b000000000000000000000000000000000000;
+	
+defparam dpram1.ADDR_WIDTH = 16;
+defparam dpram1.DATA_WIDTH = 36;
+dual_port_ram dpram1(	
+  .clk (clk),
+  .we1(wren),
+  .we2(const_zero),
+  .data1(data),
+  .data2(const_zero_data),
+  .out1(dont_care_out),
+  .out2 (q),
+  .addr1(wraddress),
+  .addr2(rdaddress));
+  
+  
+  endmodule
+   module dual2 (clk, data, rdaddress, wraddress , wren, q);
 
-	dual_port_ram dpram1(	
-		.clk (clk),
-		.we1(wren),
-		.we2(const_zero),
-		.data1(data),
-		.data2(const_zero_data),
-		.out1(dont_care_out),
-		.out2 (q),
-		.addr1(wraddress),
-		.addr2(rdaddress)
-	);
-endmodule
+// 18bit wide
+// 16bit address
 
-module dual2 (clk, data, rdaddress, wraddress , wren, q);
-	// 18bit wide
-	// 16bit address
-	input clk;
-	input[17:0] data;
-	input [15:0] rdaddress;
-	input [15:0] wraddress;
-	input wren;
-	output [17:0] q;
+input clk;
+input[17:0] data;
+input [15:0] rdaddress;
+input [15:0] wraddress;
+input wren;
+output [17:0] q;
 
-	wire const_zero;
-	wire [17:0] const_zero_data;
-	wire [17:0] dont_care_out;
 
-	assign const_zero = 1'b0;
-	assign const_zero_data = 18'b000000000000000000;
-	assign dont_care_out = 18'b000000000000000000;
+wire const_zero;
+wire [17:0] const_zero_data;
+wire [17:0] dont_care_out;
 
-	dual_port_ram dpram1(	
-		.clk (clk),
-		.we1(wren),
-		.we2(const_zero),
-		.data1(data),
-		.data2(const_zero_data),
-		.out1(dont_care_out),
-		.out2 (q),
-		.addr1(wraddress),
-		.addr2(rdaddress)
-	);
-endmodule
+assign const_zero = 1'b0;
+assign const_zero_data = 18'b000000000000000000;
+assign dont_care_out = 18'b000000000000000000;
+	
+defparam dpram1.ADDR_WIDTH = 16;
+defparam dpram1.DATA_WIDTH = 18;
+dual_port_ram dpram1(	
+  .clk (clk),
+  .we1(wren),
+  .we2(const_zero),
+  .data1(data),
+  .data2(const_zero_data),
+  .out1(dont_care_out),
+  .out2 (q),
+  .addr1(wraddress),
+  .addr2(rdaddress));
+  
+  
+  endmodule
+   module dual3 (clk, data, rdaddress, wraddress , wren, q);
 
-module dual3 (clk, data, rdaddress, wraddress , wren, q);
-	// 8bit wide
-	// 16bit address
-	input clk;
-	input[7:0] data;
-	input [15:0] rdaddress;
-	input [15:0] wraddress;
-	input wren;
-	output [7:0] q;
+// 8bit wide
+// 16bit address
 
-	wire const_zero;
-	wire [7:0] const_zero_data;
-	wire [7:0] dont_care_out;
+input clk;
+input[7:0] data;
+input [15:0] rdaddress;
+input [15:0] wraddress;
+input wren;
+output [7:0] q;
 
-	assign const_zero = 1'b0;
-	assign const_zero_data = 8'b00000000;
-	assign dont_care_out = 8'b00000000;
 
-	dual_port_ram dpram1(	
-		.clk (clk),
-		.we1(wren),
-		.we2(const_zero),
-		.data1(data),
-		.data2(const_zero_data),
-		.out1(dont_care_out),
-		.out2 (q),
-		.addr1(wraddress),
-		.addr2(rdaddress)
-	);
-endmodule
+wire const_zero;
+wire [7:0] const_zero_data;
+wire [7:0] dont_care_out;
+
+assign const_zero = 1'b0;
+assign const_zero_data = 8'b00000000;
+assign dont_care_out = 8'b00000000;
+	
+defparam dpram1.ADDR_WIDTH = 16;
+defparam dpram1.DATA_WIDTH = 8;
+dual_port_ram dpram1(	
+  .clk (clk),
+  .we1(wren),
+  .we2(const_zero),
+  .data1(data),
+  .data2(const_zero_data),
+  .out1(dont_care_out),
+  .out2 (q),
+  .addr1(wraddress),
+  .addr2(rdaddress));
+  
+  
+  endmodule
 
  
  
@@ -1861,202 +2065,201 @@ module PhotonCalculator (
 
 	// Done signal
 	done
-);
-	//parameter BIT_WIDTH=32;
-	//parameter LAYER_WIDTH=3;
-	//parameter TRIG_WIDTH=10;
-	//parameter PIPELINE_DEPTH_UPPER_LIMIT = 256;
-	//parameter ABSORB_ADDR_WIDTH=16;
-	//parameter ABSORB_WORD_WIDTH=64;
-	//parameter WSCALE=1919999;
+	);
+//parameter BIT_WIDTH=32;
+//parameter LAYER_WIDTH=3;
+//parameter TRIG_WIDTH=10;
+//parameter PIPELINE_DEPTH_UPPER_LIMIT = 256;
+//parameter ABSORB_ADDR_WIDTH=16;
+//parameter ABSORB_WORD_WIDTH=64;
+//parameter WSCALE=1919999;
 
 
-	input clock, reset, enable;
+input clock, reset, enable;
 
-	// CONSTANTS
-	input [`BIT_WIDTH-1:0] total_photons;
+// CONSTANTS
+input [`BIT_WIDTH-1:0] total_photons;
 
-	input [`BIT_WIDTH-1:0] randseed1;
-	input [`BIT_WIDTH-1:0] randseed2;
-	input [`BIT_WIDTH-1:0] randseed3;
-	input [`BIT_WIDTH-1:0] randseed4;
-	input [`BIT_WIDTH-1:0] randseed5;
+input [`BIT_WIDTH-1:0] randseed1;
+input [`BIT_WIDTH-1:0] randseed2;
+input [`BIT_WIDTH-1:0] randseed3;
+input [`BIT_WIDTH-1:0] randseed4;
+input [`BIT_WIDTH-1:0] randseed5;
 
-	input [`BIT_WIDTH-1:0] initialWeight;
+input [`BIT_WIDTH-1:0] initialWeight;
 
-	//   Mover
-	input [`BIT_WIDTH-1:0] OneOver_MutMaxrad_0, OneOver_MutMaxrad_1, OneOver_MutMaxrad_2, OneOver_MutMaxrad_3, OneOver_MutMaxrad_4, OneOver_MutMaxrad_5;
-	input [`BIT_WIDTH-1:0] OneOver_MutMaxdep_0, OneOver_MutMaxdep_1, OneOver_MutMaxdep_2, OneOver_MutMaxdep_3, OneOver_MutMaxdep_4, OneOver_MutMaxdep_5;
-	input [`BIT_WIDTH-1:0] OneOver_Mut_0, OneOver_Mut_1, OneOver_Mut_2, OneOver_Mut_3, OneOver_Mut_4, OneOver_Mut_5;
+//   Mover
+input [`BIT_WIDTH-1:0] OneOver_MutMaxrad_0, OneOver_MutMaxrad_1, OneOver_MutMaxrad_2, OneOver_MutMaxrad_3, OneOver_MutMaxrad_4, OneOver_MutMaxrad_5;
+input [`BIT_WIDTH-1:0] OneOver_MutMaxdep_0, OneOver_MutMaxdep_1, OneOver_MutMaxdep_2, OneOver_MutMaxdep_3, OneOver_MutMaxdep_4, OneOver_MutMaxdep_5;
+input [`BIT_WIDTH-1:0] OneOver_Mut_0, OneOver_Mut_1, OneOver_Mut_2, OneOver_Mut_3, OneOver_Mut_4, OneOver_Mut_5;
 
-	//   BoundaryChecker
-	input [`BIT_WIDTH-1:0] z1_0, z1_1, z1_2, z1_3, z1_4, z1_5;
-	input [`BIT_WIDTH-1:0] z0_0, z0_1, z0_2, z0_3, z0_4, z0_5;
-	input [`BIT_WIDTH-1:0] mut_0, mut_1, mut_2, mut_3, mut_4, mut_5;
-	input [`BIT_WIDTH-1:0] maxDepth_over_maxRadius;
+//   BoundaryChecker
+input [`BIT_WIDTH-1:0] z1_0, z1_1, z1_2, z1_3, z1_4, z1_5;
+input [`BIT_WIDTH-1:0] z0_0, z0_1, z0_2, z0_3, z0_4, z0_5;
+input [`BIT_WIDTH-1:0] mut_0, mut_1, mut_2, mut_3, mut_4, mut_5;
+input [`BIT_WIDTH-1:0] maxDepth_over_maxRadius;
 
-	//   Hop (no constants)
+//   Hop (no constants)
 
-	//   Scatterer Reflector Absorber Wrapper
-	input [`BIT_WIDTH-1:0] down_niOverNt_1, down_niOverNt_2, down_niOverNt_3, down_niOverNt_4, down_niOverNt_5;
-	input [`BIT_WIDTH-1:0] up_niOverNt_1, up_niOverNt_2, up_niOverNt_3, up_niOverNt_4, up_niOverNt_5;
-	input [2*`BIT_WIDTH-1:0] down_niOverNt_2_1, down_niOverNt_2_2, down_niOverNt_2_3, down_niOverNt_2_4, down_niOverNt_2_5;
-	input [2*`BIT_WIDTH-1:0] up_niOverNt_2_1, up_niOverNt_2_2, up_niOverNt_2_3, up_niOverNt_2_4, up_niOverNt_2_5;
-	input [`BIT_WIDTH-1:0] downCritAngle_0, downCritAngle_1, downCritAngle_2, downCritAngle_3, downCritAngle_4;
-	input [`BIT_WIDTH-1:0] upCritAngle_0, upCritAngle_1, upCritAngle_2, upCritAngle_3, upCritAngle_4;
-	input [`BIT_WIDTH-1:0] muaFraction1, muaFraction2, muaFraction3, muaFraction4, muaFraction5;
+//   Scatterer Reflector Absorber Wrapper
+input [`BIT_WIDTH-1:0] down_niOverNt_1, down_niOverNt_2, down_niOverNt_3, down_niOverNt_4, down_niOverNt_5;
+input [`BIT_WIDTH-1:0] up_niOverNt_1, up_niOverNt_2, up_niOverNt_3, up_niOverNt_4, up_niOverNt_5;
+input [2*`BIT_WIDTH-1:0] down_niOverNt_2_1, down_niOverNt_2_2, down_niOverNt_2_3, down_niOverNt_2_4, down_niOverNt_2_5;
+input [2*`BIT_WIDTH-1:0] up_niOverNt_2_1, up_niOverNt_2_2, up_niOverNt_2_3, up_niOverNt_2_4, up_niOverNt_2_5;
+input [`BIT_WIDTH-1:0] downCritAngle_0, downCritAngle_1, downCritAngle_2, downCritAngle_3, downCritAngle_4;
+input [`BIT_WIDTH-1:0] upCritAngle_0, upCritAngle_1, upCritAngle_2, upCritAngle_3, upCritAngle_4;
+input [`BIT_WIDTH-1:0] muaFraction1, muaFraction2, muaFraction3, muaFraction4, muaFraction5;
 
-	  // Memory look-up interface
-	input [`BIT_WIDTH-1:0] up_rFresnel;
-	input [`BIT_WIDTH-1:0] down_rFresnel;
-	input [`BIT_WIDTH-1:0] sint;
-	input [`BIT_WIDTH-1:0] cost;
-		//To Memories
-	output [12:0] tindex;
-	output [9:0] fresIndex;
+  // Memory look-up interface
+input [`BIT_WIDTH-1:0] up_rFresnel;
+input [`BIT_WIDTH-1:0] down_rFresnel;
+input [`BIT_WIDTH-1:0] sint;
+input [`BIT_WIDTH-1:0] cost;
+	//To Memories
+output [12:0] tindex;
+output [9:0] fresIndex;
 
-	//   Roulette Module (nothing)
+//   Roulette Module (nothing)
 
-	// Final results
-	output [`ABSORB_ADDR_WIDTH-1:0] absorb_rdaddress, absorb_wraddress;
-	output absorb_wren;
-	output [`ABSORB_WORD_WIDTH-1:0] absorb_data;
-	input [`ABSORB_WORD_WIDTH-1:0] absorb_q;
+// Final results
+output [`ABSORB_ADDR_WIDTH-1:0] absorb_rdaddress, absorb_wraddress;
+output absorb_wren;
+output [`ABSORB_WORD_WIDTH-1:0] absorb_data;
+input [`ABSORB_WORD_WIDTH-1:0] absorb_q;
 
-	// Flag when final results ready
-	output done;
-
-
-	// Local variables
-	// Wired nets
-	/*mover inputs*/
-	reg [`BIT_WIDTH-1:0] x_moverMux;
-	reg [`BIT_WIDTH-1:0] y_moverMux;
-	reg [`BIT_WIDTH-1:0] z_moverMux;
-	reg [`BIT_WIDTH-1:0] ux_moverMux;
-	reg [`BIT_WIDTH-1:0] uy_moverMux;
-	reg [`BIT_WIDTH-1:0] uz_moverMux;
-	reg [`BIT_WIDTH-1:0] sz_moverMux;
-	reg [`BIT_WIDTH-1:0] sr_moverMux;
-	reg [`BIT_WIDTH-1:0] sleftz_moverMux;
-	reg [`BIT_WIDTH-1:0] sleftr_moverMux;
-	reg [`LAYER_WIDTH-1:0] layer_moverMux;
-	reg [`BIT_WIDTH-1:0] weight_moverMux;
-	reg dead_moverMux;
-
-	/*mover outputs*/
-	wire [`BIT_WIDTH-1:0] x_mover;
-	wire [`BIT_WIDTH-1:0] y_mover;
-	wire [`BIT_WIDTH-1:0] z_mover;
-	wire [`BIT_WIDTH-1:0] ux_mover;
-	wire [`BIT_WIDTH-1:0] uy_mover;
-	wire [`BIT_WIDTH-1:0] uz_mover;
-	wire [`BIT_WIDTH-1:0] sz_mover;
-	wire [`BIT_WIDTH-1:0] sr_mover;
-	wire [`BIT_WIDTH-1:0] sleftz_mover;
-	wire [`BIT_WIDTH-1:0] sleftr_mover;
-	wire [`LAYER_WIDTH-1:0] layer_mover;
-	wire [`BIT_WIDTH-1:0] weight_mover;
-	wire dead_mover;
-
-	/*boundary checker outputs*/
-	wire [`BIT_WIDTH-1:0] x_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] y_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] z_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] ux_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] uy_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] uz_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] sz_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] sr_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] sleftz_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] sleftr_boundaryChecker;
-	wire [`LAYER_WIDTH-1:0] layer_boundaryChecker;
-	wire [`BIT_WIDTH-1:0] weight_boundaryChecker;
-	wire dead_boundaryChecker;
-	wire hit_boundaryChecker;
-
-	/*hop outputs*/
-	wire [`BIT_WIDTH-1:0] x_hop;
-	wire [`BIT_WIDTH-1:0] y_hop;
-	wire [`BIT_WIDTH-1:0] z_hop;
-	wire [`BIT_WIDTH-1:0] ux_hop;
-	wire [`BIT_WIDTH-1:0] uy_hop;
-	wire [`BIT_WIDTH-1:0] uz_hop;
-	wire [`BIT_WIDTH-1:0] sz_hop;
-	wire [`BIT_WIDTH-1:0] sr_hop;
-	wire [`BIT_WIDTH-1:0] sleftz_hop;
-	wire [`BIT_WIDTH-1:0] sleftr_hop;
-	wire [`LAYER_WIDTH-1:0] layer_hop;
-	wire [`BIT_WIDTH-1:0] weight_hop;
-	wire dead_hop;
-	wire hit_hop;
-
-	/*Drop spin outputs*/
-	wire [`BIT_WIDTH-1:0] x_dropSpin;
-	wire [`BIT_WIDTH-1:0] y_dropSpin;
-	wire [`BIT_WIDTH-1:0] z_dropSpin;
-	wire [`BIT_WIDTH-1:0] ux_dropSpin;
-	wire [`BIT_WIDTH-1:0] uy_dropSpin;
-	wire [`BIT_WIDTH-1:0] uz_dropSpin;
-	wire [`BIT_WIDTH-1:0] sz_dropSpin;
-	wire [`BIT_WIDTH-1:0] sr_dropSpin;
-	wire [`BIT_WIDTH-1:0] sleftz_dropSpin;
-	wire [`BIT_WIDTH-1:0] sleftr_dropSpin;
-	wire [`LAYER_WIDTH-1:0] layer_dropSpin;
-	wire [`BIT_WIDTH-1:0] weight_dropSpin;
-	wire dead_dropSpin;
-	//Had to add this one to avoid implicit net:
-	wire hit_dropSpin;
-
-	/*Dead or Alive outputs*/
-	wire [`BIT_WIDTH-1:0] x_Roulette;
-	wire [`BIT_WIDTH-1:0] y_Roulette;
-	wire [`BIT_WIDTH-1:0] z_Roulette;
-	wire [`BIT_WIDTH-1:0] ux_Roulette;
-	wire [`BIT_WIDTH-1:0] uy_Roulette;
-	wire [`BIT_WIDTH-1:0] uz_Roulette;
-	wire [`BIT_WIDTH-1:0] sz_Roulette;
-	wire [`BIT_WIDTH-1:0] sr_Roulette;
-	wire [`BIT_WIDTH-1:0] sleftz_Roulette;
-	wire [`BIT_WIDTH-1:0] sleftr_Roulette;
-	wire [`LAYER_WIDTH-1:0] layer_Roulette;
-	wire [`BIT_WIDTH-1:0] weight_Roulette;
-	wire dead_Roulette;
-
-	// internals
-	wire [`BIT_WIDTH-1:0] rand1, rand2, rand3, rand4, rand5;
-	wire [`BIT_WIDTH-1:0] logrand;
-
-	// Combinational Drivers
-	reg [`BIT_WIDTH-1:0] c_num_photons_left;
-	reg [`BIT_WIDTH-1:0] c_counter;
-	reg c_done;
-
-	// Registered Drivers
-	reg r_done;
-	reg loadseed;
-	reg delay_loadseed;
+// Flag when final results ready
+output done;
 
 
-	reg [`BIT_WIDTH-1:0] r_num_photons_left;	
-	reg [`BIT_WIDTH-1:0] r_counter;
+// Local variables
+// Wired nets
+/*mover inputs*/
+reg [`BIT_WIDTH-1:0] x_moverMux;
+reg [`BIT_WIDTH-1:0] y_moverMux;
+reg [`BIT_WIDTH-1:0] z_moverMux;
+reg [`BIT_WIDTH-1:0] ux_moverMux;
+reg [`BIT_WIDTH-1:0] uy_moverMux;
+reg [`BIT_WIDTH-1:0] uz_moverMux;
+reg [`BIT_WIDTH-1:0] sz_moverMux;
+reg [`BIT_WIDTH-1:0] sr_moverMux;
+reg [`BIT_WIDTH-1:0] sleftz_moverMux;
+reg [`BIT_WIDTH-1:0] sleftr_moverMux;
+reg [`LAYER_WIDTH-1:0] layer_moverMux;
+reg [`BIT_WIDTH-1:0] weight_moverMux;
+reg dead_moverMux;
 
-	assign done = r_done;
+/*mover outputs*/
+wire [`BIT_WIDTH-1:0] x_mover;
+wire [`BIT_WIDTH-1:0] y_mover;
+wire [`BIT_WIDTH-1:0] z_mover;
+wire [`BIT_WIDTH-1:0] ux_mover;
+wire [`BIT_WIDTH-1:0] uy_mover;
+wire [`BIT_WIDTH-1:0] uz_mover;
+wire [`BIT_WIDTH-1:0] sz_mover;
+wire [`BIT_WIDTH-1:0] sr_mover;
+wire [`BIT_WIDTH-1:0] sleftz_mover;
+wire [`BIT_WIDTH-1:0] sleftr_mover;
+wire [`LAYER_WIDTH-1:0] layer_mover;
+wire [`BIT_WIDTH-1:0] weight_mover;
+wire dead_mover;
 
-	//Cannot be logic in instantiatino:
-	wire not_reset;
-	assign not_reset = ~reset;
+/*boundary checker outputs*/
+wire [`BIT_WIDTH-1:0] x_boundaryChecker;
+wire [`BIT_WIDTH-1:0] y_boundaryChecker;
+wire [`BIT_WIDTH-1:0] z_boundaryChecker;
+wire [`BIT_WIDTH-1:0] ux_boundaryChecker;
+wire [`BIT_WIDTH-1:0] uy_boundaryChecker;
+wire [`BIT_WIDTH-1:0] uz_boundaryChecker;
+wire [`BIT_WIDTH-1:0] sz_boundaryChecker;
+wire [`BIT_WIDTH-1:0] sr_boundaryChecker;
+wire [`BIT_WIDTH-1:0] sleftz_boundaryChecker;
+wire [`BIT_WIDTH-1:0] sleftr_boundaryChecker;
+wire [`LAYER_WIDTH-1:0] layer_boundaryChecker;
+wire [`BIT_WIDTH-1:0] weight_boundaryChecker;
+wire dead_boundaryChecker;
+wire hit_boundaryChecker;
 
-	// Connect blocks
-	LogCalc log_u1(.clock(clock), .reset(reset), .enable(1'b1), .in_x(rand1), .log_x(logrand));
-	rng rand_u1(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed1), .number_o(rand1));
-	rng rand_u2(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed2), .number_o(rand2));
-	rng rand_u3(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed3), .number_o(rand3));
-	rng rand_u4(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed4), .number_o(rand4));
-	rng rand_u5(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed5), .number_o(rand5));
+/*hop outputs*/
+wire [`BIT_WIDTH-1:0] x_hop;
+wire [`BIT_WIDTH-1:0] y_hop;
+wire [`BIT_WIDTH-1:0] z_hop;
+wire [`BIT_WIDTH-1:0] ux_hop;
+wire [`BIT_WIDTH-1:0] uy_hop;
+wire [`BIT_WIDTH-1:0] uz_hop;
+wire [`BIT_WIDTH-1:0] sz_hop;
+wire [`BIT_WIDTH-1:0] sr_hop;
+wire [`BIT_WIDTH-1:0] sleftz_hop;
+wire [`BIT_WIDTH-1:0] sleftr_hop;
+wire [`LAYER_WIDTH-1:0] layer_hop;
+wire [`BIT_WIDTH-1:0] weight_hop;
+wire dead_hop;
+wire hit_hop;
 
-	Move mover(		 
-	.clock(clock), .reset(reset), .enable(enable),
+/*Drop spin outputs*/
+wire [`BIT_WIDTH-1:0] x_dropSpin;
+wire [`BIT_WIDTH-1:0] y_dropSpin;
+wire [`BIT_WIDTH-1:0] z_dropSpin;
+wire [`BIT_WIDTH-1:0] ux_dropSpin;
+wire [`BIT_WIDTH-1:0] uy_dropSpin;
+wire [`BIT_WIDTH-1:0] uz_dropSpin;
+wire [`BIT_WIDTH-1:0] sz_dropSpin;
+wire [`BIT_WIDTH-1:0] sr_dropSpin;
+wire [`BIT_WIDTH-1:0] sleftz_dropSpin;
+wire [`BIT_WIDTH-1:0] sleftr_dropSpin;
+wire [`LAYER_WIDTH-1:0] layer_dropSpin;
+wire [`BIT_WIDTH-1:0] weight_dropSpin;
+wire dead_dropSpin;
+//Had to add this one to avoid implicit net:
+wire hit_dropSpin;
+
+/*Dead or Alive outputs*/
+wire [`BIT_WIDTH-1:0] x_Roulette;
+wire [`BIT_WIDTH-1:0] y_Roulette;
+wire [`BIT_WIDTH-1:0] z_Roulette;
+wire [`BIT_WIDTH-1:0] ux_Roulette;
+wire [`BIT_WIDTH-1:0] uy_Roulette;
+wire [`BIT_WIDTH-1:0] uz_Roulette;
+wire [`BIT_WIDTH-1:0] sz_Roulette;
+wire [`BIT_WIDTH-1:0] sr_Roulette;
+wire [`BIT_WIDTH-1:0] sleftz_Roulette;
+wire [`BIT_WIDTH-1:0] sleftr_Roulette;
+wire [`LAYER_WIDTH-1:0] layer_Roulette;
+wire [`BIT_WIDTH-1:0] weight_Roulette;
+wire dead_Roulette;
+
+// internals
+wire [`BIT_WIDTH-1:0] rand1, rand2, rand3, rand4, rand5;
+wire [`BIT_WIDTH-1:0] logrand;
+
+// Combinational Drivers
+reg [`BIT_WIDTH-1:0] c_num_photons_left;
+reg [`BIT_WIDTH-1:0] c_counter;
+reg c_done;
+
+// Registered Drivers
+reg r_done;
+reg loadseed;
+reg delay_loadseed;
+
+
+reg [`BIT_WIDTH-1:0] r_num_photons_left;
+reg [`BIT_WIDTH-1:0] r_counter;
+
+assign done = r_done;
+
+//Cannot be logic in instantiatino:
+wire not_reset;
+assign not_reset = ~reset;
+
+// Connect blocks
+LogCalc log_u1(.clock(clock), .reset(reset), .enable(1'b1), .in_x(rand1), .log_x(logrand));
+rng rand_u1(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed1), .number_o(rand1));
+rng rand_u2(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed2), .number_o(rand2));
+rng rand_u3(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed3), .number_o(rand3));
+rng rand_u4(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed4), .number_o(rand4));
+rng rand_u5(.clk(clock), .en(1'b1), .resetn(not_reset), .loadseed_i(loadseed), .seed_i(randseed5), .number_o(rand5));
+
+Move mover(		 .clock(clock), .reset(reset), .enable(enable),
 				 .x_moverMux(x_moverMux), .y_moverMux(y_moverMux), .z_moverMux(z_moverMux),
 				 .ux_moverMux(ux_moverMux), .uy_moverMux(uy_moverMux), .uz_moverMux(uz_moverMux),
 				 .sz_moverMux(sz_moverMux), .sr_moverMux(sr_moverMux),
@@ -10264,6 +10467,9 @@ reg [`BIT_WIDTH - 1:0] log_x;
 //Log_mantissa u1(c_shifted_x, clock, mantissa);
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
+
+defparam sram_replace0.ADDR_WIDTH = `MANTISSA_PRECISION;
+defparam sram_replace0.DATA_WIDTH = 32;
 single_port_ram sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
 
 // priority encoder
@@ -18117,7 +18323,12 @@ output	[31:0]			cosp;
 //Instantiate a single port ram for odin
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
+defparam sinp_replace.ADDR_WIDTH = 10;
+defparam sinp_replace.DATA_WIDTH = 32;
 single_port_ram sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
+
+defparam cosp_replace.ADDR_WIDTH = 10;
+defparam cosp_replace.DATA_WIDTH = 32;
 single_port_ram cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
 
 			
@@ -24611,5 +24822,6 @@ module Sqrt_64b (clk, num_, res);
 
 	
 endmodule 	
+
 
 

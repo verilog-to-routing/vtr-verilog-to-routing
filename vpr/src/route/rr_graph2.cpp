@@ -369,9 +369,9 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y) {
     chan_details_x = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details, seg_details, SEG_DETAILS_X);
+                                       num_seg_details, seg_details, X_AXIS);
     chan_details_y = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details, seg_details, SEG_DETAILS_Y);
+                                       num_seg_details, seg_details, Y_AXIS);
 
     /* Adjust segment start/end based on obstructed channels, if any */
     adjust_chan_details(grid, nodes_per_chan,
@@ -382,7 +382,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const t_chan_width* nodes_per_chan,
                                  const int num_seg_details,
                                  const t_seg_details* seg_details,
-                                 const enum e_seg_details_type seg_details_type) {
+                                 const enum e_parallel_axis seg_parallel_axis) {
     VTR_ASSERT(num_seg_details <= nodes_per_chan->max);
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
@@ -396,11 +396,11 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 int seg_start = -1;
                 int seg_end = -1;
 
-                if (seg_details_type == SEG_DETAILS_X) {
+                if (seg_parallel_axis == X_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, y, x);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, y, grid.width() - 2); //-2 for no perim channels
                 }
-                if (seg_details_type == SEG_DETAILS_Y) {
+                if (seg_parallel_axis == Y_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, x, y);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, x, grid.height() - 2); //-2 for no perim channels
                 }
@@ -408,12 +408,12 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 p_seg_details[i].set_seg_start(seg_start);
                 p_seg_details[i].set_seg_end(seg_end);
 
-                if (seg_details_type == SEG_DETAILS_X) {
+                if (seg_parallel_axis == X_AXIS) {
                     if (i >= nodes_per_chan->x_list[y]) {
                         p_seg_details[i].set_length(0);
                     }
                 }
-                if (seg_details_type == SEG_DETAILS_Y) {
+                if (seg_parallel_axis == Y_AXIS) {
                     if (i >= nodes_per_chan->y_list[x]) {
                         p_seg_details[i].set_length(0);
                     }
@@ -436,7 +436,7 @@ void adjust_chan_details(const DeviceGrid& grid,
                 continue;
 
             adjust_seg_details(x, y, grid, nodes_per_chan,
-                               chan_details_x, SEG_DETAILS_X);
+                               chan_details_x, X_AXIS);
         }
     }
 
@@ -448,7 +448,7 @@ void adjust_chan_details(const DeviceGrid& grid,
                 continue;
 
             adjust_seg_details(x, y, grid, nodes_per_chan,
-                               chan_details_y, SEG_DETAILS_Y);
+                               chan_details_y, Y_AXIS);
         }
     }
 }
@@ -458,34 +458,34 @@ void adjust_seg_details(const int x,
                         const DeviceGrid& grid,
                         const t_chan_width* nodes_per_chan,
                         t_chan_details& chan_details,
-                        const enum e_seg_details_type seg_details_type) {
-    int seg_index = (seg_details_type == SEG_DETAILS_X ? x : y);
+                        const enum e_parallel_axis seg_parallel_axis) {
+    int seg_index = (seg_parallel_axis == X_AXIS ? x : y);
 
     for (int track = 0; track < nodes_per_chan->max; ++track) {
-        int lx = (seg_details_type == SEG_DETAILS_X ? x - 1 : x);
-        int ly = (seg_details_type == SEG_DETAILS_X ? y : y - 1);
+        int lx = (seg_parallel_axis == X_AXIS ? x - 1 : x);
+        int ly = (seg_parallel_axis == X_AXIS ? y : y - 1);
         if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
             continue;
 
         while (chan_details[lx][ly][track].seg_end() >= seg_index) {
             chan_details[lx][ly][track].set_seg_end(seg_index - 1);
-            lx = (seg_details_type == SEG_DETAILS_X ? lx - 1 : lx);
-            ly = (seg_details_type == SEG_DETAILS_X ? ly : ly - 1);
+            lx = (seg_parallel_axis == X_AXIS ? lx - 1 : lx);
+            ly = (seg_parallel_axis == X_AXIS ? ly : ly - 1);
             if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
                 break;
         }
     }
 
     for (int track = 0; track < nodes_per_chan->max; ++track) {
-        size_t lx = (seg_details_type == SEG_DETAILS_X ? x + 1 : x);
-        size_t ly = (seg_details_type == SEG_DETAILS_X ? y : y + 1);
+        size_t lx = (seg_parallel_axis == X_AXIS ? x + 1 : x);
+        size_t ly = (seg_parallel_axis == X_AXIS ? y : y + 1);
         if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
             continue;
 
         while (chan_details[lx][ly][track].seg_start() <= seg_index) {
             chan_details[lx][ly][track].set_seg_start(seg_index + 1);
-            lx = (seg_details_type == SEG_DETAILS_X ? lx + 1 : lx);
-            ly = (seg_details_type == SEG_DETAILS_X ? ly : ly + 1);
+            lx = (seg_parallel_axis == X_AXIS ? lx + 1 : lx);
+            ly = (seg_parallel_axis == X_AXIS ? ly : ly + 1);
             if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
                 break;
         }
@@ -1193,8 +1193,6 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                 for (RRNodeId inode : nodes_from_lookup) {
                     rr_node_counts[inode]++;
 
-                    auto& rr_node = rr_nodes[size_t(inode)];
-
                     if (rr_graph.node_type(inode) != rr_type) {
                         VPR_ERROR(VPR_ERROR_ROUTE, "RR node type does not match between rr_nodes and rr_node_indices (%s/%s): %s",
                                   rr_node_typename[rr_graph.node_type(inode)],
@@ -1203,53 +1201,53 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                     }
 
                     if (rr_graph.node_type(inode) == CHANX) {
-                        VTR_ASSERT_MSG(rr_node.ylow() == rr_node.yhigh(), "CHANX should be horizontal");
+                        VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANX should be horizontal");
 
-                        if (y != rr_node.ylow()) {
+                        if (y != rr_graph.node_ylow(inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
-                                      rr_node.ylow(),
+                                      rr_graph.node_ylow(inode),
                                       y,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
 
-                        if (x < rr_node.xlow() || x > rr_node.xhigh()) {
+                        if (!rr_graph.x_in_node_range(x, inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                      rr_node.xlow(),
-                                      rr_node.xlow(),
+                                      rr_graph.node_xlow(inode),
+                                      rr_graph.node_xlow(inode),
                                       x,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
                     } else if (rr_graph.node_type(inode) == CHANY) {
-                        VTR_ASSERT_MSG(rr_node.xlow() == rr_node.xhigh(), "CHANY should be veritcal");
+                        VTR_ASSERT_MSG(rr_graph.node_xlow(inode) == rr_graph.node_xhigh(inode), "CHANY should be veritcal");
 
-                        if (x != rr_node.xlow()) {
+                        if (x != rr_graph.node_xlow(inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node x position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
-                                      rr_node.xlow(),
+                                      rr_graph.node_xlow(inode),
                                       x,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
 
-                        if (y < rr_node.ylow() || y > rr_node.yhigh()) {
+                        if (!rr_graph.y_in_node_range(y, inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                      rr_node.ylow(),
-                                      rr_node.ylow(),
+                                      rr_graph.node_ylow(inode),
+                                      rr_graph.node_ylow(inode),
                                       y,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
                     } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
                         //Sources have co-ordintes covering the entire block they are in
-                        if (x < rr_node.xlow() || x > rr_node.xhigh()) {
+                        if (!rr_graph.x_in_node_range(x, inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                      rr_node.xlow(),
-                                      rr_node.xlow(),
+                                      rr_graph.node_xlow(inode),
+                                      rr_graph.node_xlow(inode),
                                       x,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
 
-                        if (y < rr_node.ylow() || y > rr_node.yhigh()) {
+                        if (!rr_graph.y_in_node_range(y, inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                      rr_node.ylow(),
-                                      rr_node.ylow(),
+                                      rr_graph.node_ylow(inode),
+                                      rr_graph.node_ylow(inode),
                                       y,
                                       describe_rr_node(size_t(inode)).c_str());
                         }
@@ -1305,8 +1303,8 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
         auto& rr_node = rr_nodes[size_t(inode)];
 
         if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
-            int rr_width = (rr_node.xhigh() - rr_node.xlow() + 1);
-            int rr_height = (rr_node.yhigh() - rr_node.ylow() + 1);
+            int rr_width = (rr_graph.node_xhigh(rr_node.id()) - rr_graph.node_xlow(rr_node.id()) + 1);
+            int rr_height = (rr_graph.node_yhigh(rr_node.id()) - rr_graph.node_ylow(rr_node.id()) + 1);
             int rr_area = rr_width * rr_height;
             if (count != rr_area) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node size (%d) and count within rr_node_indices (%d): %s",

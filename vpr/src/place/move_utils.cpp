@@ -5,6 +5,9 @@
 
 #include "vtr_random.h"
 
+#include "draw_debug.h"
+#include "draw.h"
+
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
@@ -728,14 +731,15 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 }
 
 //Array of move type strings
-static const std::array<std::string, NUM_PL_MOVE_TYPES> move_type_strings = {
+static const std::array<std::string, NUM_PL_MOVE_TYPES + 1> move_type_strings = {
     "Uniform",
     "Median",
     "W. Centroid",
     "Centroid",
     "W. Median",
     "Crit. Uniform",
-    "Feasible Region"};
+    "Feasible Region",
+    "Manual Move"};
 
 //To convert enum move type to string
 std::string move_type_to_string(e_move_type move) {
@@ -842,4 +846,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
         }
     }
     return legal;
+}
+
+std::string e_move_result_to_string(e_move_result move_outcome) {
+    std::string move_result_to_string[] = {"Rejected", "Accepted", "Aborted"};
+    return move_result_to_string[move_outcome];
 }

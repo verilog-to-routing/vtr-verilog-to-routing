@@ -1,7 +1,7 @@
 {
     "default/case_default/no_arch": {
         "test_name": "default/case_default/no_arch",
-        "blif": "case_default.blif",
+        "generated_blif": "case_default_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 5,
         "simulation_time(ms)": 1.4,
@@ -17,7 +17,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

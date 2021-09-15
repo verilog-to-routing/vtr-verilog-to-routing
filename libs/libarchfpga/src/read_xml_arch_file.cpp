@@ -3639,6 +3639,10 @@ static void ProcessSegments(pugi::xml_node Parent,
 
     /* Load the segments. */
     Node = get_first_child(Parent, "segment", loc_data);
+
+    bool x_axis_seg_found = false; /*Flags to see if we have any x-directed segment type specified*/
+    bool y_axis_seg_found = false; /*Flags to see if we have any y-directed segment type specified*/
+
     for (i = 0; i < NumSegs; ++i) {
         /* Get segment name */
         tmp = get_attribute(Node, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
@@ -3681,6 +3685,26 @@ static void ProcessSegments(pugi::xml_node Parent,
         ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
         Segs[i].Rmetal = get_attribute(Node, "Rmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
         Segs[i].Cmetal = get_attribute(Node, "Cmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
+
+        /*Get parallel axis*/
+
+        Segs[i].parallel_axis = BOTH_AXIS; /*DEFAULT value if no axis is specified*/
+        tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+
+        if (tmp) {
+            if (strcmp(tmp, "x") == 0) {
+                Segs[i].parallel_axis = X_AXIS;
+                x_axis_seg_found = true;
+            } else if (strcmp(tmp, "y") == 0) {
+                Segs[i].parallel_axis = Y_AXIS;
+                y_axis_seg_found = true;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
+            }
+        } else {
+            x_axis_seg_found = true;
+            y_axis_seg_found = true;
+        }
 
         /* Get Power info */
         /*
@@ -3799,8 +3823,13 @@ static void ProcessSegments(pugi::xml_node Parent,
         /* Get next Node */
         Node = Node.next_sibling(Node.name());
     }
-}
+    /*We need at least one type of segment that applies to each of x- and y-directed wiring.*/
 
+    if (!x_axis_seg_found || !y_axis_seg_found) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.");
+    }
+}
 /* Processes the switchblocklist section from the xml architecture file.
  * See vpr/SRC/route/build_switchblocks.c for a detailed description of this
  * switch block format */

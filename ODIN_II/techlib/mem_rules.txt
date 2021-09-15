@@ -1,0 +1,66 @@
+bram _$BRAM
+    init   1   
+    abits 23   @A8388608
+    abits 22   @A4194304
+    abits 21   @A2097152
+    abits 20   @A1048576
+    abits 19   @A524288
+    abits 18   @A262144
+    abits 17   @A131072
+    abits 16   @A65536
+    abits 15   @A32768
+    abits 14   @A16384
+    abits 13   @A8192
+    abits 12   @A4096
+    abits 11   @A2048
+    abits 10   @A1024
+    abits 9    @A512
+    abits 8    @A256
+    abits 7    @A128
+    abits 6    @A64
+    abits 5    @A32
+    abits 4    @A16
+    abits 3    @A8
+    abits 2    @A4
+    abits 1    @A2
+
+    dbits  1    @A8388608 @A4194304 @A2097152 @A1048576 @A524288 @A262144 @A131072 @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  2    @A4194304 @A2097152 @A1048576 @A524288 @A262144 @A131072 @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  3    @A2097152 @A1048576 @A524288 @A262144 @A131072 @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  4    @A1048576 @A524288 @A262144 @A131072 @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  5    @A524288 @A262144 @A131072 @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  6    @A262144 @A131072 @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  7    @A131072 @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  8    @A65536 @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  9    @A32768 @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  10   @A16384 @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  11   @A8192 @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  12   @A4096 @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  13   @A2048 @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  14   @A1024 @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  15   @A512 @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  16   @A256 @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  17   @A128 @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  18   @A64 @A32 @A16 @A8 @A4 @A2
+    dbits  19   @A32 @A16 @A8 @A4 @A2
+    dbits  20   @A16 @A8 @A4 @A2
+    dbits  21   @A8 @A4 @A2
+    dbits  22   @A4 @A2
+    dbits  23   @A2
+
+    groups 2
+    ports  1 1
+    wrmode 0 1
+    enable 1 1
+    transp 0 0
+    clocks 1 1
+    clkpol 1 1
+endbram
+
+
+match _$BRAM
+    max bits 16777216
+endmatch
+
+
+

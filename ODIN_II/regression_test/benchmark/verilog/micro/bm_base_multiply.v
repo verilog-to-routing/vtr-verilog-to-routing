@@ -11,10 +11,10 @@ module 	bm_base_multiply(clock,
 		e_in,
 		f_in,
 		out0,
+		out1,
 		out2,
 		out3,
-		out4,
-		out1);
+		out4);
 
 // SIGNAL DECLARATIONS
 input	clock;

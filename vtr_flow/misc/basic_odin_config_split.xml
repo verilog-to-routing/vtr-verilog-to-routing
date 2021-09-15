@@ -1,8 +1,11 @@
 <config>
-	<verilog_files>
+	<inputs>
+		<!-- These are the output flags for the project -->
+		<!-- possible types: verilog, verilog_header and blif -->
+		<input_type>TTT</input_type>
 		<!-- Way of specifying multiple files in a project -->
-		<verilog_file>XXX</verilog_file>
-	</verilog_files>
+		<input_path_and_name>XXX</input_path_and_name>
+	</inputs>
 	<output>
 		<!-- These are the output flags for the project -->
 		<output_type>blif</output_type>
