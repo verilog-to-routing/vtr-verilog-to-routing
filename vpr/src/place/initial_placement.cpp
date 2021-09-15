@@ -35,7 +35,7 @@ struct t_block_score {
 
 static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
 
-static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro);
+static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string circuit_name);
 
 static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::string circuit_name);
 
@@ -215,6 +215,10 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
     for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
         vtr::Rect<int> rect = regions[reg].get_region_rect();
 
+        if (circuit_name == "test") {
+            VTR_LOG("xmin is %d, ymin is %d, xmax is %d, ymax is %d\n", rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax());
+        }
+
         int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
         int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
 
@@ -263,10 +267,10 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                     to_loc.sub_tile = subtile;
                     if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
                         if (circuit_name == "test") {
-                            VTR_LOG("trying to place macro\n");
+                            VTR_LOG("1. trying to place macro\n");
                         }
 
-                        placed = try_place_macro(to_loc, pl_macro);
+                        placed = try_place_macro(to_loc, pl_macro, circuit_name);
                     }
                 } else {
                     for (const auto& sub_tile : tile_type->sub_tiles) {
@@ -281,9 +285,9 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                                 to_loc.sub_tile = st;
                                 if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
                                     if (circuit_name == "test") {
-                                        VTR_LOG("trying to place macro\n");
+                                        VTR_LOG("2. trying to place macro\n");
                                     }
-                                    placed = try_place_macro(to_loc, pl_macro);
+                                    placed = try_place_macro(to_loc, pl_macro, circuit_name);
                                 }
                             }
                         }
@@ -353,8 +357,12 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
     return (macro_can_be_placed);
 }
 
-static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro) {
+static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string circuit_name) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    if (circuit_name == "test") {
+        VTR_LOG("In try_place_macro, head position is x: %d, y: %d, subtile: %d\n", head_pos.x, head_pos.y, head_pos.sub_tile);
+    }
 
     int macro_placed = false;
 
@@ -364,8 +372,14 @@ static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro) {
     }
 
     int macro_can_be_placed = check_macro_can_be_placed(pl_macro, head_pos);
+    if (circuit_name == "test") {
+        VTR_LOG("Macro can be placed returned %d \n", macro_can_be_placed);
+    }
 
     if (macro_can_be_placed) {
+        if (circuit_name == "test") {
+            VTR_LOG("Macro can be placed, placing macro\n");
+        }
         // Place down the macro
         macro_placed = true;
         for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
@@ -433,7 +447,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
 
             // Try to place the macro
             if (found_legal_location) {
-                macro_placed = try_place_macro(head_pos, pl_macro);
+                macro_placed = try_place_macro(head_pos, pl_macro, circuit_name);
             }
 
         } // Finished all tries
