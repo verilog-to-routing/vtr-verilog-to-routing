@@ -185,6 +185,25 @@ jobs:
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
 
+  
+  VQM2BLIF:
+    name: 'VQM2BLIF Basic Tests'
+    runs-on: ubuntu-18.04
+    steps:
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Test
+      env:
+        BUILD_TYPE: release
+      run: |
+        ./.github/scripts/build.sh
+        ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
+
 
   Compatibility:
     runs-on: ubuntu-18.04
@@ -227,6 +246,7 @@ jobs:
       - Regression
       - Sanitized
       - ODINII
+      - VQM2BLIF
       - Compatibility
     runs-on: ubuntu-18.04
     steps:
