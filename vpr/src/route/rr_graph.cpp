@@ -2422,8 +2422,8 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
 }
 
 /* TODO: This function should adapt RRNodeId */
-std::string describe_rr_node(int inode,const DeviceContext& device_ctx) {
-    
+std::string describe_rr_node(int inode, const DeviceContext& device_ctx) {
+
   // auto& device_ctx = g_vpr_ctx.device();
 
     const auto& rr_graph = device_ctx.rr_graph;
