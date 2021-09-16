@@ -1,9 +1,30 @@
 #!/bin/bash
 
-# the purpose of this script is to go through a number of .vqm files
+# The purpose of this script is to go through a number of .vqm files
 # and generate the corresponding .blif files using the vqm2blif program.
 # The generated blif files will be compared to a golden set of outputs
 # to validate the vqm2blif program changes.
+
+# This program accepts two arguments:
+# Argument 1: Location of the directory that contains all the netlists
+# Argument 2: Location of the architecture file that will be used when running the vqm2blif program
+
+# if any of the arguments are not supplied, then default values will be used (see below for further information)
+
+# This script assumes that the corresponding "golden" blif file for any vqm netlist is in the same directory and it is the ONLY blif file in the directory.
+# See below for a sample directory structure:
+# - netlists
+#    - netlist_1
+#       - circuit_1.vqm
+#       - circuit_1.blif
+#    - netlist_2
+#       - circuit_2.vqm
+#       - circuit_2.blif
+#    - netlist_3
+
+# please note that the original Titan benchmarks were arranged this way
+
+# Finally, the generated blif files have the extension ".test.blif", so please do not name any other files with this extension
 
 
 # has useful utilities
@@ -16,7 +37,7 @@ VTR_ROOT_DIR="$(dirname "$0")/../../../../"
 # location of the deafult architecture file used when testing the vqm2blif program
 ARCH_FILE="$(dirname "$0")/../../../../vtr_flow/arch/titan/stratixiv_arch.timing.xml"
 
-# location of the default folder where all the test netlists are located
+# location of the default folder where all the test netlists are located (basic becnchmak tests)
 TEST_FOLDER="$(dirname "$0")/../netlists/"
 
 ### useful file extensions ###
