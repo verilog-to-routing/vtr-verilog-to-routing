@@ -488,9 +488,14 @@ def vtr_command_main(arg_list, prog=None):
 
     finally:
         seconds = datetime.now() - start
+        with open(temp_dir/"vpr.out","r") as fpmem:
+            for line in fpmem.readlines():
+                if "Maximum resident set size" in line:
+                    mem_usage = int(line.split()[-1])//1024
         print(
-            "{status} (took {time})".format(
-                status=error_status, time=vtr.format_elapsed_time(seconds)
+            "{status} (took {time}, vpr run consumed {max_mem} MB memory)".format(
+                status=error_status, time=vtr.format_elapsed_time(seconds),
+                max_mem=mem_usage
             )
         )
         temp_dir.mkdir(parents=True, exist_ok=True)
