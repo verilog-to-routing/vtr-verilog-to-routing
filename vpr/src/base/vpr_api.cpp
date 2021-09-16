@@ -659,8 +659,6 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
             vpr_setup.Segments);
     }
 
-    auto& filename_opts = vpr_setup.FileNameOpts;
-
     try_place(vpr_setup.PlacerOpts,
               vpr_setup.AnnealSched,
               vpr_setup.RouterOpts,
@@ -669,10 +667,9 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
               arch.Directs,
-              arch.num_directs,
-              filename_opts.CircuitName);
+              arch.num_directs);
 
-    //auto& filename_opts = vpr_setup.FileNameOpts;
+    auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     print_place(filename_opts.NetFile.c_str(),

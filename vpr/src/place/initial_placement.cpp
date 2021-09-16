@@ -33,13 +33,13 @@ struct t_block_score {
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 6
 #define MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY 10
 
-static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std::string circuit_name);
+static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
 
-static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string circuit_name);
+static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro);
 
-static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::string circuit_name);
+static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro);
 
-static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type, std::string circuit_name);
+static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type);
 
 /*
  * Assign scores to each block based on macro size, floorplanning constraints, and number of equivalent tiles.
@@ -52,18 +52,17 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 //Get a legal placement position for the block
-static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type, std::string circuit_name);
+static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type);
 
-static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, std::string circuit_name);
+static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
-static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, std::string circuit_name);
+static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type);
 
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              const vtr::vector<ClusterBlockId, t_block_score>& block_scores,
-                             enum e_pad_loc_type pad_loc_type,
-                             std::string circuit_name);
+                             enum e_pad_loc_type pad_loc_type);
 
 static bool is_loc_on_chip(t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -71,11 +70,7 @@ static bool is_loc_on_chip(t_pl_loc& loc) {
     return (loc.x >= 0 && loc.x < int(device_ctx.grid.width()) && loc.y >= 0 && loc.y < int(device_ctx.grid.height()));
 }
 
-static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type, std::string circuit_name) {
-    if (circuit_name == "test") {
-        VTR_LOG("In get random legal placement routine\n");
-    }
-
+static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
     bool legal;
@@ -118,18 +113,14 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 
     auto& grid = g_vpr_ctx.device().grid;
 
-    VTR_ASSERT_MSG(grid[loc.x][loc.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(grid[loc.x][loc.y].height_offset == 0, "Should be at block base location");
+    VTR_ASSERT(grid[loc.x][loc.y].width_offset == 0);
+    VTR_ASSERT(grid[loc.x][loc.y].height_offset == 0);
 
     return legal;
 }
 
-static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, std::string circuit_name) {
+static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-
-    if (circuit_name == "test") {
-        VTR_LOG("In regular block exhaustive placement routine\n");
-    }
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -150,7 +141,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
-            VTR_ASSERT_MSG(y_range >= 0, "y range should be greater than or equal to zero");
+            VTR_ASSERT(y_range >= 0);
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
                 int cy = (y_lower_iter + dy)->first;
@@ -204,7 +195,7 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
     return placed;
 }
 
-static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, std::string circuit_name) {
+static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -214,48 +205,22 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
 
     t_pl_loc to_loc;
 
-    if (circuit_name == "test") {
-        VTR_LOG("In macro exhaustive placement routine\n");
-    }
-
     for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
         vtr::Rect<int> rect = regions[reg].get_region_rect();
-
-        if (circuit_name == "test") {
-            VTR_LOG("xmin is %d, ymin is %d, xmax is %d, ymax is %d\n", rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax());
-        }
 
         int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
         int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
 
-        if (circuit_name == "test") {
-            VTR_LOG("min_cx is %d, max_cx is %d\n", min_cx, max_cx);
-        }
-
         for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
-            if (circuit_name == "test") {
-                VTR_LOG("trying cx %d\n", cx);
-            }
-
             auto y_lower_iter = compressed_block_grid.grid[cx].begin();
             auto y_upper_iter = compressed_block_grid.grid[cx].end();
 
             int y_range = std::distance(y_lower_iter, y_upper_iter);
-            if (circuit_name == "test") {
-                VTR_LOG("y_range is %d\n", y_range);
-            }
-            VTR_ASSERT_MSG(y_range >= 0, "y range should be greater than or equal to zero");
+
+            VTR_ASSERT(y_range >= 0);
 
             for (int dy = 0; dy < y_range && placed == false; dy++) {
-                if (circuit_name == "test") {
-                    VTR_LOG("dy is %d\n", dy);
-                }
-
                 int cy = (y_lower_iter + dy)->first;
-
-                if (circuit_name == "test") {
-                    VTR_LOG("trying cy %d\n", cy);
-                }
 
                 to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
                 to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
@@ -266,17 +231,9 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                 if (regions[reg].get_sub_tile() != NO_SUBTILE) {
                     int subtile = regions[reg].get_sub_tile();
 
-                    if (circuit_name == "test") {
-                        VTR_LOG("trying subtile %d\n", subtile);
-                    }
-
                     to_loc.sub_tile = subtile;
                     if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-                        if (circuit_name == "test") {
-                            VTR_LOG("1. trying to place macro\n");
-                        }
-
-                        placed = try_place_macro(to_loc, pl_macro, circuit_name);
+                        placed = try_place_macro(to_loc, pl_macro);
                     }
                 } else {
                     for (const auto& sub_tile : tile_type->sub_tiles) {
@@ -285,15 +242,9 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                             int st_high = sub_tile.capacity.high;
 
                             for (int st = st_low; st <= st_high && placed == false; st++) {
-                                if (circuit_name == "test") {
-                                    VTR_LOG("trying subtile %d\n", st);
-                                }
                                 to_loc.sub_tile = st;
                                 if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-                                    if (circuit_name == "test") {
-                                        VTR_LOG("2. trying to place macro\n");
-                                    }
-                                    placed = try_place_macro(to_loc, pl_macro, circuit_name);
+                                    placed = try_place_macro(to_loc, pl_macro);
                                 }
                             }
                         }
@@ -310,32 +261,20 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
     return placed;
 }
 
-static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std::string circuit_name) {
+static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if (circuit_name == "test") {
-        VTR_LOG("In check_macro_can_be_placed \n");
-    }
-
     //Get block type of head member
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-
-    if (circuit_name == "test") {
-        VTR_LOG("Got block type \n");
-    }
 
     // Every macro can be placed until proven otherwise
     int macro_can_be_placed = true;
 
     //Check whether macro contains blocks with floorplan constraints
     bool macro_constrained = is_macro_constrained(pl_macro);
-
-    if (circuit_name == "test") {
-        VTR_LOG("Checked whether macro is constrained \n");
-    }
 
     // Check whether all the members can be placed
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
@@ -344,10 +283,6 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std
         if (!is_loc_on_chip(member_pos)) {
             macro_can_be_placed = false;
             break;
-        }
-
-        if (circuit_name == "test") {
-            VTR_LOG("Member pos is x: %d, y: %d, subtile: %d \n", member_pos.x, member_pos.y, member_pos.sub_tile);
         }
 
         /*
@@ -359,9 +294,6 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std
          */
         if (macro_constrained && imember == 0) {
             bool member_loc_good = cluster_floorplanning_legal(pl_macro.members[imember].blk_index, member_pos);
-            if (circuit_name == "test") {
-                VTR_LOG("Checked member floorplanning legal \n");
-            }
             if (!member_loc_good) {
                 macro_can_be_placed = false;
                 break;
@@ -376,35 +308,19 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, std
             && is_tile_compatible(device_ctx.grid[member_pos.x][member_pos.y].type, block_type)
             && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] == EMPTY_BLOCK_ID) {
             // Can still accommodate blocks here, check the next position
-            if (circuit_name == "test") {
-                VTR_LOG("Position can accommodate blocks \n");
-            }
             continue;
         } else {
             // Cant be placed here - skip to the next try
-            if (circuit_name == "test") {
-                VTR_LOG("Position cannot accommodate more blocks \n");
-            }
             macro_can_be_placed = false;
             break;
         }
-        if (circuit_name == "test") {
-            VTR_LOG("Checked whether this position can still accomodate blocks \n");
-        }
     }
 
-    if (circuit_name == "test") {
-        VTR_LOG("Returning macro_can_be_placed is %d \n", macro_can_be_placed);
-    }
     return (macro_can_be_placed);
 }
 
-static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string circuit_name) {
+static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    if (circuit_name == "test") {
-        VTR_LOG("In try_place_macro, head position is x: %d, y: %d, subtile: %d\n", head_pos.x, head_pos.y, head_pos.sub_tile);
-    }
 
     int macro_placed = false;
 
@@ -413,20 +329,9 @@ static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string c
         return (macro_placed);
     }
 
-    if (circuit_name == "test") {
-        VTR_LOG("checked location, not occupied\n");
-    }
-
-    int macro_can_be_placed = check_macro_can_be_placed(pl_macro, head_pos, circuit_name);
-
-    if (circuit_name == "test") {
-        VTR_LOG("Macro can be placed returned %d \n", macro_can_be_placed);
-    }
+    int macro_can_be_placed = check_macro_can_be_placed(pl_macro, head_pos);
 
     if (macro_can_be_placed) {
-        if (circuit_name == "test") {
-            VTR_LOG("Macro can be placed, placing macro\n");
-        }
         // Place down the macro
         macro_placed = true;
         for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
@@ -440,13 +345,10 @@ static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro, std::string c
 
     } // End of this choice of legal_pos
 
-    if (circuit_name == "test") {
-        VTR_LOG("Returning macro_placed as %d \n", macro_placed);
-    }
     return (macro_placed);
 }
 
-static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::string circuit_name) {
+static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
     int macro_placed;
     int itry;
     ClusterBlockId blk_id;
@@ -459,15 +361,10 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
     auto& device_ctx = g_vpr_ctx.device();
 
     macro_placed = false;
-    std::string circuit = "test.v";
 
     while (!macro_placed) {
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macro.members[0].blk_index;
-
-        if (circuit_name == "test") {
-            VTR_LOG("In place_a_macro, placing macro with head block %s (%d)\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
-        }
 
         if (place_ctx.block_locs[blk_id].loc.x != -1) {
             //put VTR assert
@@ -493,11 +390,11 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
 
         // Try to place the macro first, if can be placed - place them, otherwise try again
         for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-            found_legal_location = get_legal_placement_loc(pr, head_pos, block_type, circuit_name);
+            found_legal_location = get_legal_placement_loc(pr, head_pos, block_type);
 
             // Try to place the macro
             if (found_legal_location) {
-                macro_placed = try_place_macro(head_pos, pl_macro, circuit_name);
+                macro_placed = try_place_macro(head_pos, pl_macro);
             }
 
         } // Finished all tries
@@ -510,7 +407,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
             // if there are no legal positions, error out
 
             // Exhaustive placement of carry macros
-            macro_placed = try_all_part_region_locations_macro(pl_macro, pr, block_type, circuit_name);
+            macro_placed = try_all_part_region_locations_macro(pl_macro, pr, block_type);
 
             // If macro could not be placed after exhaustive placement, error out
         }
@@ -534,17 +431,11 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro, std::st
 
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
-static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type, std::string circuit_name) {
+static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& device_ctx = g_vpr_ctx.device();
-
-    std::string circuit = "test.v";
-
-    if (circuit_name == "test") {
-        VTR_LOG("In place_a_block, placing block %s (%d)\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
-    }
 
     bool placed = false;
     while (!placed) {
@@ -575,7 +466,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
         bool floorplanning_good = false;
 
         for (int itry = 0; itry < blocks_max_num_tries && placed == false; itry++) {
-            found_legal_place = get_legal_placement_loc(pr, to, logical_block, circuit_name);
+            found_legal_place = get_legal_placement_loc(pr, to, logical_block);
 
             if (found_legal_place) {
                 floorplanning_good = cluster_floorplanning_legal(blk_id, to);
@@ -601,7 +492,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
              * set placed = true;
              * If there are no legal positions, error out
              */
-            placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type, circuit_name);
+            placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type);
 
             // If block could not be placed after exhaustive placement, error out
             if (placed == false) {
@@ -695,8 +586,7 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 
 static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              const vtr::vector<ClusterBlockId, t_block_score>& block_scores,
-                             enum e_pad_loc_type pad_loc_type,
-                             std::string circuit_name) {
+                             enum e_pad_loc_type pad_loc_type) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     for (auto blk_id : sorted_blocks) {
@@ -711,24 +601,16 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
             get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
             t_pl_macro pl_macro;
             pl_macro = place_ctx.pl_macros[imacro];
-            place_a_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, circuit_name);
+            place_a_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro);
         } else {
-            place_a_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type, circuit_name);
+            place_a_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type);
         }
     }
 }
 
-void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file, std::string circuit_name) {
+void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
-    std::string circuit = "test.v";
-
-    VTR_LOG("Circuit name is %s\n", circuit_name.c_str());
-    if (circuit_name == "test") {
-        VTR_LOG("In main initial placement routine\n");
-    }
-
-    VTR_LOG("In main initial placement routine\n");
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Go through cluster blocks to calculate the tightest placement
@@ -736,17 +618,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
      */
     propagate_place_constraints();
 
-    if (circuit_name == "test") {
-        VTR_LOG("Finished propagating placement constraints\n");
-    }
-
     //Sort blocks and placement macros according to how difficult they are to place
     vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores();
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
-
-    if (circuit_name == "test") {
-        VTR_LOG("Finished sorting blocks\n");
-    }
 
     // Set every grid location to an INVALID block id
     zero_initialize_grid_blocks();
@@ -775,10 +649,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
-    if (circuit_name == "test") {
-        VTR_LOG("Finished initializing place context\n");
-    }
-
     /*Check whether the constraint file is NULL, if not, read in the block locations from the constraints file here*/
     if (strlen(constraints_file) != 0) {
         read_constraints(constraints_file);
@@ -788,16 +658,8 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
      * as fixed so they do not get moved during initial placement or during simulated annealing*/
     mark_fixed_blocks();
 
-    if (circuit_name == "test") {
-        VTR_LOG("Finished marking fixed blocks\n");
-    }
-
     //Place the blocks in sorted order
-    place_the_blocks(sorted_blocks, block_scores, pad_loc_type, circuit_name);
-
-    if (circuit_name == "test") {
-        VTR_LOG("Finished placing blocks\n");
-    }
+    place_the_blocks(sorted_blocks, block_scores, pad_loc_type);
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
