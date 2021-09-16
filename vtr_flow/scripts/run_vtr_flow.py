@@ -411,6 +411,16 @@ def vtr_command_argparser(prog=None):
     return parser
 
 
+def format_human_readable_memory(num_kbytes):
+    """format the number of bytes given as a human readable value"""
+    if num_kbytes < 1024:
+        return "%.2f KiB" % (num_kbytes)
+    elif num_kbytes < (1024 ** 2):
+        return "%.2f MiB" % (num_kbytes / (1024 ** 1))
+    else:
+        return "%.2f GiB" % (num_kbytes / (1024 ** 2))
+
+
 # pylint: enable=too-many-statements
 
 
@@ -491,9 +501,9 @@ def vtr_command_main(arg_list, prog=None):
         with open(temp_dir / "vpr.out", "r") as fpmem:
             for line in fpmem.readlines():
                 if "Maximum resident set size" in line:
-                    mem_usage = int(line.split()[-1]) // 1024
+                    mem_usage = format_human_readable_memory(int(line.split()[-1]))
         print(
-            "{status} (took {time}, vpr run consumed {max_mem} MB memory)".format(
+            "{status} (took {time}, vpr run consumed {max_mem} memory)".format(
                 status=error_status, time=vtr.format_elapsed_time(seconds), max_mem=mem_usage
             )
         )
