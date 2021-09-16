@@ -137,6 +137,15 @@ jobs:
         ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
+    - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        with:
+          name: failed_${{matrix.name}}_regression_log
+          retention-days: 3
+          path: |
+            vtr_flow/**/*.log
+            vtr_flow/**/*.out
 
   Sanitized:
     runs-on: ubuntu-18.04
