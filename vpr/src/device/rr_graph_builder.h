@@ -55,6 +55,9 @@ class RRGraphBuilder {
     /** @brief Clear all the underlying data storage */
     void clear();
 
+    /** @brief Set capacity of this node (number of routes that can use it). */
+    void set_node_capacity(RRNodeId, short new_capacity);
+
     /** @brief Set the node coordinate */
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
 
