@@ -425,10 +425,10 @@ public:
    * Draw a surface
    *
    * @param surface The surface to draw
-   * @param top_left The corner point of the drawn surface.
+   * @param anchor_point The anchor_point point of the drawn surface.
    * @param scale_factor The scaling factor of the drawn surface (optional)
    */
-  void draw_surface(surface *p_surface, point2d top_left, double scale_factor = 1);
+  void draw_surface(surface *p_surface, point2d anchor_point, double scale_factor = 1);
 
   /**
    * load a png image
