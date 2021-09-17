@@ -414,11 +414,12 @@ def vtr_command_argparser(prog=None):
 def format_human_readable_memory(num_kbytes):
     """format the number of bytes given as a human readable value"""
     if num_kbytes < 1024:
-        return "%.2f KiB" % (num_kbytes)
+        value = "%.2f KiB" % (num_kbytes)
     elif num_kbytes < (1024 ** 2):
-        return "%.2f MiB" % (num_kbytes / (1024 ** 1))
+        value = "%.2f MiB" % (num_kbytes / (1024 ** 1))
     else:
-        return "%.2f GiB" % (num_kbytes / (1024 ** 2))
+        value = "%.2f GiB" % (num_kbytes / (1024 ** 2))
+    return value
 
 
 # pylint: enable=too-many-statements
