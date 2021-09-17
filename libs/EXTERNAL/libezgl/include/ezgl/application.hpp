@@ -132,8 +132,10 @@ public:
     : main_ui_resource(build_ui_from_file ? "main_ui" : "/ezgl/main.ui"), window_identifier("MainWindow"), canvas_identifier("MainCanvas"), application_identifier("ezgl.app"),
       setup_callbacks(nullptr)
     {
-      // If the default application identifier is used, uniquify it by appending a time stamp
-      application_identifier = "ezgl.app.t" + std::to_string(std::time(nullptr));
+      // Uniquify the application_identifier by appending a time stamp,
+      // so that each instance of the same program has a different application ID.
+      // This allows multiple instance of the program to run independelty.
+      application_identifier += ".t" + std::to_string(std::time(nullptr));
     }
 
     /**
@@ -144,9 +146,10 @@ public:
     : main_ui_resource(m_resource), window_identifier(w_identifier), canvas_identifier(c_identifier), application_identifier(a_identifier),
       setup_callbacks(s_callbacks)
     {
-      // If the default application identifier is used, uniquify it by appending a time stamp
-      if (application_identifier == "ezgl.app")
-        application_identifier = "ezgl.app.t" + std::to_string(std::time(nullptr));
+      // Uniquify the application_identifier by appending a time stamp,
+      // so that each instance of the same program has a different application ID.
+      // This allows multiple instance of the program to run independelty.
+      application_identifier += ".t" + std::to_string(std::time(nullptr));
     }
   };
 
@@ -413,27 +416,13 @@ public:
   key_callback_fn key_press_callback;
 };
 
-#ifndef ECE297
 /**
  * Set the disable_event_loop flag to new_setting
  * Call with new_setting == true to make the event_loop immediately return.
- * Needed only for auto-marking
  *
  * @param new_setting The new state of disable_event_loop flag
  */
 void set_disable_event_loop(bool new_setting);
-#endif
 }
-
-#ifdef ECE297
-/**
- * Set the disable_event_loop flag to new_setting
- * Call with new_setting == true to make the event_loop immediately return.
- * Needed only for auto-marking
- *
- * @param new_setting The new state of disable_event_loop flag
- */
-void set_disable_event_loop(bool new_setting);
-#endif
 
 #endif //EZGL_APPLICATION_HPP

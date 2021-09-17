@@ -27,7 +27,7 @@ namespace ezgl {
 class point2d {
 public:
   /**
-   * Create a point at (0, 0).
+   * Default constructor: Create a point at (0, 0).
    */
   point2d() : x(0.0), y(0.0)
   {

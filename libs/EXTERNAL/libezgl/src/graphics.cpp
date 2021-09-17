@@ -304,12 +304,14 @@ void renderer::set_text_rotation(double degrees)
 
 void renderer::set_horiz_justification(justification horiz_just)
 {
+  // Ignore illegal values for horizontal justification
   if (horiz_just != justification::top && horiz_just != justification::bottom)
     horiz_justification = horiz_just;
 }
 
 void renderer::set_vert_justification(justification vert_just)
 {
+  // Ignore illegal values for vertical justification
   if (vert_just != justification::right && vert_just != justification::left)
     vert_justification = vert_just;
 }
@@ -713,8 +715,10 @@ void renderer::draw_arc_path(point2d center,
 void renderer::draw_surface(surface *p_surface, point2d point, double scale_factor)
 {
   // Check if the surface is properly created
-  if(cairo_surface_status(p_surface) != CAIRO_STATUS_SUCCESS)
+  if(cairo_surface_status(p_surface) != CAIRO_STATUS_SUCCESS) {
+    g_warning("renderer::draw_surface: Error drawing surface at address %p; surface is not valid.", p_surface);
     return;
+  }
 
   // calculate surface width and height in screen coordinates
   double s_width = (double)cairo_image_surface_get_width(p_surface) * scale_factor;
@@ -732,6 +736,9 @@ void renderer::draw_surface(surface *p_surface, point2d point, double scale_fact
     top_left.x -= s_width/2;
   else if (horiz_justification == justification::right)
     top_left.x -= s_width;
+  // Vertical justifaction is calculated differently based on the current coordinate system
+  // Since the origin point of screen coordinates is at the top left,
+  // while the origin point of world coordinates is at the bottom left
   if (vert_justification == justification::center)
     top_left.y += (current_coordinate_system == WORLD) ? s_height/2 : -s_height/2;
   else if (vert_justification == justification::bottom)
@@ -776,10 +783,10 @@ surface *renderer::load_png(const char *file_path)
   cairo_status_t status = cairo_surface_status(png_surface);
 
   if (status == CAIRO_STATUS_FILE_NOT_FOUND) {
-    g_warning("load_png: File %s not found.", file_path);
+    g_warning("renderer::load_png: File %s not found.", file_path);
   }
   else if (status != CAIRO_STATUS_SUCCESS) {
-    g_warning("load_png: Error loading file %s.", file_path);
+    g_warning("renderer::load_png: Error loading file %s.", file_path);
   }
 
   return png_surface;

@@ -20,11 +20,24 @@
 
 namespace ezgl {
 
-// File wide static variables to track whether the mouse button used for
-// panning is currently pressed AND the old x and y positions of the mouse pointer
-bool panning_mouse_button_pressed = false;
-int last_panning_event_time = 0;
-double prev_x = 0, prev_y = 0;
+/**
+ * Provides file wide variables to support mouse panning
+ */
+struct mouse_pan {
+  /**
+   * Tracks whether the mouse button used for panning is currently pressed
+   */
+  bool panning_mouse_button_pressed = false;
+  /**
+   * Holds the timestamp of the last panning event
+   */
+  int last_panning_event_time = 0;
+  /**
+   * The old x and y positions of the mouse pointer
+   */
+  double prev_x = 0;
+  double prev_y = 0;
+} g_mouse_pan;
 
 gboolean press_key(GtkWidget *, GdkEventKey *event, gpointer data)
 {
@@ -53,9 +66,9 @@ gboolean press_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
 
     // Check for mouse press to support dragging
     if(event->button == PANNING_MOUSE_BUTTON) {
-      panning_mouse_button_pressed = true;
-      prev_x = event->x;
-      prev_y = event->y;
+      g_mouse_pan.panning_mouse_button_pressed = true;
+      g_mouse_pan.prev_x = event->x;
+      g_mouse_pan.prev_y = event->y;
     }
     // Call the user-defined mouse press callback if defined
     // The user-defined callback is called for mouse buttons other than
@@ -82,10 +95,10 @@ gboolean release_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
   if(event->type == GDK_BUTTON_RELEASE) {
     // Check for mouse release to support dragging
     if(event->button == PANNING_MOUSE_BUTTON) {
-      panning_mouse_button_pressed = false;
+      g_mouse_pan.panning_mouse_button_pressed = false;
 
       // Call the user-defined mouse press callback for the PANNING_MOUSE_BUTTON button only if no panning occurs
-      if(event->x == prev_x && event->y == prev_y && application->mouse_press_callback != nullptr) {
+      if(event->x == g_mouse_pan.prev_x && event->y == g_mouse_pan.prev_y && application->mouse_press_callback != nullptr) {
         ezgl::point2d const widget_coordinates(event->x, event->y);
 
         std::string main_canvas_id = application->get_main_canvas_id();
@@ -107,12 +120,12 @@ gboolean move_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
   if(event->type == GDK_MOTION_NOTIFY) {
 
     // Check if the mouse button is pressed to support dragging
-    if(panning_mouse_button_pressed) {
+    if(g_mouse_pan.panning_mouse_button_pressed) {
       // drop this panning event if we have just served another one
-      if(gtk_get_current_event_time() - last_panning_event_time < 100)
+      if(gtk_get_current_event_time() - g_mouse_pan.last_panning_event_time < 100)
         return true;
 
-      last_panning_event_time = gtk_get_current_event_time();
+      g_mouse_pan.last_panning_event_time = gtk_get_current_event_time();
 
       GdkEventMotion *motion_event = (GdkEventMotion *)event;
 
@@ -120,13 +133,13 @@ gboolean move_mouse(GtkWidget *, GdkEventButton *event, gpointer data)
       auto canvas = application->get_canvas(main_canvas_id);
 
       point2d curr_trans = canvas->get_camera().widget_to_world({motion_event->x, motion_event->y});
-      point2d prev_trans = canvas->get_camera().widget_to_world({prev_x, prev_y});
+      point2d prev_trans = canvas->get_camera().widget_to_world({g_mouse_pan.prev_x, g_mouse_pan.prev_y});
 
       double dx = curr_trans.x - prev_trans.x;
       double dy = curr_trans.y - prev_trans.y;
 
-      prev_x = motion_event->x;
-      prev_y = motion_event->y;
+      g_mouse_pan.prev_x = motion_event->x;
+      g_mouse_pan.prev_y = motion_event->y;
 
       // Flip the delta x to avoid inverted dragging
       translate(canvas, -dx, -dy);
