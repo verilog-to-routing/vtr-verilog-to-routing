@@ -189,10 +189,6 @@ class t_rr_graph_storage {
         return RRIndexedDataId(node_storage_[id].cost_index_);
     }
 
-    bool cost_index_is_invalid(RRNodeId id) const {
-        return node_storage_[id].cost_index_ < 0;
-    }
-
     Direction node_direction(RRNodeId id) const {
         return get_node_direction(
             vtr::array_view_id<RRNodeId, const t_rr_node_data>(
