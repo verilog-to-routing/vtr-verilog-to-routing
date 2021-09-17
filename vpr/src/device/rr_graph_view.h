@@ -249,11 +249,6 @@ class RRGraphView {
         return node_storage_.node_cost_index(node);
     }
 
-    /** @brief Check if a node cost index is invalid (ie less than 0). This function is inlined for runtime optimization. */
-    bool cost_index_is_invalid(RRNodeId node) const {
-        return node_storage_.cost_index_is_invalid(node);
-    }
-
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
