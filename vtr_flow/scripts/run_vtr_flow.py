@@ -422,6 +422,15 @@ def format_human_readable_memory(num_kbytes):
     return value
 
 
+def get_memory_usage(logfile):
+    """Extrats the memory usage from the *.out log files"""
+    with open(logfile, "r") as fpmem:
+        for line in fpmem.readlines():
+            if "Maximum resident set size" in line:
+                return format_human_readable_memory(int(line.split()[-1]))
+    return "--"
+
+
 # pylint: enable=too-many-statements
 
 
@@ -499,13 +508,12 @@ def vtr_command_main(arg_list, prog=None):
 
     finally:
         seconds = datetime.now() - start
-        with open(temp_dir / "vpr.out", "r") as fpmem:
-            for line in fpmem.readlines():
-                if "Maximum resident set size" in line:
-                    mem_usage = format_human_readable_memory(int(line.split()[-1]))
+
         print(
             "{status} (took {time}, vpr run consumed {max_mem} memory)".format(
-                status=error_status, time=vtr.format_elapsed_time(seconds), max_mem=mem_usage
+                status=error_status,
+                time=vtr.format_elapsed_time(seconds),
+                max_mem=get_memory_usage(temp_dir / "vpr.out"),
             )
         )
         temp_dir.mkdir(parents=True, exist_ok=True)
