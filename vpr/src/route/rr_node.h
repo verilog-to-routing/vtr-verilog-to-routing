@@ -93,10 +93,6 @@ class t_rr_node {
 
     bool edge_is_configurable(t_edge_size iedge) const;
 
-    short xlow() const;
-    short ylow() const;
-    short xhigh() const;
-    short yhigh() const;
     signed short length() const;
 
     short ptc_num() const;
@@ -108,9 +104,6 @@ class t_rr_node {
     short rc_index() const;
 
     bool is_node_on_specific_side(e_side side) const;
-
-    float R() const;
-    float C() const;
 
     bool validate() const;
 

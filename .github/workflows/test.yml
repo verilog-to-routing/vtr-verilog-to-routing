@@ -167,7 +167,7 @@ jobs:
 
 
   ODINII:
-    name: 'ODIN-II Basic Tests'
+    name: 'ODIN-II Basic Test'
     runs-on: ubuntu-18.04
     steps:
 
@@ -203,6 +203,35 @@ jobs:
       run: |
         ./.github/scripts/build.sh
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
+
+
+  YOSYSODINII:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          {
+            name: 'Yosys+ODIN-II Basic',
+            suite: 'odin_tech_basic'
+          }
+        ]
+    name: '${{ matrix.name }}'
+    steps:
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON'
+        BUILD_TYPE: debug
+      run: |
+        ./.github/scripts/build.sh
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
 
   Compatibility:
@@ -247,6 +276,7 @@ jobs:
       - Sanitized
       - ODINII
       - VQM2BLIF
+      - YOSYSODINII
       - Compatibility
     runs-on: ubuntu-18.04
     steps:

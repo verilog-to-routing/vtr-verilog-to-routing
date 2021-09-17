@@ -36,6 +36,7 @@
 
 #include "odin_util.h"
 #include "vtr_util.h"
+#include "vtr_path.h"
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
@@ -43,8 +44,10 @@
 // for mkdir
 #ifdef WIN32
 #    include <direct.h>
+#    define getcwd _getcwd
 #else
 #    include <sys/stat.h>
+#    include <unistd.h>
 #endif
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc) {
@@ -60,6 +63,15 @@ std::string get_file_extension(std::string input_file) {
     auto dot_location = input_file.find_last_of('.');
     if (dot_location != std::string::npos) {
         return input_file.substr(dot_location);
+    } else {
+        return "";
+    }
+}
+
+std::string get_directory(std::string input_file) {
+    auto last_slash_location = input_file.find_last_of("\\/");
+    if (last_slash_location != std::string::npos) {
+        return input_file.substr(0, last_slash_location);
     } else {
         return "";
     }
@@ -82,15 +94,15 @@ void create_directory(std::string path) {
 void assert_supported_file_extension(std::string input_file, loc_t loc) {
     bool supported = false;
     std::string extension = get_file_extension(input_file);
-    for (int i = 0; i < file_extension_supported_END && !supported; i++) {
-        supported = (extension == std::string(file_extension_supported_STR[i]));
+    for (int i = 0; i < file_type_e::file_type_e_END && !supported; i++) {
+        supported = (file_type_strmap[extension] != file_type_e::file_type_e_END);
     }
 
     if (!supported) {
         std::string supported_extension_list = "";
-        for (int i = 0; i < file_extension_supported_END; i++) {
+        for (auto iter : file_type_strmap) {
             supported_extension_list += " ";
-            supported_extension_list += file_extension_supported_STR[i];
+            supported_extension_list += iter.second;
         }
 
         possible_error_message(UTIL, loc,
@@ -107,6 +119,20 @@ FILE* open_file(const char* file_name, const char* open_type) {
         error_message(UTIL, unknown_location, "cannot open file: %s\n", file_name);
     }
     return opened_file;
+}
+
+/**
+ * (function: get_current_path)
+ *
+ * @brief find the path where Odin-II is running
+ */
+void get_current_path() {
+    /* create a string buffer to hold path */
+    char* buffer;
+    buffer = getcwd(NULL, READ_BUFFER_SIZE);
+
+    global_args.current_path = std::string(buffer);
+    vtr::free(buffer);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -581,6 +607,71 @@ char* get_port_name(char* name) {
     return port_name;
 }
 
+/**
+ * (function: get_node_name)
+ * 
+ * @brief Removing the hard block unique number from its name 
+ * and gets the node name (everything before the ~).
+ *  
+ * @param name the given hard block name
+ * 
+ * @return pure hard block name
+ */
+char* get_hard_block_node_name(char* name) {
+    char* port_name = vtr::strdup(name);
+    // Find out if there is a ~ and remove everything after it.
+    char* tilde = strchr(port_name, '~');
+    if (tilde)
+        *tilde = '\0';
+    return (port_name);
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: get_stripped_name)
+ * 
+ * @brief find the sub-circuit name in an altered sub-circuit name
+ * In yosys cases, it appears when there is an instantiated parameterized 
+ * module, so Yosys changes the name to avoid name collision. For Odin-II,
+ * it looks for the pattern specified as names of supported hard blocks, 
+ * such as mult_XXX
+ * 
+ * @param subcircuit_name complete name
+ * 
+ * @return a stripped name
+ * -------------------------------------------------------------------------------------------
+ */
+char* get_stripped_name(const char* subcircuit_name) {
+    /* validation */
+    oassert(subcircuit_name);
+
+    char* subcircuit_stripped_name = NULL;
+
+    /* looking for Yosys style generated RTLIL module name */
+    if (configuration.coarsen) {
+        const char* pos = strchr(subcircuit_name, '\\');
+        if (pos) {
+            const char* end = strchr(pos, '\0');
+            // get stripped name
+            if (end) {
+                subcircuit_stripped_name = (char*)vtr::malloc((end - pos + 1) * sizeof(char));
+                memcpy(subcircuit_stripped_name, pos + 1, end - pos - 1);
+                subcircuit_stripped_name[end - pos - 1] = '\0';
+            }
+        }
+    }
+    /* looking for Odin-II style subckt types */
+    else {
+        /* init sub-circuit */
+        subcircuit_stripped_name = (char*)vtr::calloc(6, sizeof(char));
+        /* Determine the type of hard block. */
+        memcpy(subcircuit_stripped_name, subcircuit_name, 5);
+        subcircuit_stripped_name[5] = '\0';
+    }
+
+    return (subcircuit_stripped_name);
+}
+
 /*
  * Gets the pin number (the number after the ~)
  * from the given name.
@@ -1032,4 +1123,21 @@ char* str_collate(char* str1, char* str2) {
         vtr::free(str2);
     }
     return buffer;
+}
+
+/**
+ * (function: print_input_files_info)
+ * 
+ * @brief This shows the name of input file, whether Verilog or BLIF
+ */
+void print_input_files_info() {
+    if (configuration.input_file_type == file_type_e::_VERILOG) {
+        for (std::string v_file : global_args.verilog_files.value())
+            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
+
+    } else if (configuration.input_file_type == file_type_e::_BLIF) {
+        printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+    }
+
+    fflush(stdout);
 }

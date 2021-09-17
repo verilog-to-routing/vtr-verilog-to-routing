@@ -128,7 +128,6 @@ static uint64_t interleave(uint32_t x) {
 static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_segments) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& rr_nodes = device_ctx.rr_nodes;
 
     if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) {
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
@@ -138,8 +137,8 @@ static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_se
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
-    int x = rr_nodes.node_xlow(node.id());
-    int y = rr_nodes.node_ylow(node.id());
+    int x = rr_graph.node_xlow(node.id());
+    int y = rr_graph.node_ylow(node.id());
 
     int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 

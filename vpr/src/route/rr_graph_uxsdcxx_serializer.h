@@ -615,16 +615,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return node.ptc_num();
     }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
-        return node.xhigh();
+        return rr_graph_->node_xhigh(node.id());
     }
     inline int get_node_loc_xlow(const t_rr_node& node) final {
-        return node.xlow();
+        return rr_graph_->node_xlow(node.id());
     }
     inline int get_node_loc_yhigh(const t_rr_node& node) final {
-        return node.yhigh();
+        return rr_graph_->node_yhigh(node.id());
     }
     inline int get_node_loc_ylow(const t_rr_node& node) final {
-        return node.ylow();
+        return rr_graph_->node_ylow(node.id());
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
@@ -682,10 +682,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline float get_node_timing_C(const t_rr_node& node) final {
-        return node.C();
+        return rr_graph_->node_C(node.id());
     }
     inline float get_node_timing_R(const t_rr_node& node) final {
-        return node.R();
+        return rr_graph_->node_R(node.id());
     }
 
     /** Generated for complex type "node_segment":

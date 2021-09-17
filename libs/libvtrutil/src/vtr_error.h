@@ -4,15 +4,32 @@
 #include <stdexcept>
 #include <string>
 
+/**
+ * @file
+ * @brief A utility container that can be used to identify VTR execution errors.
+ * 
+ * The recommended usage is to store information in this container about the error during an error event and and then throwing an exception with the container. If the exception is not handled (exception is not caught), this will result in the termination of the program.
+ * 
+ * Error information can be displayed using the information stored within this container.
+ * 
+ */
+
 namespace vtr {
 
 /**
- * @brief Contriner that holds informations related to an error
+ * @brief Container that holds information related to an error
  *
  * It holds different info related to a VTR error:
  *      - error message
  *      - file name associated with the error
  *      - line number associated with the error
+ * 
+ * Example Usage:
+ * 
+ *      // creating and throwing an exception with a VtrError container that has an error occuring in file "error_file.txt" at line number 1
+ *       
+ *      throw vtr::VtrError("This is a program terminating error!", "error_file.txt", 1);
+ * 
  */
 class VtrError : public std::runtime_error {
   public:

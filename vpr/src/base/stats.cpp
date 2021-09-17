@@ -252,14 +252,14 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
             }
 
             else if (rr_type == CHANX) {
-                j = device_ctx.rr_nodes[inode].ylow();
-                for (i = device_ctx.rr_nodes[inode].xlow(); i <= device_ctx.rr_nodes[inode].xhigh(); i++)
+                j = rr_graph.node_ylow(RRNodeId(inode));
+                for (i = rr_graph.node_xlow(RRNodeId(inode)); i <= rr_graph.node_xhigh(RRNodeId(inode)); i++)
                     chanx_occ[i][j]++;
             }
 
             else if (rr_type == CHANY) {
-                i = device_ctx.rr_nodes[inode].xlow();
-                for (j = device_ctx.rr_nodes[inode].ylow(); j <= device_ctx.rr_nodes[inode].yhigh(); j++)
+                i = rr_graph.node_xlow(RRNodeId(inode));
+                for (j = rr_graph.node_ylow(RRNodeId(inode)); j <= rr_graph.node_yhigh(RRNodeId(inode)); j++)
                     chany_occ[i][j]++;
             }
 
@@ -310,8 +310,7 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
 
         else if (curr_type == CHANX || curr_type == CHANY) {
             segments++;
-            length += 1 + device_ctx.rr_nodes[inode].xhigh() - device_ctx.rr_nodes[inode].xlow()
-                      + device_ctx.rr_nodes[inode].yhigh() - device_ctx.rr_nodes[inode].ylow();
+            length += rr_graph.node_length(RRNodeId(inode));
 
             if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
                 bends++;

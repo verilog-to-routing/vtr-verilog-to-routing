@@ -148,6 +148,7 @@ static int line_has_unknown_pin(line_t* line, int cycle);
 
 static void compute_flipflop_node(nnode_t* node, int cycle);
 static void compute_mux_2_node(nnode_t* node, int cycle);
+static void compute_smux_2_node(nnode_t* node, int cycle);
 
 static void compute_single_port_memory(nnode_t* node, int cycle);
 static void compute_dual_port_memory(nnode_t* node, int cycle);
@@ -774,6 +775,9 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
     switch (type) {
         case MUX_2:
             compute_mux_2_node(node, cycle);
+            break;
+        case SMUX_2:
+            compute_smux_2_node(node, cycle);
             break;
         case FF_NODE:
             compute_flipflop_node(node, cycle);
@@ -1417,7 +1421,7 @@ static void compute_flipflop_node(nnode_t* node, int cycle) {
     npin_t* Q = node->output_pins[0];
     npin_t* clock_pin = node->input_pins[1];
     npin_t* output_pin = node->output_pins[0];
-    bool trigger = ff_trigger(node->edge_type, clock_pin, cycle);
+    bool trigger = ff_trigger(node->attributes->clk_edge_type, clock_pin, cycle);
 
     BitSpace::bit_value_t new_value = compute_ff(trigger, D, Q, cycle);
     update_pin_value(output_pin, new_value, cycle);
@@ -1479,6 +1483,72 @@ static void compute_mux_2_node(nnode_t* node, int cycle) {
         update_pin_value(output_pin, BitSpace::_x, cycle);
     } else {
         npin_t* pin = node->input_pins[select + node->input_port_sizes[0]];
+        BitSpace::bit_value_t value = get_pin_value(pin, cycle);
+
+        // Drive implied drivers to unknown value.
+        /*if (pin->is_implied && ast_node && (ast_node->type == CASE))
+         * update_pin_value(output_pin, BitSpace::_x, cycle);
+         * else*/
+        update_pin_value(output_pin, value, cycle);
+    }
+}
+
+/*
+ * Computes a node of type MUX_2 for the given cycle.
+ */
+static void compute_smux_2_node(nnode_t* node, int cycle) {
+    verify_i_o_availabilty(node, -1, 1);
+    oassert(node->num_input_port_sizes == 2);
+    oassert(node->input_port_sizes[0] == node->input_port_sizes[1] - 1);
+
+    ast_node_t* ast_node = node->related_ast_node;
+
+    // Figure out which pin is being selected.
+    bool unknown = false;
+    int select = -1;
+    int default_select = -1;
+
+    npin_t* select_pin = node->input_pins[0];
+    BitSpace::bit_value_t sel_value = get_pin_value(select_pin, cycle);
+
+    if (BitSpace::is_unk[sel_value])
+        unknown = true;
+    else if (sel_value == BitSpace::_0) // Take the first selection only.
+        select = 1;
+    else if (sel_value == BitSpace::_1) // Take the second selection only.
+        select = 2;
+
+    /*
+     *  If the pin comes from an "else" condition or a case "default" condition,
+     *  we favour it in the case where there are unknowns.
+     */
+    if (ast_node && select_pin->is_default && (ast_node->type == IF || ast_node->type == CASE))
+        default_select = 1;
+
+    // If there are unknowns and there is a default clause, select it.
+    if (unknown && default_select >= 1) {
+        unknown = false;
+        select = default_select;
+    }
+
+    npin_t* output_pin = node->output_pins[0];
+
+    // If any select pin is unknown (and we don't have a default), we take the value from the previous cycle.
+    if (unknown) {
+        /*
+         *  Conform to ModelSim's behaviour where in-line ifs are concerned. If the
+         *  condition is unknown, the inline if's output is unknown.
+         */
+        if (ast_node && ast_node->type == TERNARY_OPERATION)
+            update_pin_value(output_pin, BitSpace::_x, cycle);
+        else
+            update_pin_value(output_pin, get_pin_value(output_pin, cycle - 1), cycle);
+    }
+    // If no selection is made (all 0) we output x.
+    else if (select < 0) {
+        update_pin_value(output_pin, BitSpace::_x, cycle);
+    } else {
+        npin_t* pin = node->input_pins[select];
         BitSpace::bit_value_t value = get_pin_value(pin, cycle);
 
         // Drive implied drivers to unknown value.

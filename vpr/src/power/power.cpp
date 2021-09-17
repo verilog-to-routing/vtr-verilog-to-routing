@@ -906,9 +906,9 @@ static void power_usage_routing(t_power_usage* power_usage,
 
                 wire_length = 0;
                 if (rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANX) {
-                    wire_length = node.xhigh() - node.xlow() + 1;
+                    wire_length = rr_graph.node_xhigh(node.id()) - rr_graph.node_xlow(node.id()) + 1;
                 } else if (rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANY) {
-                    wire_length = node.yhigh() - node.ylow() + 1;
+                    wire_length = rr_graph.node_yhigh(node.id()) - rr_graph.node_ylow(node.id()) + 1;
                 }
                 int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
                 C_wire = wire_length * device_ctx.rr_segments[seg_index].Cmetal;

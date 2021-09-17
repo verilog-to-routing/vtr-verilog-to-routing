@@ -273,6 +273,10 @@ def run_odin_test(args, test_name):
         odin_reg_script[-1] += "task/full"
     elif test_name == "odin_reg_basic":
         odin_reg_script[-1] += "suite/light_suite"
+    elif test_name == "odin_tech_basic":
+        odin_reg_script[-1] += "suite/yosys+odin/techmap_lightsuite"
+    elif test_name == "odin_tech_strong":
+        odin_reg_script[-1] += "suite/yosys+odin/techmap_heavysuite"
     elif test_name == "odin_reg_strong":
         odin_reg_script[-1] += "suite/heavy_suite"
     else:

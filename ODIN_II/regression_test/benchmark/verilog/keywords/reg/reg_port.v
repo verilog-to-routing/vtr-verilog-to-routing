@@ -1,4 +1,4 @@
-module simple_op(a,b,c);
+module simple_op(a,c);
 
 input a;
 
