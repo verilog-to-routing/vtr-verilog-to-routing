@@ -37,9 +37,9 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
 
 static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro);
 
-static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro);
+static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro);
 
-static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type);
+static void place_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type);
 
 /*
  * Assign scores to each block based on macro size, floorplanning constraints, and number of equivalent tiles.
@@ -60,7 +60,7 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
 
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
-static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
+static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              const vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              enum e_pad_loc_type pad_loc_type);
 
@@ -72,8 +72,6 @@ static bool is_loc_on_chip(t_pl_loc& loc) {
 
 static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-
-    bool legal;
 
     int cx_from = -1;
     int cy_from = -1;
@@ -103,6 +101,7 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
     int cx_to;
     int cy_to;
 
+    bool legal;
     legal = find_compatible_compressed_loc_in_range(block_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
     if (!legal) {
         //No valid position found
@@ -348,7 +347,7 @@ static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro) {
     return (macro_placed);
 }
 
-static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
+static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
     int macro_placed;
     int itry;
     ClusterBlockId blk_id;
@@ -399,7 +398,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
 
         } // Finished all tries
 
-        if (macro_placed == false) {
+        if (!macro_placed) {
             // if a macro still could not be placed after macros_max_num_tries times,
             // go through the chip exhaustively to find a legal placement for the macro
             // place the macro on the first location that is legal
@@ -412,7 +411,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
             // If macro could not be placed after exhaustive placement, error out
         }
 
-        if (macro_placed == false) {
+        if (!macro_placed) {
             std::vector<std::string> tried_types;
             for (auto tile_type : block_type->equivalent_tiles) {
                 tried_types.push_back(tile_type->name);
@@ -431,7 +430,7 @@ static void place_a_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
 
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
-static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type) {
+static void place_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -484,7 +483,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
 
         } // Finished all tries
 
-        if (placed == false) {
+        if (!placed) {
             /*
              * If a block could still not be placed after blocks_max_num_tries attempts,
              * go through the region exhaustively to find a legal placement for the block.
@@ -495,7 +494,7 @@ static void place_a_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum 
             placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type);
 
             // If block could not be placed after exhaustive placement, error out
-            if (placed == false) {
+            if (!placed) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                                 "Initial placement failed.\n"
                                 "Could not place  block %s (#%zu); not enough free locations of type(s) %s.\n",
@@ -584,7 +583,7 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
     }
 }
 
-static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
+static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              const vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              enum e_pad_loc_type pad_loc_type) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -601,9 +600,9 @@ static void place_the_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
             get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
             t_pl_macro pl_macro;
             pl_macro = place_ctx.pl_macros[imacro];
-            place_a_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro);
+            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro);
         } else {
-            place_a_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type);
+            place_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type);
         }
     }
 }
@@ -659,7 +658,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     mark_fixed_blocks();
 
     //Place the blocks in sorted order
-    place_the_blocks(sorted_blocks, block_scores, pad_loc_type);
+    place_all_blocks(sorted_blocks, block_scores, pad_loc_type);
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
