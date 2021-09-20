@@ -112,7 +112,7 @@ void renderer::set_visible_world(rectangle new_world)
   }
   else {
     // Change the width
-    double new_width = n_height/i_aspect_ratio;
+    double new_width = n_height*i_aspect_ratio;
     new_world ={{n_center.x-new_width/2, n_center.y-n_height/2}, new_width, n_height};
   }
 
@@ -290,20 +290,30 @@ void renderer::format_font(std::string const &family,
 
 void renderer::set_text_rotation(double degrees)
 {
-  // convert the given angle to rad
-  rotation_angle = -degrees * M_PI / 180;
+  // Bad rotation values (inf, NaN) can cause permanent problems in the 
+  // graphics, as the cairo_restore to undo the rotation doesn't work.
+  // Check for them before changing the angle.
+  if (degrees >= -360. && degrees <= 360.) {
+    // convert the given angle to rad
+    rotation_angle = -degrees * M_PI / 180;
+  }
+  else {
+    g_warning("set_text_rotation: bad rotation angle of %f. Ignored!", degrees);
+  }
 }
 
-void renderer::set_horiz_text_just(text_just horiz_just)
+void renderer::set_horiz_justification(justification horiz_just)
 {
-  if (horiz_just != text_just::top && horiz_just != text_just::bottom)
-    horiz_text_just = horiz_just;
+  // Ignore illegal values for horizontal justification
+  if (horiz_just != justification::top && horiz_just != justification::bottom)
+    horiz_justification = horiz_just;
 }
 
-void renderer::set_vert_text_just(text_just vert_just)
+void renderer::set_vert_justification(justification vert_just)
 {
-  if (vert_just != text_just::right && vert_just != text_just::left)
-    vert_text_just = vert_just;
+  // Ignore illegal values for vertical justification
+  if (vert_just != justification::right && vert_just != justification::left)
+    vert_justification = vert_just;
 }
 
 void renderer::draw_line(point2d start, point2d end)
@@ -509,13 +519,13 @@ void renderer::draw_text(point2d point, std::string const &text, double bound_x,
   point2d center = point;
 
   // roughly calculate the center point for pre-clipping
-  if (horiz_text_just == text_just::left)
+  if (horiz_justification == justification::left)
     center.x += bound_x/2;
-  else if (horiz_text_just == text_just::right)
+  else if (horiz_justification == justification::right)
     center.x -= bound_x/2;
-  if (vert_text_just == text_just::top)
+  if (vert_justification == justification::top)
     center.y -= bound_y/2;
-  else if (vert_text_just == text_just::bottom)
+  else if (vert_justification == justification::bottom)
     center.y += bound_y/2;
 
   if(rectangle_off_screen({{center.x - bound_x / 2, center.y - bound_y / 2}, bound_x, bound_y}))
@@ -561,19 +571,19 @@ void renderer::draw_text(point2d point, std::string const &text, double bound_x,
                 (text_extents.x_bearing + (text_extents.width / 2)) * sin(rotation_angle);
 
   // adjust the reference point according to the required justification
-  if (horiz_text_just == text_just::left) {
+  if (horiz_justification == justification::left) {
     ref_point.x += (text_extents.width / 2) * cos(rotation_angle);
     ref_point.y += (text_extents.width / 2) * sin(rotation_angle);
   }
-  else if (horiz_text_just == text_just::right) {
+  else if (horiz_justification == justification::right) {
     ref_point.x -= (text_extents.width / 2) * cos(rotation_angle);
     ref_point.y -= (text_extents.width / 2) * sin(rotation_angle);
   }
-  if (vert_text_just == text_just::top) {
+  if (vert_justification == justification::top) {
     ref_point.x -= (text_extents.height / 2) * sin(rotation_angle);
     ref_point.y += (text_extents.height / 2) * cos(rotation_angle);
   }
-  else if (vert_text_just == text_just::bottom) {
+  else if (vert_justification == justification::bottom) {
     ref_point.x += (text_extents.height / 2) * sin(rotation_angle);
     ref_point.y -= (text_extents.height / 2) * cos(rotation_angle);
   }
@@ -702,34 +712,82 @@ void renderer::draw_arc_path(point2d center,
     cairo_stroke(m_cairo);
 }
 
-void renderer::draw_surface(surface *p_surface, point2d top_left)
+void renderer::draw_surface(surface *p_surface, point2d point, double scale_factor)
 {
   // Check if the surface is properly created
-  if(cairo_surface_status(p_surface) != CAIRO_STATUS_SUCCESS)
+  if(cairo_surface_status(p_surface) != CAIRO_STATUS_SUCCESS) {
+    g_warning("renderer::draw_surface: Error drawing surface at address %p; surface is not valid.", p_surface);
+    return;
+  }
+
+  // calculate surface width and height in screen coordinates
+  double s_width = (double)cairo_image_surface_get_width(p_surface) * scale_factor;
+  double s_height = (double)cairo_image_surface_get_height(p_surface) * scale_factor;
+
+  // calculate surface width and height in world coordinates
+  if (current_coordinate_system == WORLD) {
+    s_width *= m_camera->get_world_scale_factor().x;
+    s_height *= m_camera->get_world_scale_factor().y;
+  }
+
+  // Calculate the top left point
+  point2d top_left = point;
+  if (horiz_justification == justification::center)
+    top_left.x -= s_width/2;
+  else if (horiz_justification == justification::right)
+    top_left.x -= s_width;
+  // Vertical justifaction is calculated differently based on the current coordinate system
+  // Since the origin point of screen coordinates is at the top left,
+  // while the origin point of world coordinates is at the bottom left
+  if (vert_justification == justification::center)
+    top_left.y += (current_coordinate_system == WORLD) ? s_height/2 : -s_height/2;
+  else if (vert_justification == justification::bottom)
+    top_left.y += (current_coordinate_system == WORLD) ? s_height : -s_height;
+
+  if (rectangle_off_screen({{top_left.x, top_left.y - s_height}, s_width, s_height}))
     return;
 
-  // pre-clipping
-  double s_width = (double)cairo_image_surface_get_width(p_surface);
-  double s_height = (double)cairo_image_surface_get_height(p_surface);
-
-  if(rectangle_off_screen({{top_left.x, top_left.y - s_height}, s_width, s_height}))
-    return;
-
-  // transform the given top_left point
+  // transform the given point
   if(current_coordinate_system == WORLD)
     top_left = m_transform(top_left);
+
+  if (scale_factor != 1) {
+    // save the current state to undo the scaling
+    cairo_save(m_cairo);
+
+    // scale the cairo context with the given scale factor
+    cairo_scale(m_cairo, scale_factor, scale_factor);
+
+    // adjust the corner point based on the context scaling
+    top_left.x /= scale_factor;
+    top_left.y /= scale_factor;
+  }
 
   // Create a source for painting from the surface
   cairo_set_source_surface(m_cairo, p_surface, top_left.x, top_left.y);
 
   // Actual drawing
   cairo_paint(m_cairo);
+
+  if (scale_factor != 1) {
+    // restore the old state to undo the performed scaling
+    cairo_restore(m_cairo);
+  }
 }
 
 surface *renderer::load_png(const char *file_path)
 {
   // Create an image surface from a PNG image
   cairo_surface_t *png_surface = cairo_image_surface_create_from_png(file_path);
+
+  cairo_status_t status = cairo_surface_status(png_surface);
+
+  if (status == CAIRO_STATUS_FILE_NOT_FOUND) {
+    g_warning("renderer::load_png: File %s not found.", file_path);
+  }
+  else if (status != CAIRO_STATUS_SUCCESS) {
+    g_warning("renderer::load_png: Error loading file %s.", file_path);
+  }
 
   return png_surface;
 }

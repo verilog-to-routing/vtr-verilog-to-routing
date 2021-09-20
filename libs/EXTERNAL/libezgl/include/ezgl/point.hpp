@@ -27,6 +27,13 @@ namespace ezgl {
 class point2d {
 public:
   /**
+   * Default constructor: Create a point at (0, 0).
+   */
+  point2d() : x(0.0), y(0.0)
+  {
+  }
+
+  /**
    * Create a point at the given x and y position.
    */
   point2d(double x_coord, double y_coord) : x(x_coord), y(y_coord)
