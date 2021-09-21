@@ -317,6 +317,7 @@ int ClockRib::create_chanx_wire(int x_start,
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
     auto node = rr_nodes->back();
+    RRNodeId chanx_node = RRNodeId(node_index);
 
     node.set_coordinates(x_start, y, x_end, y);
     node.set_type(CHANX);
@@ -324,7 +325,7 @@ int ClockRib::create_chanx_wire(int x_start,
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
         x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal));
-    node.set_direction(direction);
+    rr_graph_builder.set_node_direction(chanx_node, direction);
 
     short seg_index = 0;
     switch (direction) {
@@ -345,7 +346,7 @@ int ClockRib::create_chanx_wire(int x_start,
 
     /* Add the node to spatial lookup */
     auto& rr_graph = (*rr_nodes);
-    RRNodeId chanx_node = RRNodeId(node_index);
+
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
@@ -630,7 +631,7 @@ int ClockSpine::create_chany_wire(int y_start,
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
         y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal));
-    node.set_direction(direction);
+    rr_graph_builder.set_node_direction(chanx_node, direction);
 
     short seg_index = 0;
     switch (direction) {
