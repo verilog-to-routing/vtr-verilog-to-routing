@@ -21,15 +21,14 @@ module single_port_ram_21_8(
      
     reg 	[`DATA_WIDTH_21_8-1:0] 	RAM[255:0];
      
-    defparam sram_replace_21_8.ADDR_WIDTH = `ADDR_WIDTH_21_8;
-    defparam sram_replace_21_8.DATA_WIDTH = `DATA_WIDTH_21_8;
-    single_port_ram sram_replace_21_8 (
-        .clk (clk), 
-        .addr (addr), 
-        .data (data), 
-        .we (we), 
-        .out (out)
-    );
+    always @ (posedge clk) 
+     begin 
+         if (we) 
+ 	begin
+ 	RAM[addr] <= data;
+         out <= RAM[addr]; 
+ 	end
+     end
      
 endmodule
 
@@ -56,15 +55,14 @@ module single_port_ram_128_8(
      
     reg 	[`DATA_WIDTH_128_8-1:0] 	RAM[255:0];
      
-    defparam sram_replace_128_8.ADDR_WIDTH = `ADDR_WIDTH_128_8;
-    defparam sram_replace_128_8.DATA_WIDTH = `DATA_WIDTH_128_8;
-    single_port_ram sram_replace_128_8 (
-        .clk (clk), 
-        .addr (addr), 
-        .data (data), 
-        .we (we), 
-        .out (out)
-    );
+    always @ (posedge clk) 
+     begin 
+         if (we) 
+ 	begin
+ 	RAM[addr] <= data;
+         out <= RAM[addr]; 
+ 	end
+     end
 
 endmodule
 
