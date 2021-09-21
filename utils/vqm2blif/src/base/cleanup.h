@@ -21,7 +21,7 @@ void netlist_cleanup (t_module* module);
 
 void remove_node ( t_node* node, t_node** nodes, int original_num_nodes );
 
-void reorganize_module_node_list(int original_number_of_nodes, int number_of_nodes_eliminated, t_node** module_node_list, t_module* module);
+void reorganize_module_node_list(t_module* module);
 
 //============================================================================================
 //				STRUCTURES & TYPEDEFS

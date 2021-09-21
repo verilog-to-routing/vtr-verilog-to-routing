@@ -355,8 +355,8 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 		}
 	}
 
-	// reorganize the node array after removing all the one lut nodes previously 
-	reorganize_module_node_list(original_num_nodes, oneluts_elim, nodes, module);
+	// fix the module nodes list (node array) by filling in the gaps where the one-lut nodes have been removed above 
+	reorganize_module_node_list(module);
 
     //Reduce run-time by only verifying at the end
 	//verify_netlist (nodes, module->number_of_nodes, buses, hash_table);
@@ -841,12 +841,12 @@ void remove_node ( t_node* node, t_node** nodes, int original_num_nodes ) {
 //============================================================================================
 //============================================================================================
 
-void reorganize_module_node_list(int original_number_of_nodes, int number_of_nodes_eliminated, t_node** module_node_list, t_module* module)
+void reorganize_module_node_list(t_module* module)
 {
 	/*
-        The purpose of this function is to regorganize the nodes array by filling in gaps with the last available elements in the array to save CPU time.
+        The purpose of this function is to regorganize the module node list (node array) by filling in gaps with the last available elements in the array to save CPU time.
 
-		The node array provided to this function is expected to have elements deleted within. THis essentially creates gaps in the array. So we fill in the gaps of this array and ensure it is a continuous list of nodes.
+		The module provided to this function is expected to have nodes deleted within its nodes list (array). This essentially creates gaps in the array. So we fill in the gaps of this array and ensure it is a continuous list of nodes.
 
 		Please refer to the example below:
 
@@ -858,8 +858,10 @@ void reorganize_module_node_list(int original_number_of_nodes, int number_of_nod
 		After reorganization and filling gaps:
 
              ------      ------      ------      ------
-            |LUT 1| --> |LUT 2| --> |LUT 3| --> |LUT 4| -->
+            |LUT 1| --> |LUT 2| --> |LUT 4| --> |LUT 3| -->
             ------      ------      ------      ------
+
+		The function fills in the gaps with the last available node in the list (as shown in the example above).
 
 	Change Log:
 		- Srivatsan Srinivasan, August 2021:
@@ -867,10 +869,13 @@ void reorganize_module_node_list(int original_number_of_nodes, int number_of_nod
 			- Initially the feature provided by this function was embedded indide the "remove_one_lut_nodes" function. By creating a seperate function, we are now not restricted to only removing one-lut nodes. 
 			- Now we can remove any types of nodes and then run this function to reorganize the node array.  
 */
-	int new_array_size = original_number_of_nodes - number_of_nodes_eliminated;
+	// assign module related parameters
+	int original_number_of_nodes = module->number_of_nodes;
+	t_node** module_node_list = module->array_of_nodes;
+
 	int curr_node_index = 0;
 	int replacement_node_index = original_number_of_nodes - 1;
-	while (curr_node_index < replacement_node_index) {
+	while (curr_node_index <= replacement_node_index) {
 		if (module_node_list[curr_node_index] == NULL) {
 			if (module_node_list[replacement_node_index] != NULL) {
 				//Replace gap with node
@@ -883,14 +888,11 @@ void reorganize_module_node_list(int original_number_of_nodes, int number_of_nod
 			curr_node_index++;
 		}
 	}
-	if (module_node_list[curr_node_index] == NULL) {
-		VTR_ASSERT(curr_node_index == new_array_size); //check array size
-	} else {
-		VTR_ASSERT(curr_node_index == new_array_size - 1); //check array size
-	}
-
+	
 	//Update array bounds
-	module -> number_of_nodes = new_array_size;
+	// curr_node_index keeps track of the number of non-removed nodes within the node array. 
+	// So we can use it directly to indicate the new size of the array.
+	module -> number_of_nodes = curr_node_index;
 
 	return;
 }
