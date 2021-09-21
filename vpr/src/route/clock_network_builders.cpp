@@ -319,8 +319,8 @@ int ClockRib::create_chanx_wire(int x_start,
     auto node = rr_nodes->back();
     RRNodeId chanx_node = RRNodeId(node_index);
 
-    node.set_coordinates(x_start, y, x_end, y);
     rr_graph_builder.set_node_type(chanx_node, CHANX);
+    rr_graph_builder.set_node_coordinates(chanx_node, x_start, y, x_end, y);
     node.set_capacity(1);
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
@@ -346,6 +346,7 @@ int ClockRib::create_chanx_wire(int x_start,
 
     /* Add the node to spatial lookup */
     auto& rr_graph = (*rr_nodes);
+
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
@@ -625,8 +626,8 @@ int ClockSpine::create_chany_wire(int y_start,
     auto node = rr_nodes->back();
     RRNodeId chany_node = RRNodeId(node_index);
 
-    node.set_coordinates(x, y_start, x, y_end);
     rr_graph_builder.set_node_type(chany_node, CHANY);
+    rr_graph_builder.set_node_coordinates(chany_node, x, y_start, x, y_end);
     node.set_capacity(1);
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
@@ -652,6 +653,7 @@ int ClockSpine::create_chany_wire(int y_start,
 
     /* Add the node to spatial lookup */
     auto& rr_graph = (*rr_nodes);
+
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {

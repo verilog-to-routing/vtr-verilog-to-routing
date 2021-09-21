@@ -601,8 +601,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline int init_node_loc(int& inode, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
         auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
 
-        node.set_coordinates(xlow, ylow, xhigh, yhigh);
+        rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         node.set_ptc_num(ptc);
         return inode;
     }

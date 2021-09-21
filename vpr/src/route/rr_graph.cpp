@@ -1429,7 +1429,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
         /* Things common to both SOURCEs and SINKs.   */
         L_rr_node.set_node_capacity(inode, class_inf[iclass].num_pins);
-        L_rr_node.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
+        rr_graph_builder.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
         float R = 0.;
         float C = 0.;
         L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
@@ -1488,7 +1488,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             //For those pins located on multiple sides, we save the rr node index
                             //for the pin on all sides at which it exists
                             //As such, multipler driver problem can be avoided.
-                            L_rr_node.set_node_coordinates(inode, i + width_offset, j + height_offset, i + width_offset, j + height_offset);
+                            rr_graph_builder.set_node_coordinates(inode, i + width_offset, j + height_offset, i + width_offset, j + height_offset);
                             L_rr_node.add_node_side(inode, side);
 
                             // Sanity check
@@ -1660,10 +1660,10 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         L_rr_node.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {
-            L_rr_node.set_node_coordinates(node, start, y_coord, end, y_coord);
+            rr_graph_builder.set_node_coordinates(node, start, y_coord, end, y_coord);
         } else {
             VTR_ASSERT(chan_type == CHANY);
-            L_rr_node.set_node_coordinates(node, x_coord, start, x_coord, end);
+            rr_graph_builder.set_node_coordinates(node, x_coord, start, x_coord, end);
         }
 
         int length = end - start + 1;

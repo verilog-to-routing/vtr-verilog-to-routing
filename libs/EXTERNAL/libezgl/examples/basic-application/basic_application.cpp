@@ -392,7 +392,7 @@ void draw_line_example(ezgl::renderer *g)
   {
     double offsetY = 50*i;
 
-    g->set_horiz_text_just(ezgl::text_just::left);
+    g->set_horiz_justification(ezgl::justification::left);
 
     if (i == 0) {
       g->set_color(ezgl::BLACK);
@@ -415,7 +415,7 @@ void draw_line_example(ezgl::renderer *g)
       g->draw_text({950, 920+offsetY}, "Butt ends, 67% transparent", 400, DBL_MAX);
     }
 
-    g->set_horiz_text_just(ezgl::text_just::center);
+    g->set_horiz_justification(ezgl::justification::center);
 
     g->draw_text({200, 900+offsetY}, "Thin line (width 1)", 200, DBL_MAX);
     g->set_line_width(1);
