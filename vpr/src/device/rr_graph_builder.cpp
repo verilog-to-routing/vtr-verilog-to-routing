@@ -50,3 +50,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
 }
+
+void RRGraphBuilder::set_node_direction(RRNodeId id, Direction new_direction) {
+    node_storage_.set_node_direction(id, new_direction);
+}

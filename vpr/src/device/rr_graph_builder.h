@@ -55,6 +55,9 @@ class RRGraphBuilder {
     /** @brief Clear all the underlying data storage */
     void clear();
 
+    /** @brief Set the nod direction  */
+    void set_node_direction(RRNodeId, Direction new_direction);
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
