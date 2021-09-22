@@ -6,7 +6,7 @@
 // depth and data may need to be splited
 module single_port_ram(clk, we, addr, data, out);
 
-    parameter ADDR_WIDTH = 1;
+    parameter ADDR_WIDTH = `MEM_MAXADDR;
     parameter DATA_WIDTH = 1;
 
     input clk;
@@ -89,3 +89,4 @@ module singlePortRam(clk, data, addr, we, out);
     end
     */
 endmodule
+

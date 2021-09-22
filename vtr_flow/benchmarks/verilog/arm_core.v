@@ -4048,7 +4048,7 @@ reg  [31:0] r11 = 32'hdeadbeef;
 reg  [31:0] r12 = 32'hdeadbeef;
 reg  [31:0] r13 = 32'hdeadbeef;
 reg  [31:0] r14 = 32'hdeadbeef;
-reg  [23:0] r15 = 24'hc0ffee;
+reg  [23:0] r15; // line: 4272
  
 wire  [31:0] r0_out;
 wire  [31:0] r1_out;
@@ -4268,7 +4268,8 @@ assign r15_out_rm_nxt = { i_status_bits_flags,
                           i_status_bits_firq_mask, 
                           i_pc, 
                           i_mode_exec};
- 
+
+// if r15 is initialized => Yosys+ABC:A CI/CO pair share the name (u_execute.u_register_bank.r15[1]) but do not link directly
 assign r15_out_rn     = {6'd0, r15, 2'd0};
  
  

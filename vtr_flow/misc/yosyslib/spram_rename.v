@@ -1,9 +1,12 @@
 `timescale 1ps/1ps
 
+`define MEM_MAXADDR PPP
+`define MEM_MAXDATA 36
+
 // depth and data may need to be splited
 module singlePortRam(clk, we, addr, data, out);
 
-    parameter ADDR_WIDTH = 1;
+    parameter ADDR_WIDTH = `MEM_MAXADDR;
     parameter DATA_WIDTH = 1;
 
     input clk;

@@ -5,7 +5,7 @@
 
 // depth and data may need to be splited
 module dual_port_ram(clk, we1, we2, addr1, addr2, data1, data2, out1, out2);
-    parameter ADDR_WIDTH = 1;
+    parameter ADDR_WIDTH = `MEM_MAXADDR;
     parameter DATA_WIDTH = 1;
 
     input clk;
@@ -108,3 +108,4 @@ module dualPortRam(clk, data2, data1, addr2, addr1, we2, we1, out2, out1);
     end
     */
 endmodule
+
