@@ -321,7 +321,7 @@ int ClockRib::create_chanx_wire(int x_start,
 
     rr_graph_builder.set_node_coordinates(chanx_node, x_start, y, x_end, y);
     node.set_type(CHANX);
-    rr_graph_builder.set_node_capacity(chanx_node,1);
+    rr_graph_builder.set_node_capacity(chanx_node, 1);
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
         x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal));
@@ -627,7 +627,7 @@ int ClockSpine::create_chany_wire(int y_start,
 
     rr_graph_builder.set_node_coordinates(chany_node, x, y_start, x, y_end);
     node.set_type(CHANY);
-    rr_graph_builder.set_node_capacity(chany_node,1);
+    rr_graph_builder.set_node_capacity(chany_node, 1);
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
         y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal));
