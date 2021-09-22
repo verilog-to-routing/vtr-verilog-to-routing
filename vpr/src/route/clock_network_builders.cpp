@@ -624,6 +624,7 @@ int ClockSpine::create_chany_wire(int y_start,
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
     auto node = rr_nodes->back();
+    RRNodeId chanx_node = RRNodeId(node_index);
 
     node.set_coordinates(x, y_start, x, y_end);
     node.set_type(CHANY);
