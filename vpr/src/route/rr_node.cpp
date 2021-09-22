@@ -55,14 +55,6 @@ void t_rr_node::set_type(t_rr_type new_type) {
     storage_->set_node_type(id_, new_type);
 }
 
-/*
- * Pass in two coordinate variables describing location of node.
- * They do not have to be in any particular order.
- */
-void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
-    storage_->set_node_coordinates(id_, x1, y1, x2, y2);
-}
-
 void t_rr_node::set_ptc_num(short new_ptc_num) {
     storage_->set_node_ptc_num(id_, new_ptc_num);
 }
