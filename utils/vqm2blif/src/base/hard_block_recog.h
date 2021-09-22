@@ -35,6 +35,7 @@
 
 // user vqm2blif libraries
 #include "vqm2blif_util.h"
+#include "cleanup.h"
 
 // standard libraries
 #include <unordered_map>
@@ -165,11 +166,13 @@ typedef struct s_hard_block_recog
     */
     std::unordered_map<std::string, int> hard_block_instance_name_to_index;
 
-    /* The lcells and dffeas used to model ports are all stored as nodes.
-       The nodelist is simply an array. Now deleting lcell nodes while still
-       creating additional nodes could cause some problems, so we will
-       delete all these nodes at the end. Therefore we need to keep a 
-       reference for all the lcell and dffeas nodes here.*/
+    /* 
+       The luts and dffeas used to model ports are all stored as nodes and
+       we will need to remove them from the netlist after adding all the
+       hard blocks to the netlist.The ports that are modelled by the luts and dffeas aren't needed once all the hard blocks within the design are added to the netlist.The luts and dffeas are simply repeating the port information, so we can remove them.
+        
+       The nodelist is simply an array. Now deleting lut/dffeas nodes while still creating additional hard block nodes could cause some problems, so we will delete all these nodes at the end. Therefore we need to keep a 
+       reference for all the luts and dffeas nodes that represent hard block ports here, so we can them remove later on.*/
     std::vector<t_node*> luts_dffeas_nodes_to_remove; // look into using array index instead
 
 }t_hard_block_recog;
@@ -259,6 +262,8 @@ void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info*, st
 void split_node_name(std::string, std::vector<std::string>*, std::string);
 
 std::string construct_hard_block_name(std::vector<std::string>*, std::string);
+
+void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module*, t_hard_block_recog*);
 
 // utility functions
 

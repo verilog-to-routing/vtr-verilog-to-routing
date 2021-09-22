@@ -27,8 +27,9 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
         throw vtr::VtrError((std::string)error.what() + "The original netlist is described in " + vqm_file_name + ".");
     }
 
-
-
+    // at this point we have a list of luts/dffeas nodes found in the module that we need to remove
+    // so we remove them here
+    remove_luts_dffeas_nodes_representing_hard_block_ports(main_module, &module_hard_block_node_refs_and_info);
 
     // need to delete all the dynamic memory used to store 
     // all the hard block port information
@@ -832,6 +833,35 @@ void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* cur
         curr_hard_block_port->hard_block_port_name.assign(port_info[PORT_NAME]);
     
     }
+
+    return;
+}
+
+void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module* main_module, t_hard_block_recog* module_hard_block_node_refs_and_info)
+{
+    // reference to the list of luts/dffeas nodes we need to remove
+    std::vector<t_node*>* list_of_nodes_to_remove = &(module_hard_block_node_refs_and_info->luts_dffeas_nodes_to_remove);
+
+    t_node** module_node_list = main_module->array_of_nodes;
+    int number_of_nodes_in_module = main_module->number_of_nodes;
+
+    // iterator to go through the list of nodes we will be removing
+    std::vector<t_node*>::iterator node_to_remove;
+
+    // keep track of all the nodes we removed from the module node array
+    //int number_of_nodes_removed = 0;
+
+    // go through the list of nodes we need to remove and delete them
+    // from the node array within the module
+    for(node_to_remove = list_of_nodes_to_remove->begin(); node_to_remove != list_of_nodes_to_remove->end(); node_to_remove++)
+    {
+        remove_node(*node_to_remove, module_node_list, number_of_nodes_in_module);
+
+        //number_of_nodes_removed++;
+    }
+
+    // we need to fix the gaps created in the node array after removing all luts/dffeas nodes previously
+    reorganize_module_node_list(main_module);
 
     return;
 }
