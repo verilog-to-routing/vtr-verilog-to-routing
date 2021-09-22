@@ -1550,7 +1550,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
     //Check that each accepted swap yields a valid placement
-    check_place(*costs, delay_model, place_algorithm);
+    check_place(*costs, delay_model, criticalities, place_algorithm);
 #endif
 
     return move_outcome;
@@ -1585,6 +1585,7 @@ static int find_affected_nets_and_update_costs(
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c) {
+
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2004,9 +2005,9 @@ static double comp_bb_cost(e_cost_methods method) {
     }
 
     if (method == CHECK) {
-        VTR_LOG("\n");
+        /*VTR_LOG("\n");
         VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-                expected_wirelength);
+                expected_wirelength);*/
     }
     return cost;
 }
