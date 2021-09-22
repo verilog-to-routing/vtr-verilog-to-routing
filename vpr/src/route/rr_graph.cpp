@@ -708,11 +708,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         for (int i = 0; i < num_rr_nodes; i++) {
             if (rr_graph.node_type(RRNodeId(i)) == CHANX) {
                 int ylow = rr_graph.node_ylow(RRNodeId(i));
-                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i),nodes_per_chan.x_list[ylow]);
+                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.x_list[ylow]);
             }
             if (rr_graph.node_type(RRNodeId(i)) == CHANY) {
                 int xlow = rr_graph.node_xlow(RRNodeId(i));
-                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i),nodes_per_chan.y_list[xlow]);
+                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.y_list[xlow]);
             }
         }
     }
