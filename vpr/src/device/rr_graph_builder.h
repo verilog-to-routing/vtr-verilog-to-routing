@@ -58,6 +58,9 @@ class RRGraphBuilder {
     /** @brief Set the node coordinate */
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
 
+    /** @brief Set the node direction */
+    void set_node_direction(RRNodeId, Direction new_direction);
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
