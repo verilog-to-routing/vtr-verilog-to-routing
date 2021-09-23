@@ -50,10 +50,3 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
 }
-
-void RRGraphBuilder::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
-    node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
-}
-void RRGraphBuilder::set_node_capacity(RRNodeId id, short new_capacity) {
-    node_storage_.set_node_capacity(id, new_capacity);
-}

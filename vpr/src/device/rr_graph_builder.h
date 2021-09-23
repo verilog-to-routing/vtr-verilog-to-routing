@@ -56,10 +56,14 @@ class RRGraphBuilder {
     void clear();
 
     /** @brief Set capacity of this node (number of routes that can use it). */
-    void set_node_capacity(RRNodeId, short new_capacity);
+    inline void set_node_capacity(RRNodeId id, short new_capacity) {
+        node_storage_.set_node_capacity(id, new_capacity);
+    }
 
     /** @brief Set the node coordinate */
-    void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
+    inline void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
+        node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
+    }
 
     /* -- Internal data storage -- */
   private:
