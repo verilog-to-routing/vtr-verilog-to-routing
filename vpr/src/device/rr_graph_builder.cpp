@@ -13,10 +13,6 @@ RRSpatialLookup& RRGraphBuilder::node_lookup() {
     return node_lookup_;
 }
 
-void RRGraphBuilder::set_node_type(RRNodeId id, t_rr_type type) {
-    node_storage_.set_node_type(id, type);
-}
-
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
