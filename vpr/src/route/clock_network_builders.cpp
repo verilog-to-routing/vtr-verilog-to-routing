@@ -325,7 +325,7 @@ int ClockRib::create_chanx_wire(int x_start,
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
         x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal));
-    rr_graph_builder.set_node_direction(chanx_node,direction);
+    rr_graph_builder.set_node_direction(chanx_node, direction);
 
     short seg_index = 0;
     switch (direction) {
