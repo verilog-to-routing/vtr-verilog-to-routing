@@ -54,4 +54,3 @@ void RRGraphBuilder::clear() {
 void RRGraphBuilder::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
     node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
 }
-
