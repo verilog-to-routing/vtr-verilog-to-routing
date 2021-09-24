@@ -55,6 +55,3 @@ void RRGraphBuilder::set_node_coordinates(RRNodeId id, short x1, short y1, short
     node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
 }
 
-void RRGraphBuilder::set_node_direction(RRNodeId id, Direction new_direction) {
-    node_storage_.set_node_direction(id, new_direction);
-}
