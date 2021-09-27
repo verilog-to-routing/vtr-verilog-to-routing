@@ -265,8 +265,12 @@ std::string construct_hard_block_name(std::vector<std::string>*, std::string);
 
 void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module*, t_hard_block_recog*);
 
+void verify_hard_blocks(t_hard_block_recog*);
+
 // utility functions
 
 void store_hard_block_names(char**, int, std::vector<std::string>*);
+
+bool sort_hard_blocks_by_valid_connections(t_hard_block, t_hard_block);
 
 #endif

@@ -15,16 +15,18 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
     }
     catch(const vtr::VtrError& error)
     {
-        throw vtr::VtrError((std::string)error.what() + "The FPGA architecture is described in " + arch_file_name + ".");
+        throw vtr::VtrError((std::string)error.what() + " The FPGA architecture is described in " + arch_file_name + ".");
     }
 
     try
     {
         process_module_nodes_and_create_hard_blocks(main_module, list_hard_block_type_names, &module_hard_block_node_refs_and_info);
+
+        verify_hard_blocks(&module_hard_block_node_refs_and_info);
     }
     catch(const vtr::VtrError& error)
     {
-        throw vtr::VtrError((std::string)error.what() + "The original netlist is described in " + vqm_file_name + ".");
+        throw vtr::VtrError((std::string)error.what() + " The original netlist is described in " + vqm_file_name + ".");
     }
 
     // at this point we have a list of luts/dffeas nodes found in the module that we need to remove
@@ -866,6 +868,63 @@ void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module* main_modul
     return;
 }
 
+void verify_hard_blocks(t_hard_block_recog* module_hard_block_node_refs_and_info)
+{   
+
+    // IF we find a hard block instance that has ports unassigned, we store its information in the variables below
+    t_node* incomplete_hard_block_instance = NULL;
+    t_node_port_association* temp_port = NULL;
+    std::string incomplete_hard_block_instance_name = "";
+    std::string incomplete_hard_block_instance_type = "";
+    std::string unassigned_port_name = "";
+
+    std::vector<t_hard_block>* list_of_hard_block_instances = &(module_hard_block_node_refs_and_info->hard_block_instances);
+
+    // we order the vector of t_hard_blocks from the largest to smallest number of ports not assigned
+    std::sort(list_of_hard_block_instances->begin(), list_of_hard_block_instances->end(), sort_hard_blocks_by_valid_connections);
+
+    /* We just need to check the first element of the previously sorted vector of hard block instances in the design to see if has any ports unassigned. If the first element has all ports connected, then this means all other hard block instances in the design have all their ports assigned (since we ordered them from largest to smallest number of ports unassigned).
+    
+    If we find that the the hard block instance has a port or more that is unassigned, we go through all the ports and throw an error on the first unassgined port.
+    */
+    if (((list_of_hard_block_instances->begin())->hard_block_ports_not_assigned) != 0)
+    {
+        incomplete_hard_block_instance = (list_of_hard_block_instances->begin())->hard_block_instance_node_reference;
+        
+        // iterate through all ports in the hard block
+        for (int i = 0; i < incomplete_hard_block_instance->number_of_ports; i++)
+        {
+            temp_port = incomplete_hard_block_instance->array_of_ports[i];
+            
+            // check each port too see if it was unassigned
+            if (temp_port->associated_net == NULL)
+            {
+                // if we are here, then the port was unassigned
+
+                // store some information about the port that is unassgined the hard block instance it is part of
+                incomplete_hard_block_instance_name.assign( incomplete_hard_block_instance->name);
+                incomplete_hard_block_instance_type.assign(incomplete_hard_block_instance->type);
+                unassigned_port_name.assign(temp_port->port_name);
+
+
+                // we store ports that are not bussed with an index of -1, we dont want to show that to the user, so we use two different error messages for ports that are a bus and ports which are not
+                if ((temp_port->port_index) == PORT_WIRE_NOT_INDEXED)
+                {
+                    throw vtr::VtrError("The hard block instance '" + incomplete_hard_block_instance_name + "', which is of hard block type: '"+ incomplete_hard_block_instance_type + "' has a port: '" + unassigned_port_name +"' that is unassigned. This means that the port was not included in the provided vqm netlist.");
+                }
+                else
+                {
+                    throw vtr::VtrError("The hard block instance '" + incomplete_hard_block_instance_name + "', which is of hard block type: '"+ incomplete_hard_block_instance_type + "' has a port: '" + unassigned_port_name +"[" + std::to_string(temp_port->port_index)+"]' that is unassigned. This means that the port was not found in the provided vqm netlist.");
+                }            
+                
+            }
+        }
+    }
+
+    return;
+
+}
+
 void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_type_name_to_port_info_map)
 {
     std::unordered_map<std::string, t_hard_block_port_info>::iterator curr_hard_block_port_info = hard_block_type_name_to_port_info_map->begin();
@@ -884,4 +943,11 @@ void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_po
     }
 
     return;  
+}
+
+bool sort_hard_blocks_by_valid_connections(t_hard_block instance_one, t_hard_block instance_two)
+{
+
+    return ((instance_one.hard_block_ports_not_assigned) > (instance_two.hard_block_ports_not_assigned));
+
 }
