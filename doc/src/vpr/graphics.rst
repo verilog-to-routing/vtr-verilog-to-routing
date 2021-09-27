@@ -42,7 +42,7 @@ A graphical window will now pop up when you run VPR.
 Navigation
 ----------
 Click on **Zoom-Fit** buttons to zoom the view.
-Click and drag the mouse wheel to pan the view, or scroll the mouse wheel to zoom in and out.
+Click and drag with the left mouse button to pan the view, or scroll the mouse wheel to zoom in and out.
 Click on the **Window**, then on the diagonally opposite corners of a box, to zoom in on a particular area.
 
 Click on **Save** to save the image on screen to PDF, PNG, or SVG file.
