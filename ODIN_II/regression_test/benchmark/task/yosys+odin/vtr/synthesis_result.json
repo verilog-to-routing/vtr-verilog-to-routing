@@ -101,15 +101,15 @@
         "Latch Drivers": 1,
         "Pi": 273,
         "Po": 193,
-        "logic element": 4141,
-        "latch": 857,
-        "Adder": 136,
+        "logic element": 4204,
+        "latch": 871,
+        "Adder": 151,
         "Memory": 32,
         "generic logic size": 4,
         "Longest Path": 428,
         "Average Path": 4,
-        "Estimated LUTs": 4435,
-        "Total Node": 5167
+        "Estimated LUTs": 4510,
+        "Total Node": 5259
     },
     "vtr/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vtr/ch_intrinsics/k6_frac_N10_frac_chain_mem32K_40nm",

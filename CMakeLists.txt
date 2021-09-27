@@ -393,7 +393,6 @@ elseif(${WITH_ODIN})
     endif()
 endif()
 
-
 #Add extra compilation flags to suppress warnings from some libraries/tools
 # Note that target_compile_options() *appends* to the current compilation options of
 # the specified target

@@ -22,13 +22,13 @@ module single_port_ram_21_8(
     reg 	[`DATA_WIDTH_21_8-1:0] 	RAM[255:0];
      
     always @ (posedge clk) 
-     begin 
-         if (we) 
- 	begin
- 	RAM[addr] <= data;
-         out <= RAM[addr]; 
- 	end
-     end
+    begin 
+        if (we) 
+	begin
+	RAM[addr] <= data;
+        out <= RAM[addr]; 
+	end
+    end 
      
 endmodule
 
@@ -56,14 +56,14 @@ module single_port_ram_128_8(
     reg 	[`DATA_WIDTH_128_8-1:0] 	RAM[255:0];
      
     always @ (posedge clk) 
-     begin 
-         if (we) 
- 	begin
- 	RAM[addr] <= data;
-         out <= RAM[addr]; 
- 	end
-     end
-
+    begin 
+        if (we) 
+	begin
+	RAM[addr] <= data;
+        out <= RAM[addr]; 
+	end
+    end 
+     
 endmodule
 
 
@@ -4048,7 +4048,7 @@ reg  [31:0] r11 = 32'hdeadbeef;
 reg  [31:0] r12 = 32'hdeadbeef;
 reg  [31:0] r13 = 32'hdeadbeef;
 reg  [31:0] r14 = 32'hdeadbeef;
-reg  [23:0] r15; // line: 4272
+reg  [23:0] r15; // see line: 4272
  
 wire  [31:0] r0_out;
 wire  [31:0] r1_out;
