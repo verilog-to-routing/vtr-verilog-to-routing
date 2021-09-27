@@ -1928,6 +1928,15 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
         } else {
             place_ctx.physical_pins.insert(pin, new_physical_pin_index);
         }
+
+        auto pins_result = place_ctx.physical_pins_vectors.find(pin);
+        if (pins_result != place_ctx.physical_pins_vectors.end()) {
+        	place_ctx.physical_pins_vectors[pin].push_back(new_physical_pin_index);
+        } else {
+        	std::vector<int> pins;
+        	pins.push_back(new_physical_pin_index);
+            place_ctx.physical_pins_vectors.insert(pin, pins);
+        }
     }
 }
 
@@ -1969,6 +1978,21 @@ int tile_pin_index(const ClusterPinId pin) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     return place_ctx.physical_pins[pin];
+}
+
+std::vector<int> net_pin_to_tile_pin_indexes(const ClusterNetId net_id, int net_pin_index) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Get the logical pin index of pin within it's logical block type
+    auto pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
+
+    return tile_pin_indexes(pin_id);
+}
+
+std::vector<int> tile_pin_indexes(const ClusterPinId pin) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    return place_ctx.physical_pins_vectors[pin];
 }
 
 t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const char* port_name) {

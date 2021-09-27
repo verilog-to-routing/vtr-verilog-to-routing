@@ -1087,10 +1087,10 @@ static void placement_inner_loop(const t_annealing_state* state,
         }
 #ifdef VERBOSE
         VTR_LOG("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d\n",
-                t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
+                state->t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
         if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
-            VPR_ERROR(VPR_ERROR_PLACE,
-                      "fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
+            VPR_ERROR(VPR_ERROR_PLACE, "bb_cost is %g, comp_bb_cost is %g\n", costs->bb_cost, comp_bb_cost(CHECK));
+                      //"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
 
         /* Lines below prevent too much round-off error from accumulating
@@ -1100,11 +1100,10 @@ static void placement_inner_loop(const t_annealing_state* state,
          */
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
-        	VTR_LOG("Recomputing costs from scratch\n");
-        	VTR_LOG("old_bb_cost is %f\n", costs->bb_cost);
+        	//VTR_LOG("recomputing costs from scratch, old bb_cost is %g\n", costs->bb_cost);
             recompute_costs_from_scratch(placer_opts, delay_model,
                                          criticalities, costs);
-            VTR_LOG("new_bb_cost is %f\n", costs->bb_cost);
+            //VTR_LOG("new_bb_cost is %g\n", costs->bb_cost);
             *moves_since_cost_recompute = 0;
         }
 
@@ -2314,8 +2313,37 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
+    VTR_LOG("In get non_updateable_bb \n");
+    VTR_LOG("Net id is %d \n", net_id);
+
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    pnum = net_pin_to_tile_pin_index(net_id, 0);
+    VTR_LOG("Cluster Block id is %d \n", bnum);
+
+
+
+    //pnum = net_pin_to_tile_pin_index(net_id, 0);
+    std::vector<int> pnums = net_pin_to_tile_pin_indexes(net_id, 0);
+    VTR_LOG("Size of pnums is %d \n", pnums.size());
+    int offset_size = physical_tile_type(bnum)->pin_width_offset.size();
+    VTR_LOG("Offset size is %d \n", offset_size);
+    for (unsigned int i = 0; i < pnums.size(); i++) {
+    	VTR_LOG("pnums[%d] is %d \n", i, pnums[i]);
+    	if (pnums[i] < offset_size - 1) {
+    		pnum = pnums[i];
+    		VTR_LOG("pnum set to %d \n", pnum);
+    		break;
+    	}
+    }
+
+
+    VTR_LOG("Tile pin index is %d \n", pnum);
+
+    VTR_LOG("x is %d \n", place_ctx.block_locs[bnum].loc.x);
+    VTR_LOG("physical_tile_type is %s \n", physical_tile_type(bnum)->name);
+
+    VTR_LOG("Size of pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset.size());
+
+    VTR_LOG("pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset[pnum]);
     x = place_ctx.block_locs[bnum].loc.x
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y

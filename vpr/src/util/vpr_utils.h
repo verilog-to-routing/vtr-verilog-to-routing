@@ -157,9 +157,11 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
+std::vector<int> net_pin_to_tile_pin_indexes(const ClusterNetId net_id, int net_pin_index);
 
 //Returns the physical pin of the tile, related to the given ClusterPinId
 int tile_pin_index(const ClusterPinId pin);
+std::vector<int> tile_pin_indexes(const ClusterPinId pin);
 
 int max_pins_per_grid_tile();
 
