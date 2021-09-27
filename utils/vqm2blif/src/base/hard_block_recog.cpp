@@ -9,8 +9,15 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
 {
     t_hard_block_recog module_hard_block_node_refs_and_info;
 
+    // variables used for reporting statistics to the user
+    int number_of_hard_blocks_added = 0;
+    int number_of_luts_flip_flops_removed = 0;
+
     try
     {
+
+        std::cout << "\t>> Generating models for custom hard blocks.\n";
+
         initialize_hard_block_models(main_arch, list_hard_block_type_names, &module_hard_block_node_refs_and_info);
     }
     catch(const vtr::VtrError& error)
@@ -20,18 +27,32 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
 
     try
     {
+
+        std::cout << "\t>> Processing netlist to infer and add custom hard blocks.\n";
+
         process_module_nodes_and_create_hard_blocks(main_module, list_hard_block_type_names, &module_hard_block_node_refs_and_info);
 
+        std::cout << "\t>> Verifying newly created custom hard blocks.\n";
+
         verify_hard_blocks(&module_hard_block_node_refs_and_info);
+
+        number_of_hard_blocks_added = module_hard_block_node_refs_and_info.hard_block_instances.size();
+        number_of_luts_flip_flops_removed = module_hard_block_node_refs_and_info.luts_dffeas_nodes_to_remove.size();
+
+        std::cout << "\t>> Inferred and added " << number_of_hard_blocks_added << " hard blocks to the netlist.\n";
     }
     catch(const vtr::VtrError& error)
     {
         throw vtr::VtrError((std::string)error.what() + " The original netlist is described in " + vqm_file_name + ".");
     }
 
+    std::cout << "\t>> Cleaning up netlist after adding hard blocks.\n";
+
     // at this point we have a list of luts/dffeas nodes found in the module that we need to remove
     // so we remove them here
     remove_luts_dffeas_nodes_representing_hard_block_ports(main_module, &module_hard_block_node_refs_and_info);
+
+    std::cout << "\t>> Removed " << number_of_luts_flip_flops_removed << " luts and flip flops from the netlist.\n";
 
     // need to delete all the dynamic memory used to store 
     // all the hard block port information

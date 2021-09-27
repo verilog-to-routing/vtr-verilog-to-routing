@@ -381,7 +381,11 @@ int main(int argc, char* argv[])
 
 	// only process the netlist for any custom hard blocks if the user provided valid hard block names
 	if (identify_and_instantiate_custom_hard_blocks)
-	{
+	{	
+		cout << "\n>> Identifying and instantiating custom hard blocks within the netlist.\n";
+		
+		processStart = clock();
+		
 		try
 		{
 			add_hard_blocks_to_netlist(my_module,&arch,&hard_block_type_name_list, arch_file, source_file);
@@ -391,6 +395,10 @@ int main(int argc, char* argv[])
 			VTR_LOG_ERROR("%s\n", ((std::string)error.what()).c_str());
 			exit(1);
 		}
+
+		processEnd = clock();
+
+		cout << "\n>> Custom hard block instantiations took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
 	}
 	
 	//Reorganize netlist data into structures conducive to .blif writing.
