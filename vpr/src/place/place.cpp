@@ -2313,16 +2313,10 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_LOG("In get non_updateable_bb \n");
-    VTR_LOG("Net id is %d \n", net_id);
-
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    VTR_LOG("Cluster Block id is %d \n", bnum);
-
-
 
     //pnum = net_pin_to_tile_pin_index(net_id, 0);
-    std::vector<int> pnums = net_pin_to_tile_pin_indexes(net_id, 0);
+    /*std::vector<int> pnums = net_pin_to_tile_pin_indexes(net_id, 0);
     VTR_LOG("Size of pnums is %d \n", pnums.size());
     int offset_size = physical_tile_type(bnum)->pin_width_offset.size();
     VTR_LOG("Offset size is %d \n", offset_size);
@@ -2333,17 +2327,31 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     		VTR_LOG("pnum set to %d \n", pnum);
     		break;
     	}
+    }*/
+    pnum = net_pin_to_tile_pin_index(net_id, 0);
+
+    ClusterBlockId block(1647);
+    ClusterNetId net(6494);
+
+    if (bnum == block && net_id == net) {
+    	VTR_LOG("\n");
+    	VTR_LOG("Begin \n");
+		VTR_LOG("In get non_updateable_bb \n");
+		VTR_LOG("Net id is %d \n", net_id);
+		VTR_LOG("Cluster Block id is %d \n", bnum);
+
+		VTR_LOG("Tile pin index is %d \n", pnum);
+
+		VTR_LOG("x is %d \n", place_ctx.block_locs[bnum].loc.x);
+		VTR_LOG("physical_tile_type is %s \n", physical_tile_type(bnum)->name);
+
+		VTR_LOG("Size of pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset.size());
+
+		VTR_LOG("pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset[pnum]);
+		VTR_LOG("End\n");
+		VTR_LOG("\n");
     }
 
-
-    VTR_LOG("Tile pin index is %d \n", pnum);
-
-    VTR_LOG("x is %d \n", place_ctx.block_locs[bnum].loc.x);
-    VTR_LOG("physical_tile_type is %s \n", physical_tile_type(bnum)->name);
-
-    VTR_LOG("Size of pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset.size());
-
-    VTR_LOG("pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset[pnum]);
     x = place_ctx.block_locs[bnum].loc.x
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
