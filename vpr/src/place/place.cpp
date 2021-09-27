@@ -2333,7 +2333,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     ClusterBlockId block(1647);
     ClusterNetId net(6494);
 
-    if (bnum == block && net_id == net) {
+    /*if (bnum == block && net_id == net) {
     	VTR_LOG("\n");
     	VTR_LOG("Begin \n");
 		VTR_LOG("In get non_updateable_bb \n");
@@ -2350,7 +2350,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
 		VTR_LOG("pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset[pnum]);
 		VTR_LOG("End\n");
 		VTR_LOG("\n");
-    }
+    }*/
 
     x = place_ctx.block_locs[bnum].loc.x
         + physical_tile_type(bnum)->pin_width_offset[pnum];

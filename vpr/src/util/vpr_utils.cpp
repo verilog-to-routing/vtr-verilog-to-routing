@@ -1903,20 +1903,28 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& clb_nlist = cluster_ctx.clb_nlist;
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-   ClusterBlockId block(1647);
+   //ClusterBlockId block(1647);
 
     auto physical_tile = physical_tile_type(iblk);
     auto logical_block = clb_nlist.block_type(iblk);
 
-    if (iblk == block) {
+    std::string tile_name = "BLK-TL-CLBLL_L";
+    bool tile = false;
+
+    if (physical_tile->name == tile_name.c_str()) {
+    	VTR_LOG("In place_sync_external_block_connections for block %d of type %s\n", iblk, physical_tile->name);
+    	tile = true;
+    }
+
+    /*if (iblk == block) {
     	VTR_LOG("At block %d in place_sync_external_block_connections \n", iblk);
     	VTR_LOG("Physical tile type is %s, logical block type is %s \n", physical_tile->name, logical_block->name);
-    }
+    }*/
 
     int sub_tile_index = get_sub_tile_index(iblk);
     auto sub_tile = physical_tile->sub_tiles[sub_tile_index];
 
-    if (iblk == block) {
+    if (tile) {
     	VTR_LOG("Subtile index is %d \n", sub_tile_index);
     	VTR_LOG("Subtile capacity is %d \n", sub_tile.capacity.total());
     }
@@ -1937,12 +1945,12 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
         auto result = place_ctx.physical_pins.find(pin);
         if (result != place_ctx.physical_pins.end()) {
             place_ctx.physical_pins[pin] = new_physical_pin_index;
-            if (iblk == block) {
+            if (tile) {
             	VTR_LOG("For block pin %d, updated to new_physical_pin_index %d \n", pin, new_physical_pin_index);
             }
         } else {
             place_ctx.physical_pins.insert(pin, new_physical_pin_index);
-            if (iblk == block) {
+            if (tile) {
             	VTR_LOG("For block pin %d, inserted new_physical_pin_index %d \n", pin, new_physical_pin_index);
             }
         }
