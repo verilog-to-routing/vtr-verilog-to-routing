@@ -1,0 +1,4 @@
+#Yosys Run-time Metrics
+yosys_synth_time;yosys.out;\s*User time \(seconds\): (.*)
+max_yosys_mem;yosys.out;\s*Maximum resident set size \(kbytes\): (\d+)
+
