@@ -411,6 +411,26 @@ def vtr_command_argparser(prog=None):
     return parser
 
 
+def format_human_readable_memory(num_kbytes):
+    """format the number of bytes given as a human readable value"""
+    if num_kbytes < 1024:
+        value = "%.2f KiB" % (num_kbytes)
+    elif num_kbytes < (1024 ** 2):
+        value = "%.2f MiB" % (num_kbytes / (1024 ** 1))
+    else:
+        value = "%.2f GiB" % (num_kbytes / (1024 ** 2))
+    return value
+
+
+def get_memory_usage(logfile):
+    """Extrats the memory usage from the *.out log files"""
+    with open(logfile, "r") as fpmem:
+        for line in fpmem.readlines():
+            if "Maximum resident set size" in line:
+                return format_human_readable_memory(int(line.split()[-1]))
+    return "--"
+
+
 # pylint: enable=too-many-statements
 
 
@@ -488,9 +508,12 @@ def vtr_command_main(arg_list, prog=None):
 
     finally:
         seconds = datetime.now() - start
+
         print(
-            "{status} (took {time})".format(
-                status=error_status, time=vtr.format_elapsed_time(seconds)
+            "{status} (took {time}, vpr run consumed {max_mem} memory)".format(
+                status=error_status,
+                time=vtr.format_elapsed_time(seconds),
+                max_mem=get_memory_usage(temp_dir / "vpr.out"),
             )
         )
         temp_dir.mkdir(parents=True, exist_ok=True)
