@@ -2314,20 +2314,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     auto& device_ctx = g_vpr_ctx.device();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-
-    //pnum = net_pin_to_tile_pin_index(net_id, 0);
-    /*std::vector<int> pnums = net_pin_to_tile_pin_indexes(net_id, 0);
-    VTR_LOG("Size of pnums is %d \n", pnums.size());
-    int offset_size = physical_tile_type(bnum)->pin_width_offset.size();
-    VTR_LOG("Offset size is %d \n", offset_size);
-    for (unsigned int i = 0; i < pnums.size(); i++) {
-    	VTR_LOG("pnums[%d] is %d \n", i, pnums[i]);
-    	if (pnums[i] < offset_size - 1) {
-    		pnum = pnums[i];
-    		VTR_LOG("pnum set to %d \n", pnum);
-    		break;
-    	}
-    }*/
+    place_sync_external_block_connections(bnum);
     pnum = net_pin_to_tile_pin_index(net_id, 0);
 
     ClusterBlockId block(1647);
@@ -2344,8 +2331,6 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
 
 		VTR_LOG("x is %d \n", place_ctx.block_locs[bnum].loc.x);
 		VTR_LOG("physical_tile_type is %s \n", physical_tile_type(bnum)->name);
-
-		VTR_LOG("Size of pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset.size());
 
 		VTR_LOG("pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset[pnum]);
 		VTR_LOG("End\n");
