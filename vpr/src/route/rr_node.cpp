@@ -79,10 +79,6 @@ void t_rr_node::set_rc_index(short new_rc_index) {
     storage_->set_node_rc_index(id_, new_rc_index);
 }
 
-void t_rr_node::set_capacity(short new_capacity) {
-    storage_->set_node_capacity(id_, new_capacity);
-}
-
 void t_rr_node::add_side(e_side new_side) {
     storage_->add_node_side(id_, new_side);
 }
