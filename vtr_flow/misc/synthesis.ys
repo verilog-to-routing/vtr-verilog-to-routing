@@ -60,11 +60,6 @@ opt -full
 techmap 
 opt -fast
 
-flatten
-# Turn all DFFs into simple latches
-dffunmap
-opt -fast -noff
-
 # We read the definitions for all the VTR primitives
 # as blackboxes
 read_verilog -lib TTT/adder.v
@@ -79,14 +74,19 @@ read_verilog -lib DDD     #(DDD) will be replaced by dual_port_ram.v by python s
 read_verilog SSR         #(SSR) will be replaced by spram_rename.v by python script
 read_verilog DDR         #(DDR) will be replaced by dpram_rename.v by python script
 
-
+# Flatten the netlist
 flatten
+# Turn all DFFs into simple latches
+dffunmap
+opt -fast -noff
+
 # Lastly, check the hierarchy for any unknown modules,
 # and purge all modules (including blackboxes) that
 # aren't used
 hierarchy -check -purge_lib
 tee -o /dev/stdout stat
 
+autoname
 
 # Then write it out as a blif file, remembering to call
 # the internal `$true'/`$false' signals vcc/gnd, but

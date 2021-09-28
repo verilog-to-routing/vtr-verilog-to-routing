@@ -55,7 +55,7 @@ module single_port_ram(clk, we, addr, data, out);
                 singlePortRam uut (
                     .clk(clk), 
                     .we(we), 
-                    .addr(addr), 
+                    .addr({ {{`MEM_MAXADDR-ADDR_WIDTH}{1'bx}}, addr[ADDR_WIDTH-1:0] }), 
                     .data(data[i]), 
                     .out(out[i])
                 );
