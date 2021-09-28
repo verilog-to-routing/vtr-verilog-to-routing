@@ -708,11 +708,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         for (int i = 0; i < num_rr_nodes; i++) {
             if (rr_graph.node_type(RRNodeId(i)) == CHANX) {
                 int ylow = rr_graph.node_ylow(RRNodeId(i));
-                device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
+                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.x_list[ylow]);
             }
             if (rr_graph.node_type(RRNodeId(i)) == CHANY) {
                 int xlow = rr_graph.node_xlow(RRNodeId(i));
-                device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.y_list[xlow]);
+                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.y_list[xlow]);
             }
         }
     }
@@ -1428,7 +1428,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Things common to both SOURCEs and SINKs.   */
-        L_rr_node.set_node_capacity(inode, class_inf[iclass].num_pins);
+        rr_graph_builder.set_node_capacity(inode, class_inf[iclass].num_pins);
         rr_graph_builder.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
         float R = 0.;
         float C = 0.;
@@ -1477,7 +1477,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
                         /* Common to both DRIVERs and RECEIVERs */
                         if (inode) {
-                            L_rr_node.set_node_capacity(inode, 1);
+                            rr_graph_builder.set_node_capacity(inode, 1);
                             float R = 0.;
                             float C = 0.;
                             L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
@@ -1657,7 +1657,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         /* Edge arrays have now been built up.  Do everything else.  */
         L_rr_node.set_node_cost_index(node, cost_index_offset + seg_details[track].index());
-        L_rr_node.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
+        rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {
             rr_graph_builder.set_node_coordinates(node, start, y_coord, end, y_coord);
