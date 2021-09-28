@@ -2314,28 +2314,9 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     auto& device_ctx = g_vpr_ctx.device();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+    //Need to sync physical pins because potentially looking at new physical tile type
     place_sync_external_block_connections(bnum);
     pnum = net_pin_to_tile_pin_index(net_id, 0);
-
-    ClusterBlockId block(1647);
-    ClusterNetId net(6494);
-
-    /*if (bnum == block && net_id == net) {
-    	VTR_LOG("\n");
-    	VTR_LOG("Begin \n");
-		VTR_LOG("In get non_updateable_bb \n");
-		VTR_LOG("Net id is %d \n", net_id);
-		VTR_LOG("Cluster Block id is %d \n", bnum);
-
-		VTR_LOG("Tile pin index is %d \n", pnum);
-
-		VTR_LOG("x is %d \n", place_ctx.block_locs[bnum].loc.x);
-		VTR_LOG("physical_tile_type is %s \n", physical_tile_type(bnum)->name);
-
-		VTR_LOG("pin_width_offset is %d \n", physical_tile_type(bnum)->pin_width_offset[pnum]);
-		VTR_LOG("End\n");
-		VTR_LOG("\n");
-    }*/
 
     x = place_ctx.block_locs[bnum].loc.x
         + physical_tile_type(bnum)->pin_width_offset[pnum];
