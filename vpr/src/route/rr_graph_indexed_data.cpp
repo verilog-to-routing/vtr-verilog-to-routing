@@ -361,7 +361,7 @@ static void load_rr_indexed_data_T_values() {
         calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
 
         if (num_switches == 0) {
-            //VTR_LOG_WARN("Node %d had no out-going switches\n", inode);
+            VTR_LOG_WARN("Node %d had no out-going switches\n", inode);
             continue;
         }
         VTR_ASSERT(num_switches > 0);

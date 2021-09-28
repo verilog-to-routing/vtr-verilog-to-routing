@@ -437,11 +437,11 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
             VTR_ASSERT(pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
             if (pb_graph_node->input_pins[i][j].pin_class == OPEN) {
-                /*VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
+                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
                              pb_graph_node->pb_type->name,
                              pb_graph_node->placement_index,
                              pb_graph_node->input_pins[i][j].port->name,
-                             pb_graph_node->input_pins[i][j].pin_number);*/
+                             pb_graph_node->input_pins[i][j].pin_number);
                 continue;
             }
             pb_graph_node->input_pin_class_size[pb_graph_node->input_pins[i][j].pin_class]++;
@@ -451,11 +451,11 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
         for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
             VTR_ASSERT(pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
             if (pb_graph_node->output_pins[i][j].pin_class == OPEN) {
-                /*VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
+                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
                              pb_graph_node->pb_type->name,
                              pb_graph_node->placement_index,
                              pb_graph_node->output_pins[i][j].port->name,
-                             pb_graph_node->output_pins[i][j].pin_number);*/
+                             pb_graph_node->output_pins[i][j].pin_number);
                 continue;
             }
             pb_graph_node->output_pin_class_size[pb_graph_node->output_pins[i][j].pin_class]++;
@@ -465,11 +465,11 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
         for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             VTR_ASSERT(pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
             if (pb_graph_node->clock_pins[i][j].pin_class == OPEN) {
-                /*VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
+                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
                              pb_graph_node->pb_type->name,
                              pb_graph_node->placement_index,
                              pb_graph_node->clock_pins[i][j].port->name,
-                             pb_graph_node->clock_pins[i][j].pin_number);*/
+                             pb_graph_node->clock_pins[i][j].pin_number);
                 continue;
             }
             pb_graph_node->input_pin_class_size[pb_graph_node->clock_pins[i][j].pin_class]++;
