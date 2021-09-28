@@ -1090,7 +1090,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                 state->t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
         if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
             VPR_ERROR(VPR_ERROR_PLACE, "bb_cost is %g, comp_bb_cost is %g\n", costs->bb_cost, comp_bb_cost(CHECK));
-                      //"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
+            //"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
 
         /* Lines below prevent too much round-off error from accumulating
@@ -1100,7 +1100,7 @@ static void placement_inner_loop(const t_annealing_state* state,
          */
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
-        	//VTR_LOG("recomputing costs from scratch, old bb_cost is %g\n", costs->bb_cost);
+            //VTR_LOG("recomputing costs from scratch, old bb_cost is %g\n", costs->bb_cost);
             recompute_costs_from_scratch(placer_opts, delay_model,
                                          criticalities, costs);
             //VTR_LOG("new_bb_cost is %g\n", costs->bb_cost);
@@ -1587,7 +1587,6 @@ static int find_affected_nets_and_update_costs(
     t_pl_blocks_to_be_moved& blocks_affected,
     double& bb_delta_c,
     double& timing_delta_c) {
-
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
     VTR_ASSERT_SAFE(timing_delta_c == 0.);
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2008,8 +2007,8 @@ static double comp_bb_cost(e_cost_methods method) {
 
     if (method == CHECK) {
         /*VTR_LOG("\n");
-        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-                expected_wirelength);*/
+         * VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
+         * expected_wirelength);*/
     }
     return cost;
 }
