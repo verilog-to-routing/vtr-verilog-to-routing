@@ -51,17 +51,28 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 //Sort the blocks according to how difficult they are to place, prior to initial placement
 static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
-//Get a legal placement position for the block
+/*
+ * Look for one random legal position for a block that respects its floorplanning constraints
+ * Returns true if a valid location is found, false otherwise
+ * Returns location (loc) by reference
+ */
 static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type);
 
+/*
+ * A routine to look for a valid placement location for a (non-macro) block exhaustively once the maximum number of random locations
+ * have been tried. Returns true if the block is placed, false otherwise.
+ */
 static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
+/*
+ * A routine to look for a valid placement location for a block in a macro exhaustively once the maximum number of random locations
+ * have been tried. Returns true if the block is placed, false otherwise.
+ */
 static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type);
 
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
-                             const vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              enum e_pad_loc_type pad_loc_type);
 
 static bool is_loc_on_chip(t_pl_loc& loc) {
@@ -73,19 +84,24 @@ static bool is_loc_on_chip(t_pl_loc& loc) {
 static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
+    /*
+     * Getting various values needed for the find_compatible_compressed_loc_in_range() routine called below.
+     * Need to pass the from/to coords of the block, as well as the min/max x and y coords of where it can
+     * be placed in the compressed grid.
+     */
+
+    //Block has not been placed yet, so the "from" coords will be (-1, -1)
     int cx_from = -1;
     int cy_from = -1;
 
+    //If the block has more than one floorplan region, pick a random region to get the min/max x and y values
     int region_index;
-
     std::vector<Region> regions = pr.get_partition_region();
-
     if (regions.size() > 1) {
         region_index = vtr::irand(regions.size() - 1);
     } else {
         region_index = 0;
     }
-
     Region reg = regions[region_index];
 
     vtr::Rect<int> rect = reg.get_region_rect();
@@ -118,6 +134,10 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
     return legal;
 }
 
+/*
+ * Go through every valid location in a block's floorplan region in order to place the block.
+ * Return true if block was placed, false if not.
+ */
 static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
@@ -194,6 +214,10 @@ static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion
     return placed;
 }
 
+/*
+ * Go through every valid location in a block's floorplan region in order to place the block.
+ * Return true if block was placed, false if not.
+ */
 static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -584,7 +608,6 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 }
 
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
-                             const vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              enum e_pad_loc_type pad_loc_type) {
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -595,13 +618,15 @@ static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
             continue;
         }
 
-        if (block_scores[blk_id].macro_size > 0) {
-            int imacro;
-            get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
+        //Lookup to see if the block is part of a macro
+        int imacro;
+        get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
+
+        if (imacro != -1) { //If the block belongs to a macro, use macro initial placement routines
             t_pl_macro pl_macro;
             pl_macro = place_ctx.pl_macros[imacro];
             place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro);
-        } else {
+        } else { //If it does not belong to a macro, use non-macro initial placement routines
             place_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type);
         }
     }
@@ -658,7 +683,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     mark_fixed_blocks();
 
     //Place the blocks in sorted order
-    place_all_blocks(sorted_blocks, block_scores, pad_loc_type);
+    place_all_blocks(sorted_blocks, pad_loc_type);
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
