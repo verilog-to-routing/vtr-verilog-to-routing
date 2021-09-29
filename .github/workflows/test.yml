@@ -194,7 +194,7 @@ jobs:
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
 
-  
+
   VQM2BLIF:
     name: 'VQM2BLIF Basic Tests'
     runs-on: ubuntu-18.04
