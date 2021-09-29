@@ -44,4 +44,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -check_equivalent -starting_stage abc --gen_post_synthesis_netlist on --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off --seed 2
+script_params=-track_memory_usage -check_equivalent -starting_stage abc --gen_post_synthesis_netlist on --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off --seed 3
