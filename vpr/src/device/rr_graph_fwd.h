@@ -15,11 +15,13 @@ class RRGraph;
 
 struct rr_node_id_tag;
 struct rr_edge_id_tag;
+struct rr_indexed_data_id_tag;
 struct rr_switch_id_tag;
 struct rr_segment_id_tag;
 
 typedef vtr::StrongId<rr_node_id_tag, unsigned int> RRNodeId;
 typedef vtr::StrongId<rr_edge_id_tag, unsigned int> RREdgeId;
+typedef vtr::StrongId<rr_indexed_data_id_tag, unsigned int> RRIndexedDataId;
 typedef vtr::StrongId<rr_switch_id_tag, short> RRSwitchId;
 typedef vtr::StrongId<rr_segment_id_tag, short> RRSegmentId;
 

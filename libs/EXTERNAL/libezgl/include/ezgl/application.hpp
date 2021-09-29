@@ -28,6 +28,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <ctime>
 
 #include <gtk/gtk.h>
 
@@ -35,6 +36,13 @@
  * A library for creating a graphical user interface.
  */
 namespace ezgl {
+
+// A flag to specify whether the GUI is built from an XML file or an XML resource
+#ifndef ECE297
+const bool build_ui_from_file = false;
+#else
+const bool build_ui_from_file = true;
+#endif
 
 class application;
 
@@ -81,7 +89,7 @@ public:
    */
   struct settings {
     /**
-     * The resource path that contains the XML file, which describes the GUI.
+     * The resource/file path that contains the XML file, which describes the GUI.
      */
     std::string main_ui_resource;
 
@@ -121,9 +129,13 @@ public:
      * Create the settings structure with default values
      */
     settings()
-    : main_ui_resource("/ezgl/main.ui"), window_identifier("MainWindow"), canvas_identifier("MainCanvas"), application_identifier("ezgl.app"),
+    : main_ui_resource(build_ui_from_file ? "main_ui" : "/ezgl/main.ui"), window_identifier("MainWindow"), canvas_identifier("MainCanvas"), application_identifier("ezgl.app"),
       setup_callbacks(nullptr)
     {
+      // Uniquify the application_identifier by appending a time stamp,
+      // so that each instance of the same program has a different application ID.
+      // This allows multiple instance of the program to run independelty.
+      application_identifier += ".t" + std::to_string(std::time(nullptr));
     }
 
     /**
@@ -134,6 +146,10 @@ public:
     : main_ui_resource(m_resource), window_identifier(w_identifier), canvas_identifier(c_identifier), application_identifier(a_identifier),
       setup_callbacks(s_callbacks)
     {
+      // Uniquify the application_identifier by appending a time stamp,
+      // so that each instance of the same program has a different application ID.
+      // This allows multiple instance of the program to run independelty.
+      application_identifier += ".t" + std::to_string(std::time(nullptr));
     }
   };
 
@@ -403,7 +419,6 @@ public:
 /**
  * Set the disable_event_loop flag to new_setting
  * Call with new_setting == true to make the event_loop immediately return.
- * Needed only for auto-marking
  *
  * @param new_setting The new state of disable_event_loop flag
  */

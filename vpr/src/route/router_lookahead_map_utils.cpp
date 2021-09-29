@@ -469,7 +469,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
             int seg_index;
             if (curr_rr_type != SINK) {
                 //It's a wire, figure out its type
-                int cost_index = rr_graph.node_cost_index(curr.node);
+                auto cost_index = temp_rr_graph.node_cost_index(curr.node);
                 seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
             } else {
                 //This is a direct-connect path between an IPIN and OPIN,
@@ -493,7 +493,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
         } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
             //We allow expansion through SOURCE/OPIN/IPIN types
-            int cost_index = rr_graph.node_cost_index(curr.node);
+            auto cost_index = temp_rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
@@ -588,7 +588,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             }
 
             //We allow expansion through SOURCE/OPIN/IPIN types
-            int cost_index = rr_graph.node_cost_index(curr.node);
+            auto cost_index = temp_rr_graph.node_cost_index(curr.node);
             float new_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {

@@ -1550,10 +1550,10 @@ void update_rr_base_costs(int fanout) {
     factor = sqrt(fanout);
 
     for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
-        if (device_ctx.rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
-            device_ctx.rr_indexed_data[index].base_cost = device_ctx.rr_indexed_data[index].saved_base_cost * factor;
+        if (device_ctx.rr_indexed_data[RRIndexedDataId(index)].T_quadratic > 0.) { /* pass transistor */
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost * factor;
         } else {
-            device_ctx.rr_indexed_data[index].base_cost = device_ctx.rr_indexed_data[index].saved_base_cost;
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost;
         }
     }
 }

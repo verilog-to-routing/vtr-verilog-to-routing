@@ -708,11 +708,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         for (int i = 0; i < num_rr_nodes; i++) {
             if (rr_graph.node_type(RRNodeId(i)) == CHANX) {
                 int ylow = rr_graph.node_ylow(RRNodeId(i));
-                device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
+                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.x_list[ylow]);
             }
             if (rr_graph.node_type(RRNodeId(i)) == CHANY) {
                 int xlow = rr_graph.node_xlow(RRNodeId(i));
-                device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.y_list[xlow]);
+                device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.y_list[xlow]);
             }
         }
     }
@@ -1405,7 +1405,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                 rr_edges_to_create.emplace_back(inode, opin_nodes[iedge], delayless_switch);
             }
 
-            L_rr_node.set_node_cost_index(inode, SOURCE_COST_INDEX);
+            L_rr_node.set_node_cost_index(inode, RRIndexedDataId(SOURCE_COST_INDEX));
             L_rr_node.set_node_type(inode, SOURCE);
         } else { /* SINK */
             VTR_ASSERT(class_inf[iclass].type == RECEIVER);
@@ -1423,13 +1423,13 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
              * - set_node_cost_index(RRNodeId, int);
              * - set_node_type(RRNodeId, t_rr_type);
              */
-            L_rr_node.set_node_cost_index(inode, SINK_COST_INDEX);
+            L_rr_node.set_node_cost_index(inode, RRIndexedDataId(SINK_COST_INDEX));
             L_rr_node.set_node_type(inode, SINK);
         }
 
         /* Things common to both SOURCEs and SINKs.   */
-        L_rr_node.set_node_capacity(inode, class_inf[iclass].num_pins);
-        L_rr_node.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
+        rr_graph_builder.set_node_capacity(inode, class_inf[iclass].num_pins);
+        rr_graph_builder.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
         float R = 0.;
         float C = 0.;
         L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
@@ -1458,7 +1458,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                 //Add info about the edge to be created
                                 rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
 
-                                L_rr_node.set_node_cost_index(inode, IPIN_COST_INDEX);
+                                L_rr_node.set_node_cost_index(inode, RRIndexedDataId(IPIN_COST_INDEX));
                                 L_rr_node.set_node_type(inode, IPIN);
                             }
                         } else {
@@ -1470,14 +1470,14 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             /* Output pins may not exist on some sides, we may not always find one */
                             if (inode) {
                                 //Initially left unconnected
-                                L_rr_node.set_node_cost_index(inode, OPIN_COST_INDEX);
+                                L_rr_node.set_node_cost_index(inode, RRIndexedDataId(OPIN_COST_INDEX));
                                 L_rr_node.set_node_type(inode, OPIN);
                             }
                         }
 
                         /* Common to both DRIVERs and RECEIVERs */
                         if (inode) {
-                            L_rr_node.set_node_capacity(inode, 1);
+                            rr_graph_builder.set_node_capacity(inode, 1);
                             float R = 0.;
                             float C = 0.;
                             L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
@@ -1488,7 +1488,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             //For those pins located on multiple sides, we save the rr node index
                             //for the pin on all sides at which it exists
                             //As such, multipler driver problem can be avoided.
-                            L_rr_node.set_node_coordinates(inode, i + width_offset, j + height_offset, i + width_offset, j + height_offset);
+                            rr_graph_builder.set_node_coordinates(inode, i + width_offset, j + height_offset, i + width_offset, j + height_offset);
                             L_rr_node.add_node_side(inode, side);
 
                             // Sanity check
@@ -1656,14 +1656,14 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Edge arrays have now been built up.  Do everything else.  */
-        L_rr_node.set_node_cost_index(node, cost_index_offset + seg_details[track].index());
-        L_rr_node.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
+        L_rr_node.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track].index()));
+        rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {
-            L_rr_node.set_node_coordinates(node, start, y_coord, end, y_coord);
+            rr_graph_builder.set_node_coordinates(node, start, y_coord, end, y_coord);
         } else {
             VTR_ASSERT(chan_type == CHANY);
-            L_rr_node.set_node_coordinates(node, x_coord, start, x_coord, end);
+            rr_graph_builder.set_node_coordinates(node, x_coord, start, x_coord, end);
         }
 
         int length = end - start + 1;
@@ -2431,7 +2431,7 @@ std::string describe_rr_node(int inode) {
     auto rr_node = device_ctx.rr_nodes[inode];
 
     if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
-        int cost_index = rr_node.cost_index();
+        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
         std::string rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
