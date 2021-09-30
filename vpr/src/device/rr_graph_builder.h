@@ -65,9 +65,11 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
-    /** @brief Set the node ptc num */
+    /** @brief Set the node_ptc_num; The ptc (pin, track, or class) number is an integer
+     *  that allows you to differentiate between wires, pins or sources/sinks with overlapping x,y coordinates or extent.
+     *  This is useful for drawing rr-graphs nicely.*/
     inline void set_node_ptc_num(RRNodeId id, short new_ptc_num) {
-    	node_storage_.set_node_ptc_num(id, new_ptc_num);
+        node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
     /* -- Internal data storage -- */
