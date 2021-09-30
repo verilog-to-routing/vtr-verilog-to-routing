@@ -172,7 +172,7 @@
           <direct name="outpad" input="io.outpad" output="outpad.outpad"/>
         </interconnect>
       </mode>
-      <!-- IOs go on the periphery of the FPGA, for consistency,
+      <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
           If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
         -->
@@ -579,7 +579,7 @@
       <output name="out" num_pins="72"/>
       <mode name="two_divisible_mult_18x18">
         <pb_type name="divisible_mult_18x18" num_pb="2">
-          <input name="aa" num_pins="18"/>
+          <input name="a" num_pins="18"/>
           <input name="b" num_pins="18"/>
           <output name="out" num_pins="36"/>
           <mode name="two_mult_9x9">

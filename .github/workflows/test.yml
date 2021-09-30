@@ -139,13 +139,15 @@ jobs:
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
-      if: ${{ failure() }}
       with:
         name: failed_${{matrix.name}}_regression_log
-        retention-days: 3
         path: |
           vtr_flow/**/*.log
           vtr_flow/**/*.out
+          vtr_flow/**/*.blif
+          vtr_flow/**/*.p
+          vtr_flow/**/*.net
+          vtr_flow/**/*.r
 
   Sanitized:
     runs-on: ubuntu-18.04
