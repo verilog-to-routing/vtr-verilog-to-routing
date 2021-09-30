@@ -65,6 +65,11 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    /** @brief Set the node ptc num */
+    inline void set_node_ptc_num(RRNodeId id, short new_ptc_num) {
+    	node_storage_.set_node_ptc_num(id, new_ptc_num);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
