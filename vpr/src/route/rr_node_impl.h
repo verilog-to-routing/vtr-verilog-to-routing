@@ -118,5 +118,4 @@ inline short t_rr_node::class_num() const {
     return storage_->node_class_num(id_);
 }
 
-
 #endif /* _RR_NODE_IMPL_H_ */
