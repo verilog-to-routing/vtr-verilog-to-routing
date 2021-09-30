@@ -310,9 +310,9 @@ def find_longest_task_description(configs):
         for arch, circuit in itertools.product(config.archs, config.circuits):
             if config.script_params_list_add:
                 for param in config.script_params_list_add:
-                    for c in [":", "<", ">", "|", "*", "?"]:
+                    for spec_char in [":", "<", ">", "|", "*", "?"]:
                         # replaced to create valid URL path
-                        param = param.replace(c, "_")
+                        param = param.replace(spec_char, "_")
                     arch_circuit_len = len(str(PurePath(arch) / circuit / "common_" / param))
                     if arch_circuit_len > longest:
                         longest = arch_circuit_len
