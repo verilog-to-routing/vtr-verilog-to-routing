@@ -103,8 +103,6 @@ class t_rr_node {
     RRIndexedDataId cost_index() const;
     short rc_index() const;
 
-    bool is_node_on_specific_side(e_side side) const;
-
     bool validate() const;
 
   public: //Mutators

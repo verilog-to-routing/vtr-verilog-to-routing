@@ -240,7 +240,7 @@ void check_rr_graph(const t_graph_type graph_type,
                             std::string pin_name = block_type_pin_index_to_name(block_type, node.pin_num());
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : SIDES) {
-                                if (!node.is_node_on_specific_side(node_side)) {
+                                if (!rr_graph.is_node_on_specific_side(RRNodeId(rr_node), node_side)) {
                                     continue;
                                 }
                                 VTR_LOG_ERROR("in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s pin=%s has no fanin.\n",
@@ -591,10 +591,10 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     VTR_ASSERT(rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN);
 
-    if ((rr_graph.node_xlow(node.id()) == 0 && !node.is_node_on_specific_side(RIGHT))                          //left device edge connects only along block's right side
-        || (rr_graph.node_ylow(node.id()) == int(grid.height() - 1) && !node.is_node_on_specific_side(BOTTOM)) //top device edge connects only along block's bottom side
-        || (rr_graph.node_xlow(node.id()) == int(grid.width() - 1) && !node.is_node_on_specific_side(LEFT))    //right deivce edge connects only along block's left side
-        || (rr_graph.node_ylow(node.id()) == 0 && !node.is_node_on_specific_side(TOP))                         //bottom deivce edge connects only along block's top side
+    if ((rr_graph.node_xlow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), RIGHT))                          //left device edge connects only along block's right side
+        || (rr_graph.node_ylow(node.id()) == int(grid.height() - 1) && !rr_graph.is_node_on_specific_side(node.id(), BOTTOM)) //top device edge connects only along block's bottom side
+        || (rr_graph.node_xlow(node.id()) == int(grid.width() - 1) && !rr_graph.is_node_on_specific_side(node.id(), LEFT))    //right deivce edge connects only along block's left side
+        || (rr_graph.node_ylow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), TOP))                         //bottom deivce edge connects only along block's top side
     ) {
         return false;
     }

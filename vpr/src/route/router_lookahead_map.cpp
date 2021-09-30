@@ -1005,10 +1005,9 @@ static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y) {
      * Similarly for blocks at (*,0) we clip the minimum y to zero.
      */
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the rr_graph below is unneeded
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT_SAFE(is_pin(temp_rr_graph.node_type(rr)));
+    VTR_ASSERT_SAFE(is_pin(rr_graph.node_type(rr)));
     VTR_ASSERT_SAFE(rr_graph.node_xlow(rr) == rr_graph.node_xhigh(rr));
     VTR_ASSERT_SAFE(rr_graph.node_ylow(rr) == rr_graph.node_yhigh(rr));
 

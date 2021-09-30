@@ -653,7 +653,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {
             std::bitset<NUM_SIDES> sides_bitset;
             for (const e_side& side : SIDES) {
-                if (node.is_node_on_specific_side(side)) {
+                if (rr_graph.is_node_on_specific_side(node.id(), side)) {
                     sides_bitset.set(side);
                 }
             }
