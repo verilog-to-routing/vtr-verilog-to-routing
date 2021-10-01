@@ -11,9 +11,21 @@ echo "----------------------------------------"
 
 echo
 echo "========================================"
+echo "Host not verifying certificate name matches server name"
+echo "----------------------------------------"
+echo | sudo tee -a /etc/apt/apt.conf.d/80-ignore-ssl-issues <<EOF
+// Do not verify peer certificate
+Acquire::https::Verify-Peer "false";
+// Do not verify that certificate name matches server name
+Acquire::https::Verify-Host "false";
+EOF
+echo "----------------------------------------"
+
+echo
+echo "========================================"
 echo "Host adding PPAs"
 echo "----------------------------------------"
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
+wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
 sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
 echo "----------------------------------------"
 
