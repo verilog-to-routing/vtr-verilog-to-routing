@@ -495,6 +495,9 @@ def create_job(
     Create an individual job with the specified parameters
     """
     param_string = "common" + (("_" + param.replace(" ", "_")) if param else "")
+    for spec_char in [":", "<", ">", "|", "*", "?"]:
+        # replaced to create valid URL path
+        param_string = param_string.replace(spec_char, "_")
     if not param:
         param = "common"
 
