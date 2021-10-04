@@ -143,7 +143,7 @@ int grid_to_compressed_approx(const std::vector<int>& coords, int point) {
     return std::distance(coords.begin(), itr);
 }
 
-/*Print the contents of each cluster to an echo file*/
+/*Print the contents of the compressed grids to an echo file*/
 void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_grid>& comp_grids) {
     FILE* fp;
     fp = vtr::fopen(filename, "w");

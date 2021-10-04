@@ -18,7 +18,7 @@
 
 //Used to assign each block a score for how difficult it is to place
 struct t_block_score {
-    int macro_size = 0; //how many members does the macro have, if the block is part of one, this value is zero if the block is not in a macro
+    int macro_size = 0; //how many members does the macro have, if the block is part of one - this value is zero if the block is not in a macro
 
     /*
      * The number of tiles NOT covered by the block's floorplan constraints. The higher this number, the more
@@ -27,22 +27,35 @@ struct t_block_score {
     int tiles_outside_of_floorplan_constraints = 0;
 };
 
-/* The maximum number of tries when trying to place a carry chain at a    *
- * random location before trying exhaustive placement - find the fist     *
+/// @brief sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
+constexpr int INVALID_X = -1;
+
+/* The maximum number of tries when trying to place a macro at a    *
+ * random location before trying exhaustive placement - find the first     *
  * legal position and place it during initial placement.                  */
-#define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 6
-#define MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY 10
-
-static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
-
-static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro);
-
-static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro);
-
-static void place_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type);
+#define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 8
 
 /*
- * Assign scores to each block based on macro size, floorplanning constraints, and number of equivalent tiles.
+ * Checks that the placement location is legal for each macro member by applying
+ * the member's offset to the head position and checking that the resulting
+ * spot is free, on the chip, etc.
+ */
+static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
+
+/*
+ * Places the macro if the head position passed in is legal, and all the resulting
+ * member positions are legal
+ */
+static int try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos);
+
+/*
+ * Control routine for placing a macro - first calls random placement for the max number of tries,
+ * the calls the exhaustive placement routine. Errors out if the macro cannot be placed.
+ */
+static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pad_loc_type pad_loc_type);
+
+/*
+ * Assign scores to each block based on macro size and floorplanning constraints.
  * Used for relative placement, so that the blocks that are more difficult to place can be placed first during initial placement.
  * A higher score indicates that the block is more difficult to place.
  */
@@ -51,24 +64,31 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 //Sort the blocks according to how difficult they are to place, prior to initial placement
 static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
-/*
- * Look for one random legal position for a block that respects its floorplanning constraints
- * Returns true if a valid location is found, false otherwise
- * Returns location (loc) by reference
+/**
+ * @brief  try to place a macro at a random location
+ *
+ *   @param pl_macro The macro to be placed.
+ *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
+ *   constrained.
+ *   @param block_type Logical block type of the macro blocks.
+ *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
+ *
+ *   Returns true if the macro gets placed, false if not.
  */
-static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type);
+static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
-/*
- * A routine to look for a valid placement location for a (non-macro) block exhaustively once the maximum number of random locations
- * have been tried. Returns true if the block is placed, false otherwise.
+/**
+ * @brief  Look for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
+ *
+ *   @param pl_macro The macro to be placed.
+ *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
+ *   constrained.
+ *   @param block_type Logical block type of the macro blocks.
+ *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
+ *
+ *   Returns true if the macro gets placed, false if not.
  */
-static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
-
-/*
- * A routine to look for a valid placement location for a block in a macro exhaustively once the maximum number of random locations
- * have been tried. Returns true if the block is placed, false otherwise.
- */
-static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type);
+static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type);
 
 void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
@@ -81,8 +101,21 @@ static bool is_loc_on_chip(t_pl_loc& loc) {
     return (loc.x >= 0 && loc.x < int(device_ctx.grid.width()) && loc.y >= 0 && loc.y < int(device_ctx.grid.height()));
 }
 
-static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logical_block_type_ptr block_type) {
+static bool is_block_placed(ClusterBlockId blk_id) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    bool placed = true;
+
+    if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
+        placed = false;
+    }
+
+    return placed;
+}
+
+static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+    t_pl_loc loc;
 
     /*
      * Getting various values needed for the find_compatible_compressed_loc_in_range() routine called below.
@@ -126,101 +159,29 @@ static bool get_legal_placement_loc(PartitionRegion& pr, t_pl_loc& loc, t_logica
 
     compressed_grid_to_loc(block_type, cx_to, cy_to, loc);
 
-    auto& grid = g_vpr_ctx.device().grid;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    VTR_ASSERT(grid[loc.x][loc.y].width_offset == 0);
-    VTR_ASSERT(grid[loc.x][loc.y].height_offset == 0);
+    VTR_ASSERT(device_ctx.grid[loc.x][loc.y].width_offset == 0);
+    VTR_ASSERT(device_ctx.grid[loc.x][loc.y].height_offset == 0);
+
+    legal = try_place_macro(pl_macro, loc);
+
+    //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
+    //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
+    if (legal && is_io_type(device_ctx.grid[loc.x][loc.y].type) && pad_loc_type == RANDOM) {
+        for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
+            place_ctx.block_locs[pl_macro.members[i].blk_index].is_fixed = true;
+        }
+    }
 
     return legal;
 }
 
-/*
- * Go through every valid location in a block's floorplan region in order to place the block.
- * Return true if block was placed, false if not.
- */
-static bool try_all_part_region_locations(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
-    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    std::vector<Region> regions = pr.get_partition_region();
-
-    bool placed = false;
-
-    t_pl_loc to_loc;
-
-    for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
-        vtr::Rect<int> rect = regions[reg].get_region_rect();
-
-        int min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-        int max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
-
-        for (int cx = min_cx; cx <= max_cx && placed == false; cx++) {
-            auto y_lower_iter = compressed_block_grid.grid[cx].begin();
-            auto y_upper_iter = compressed_block_grid.grid[cx].end();
-
-            int y_range = std::distance(y_lower_iter, y_upper_iter);
-            VTR_ASSERT(y_range >= 0);
-
-            for (int dy = 0; dy < y_range && placed == false; dy++) {
-                int cy = (y_lower_iter + dy)->first;
-
-                to_loc.x = compressed_block_grid.compressed_to_grid_x[cx];
-                to_loc.y = compressed_block_grid.compressed_to_grid_y[cy];
-
-                auto& grid = g_vpr_ctx.device().grid;
-                auto tile_type = grid[to_loc.x][to_loc.y].type;
-
-                if (regions[reg].get_sub_tile() != NO_SUBTILE) {
-                    int subtile = regions[reg].get_sub_tile();
-
-                    to_loc.sub_tile = subtile;
-                    if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
-                        set_block_location(blk_id, to_loc);
-                        placed = true;
-
-                        if (is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-                            place_ctx.block_locs[blk_id].is_fixed = true;
-                        }
-                    }
-                } else {
-                    for (const auto& sub_tile : tile_type->sub_tiles) {
-                        if (is_sub_tile_compatible(tile_type, block_type, sub_tile.capacity.low)) {
-                            int st_low = sub_tile.capacity.low;
-                            int st_high = sub_tile.capacity.high;
-
-                            for (int st = st_low; st <= st_high && placed == false; st++) {
-                                to_loc.sub_tile = st;
-                                if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID && cluster_floorplanning_legal(blk_id, to_loc)) {
-                                    set_block_location(blk_id, to_loc);
-                                    placed = true;
-
-                                    if (is_io_type(pick_physical_type(block_type)) && pad_loc_type == RANDOM) {
-                                        place_ctx.block_locs[blk_id].is_fixed = true;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (placed) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return placed;
-}
-
-/*
- * Go through every valid location in a block's floorplan region in order to place the block.
- * Return true if block was placed, false if not.
- */
-static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
+static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
     std::vector<Region> regions = pr.get_partition_region();
 
@@ -256,7 +217,15 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
 
                     to_loc.sub_tile = subtile;
                     if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-                        placed = try_place_macro(to_loc, pl_macro);
+                        placed = try_place_macro(pl_macro, to_loc);
+
+                        //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
+                        //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
+                        if (placed && is_io_type(device_ctx.grid[to_loc.x][to_loc.y].type) && pad_loc_type == RANDOM) {
+                            for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
+                                place_ctx.block_locs[pl_macro.members[i].blk_index].is_fixed = true;
+                            }
+                        }
                     }
                 } else {
                     for (const auto& sub_tile : tile_type->sub_tiles) {
@@ -267,7 +236,15 @@ static bool try_all_part_region_locations_macro(t_pl_macro pl_macro, PartitionRe
                             for (int st = st_low; st <= st_high && placed == false; st++) {
                                 to_loc.sub_tile = st;
                                 if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
-                                    placed = try_place_macro(to_loc, pl_macro);
+                                    placed = try_place_macro(pl_macro, to_loc);
+
+                                    //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
+                                    //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
+                                    if (placed && is_io_type(device_ctx.grid[to_loc.x][to_loc.y].type) && pad_loc_type == RANDOM) {
+                                        for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
+                                            place_ctx.block_locs[pl_macro.members[i].blk_index].is_fixed = true;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -303,6 +280,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
     for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
+        //Check that the member location is on the grid
         if (!is_loc_on_chip(member_pos)) {
             macro_can_be_placed = false;
             break;
@@ -325,8 +303,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
 
         // Check whether the location could accept block of this type
         // Then check whether the location could still accommodate more blocks
-        // Also check whether the member position is valid, that is the member's location
-        // still within the chip's dimemsion and the member_z is allowed at that location on the grid
+        // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && is_tile_compatible(device_ctx.grid[member_pos.x][member_pos.y].type, block_type)
             && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] == EMPTY_BLOCK_ID) {
@@ -342,7 +319,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
     return (macro_can_be_placed);
 }
 
-static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro) {
+static int try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     int macro_placed = false;
@@ -371,53 +348,48 @@ static int try_place_macro(t_pl_loc head_pos, t_pl_macro pl_macro) {
     return (macro_placed);
 }
 
-static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
-    int macro_placed;
+static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pad_loc_type pad_loc_type) {
+    bool macro_placed;
     int itry;
     ClusterBlockId blk_id;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    auto& place_ctx = g_vpr_ctx.placement();
-
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& device_ctx = g_vpr_ctx.device();
 
     macro_placed = false;
 
     while (!macro_placed) {
-        // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macro.members[0].blk_index;
 
-        if (place_ctx.block_locs[blk_id].loc.x != -1) {
-            //put VTR assert
+        if (is_block_placed(blk_id)) {
             macro_placed = true;
             continue;
         }
 
+        // Assume that all the blocks in the macro are of the same type
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
-        //Choose a random location for the head
-        t_pl_loc head_pos;
         PartitionRegion pr;
-        bool found_legal_location = false;
 
+        //Enough to check head member of macro to see if its constrained because
+        //constraints propagation was done earlier in initial placement.
         if (is_cluster_constrained(blk_id)) {
             pr = floorplanning_ctx.cluster_constraints[blk_id];
-        } else {
+        } else { //If the block is not constrained, assign a region the size of the grid to its PartitionRegion
             Region reg;
             reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
             reg.set_sub_tile(NO_SUBTILE);
             pr.add_to_part_region(reg);
         }
 
-        // Try to place the macro first, if can be placed - place them, otherwise try again
+        // Try to place the macro randomly for the max number of random tries
         for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-            found_legal_location = get_legal_placement_loc(pr, head_pos, block_type);
+            macro_placed = try_random_placement(pl_macro, pr, block_type, pad_loc_type);
 
             // Try to place the macro
-            if (found_legal_location) {
-                macro_placed = try_place_macro(head_pos, pl_macro);
+            if (macro_placed) {
+                break;
             }
 
         } // Finished all tries
@@ -430,7 +402,7 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
             // if there are no legal positions, error out
 
             // Exhaustive placement of carry macros
-            macro_placed = try_all_part_region_locations_macro(pl_macro, pr, block_type);
+            macro_placed = try_exhaustive_placement(pl_macro, pr, block_type, pad_loc_type);
 
             // If macro could not be placed after exhaustive placement, error out
         }
@@ -448,82 +420,6 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro) {
                             "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type(s) %s.\n"
                             "Please manually size the FPGA because VPR can't do this yet.\n",
                             pl_macro.members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), tried_types_str.c_str());
-        }
-    }
-}
-
-/* Place blocks that are NOT a part of any macro.
- * We'll randomly place each block in the clustered netlist, one by one. */
-static void place_block(int blocks_max_num_tries, ClusterBlockId blk_id, enum e_pad_loc_type pad_loc_type) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    bool placed = false;
-    while (!placed) {
-        /* -1 is a sentinel for a non-placed block, which the code in this routine will choose a location for.
-         * If the x value is not -1, we assume something else has already placed this block and we should leave it there.
-         * For example, if the user constrained it to a certain location, the block has already been placed.
-         */
-        if (place_ctx.block_locs[blk_id].loc.x != -1) {
-            //put VTR assert
-            placed = true;
-            continue;
-        }
-
-        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-
-        t_pl_loc to;
-        PartitionRegion pr;
-
-        if (is_cluster_constrained(blk_id)) {
-            pr = floorplanning_ctx.cluster_constraints[blk_id];
-        } else {
-            Region reg;
-            reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-            reg.set_sub_tile(NO_SUBTILE);
-            pr.add_to_part_region(reg);
-        }
-        bool found_legal_place = false;
-        bool floorplanning_good = false;
-
-        for (int itry = 0; itry < blocks_max_num_tries && placed == false; itry++) {
-            found_legal_place = get_legal_placement_loc(pr, to, logical_block);
-
-            if (found_legal_place) {
-                floorplanning_good = cluster_floorplanning_legal(blk_id, to);
-                if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID && floorplanning_good) {
-                    set_block_location(blk_id, to);
-                    placed = true;
-
-                    if (is_io_type(pick_physical_type(logical_block)) && pad_loc_type == RANDOM) {
-                        place_ctx.block_locs[blk_id].is_fixed = true;
-                    }
-
-                    break;
-                }
-            }
-
-        } // Finished all tries
-
-        if (!placed) {
-            /*
-             * If a block could still not be placed after blocks_max_num_tries attempts,
-             * go through the region exhaustively to find a legal placement for the block.
-             * Place the blocks on the first location that is legal and available then
-             * set placed = true;
-             * If there are no legal positions, error out
-             */
-            placed = try_all_part_region_locations(blk_id, pr, logical_block, pad_loc_type);
-
-            // If block could not be placed after exhaustive placement, error out
-            if (!placed) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "Could not place  block %s (#%zu); not enough free locations of type(s) %s.\n",
-                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name);
-            }
         }
     }
 }
@@ -548,10 +444,10 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     /*
      * For the blocks with no floorplan constraints, and the blocks that are not part of macros,
      * the block scores will remain at their default values assigned by the constructor
-     * (macro_size = 0; floorplan_constraints = 0; num_equivalent_tiles =1;
+     * (macro_size = 0; floorplan_constraints = 0;
      */
 
-    //go through all blocks and store floorplan constraints and num equivalent tiles
+    //go through all blocks and store floorplan constraints score
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         if (is_cluster_constrained(blk_id)) {
             PartitionRegion pr = floorplan_ctx.cluster_constraints[blk_id];
@@ -613,21 +509,29 @@ static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
 
     for (auto blk_id : sorted_blocks) {
         //Check if block has already been placed
-        if (place_ctx.block_locs[blk_id].loc.x != -1) {
-            //put VTR assert
+        if (is_block_placed(blk_id)) {
             continue;
         }
 
         //Lookup to see if the block is part of a macro
+        t_pl_macro pl_macro;
         int imacro;
         get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
 
-        if (imacro != -1) { //If the block belongs to a macro, use macro initial placement routines
-            t_pl_macro pl_macro;
+        if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
             pl_macro = place_ctx.pl_macros[imacro];
-            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro);
-        } else { //If it does not belong to a macro, use non-macro initial placement routines
-            place_block(MAX_NUM_TRIES_TO_PLACE_BLOCKS_RANDOMLY, blk_id, pad_loc_type);
+            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
+        } else {
+            //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
+            //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
+            t_pl_macro_member macro_member;
+            t_pl_offset block_offset(0, 0, 0);
+
+            macro_member.blk_index = blk_id;
+            macro_member.offset = block_offset;
+            pl_macro.members.push_back(macro_member);
+
+            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
         }
     }
 }
