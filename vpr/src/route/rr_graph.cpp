@@ -134,6 +134,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   const int num_seg_types);
 
 static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
+                                       const RRGraphView& rr_graph,
                                        int x,
                                        int y,
                                        e_side side,
@@ -270,7 +271,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const enum e_directionality directionality,
                                                               bool* Fc_clipped);
 
-static RRNodeId pick_best_direct_connect_target_rr_node(RRNodeId from_rr,
+static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
+                                                        RRNodeId from_rr,
                                                         const std::vector<RRNodeId>& candidate_rr_nodes);
 
 static void process_non_config_sets();
@@ -1276,6 +1278,8 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const int num_directs,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
                                  const int num_seg_types) {
+
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     //Don't connect pins which are not adjacent to channels around the perimeter
     if ((i == 0 && side != RIGHT)
         || (i == int(grid.width() - 1) && side != LEFT)
@@ -1318,7 +1322,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Add in direct connections */
-        get_opin_direct_connections(rr_graph_builder, i, j, side, pin_index,
+        get_opin_direct_connections(rr_graph_builder, rr_graph, i, j, side, pin_index,
                                     node_index, rr_edges_to_create,
                                     directs, num_directs, clb_to_clb_directs);
     }
@@ -2486,6 +2490,8 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
      * This routine adds the edges from opins to channels at the specified
      * grid location (i,j) and grid tile side
      */
+
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     *Fc_clipped = false;
 
     auto type = grid[i][j].type;
@@ -2565,7 +2571,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Add in direct connections */
-        get_opin_direct_connections(rr_graph_builder, i, j, side, pin_index, opin_node_index, rr_edges_to_create,
+        get_opin_direct_connections(rr_graph_builder, rr_graph, i, j, side, pin_index, opin_node_index, rr_edges_to_create,
                                     directs, num_directs, clb_to_clb_directs);
     }
 }
@@ -2681,6 +2687,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
  * The current opin is located at (x,y) along the specified side
  */
 static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
+                                       const RRGraphView& rr_graph,
                                        int x,
                                        int y,
                                        e_side side,
@@ -2782,7 +2789,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                             //target ipin. We only need to connect to one of them (since the physical pins
                             //are logically equivalent). This also ensures the graphics look reasonable and map
                             //back fairly directly to the architecture file in the case of pin equivalence
-                            RRNodeId inode = pick_best_direct_connect_target_rr_node(from_rr_node, inodes);
+                            RRNodeId inode = pick_best_direct_connect_target_rr_node(rr_graph, from_rr_node, inodes);
 
                             rr_edges_to_create.emplace_back(from_rr_node, inode, clb_to_clb_directs[i].switch_index);
                             ++num_pins;
@@ -2896,7 +2903,8 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     return perturb_opins;
 }
 
-static RRNodeId pick_best_direct_connect_target_rr_node(RRNodeId from_rr,
+static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
+                                                        RRNodeId from_rr,
                                                         const std::vector<RRNodeId>& candidate_rr_nodes) {
     //With physically equivalent pins there may be multiple candidate rr nodes (which are equivalent)
     //to connect the direct edge to.
@@ -2906,9 +2914,6 @@ static RRNodeId pick_best_direct_connect_target_rr_node(RRNodeId from_rr,
     //candidate would be picked (i.e. to minimize the drawn edge length).
     //
     //This function attempts to pick the 'best/closest' of the candidates.
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
     VTR_ASSERT(rr_graph.node_type(from_rr) == OPIN);
 
     float best_dist = std::numeric_limits<float>::infinity();
