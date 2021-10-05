@@ -1278,7 +1278,6 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const int num_directs,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
                                  const int num_seg_types) {
-
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     //Don't connect pins which are not adjacent to channels around the perimeter
     if ((i == 0 && side != RIGHT)
