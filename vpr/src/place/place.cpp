@@ -2315,14 +2315,6 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     pnum = net_pin_to_tile_pin_index(net_id, 0);
 
-    if (unsigned(pnum) > (physical_tile_type(bnum)->pin_width_offset.size() - 1)) {
-        //Need to sync physical pins if pnum not found in physical pins
-        place_sync_external_block_connections(bnum);
-
-        //Call pnum again after resyncing
-        pnum = net_pin_to_tile_pin_index(net_id, 0);
-    }
-
     x = place_ctx.block_locs[bnum].loc.x
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y
