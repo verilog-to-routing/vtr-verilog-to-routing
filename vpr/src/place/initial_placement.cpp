@@ -583,7 +583,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
     }
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
-     * as fixed so they do not get moved during initial placement or during simulated annealing*/
+     * as fixed so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
     mark_fixed_blocks();
 
     //Place the blocks in sorted order
