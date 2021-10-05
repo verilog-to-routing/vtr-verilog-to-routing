@@ -908,7 +908,7 @@ void verify_hard_blocks(t_hard_block_recog* module_hard_block_node_refs_and_info
     
     If we find that the the hard block instance has a port or more that is unassigned, we go through all the ports and throw an error on the first unassgined port.
     */
-    if (((list_of_hard_block_instances->begin())->hard_block_ports_not_assigned) != 0)
+    if (!(list_of_hard_block_instances->empty()) && (((list_of_hard_block_instances->begin())->hard_block_ports_not_assigned) != 0))
     {
         incomplete_hard_block_instance = (list_of_hard_block_instances->begin())->hard_block_instance_node_reference;
         
