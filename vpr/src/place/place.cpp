@@ -911,6 +911,11 @@ void try_place(const t_placer_opts& placer_opts,
     }
 #endif
 
+    // Update physical pin values
+    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id);
+    }
+
     check_place(costs, place_delay_model.get(), placer_criticalities.get(),
                 placer_opts.place_algorithm);
 

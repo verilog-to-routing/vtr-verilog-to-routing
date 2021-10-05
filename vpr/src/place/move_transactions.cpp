@@ -37,21 +37,16 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
-    bool sync_pins = false;
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
     //yet since we don't know whether the swap will be accepted
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
-        //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
-        if (device_ctx.grid[place_ctx.block_locs[blk].loc.x][place_ctx.block_locs[blk].loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].new_loc.x][blocks_affected.moved_blocks[iblk].new_loc.y].type) {
-            sync_pins = true;
-        }
-
         place_ctx.block_locs[blk].loc = blocks_affected.moved_blocks[iblk].new_loc;
 
-        if (sync_pins) {
+        //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
+        if (device_ctx.grid[blocks_affected.moved_blocks[iblk].old_loc.x][blocks_affected.moved_blocks[iblk].old_loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].new_loc.x][blocks_affected.moved_blocks[iblk].new_loc.y].type) {
             place_sync_external_block_connections(blk);
         }
     }
@@ -90,7 +85,6 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
-    bool sync_pins = false;
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -98,14 +92,10 @@ void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
 
         t_pl_loc old = blocks_affected.moved_blocks[iblk].old_loc;
 
-        //if physical tile type of old location does not equal physical tile type of current location, sync the physical pins
-        if (device_ctx.grid[place_ctx.block_locs[blk].loc.x][place_ctx.block_locs[blk].loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].old_loc.x][blocks_affected.moved_blocks[iblk].old_loc.y].type) {
-            sync_pins = true;
-        }
-
         place_ctx.block_locs[blk].loc = old;
 
-        if (sync_pins) {
+        //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
+        if (device_ctx.grid[blocks_affected.moved_blocks[iblk].old_loc.x][blocks_affected.moved_blocks[iblk].old_loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].new_loc.x][blocks_affected.moved_blocks[iblk].new_loc.y].type) {
             place_sync_external_block_connections(blk);
         }
 
