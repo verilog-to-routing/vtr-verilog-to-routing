@@ -39,14 +39,16 @@ constexpr int INVALID_X = -1;
  * Checks that the placement location is legal for each macro member by applying
  * the member's offset to the head position and checking that the resulting
  * spot is free, on the chip, etc.
+ * Returns true if the macro can be placed at the given head position, false if not.
  */
-static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
+static bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
 
 /*
  * Places the macro if the head position passed in is legal, and all the resulting
  * member positions are legal
+ * Returns true if macro was placed, false if not.
  */
-static int try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos);
+static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos);
 
 /*
  * Control routine for placing a macro - first calls random placement for the max number of tries,
@@ -104,13 +106,7 @@ static bool is_loc_on_chip(t_pl_loc& loc) {
 static bool is_block_placed(ClusterBlockId blk_id) {
     auto& place_ctx = g_vpr_ctx.placement();
 
-    bool placed = true;
-
-    if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
-        placed = false;
-    }
-
-    return placed;
+    return (!(place_ctx.block_locs[blk_id].loc.x == INVALID_X));
 }
 
 static bool try_random_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type) {
@@ -261,7 +257,7 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
     return placed;
 }
 
-static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
+static bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -271,7 +267,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
     // Every macro can be placed until proven otherwise
-    int macro_can_be_placed = true;
+    bool mac_can_be_placed = true;
 
     //Check whether macro contains blocks with floorplan constraints
     bool macro_constrained = is_macro_constrained(pl_macro);
@@ -282,7 +278,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
 
         //Check that the member location is on the grid
         if (!is_loc_on_chip(member_pos)) {
-            macro_can_be_placed = false;
+            mac_can_be_placed = false;
             break;
         }
 
@@ -296,7 +292,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
         if (macro_constrained && imember == 0) {
             bool member_loc_good = cluster_floorplanning_legal(pl_macro.members[imember].blk_index, member_pos);
             if (!member_loc_good) {
-                macro_can_be_placed = false;
+                mac_can_be_placed = false;
                 break;
             }
         }
@@ -311,27 +307,27 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
             continue;
         } else {
             // Cant be placed here - skip to the next try
-            macro_can_be_placed = false;
+            mac_can_be_placed = false;
             break;
         }
     }
 
-    return (macro_can_be_placed);
+    return (mac_can_be_placed);
 }
 
-static int try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
+static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    int macro_placed = false;
+    bool macro_placed = false;
 
     // If that location is occupied, do nothing.
     if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.sub_tile] != EMPTY_BLOCK_ID) {
         return (macro_placed);
     }
 
-    int macro_can_be_placed = check_macro_can_be_placed(pl_macro, head_pos);
+    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos);
 
-    if (macro_can_be_placed) {
+    if (mac_can_be_placed) {
         // Place down the macro
         macro_placed = true;
         for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
