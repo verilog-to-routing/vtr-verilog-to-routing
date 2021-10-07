@@ -763,8 +763,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto node = (*rr_nodes_)[id];
         RRNodeId node_id = node.id();
 
+        rr_graph_builder_->set_node_type(node_id, from_uxsd_node_type(type));
         rr_graph_builder_->set_node_capacity(node_id, capacity);
-        node.set_type(from_uxsd_node_type(type));
 
         switch (rr_graph.node_type(node.id())) {
             case CHANX:

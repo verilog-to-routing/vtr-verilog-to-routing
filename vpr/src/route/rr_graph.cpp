@@ -1406,7 +1406,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
             }
 
             L_rr_node.set_node_cost_index(inode, RRIndexedDataId(SOURCE_COST_INDEX));
-            L_rr_node.set_node_type(inode, SOURCE);
+            rr_graph_builder.set_node_type(inode, SOURCE);
         } else { /* SINK */
             VTR_ASSERT(class_inf[iclass].type == RECEIVER);
             inode = rr_graph_builder.node_lookup().find_node(i, j, SINK, iclass);
@@ -1424,7 +1424,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
              * - set_node_type(RRNodeId, t_rr_type);
              */
             L_rr_node.set_node_cost_index(inode, RRIndexedDataId(SINK_COST_INDEX));
-            L_rr_node.set_node_type(inode, SINK);
+            rr_graph_builder.set_node_type(inode, SINK);
         }
 
         /* Things common to both SOURCEs and SINKs.   */
@@ -1459,7 +1459,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                 rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
 
                                 L_rr_node.set_node_cost_index(inode, RRIndexedDataId(IPIN_COST_INDEX));
-                                L_rr_node.set_node_type(inode, IPIN);
+                                rr_graph_builder.set_node_type(inode, IPIN);
                             }
                         } else {
                             VTR_ASSERT(class_inf[iclass].type == DRIVER);
@@ -1471,7 +1471,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             if (inode) {
                                 //Initially left unconnected
                                 L_rr_node.set_node_cost_index(inode, RRIndexedDataId(OPIN_COST_INDEX));
-                                L_rr_node.set_node_type(inode, OPIN);
+                                rr_graph_builder.set_node_type(inode, OPIN);
                             }
                         }
 
@@ -1672,7 +1672,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         L_rr_node.set_node_rc_index(node, find_create_rr_rc_data(R, C));
 
         L_rr_node.set_node_ptc_num(node, track);
-        L_rr_node.set_node_type(node, chan_type);
+        rr_graph_builder.set_node_type(node, chan_type);
         L_rr_node.set_node_direction(node, seg_details[track].direction());
     }
 }

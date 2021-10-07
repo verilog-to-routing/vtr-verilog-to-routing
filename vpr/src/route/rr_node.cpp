@@ -51,10 +51,6 @@ bool t_rr_node::validate() const {
     return true;
 }
 
-void t_rr_node::set_type(t_rr_type new_type) {
-    storage_->set_node_type(id_, new_type);
-}
-
 void t_rr_node::set_ptc_num(short new_ptc_num) {
     storage_->set_node_ptc_num(id_, new_ptc_num);
 }

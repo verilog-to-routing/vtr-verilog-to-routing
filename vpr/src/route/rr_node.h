@@ -108,8 +108,6 @@ class t_rr_node {
     bool validate() const;
 
   public: //Mutators
-    void set_type(t_rr_type new_type);
-
     void set_ptc_num(short);
     void set_pin_num(short);   //Same as set_ptc_num() by checks type() is consistent
     void set_track_num(short); //Same as set_ptc_num() by checks type() is consistent
