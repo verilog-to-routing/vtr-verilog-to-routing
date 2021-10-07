@@ -338,8 +338,7 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
             set_block_location(iblk, member_pos);
 
         } // Finish placing all the members in the macro
-
-    } // End of this choice of legal_pos
+    }
 
     return (macro_placed);
 }
