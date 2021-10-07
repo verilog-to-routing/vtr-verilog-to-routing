@@ -101,6 +101,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
                                                                              const int num_seg_types);
 
 static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
+                                 const RRGraphView& rr_graph,
                                  const int i,
                                  const int j,
                                  const e_side side,
@@ -116,6 +117,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const int num_seg_types);
 
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
+                                  const RRGraphView& rr_graph,
                                   const int i,
                                   const int j,
                                   const e_side side,
@@ -147,6 +149,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
+                                                                  const RRGraphView& rr_graph,
                                                                   const int num_seg_types,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -677,7 +680,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     bool Fc_clipped = false;
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
-        device_ctx.rr_nodes, segment_inf.size(),
+        device_ctx.rr_nodes, device_ctx.rr_graph, segment_inf.size(),
         chan_details_x, chan_details_y,
         track_to_pin_lookup, opin_to_track_map,
         switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
@@ -1125,6 +1128,7 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
  * appropriate values.  Everything up to this was just a prelude!      */
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
+                                                                  const RRGraphView& rr_graph,
                                                                   const int num_seg_types,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -1185,14 +1189,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         for (size_t j = 0; j < grid.height(); ++j) {
             for (e_side side : SIDES) {
                 if (BI_DIRECTIONAL == directionality) {
-                    build_bidir_rr_opins(rr_graph_builder, i, j, side,
+                    build_bidir_rr_opins(rr_graph_builder, rr_graph, i, j, side,
                                          opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x, chan_details_y,
                                          grid,
                                          directs, num_directs, clb_to_clb_directs, num_seg_types);
                 } else {
                     VTR_ASSERT(UNI_DIRECTIONAL == directionality);
                     bool clipped;
-                    build_unidir_rr_opins(rr_graph_builder, i, j, side, grid, Fc_out, max_chan_width,
+                    build_unidir_rr_opins(rr_graph_builder, rr_graph, i, j, side, grid, Fc_out, max_chan_width,
                                           chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
                                           rr_edges_to_create, &clipped,
                                           directs, num_directs, clb_to_clb_directs, num_seg_types);
@@ -1265,6 +1269,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 }
 
 static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
+                                 const RRGraphView& rr_graph,
                                  const int i,
                                  const int j,
                                  const e_side side,
@@ -1278,7 +1283,6 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const int num_directs,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
                                  const int num_seg_types) {
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     //Don't connect pins which are not adjacent to channels around the perimeter
     if ((i == 0 && side != RIGHT)
         || (i == int(grid.width() - 1) && side != LEFT)
@@ -2469,6 +2473,7 @@ std::string describe_rr_node(int inode) {
 }
 
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
+                                  const RRGraphView& rr_graph,
                                   const int i,
                                   const int j,
                                   const e_side side,
@@ -2490,7 +2495,6 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
      * grid location (i,j) and grid tile side
      */
 
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     *Fc_clipped = false;
 
     auto type = grid[i][j].type;
