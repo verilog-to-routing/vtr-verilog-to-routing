@@ -2494,7 +2494,6 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
      * This routine adds the edges from opins to channels at the specified
      * grid location (i,j) and grid tile side
      */
-
     *Fc_clipped = false;
 
     auto type = grid[i][j].type;

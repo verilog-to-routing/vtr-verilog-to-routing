@@ -33,7 +33,7 @@ override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefil
 #Are we doing a strict (i.e. warnings as errors) build?
 ifneq (,$(findstring strict,$(BUILD_TYPE)))
 	#Configure for strict build with VPR warning treated as errors
-override CMAKE_PARAMS := -DVTR_ENABLE_STRICT_COMPILE=off ${CMAKE_PARAMS}
+override CMAKE_PARAMS := -DVTR_ENABLE_STRICT_COMPILE=on ${CMAKE_PARAMS}
 endif #Strict build type
 
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
