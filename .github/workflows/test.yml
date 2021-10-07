@@ -140,7 +140,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: failed_${{matrix.name}}_regression_log
+        name: ${{matrix.name}}_regression_log
         path: |
           vtr_flow/**/*.log
           vtr_flow/**/*.out
