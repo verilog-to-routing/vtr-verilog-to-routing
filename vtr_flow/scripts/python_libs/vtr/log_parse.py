@@ -301,6 +301,9 @@ def load_script_param(script_param):
         script_param = script_param.replace(" ", "_")
     else:
         script_param = "common"
+    for spec_char in [":", "<", ">", "|", "*", "?"]:
+        # replaced to create valid URL path
+        script_param = script_param.replace(spec_char, "_")
     return script_param
 
 

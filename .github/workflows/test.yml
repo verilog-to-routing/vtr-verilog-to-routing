@@ -137,6 +137,17 @@ jobs:
         ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: failed_${{matrix.name}}_regression_log
+        path: |
+          vtr_flow/**/*.log
+          vtr_flow/**/*.out
+          vtr_flow/**/*.blif
+          vtr_flow/**/*.p
+          vtr_flow/**/*.net
+          vtr_flow/**/*.r
 
   Sanitized:
     runs-on: ubuntu-18.04
@@ -185,7 +196,7 @@ jobs:
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
 
-  
+
   VQM2BLIF:
     name: 'VQM2BLIF Basic Tests'
     runs-on: ubuntu-18.04
