@@ -410,7 +410,7 @@ class RRGraph {
      * when used in evaluate different routing paths
      * See cross-reference section in this header file for more details
      */
-    short node_cost_index(const RRNodeId& node) const;
+    RRIndexedDataId node_cost_index(const RRNodeId& node) const;
 
     /* Get the directionality of a node
      * see node coordinate for details 
@@ -433,12 +433,6 @@ class RRGraph {
      *
      */
     e_side node_side(const RRNodeId& node) const;
-
-    /* Get resistance of a node, used to built RC tree for timing analysis */
-    float node_R(const RRNodeId& node) const;
-
-    /* Get capacitance of a node, used to built RC tree for timing analysis */
-    float node_C(const RRNodeId& node) const;
 
     /* Get segment id of a node, containing the information of the routing
      * segment that the node represents. See more details in the data structure t_segment_inf
@@ -675,7 +669,7 @@ class RRGraph {
 
     /* Set the routing cost index for node, see node_cost_index() for details */
     /* TODO: the cost index should be changed to a StrongId!!! */
-    void set_node_cost_index(const RRNodeId& node, const short& cost_index);
+    void set_node_cost_index(const RRNodeId& node, const RRIndexedDataId& cost_index);
 
     /* Set the directionality for a node, only applicable to CHANX and CHANY */
     void set_node_direction(const RRNodeId& node, const Direction& direction);

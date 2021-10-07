@@ -1,7 +1,7 @@
 {
     "always/case_default/no_arch": {
         "test_name": "always/case_default/no_arch",
-        "blif": "case_default.blif",
+        "generated_blif": "case_default_generated.blif",
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 8.8,
         "simulation_time(ms)": 2.9,
@@ -16,7 +16,7 @@
     },
     "always/posedge/no_arch": {
         "test_name": "always/posedge/no_arch",
-        "blif": "posedge.blif",
+        "generated_blif": "posedge_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 4,
         "simulation_time(ms)": 0.7,
@@ -33,7 +33,7 @@
     },
     "always/always_clk/no_arch": {
         "test_name": "always/always_clk/no_arch",
-        "blif": "always_clk.blif",
+        "generated_blif": "always_clk_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -51,7 +51,7 @@
     },
     "always/always_posedge_negedge/no_arch": {
         "test_name": "always/always_posedge_negedge/no_arch",
-        "blif": "always_posedge_negedge.blif",
+        "generated_blif": "always_posedge_negedge_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -69,7 +69,7 @@
     },
     "always/always_asterisk_event/no_arch": {
         "test_name": "always/always_asterisk_event/no_arch",
-        "blif": "always_asterisk_event.blif",
+        "generated_blif": "always_asterisk_event_generated.blif",
         "warnings": [
             "[OUTPUT_BLIF] Vector 0 equivalent but output vector has bits set when expecting don't care :"
         ],
@@ -87,7 +87,7 @@
     },
     "always/always_lone_asterisk/no_arch": {
         "test_name": "always/always_lone_asterisk/no_arch",
-        "blif": "always_lone_asterisk.blif",
+        "generated_blif": "always_lone_asterisk_generated.blif",
         "warnings": [
             "[OUTPUT_BLIF] Vector 0 equivalent but output vector has bits set when expecting don't care :"
         ],
@@ -105,7 +105,7 @@
     },
     "always/always_or_event/no_arch": {
         "test_name": "always/always_or_event/no_arch",
-        "blif": "always_or_event.blif",
+        "generated_blif": "always_or_event_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -124,7 +124,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

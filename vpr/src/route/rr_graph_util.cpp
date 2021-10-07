@@ -16,12 +16,13 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
      * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     if (from_rr_type == CHANX)
-        return (device_ctx.rr_nodes[to_node].xlow());
+        return (rr_graph.node_xlow(RRNodeId(to_node)));
     else
         /* CHANY */
-        return (device_ctx.rr_nodes[to_node].ylow());
+        return (rr_graph.node_ylow(RRNodeId(to_node)));
 }
 
 int seg_index_of_sblock(int from_node, int to_node) {
@@ -42,12 +43,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
 
     if (from_rr_type == CHANX) {
         if (to_rr_type == CHANY) {
-            return (device_ctx.rr_nodes[to_node].xlow());
+            return (rr_graph.node_xlow(RRNodeId(to_node)));
         } else if (to_rr_type == CHANX) {
-            if (device_ctx.rr_nodes[to_node].xlow() > device_ctx.rr_nodes[from_node].xlow()) { /* Going right */
-                return (device_ctx.rr_nodes[from_node].xhigh());
+            if (rr_graph.node_xlow(RRNodeId(to_node)) > rr_graph.node_xlow(RRNodeId(from_node))) { /* Going right */
+                return (rr_graph.node_xhigh(RRNodeId(from_node)));
             } else { /* Going left */
-                return (device_ctx.rr_nodes[to_node].xhigh());
+                return (rr_graph.node_xhigh(RRNodeId(to_node)));
             }
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -59,12 +60,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
     /* End from_rr_type is CHANX */
     else if (from_rr_type == CHANY) {
         if (to_rr_type == CHANX) {
-            return (device_ctx.rr_nodes[to_node].ylow());
+            return (rr_graph.node_ylow(RRNodeId(to_node)));
         } else if (to_rr_type == CHANY) {
-            if (device_ctx.rr_nodes[to_node].ylow() > device_ctx.rr_nodes[from_node].ylow()) { /* Going up */
-                return (device_ctx.rr_nodes[from_node].yhigh());
+            if (rr_graph.node_ylow(RRNodeId(to_node)) > rr_graph.node_ylow(RRNodeId(from_node))) { /* Going up */
+                return (rr_graph.node_yhigh(RRNodeId(from_node)));
             } else { /* Going down */
-                return (device_ctx.rr_nodes[to_node].yhigh());
+                return (rr_graph.node_yhigh(RRNodeId(to_node)));
             }
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -156,20 +157,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
 
     graph.reorder(dest_order, src_order);
 
-    // update rr_node_indices, a map to optimize rr_index lookups
-    for (auto& grid : device_ctx.rr_node_indices) {
-        for (size_t x = 0; x < grid.dim_size(0); x++) {
-            for (size_t y = 0; y < grid.dim_size(1); y++) {
-                for (size_t s = 0; s < grid.dim_size(2); s++) {
-                    for (auto& node : grid[x][y][s]) {
-                        if (node != OPEN) {
-                            node = size_t(dest_order[RRNodeId(node)]);
-                        }
-                    }
-                }
-            }
-        }
-    }
+    device_ctx.rr_graph_builder.node_lookup().reorder(dest_order);
 
     device_ctx.rr_node_metadata.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
     device_ctx.rr_edge_metadata.remap_keys([&](std::tuple<int, int, short> edge) {

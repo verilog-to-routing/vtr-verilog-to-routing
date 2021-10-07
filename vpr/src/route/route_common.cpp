@@ -191,7 +191,7 @@ void get_serial_num() {
         while (tptr != nullptr) {
             inode = tptr->index;
             serial_num += (size_t(net_id) + 1)
-                          * (device_ctx.rr_nodes[inode].xlow() * (device_ctx.grid.width()) - device_ctx.rr_nodes[inode].yhigh());
+                          * (rr_graph.node_xlow(RRNodeId(inode)) * (device_ctx.grid.width()) - rr_graph.node_yhigh(RRNodeId(inode)));
 
             serial_num -= device_ctx.rr_nodes[inode].ptc_num() * (size_t(net_id) + 1) * 10;
 
@@ -1143,31 +1143,29 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
     int max_dim = std::max<int>(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
     bb_factor = std::min(bb_factor, max_dim);
 
-    int driver_rr = route_ctx.net_rr_terminals[net_id][0];
-    const t_rr_node& source_node = device_ctx.rr_nodes[driver_rr];
-    VTR_ASSERT(rr_graph.node_type(RRNodeId(driver_rr)) == SOURCE);
+    RRNodeId driver_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][0]);
+    VTR_ASSERT(rr_graph.node_type(driver_rr) == SOURCE);
 
-    VTR_ASSERT(source_node.xlow() <= source_node.xhigh());
-    VTR_ASSERT(source_node.ylow() <= source_node.yhigh());
+    VTR_ASSERT(rr_graph.node_xlow(driver_rr) <= rr_graph.node_xhigh(driver_rr));
+    VTR_ASSERT(rr_graph.node_ylow(driver_rr) <= rr_graph.node_yhigh(driver_rr));
 
-    int xmin = source_node.xlow();
-    int ymin = source_node.ylow();
-    int xmax = source_node.xhigh();
-    int ymax = source_node.yhigh();
+    int xmin = rr_graph.node_xlow(driver_rr);
+    int ymin = rr_graph.node_ylow(driver_rr);
+    int xmax = rr_graph.node_xhigh(driver_rr);
+    int ymax = rr_graph.node_yhigh(driver_rr);
 
     auto net_sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
-        int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
-        const t_rr_node& sink_node = device_ctx.rr_nodes[sink_rr];
-        VTR_ASSERT(rr_graph.node_type(RRNodeId(sink_rr)) == SINK);
+        RRNodeId sink_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][ipin]);
+        VTR_ASSERT(rr_graph.node_type(sink_rr) == SINK);
 
-        VTR_ASSERT(sink_node.xlow() <= sink_node.xhigh());
-        VTR_ASSERT(sink_node.ylow() <= sink_node.yhigh());
+        VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
+        VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
-        xmin = std::min<int>(xmin, sink_node.xlow());
-        xmax = std::max<int>(xmax, sink_node.xhigh());
-        ymin = std::min<int>(ymin, sink_node.ylow());
-        ymax = std::max<int>(ymax, sink_node.yhigh());
+        xmin = std::min<int>(xmin, rr_graph.node_xlow(sink_rr));
+        xmax = std::max<int>(xmax, rr_graph.node_xhigh(sink_rr));
+        ymin = std::min<int>(ymin, rr_graph.node_ylow(sink_rr));
+        ymax = std::max<int>(ymax, rr_graph.node_yhigh(sink_rr));
     }
 
     /* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
@@ -1238,16 +1236,16 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                 while (tptr != nullptr) {
                     int inode = tptr->index;
                     t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
-                    int ilow = device_ctx.rr_nodes[inode].xlow();
-                    int jlow = device_ctx.rr_nodes[inode].ylow();
+                    int ilow = rr_graph.node_xlow(RRNodeId(inode));
+                    int jlow = rr_graph.node_ylow(RRNodeId(inode));
 
                     fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
                             device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
 
-                    if ((ilow != device_ctx.rr_nodes[inode].xhigh())
-                        || (jlow != device_ctx.rr_nodes[inode].yhigh()))
-                        fprintf(fp, "to (%d,%d) ", device_ctx.rr_nodes[inode].xhigh(),
-                                device_ctx.rr_nodes[inode].yhigh());
+                    if ((ilow != rr_graph.node_xhigh(RRNodeId(inode)))
+                        || (jlow != rr_graph.node_yhigh(RRNodeId(inode))))
+                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(RRNodeId(inode)),
+                                rr_graph.node_yhigh(RRNodeId(inode)));
 
                     switch (rr_type) {
                         case IPIN:

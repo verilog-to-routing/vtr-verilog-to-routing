@@ -102,6 +102,7 @@ static void do_one_route(int source_node, int sink_node,
             device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_nodes,
+            &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
             device_ctx.rr_switch_inf,
             g_vpr_ctx.mutable_routing().rr_node_route_inf);
@@ -170,7 +171,7 @@ static void profile_source(int source_rr_node,
             for (int sink_ptc : best_sink_ptcs) {
                 VTR_ASSERT(sink_ptc != OPEN);
 
-                int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
+                int sink_rr_node = size_t(device_ctx.rr_graph.node_lookup().find_node(sink_x, sink_y, SINK, sink_ptc));
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists

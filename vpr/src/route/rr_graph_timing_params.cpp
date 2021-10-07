@@ -49,7 +49,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         //The C may have already been partly initialized (e.g. with metal capacitance)
-        rr_node_C[inode] += device_ctx.rr_nodes[inode].C();
+        rr_node_C[inode] += rr_graph.node_C(RRNodeId(inode));
 
         from_rr_type = rr_graph.node_type(RRNodeId(inode));
 
@@ -130,11 +130,11 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
              * }     */
 
             if (from_rr_type == CHANX) {
-                iseg_low = device_ctx.rr_nodes[inode].xlow();
-                iseg_high = device_ctx.rr_nodes[inode].xhigh();
+                iseg_low = rr_graph.node_xlow(RRNodeId(inode));
+                iseg_high = rr_graph.node_xhigh(RRNodeId(inode));
             } else { /* CHANY */
-                iseg_low = device_ctx.rr_nodes[inode].ylow();
-                iseg_high = device_ctx.rr_nodes[inode].yhigh();
+                iseg_low = rr_graph.node_ylow(RRNodeId(inode));
+                iseg_high = rr_graph.node_yhigh(RRNodeId(inode));
             }
 
             for (icblock = iseg_low; icblock <= iseg_high; icblock++) {
@@ -191,7 +191,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
     //Create the final flywieghted t_rr_rc_data
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        mutable_device_ctx.rr_nodes[inode].set_rc_index(find_create_rr_rc_data(device_ctx.rr_nodes[inode].R(), rr_node_C[inode]));
+        mutable_device_ctx.rr_nodes[inode].set_rc_index(find_create_rr_rc_data(rr_graph.node_R(RRNodeId(inode)), rr_node_C[inode]));
     }
 
     free(Couts_to_add);

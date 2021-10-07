@@ -37,11 +37,19 @@ static cairo_surface_t *create_surface(GtkWidget *widget)
   // Cairo image surfaces are more efficient than normal Cairo surfaces
   // However, you cannot use X11 functions to draw on image surfaces
 #ifdef EZGL_USE_X11
-  return gdk_window_create_similar_surface(parent_window, CAIRO_CONTENT_COLOR_ALPHA, width, height);
+  cairo_surface_t *p_surface = gdk_window_create_similar_surface(
+      parent_window, CAIRO_CONTENT_COLOR_ALPHA, width, height);
 #else
-  return gdk_window_create_similar_image_surface(
+  cairo_surface_t *p_surface = gdk_window_create_similar_image_surface(
       parent_window, CAIRO_FORMAT_ARGB32, width, height, 0);
 #endif
+
+  // On HiDPI displays, Cairos surfaces are scaled to 2x or more
+  // However, EZGL doesn't support scaling yet
+  // Force the scaling factor to 1 for both x and y
+  cairo_surface_set_device_scale(p_surface, 1, 1);
+
+  return p_surface;
 }
 
 static cairo_t *create_context(cairo_surface_t *p_surface)

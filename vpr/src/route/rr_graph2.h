@@ -5,22 +5,14 @@
 #include "build_switchblocks.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_util.h"
+#include "rr_graph_view.h"
 #include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
 
 /******************* Types shared by rr_graph2 functions *********************/
 
-enum e_seg_details_type {
-    SEG_DETAILS_X,
-    SEG_DETAILS_Y
-};
-
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
-
-struct t_opin_connections_scratchpad {
-    std::array<std::vector<int>, 8> scratch;
-};
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
@@ -31,28 +23,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y);
 
-bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes);
-
-int get_rr_node_index(int x,
-                      int y,
-                      t_rr_type rr_type,
-                      int ptc,
-                      const t_rr_node_indices& L_rr_node_indices);
-
-//Returns all the rr nodes associated with the specified coordinate (i.e. accross sides)
-void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
-                         int x,
-                         int y,
-                         t_rr_type rr_type,
-                         int ptc,
-                         std::vector<int>* indices);
-
-void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
-                         int x,
-                         int y,
-                         t_rr_type rr_type,
-                         std::vector<int>* indices,
-                         e_side side = NUM_SIDES);
+bool verify_rr_node_indices(const DeviceGrid& grid,
+                            const RRGraphView& rr_graph,
+                            const t_rr_graph_storage& rr_nodes);
 
 //Returns all x-channel or y-channel wires at the specified location
 std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
@@ -93,7 +66,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const t_chan_width* nodes_per_chan,
                                  const int num_seg_details,
                                  const t_seg_details* seg_details,
-                                 const enum e_seg_details_type seg_details_type);
+                                 const enum e_parallel_axis seg_details_type);
 void adjust_chan_details(const DeviceGrid& grid,
                          const t_chan_width* nodes_per_chan,
                          t_chan_details& chan_details_x,
@@ -103,7 +76,7 @@ void adjust_seg_details(const int x,
                         const DeviceGrid& grid,
                         const t_chan_width* nodes_per_chan,
                         t_chan_details& chan_details,
-                        const enum e_seg_details_type seg_details_type);
+                        const enum e_parallel_axis seg_details_type);
 
 void free_chan_details(t_chan_details& chan_details_x,
                        t_chan_details& chan_details_y);
@@ -152,8 +125,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 vtr::NdMatrix<int, 3>& Fc_ofs,
                                 const int max_len,
                                 const int max_chan_width,
-                                bool* Fc_clipped,
-                                t_opin_connections_scratchpad* scratchpad);
+                                bool* Fc_clipped);
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       int seg,
@@ -188,8 +160,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_chan_details& to_chan_details,
                         const enum e_directionality directionality,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        t_sb_connection_map* sb_conn_map,
-                        t_opin_connections_scratchpad* scratchpad);
+                        t_sb_connection_map* sb_conn_map);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const int max_chan_width);
@@ -202,8 +173,7 @@ void load_sblock_pattern_lookup(const int i,
                                 const t_chan_details& chan_details_y,
                                 const int Fs,
                                 const enum e_switch_block_type switch_block_type,
-                                t_sblock_pattern& sblock_pattern,
-                                t_opin_connections_scratchpad* scratchpad);
+                                t_sblock_pattern& sblock_pattern);
 
 std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
                                             const std::vector<t_segment_inf>& segment_inf,

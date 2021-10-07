@@ -1,6 +1,6 @@
 `define WIDTH 32
 
-module cmd_module (size,addr_key,sign_ext,result,en,clk,wren1,wren2,d1,d2);
+module cmd_module (addr,size,addr_key,sign_ext,result,en,clk,wren1,wren2,d1,d2);
 
 input[7:0] addr;
 input[1:0] size ;
@@ -21,6 +21,8 @@ assign addr2 = addr+1;
 wire [31:0] loaded_data;
 wire [31:0] dont_care;
 
+defparam dmem_replace.ADDR_WIDTH = 8;
+defparam dmem_replace.DATA_WIDTH = 32;
 dual_port_ram dmem_replace(
   .clk (clk),
   .we1(wren1),

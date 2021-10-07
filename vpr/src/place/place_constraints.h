@@ -8,6 +8,9 @@
 #include "move_transactions.h"
 #include "region.h"
 #include "clustered_netlist_utils.h"
+#include "partition_region.h"
+#include "place_macro.h"
+#include "grid_tile_lookup.h"
 
 #ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
 #    define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
@@ -112,5 +115,21 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
  * and loc is updated with the location covered by the PartitionRegion
  */
 bool is_pr_size_one(PartitionRegion& pr, t_logical_block_type_ptr block_type, t_pl_loc& loc);
+
+/*
+ * Returns the number of grid tiles that are covered by the partition region and
+ * compatible with the cluster's block type.
+ * Used prior to initial placement to help sort blocks based on how difficult they
+ * are to place.
+ */
+int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
+
+/*
+ * Return the floorplan score that will be used for sorting blocks during initial placement. This score is the
+ * total number of subtilesfor the block type in the grid, minus the number of subtiles in the block's floorplan PartitionRegion.
+ * The resulting number is the number of tiles outside the block's floorplan region, meaning the higher
+ * it is, the more difficult the block is to place.
+ */
+int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

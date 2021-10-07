@@ -34,7 +34,7 @@ float get_rr_cong_cost(int inode, float pres_fac);
 /* Returns the base cost of using this rr_node */
 inline float get_single_rr_cong_base_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+    auto cost_index = device_ctx.rr_graph.node_cost_index(RRNodeId(inode));
 
     return device_ctx.rr_indexed_data[cost_index].base_cost;
 }
@@ -78,12 +78,12 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
         pres_cost = 1.;
     }
 
-    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+    auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
 
     float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
 
     VTR_ASSERT_DEBUG_MSG(
-        cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_base_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac),
+        cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_acc_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac),
         "Single rr node congestion cost is inaccurate");
 
     return cost;

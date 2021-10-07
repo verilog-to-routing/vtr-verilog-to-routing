@@ -858,6 +858,7 @@ static void power_usage_routing(t_power_usage* power_usage,
     for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
         t_power_usage sub_power_usage;
         auto node = device_ctx.rr_nodes[rr_node_idx];
+        RRNodeId rr_node = RRNodeId(rr_node_idx);
         t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
         float C_wire;
         float buffer_size;
@@ -865,9 +866,9 @@ static void power_usage_routing(t_power_usage* power_usage,
         int switchbox_fanout;
         //float C_per_seg_split;
         int wire_length;
-        const t_edge_size node_fan_in = rr_graph.node_fan_in(RRNodeId(rr_node_idx));
+        const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_node);
 
-        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
+        switch (rr_graph.node_type(rr_node)) {
             case SOURCE:
             case SINK:
             case OPIN:
@@ -905,12 +906,12 @@ static void power_usage_routing(t_power_usage* power_usage,
                 VTR_ASSERT(node_power->in_prob);
 
                 wire_length = 0;
-                if (rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANX) {
-                    wire_length = node.xhigh() - node.xlow() + 1;
-                } else if (rr_graph.node_type(RRNodeId(rr_node_idx)) == CHANY) {
-                    wire_length = node.yhigh() - node.ylow() + 1;
+                if (rr_graph.node_type(rr_node) == CHANX) {
+                    wire_length = rr_graph.node_xhigh(rr_node) - rr_graph.node_xlow(rr_node) + 1;
+                } else if (rr_graph.node_type(rr_node) == CHANY) {
+                    wire_length = rr_graph.node_yhigh(rr_node) - rr_graph.node_ylow(rr_node) + 1;
                 }
-                int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+                int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_node)].seg_index;
                 C_wire = wire_length * device_ctx.rr_segments[seg_index].Cmetal;
                 //(double)power_ctx.commonly_used->tile_length);
                 VTR_ASSERT(node_power->selected_input < node_fan_in);

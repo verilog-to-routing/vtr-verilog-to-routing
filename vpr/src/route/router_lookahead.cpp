@@ -61,13 +61,13 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
         int num_segs_ortho_dir = 0;
         int num_segs_same_dir = get_expected_segs_to_target(node, target_node, &num_segs_ortho_dir);
 
-        int cost_index = device_ctx.rr_nodes.node_cost_index(node);
+        auto cost_index = rr_graph.node_cost_index(node);
         int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
         const auto& same_data = device_ctx.rr_indexed_data[cost_index];
-        const auto& ortho_data = device_ctx.rr_indexed_data[ortho_cost_index];
-        const auto& ipin_data = device_ctx.rr_indexed_data[IPIN_COST_INDEX];
-        const auto& sink_data = device_ctx.rr_indexed_data[SINK_COST_INDEX];
+        const auto& ortho_data = device_ctx.rr_indexed_data[RRIndexedDataId(ortho_cost_index)];
+        const auto& ipin_data = device_ctx.rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)];
+        const auto& sink_data = device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)];
 
         float cong_cost = num_segs_same_dir * same_data.base_cost
                           + num_segs_ortho_dir * ortho_data.base_cost
@@ -83,7 +83,7 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
 
         return std::make_pair(params.criticality * Tdel, (1 - params.criticality) * cong_cost);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-        return std::make_pair(0., device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+        return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
 
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);
@@ -113,23 +113,24 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
     const auto& rr_graph = device_ctx.rr_graph;
 
     t_rr_type rr_type;
-    int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
+    int target_x, target_y, num_segs_same_dir, ortho_cost_index;
+    RRIndexedDataId cost_index;
     int no_need_to_pass_by_clb;
     float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
 
-    target_x = device_ctx.rr_nodes.node_xlow(target_node);
-    target_y = device_ctx.rr_nodes.node_ylow(target_node);
+    target_x = rr_graph.node_xlow(target_node);
+    target_y = rr_graph.node_ylow(target_node);
 
-    cost_index = device_ctx.rr_nodes.node_cost_index(inode);
+    cost_index = rr_graph.node_cost_index(inode);
     inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
     ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
-    ortho_inv_length = device_ctx.rr_indexed_data[ortho_cost_index].inv_length;
+    ortho_inv_length = device_ctx.rr_indexed_data[RRIndexedDataId(ortho_cost_index)].inv_length;
     rr_type = rr_graph.node_type(inode);
 
     if (rr_type == CHANX) {
-        ylow = device_ctx.rr_nodes.node_ylow(inode);
-        xhigh = device_ctx.rr_nodes.node_xhigh(inode);
-        xlow = device_ctx.rr_nodes.node_xlow(inode);
+        ylow = rr_graph.node_ylow(inode);
+        xhigh = rr_graph.node_xhigh(inode);
+        xlow = rr_graph.node_xlow(inode);
 
         /* Count vertical (orthogonal to inode) segs first. */
 
@@ -154,9 +155,9 @@ static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int
             num_segs_same_dir = 0;
         }
     } else { /* inode is a CHANY */
-        ylow = device_ctx.rr_nodes.node_ylow(inode);
-        yhigh = device_ctx.rr_nodes.node_yhigh(inode);
-        xlow = device_ctx.rr_nodes.node_xlow(inode);
+        ylow = rr_graph.node_ylow(inode);
+        yhigh = rr_graph.node_yhigh(inode);
+        xlow = rr_graph.node_xlow(inode);
 
         /* Count horizontal (orthogonal to inode) segs first. */
 

@@ -11,9 +11,30 @@ echo "----------------------------------------"
 
 echo
 echo "========================================"
+echo "Update the CA certificates"
+echo "----------------------------------------"
+sudo apt-get install -y ca-certificates
+echo "----------------------------------------"
+sudo update-ca-certificates
+echo "----------------------------------------"
+
+echo
+echo "========================================"
+echo "Remove the expired letsencrypt.org cert "
+echo "----------------------------------------"
+sudo rm /usr/share/ca-certificates/mozilla/DST_Root_CA_X3.crt
+echo "----------------------------------------"
+sudo update-ca-certificates
+echo "----------------------------------------"
+wget https://helloworld.letsencrypt.org/ || true
+echo "----------------------------------------"
+
+
+echo
+echo "========================================"
 echo "Host adding PPAs"
 echo "----------------------------------------"
-wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
+wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
 sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
 echo "----------------------------------------"
 
@@ -56,6 +77,17 @@ sudo apt-get install -y \
         python3-yaml \
         qt5-default \
         virtualenv \
+        clang \
+	    libreadline-dev \
+        gawk \
+        tcl-dev \
+        libffi-dev \
+        xdot \
+        pkg-config \
+        libboost-system-dev \
+	    libboost-python-dev \
+        libboost-filesystem-dev \
+        zlib1g-dev \
         #Don't include libtbb-dev since it may increase memory usage
         #libtbb-dev \
 

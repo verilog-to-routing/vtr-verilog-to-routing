@@ -30,6 +30,8 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+bool coarsen_cleanup;
+
 /* Used in the nnode_t.node_data field to mark if the node was already visited
  * during a forward or backward sweep traversal or the removal phase */
 int _visited_forward, _visited_backward, _visited_removal;
@@ -71,8 +73,11 @@ void traverse_backward(nnode_t* node) {
     node->node_data = VISITED_BACKWARD;              // Mark as visited
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
-        for (int j = 0; j < node->input_pins[i]->net->num_driver_pins; j++) {  // ensure this net has a driver (i.e. skip undriven outputs)
-            traverse_backward(node->input_pins[i]->net->driver_pins[j]->node); // Visit the drivers of this node
+        // ensure this net has a driver (i.e. skip undriven outputs)
+        for (int j = 0; j < node->input_pins[i]->net->num_driver_pins; j++) {
+            if (node->input_pins[i]->net->driver_pins[j]->node)
+                // Visit the drivers of this node
+                traverse_backward(node->input_pins[i]->net->driver_pins[j]->node);
         }
     }
 }
@@ -169,7 +174,9 @@ void remove_unused_nodes(node_list_t* remove) {
         int i;
         for (i = 0; i < remove->node->num_input_pins; i++) {
             npin_t* input_pin = remove->node->input_pins[i];
-            input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL; // Remove the fanout pin from the net
+            /* Remove the fanout pin from the net */
+            if (input_pin)
+                input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL;
         }
         remove->node->node_data = VISITED_REMOVAL;
         remove = remove->next;

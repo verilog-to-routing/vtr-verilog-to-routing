@@ -198,11 +198,11 @@ std::string rr_node_arch_name(int inode) {
     std::string rr_node_arch_name;
     if (rr_graph.node_type(RRNodeId(inode)) == OPIN || rr_graph.node_type(RRNodeId(inode)) == IPIN) {
         //Pin names
-        auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_node.ptc_num());
     } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
         //Set of pins associated with SOURCE/SINK
-        auto type = device_ctx.grid[rr_node.xlow()][rr_node.ylow()].type;
+        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
         auto pin_names = block_type_class_index_to_pin_names(type, rr_node.ptc_num());
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_node.type_string();
@@ -216,7 +216,7 @@ std::string rr_node_arch_name(int inode) {
     } else {
         VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY);
         //Wire segment name
-        auto cost_index = rr_node.cost_index();
+        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
         rr_node_arch_name += device_ctx.rr_segments[seg_index].name;
@@ -1866,8 +1866,8 @@ void print_switch_usage() {
  * auto& device_ctx = g_vpr_ctx.device();
  * for (int inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
  * if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_node[inode].type() == CHANY) {
- * //int length = abs(device_ctx.rr_nodes[inode].get_xhigh() + rr_node[inode].get_yhigh()
- * //             - device_ctx.rr_nodes[inode].get_xlow() - rr_node[inode].get_ylow());
+ * //int length = abs(rr_graph.node_xhigh(RRNodeId(inode)) + rr_graph.node_yhigh(RRNodeId(inode))
+ * //             - rr_graph.node_xlow(RRNodeId(inode)) - rr_graph.node_ylow(RRNodeId(inode)));
  * int length = device_ctx.rr_nodes[inode].get_length();
  * if (rr_node_route_inf[inode].occ() > 0) {
  * if (used_wire_count.count(length) == 0)

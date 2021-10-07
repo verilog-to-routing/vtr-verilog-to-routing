@@ -301,8 +301,8 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                                  clock_graph);
 
             // connect drive point to each half rib using a directed switch
-            clock_graph.add_edge(rr_edges_to_create, drive_node_idx, left_node_idx, drive.switch_idx);
-            clock_graph.add_edge(rr_edges_to_create, drive_node_idx, right_node_idx, drive.switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx);
         }
     }
 }
@@ -317,10 +317,11 @@ int ClockRib::create_chanx_wire(int x_start,
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
     auto node = rr_nodes->back();
+    RRNodeId chanx_node = RRNodeId(node_index);
 
-    node.set_coordinates(x_start, y, x_end, y);
+    rr_graph_builder.set_node_coordinates(chanx_node, x_start, y, x_end, y);
     node.set_type(CHANX);
-    node.set_capacity(1);
+    rr_graph_builder.set_node_capacity(chanx_node, 1);
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
         x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal));
@@ -341,11 +342,10 @@ int ClockRib::create_chanx_wire(int x_start,
             VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
             break;
     }
-    node.set_cost_index(CHANX_COST_INDEX_START + seg_index); // Actual value set later
+    node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + seg_index)); // Actual value set later
 
     /* Add the node to spatial lookup */
     auto& rr_graph = (*rr_nodes);
-    RRNodeId chanx_node = RRNodeId(node_index);
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chanx_node); ix <= rr_graph.node_xhigh(chanx_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chanx_node); iy <= rr_graph.node_yhigh(chanx_node); ++iy) {
@@ -606,8 +606,8 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                  clock_graph);
 
             // connect drive point to each half spine using a directed switch
-            clock_graph.add_edge(rr_edges_to_create, drive_node_idx, left_node_idx, drive.switch_idx);
-            clock_graph.add_edge(rr_edges_to_create, drive_node_idx, right_node_idx, drive.switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(left_node_idx), drive.switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, RRNodeId(drive_node_idx), RRNodeId(right_node_idx), drive.switch_idx);
         }
     }
 }
@@ -623,10 +623,11 @@ int ClockSpine::create_chany_wire(int y_start,
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
     auto node = rr_nodes->back();
+    RRNodeId chany_node = RRNodeId(node_index);
 
-    node.set_coordinates(x, y_start, x, y_end);
+    rr_graph_builder.set_node_coordinates(chany_node, x, y_start, x, y_end);
     node.set_type(CHANY);
-    node.set_capacity(1);
+    rr_graph_builder.set_node_capacity(chany_node, 1);
     node.set_track_num(ptc_num);
     node.set_rc_index(find_create_rr_rc_data(
         y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal));
@@ -647,11 +648,10 @@ int ClockSpine::create_chany_wire(int y_start,
             VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
             break;
     }
-    node.set_cost_index(CHANX_COST_INDEX_START + num_segments + seg_index);
+    node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + num_segments + seg_index));
 
     /* Add the node to spatial lookup */
     auto& rr_graph = (*rr_nodes);
-    RRNodeId chany_node = RRNodeId(node_index);
     /* TODO: Will replace these codes with an API add_node_to_all_locs() of RRGraphBuilder */
     for (int ix = rr_graph.node_xlow(chany_node); ix <= rr_graph.node_xhigh(chany_node); ++ix) {
         for (int iy = rr_graph.node_ylow(chany_node); iy <= rr_graph.node_yhigh(chany_node); ++iy) {

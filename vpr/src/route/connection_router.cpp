@@ -384,10 +384,10 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
 
     t_bb target_bb;
     if (target_node != OPEN) {
-        target_bb.xmin = rr_nodes_.node_xlow(RRNodeId(target_node));
-        target_bb.ymin = rr_nodes_.node_ylow(RRNodeId(target_node));
-        target_bb.xmax = rr_nodes_.node_xhigh(RRNodeId(target_node));
-        target_bb.ymax = rr_nodes_.node_yhigh(RRNodeId(target_node));
+        target_bb.xmin = rr_graph_->node_xlow(RRNodeId(target_node));
+        target_bb.ymin = rr_graph_->node_ylow(RRNodeId(target_node));
+        target_bb.xmax = rr_graph_->node_xhigh(RRNodeId(target_node));
+        target_bb.ymax = rr_graph_->node_yhigh(RRNodeId(target_node));
     }
 
     //For each node associated with the current heap element, expand all of it's neighbors
@@ -446,10 +446,10 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                                             int target_node,
                                                             const t_bb target_bb) {
     RRNodeId to_node(to_node_int);
-    int to_xlow = rr_nodes_.node_xlow(to_node);
-    int to_ylow = rr_nodes_.node_ylow(to_node);
-    int to_xhigh = rr_nodes_.node_xhigh(to_node);
-    int to_yhigh = rr_nodes_.node_yhigh(to_node);
+    int to_xlow = rr_graph_->node_xlow(to_node);
+    int to_ylow = rr_graph_->node_ylow(to_node);
+    int to_xhigh = rr_graph_->node_xhigh(to_node);
+    int to_yhigh = rr_graph_->node_yhigh(to_node);
 
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
@@ -474,7 +474,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
      * more promising routes, but makes route-through (via CLBs) impossible.   *
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != OPEN) {
-        t_rr_type to_type = rr_nodes_.node_type(to_node);
+        t_rr_type to_type = rr_graph_->node_type(to_node);
         if (to_type == IPIN) {
             //Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
@@ -577,7 +577,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         if (rcv_path_manager.is_enabled() && current->path_data) {
             next_ptr->path_data->path_rr = current->path_data->path_rr;
             next_ptr->path_data->edge = current->path_data->edge;
-            next_ptr->path_data->path_rr.emplace_back(from_node);
+            next_ptr->path_data->path_rr.emplace_back(RRNodeId(from_node));
             next_ptr->path_data->edge.emplace_back(from_edge);
         }
 
@@ -686,12 +686,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     //To node info
-    auto rc_index = rr_nodes_.node_rc_index(RRNodeId(to_node));
+    auto rc_index = rr_graph_->node_rc_index(RRNodeId(to_node));
     float node_C = rr_rc_data_[rc_index].C;
     float node_R = rr_rc_data_[rc_index].R;
 
     //From node info
-    float from_node_R = rr_rc_data_[rr_nodes_.node_rc_index(RRNodeId(from_node))].R;
+    float from_node_R = rr_rc_data_[rr_graph_->node_rc_index(RRNodeId(from_node))].R;
 
     //Update R_upstream
     if (switch_buffered) {
@@ -745,8 +745,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
 
     if (cost_params.bend_cost != 0.) {
-        t_rr_type from_type = rr_nodes_.node_type(RRNodeId(from_node));
-        t_rr_type to_type = rr_nodes_.node_type(RRNodeId(to_node));
+        t_rr_type from_type = rr_graph_->node_type(RRNodeId(from_node));
+        t_rr_type to_type = rr_graph_->node_type(RRNodeId(to_node));
         if ((from_type == CHANX && to_type == CHANY) || (from_type == CHANY && to_type == CHANX)) {
             to->backward_path_cost += cost_params.bend_cost; //Bend cost
         }
@@ -896,16 +896,16 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //Determine which bin the target node is located in
     RRNodeId target_node_id(target_node);
 
-    int target_bin_x = grid_to_bin_x(rr_nodes_.node_xlow(target_node_id), spatial_rt_lookup);
-    int target_bin_y = grid_to_bin_y(rr_nodes_.node_ylow(target_node_id), spatial_rt_lookup);
+    int target_bin_x = grid_to_bin_x(rr_graph_->node_xlow(target_node_id), spatial_rt_lookup);
+    int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node_id), spatial_rt_lookup);
 
     int nodes_added = 0;
 
     t_bb highfanout_bb;
-    highfanout_bb.xmin = rr_nodes_.node_xlow(target_node_id);
-    highfanout_bb.xmax = rr_nodes_.node_xhigh(target_node_id);
-    highfanout_bb.ymin = rr_nodes_.node_ylow(target_node_id);
-    highfanout_bb.ymax = rr_nodes_.node_yhigh(target_node_id);
+    highfanout_bb.xmin = rr_graph_->node_xlow(target_node_id);
+    highfanout_bb.xmax = rr_graph_->node_xhigh(target_node_id);
+    highfanout_bb.ymin = rr_graph_->node_ylow(target_node_id);
+    highfanout_bb.ymax = rr_graph_->node_yhigh(target_node_id);
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
@@ -928,10 +928,10 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 
                 //Update Bounding Box
                 RRNodeId node(rt_node->inode);
-                highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_nodes_.node_xlow(node));
-                highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_nodes_.node_ylow(node));
-                highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_nodes_.node_xhigh(node));
-                highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_nodes_.node_yhigh(node));
+                highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_graph_->node_xlow(node));
+                highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
+                highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
+                highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
 
                 ++nodes_added;
             }
@@ -967,6 +967,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const DeviceGrid& grid,
     const RouterLookahead& router_lookahead,
     const t_rr_graph_storage& rr_nodes,
+    const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const std::vector<t_rr_switch_inf>& rr_switch_inf,
     std::vector<t_rr_node_route_inf>& rr_node_route_inf) {
@@ -976,6 +977,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 grid,
                 router_lookahead,
                 rr_nodes,
+                rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
                 rr_node_route_inf);
@@ -984,6 +986,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 grid,
                 router_lookahead,
                 rr_nodes,
+                rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
                 rr_node_route_inf);

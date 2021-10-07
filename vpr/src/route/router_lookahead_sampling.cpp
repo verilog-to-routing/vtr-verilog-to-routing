@@ -128,20 +128,20 @@ static uint64_t interleave(uint32_t x) {
 static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_segments) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& rr_nodes = device_ctx.rr_nodes;
+    RRNodeId rr_node = node.id();
 
-    if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) {
+    if (rr_graph.node_type(rr_node) != CHANX && rr_graph.node_type(rr_node) != CHANY) {
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
-    if (rr_graph.node_capacity(node.id()) == 0 || node.num_edges() == 0) {
+    if (rr_graph.node_capacity(rr_node) == 0 || node.num_edges() == 0) {
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
-    int x = rr_nodes.node_xlow(node.id());
-    int y = rr_nodes.node_ylow(node.id());
+    int x = rr_graph.node_xlow(rr_node);
+    int y = rr_graph.node_ylow(rr_node);
 
-    int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+    int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_node)].seg_index;
 
     VTR_ASSERT(seg_index != OPEN);
     VTR_ASSERT(seg_index < num_segments);
@@ -206,7 +206,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     for (auto& node : rr_nodes) {
         if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) continue;
         if (rr_graph.node_capacity(node.id()) == 0 || node.num_edges() == 0) continue;
-        int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+        int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(node.id())].seg_index;
 
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);

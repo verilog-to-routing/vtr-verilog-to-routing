@@ -17,6 +17,7 @@ RouterDelayProfiler::RouterDelayProfiler(
           g_vpr_ctx.device().grid,
           *lookahead,
           g_vpr_ctx.device().rr_nodes,
+          &g_vpr_ctx.device().rr_graph,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_switch_inf,
           g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
@@ -32,12 +33,12 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
     //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling Delay from %s at %d,%d (%s) to %s at %d,%d (%s)",
     //device_ctx.rr_nodes[source_node].type_string(),
-    //device_ctx.rr_nodes[source_node].xlow(),
-    //device_ctx.rr_nodes[source_node].ylow(),
+    //rr_graph.node_xlow(RRNodeId(source_node)),
+    //rr_graph.node_ylow(RRNodeId(source_node)),
     //rr_node_arch_name(source_node).c_str(),
     //device_ctx.rr_nodes[sink_node].type_string(),
-    //device_ctx.rr_nodes[sink_node].xlow(),
-    //device_ctx.rr_nodes[sink_node].ylow(),
+    //rr_graph.node_xlow(RRNodeId(sink_node)),
+    //rr_graph.node_ylow(RRNodeId(sink_node)),
     //rr_node_arch_name(sink_node).c_str()));
 
     t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
@@ -121,6 +122,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_nodes,
+        &g_vpr_ctx.device().rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
         routing_ctx.rr_node_route_inf);

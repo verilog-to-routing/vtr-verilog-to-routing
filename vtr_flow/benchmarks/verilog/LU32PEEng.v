@@ -2597,13 +2597,17 @@ module ram (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
 	wire [`RAMWIDTH-1:0] uselessdata;
  assign uselessdata = 1024'b0;
 wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
+
+ assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2637,13 +2641,17 @@ module ram1 (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
 	wire [`RAMWIDTH-1:0] uselessdata;
  assign uselessdata = 1024'b0;
 wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
+
+ assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2677,13 +2685,17 @@ module ram2 (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
 	wire [`RAMWIDTH-1:0] uselessdata;
  assign uselessdata = 1024'b0;
 wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
+
+ assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2717,13 +2729,16 @@ module ram3 (
 	output	[`RAMWIDTH-1:0]  q;
 	wire	[`RAMWIDTH-1:0]  value_out;
 	wire [`RAMWIDTH-1:0] subwire;
-	assign q = subwire | dummy;
 	wire [`RAMWIDTH-1:0] uselessdata;
  assign uselessdata = 1024'b0;
 wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
+ assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2760,9 +2775,12 @@ module top_ram (
 	wire [32-1:0] sub_wire0;
 	wire [32-1:0] q;
 	wire [32-1:0] junk_output;
-	assign q = sub_wire0 | dummy;
 	wire[32-1:0] dummy;
+	assign q = sub_wire0 | dummy;
 	assign dummy = junk_output & 32'b0;
+
+    defparam inst2.ADDR_WIDTH = 12;
+    defparam inst2.DATA_WIDTH = 32;        
  dual_port_ram inst2(
  .clk (clk),
  .we1(wren),
@@ -3249,38 +3267,54 @@ if (rdreq)
 	counter <= 0;
 else 
 	counter <= counter + 2'b01;
-if(counter == 0)
-	q[`rFIFOINPUTWIDTH-1:0] <= data_ram;
-else if (counter == 1)
+if(counter == 0) begin
+	q[`rFIFOINPUTWIDTH-1:0] <= data_ram;	
+end
+else if (counter == 1) begin
 	q[127:64] <= data_ram;
-else if (counter == 2)
+end
+else if (counter == 2) begin
 	q[191:128] <= data_ram;
-else if (counter == 3)
+end
+else if (counter == 3) begin
 	q[255:192] <= data_ram;
-else if (counter == 4)
+end
+else if (counter == 4) begin
 	q[319:256] <= data_ram;
-else if (counter == 5)
+end
+else if (counter == 5) begin
 	q[383:320] <= data_ram;
-else if (counter == 6)
+end
+else if (counter == 6) begin
 	q[447:384] <= data_ram;
-else if (counter == 7)
+end
+else if (counter == 7) begin
 	q[511:448] <= data_ram;
-else if (counter == 8)
+end
+else if (counter == 8) begin
 	q[575:512] <= data_ram;
-else if (counter == 9)
+end
+else if (counter == 9) begin
 	q[639:576] <= data_ram;
-else if (counter == 10)
+end
+else if (counter == 10) begin
 	q[703:640] <= data_ram;
-else if (counter == 11)
+end
+else if (counter == 11) begin
 	q[767:704] <= data_ram;
-else if (counter == 12)
+end
+else if (counter == 12) begin
 	q[831:768] <= data_ram;
-else if (counter == 13)
+end
+else if (counter == 13) begin
 	q[895:832] <= data_ram;
-else if (counter == 14)
+end
+else if (counter == 14) begin
 	q[959:896] <= data_ram;
-else if (counter == 15)
+end
+else if (counter == 15) begin
 	q[1023:960] <= data_ram;
+end
 end
 always @ (posedge clk )
 begin // : STATUS_COUNTER
@@ -3290,6 +3324,8 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 64 ))
 		status_cnt <= status_cnt + 1'b1;
 end 
+  defparam ram_addr.ADDR_WIDTH = `rFIFORSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `rFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -3353,42 +3389,60 @@ begin  //READ_POINTER
 end
 always  @ (posedge clk )
 begin  //READ_DATA
-if (rdreq) 
+if (rdreq) begin 
 	counter <= 0;
-else 
+end 
+else begin 
 	counter <= counter + 2'b01;
-if(counter == 0)
+end 
+if(counter == 0) begin
 	q <= data_ram[63:0];
-else if(counter == 1)
+end
+else if(counter == 1) begin
 	q <= data_ram[127:64];
-else if(counter == 2)
+end
+else if(counter == 2) begin
 	q <= data_ram[191:128];
-else if(counter == 3)
+end
+else if(counter == 3) begin
 	q <= data_ram[255:192];
-else if(counter == 4)
+end
+else if(counter == 4) begin
 	q <= data_ram[319:256];
-else if(counter == 5)
+end
+else if(counter == 5) begin
 	q <= data_ram[383:320];
-else if(counter == 6)
+end
+else if(counter == 6) begin
 	q <= data_ram[447:384];
-else if(counter == 7)
+end
+else if(counter == 7) begin
 	q <= data_ram[511:448];
-else if(counter == 8)
+end
+else if(counter == 8) begin
 	q <= data_ram[575:512];
-else if(counter == 9)
+end
+else if(counter == 9) begin
 	q <= data_ram[639:576];
-else if(counter == 10)
+end
+else if(counter == 10) begin
 	q <= data_ram[703:640];
-else if(counter == 11)
+end
+else if(counter == 11) begin
 	q <= data_ram[767:704];
-else if(counter == 12)
+end
+else if(counter == 12) begin
 	q <= data_ram[831:768];
-else if(counter == 13)
+end
+else if(counter == 13) begin
 	q <= data_ram[895:832];
-else if(counter == 14)
+end
+else if(counter == 14) begin
 	q <= data_ram[959:896];
-else if(counter == 15)
+end
+else if(counter == 15) begin
 	q <= data_ram[1023:960];
+end	
 end
 always @ (posedge clk )
 begin // : STATUS_COUNTER
@@ -3399,6 +3453,9 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1'b1;
 end 
 assign usedw = status_cnt[`wFIFOSIZEWIDTH-1:0];
+
+  defparam ram_addr.ADDR_WIDTH = `wFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `wFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -3473,6 +3530,9 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 5'b10000))
 		status_cnt <= status_cnt + 1;
 end
+
+  defparam ram_addr.ADDR_WIDTH = `aFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `aFIFOWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -3543,6 +3603,8 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 16 ))
 		status_cnt <= status_cnt + 1'b1;
 end
+    defparam ram_addr.ADDR_WIDTH = `mFIFOSIZEWIDTH;
+    defparam ram_addr.DATA_WIDTH = `mFIFOWIDTH;
 	dual_port_ram ram_addr(
 	.we1      (wrreq)      , // write enable
 	.we2      (rdreq)       , // Read enable
@@ -4565,7 +4627,7 @@ module fpmul(clk, a, b, y_out, control, flags) ;
   
     flag		flager(invalid, overflow, inexact_or_shiftloss,  
 			shiftloss_or_inexact, 
-			/* tiny */ stilltiny_or_tiny_and_denormround,  
+			/* tiny */ still_tiny_or_tiny_and_denormround,  
 			specialcase, flags);  
 	  
  

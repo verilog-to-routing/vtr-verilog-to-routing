@@ -340,6 +340,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_nodes,
+        &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
         route_ctx.rr_node_route_inf);
@@ -1549,10 +1550,10 @@ void update_rr_base_costs(int fanout) {
     factor = sqrt(fanout);
 
     for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
-        if (device_ctx.rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
-            device_ctx.rr_indexed_data[index].base_cost = device_ctx.rr_indexed_data[index].saved_base_cost * factor;
+        if (device_ctx.rr_indexed_data[RRIndexedDataId(index)].T_quadratic > 0.) { /* pass transistor */
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost * factor;
         } else {
-            device_ctx.rr_indexed_data[index].base_cost = device_ctx.rr_indexed_data[index].saved_base_cost;
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost;
         }
     }
 }
@@ -1670,10 +1671,7 @@ static size_t calculate_wirelength_available() {
     for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
         const t_rr_type channel_type = rr_graph.node_type(RRNodeId(i));
         if (channel_type == CHANX || channel_type == CHANY) {
-            size_t length_x = device_ctx.rr_nodes[i].xhigh() - device_ctx.rr_nodes[i].xlow();
-            size_t length_y = device_ctx.rr_nodes[i].yhigh() - device_ctx.rr_nodes[i].ylow();
-
-            available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * (length_x + length_y + 1);
+            available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * rr_graph.node_length(RRNodeId(i));
         }
     }
     return available_wirelength;
@@ -1936,6 +1934,7 @@ static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& upd
 //Returns the bounding box of a net's used routing resources
 static t_bb calc_current_bb(const t_trace* head) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& grid = device_ctx.grid;
 
     t_bb bb;
@@ -1950,10 +1949,10 @@ static t_bb calc_current_bb(const t_trace* head) {
         //'within' of the BB. Only those which are *strictly* out side the
         //box are excluded, hence we use the nodes xhigh/yhigh for xmin/xmax,
         //and xlow/ylow for xmax/ymax calculations
-        bb.xmin = std::min<int>(bb.xmin, node.xhigh());
-        bb.ymin = std::min<int>(bb.ymin, node.yhigh());
-        bb.xmax = std::max<int>(bb.xmax, node.xlow());
-        bb.ymax = std::max<int>(bb.ymax, node.ylow());
+        bb.xmin = std::min<int>(bb.xmin, rr_graph.node_xhigh(node.id()));
+        bb.ymin = std::min<int>(bb.ymin, rr_graph.node_yhigh(node.id()));
+        bb.xmax = std::max<int>(bb.xmax, rr_graph.node_xlow(node.id()));
+        bb.ymax = std::max<int>(bb.ymax, rr_graph.node_ylow(node.id()));
     }
 
     VTR_ASSERT(bb.xmin <= bb.xmax);

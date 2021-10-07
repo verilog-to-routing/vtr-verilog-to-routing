@@ -43,8 +43,8 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 
     for (const auto& new_edge : *rr_edges_to_create) {
         emplace_back_edge(
-            RRNodeId(new_edge.from_node),
-            RRNodeId(new_edge.to_node),
+            new_edge.from_node,
+            new_edge.to_node,
             new_edge.switch_type);
     }
 }
@@ -96,8 +96,8 @@ struct edge_swapper {
     operator t_rr_edge_info() const {
         VTR_ASSERT(idx_ < storage_->edge_src_node_.size());
         t_rr_edge_info info(
-            size_t(storage_->edge_src_node_[RREdgeId(idx_)]),
-            size_t(storage_->edge_dest_node_[RREdgeId(idx_)]),
+            storage_->edge_src_node_[RREdgeId(idx_)],
+            storage_->edge_dest_node_[RREdgeId(idx_)],
             storage_->edge_switch_[RREdgeId(idx_)]);
 
         return info;
@@ -681,13 +681,13 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
     }
 }
 
-void t_rr_graph_storage::set_node_cost_index(RRNodeId id, size_t new_cost_index) {
+void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
     auto& node = node_storage_[id];
-    if (new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
+    if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set cost_index_ %zu above cost_index storage max value.",
                         new_cost_index);
     }
-    node.cost_index_ = new_cost_index;
+    node.cost_index_ = (size_t)new_cost_index;
 }
 
 void t_rr_graph_storage::set_node_rc_index(RRNodeId id, short new_rc_index) {
