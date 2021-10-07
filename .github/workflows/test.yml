@@ -149,6 +149,13 @@ jobs:
           vtr_flow/**/*.net
           vtr_flow/**/*.r
 
+    - name: Upload golden results
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.name}}_golden_results
+        path: |
+          vtr_flow/**/parse_results*.txt
+
   Sanitized:
     runs-on: ubuntu-18.04
     strategy:
