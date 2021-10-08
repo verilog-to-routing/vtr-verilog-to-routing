@@ -73,6 +73,9 @@ class RRGraphBuilder {
         node_storage_.set_node_track_num(id, new_track_num);
     }
 
+    inline void set_node_pin_num(RRNodeId id, short new_pin_num) {
+        node_storage_.set_node_pin_num(id, new_pin_num);
+    }
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
