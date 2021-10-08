@@ -109,7 +109,6 @@ class t_rr_node {
 
   public: //Mutators
     void set_ptc_num(short);
-    void set_pin_num(short);   //Same as set_ptc_num() by checks type() is consistent
     void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
 
     void set_cost_index(RRIndexedDataId);

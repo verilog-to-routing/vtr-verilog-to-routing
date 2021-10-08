@@ -55,10 +55,6 @@ void t_rr_node::set_ptc_num(short new_ptc_num) {
     storage_->set_node_ptc_num(id_, new_ptc_num);
 }
 
-void t_rr_node::set_pin_num(short new_pin_num) {
-    storage_->set_node_pin_num(id_, new_pin_num);
-}
-
 void t_rr_node::set_class_num(short new_class_num) {
     storage_->set_node_class_num(id_, new_class_num);
 }
