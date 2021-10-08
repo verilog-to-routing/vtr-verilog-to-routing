@@ -51,10 +51,6 @@ bool t_rr_node::validate() const {
     return true;
 }
 
-void t_rr_node::set_ptc_num(short new_ptc_num) {
-    storage_->set_node_ptc_num(id_, new_ptc_num);
-}
-
 void t_rr_node::set_cost_index(RRIndexedDataId new_cost_index) {
     storage_->set_node_cost_index(id_, new_cost_index);
 }

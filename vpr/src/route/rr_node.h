@@ -108,7 +108,6 @@ class t_rr_node {
     bool validate() const;
 
   public: //Mutators
-    void set_ptc_num(short);
 
     void set_cost_index(RRIndexedDataId);
     void set_rc_index(short);
