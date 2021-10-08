@@ -69,6 +69,10 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    inline void set_node_track_num(RRNodeId id, short new_track_num) {
+        node_storage_.set_node_track_num(id, new_track_num);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
