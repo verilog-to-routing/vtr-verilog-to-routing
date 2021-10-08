@@ -1405,8 +1405,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                 rr_edges_to_create.emplace_back(inode, opin_nodes[iedge], delayless_switch);
             }
 
-            L_rr_node.set_node_cost_index(inode, SOURCE_COST_INDEX);
-            L_rr_node.set_node_type(inode, SOURCE);
+            L_rr_node.set_node_cost_index(inode, RRIndexedDataId(SOURCE_COST_INDEX));
+            rr_graph_builder.set_node_type(inode, SOURCE);
         } else { /* SINK */
             VTR_ASSERT(class_inf[iclass].type == RECEIVER);
             inode = rr_graph_builder.node_lookup().find_node(i, j, SINK, iclass);
@@ -1423,8 +1423,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
              * - set_node_cost_index(RRNodeId, int);
              * - set_node_type(RRNodeId, t_rr_type);
              */
-            L_rr_node.set_node_cost_index(inode, SINK_COST_INDEX);
-            L_rr_node.set_node_type(inode, SINK);
+            L_rr_node.set_node_cost_index(inode, RRIndexedDataId(SINK_COST_INDEX));
+            rr_graph_builder.set_node_type(inode, SINK);
         }
 
         /* Things common to both SOURCEs and SINKs.   */
@@ -1458,8 +1458,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                 //Add info about the edge to be created
                                 rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
 
-                                L_rr_node.set_node_cost_index(inode, IPIN_COST_INDEX);
-                                L_rr_node.set_node_type(inode, IPIN);
+                                L_rr_node.set_node_cost_index(inode, RRIndexedDataId(IPIN_COST_INDEX));
+                                rr_graph_builder.set_node_type(inode, IPIN);
                             }
                         } else {
                             VTR_ASSERT(class_inf[iclass].type == DRIVER);
@@ -1470,8 +1470,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             /* Output pins may not exist on some sides, we may not always find one */
                             if (inode) {
                                 //Initially left unconnected
-                                L_rr_node.set_node_cost_index(inode, OPIN_COST_INDEX);
-                                L_rr_node.set_node_type(inode, OPIN);
+                                L_rr_node.set_node_cost_index(inode, RRIndexedDataId(OPIN_COST_INDEX));
+                                rr_graph_builder.set_node_type(inode, OPIN);
                             }
                         }
 
@@ -1656,7 +1656,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Edge arrays have now been built up.  Do everything else.  */
-        L_rr_node.set_node_cost_index(node, cost_index_offset + seg_details[track].index());
+        L_rr_node.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track].index()));
         rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
 
         if (chan_type == CHANX) {
@@ -1672,7 +1672,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         L_rr_node.set_node_rc_index(node, find_create_rr_rc_data(R, C));
 
         L_rr_node.set_node_ptc_num(node, track);
-        L_rr_node.set_node_type(node, chan_type);
+        rr_graph_builder.set_node_type(node, chan_type);
         rr_graph_builder.set_node_direction(node, seg_details[track].direction());
     }
 }
@@ -2431,7 +2431,7 @@ std::string describe_rr_node(int inode) {
     auto rr_node = device_ctx.rr_nodes[inode];
 
     if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
-        int cost_index = rr_node.cost_index();
+        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
         std::string rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
