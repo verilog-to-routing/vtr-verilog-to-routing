@@ -59,10 +59,6 @@ void t_rr_node::set_pin_num(short new_pin_num) {
     storage_->set_node_pin_num(id_, new_pin_num);
 }
 
-void t_rr_node::set_track_num(short new_track_num) {
-    storage_->set_node_track_num(id_, new_track_num);
-}
-
 void t_rr_node::set_class_num(short new_class_num) {
     storage_->set_node_class_num(id_, new_class_num);
 }
