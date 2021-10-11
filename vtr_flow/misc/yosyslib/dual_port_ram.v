@@ -1,3 +1,10 @@
+/****************************************************************
+# Description: Performing a recursive depth splitting for 		#
+#			   dual_port_ram memory hard blocks					#
+#																#
+# Author: Seyed Alireza Damghani (sdamghann@gmail.com)   		#
+****************************************************************/
+
 `timescale 1ps/1ps
 
 `define MEM_MAXADDR PPP

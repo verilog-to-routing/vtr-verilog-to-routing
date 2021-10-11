@@ -9,6 +9,9 @@
 # it adaptable with the current VTR flow have been made.		#
 #																#
 # [1] http://eddiehung.github.io/vtb.html						#
+#																#
+# Author: Eddie Hung											#
+# Co-author: Seyed Alireza Damghani	(sdamghann@gmail.com)  		#
 #################################################################
 
 # XXX (input circuit) is replaced with filename by the run_vtr_flow script

@@ -1,3 +1,18 @@
+/********************************************************************************************
+# Description: this file includes the required definitions for Yosys to how it should		#
+#			   infer implicit memories and instantiate arithmetic operations, such as 		#
+#			   addition, subtraction, and multiplication. In this file, implicit memory 	#
+#			   boundary and required splitting process, arithmetic operation depth/width    # 
+#			   splitting, and error handling for possible invalid situations are specified.	#
+# 																							#
+# NOTE: PPP, AAA, and MMM will be replaced with the configuration specifications via the 	#
+#		run_vtr_flow.py script file while the VTR flow is executing.						#
+# 																							#
+# Author: Eddie Hung																		#
+# VTR-to-Bitstream: "http://eddiehung.github.io/vtb.html"								#
+********************************************************************************************/
+
+
 `define MEM_MINWIDTH 1
 `define MEM_MAXADDR PPP
 `define MEM_MAXDATA 36

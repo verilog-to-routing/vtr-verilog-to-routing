@@ -18,8 +18,8 @@ odin_output_on_error_path = odin_path / "regression_test" / ".library" / "output
 
 # YOSYS paths
 yosys_exe_path = root_path / "libs" / "EXTERNAL" / "libyosys" / "yosys"
-yosys_script_path = vtr_flow_path / "misc" / "synthesis.ys"
 yosys_lib_path = vtr_flow_path / "misc" / "yosyslib"
+yosys_script_path = yosys_lib_path / "synthesis.ys"
 
 # ABC paths
 abc_path = root_path / "abc"
