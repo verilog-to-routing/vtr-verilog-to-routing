@@ -34,6 +34,72 @@ using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
 
+static float get_corner_value(Device::CornerModel::Reader model, const char* speed_model, const char* value) {
+    bool slow_model = std::string(speed_model) == std::string("slow");
+    bool fast_model = std::string(speed_model) == std::string("fast");
+
+    bool min_corner = std::string(value) == std::string("min");
+    bool typ_corner = std::string(value) == std::string("typ");
+    bool max_corner = std::string(value) == std::string("max");
+
+    if (!slow_model && !fast_model) {
+        archfpga_throw("", __LINE__,
+                       "Wrong speed model `%s`. Expected `slow` or `fast`\n", speed_model);
+    }
+
+    if (!min_corner && !typ_corner && !max_corner) {
+        archfpga_throw("", __LINE__,
+                       "Wrong corner model `%s`. Expected `min`, `typ` or `max`\n", value);
+    }
+
+    bool has_fast = model.getFast().hasFast();
+    bool has_slow = model.getSlow().hasSlow();
+
+    if (slow_model && has_slow) {
+        auto half = model.getSlow().getSlow();
+        if (min_corner && half.getMin().isMin()) {
+            return half.getMin().getMin();
+        } else if (typ_corner && half.getTyp().isTyp()) {
+            return half.getTyp().getTyp();
+        } else if (max_corner && half.getMax().isMax()) {
+            return half.getMax().getMax();
+        } else {
+            if (half.getMin().isMin()) {
+                return half.getMin().getMin();
+            } else if (half.getTyp().isTyp()) {
+                return half.getTyp().getTyp();
+            } else if (half.getMax().isMax()) {
+                return half.getMax().getMax();
+            } else {
+                archfpga_throw("", __LINE__,
+                               "Invalid speed model %s. No value found!\n", speed_model);
+            }
+        }
+    } else if (fast_model && has_fast) {
+        auto half = model.getFast().getFast();
+        if (min_corner && half.getMin().isMin()) {
+            return half.getMin().getMin();
+        } else if (typ_corner && half.getTyp().isTyp()) {
+            return half.getTyp().getTyp();
+        } else if (max_corner && half.getMax().isMax()) {
+            return half.getMax().getMax();
+        } else {
+            if (half.getMin().isMin()) {
+                return half.getMin().getMin();
+            } else if (half.getTyp().isTyp()) {
+                return half.getTyp().getTyp();
+            } else if (half.getMax().isMax()) {
+                return half.getMax().getMax();
+            } else {
+                archfpga_throw("", __LINE__,
+                               "Invalid speed model %s. No value found!\n", speed_model);
+            }
+        }
+    }
+
+    return 0.;
+}
+
 struct ArchReader {
   public:
     ArchReader(t_arch* arch, Device::Reader& arch_reader, const char* arch_file, std::vector<t_physical_tile_type>& phys_types, std::vector<t_logical_block_type>& logical_types)
@@ -47,6 +113,11 @@ struct ArchReader {
 
     void read_arch() {
         process_models();
+        process_device();
+
+        process_layout();
+        process_switches();
+        process_segments();
     }
 
   private:
@@ -161,6 +232,220 @@ struct ArchReader {
                 model_port->next = model->outputs;
                 model->outputs = model_port;
             }
+        }
+    }
+
+    // Layout Processing
+    void process_layout() {
+        auto strList = ar_.getStrList();
+        auto tileList = ar_.getTileList();
+        auto tileTypeList = ar_.getTileTypeList();
+        t_grid_def grid_def;
+
+        grid_def.width = grid_def.height = 0;
+        for (auto tile : tileList) {
+            grid_def.width = std::max(grid_def.width, tile.getCol() + 1);
+            grid_def.height = std::max(grid_def.height, tile.getRow() + 1);
+        }
+
+        grid_def.grid_type = GridDefType::FIXED;
+        std::string name = std::string(ar_.getName());
+        if (name == "auto") {
+            archfpga_throw(arch_file_, __LINE__,
+                           "The name auto is reserved for auto-size layouts; please choose another name");
+        }
+        grid_def.name = name;
+        for (auto tile : tileList) {
+            t_metadata_dict data;
+            std::string tile_prefix(strList[tile.getName()].cStr());
+            auto tileType = tileTypeList[tile.getType()];
+            std::string tile_type(strList[tileType.getName()].cStr());
+
+            size_t pos = tile_prefix.find(tile_type);
+            if (pos != std::string::npos && pos == 0)
+                tile_prefix.erase(pos, tile_type.length() + 1);
+            data.add(arch_->strings.intern_string(vtr::string_view("fasm_prefix")),
+                     arch_->strings.intern_string(vtr::string_view(tile_prefix.c_str())));
+            t_grid_loc_def single(tile_type, 1);
+            single.x.start_expr = tile.getCol();
+            single.y.start_expr = tile.getRow();
+            single.x.end_expr = single.x.start_expr + " + w - 1";
+            single.y.end_expr = single.y.start_expr + " + h - 1";
+            single.owned_meta = std::make_unique<t_metadata_dict>(data);
+            single.meta = single.owned_meta.get();
+            grid_def.loc_defs.emplace_back(std::move(single));
+        }
+
+        arch_->grid_layouts.emplace_back(std::move(grid_def));
+    }
+
+    void process_device() {
+        /*
+         * The generic architecture data is not currently available in the interchange format
+         * therefore, for a very initial implementation, the values are taken from the ones
+         * used primarly in the Xilinx series7 devices, generated using SymbiFlow.
+         *
+         * As the interchange format develops further, with possibly more details, this function can
+         * become dynamic, allowing for different parameters for the different architectures.
+         */
+        arch_->R_minW_nmos = 6065.520020;
+        arch_->R_minW_pmos = 18138.500000;
+        arch_->grid_logic_tile_area = 14813.392;
+        arch_->Chans.chan_x_dist.type = UNIFORM;
+        arch_->Chans.chan_x_dist.peak = 1;
+        arch_->Chans.chan_x_dist.width = 0;
+        arch_->Chans.chan_x_dist.xpeak = 0;
+        arch_->Chans.chan_x_dist.dc = 0;
+        arch_->Chans.chan_y_dist.type = UNIFORM;
+        arch_->Chans.chan_y_dist.peak = 1;
+        arch_->Chans.chan_y_dist.width = 0;
+        arch_->Chans.chan_y_dist.xpeak = 0;
+        arch_->Chans.chan_y_dist.dc = 0;
+        arch_->ipin_cblock_switch_name = std::string("generic");
+        arch_->SBType = WILTON;
+        arch_->Fs = 3;
+        default_fc_.specified = true;
+        default_fc_.in_value_type = e_fc_value_type::FRACTIONAL;
+        default_fc_.in_value = 1.0;
+        default_fc_.out_value_type = e_fc_value_type::FRACTIONAL;
+        default_fc_.out_value = 1.0;
+    }
+
+    void process_switches() {
+        std::set<std::pair<bool, uint32_t>> pip_timing_models;
+        for (auto tile_type : ar_.getTileTypeList()) {
+            for (auto pip : tile_type.getPips()) {
+                pip_timing_models.insert(std::pair<bool, uint32_t>(pip.getBuffered21(), pip.getTiming()));
+                if (!pip.getDirectional())
+                    pip_timing_models.insert(std::pair<bool, uint32_t>(pip.getBuffered20(), pip.getTiming()));
+            }
+        }
+
+        auto timing_data = ar_.getPipTimings();
+
+        std::vector<std::pair<bool, uint32_t>> pip_timing_models_list;
+        pip_timing_models_list.reserve(pip_timing_models.size());
+
+        for (auto entry : pip_timing_models) {
+            pip_timing_models_list.push_back(entry);
+        }
+
+        auto num_switches = pip_timing_models.size() + 2;
+        std::string switch_name;
+
+        arch_->num_switches = num_switches;
+        auto* switches = arch_->Switches;
+
+        if (num_switches > 0) {
+            switches = new t_arch_switch_inf[num_switches];
+        }
+
+        float R, Cin, Cint, Cout, Tdel;
+        for (int i = 0; i < (int)num_switches; ++i) {
+            t_arch_switch_inf& as = switches[i];
+
+            R = Cin = Cint = Cout = Tdel = 0.0;
+            SwitchType type;
+
+            if (i == 0) {
+                switch_name = "short";
+                type = SwitchType::SHORT;
+                R = 0.0;
+            } else if (i == 1) {
+                switch_name = "generic";
+                type = SwitchType::MUX;
+                R = 0.0;
+            } else {
+                auto entry = pip_timing_models_list[i - 2];
+                auto model = timing_data[entry.second];
+                std::stringstream name;
+                std::string mux_type_string = entry.first ? "mux_" : "passGate_";
+                name << mux_type_string;
+
+                R = get_corner_value(model.getOutputResistance(), "slow", "min");
+                name << "R" << std::scientific << R;
+
+                Cin = get_corner_value(model.getInputCapacitance(), "slow", "min");
+                name << "Cin" << std::scientific << Cin;
+
+                Cout = get_corner_value(model.getOutputCapacitance(), "slow", "min");
+                name << "Cout" << std::scientific << Cout;
+
+                if (entry.first) {
+                    Cint = get_corner_value(model.getInternalCapacitance(), "slow", "min");
+                    name << "Cinternal" << std::scientific << Cint;
+                }
+
+                Tdel = get_corner_value(model.getInternalDelay(), "slow", "min");
+                name << "Tdel" << std::scientific << Tdel;
+
+                switch_name = name.str();
+                type = entry.first ? SwitchType::MUX : SwitchType::PASS_GATE;
+            }
+
+            /* Should never happen */
+            if (switch_name == std::string(VPR_DELAYLESS_SWITCH_NAME)) {
+                archfpga_throw(arch_file_, __LINE__,
+                               "Switch name '%s' is a reserved name for VPR internal usage!", switch_name.c_str());
+            }
+
+            as.name = vtr::strdup(switch_name.c_str());
+            as.set_type(type);
+            as.mux_trans_size = as.type() == SwitchType::MUX ? 1 : 0;
+
+            as.R = R;
+            as.Cin = Cin;
+            as.Cout = Cout;
+            as.Cinternal = Cint;
+            as.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
+
+            if (as.type() == SwitchType::SHORT || as.type() == SwitchType::PASS_GATE) {
+                as.buf_size_type = BufferSize::ABSOLUTE;
+                as.buf_size = 0;
+                as.power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
+                as.power_buffer_size = 0.;
+            } else {
+                as.buf_size_type = BufferSize::AUTO;
+                as.buf_size = 0.;
+                as.power_buffer_type = POWER_BUFFER_TYPE_AUTO;
+            }
+        }
+    }
+
+    void process_segments() {
+        auto strList = ar_.getStrList();
+
+        // Segment names will be taken from wires connected to pips
+        // They are good representation for nodes
+        std::set<uint32_t> wire_names;
+        for (auto tile_type : ar_.getTileTypeList()) {
+            auto wires = tile_type.getWires();
+            for (auto pip : tile_type.getPips()) {
+                wire_names.insert(wires[pip.getWire0()]);
+                wire_names.insert(wires[pip.getWire1()]);
+            }
+        }
+        int num_seg = wire_names.size();
+        arch_->Segments.resize(num_seg);
+        uint32_t index = 0;
+        for (auto i : wire_names) {
+            // Use default values as we will populate rr_graph with correct values
+            // This segments are just declaration of future use
+            arch_->Segments[index].name = std::string(strList[i]);
+            arch_->Segments[index].length = 1;
+            arch_->Segments[index].frequency = 1;
+            arch_->Segments[index].Rmetal = 0;
+            arch_->Segments[index].Cmetal = 0;
+            arch_->Segments[index].parallel_axis = BOTH_AXIS;
+            arch_->Segments[index].directionality = BI_DIRECTIONAL;
+            arch_->Segments[index].arch_wire_switch = 1;
+            arch_->Segments[index].arch_opin_switch = 1;
+            arch_->Segments[index].cb.resize(1);
+            arch_->Segments[index].cb[0] = true;
+            arch_->Segments[index].sb.resize(2);
+            arch_->Segments[index].sb[0] = true;
+            arch_->Segments[index].sb[1] = true;
+            ++index;
         }
     }
 };
