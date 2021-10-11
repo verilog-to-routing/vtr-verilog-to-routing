@@ -10,6 +10,7 @@ sudo apt install -y \
   binutils \
   binutils-gold \
   build-essential \
+  capnproto \
   cmake \
   ctags \
   curl \
@@ -20,6 +21,7 @@ sudo apt install -y \
   git \
   gperf \
   libcairo2-dev \
+  libcapnp-dev \
   libgtk-3-dev \
   libevent-dev \
   libfontconfig1-dev \
@@ -54,3 +56,9 @@ sudo apt install -y \
 #  libtbb-dev
 
 pip install -r requirements.txt
+
+git clone https://github.com/capnproto/capnproto-java.git $GITHUB_WORKSPACE/env/capnproto-java
+pushd $GITHUB_WORKSPACE/env/capnproto-java
+make
+sudo make install
+popd
