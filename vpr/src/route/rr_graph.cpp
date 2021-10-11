@@ -1673,7 +1673,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         L_rr_node.set_node_ptc_num(node, track);
         rr_graph_builder.set_node_type(node, chan_type);
-        L_rr_node.set_node_direction(node, seg_details[track].direction());
+        rr_graph_builder.set_node_direction(node, seg_details[track].direction());
     }
 }
 

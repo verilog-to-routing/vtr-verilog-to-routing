@@ -75,10 +75,6 @@ void t_rr_node::set_rc_index(short new_rc_index) {
     storage_->set_node_rc_index(id_, new_rc_index);
 }
 
-void t_rr_node::set_direction(Direction new_direction) {
-    storage_->set_node_direction(id_, new_direction);
-}
-
 void t_rr_node::add_side(e_side new_side) {
     storage_->add_node_side(id_, new_side);
 }

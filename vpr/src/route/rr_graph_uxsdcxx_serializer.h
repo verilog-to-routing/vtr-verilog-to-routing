@@ -818,6 +818,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
         const auto& rr_graph = (*rr_graph_);
         auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+
         if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
             if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
                 report_error(
@@ -825,7 +827,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     inode, rr_graph.node_type(node.id()));
             }
         } else {
-            node.set_direction(from_uxsd_node_direction(direction));
+            rr_graph_builder_->set_node_direction(node_id, from_uxsd_node_direction(direction));
         }
     }
     inline uxsd::enum_node_direction get_node_direction(const t_rr_node& node) final {

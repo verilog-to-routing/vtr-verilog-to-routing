@@ -116,7 +116,6 @@ class t_rr_node {
     void set_cost_index(RRIndexedDataId);
     void set_rc_index(short);
 
-    void set_direction(Direction);
     void set_side(e_side);
     void add_side(e_side);
 

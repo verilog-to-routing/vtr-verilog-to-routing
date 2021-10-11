@@ -69,6 +69,10 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
+    inline void set_node_direction(RRNodeId id, Direction new_direction) {
+        node_storage_.set_node_direction(id, new_direction);
+    }
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
