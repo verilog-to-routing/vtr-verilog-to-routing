@@ -36,6 +36,7 @@ if (VPR_ENABLE_INTERCHANGE)
     set(CAPNPC_SRC_PREFIX ${IC_DIR})
 
     find_program(WGET wget REQUIRED)
+    find_package(ZLIB REQUIRED)
 
     # Add Java schema
     set(JAVA_SCHEMA ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/java.capnp)

@@ -122,6 +122,11 @@ endif()
 # Build type flags
 #
 
+set(EXTRA_FLAGS "")
+if(VPR_ENABLE_INTERCHANGE)
+    set(EXTRA_FLAGS "-lz")
+endif()
+
 if(NOT MSVC)
     # for GCC and Clang
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
@@ -296,7 +301,7 @@ endif()
 # Set final flags
 #
 separate_arguments(
-    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE} ${EXTRA_FLAGS}"
     )
 separate_arguments(
     WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
