@@ -1671,8 +1671,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         float C = length * seg_details[track].Cmetal();
         L_rr_node.set_node_rc_index(node, find_create_rr_rc_data(R, C));
 
-        rr_graph_builder.set_node_track_num(node, track);
         rr_graph_builder.set_node_type(node, chan_type);
+        rr_graph_builder.set_node_track_num(node, track);
         L_rr_node.set_node_direction(node, seg_details[track].direction());
     }
 }
