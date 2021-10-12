@@ -25,15 +25,40 @@ set(CAPNP_DEFS
     gen/rr_graph_uxsdcxx.capnp
     map_lookahead.capnp
     extended_map_lookahead.capnp
-    )
+)
+
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     ${CAPNP_DEFS}
+)
+
+if (VPR_ENABLE_INTERCHANGE)
+    set(IC_DIR ${CMAKE_SOURCE_DIR}/libs/EXTERNAL/libinterchange/interchange)
+    set(CAPNPC_SRC_PREFIX ${IC_DIR})
+    set(IC_PROTOS
+        LogicalNetlist.capnp
+        PhysicalNetlist.capnp
+        DeviceResources.capnp
+        References.capnp
     )
+    set(IC_SRCS)
+    set(IC_HDRS)
+    foreach(PROTO ${IC_PROTOS})
+        capnp_generate_cpp(
+            IC_SRC
+            IC_HDR
+            ${IC_DIR}/${PROTO}
+        )
+        list(APPEND IC_SRCS ${IC_SRC})
+        list(APPEND IC_HDRS ${IC_HDR})
+    endforeach()
+
+endif()
 
 install(FILES ${CAPNP_DEFS} DESTINATION ${CMAKE_INSTALL_DATADIR}/vtr)
 
 add_library(libvtrcapnproto STATIC
             ${CAPNP_SRCS}
+            ${IC_SRCS}
             mmap_file.h
             mmap_file.cpp
             serdes_utils.h
@@ -47,4 +72,4 @@ target_include_directories(libvtrcapnproto PUBLIC
 target_link_libraries(libvtrcapnproto
     libvtrutil
     CapnProto::capnp
-    )
+)
