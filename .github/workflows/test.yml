@@ -23,6 +23,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -47,6 +49,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -62,6 +66,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -79,6 +85,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -128,6 +136,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -164,6 +174,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -186,6 +198,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -206,6 +220,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -234,6 +250,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -266,6 +284,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
@@ -296,6 +316,8 @@ jobs:
       with:
         python-version: 3.6
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - run: ./.github/scripts/install_dependencies.sh
 
     - name: Test
