@@ -5,8 +5,8 @@
 crit_path_routed_wirelength;Range(0.60,1.50)
 
 #Area Metrics
-crit_path_routing_area_total;Range(0.8,1.3)
-crit_path_routing_area_per_tile;Range(0.8,1.3)
+crit_path_routing_area_total;Range(0.7,1.3)
+crit_path_routing_area_per_tile;Range(0.7,1.3)
 
 #Run-time Metrics
 crit_path_route_time;RangeAbs(0.10,10.0,2)

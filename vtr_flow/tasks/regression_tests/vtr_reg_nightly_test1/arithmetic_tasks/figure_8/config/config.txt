@@ -128,4 +128,4 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_chain.txt
 
-script_params=-lut_size 6 -routing_failure_predictor off
+script_params=-lut_size 6 -routing_failure_predictor off -seed 2

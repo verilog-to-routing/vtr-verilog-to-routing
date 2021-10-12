@@ -36,6 +36,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
 //Moves the blocks in blocks_affected to their new locations
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
     //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
     //yet since we don't know whether the swap will be accepted
@@ -43,6 +44,11 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         ClusterBlockId blk = blocks_affected.moved_blocks[iblk].block_num;
 
         place_ctx.block_locs[blk].loc = blocks_affected.moved_blocks[iblk].new_loc;
+
+        //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
+        if (device_ctx.grid[blocks_affected.moved_blocks[iblk].old_loc.x][blocks_affected.moved_blocks[iblk].old_loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].new_loc.x][blocks_affected.moved_blocks[iblk].new_loc.y].type) {
+            place_sync_external_block_connections(blk);
+        }
     }
 }
 
@@ -78,6 +84,7 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 //Moves the blocks in blocks_affected to their old locations
 void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
     // Swap the blocks back, nets not yet swapped they don't need to be changed
     for (int iblk = 0; iblk < blocks_affected.num_moved_blocks; ++iblk) {
@@ -86,6 +93,11 @@ void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
         t_pl_loc old = blocks_affected.moved_blocks[iblk].old_loc;
 
         place_ctx.block_locs[blk].loc = old;
+
+        //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
+        if (device_ctx.grid[blocks_affected.moved_blocks[iblk].old_loc.x][blocks_affected.moved_blocks[iblk].old_loc.y].type != device_ctx.grid[blocks_affected.moved_blocks[iblk].new_loc.x][blocks_affected.moved_blocks[iblk].new_loc.y].type) {
+            place_sync_external_block_connections(blk);
+        }
 
         VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[old.x][old.y].blocks[old.sub_tile] == blk, "Grid blocks should only have been updated if swap commited (not reverted)");
     }

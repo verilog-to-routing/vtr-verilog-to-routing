@@ -510,8 +510,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
-    initial_placement(placer_opts.pad_loc_type,
-                      placer_opts.constraints_file.c_str());
+    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
@@ -912,6 +911,11 @@ void try_place(const t_placer_opts& placer_opts,
     }
 #endif
 
+    // Update physical pin values
+    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id);
+    }
+
     check_place(costs, place_delay_model.get(), placer_criticalities.get(),
                 placer_opts.place_algorithm);
 
@@ -1088,10 +1092,10 @@ static void placement_inner_loop(const t_annealing_state* state,
         }
 #ifdef VERBOSE
         VTR_LOG("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d\n",
-                t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
+                state->t, costs->cost, costs->bb_cost, costs->timing_cost, inner_iter);
         if (fabs((costs->bb_cost) - comp_bb_cost(CHECK)) > (costs->bb_cost) * ERROR_TOL)
-            VPR_ERROR(VPR_ERROR_PLACE,
-                      "fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
+            VPR_ERROR(VPR_ERROR_PLACE, "bb_cost is %g, comp_bb_cost is %g\n", costs->bb_cost, comp_bb_cost(CHECK));
+            //"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
 #endif
 
         /* Lines below prevent too much round-off error from accumulating
@@ -1101,8 +1105,10 @@ static void placement_inner_loop(const t_annealing_state* state,
          */
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
+            //VTR_LOG("recomputing costs from scratch, old bb_cost is %g\n", costs->bb_cost);
             recompute_costs_from_scratch(placer_opts, delay_model,
                                          criticalities, costs);
+            //VTR_LOG("new_bb_cost is %g\n", costs->bb_cost);
             *moves_since_cost_recompute = 0;
         }
 
@@ -1551,7 +1557,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
 #if 0
     //Check that each accepted swap yields a valid placement
-    check_place(*costs, delay_model, place_algorithm);
+    check_place(*costs, delay_model, criticalities, place_algorithm);
 #endif
 
     return move_outcome;
@@ -2005,9 +2011,9 @@ static double comp_bb_cost(e_cost_methods method) {
     }
 
     if (method == CHECK) {
-        VTR_LOG("\n");
-        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-                expected_wirelength);
+        /*VTR_LOG("\n");
+         * VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
+         * expected_wirelength);*/
     }
     return cost;
 }
@@ -2313,6 +2319,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
     pnum = net_pin_to_tile_pin_index(net_id, 0);
+
     x = place_ctx.block_locs[bnum].loc.x
         + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y

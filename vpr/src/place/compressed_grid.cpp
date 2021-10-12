@@ -142,3 +142,40 @@ int grid_to_compressed_approx(const std::vector<int>& coords, int point) {
         return std::distance(coords.begin(), itr - 1);
     return std::distance(coords.begin(), itr);
 }
+
+/*Print the contents of the compressed grids to an echo file*/
+void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_grid>& comp_grids) {
+    FILE* fp;
+    fp = vtr::fopen(filename, "w");
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "Compressed Grids: \n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    for (int i = 0; i < (int)comp_grids.size(); i++) {
+        fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
+
+        fprintf(fp, "X coordinates: \n");
+        for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x.size(); j++) {
+            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_x[j]);
+        }
+        fprintf(fp, "\n");
+
+        fprintf(fp, "Y coordinates: \n");
+        for (int k = 0; k < (int)comp_grids[i].compressed_to_grid_y.size(); k++) {
+            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[k]);
+        }
+        fprintf(fp, "\n");
+
+        fprintf(fp, "Subtiles: \n");
+        for (int s = 0; s < (int)comp_grids[i].compatible_sub_tiles_for_tile.size(); s++) {
+            fprintf(fp, "%d ", comp_grids[i].compressed_to_grid_y[s]);
+        }
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+}
