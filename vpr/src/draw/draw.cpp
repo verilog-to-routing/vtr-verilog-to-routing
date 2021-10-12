@@ -2255,6 +2255,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
     float xcen, ycen;
     char str[vtr::bufsize];
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     int ipin = device_ctx.rr_nodes[inode].ptc_num();
 
@@ -2265,7 +2266,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
      * - draw the pin on each side that it appears
      */
     for (const e_side& pin_side : SIDES) {
-        if (!device_ctx.rr_nodes[inode].is_node_on_specific_side(pin_side)) {
+        if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
             continue;
         }
         draw_get_rr_pin_coords(inode, &xcen, &ycen, pin_side);
@@ -3185,7 +3186,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
      */
     std::vector<e_side> pin_candidate_sides;
     for (const e_side& pin_candidate_side : SIDES) {
-        if ((pin_rr.is_node_on_specific_side(pin_candidate_side))
+        if ((rr_graph.is_node_on_specific_side(pin_rr.id(), pin_candidate_side))
             && (grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_candidate_side][pin_rr.pin_num()])) {
             pin_candidate_sides.push_back(pin_candidate_side);
         }
@@ -3312,7 +3313,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     float x1 = 0, y1 = 0;
     std::vector<e_side> opin_candidate_sides;
     for (const e_side& opin_candidate_side : SIDES) {
-        if (device_ctx.rr_nodes[opin_node].is_node_on_specific_side(opin_candidate_side)) {
+        if (rr_graph.is_node_on_specific_side(RRNodeId(opin_node), opin_candidate_side)) {
             opin_candidate_sides.push_back(opin_candidate_side);
         }
     }
@@ -3322,7 +3323,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     float x2 = 0, y2 = 0;
     std::vector<e_side> ipin_candidate_sides;
     for (const e_side& ipin_candidate_side : SIDES) {
-        if (device_ctx.rr_nodes[ipin_node].is_node_on_specific_side(ipin_candidate_side)) {
+        if (rr_graph.is_node_on_specific_side(RRNodeId(ipin_node), ipin_candidate_side)) {
             ipin_candidate_sides.push_back(ipin_candidate_side);
         }
     }
@@ -3338,12 +3339,12 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
 
 static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     float x1 = 0, y1 = 0;
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : SIDES) {
-        if (!device_ctx.rr_nodes[ipin_node].is_node_on_specific_side(
-                pin_side)) {
+        if (!rr_graph.is_node_on_specific_side(RRNodeId(ipin_node), pin_side)) {
             continue;
         }
 
@@ -3362,14 +3363,14 @@ static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
 
 static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     float x1 = 0, y1 = 0;
     draw_get_rr_src_sink_coords(device_ctx.rr_nodes[source_node], &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : SIDES) {
-        if (!device_ctx.rr_nodes[opin_node].is_node_on_specific_side(
-                pin_side)) {
+        if (!rr_graph.is_node_on_specific_side(RRNodeId(opin_node), pin_side)) {
             continue;
         }
 

@@ -84,6 +84,12 @@ class RRGraphBuilder {
     inline void set_node_ptc_num(RRNodeId id, short new_ptc_num) {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
+
+    /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
+    inline void set_node_direction(RRNodeId id, Direction new_direction) {
+        node_storage_.set_node_direction(id, new_direction);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
