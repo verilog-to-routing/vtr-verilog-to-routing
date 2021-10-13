@@ -34,6 +34,27 @@ capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
 if (VPR_ENABLE_INTERCHANGE)
     set(IC_DIR ${CMAKE_SOURCE_DIR}/libs/EXTERNAL/libinterchange/interchange)
     set(CAPNPC_SRC_PREFIX ${IC_DIR})
+
+    find_program(WGET wget REQUIRED)
+
+    # Add Java schema
+    set(JAVA_SCHEMA ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/java.capnp)
+    add_custom_command(
+        OUTPUT ${JAVA_SCHEMA}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/schema/capnp/
+        COMMAND ${WGET}
+            https://raw.githubusercontent.com/capnproto/capnproto-java/master/compiler/src/main/schema/capnp/java.capnp
+            -O ${JAVA_SCHEMA}
+    )
+
+    add_custom_target(
+        get_java_capnp_schema
+        DEPENDS ${JAVA_SCHEMA}
+    )
+
+    set(CAPNPC_IMPORT_DIRS)
+    list(APPEND CAPNPC_IMPORT_DIRS ${CMAKE_CURRENT_BINARY_DIR}/schema)
+
     set(IC_PROTOS
         LogicalNetlist.capnp
         PhysicalNetlist.capnp
@@ -50,8 +71,8 @@ if (VPR_ENABLE_INTERCHANGE)
         )
         list(APPEND IC_SRCS ${IC_SRC})
         list(APPEND IC_HDRS ${IC_HDR})
+        list(APPEND CAPNP_DEFS ${IC_DIR}/${PROTO})
     endforeach()
-
 endif()
 
 install(FILES ${CAPNP_DEFS} DESTINATION ${CMAKE_INSTALL_DATADIR}/vtr)
@@ -64,6 +85,13 @@ add_library(libvtrcapnproto STATIC
             serdes_utils.h
             serdes_utils.cpp
             )
+
+if (VPR_ENABLE_INTERCHANGE)
+    add_dependencies(libvtrcapnproto
+        get_java_capnp_schema
+    )
+endif()
+
 target_include_directories(libvtrcapnproto PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
