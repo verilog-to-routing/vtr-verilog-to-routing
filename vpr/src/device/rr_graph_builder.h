@@ -102,6 +102,14 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
+    /** @brief set_node_cost_index gets the index of cost data in the list of cost_indexed_data data structure
+     * It contains the routing cost for different nodes in the RRGraph
+     * when used in evaluate different routing paths
+     */
+    inline void set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
+        node_storage_.set_node_cost_index(id, new_cost_index);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
