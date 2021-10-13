@@ -69,10 +69,39 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    /** @brief Set the node_ptc_num; The ptc (pin, track, or class) number is an integer
+     * that allows you to differentiate between wires, pins or sources/sinks with overlapping x,y coordinates or extent.
+     * This is useful for drawing rr-graphs nicely.
+     *
+     * The ptc_num carries different meanings for different node types
+     * (true in VPR RRG that is currently supported, may not be true in customized RRG)
+     * CHANX or CHANY: the track id in routing channels
+     * OPIN or IPIN: the index of pins in the logic block data structure
+     * SOURCE and SINK: the class id of a pin (indicating logic equivalence of pins) in the logic block data structure */
+    inline void set_node_ptc_num(RRNodeId id, short new_ptc_num) {
+        node_storage_.set_node_ptc_num(id, new_ptc_num);
+    }
+
+    /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
+    inline void set_node_pin_num(RRNodeId id, short new_pin_num) {
+        node_storage_.set_node_pin_num(id, new_pin_num);
+    }
+
+    /** @brief set_node_track_num() is designed for routing tracks, which are CHANX and CHANY nodes */
+    inline void set_node_track_num(RRNodeId id, short new_track_num) {
+        node_storage_.set_node_track_num(id, new_track_num);
+    }
+
+    /** @brief set_ node_class_num() is designed for routing source and sinks, which are SOURCE and SINK nodes */
+    inline void set_node_class_num(RRNodeId id, short new_class_num) {
+        node_storage_.set_node_class_num(id, new_class_num);
+    }
+
     /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
     inline void set_node_direction(RRNodeId id, Direction new_direction) {
         node_storage_.set_node_direction(id, new_direction);
     }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 

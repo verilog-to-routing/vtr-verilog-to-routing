@@ -1438,7 +1438,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
         float R = 0.;
         float C = 0.;
         L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
-        L_rr_node.set_node_ptc_num(inode, iclass);
+        rr_graph_builder.set_node_class_num(inode, iclass);
     }
 
     /* Connect IPINS to SINKS and initialize OPINS */
@@ -1486,7 +1486,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             float R = 0.;
                             float C = 0.;
                             L_rr_node.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
-                            L_rr_node.set_node_ptc_num(inode, ipin);
+                            rr_graph_builder.set_node_pin_num(inode, ipin);
 
                             //Note that we store the grid tile location and side where the pin is located,
                             //which greatly simplifies the drawing code
@@ -1676,8 +1676,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         float C = length * seg_details[track].Cmetal();
         L_rr_node.set_node_rc_index(node, find_create_rr_rc_data(R, C));
 
-        L_rr_node.set_node_ptc_num(node, track);
         rr_graph_builder.set_node_type(node, chan_type);
+        rr_graph_builder.set_node_track_num(node, track);
         rr_graph_builder.set_node_direction(node, seg_details[track].direction());
     }
 }
