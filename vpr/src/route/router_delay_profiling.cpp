@@ -36,7 +36,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     //rr_graph.node_xlow(RRNodeId(source_node)),
     //rr_graph.node_ylow(RRNodeId(source_node)),
     //rr_node_arch_name(source_node).c_str(),
-    //rr_graph.node_xlow(RRNodeId(sink_node)),
+    //rr_graph.node_type_string(RRNodeId(sink_node)),
     //rr_graph.node_xlow(RRNodeId(sink_node)),
     //rr_graph.node_ylow(RRNodeId(sink_node)),
     //rr_node_arch_name(sink_node).c_str()));
