@@ -32,11 +32,11 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     auto& route_ctx = g_vpr_ctx.routing();
 
     //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling Delay from %s at %d,%d (%s) to %s at %d,%d (%s)",
-    //device_ctx.rr_nodes[source_node].type_string(),
+    //rr_graph.node_type_string(RRNodeId(source_node)),
     //rr_graph.node_xlow(RRNodeId(source_node)),
     //rr_graph.node_ylow(RRNodeId(source_node)),
     //rr_node_arch_name(source_node).c_str(),
-    //device_ctx.rr_nodes[sink_node].type_string(),
+    //rr_graph.node_xlow(RRNodeId(sink_node)),
     //rr_graph.node_xlow(RRNodeId(sink_node)),
     //rr_graph.node_ylow(RRNodeId(sink_node)),
     //rr_node_arch_name(sink_node).c_str()));

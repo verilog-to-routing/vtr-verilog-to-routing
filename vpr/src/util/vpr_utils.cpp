@@ -205,7 +205,7 @@ std::string rr_node_arch_name(int inode) {
         auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
         auto pin_names = block_type_class_index_to_pin_names(type, rr_node.ptc_num());
         if (pin_names.size() > 1) {
-            rr_node_arch_name += rr_node.type_string();
+            rr_node_arch_name += rr_graph.node_type_string(RRNodeId(inode));
             rr_node_arch_name += " connected to ";
             rr_node_arch_name += "{";
             rr_node_arch_name += vtr::join(pin_names, ", ");
