@@ -62,6 +62,7 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),clean)
 all $(MAKECMDGOALS):
+	@ git submodule update --init --recursive
 ifneq ($(BUILD_DIR),build)
 	ln -sf $(BUILD_DIR) build
 endif

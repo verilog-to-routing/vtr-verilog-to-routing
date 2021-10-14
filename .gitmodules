@@ -1,0 +1,3 @@
+[submodule "libs/EXTERNAL/capnproto"]
+	path = libs/EXTERNAL/capnproto
+	url = https://github.com/capnproto/capnproto.git
