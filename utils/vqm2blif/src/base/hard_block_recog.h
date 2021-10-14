@@ -201,76 +201,31 @@ typedef struct s_parsed_hard_block_port_info
 }t_parsed_hard_block_port_info;
 
 
-/*  Function Declarations 
+/*  Global Function Declarations 
 *
 *   For more information about functions, refer to
 *   'hard_block_recog.cpp'
 */
 
+/*
+*	Function: add_hard_blocks_to_netlist
+*	
+*	Goes through a netlist and removes luts/dff that represent
+*   specific hard block ports and then the corresponding hard block
+*   is added to the netlist.
+*
+*	Parameters:
+*		t_module*  - A reference to the netlist of the design
+*		t_arch* - a pointer to the FPGA architecture that design will
+*                 target
+*		std::vector<std::string>* - a reference to a list of hard block names
+                                    that need to be identified within the
+                                    netlist.
+*		
+*	    std::string - the name of the architecture file (".xml")
+        std::string - the name of the Quartus generated netlist file (".vqm")
+*
+*/
 void add_hard_blocks_to_netlist(t_module*, t_arch*, std::vector<std::string>*, std::string, std::string);
-
-void initialize_hard_block_models(t_arch*, std::vector<std::string>*, t_hard_block_recog*);
-
-void process_module_nodes_and_create_hard_blocks(t_module*, std::vector<std::string>*, t_hard_block_recog*);
-
-bool create_and_initialize_all_hard_block_ports(t_model*, t_hard_block_recog*);
-
-void create_hard_block_port_info_structure(t_hard_block_recog*, std::string);
-
-int extract_and_store_hard_block_model_ports(t_hard_block_recog*, t_model_ports*, std::string, int, std::string);
-
-t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports*);
-
-t_node_port_association* create_unconnected_node_port_association(char*, int ,int);
-
-void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,t_array_ref**, int*);
-
-void copy_array_ref(t_array_ref*, t_array_ref*);
-
-t_array_ref* create_and_initialize_t_array_ref_struct(void);
-
-int find_hard_block_instance(t_hard_block_recog*, t_parsed_hard_block_port_info*);
-
-void assign_net_to_hard_block_instance_port(t_node*, t_parsed_hard_block_port_info*, t_hard_block_recog*, int);
-
-t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node*);
-
-int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info*, t_parsed_hard_block_port_info*, t_node*);
-
-void handle_net_assignment(t_node*, t_hard_block*, int, t_node_port_association*, t_parsed_hard_block_port_info*);
-
-bool is_hard_block_port_legal(t_node*);
-
-int create_new_hard_block_instance(t_array_ref*, t_hard_block_recog*, t_parsed_hard_block_port_info*);
-
-t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info*);
-
-t_node* create_new_hard_block_instance_node(t_array_ref*, t_parsed_hard_block_port_info*);
-
-int store_new_hard_block_instance_info(t_hard_block_recog*, t_hard_block_port_info*, t_node*, t_parsed_hard_block_port_info*);
-
-t_array_ref* create_t_array_ref_from_array(void**, int);
-
-void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>*);
-
-t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node*, std::vector<std::string>*);
-
-std::string identify_hard_block_type(std::vector<std::string>*, std::string);
-
-void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info*, std::string);
-
-void split_node_name(std::string, std::vector<std::string>*, std::string);
-
-std::string construct_hard_block_name(std::vector<std::string>*, std::string);
-
-void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module*, t_hard_block_recog*);
-
-void verify_hard_blocks(t_hard_block_recog*);
-
-// utility functions
-
-void store_hard_block_names(char**, int, std::vector<std::string>*);
-
-bool sort_hard_blocks_by_valid_connections(t_hard_block, t_hard_block);
 
 #endif
