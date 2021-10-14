@@ -1732,6 +1732,12 @@ struct t_clock_arch_spec {
     std::vector<t_clock_connection_arch> clock_connections_arch;
 };
 
+struct t_lut_cell {
+    std::string name;
+    std::string init_param;
+    std::vector<std::string> inputs;
+};
+
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
@@ -1750,10 +1756,22 @@ struct t_arch {
     int num_switches;
     t_direct_inf* Directs = nullptr;
     int num_directs = 0;
+
     t_model* models = nullptr;
     t_model* model_library = nullptr;
+
     t_power_arch* power = nullptr;
     t_clock_arch* clocks = nullptr;
+
+    // Constants
+    std::string gnd_cell;
+    std::string vcc_cell;
+
+    std::string gnd_net = "$__gnd_net";
+    std::string vcc_net = "$__vcc_net";
+
+    // Luts
+    std::vector<t_lut_cell> lut_cells;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).
