@@ -3,7 +3,6 @@
 #include "globals.h"
 #include "vpr_error.h"
 
-
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
     return std::max(
