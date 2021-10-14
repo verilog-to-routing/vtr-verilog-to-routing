@@ -115,6 +115,7 @@ struct ArchReader {
         process_device();
         process_layout();
         process_models();
+        process_luts();
         process_switches();
     }
 
@@ -230,6 +231,25 @@ struct ArchReader {
                 model_port->next = model->outputs;
                 model->outputs = model_port;
             }
+        }
+    }
+
+    void process_luts() {
+        // Add LUT Cell definitions
+        // This is helpful to understand which cells are LUTs
+        auto lut_def = ar_.getLutDefinitions();
+
+        for (auto lut_cell : lut_def.getLutCells()) {
+            t_lut_cell cell;
+            cell.name = lut_cell.getCell().cStr();
+            for (auto input : lut_cell.getInputPins())
+                cell.inputs.push_back(input.cStr());
+
+            auto equation = lut_cell.getEquation();
+            if (equation.isInitParam())
+                cell.init_param = equation.getInitParam().cStr();
+
+            arch_->lut_cells.push_back(cell);
         }
     }
 

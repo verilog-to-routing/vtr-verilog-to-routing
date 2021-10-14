@@ -70,7 +70,7 @@ struct ParseCircuitFormat {
         else if (str == "eblif")
             conv_value.set_value(e_circuit_format::EBLIF);
         else if (str == "fpga-interchange")
-            conv_value.set_value(e_circuit_format::FPGAInterchange);
+            conv_value.set_value(e_circuit_format::FPGA_INTERCHANGE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_circuit_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -89,7 +89,7 @@ struct ParseCircuitFormat {
         else if (val == e_circuit_format::EBLIF)
             conv_value.set_value("eblif");
         else {
-            VTR_ASSERT(val == e_circuit_format::FPGAInterchange);
+            VTR_ASSERT(val == e_circuit_format::FPGA_INTERCHANGE);
             conv_value.set_value("fpga-interchange");
         }
 
