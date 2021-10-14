@@ -112,6 +112,7 @@ struct ArchReader {
     }
 
     void read_arch() {
+        process_luts();
         process_models();
         process_device();
 
@@ -222,6 +223,14 @@ struct ArchReader {
                                "Model output ports can not have combinational sink ports");
             }
 
+            model_port->min_size = 1;
+            model_port->size = 1;
+            if (port.isBus()) {
+                int s = port.getBus().getBusStart();
+                int e = port.getBus().getBusEnd();
+                model_port->size = std::abs(e - s) + 1;
+            }
+
             port_names.insert(std::pair<std::string, enum PORTS>(model_port->name, dir));
             //Add the port
             if (dir == IN_PORT) {
@@ -232,6 +241,25 @@ struct ArchReader {
                 model_port->next = model->outputs;
                 model->outputs = model_port;
             }
+        }
+    }
+
+    void process_luts() {
+        // Add LUT Cell definitions
+        // This is helpful to understand which cells are LUTs
+        auto lut_def = ar_.getLutDefinitions();
+
+        for (auto lut_cell : lut_def.getLutCells()) {
+            t_lut_cell cell;
+            cell.name = lut_cell.getCell().cStr();
+            for (auto input : lut_cell.getInputPins())
+                cell.inputs.push_back(input.cStr());
+
+            auto equation = lut_cell.getEquation();
+            if (equation.isInitParam())
+                cell.init_param = equation.getInitParam().cStr();
+
+            arch_->lut_cells.push_back(cell);
         }
     }
 
