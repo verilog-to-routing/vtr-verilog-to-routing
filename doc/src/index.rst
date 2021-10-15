@@ -37,6 +37,7 @@ For more specific documentation about VPR see :ref:`vpr`.
    arch/index
    vpr/index
    odin/index
+   yosys+odin/index
    abc/index
    tutorials/index
    utils/index
