@@ -450,17 +450,21 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* START SEG_DETAILS */
     device_ctx.rr_segments = segment_inf;
 
-    int num_seg_details=0; 
     int num_seg_details_x = 0;
     int num_seg_details_y= 0; 
 
     t_seg_details* seg_details = nullptr;
     t_seg_details* seg_details_x=nullptr; 
     t_seg_details* seg_details_y=nullptr; 
-
+    
+    std::vector<t_segment_inf> segment_inf_x=get_parallel_segs(segment_inf,X_AXIS);
+    std::vector<t_segment_inf> segment_inf_y=get_parallel_segs(segment_inf,Y_AXIS);
+    
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
-        seg_details = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details);
+        seg_details_x = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_x);
+        seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_y);
+
     } else {
         /* Setup segments including distrubuting tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be
@@ -472,9 +476,6 @@ static void build_rr_graph(const t_graph_type graph_type,
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
         /*Get x & y segments seperately*/
-        std::vector<t_segment_inf> segment_inf_x=get_parallel_segs(segment_inf,X_AXIS);
-        std::vector<t_segment_inf> segment_inf_y=get_parallel_segs(segment_inf,Y_AXIS);
-
         seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
                                                  max_dim, segment_inf_x,
                                                  use_full_seg_groups, directionality,
@@ -539,11 +540,51 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     /* get the number of 'sets' for each segment type -- unidirectial architectures have two tracks in a set, bidirectional have one */
     int total_sets = max_chan_width;
+    int total_sets_x= max_chan_width_x;
+    int total_sets_y= max_chan_width_y; 
+
     if (directionality == UNI_DIRECTIONAL) {
         VTR_ASSERT(max_chan_width % 2 == 0);
         total_sets /= 2;
+        total_sets_x /=2;
+        total_sets_y /=2;
     }
-    auto sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
+    auto sets_per_seg_type_x = get_seg_track_counts(total_sets_x, segment_inf_x, use_full_seg_groups);
+    auto sets_per_seg_type_y = get_seg_track_counts(total_sets_y, segment_inf_y, use_full_seg_groups);
+    auto sets_test=get_seg_track_counts(total_sets, segment_inf,use_full_seg_groups);
+
+    
+
+    auto sets_per_seg_type= get_ordered_seg_track_counts(segment_inf_x,segment_inf_y,segment_inf,sets_per_seg_type_x,sets_per_seg_type_y);
+
+    FILE *f_p=vtr::fopen(getEchoFileName(ECHO_SETS_INFO),"w"); 
+    if (f_p){
+
+        fprintf(f_p,"\nSegment_inf names:==============================================\n");
+        for (size_t i; i<segment_inf.size(); i++){
+            fprintf(f_p, "%s\t",segment_inf[i].name.c_str());         
+        }
+        fprintf(f_p,"\nSet counts combined:==============================================\n");
+        for (size_t i; i<segment_inf.size(); i++){
+            fprintf(f_p,"%s:%d\t:",segment_inf[i].name.c_str(),sets_per_seg_type.get()[i]);         
+        }
+        fprintf(f_p,"\nSet counts not combined: =========================================\n");
+        for (size_t i; i<segment_inf.size(); i++){
+            fprintf(f_p,"%s:%d\t",segment_inf[i].name.c_str(),sets_test.get()[i]);
+        }
+        fprintf(f_p,"\nSet counts x :==============================================\n");
+        for (size_t i; i<segment_inf_x.size(); i++){
+            fprintf(f_p,"%s:%d\t",segment_inf_x[i].name.c_str(),sets_per_seg_type_x.get()[i]);         
+        }
+        fprintf(f_p,"\nSet counts y :==============================================\n");
+        for (size_t i; i<segment_inf_y.size(); i++){
+            fprintf(f_p, "%s:%d\t",segment_inf_y[i].name.c_str(),sets_per_seg_type_y.get()[i]);         
+        }
+    }
+    fclose(f_p);
+
+    //VTR_ASSERT_MSG(sets_test==sets_per_seg_type,
+    //                "Not equal combined output after combining segs " );
 
     if (is_global_graph) {
         //All pins can connect during global routing

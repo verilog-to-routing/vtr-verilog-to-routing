@@ -178,6 +178,12 @@ void load_sblock_pattern_lookup(const int i,
 
 std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& segment_inf, const enum e_parallel_axis parallel_axis); 
 
+std::unique_ptr<int[]> get_ordered_seg_track_counts  (const std::vector<t_segment_inf>& segment_inf_x, 
+                                                      const std::vector<t_segment_inf>& segment_inf_y,
+                                                      const std::vector<t_segment_inf>& segment_inf, 
+                                                      const std::unique_ptr<int[]>& segment_sets_x,
+                                                      const std::unique_ptr<int[]>& segment_sets_y); 
+                                                      
 std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
                                             const std::vector<t_segment_inf>& segment_inf,
                                             const bool use_full_seg_groups);

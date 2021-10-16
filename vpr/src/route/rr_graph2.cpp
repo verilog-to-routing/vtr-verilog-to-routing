@@ -146,7 +146,7 @@ static bool should_apply_switch_override(int switch_override);
  * no longer less than the requested number of tracks. As a final
  * step, if we were closer to target before last more, undo it
  * and end up with a result that uses fewer tracks than given. */
-std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
+std::unique_ptr<int[]> get_seg_track_counts(const int num_sets, 
                                             const std::vector<t_segment_inf>& segment_inf,
                                             const bool use_full_seg_groups) {
     std::unique_ptr<int[]> result;
@@ -215,11 +215,40 @@ std::vector<t_segment_inf> get_parallel_segs (const std::vector<t_segment_inf>& 
             }
     }
     return result; 
+}
+/*  Returns an array of tracks per segment, with matching indices to segment_inf by combining               *
+    sets per segment for each direction. This is a helper function to avoid having to refactor              *
+    alot of the functions inside rr_graph.cpp & rr_graph2.cpp to model different horizontal and vertical    *
+    channel widths.                                                                                          */
+std::unique_ptr<int[]> get_ordered_seg_track_counts  (const std::vector<t_segment_inf>& segment_inf_x, 
+                                                      const std::vector<t_segment_inf>& segment_inf_y,
+                                                      const std::vector<t_segment_inf>& segment_inf, 
+                                                      const std::unique_ptr<int[]>& segment_sets_x,
+                                                      const std::unique_ptr<int[]>& segment_sets_y){
+                                                
+        std::unordered_map<t_segment_inf,int,t_hash_segment_inf> all_segs_index; 
+        std::unique_ptr<int[]> ordered_seg_track_counts; 
+        ordered_seg_track_counts=std::make_unique<int[]>(segment_inf.size());
 
+        for (size_t iseg; iseg<segment_inf.size(); ++iseg){
+            all_segs_index.insert(std::make_pair(segment_inf[iseg],iseg));
+        }
+        for (size_t iseg_x; iseg_x<segment_inf_x.size(); ++iseg_x){
+            VTR_ASSERT_MSG(all_segs_index.find(segment_inf_x[iseg_x])!=all_segs_index.end(),
+                            "Segment in the x-direction must be a part of all segments."); 
 
+            ordered_seg_track_counts[all_segs_index.find(segment_inf_x[iseg_x])->second]=segment_sets_x[iseg_x]; 
+        }
+        for (size_t iseg_y; iseg_y<segment_inf_y.size(); ++iseg_y){
+            if (segment_inf_y[iseg_y].parallel_axis==BOTH_AXIS){    /*Avoid counting segments in both horizontal and vertical direction twice*/ 
+                continue; 
+            }
+            VTR_ASSERT_MSG(all_segs_index.find(segment_inf_x[iseg_y])!=all_segs_index.end(),
+                            "Segment in the y-direction must be a part of all segments."); 
+            ordered_seg_track_counts[all_segs_index.find(segment_inf_y[iseg_y])->second]= segment_sets_y[iseg_y]; 
+        }
 
-
-
+        return ordered_seg_track_counts;                                        
 }
                                                              
 t_seg_details* alloc_and_load_seg_details(int* max_chan_width,

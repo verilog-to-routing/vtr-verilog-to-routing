@@ -1445,14 +1445,27 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
-
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
+
 };
+    
+
+
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
     return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
 }
 
+struct t_hash_segment_inf{
+    size_t operator()(const t_segment_inf& seg_inf) const noexcept{
+        size_t result;
+        result = ((((std::hash<std::string>()(seg_inf.name)
+                     ^ std::hash<int>()(seg_inf.frequency) << 10)
+                     ^ std::hash<int>()(seg_inf.length) << 20)
+                     ^ std::hash<int>()((int)seg_inf.arch_opin_switch) << 30));
+        return result;
+    }
+};
 enum class SwitchType {
     MUX = 0,   //A configurable (buffered) mux (single-driver)
     TRISTATE,  //A configurable tristate-able buffer (multi-driver)
