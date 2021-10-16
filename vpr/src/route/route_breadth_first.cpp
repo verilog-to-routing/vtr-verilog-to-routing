@@ -384,16 +384,17 @@ static void breadth_first_expand_neighbours(BinaryHeap& heap, int inode, float p
      * heap.  pcost is the path_cost to get to inode.                           */
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
     for (RREdgeId from_edge : device_ctx.rr_nodes.edge_range(RRNodeId(inode))) {
         RRNodeId to_node = device_ctx.rr_nodes.edge_sink_node(from_edge);
 
-        if (device_ctx.rr_nodes.node_xhigh(to_node) < route_ctx.route_bb[net_id].xmin
-            || device_ctx.rr_nodes.node_xlow(to_node) > route_ctx.route_bb[net_id].xmax
-            || device_ctx.rr_nodes.node_yhigh(to_node) < route_ctx.route_bb[net_id].ymin
-            || device_ctx.rr_nodes.node_ylow(to_node) > route_ctx.route_bb[net_id].ymax)
-            continue; /* Node is outside (expanded) bounding box. */
+        vtr::Point<int> lower_left(route_ctx.route_bb[net_id].xmin, route_ctx.route_bb[net_id].ymin);
+        vtr::Point<int> upper_right(route_ctx.route_bb[net_id].xmax, route_ctx.route_bb[net_id].ymax);
+        vtr::Rect<int> bounding_box(lower_left, upper_right);
+
+        if (!rr_graph.node_is_inside_bounding_box(to_node, bounding_box)) continue;
 
         breadth_first_add_to_heap(heap, pcost, bend_cost, inode, to_node, from_edge, pres_fac);
     }

@@ -20,6 +20,8 @@ module  spram_big(
 	reg		[`DEPTH-1:0] address_counter;
 	reg		temp_reset;
 
+    defparam inst1.ADDR_WIDTH = `DEPTH;
+    defparam inst1.DATA_WIDTH = `WIDTH;
 	single_port_ram inst1(
 		.clk	( clock ),
 		.we		( clock ),
@@ -43,4 +45,3 @@ module  spram_big(
 	end
 
 endmodule
-

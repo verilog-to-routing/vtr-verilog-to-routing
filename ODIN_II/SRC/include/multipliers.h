@@ -32,6 +32,14 @@ struct t_multiplier {
     struct t_multiplier* next;
 };
 
+enum class mult_port_stat_e {
+    NOT_CONSTANT,         // neither of ports are constant
+    MULTIPLIER_CONSTANT,  // first input port is constant
+    MULTIPICAND_CONSTANT, // second input port is constant
+    CONSTANT,             // both input ports are constant
+    mult_port_stat_END
+};
+
 extern t_model* hard_multipliers;
 extern vtr::t_linked_vptr* mult_list;
 extern int min_mult;
@@ -41,11 +49,13 @@ extern void report_mult_distribution();
 extern void declare_hard_multiplier(nnode_t* node);
 extern void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* netlist);
 extern void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* netlist);
+extern void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list);
 extern void find_hard_multipliers();
 extern void add_the_blackbox_for_mults(FILE* out);
 extern void define_mult_function(nnode_t* node, FILE* out);
 extern void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* netlist);
 extern void iterate_multipliers(netlist_t* netlist);
+extern bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern bool is_ast_multiplier(ast_node_t* node);
 extern void clean_multipliers();
 extern void free_multipliers();

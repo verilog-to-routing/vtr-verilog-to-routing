@@ -57,6 +57,7 @@ char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf);
 FILE* fopen(const char* fname, const char* flag);
 int fclose(FILE* f);
 char* fgets(char* buf, int max_size, FILE* fp);
+char* getline(char*& _lineptr, FILE* _stream);
 
 int atoi(const std::string& value);
 unsigned atou(const std::string& value);

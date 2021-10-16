@@ -93,10 +93,6 @@ class t_rr_node {
 
     bool edge_is_configurable(t_edge_size iedge) const;
 
-    short xlow() const;
-    short ylow() const;
-    short xhigh() const;
-    short yhigh() const;
     signed short length() const;
 
     short ptc_num() const;
@@ -104,29 +100,15 @@ class t_rr_node {
     short track_num() const; //Same as ptc_num() but checks that type() is consistent
     short class_num() const; //Same as ptc_num() but checks that type() is consistent
 
-    short cost_index() const;
+    RRIndexedDataId cost_index() const;
     short rc_index() const;
-
-    bool is_node_on_specific_side(e_side side) const;
 
     bool validate() const;
 
   public: //Mutators
-    void set_type(t_rr_type new_type);
-
-    void set_coordinates(short x1, short y1, short x2, short y2);
-
-    void set_capacity(short);
-
-    void set_ptc_num(short);
-    void set_pin_num(short);   //Same as set_ptc_num() by checks type() is consistent
-    void set_track_num(short); //Same as set_ptc_num() by checks type() is consistent
-    void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
-
-    void set_cost_index(size_t);
+    void set_cost_index(RRIndexedDataId);
     void set_rc_index(short);
 
-    void set_direction(Direction);
     void set_side(e_side);
     void add_side(e_side);
 

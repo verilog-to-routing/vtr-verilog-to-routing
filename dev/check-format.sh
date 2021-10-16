@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-source $(dirname "$0")/../.github/scripts/common.sh
-
 clean=$(git status -s -uno | wc -l) #Short ignore untracked
 
 if [ $clean -ne 0 ]; then
@@ -10,7 +8,7 @@ if [ $clean -ne 0 ]; then
 else
     echo "Code Formatting Check"
     echo "====================="
-    make format > /dev/null
+    make format"$1" > /dev/null 2>&1
 
     valid_format=$(git diff | wc -l)
 
@@ -24,7 +22,7 @@ else
         git diff
 
         echo ""
-        echo "Run 'make format' to apply these changes"
+        echo "Run 'make format$1' to apply these changes"
 
         git reset --hard > /dev/null
         exit 1

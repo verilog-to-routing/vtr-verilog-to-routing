@@ -9,9 +9,9 @@ module simple_op(
 
     input   clk;
     input   reset;
-    input   [1:0] a,b;
+    input   [3:0] a,b;
 
-    output  [2:0] out;
+    output  [7:0] out;
     output  clk_out;
 
     assign clk_out = clk;

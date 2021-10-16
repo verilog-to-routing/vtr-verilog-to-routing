@@ -151,9 +151,9 @@ short RRGraph::node_class_num(const RRNodeId& node) const {
     return node_ptc_num(node);
 }
 
-short RRGraph::node_cost_index(const RRNodeId& node) const {
+RRIndexedDataId RRGraph::node_cost_index(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
-    return node_cost_indices_[node];
+    return RRIndexedDataId(node_cost_indices_[node]);
 }
 
 Direction RRGraph::node_direction(const RRNodeId& node) const {
@@ -990,9 +990,9 @@ void RRGraph::set_node_class_num(const RRNodeId& node, const short& class_id) {
     set_node_ptc_num(node, class_id);
 }
 
-void RRGraph::set_node_cost_index(const RRNodeId& node, const short& cost_index) {
+void RRGraph::set_node_cost_index(const RRNodeId& node, const RRIndexedDataId& cost_index) {
     VTR_ASSERT(valid_node_id(node));
-    node_cost_indices_[node] = cost_index;
+    node_cost_indices_[node] = (size_t)cost_index;
 }
 
 void RRGraph::set_node_direction(const RRNodeId& node, const Direction& direction) {

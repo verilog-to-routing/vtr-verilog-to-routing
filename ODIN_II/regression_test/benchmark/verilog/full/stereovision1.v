@@ -7,9 +7,27 @@
 
 
 module sv_chip1_hierarchy_no_mem (
-	tm3_clk_v0,  bus_word_3_2to1, bus_word_4_2to1, bus_word_5_2to1, bus_word_6_2to1, counter_out_2to1, 
-	bus_word_1_1to0, bus_word_2_1to0, bus_word_3_1to0, bus_word_4_1to0, bus_word_5_1to0, bus_word_6_1to0, 
-	counter_out_1to0,q, offchip_sram_data_in, offchip_sram_addr, offchip_sram_data_out, offchip_sram_we, offchip_sram_oe, rst
+	offchip_sram_data_in,
+	rst,
+	tm3_clk_v0,
+	bus_word_3_2to1,
+	bus_word_4_2to1,
+	bus_word_5_2to1,
+	bus_word_6_2to1,
+	counter_out_2to1,
+
+	offchip_sram_addr,
+	offchip_sram_data_out,
+	offchip_sram_we,
+	offchip_sram_oe,
+	q,
+	bus_word_1_1to0,
+	bus_word_2_1to0,
+	bus_word_3_1to0,
+	bus_word_4_1to0,
+	bus_word_5_1to0,
+	bus_word_6_1to0,
+	counter_out_1to0
 );
    input  [63:0]offchip_sram_data_in;
    output [18:0]offchip_sram_addr;

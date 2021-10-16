@@ -7,11 +7,11 @@ routed_wirelength;RangeAbs(0.60,1.50,5)
 #Area metrics
 logic_block_area_total;Range(0.8,1.3)
 logic_block_area_used;Range(0.8,1.3)
-min_chan_width_routing_area_total;Range(0.8,1.3)
-min_chan_width_routing_area_per_tile;Range(0.8,1.3)
+min_chan_width_routing_area_total;Range(0.7,1.3)
+min_chan_width_routing_area_per_tile;Range(0.7,1.3)
 
 #Run-time metrics
-min_chan_width_route_time;RangeAbs(0.10,10.0,2)
+min_chan_width_route_time;RangeAbs(0.10,14.0,2)
 
 #Peak memory
 #We set a 100MiB minimum threshold since the memory 

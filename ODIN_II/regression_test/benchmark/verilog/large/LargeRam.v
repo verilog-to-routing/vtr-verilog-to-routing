@@ -22,6 +22,8 @@ output [`WIDTH-1:0] spram_out;
 
 input [`DEPTH-1:0] address;
 
+defparam inst1.ADDR_WIDTH = `DEPTH;
+defparam inst1.DATA_WIDTH = `WIDTH;
 single_port_ram inst1(
   .we(wren1),
   .clk(clock),
@@ -31,4 +33,3 @@ single_port_ram inst1(
 );
 
 endmodule
-

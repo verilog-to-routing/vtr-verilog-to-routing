@@ -12,7 +12,7 @@ vtr_error
 ---------
 .. doxygenfile:: vtr_error.h
    :project: vtr
-   :sections: innernamespace innerclass briefdescription detaileddescription user-defined public-func
+   :sections: briefdescription detaileddescription innernamespace innerclass user-defined public-func
 
 vtr_assertion
 -------------

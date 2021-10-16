@@ -1,7 +1,7 @@
 {
     "initial/initial_delays/no_arch": {
         "test_name": "initial/initial_delays/no_arch",
-        "blif": "initial_delays.blif",
+        "generated_blif": "initial_delays_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -12,7 +12,7 @@
     },
     "initial/initial_multiple_blocks/no_arch": {
         "test_name": "initial/initial_multiple_blocks/no_arch",
-        "blif": "initial_multiple_blocks.blif",
+        "generated_blif": "initial_multiple_blocks_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -23,7 +23,7 @@
     },
     "initial/initial_multiple_statements/no_arch": {
         "test_name": "initial/initial_multiple_statements/no_arch",
-        "blif": "initial_multiple_statements.blif",
+        "generated_blif": "initial_multiple_statements_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -35,7 +35,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

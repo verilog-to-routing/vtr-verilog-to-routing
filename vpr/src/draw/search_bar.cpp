@@ -187,8 +187,8 @@ void auto_zoom_rr_node(int rr_node_id) {
     switch (rr_graph.node_type(RRNodeId(rr_node_id))) {
         case IPIN:
         case OPIN: {
-            int i = device_ctx.rr_nodes[rr_node_id].xlow();
-            int j = device_ctx.rr_nodes[rr_node_id].ylow();
+            int i = rr_graph.node_xlow(RRNodeId(rr_node_id));
+            int j = rr_graph.node_ylow(RRNodeId(rr_node_id));
             t_physical_tile_type_ptr type = device_ctx.grid[i][j].type;
             int width_offset = device_ctx.grid[i][j].width_offset;
             int height_offset = device_ctx.grid[i][j].height_offset;

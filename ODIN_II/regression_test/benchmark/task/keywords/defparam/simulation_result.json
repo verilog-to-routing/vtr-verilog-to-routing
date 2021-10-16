@@ -1,7 +1,7 @@
 {
     "defparam/defparam_failure/no_arch": {
         "test_name": "defparam/defparam_failure/no_arch",
-        "blif": "defparam_failure.blif",
+        "generated_blif": "defparam_failure_generated.blif",
         "max_rss(MiB)": 14,
         "exec_time(ms)": 3.9,
         "Pi": 6,
@@ -14,7 +14,7 @@
     },
     "defparam/defparam/no_arch": {
         "test_name": "defparam/defparam/no_arch",
-        "blif": "defparam.blif",
+        "generated_blif": "defparam_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -43,7 +43,7 @@
     },
     "defparam/defparam_string/no_arch": {
         "test_name": "defparam/defparam_string/no_arch",
-        "blif": "defparam_string.blif",
+        "generated_blif": "defparam_string_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 4.2,
         "simulation_time(ms)": 0.3,
@@ -59,7 +59,7 @@
     },
     "defparam/defparam_depth_1_failure/no_arch": {
         "test_name": "defparam/defparam_depth_1_failure/no_arch",
-        "blif": "defparam_depth_1_failure.blif",
+        "generated_blif": "defparam_depth_1_failure_generated.blif",
         "max_rss(MiB)": 30,
         "exec_time(ms)": 4.8,
         "simulation_time(ms)": 1.5,
@@ -74,7 +74,7 @@
     },
     "defparam/defparam_simple_failure/no_arch": {
         "test_name": "defparam/defparam_simple_failure/no_arch",
-        "blif": "defparam_simple_failure.blif",
+        "generated_blif": "defparam_simple_failure_generated.blif",
         "max_rss(MiB)": 29.1,
         "exec_time(ms)": 2.1,
         "Pi": 3,
@@ -87,7 +87,7 @@
     },
     "defparam/defparam_depth_1/no_arch": {
         "test_name": "defparam/defparam_depth_1/no_arch",
-        "blif": "defparam_depth_1.blif",
+        "generated_blif": "defparam_depth_1_generated.blif",
         "max_rss(MiB)": 35.5,
         "exec_time(ms)": 7.2,
         "simulation_time(ms)": 2.5,
@@ -102,7 +102,7 @@
     },
     "defparam/override_same_param_name/no_arch": {
         "test_name": "defparam/override_same_param_name/no_arch",
-        "blif": "override_same_param_name.blif",
+        "generated_blif": "override_same_param_name_generated.blif",
         "max_rss(MiB)": 35.6,
         "exec_time(ms)": 6.4,
         "simulation_time(ms)": 2.3,
@@ -117,7 +117,7 @@
     },
     "defparam/defparam_depth_2/no_arch": {
         "test_name": "defparam/defparam_depth_2/no_arch",
-        "blif": "defparam_depth_2.blif",
+        "generated_blif": "defparam_depth_2_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Vector files differ."
@@ -165,7 +165,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

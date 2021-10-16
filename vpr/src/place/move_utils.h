@@ -26,7 +26,8 @@ enum class e_move_type {
     CENTROID,
     W_MEDIAN,
     CRIT_UNIFORM,
-    FEASIBLE_REGION
+    FEASIBLE_REGION,
+    MANUAL_MOVE,
 };
 
 enum class e_create_move {
@@ -169,5 +170,7 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  * is_median: true if this is called from find_to_loc_median
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
+
+std::string e_move_result_to_string(e_move_result move_outcome);
 
 #endif

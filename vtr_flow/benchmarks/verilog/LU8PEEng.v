@@ -2244,6 +2244,9 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2284,6 +2287,9 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2324,6 +2330,9 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2364,6 +2373,9 @@ wire j;
 assign j = |byteena_a;
  wire [`RAMWIDTH-1:0]dummy;
  assign dummy = value_out & 256'b0;
+
+defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
+defparam inst1.DATA_WIDTH = `RAMWIDTH;
 dual_port_ram inst1( 
 .clk (clk),
 .we1(wren),
@@ -2403,6 +2415,9 @@ module top_ram (
 	assign q = sub_wire0 | dummy;
 	wire[32-1:0] dummy;
 	assign dummy = junk_output & 32'b0;
+
+ defparam inst2.ADDR_WIDTH = 8;
+ defparam inst2.DATA_WIDTH = 32;
  dual_port_ram inst2(
  .clk (clk),
  .we1(wren),
@@ -2882,6 +2897,9 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 64 ))
 		status_cnt <= status_cnt + 1'b1;
 end 
+  
+  defparam ram_addr.ADDR_WIDTH = `rFIFORSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `rFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -2967,6 +2985,9 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1'b1;
 end 
 assign usedw = status_cnt[`wFIFOSIZEWIDTH-1:0];
+
+  defparam ram_addr.ADDR_WIDTH = `wFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `wFIFOINPUTWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -3041,6 +3062,9 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 5'b10000))
 		status_cnt <= status_cnt + 1;
 end
+
+  defparam ram_addr.ADDR_WIDTH = `aFIFOSIZEWIDTH;
+  defparam ram_addr.DATA_WIDTH = `aFIFOWIDTH;
   dual_port_ram ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
@@ -3111,6 +3135,8 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 16 ))
 		status_cnt <= status_cnt + 1'b1;
 end
+    defparam ram_addr.ADDR_WIDTH = `mFIFOSIZEWIDTH;
+    defparam ram_addr.DATA_WIDTH = `mFIFOWIDTH;
 	dual_port_ram ram_addr(
 	.we1      (wrreq)      , // write enable
 	.we2      (rdreq)       , // Read enable

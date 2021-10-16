@@ -279,12 +279,6 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
 
     std::vector<tatum::DelayComponent> interconnect_components;
 
-    std::string start_x; //start x-coordinate
-    std::string start_y; //start y-coordinate
-    std::string end_x;   //end x-coordinate
-    std::string end_y;   //end y-coordinate
-    std::string arrow;   //direction arrow
-
     while (node != nullptr) {
         //Process the current interconnect component if it is of type OPIN, CHANX, CHANY, IPIN
         //Only process SOURCE, SINK in debug report mode
@@ -296,55 +290,8 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
             || ((rr_type == SOURCE || rr_type == SINK) && (detail_level() == e_timing_report_detail::DEBUG))) {
             tatum::DelayComponent net_component; //declare a new instance of DelayComponent
 
-            net_component.type_name = device_ctx.rr_nodes[node->inode].type_string(); //write the component's type as a routing resource node
-            net_component.type_name += ":" + std::to_string(node->inode) + " ";       //add the index of the routing resource node
-            if (rr_graph.node_type(RRNodeId(node->inode)) == OPIN || rr_graph.node_type(RRNodeId(node->inode)) == IPIN) {
-                net_component.type_name += "side: ("; //add the side of the routing resource node
-                for (const e_side& node_side : SIDES) {
-                    if (!device_ctx.rr_nodes.is_node_on_specific_side(RRNodeId(node->inode), node_side)) {
-                        continue;
-                    }
-                    net_component.type_name += std::string(SIDE_STRING[node_side]) + ","; //add the side of the routing resource node
-                }
-                net_component.type_name += ")"; //add the side of the routing resource node
-                // For OPINs and IPINs the starting and ending coordinate are identical, so we can just arbitrarily assign the start to larger values
-                // and the end to the lower coordinate
-                start_x = " (" + std::to_string(device_ctx.rr_nodes[node->inode].xhigh()) + ","; //start and end coordinates are the same for OPINs and IPINs
-                start_y = std::to_string(device_ctx.rr_nodes[node->inode].yhigh()) + ")";
-                end_x = "";
-                end_y = "";
-                arrow = "";
-            }
-            if (rr_graph.node_type(RRNodeId(node->inode)) == CHANX || rr_graph.node_type(RRNodeId(node->inode)) == CHANY) { //for channels, we would like to describe the component with segment specific information
-                int cost_index = device_ctx.rr_nodes[node->inode].cost_index();
-                int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-                net_component.type_name += device_ctx.rr_segments[seg_index].name;                                 //Write the segment name
-                net_component.type_name += " length:" + std::to_string(device_ctx.rr_nodes[node->inode].length()); //add the length of the segment
-                //Figure out the starting and ending coordinate of the segment depending on the direction
+            net_component.type_name = rr_graph.node_coordinate_to_string(RRNodeId(node->inode));
 
-                arrow = "->"; //we will point the coordinates from start to finish, left to right
-
-                if (rr_graph.node_direction(RRNodeId(node->inode)) == Direction::DEC) {              //signal travels along decreasing direction
-                    start_x = " (" + std::to_string(device_ctx.rr_nodes[node->inode].xhigh()) + ","; //start coordinates have large value
-                    start_y = std::to_string(device_ctx.rr_nodes[node->inode].yhigh()) + ")";
-                    end_x = "(" + std::to_string(device_ctx.rr_nodes[node->inode].xlow()) + ","; //end coordinates have smaller value
-                    end_y = std::to_string(device_ctx.rr_nodes[node->inode].ylow()) + ")";
-                }
-
-                else {                                                                              // signal travels in increasing direction, stays at same point, or can travel both directions
-                    start_x = " (" + std::to_string(device_ctx.rr_nodes[node->inode].xlow()) + ","; //start coordinates have smaller value
-                    start_y = std::to_string(device_ctx.rr_nodes[node->inode].ylow()) + ")";
-                    end_x = "(" + std::to_string(device_ctx.rr_nodes[node->inode].xhigh()) + ","; //end coordinates have larger value
-                    end_y = std::to_string(device_ctx.rr_nodes[node->inode].yhigh()) + ")";
-                    if (rr_graph.node_direction(RRNodeId(node->inode)) == Direction::BIDIR) {
-                        arrow = "<->"; //indicate that signal can travel both direction
-                    }
-                }
-            }
-
-            net_component.type_name += start_x + start_y; //Write the starting coordinates
-            net_component.type_name += arrow;             //Indicate the direction
-            net_component.type_name += end_x + end_y;     //Write the end coordiates
             if (node->parent_node) {
                 net_component.delay = tatum::Time(node->Tdel - node->parent_node->Tdel); // add the incremental delay
             } else {

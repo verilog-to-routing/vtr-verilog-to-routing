@@ -30,7 +30,7 @@ wire [`BITS-1:0] temp_b;
 wire temp_c;
 wire temp_d;
 
-a top_a({a_in[0], c_in}, .b_in(2'b10), .out(temp_a));
+a top_a(.a_in({a_in[0], c_in}), .b_in(2'b10), .out(temp_a));
 b top_b(a_in, b_in, temp_b);
 c top_c(c_in, d_in, temp_c);
 d top_d(c_in, d_in, temp_d);

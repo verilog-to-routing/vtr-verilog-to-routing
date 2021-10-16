@@ -96,7 +96,7 @@
  wire [28:0] Out_Y_wire ;
  wire [11:0] y0 ;
  wire [11:0] y19 ;
- reg [11:0] Out_Y;
+ reg [28:0] Out_Y;
 
  reg [11:0] ZeroReg; 
 

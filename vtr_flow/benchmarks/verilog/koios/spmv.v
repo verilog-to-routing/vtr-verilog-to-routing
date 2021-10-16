@@ -3705,7 +3705,7 @@ module spram #(
 		end
 	`else 
 
-		single_port_ram u_single_port_ram( 
+		single_port_ram u_single_port_ram( 
 		.addr(address),
 		.we(wren),
 		.data(din),

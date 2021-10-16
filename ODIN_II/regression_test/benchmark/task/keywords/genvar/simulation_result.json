@@ -1,7 +1,7 @@
 {
     "genvar/generate_for/no_arch": {
         "test_name": "genvar/generate_for/no_arch",
-        "blif": "generate_for.blif",
+        "generated_blif": "generate_for_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 3.1,
         "simulation_time(ms)": 0.2,
@@ -16,7 +16,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

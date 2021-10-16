@@ -18,6 +18,7 @@ const char* odin_error_STR[] = {
     "PARSE_ARGS",
     "PARSE_TO_AST",
     "AST",
+    "BLIF ELABORATION",
     "NETLIST",
     "PARSE_BLIF",
     "OUTPUT_BLIF",

@@ -1,7 +1,7 @@
 {
     "generate_endgenerate/generate_case_00/no_arch": {
         "test_name": "generate_endgenerate/generate_case_00/no_arch",
-        "blif": "generate_case_00.blif",
+        "generated_blif": "generate_case_00_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 6,
         "simulation_time(ms)": 1.5,
@@ -16,7 +16,7 @@
     },
     "generate_endgenerate/generate_case_01/no_arch": {
         "test_name": "generate_endgenerate/generate_case_01/no_arch",
-        "blif": "generate_case_01.blif",
+        "generated_blif": "generate_case_01_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 6.8,
         "simulation_time(ms)": 2.2,
@@ -31,7 +31,7 @@
     },
     "generate_endgenerate/generate_case_10/no_arch": {
         "test_name": "generate_endgenerate/generate_case_10/no_arch",
-        "blif": "generate_case_10.blif",
+        "generated_blif": "generate_case_10_generated.blif",
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 6.2,
         "simulation_time(ms)": 1.5,
@@ -46,7 +46,7 @@
     },
     "generate_endgenerate/generate_case_11/no_arch": {
         "test_name": "generate_endgenerate/generate_case_11/no_arch",
-        "blif": "generate_case_11.blif",
+        "generated_blif": "generate_case_11_generated.blif",
         "max_rss(MiB)": 14.7,
         "exec_time(ms)": 5.9,
         "simulation_time(ms)": 1.4,
@@ -60,7 +60,7 @@
     },
     "generate_endgenerate/generate_else_if_0/no_arch": {
         "test_name": "generate_endgenerate/generate_else_if_0/no_arch",
-        "blif": "generate_else_if_0.blif",
+        "generated_blif": "generate_else_if_0_generated.blif",
         "max_rss(MiB)": 14.7,
         "exec_time(ms)": 4.1,
         "simulation_time(ms)": 0.6,
@@ -75,7 +75,7 @@
     },
     "generate_endgenerate/generate_else_if_1/no_arch": {
         "test_name": "generate_endgenerate/generate_else_if_1/no_arch",
-        "blif": "generate_else_if_1.blif",
+        "generated_blif": "generate_else_if_1_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 5.8,
         "simulation_time(ms)": 1,
@@ -90,7 +90,7 @@
     },
     "generate_endgenerate/generate_if_else_0/no_arch": {
         "test_name": "generate_endgenerate/generate_if_else_0/no_arch",
-        "blif": "generate_if_else_0.blif",
+        "generated_blif": "generate_if_else_0_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 5.5,
         "simulation_time(ms)": 0.9,
@@ -105,7 +105,7 @@
     },
     "generate_endgenerate/generate_if_else_1/no_arch": {
         "test_name": "generate_endgenerate/generate_if_else_1/no_arch",
-        "blif": "generate_if_else_1.blif",
+        "generated_blif": "generate_if_else_1_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 5.2,
         "simulation_time(ms)": 0.9,
@@ -121,7 +121,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

@@ -209,6 +209,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -263,34 +264,35 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             }
 
             format_coordinates(x, y, tokens[3], inet, filename, lineno);
+            auto rr_node = RRNodeId(inode);
 
             if (tokens[4] == "to") {
                 format_coordinates(x2, y2, tokens[5], inet, filename, lineno);
-                if (node.xlow() != x || node.xhigh() != x2 || node.yhigh() != y2 || node.ylow() != y) {
+                if (rr_graph.node_xlow(rr_node) != x || rr_graph.node_xhigh(rr_node) != x2 || rr_graph.node_yhigh(rr_node) != y2 || rr_graph.node_ylow(rr_node) != y) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "The coordinates of node %d does not match the rr graph", inode);
                 }
                 offset = 2;
 
                 /* Check for connectivity, this throws an exception when a dangling net is encountered in the routing file */
-                bool legal_node = check_rr_graph_connectivity(prev_node, node.id());
+                bool legal_node = check_rr_graph_connectivity(prev_node, rr_node);
                 if (!legal_node) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno, "Dangling branch at net %lu, nodes %d -> %d: %s", inet, prev_node, inode, input.c_str());
                 }
-                prev_node = node.id();
+                prev_node = rr_node;
             } else {
-                if (node.xlow() != x || node.xhigh() != x || node.yhigh() != y || node.ylow() != y) {
+                if (rr_graph.node_xlow(rr_node) != x || rr_graph.node_xhigh(rr_node) != x || rr_graph.node_yhigh(rr_node) != y || rr_graph.node_ylow(rr_node) != y) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "The coordinates of node %d does not match the rr graph", inode);
                 }
                 offset = 0;
 
-                bool legal_node = check_rr_graph_connectivity(prev_node, node.id());
-                prev_node = node.id();
+                bool legal_node = check_rr_graph_connectivity(prev_node, rr_node);
+                prev_node = rr_node;
                 if (!legal_node) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno, "Dangling branch at net %lu, nodes %d -> %d: %s", inet, prev_node, inode, input.c_str());
                 }
-                prev_node = node.id();
+                prev_node = rr_node;
             }
 
             /* Verify types and ptc*/

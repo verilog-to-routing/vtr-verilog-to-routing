@@ -10,7 +10,7 @@ assign d = a | b;
 
 endmodule
 
-module define_tester (a,b, c);
+module define_tester (a,b, c, d);
 
 input [31:0] a;
 input wire [31:0] b;

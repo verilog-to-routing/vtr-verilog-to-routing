@@ -8,7 +8,7 @@
 
 namespace vtr {
 
-///@brief Lindek list node struct
+///@brief Linked list node struct
 struct t_linked_vptr {
     void* data_vptr;
     struct t_linked_vptr* next;

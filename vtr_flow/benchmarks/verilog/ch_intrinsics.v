@@ -28,6 +28,9 @@ reg str_write_enable;
 reg [7:0] str_in;
 wire [7:0] str_out;
 
+
+defparam _str.ADDR_WIDTH = 5;
+defparam _str.DATA_WIDTH = 8;
 single_port_ram _str (
 	.clk( clk ),
 	.addr( str_address ),

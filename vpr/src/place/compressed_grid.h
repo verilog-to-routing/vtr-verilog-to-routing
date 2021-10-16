@@ -64,4 +64,13 @@ int grid_to_compressed(const std::vector<int>& coords, int point);
  */
 int grid_to_compressed_approx(const std::vector<int>& coords, int point);
 
+/**
+ * @brief  print the contents of the compressed grids to an echo file
+ *
+ *   @param filename the name of the file to print to
+ *   @param comp_grids the compressed grids that are used during placement
+ *
+ */
+void echo_compressed_grids(char* filename, const std::vector<t_compressed_block_grid>& comp_grids);
+
 #endif

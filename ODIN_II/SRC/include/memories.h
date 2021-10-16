@@ -71,6 +71,9 @@ struct dp_ram_signals {
     npin_t* clk;
 };
 
+extern sp_ram_signals* init_sp_ram_signals();
+extern dp_ram_signals* init_dp_ram_signals();
+
 long get_sp_ram_split_depth();
 long get_dp_ram_split_depth();
 
@@ -82,6 +85,9 @@ void free_dp_ram_signals(dp_ram_signals* signalsvar);
 
 bool is_sp_ram(nnode_t* node);
 bool is_dp_ram(nnode_t* node);
+
+bool is_blif_sp_ram(nnode_t* node);
+bool is_blif_dp_ram(nnode_t* node);
 
 bool is_ast_sp_ram(ast_node_t* node);
 bool is_ast_dp_ram(ast_node_t* node);
@@ -108,7 +114,20 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 
 signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_list);
 
-void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
-void add_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
+extern void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
+extern void add_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
+extern void remap_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
+extern void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name);
+
+int* get_spram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
+int* get_dpram_hb_ports_sizes(int* hb_instance_ports_sizes, nnode_t* hb_instance);
+
+extern nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node);
+extern nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node);
+
+extern void register_memory_model(nnode_t* mem);
+
+extern void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 #endif // MEMORIES_H

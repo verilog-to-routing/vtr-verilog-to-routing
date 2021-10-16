@@ -1,7 +1,7 @@
 {
     "buf/buf_indexed_port/no_arch": {
         "test_name": "buf/buf_indexed_port/no_arch",
-        "blif": "buf_indexed_port.blif",
+        "generated_blif": "buf_indexed_port_generated.blif",
         "max_rss(MiB)": 14.7,
         "exec_time(ms)": 3.6,
         "simulation_time(ms)": 0.5,
@@ -16,7 +16,7 @@
     },
     "buf/buf_wire/no_arch": {
         "test_name": "buf/buf_wire/no_arch",
-        "blif": "buf_wire.blif",
+        "generated_blif": "buf_wire_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 3.4,
         "simulation_time(ms)": 0.5,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

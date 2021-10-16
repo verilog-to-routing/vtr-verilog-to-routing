@@ -1,7 +1,7 @@
 {
     "macromodule/macromodules_modules/no_arch": {
         "test_name": "macromodule/macromodules_modules/no_arch",
-        "blif": "macromodules_modules.blif",
+        "generated_blif": "macromodules_modules_generated.blif",
         "max_rss(MiB)": 14.7,
         "exec_time(ms)": 4,
         "simulation_time(ms)": 0.7,
@@ -16,7 +16,7 @@
     },
     "macromodule/multiple_macromodules/no_arch": {
         "test_name": "macromodule/multiple_macromodules/no_arch",
-        "blif": "multiple_macromodules.blif",
+        "generated_blif": "multiple_macromodules_generated.blif",
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 4.1,
         "simulation_time(ms)": 0.7,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

@@ -14,6 +14,7 @@
 #    include "draw_color.h"
 #    include "search_bar.h"
 #    include "draw_debug.h"
+#    include "manual_moves.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;

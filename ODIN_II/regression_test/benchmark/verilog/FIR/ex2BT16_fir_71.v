@@ -281,7 +281,7 @@
  wire [11:0] y68 ;
  wire [11:0] y69 ;
  wire [11:0] y70 ;
- reg [11:0] Out_Y;
+ reg [28:0] Out_Y;
 
  reg [11:0] ZeroReg; 
 

@@ -102,19 +102,6 @@ inline short t_rr_node::edge_switch(t_edge_size iedge) const {
     return storage_->edge_switch(id_, iedge);
 }
 
-inline short t_rr_node::xlow() const {
-    return storage_->node_xlow(id_);
-}
-inline short t_rr_node::ylow() const {
-    return storage_->node_ylow(id_);
-}
-inline short t_rr_node::xhigh() const {
-    return storage_->node_xhigh(id_);
-}
-inline short t_rr_node::yhigh() const {
-    return storage_->node_yhigh(id_);
-}
-
 inline short t_rr_node::ptc_num() const {
     return storage_->node_ptc_num(id_);
 }
@@ -129,14 +116,6 @@ inline short t_rr_node::track_num() const {
 
 inline short t_rr_node::class_num() const {
     return storage_->node_class_num(id_);
-}
-
-inline short t_rr_node::cost_index() const {
-    return storage_->node_cost_index(id_);
-}
-
-inline bool t_rr_node::is_node_on_specific_side(e_side side) const {
-    return storage_->is_node_on_specific_side(id_, side);
 }
 
 #endif /* _RR_NODE_IMPL_H_ */

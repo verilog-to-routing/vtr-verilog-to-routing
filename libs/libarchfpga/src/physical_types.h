@@ -1382,9 +1382,15 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+<<<<<<< HEAD
 /* X_AXIS: Assigned to a segment's  parallel_axis data member if segment is parallel to the x-axis. Defined in arch file as: axis="x"           *
  * Y_AXIS: Assigned to a segment's  parallel_axis data amember if segment is parallel to the y-axis. Defined in arch file as: axis="y"          *     
  * BOTH_AXIS: Assigned to a segment's parallel axis data member if segment's parallel axis is not specified (default is it parallel to both).   */        
+=======
+/* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
+ * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
+ * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
+>>>>>>> 467ad22a4a7512254a2a26819f2f18e327fcf798
 enum e_parallel_axis {
     X_AXIS,
     Y_AXIS,

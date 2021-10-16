@@ -1,7 +1,7 @@
 {
     "assign/assign_int_wide/no_arch": {
         "test_name": "assign/assign_int_wide/no_arch",
-        "blif": "assign_int_wide.blif",
+        "generated_blif": "assign_int_wide_generated.blif",
         "max_rss(MiB)": 15.8,
         "exec_time(ms)": 12.8,
         "simulation_time(ms)": 6.1,
@@ -16,7 +16,7 @@
     },
     "assign/assign_ultra_wide/no_arch": {
         "test_name": "assign/assign_ultra_wide/no_arch",
-        "blif": "assign_ultra_wide.blif",
+        "generated_blif": "assign_ultra_wide_generated.blif",
         "max_rss(MiB)": 33.1,
         "exec_time(ms)": 85.1,
         "simulation_time(ms)": 56.1,
@@ -31,7 +31,7 @@
     },
     "assign/assign_wide/no_arch": {
         "test_name": "assign/assign_wide/no_arch",
-        "blif": "assign_wide.blif",
+        "generated_blif": "assign_wide_generated.blif",
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 6,
         "simulation_time(ms)": 1.1,
@@ -46,7 +46,7 @@
     },
     "assign/assign_wire/no_arch": {
         "test_name": "assign/assign_wire/no_arch",
-        "blif": "assign_wire.blif",
+        "generated_blif": "assign_wire_generated.blif",
         "max_rss(MiB)": 14.7,
         "exec_time(ms)": 5,
         "simulation_time(ms)": 0.8,
@@ -62,7 +62,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

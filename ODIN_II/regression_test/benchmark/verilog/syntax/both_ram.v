@@ -1,16 +1,16 @@
 // DEFINES
 `define WIDTH 8         // Bit width 
-`define DEPTH 16         // Bit depth
+`define DEPTH 11         // Bit depth
 
 
 module  pram(
   clock,
   wren1,
   wren2,
-  address,
-  address2,
   value_in,
   value_in2,
+  address,
+  address2,
   spram_out,
   dpram_out,
   dpram_out2,
@@ -36,7 +36,7 @@ output [`WIDTH-1:0] dpram2_out2;
 input [`DEPTH-1:0] address;
 input [`DEPTH-1:0] address2;
 
-dual_port_ram inst1(
+dual_port_ram #(`DEPTH, `WIDTH) inst1(
   .we1(wren1),
   .we2(wren2),
   .clk(clock),
@@ -48,7 +48,7 @@ dual_port_ram inst1(
   .addr2(address2)
 );
 
-dual_port_ram inst2(
+dual_port_ram #(`DEPTH, `WIDTH) inst2 (
   .we1(wren1),
   .we2(1'b0),
   .clk(clock),
@@ -60,7 +60,7 @@ dual_port_ram inst2(
   .addr2(address2)
 );
 
-single_port_ram inst3(
+single_port_ram #(`DEPTH, `WIDTH) inst3(
   .we(wren1),
   .clk(clock),
   .data(value_in),
@@ -69,4 +69,3 @@ single_port_ram inst3(
 );
 
 endmodule
-

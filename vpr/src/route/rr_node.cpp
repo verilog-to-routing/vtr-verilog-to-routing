@@ -51,48 +51,12 @@ bool t_rr_node::validate() const {
     return true;
 }
 
-void t_rr_node::set_type(t_rr_type new_type) {
-    storage_->set_node_type(id_, new_type);
-}
-
-/*
- * Pass in two coordinate variables describing location of node.
- * They do not have to be in any particular order.
- */
-void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
-    storage_->set_node_coordinates(id_, x1, y1, x2, y2);
-}
-
-void t_rr_node::set_ptc_num(short new_ptc_num) {
-    storage_->set_node_ptc_num(id_, new_ptc_num);
-}
-
-void t_rr_node::set_pin_num(short new_pin_num) {
-    storage_->set_node_pin_num(id_, new_pin_num);
-}
-
-void t_rr_node::set_track_num(short new_track_num) {
-    storage_->set_node_track_num(id_, new_track_num);
-}
-
-void t_rr_node::set_class_num(short new_class_num) {
-    storage_->set_node_class_num(id_, new_class_num);
-}
-
-void t_rr_node::set_cost_index(size_t new_cost_index) {
+void t_rr_node::set_cost_index(RRIndexedDataId new_cost_index) {
     storage_->set_node_cost_index(id_, new_cost_index);
 }
 
 void t_rr_node::set_rc_index(short new_rc_index) {
     storage_->set_node_rc_index(id_, new_rc_index);
-}
-
-void t_rr_node::set_capacity(short new_capacity) {
-    storage_->set_node_capacity(id_, new_capacity);
-}
-
-void t_rr_node::set_direction(Direction new_direction) {
-    storage_->set_node_direction(id_, new_direction);
 }
 
 void t_rr_node::add_side(e_side new_side) {

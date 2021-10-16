@@ -2,7 +2,7 @@
     "config_file_half/bm_base_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/bm_base_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -25,7 +25,7 @@
     "config_file_half/bm_base_multiply/k6_N10_40nm": {
         "test_name": "config_file_half/bm_base_multiply/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -47,7 +47,7 @@
     "config_file_half/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -70,7 +70,7 @@
     "config_file_half/bm_match1_str_arch/k6_N10_40nm": {
         "test_name": "config_file_half/bm_match1_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -92,7 +92,7 @@
     "config_file_half/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -116,7 +116,7 @@
     "config_file_half/bm_match2_str_arch/k6_N10_40nm": {
         "test_name": "config_file_half/bm_match2_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -138,7 +138,7 @@
     "config_file_half/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -161,7 +161,7 @@
     "config_file_half/bm_match3_str_arch/k6_N10_40nm": {
         "test_name": "config_file_half/bm_match3_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -183,7 +183,7 @@
     "config_file_half/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -207,7 +207,7 @@
     "config_file_half/bm_match4_str_arch/k6_N10_40nm": {
         "test_name": "config_file_half/bm_match4_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -229,7 +229,7 @@
     "config_file_half/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -253,7 +253,7 @@
     "config_file_half/bm_match5_str_arch/k6_N10_40nm": {
         "test_name": "config_file_half/bm_match5_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -275,7 +275,7 @@
     "config_file_half/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "multiply_hard_block.blif",
+        "generated_blif": "multiply_hard_block_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -296,7 +296,7 @@
     "config_file_half/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "config_file_half/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -318,7 +318,7 @@
     "config_file_half/twobits_arithmetic_multiply/k6_N10_40nm": {
         "test_name": "config_file_half/twobits_arithmetic_multiply/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -340,7 +340,7 @@
     "config_file_half/bm_base_multiply/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_base_multiply/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -363,7 +363,7 @@
     "config_file_half/bm_base_multiply/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_base_multiply/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_base_multiply.blif",
+        "generated_blif": "bm_base_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -386,7 +386,7 @@
     "config_file_half/bm_match1_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match1_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -409,7 +409,7 @@
     "config_file_half/bm_match1_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match1_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match1_str_arch.blif",
+        "generated_blif": "bm_match1_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -432,7 +432,7 @@
     "config_file_half/bm_match2_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match2_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -455,7 +455,7 @@
     "config_file_half/bm_match2_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match2_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match2_str_arch.blif",
+        "generated_blif": "bm_match2_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -478,7 +478,7 @@
     "config_file_half/bm_match3_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match3_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -500,7 +500,7 @@
     "config_file_half/bm_match3_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match3_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match3_str_arch.blif",
+        "generated_blif": "bm_match3_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -522,7 +522,7 @@
     "config_file_half/bm_match4_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match4_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -545,7 +545,7 @@
     "config_file_half/bm_match4_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match4_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match4_str_arch.blif",
+        "generated_blif": "bm_match4_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -568,7 +568,7 @@
     "config_file_half/bm_match5_str_arch/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match5_str_arch/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -591,7 +591,7 @@
     "config_file_half/bm_match5_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/bm_match5_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "bm_match5_str_arch.blif",
+        "generated_blif": "bm_match5_str_arch_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -614,7 +614,7 @@
     "config_file_half/multiply_hard_block/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/multiply_hard_block/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "multiply_hard_block.blif",
+        "generated_blif": "multiply_hard_block_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -635,7 +635,7 @@
     "config_file_half/multiply_hard_block/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/multiply_hard_block/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "multiply_hard_block.blif",
+        "generated_blif": "multiply_hard_block_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -656,7 +656,7 @@
     "config_file_half/twobits_arithmetic_multiply/k6_frac_N10_mem32K_40nm": {
         "test_name": "config_file_half/twobits_arithmetic_multiply/k6_frac_N10_mem32K_40nm",
         "architecture": "k6_frac_N10_mem32K_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -678,7 +678,7 @@
     "config_file_half/twobits_arithmetic_multiply/k6_N10_mem32K_40nm": {
         "test_name": "config_file_half/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "twobits_arithmetic_multiply.blif",
+        "generated_blif": "twobits_arithmetic_multiply_generated.blif",
         "warnings": [
             "[PARSE_ARGS] Must include only one of either:"
         ],
@@ -700,7 +700,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

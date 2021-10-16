@@ -1,7 +1,7 @@
 {
     "parameter/multiple_parameter/no_arch": {
         "test_name": "parameter/multiple_parameter/no_arch",
-        "blif": "multiple_parameter.blif",
+        "generated_blif": "multiple_parameter_generated.blif",
         "max_rss(MiB)": 14.7,
         "exec_time(ms)": 4.1,
         "simulation_time(ms)": 0.6,
@@ -16,7 +16,7 @@
     },
     "parameter/parameter_define/no_arch": {
         "test_name": "parameter/parameter_define/no_arch",
-        "blif": "parameter_define.blif",
+        "generated_blif": "parameter_define_generated.blif",
         "max_rss(MiB)": 14.5,
         "exec_time(ms)": 3.7,
         "simulation_time(ms)": 0.3,
@@ -30,7 +30,7 @@
     },
     "parameter/parameter_override/no_arch": {
         "test_name": "parameter/parameter_override/no_arch",
-        "blif": "parameter_override.blif",
+        "generated_blif": "parameter_override_generated.blif",
         "max_rss(MiB)": 35.2,
         "exec_time(ms)": 4.4,
         "simulation_time(ms)": 0.6,
@@ -46,7 +46,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

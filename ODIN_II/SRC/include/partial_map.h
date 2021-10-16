@@ -30,5 +30,7 @@
 void partial_map_top(netlist_t* netlist);
 void instantiate_add_w_carry(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_multi_port_mux(nnode_t* node, short mark, netlist_t* netlist);
+void instantiate_multi_bits_mux_2(nnode_t* node, short mark, netlist_t* /*netlist*/);
+void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* /*netlist*/);
 
 #endif

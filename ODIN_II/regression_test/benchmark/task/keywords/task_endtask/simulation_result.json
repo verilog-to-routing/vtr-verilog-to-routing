@@ -1,7 +1,7 @@
 {
     "task_endtask/inside_port/no_arch": {
         "test_name": "task_endtask/inside_port/no_arch",
-        "blif": "inside_port.blif",
+        "generated_blif": "inside_port_generated.blif",
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 5.6,
         "simulation_time(ms)": 0.9,
@@ -16,7 +16,7 @@
     },
     "task_endtask/outside_port/no_arch": {
         "test_name": "task_endtask/outside_port/no_arch",
-        "blif": "outside_port.blif",
+        "generated_blif": "outside_port_generated.blif",
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 3.9,
         "simulation_time(ms)": 0.5,
@@ -32,7 +32,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

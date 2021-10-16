@@ -2,7 +2,7 @@
     "hard_logic/bfly/hard_fpu_arch_timing": {
         "test_name": "hard_logic/bfly/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "bfly.blif",
+        "generated_blif": "bfly_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~0 to a valid type."
@@ -11,7 +11,7 @@
     "hard_logic/bgm/hard_fpu_arch_timing": {
         "test_name": "hard_logic/bgm/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "bgm.blif",
+        "generated_blif": "bgm_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~6 to a valid type."
@@ -20,7 +20,7 @@
     "hard_logic/dscg/hard_fpu_arch_timing": {
         "test_name": "hard_logic/dscg/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "dscg.blif",
+        "generated_blif": "dscg_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_add~0 to a valid type."
@@ -29,7 +29,7 @@
     "hard_logic/fir/hard_fpu_arch_timing": {
         "test_name": "hard_logic/fir/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "fir.blif",
+        "generated_blif": "fir_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~0 to a valid type."
@@ -38,7 +38,7 @@
     "hard_logic/mm3/hard_fpu_arch_timing": {
         "test_name": "hard_logic/mm3/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "mm3.blif",
+        "generated_blif": "mm3_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~0 to a valid type."
@@ -47,7 +47,7 @@
     "hard_logic/ode/hard_fpu_arch_timing": {
         "test_name": "hard_logic/ode/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "ode.blif",
+        "generated_blif": "ode_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~0 to a valid type."
@@ -56,7 +56,7 @@
     "hard_logic/syn2/hard_fpu_arch_timing": {
         "test_name": "hard_logic/syn2/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "syn2.blif",
+        "generated_blif": "syn2_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_mul~5 to a valid type."
@@ -65,7 +65,7 @@
     "hard_logic/syn7/hard_fpu_arch_timing": {
         "test_name": "hard_logic/syn7/hard_fpu_arch_timing",
         "architecture": "hard_fpu_arch_timing.xml",
-        "blif": "syn7.blif",
+        "generated_blif": "syn7_generated.blif",
         "exit": 134,
         "errors": [
             "[OUTPUT_BLIF] Could not resolve memory hard block fpu_add~0 to a valid type."
@@ -74,7 +74,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

@@ -145,11 +145,11 @@ void define_hard_block(nnode_t* node, FILE* out) {
     for (i = 0; i < node->num_input_pins; i++) {
         /* Check that the input pin is driven */
         if (node->input_pins[i]->net->num_driver_pins == 0
-            && node->input_pins[i]->net != verilog_netlist->zero_net
-            && node->input_pins[i]->net != verilog_netlist->one_net
-            && node->input_pins[i]->net != verilog_netlist->pad_net) {
+            && node->input_pins[i]->net != syn_netlist->zero_net
+            && node->input_pins[i]->net != syn_netlist->one_net
+            && node->input_pins[i]->net != syn_netlist->pad_net) {
             warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
-            add_fanout_pin_to_net(verilog_netlist->zero_net, node->input_pins[i]);
+            add_fanout_pin_to_net(syn_netlist->zero_net, node->input_pins[i]);
         } else if (node->input_pins[i]->net->num_driver_pins > 1) {
             error_message(NETLIST, node->loc, "Multiple (%d) driver pins not supported in hard block definition\n", node->input_pins[i]->net->num_driver_pins);
         }

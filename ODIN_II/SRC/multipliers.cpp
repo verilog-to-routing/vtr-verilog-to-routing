@@ -58,6 +58,10 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b);
 void split_multiplier_b(nnode_t* node, int a, int b1, int b0);
 void pad_multiplier(nnode_t* node, netlist_t* netlist);
 void split_soft_multiplier(nnode_t* node, netlist_t* netlist);
+static mult_port_stat_e is_constant_multipication(nnode_t* node, netlist_t* netlist);
+static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e port_status, short mark, netlist_t* netlist);
+static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat, nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+static void cleanup_mult_old_node(nnode_t* nodeo, netlist_t* netlist);
 
 // data structure representing a row of bits an adder tree
 struct AdderTreeRow {
@@ -204,8 +208,17 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
             /* ELSE IF - these are the middle values that come from the LSbit of partial adders */
             remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[i - 1], 0);
         } else {
-            /* ELSE - the final outputs are straight from the outputs of the last adder */
-            remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width - 2], current_index);
+            if (current_index > multiplier_width) {
+                /* output pins greater than 2X multiplier width will be driven with pad node */
+                nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, mark);
+                /* hook a pad pin into buf node */
+                add_input_pin_to_node(buf_node, get_pad_pin(netlist), 0);
+                /* hook the over size output pin to into the buf node */
+                remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+            } else {
+                /* ELSE - the final outputs are straight from the outputs of the last adder */
+                remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width - 2], current_index);
+            }
             current_index++;
         }
     }
@@ -232,6 +245,258 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
     if (partial_products != NULL) {
         vtr::free(partial_products);
     }
+}
+
+/**
+ * --------------------------------------------------------------------------
+ * (function: implement_constant_multipication)
+ * 
+ * @brief implementing constant multipication utilizing shift and ADD operations
+ * 
+ * @note this function should call before partial mapping phase
+ * since some logic need to be softened
+ * 
+ * @param node pointer to the multipication netlist node
+ * @param port_status showing which value is constant, which is variable
+ * @param mark a unique DFS traversal number
+ * @param netlist pointer to the current netlist
+ * 
+ * @return output signal
+ * -------------------------------------------------------------------------*/
+static signal_list_t* implement_constant_multipication(nnode_t* node, mult_port_stat_e port_status, short mark, netlist_t* netlist) {
+    /* validate the port sizes */
+    oassert(node->num_input_port_sizes == 2);
+    oassert(node->num_output_port_sizes == 1);
+
+    signal_list_t* return_value = init_signal_list();
+
+    /**
+     * Multiply ports
+     * IN1: (n bits)        input_port[0]
+     * IN2: (m bits)        input_port[1]
+     * OUT: min(m, n) bits  output_port[0]
+     */
+
+    int IN1_width = node->input_port_sizes[0];
+
+    int i, j;
+    int const_operand_offset = (port_status == mult_port_stat_e::MULTIPICAND_CONSTANT) ? IN1_width : 0;
+    int const_operand_width = node->input_port_sizes[(port_status == mult_port_stat_e::MULTIPICAND_CONSTANT) ? 1 : 0];
+
+    int variable_operand_offset = (port_status == mult_port_stat_e::MULTIPICAND_CONSTANT) ? 0 : IN1_width;
+    int variable_operand_width = node->num_input_pins - const_operand_width;
+    operation_list variable_operand_signedness = (port_status == mult_port_stat_e::MULTIPICAND_CONSTANT)
+                                                     ? node->attributes->port_a_signed
+                                                     : node->attributes->port_b_signed;
+
+    /* after each level one bit will be added to the width of results */
+    int width = node->num_output_pins;
+
+    /* container for constatnt operand */
+    signal_list_t* const_operand = init_signal_list();
+    for (i = 0; i < const_operand_width; i++) {
+        add_pin_to_signal_list(const_operand, node->input_pins[const_operand_offset + i]);
+    }
+    /* container for variable operand */
+    signal_list_t* variable_operand = init_signal_list();
+    for (i = 0; i < variable_operand_width; i++) {
+        add_pin_to_signal_list(variable_operand, node->input_pins[variable_operand_offset + i]);
+    }
+
+    /* netlist GND and VCC net */
+    nnet_t* gnd_net = netlist->zero_net;
+    nnet_t* vcc_net = netlist->one_net;
+
+    int internal_outputs_size = const_operand_width;
+    /* to keep the record of internal outputs for connection purposes */
+    signal_list_t** internal_outputs = (signal_list_t**)vtr::calloc(internal_outputs_size, sizeof(signal_list_t*));
+    /* implementing the multipication using shift and add operation */
+    for (i = 0; i < node->num_output_pins + 1; i++) {
+        npin_t* pin;
+        /* checking a couple conditions to avoid going further if there is not needed */
+        if (i == node->num_output_pins || i == const_operand_width) {
+            internal_outputs_size = i;
+            /* initializing the return value */
+            for (j = 0; j < internal_outputs[i - 1]->count; j++) {
+                add_pin_to_signal_list(return_value, internal_outputs[i - 1]->pins[j]);
+            }
+            break;
+        } else {
+            pin = const_operand->pins[i];
+        }
+        /* init the interanl outputs signal list */
+        internal_outputs[i] = init_signal_list();
+
+        /* if the pin is GND we pass */
+        if (!strcmp(pin->net->name, gnd_net->name)) {
+            for (j = 0; j < width; j++) {
+                /* if the first bit of const_operand is zero we need to initiate the multipication by zero pins */
+                npin_t* internal_output_pin = (i == 0) ? get_zero_pin(netlist)
+                                                       : internal_outputs[i - 1]->pins[j];
+                add_pin_to_signal_list(internal_outputs[i], internal_output_pin);
+            }
+        }
+        /* the const_operand pin is connected to VCC */
+        else if (!strcmp(pin->net->name, vcc_net->name)) {
+            /* for the first round we do not need to shift */
+            if (i == 0) {
+                for (j = 0; j < width; j++) {
+                    if (j < variable_operand_width) {
+                        add_pin_to_signal_list(internal_outputs[0], copy_input_npin(variable_operand->pins[j]));
+                    } else {
+                        add_pin_to_signal_list(internal_outputs[0], get_zero_pin(netlist));
+                    }
+                }
+            } else {
+                /*****************************************************************************************/
+                /*************************************** SHIFT_NODE **************************************/
+                /*****************************************************************************************/
+                /**
+                 * create a shift node to shift the variable port based on the i idx 
+                 * 
+                 * (shift node)
+                 * IN1: variable_operand of the multiplier
+                 * IN2: shift value (const_operand_width maximum size)
+                 * OUT: shifted IN1 (width)
+                 * 
+                 */
+                nnode_t* shift_node = make_2port_gate(SL, width, width, width, node, mark);
+                /* connecting the shift value pins */
+                signal_list_t* shift_value = create_constant_signal(i, width, netlist);
+
+                /* keeping the shift output nodes for adding with the previous stage internal outputs */
+                signal_list_t* shift_outputs = init_signal_list();
+
+                int pad_pin = variable_operand->count - 1;
+                for (j = 0; j < width; j++) {
+                    if (j < variable_operand_width) {
+                        /* connecing the first input of the shift node */
+                        add_input_pin_to_node(shift_node,
+                                              copy_input_npin(variable_operand->pins[j]),
+                                              j);
+                    } else {
+                        add_input_pin_to_node(shift_node,
+                                              (variable_operand_signedness == SIGNED)
+                                                  ? copy_input_npin(variable_operand->pins[pad_pin])
+                                                  : get_zero_pin(netlist),
+                                              j);
+                    }
+
+                    /* hook shift value pins into the shift node */
+                    add_input_pin_to_node(shift_node,
+                                          shift_value->pins[j],
+                                          width + j);
+
+                    /* Specifying the level_muxes outputs */
+                    // Connect output pin to related input pin
+                    npin_t* var_op_out1 = allocate_npin();
+                    npin_t* var_op_out2 = allocate_npin();
+                    nnet_t* var_op_net = allocate_nnet();
+                    var_op_net->name = make_full_ref_name(NULL, NULL, NULL, shift_node->name, j);
+                    /* hook the output pin into the node */
+                    add_output_pin_to_node(shift_node, var_op_out1, j);
+                    /* hook up new pin 1 into the new net */
+                    add_driver_pin_to_net(var_op_net, var_op_out1);
+                    /* hook up the new pin 2 to this new net */
+                    add_fanout_pin_to_net(var_op_net, var_op_out2);
+
+                    /* adding the output pin to the shoft output signal container */
+                    add_pin_to_signal_list(shift_outputs, var_op_out2);
+                }
+
+                /*****************************************************************************************/
+                /**************************************** ADD_NODE ***************************************/
+                /*****************************************************************************************/
+                nnode_t* add_node = make_2port_gate(ADD, width, width, width, node, mark);
+                add_list = insert_in_vptr_list(add_list, add_node);
+                /* connecting add node input pins */
+                for (j = 0; j < width; j++) {
+                    /* connecting the previous stage internal outputs as the first add inputs */
+                    add_input_pin_to_node(add_node, internal_outputs[i - 1]->pins[j], j);
+
+                    /* connecting the shift output pins as the second input */
+                    add_input_pin_to_node(add_node, shift_outputs->pins[j], width + j);
+
+                    /* creating new output pins and adding to the internal outputs for next stages */
+                    // Connect output pin to related input pin
+                    npin_t* add_op_out1 = allocate_npin();
+                    npin_t* add_op_out2 = allocate_npin();
+                    nnet_t* add_op_net = allocate_nnet();
+                    add_op_net->name = make_full_ref_name(NULL, NULL, NULL, add_node->name, j);
+                    /* hook the output pin into the node */
+                    add_output_pin_to_node(add_node, add_op_out1, j);
+                    /* hook up new pin 1 into the new net */
+                    add_driver_pin_to_net(add_op_net, add_op_out1);
+                    /* hook up the new pin 2 to this new net */
+                    add_fanout_pin_to_net(add_op_net, add_op_out2);
+
+                    /* adding the output pin to the shoft output signal container */
+                    add_pin_to_signal_list(internal_outputs[i], add_op_out2);
+                }
+
+                // CLEAN UP
+                free_signal_list(shift_value);
+                free_signal_list(shift_outputs);
+            }
+        }
+    }
+
+    // CLEAN UP
+    free_signal_list(const_operand);
+    free_signal_list(variable_operand);
+
+    for (i = 0; i < internal_outputs_size; i++) {
+        if (internal_outputs[i])
+            free_signal_list(internal_outputs[i]);
+    }
+    vtr::free(internal_outputs);
+
+    return (return_value);
+}
+
+/**
+ * --------------------------------------------------------------------------
+ * (function: connect_constant_mult_outputs)
+ * 
+ * @brief connecting the constant multipication
+ * pins to the main mult node
+ * 
+ * @param node pointer to the multipication netlist node
+ * @param output_signal_list list of pins
+ * @param netlist pointer to the current netlist file
+ * -------------------------------------------------------------------------*/
+void connect_constant_mult_outputs(nnode_t* node, signal_list_t* output_signal_list) {
+    /* validate the size of output width and num of signals */
+    int output_width = node->num_output_pins;
+    oassert(output_width == output_signal_list->count);
+
+    int i;
+    /* hook the output signals into the node output */
+    for (i = 0; i < output_signal_list->count; i++) {
+        npin_t* pin = output_signal_list->pins[i];
+        /* join nets of the output pin and the calculated pin */
+        nnode_t* buf_node = make_1port_gate(BUF_NODE, 1, 1, node, node->traverse_visited);
+
+        /* connect the mults output pins as buf node driver */
+        add_input_pin_to_node(buf_node, pin, 0);
+        /* remap the main mult output pin to the buf node output pin */
+        remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
+    }
+
+    // CLEAN UP
+    free_signal_list(output_signal_list);
+    for (i = 0; i < node->num_input_pins; i++) {
+        npin_t* pin = node->input_pins[i];
+
+        /* detach from input nets */
+        remove_fanout_pins_from_net(pin->net, pin, pin->pin_net_idx);
+
+        /* free pin */
+        free_npin(node->input_pins[i]);
+        node->input_pins[i] = NULL;
+    }
+
+    free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------
@@ -740,15 +1005,8 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
         remap_pin_to_new_node(node->output_pins[i + b0], addbig, i);
     }
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(node->name);
-    vtr::free(node->input_port_sizes);
-    vtr::free(node->output_port_sizes);
-
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(node->input_pins);
-    vtr::free(node->output_pins);
-    vtr::free(node);
+    // CLEAN UP
+    free_nnode(node);
 
     return;
 }
@@ -814,15 +1072,9 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b) {
     for (i = 0; i < addsmall->num_output_pins; i++)
         remap_pin_to_new_node(node->output_pins[i + a0], addsmall, i);
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(node->name);
-    vtr::free(node->input_port_sizes);
-    vtr::free(node->output_port_sizes);
+    // CLEAN UP
+    free_nnode(node);
 
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(node->input_pins);
-    vtr::free(node->output_pins);
-    vtr::free(node);
     return;
 }
 
@@ -889,15 +1141,9 @@ void split_multiplier_b(nnode_t* node, int a, int b1, int b0) {
     for (i = b0; i < node->num_output_pins; i++)
         remap_pin_to_new_node(node->output_pins[i], addsmall, i - b0);
 
-    /* Probably more to do here in freeing the old node! */
-    vtr::free(node->name);
-    vtr::free(node->input_port_sizes);
-    vtr::free(node->output_port_sizes);
+    // CLEAN UP
+    free_nnode(node);
 
-    /* Free arrays NOT the pins since relocated! */
-    vtr::free(node->input_pins);
-    vtr::free(node->output_pins);
-    vtr::free(node);
     return;
 }
 
@@ -1290,15 +1536,208 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
         }
     }
 
-    // Probably more to do here in freeing the old node!
-    vtr::free(node->name);
-    vtr::free(node->input_port_sizes);
-    vtr::free(node->output_port_sizes);
+    // CLEAN UP
+    cleanup_mult_old_node(node, netlist);
+}
 
-    // Free arrays NOT the pins since relocated!
-    vtr::free(node->input_pins);
-    vtr::free(node->output_pins);
-    vtr::free(node);
+/**
+ * --------------------------------------------------------------------------
+ * (function: is_constant_multipication)
+ * 
+ * @brief checking multipication ports to specify whether it 
+ * is a constant multipication or not 
+ * 
+ * @param node pointer to the multipication netlist node
+ * 
+ * @return multipication ports status
+ * -------------------------------------------------------------------------*/
+mult_port_stat_e is_constant_multipication(nnode_t* node, netlist_t* netlist) {
+    int i;
+    mult_port_stat_e is_const = mult_port_stat_e::mult_port_stat_END;
+
+    /**
+     * Multiply ports
+     * IN1: (n bits)        input_port[0]
+     * IN2: (m bits)        input_port[1]
+     * OUT: min(m, n) bits  output_port[0]
+     */
+
+    int IN1_width = node->input_port_sizes[0];
+    int IN2_width = node->input_port_sizes[1];
+
+    bool multiplier_const = true;
+    /* going through the IN1 port */
+    for (i = 0; i < IN1_width; i++) {
+        /* corresponding pin of the port */
+        npin_t* pin = node->input_pins[i];
+        /* atleast equal to VCC or GND */
+        if (!strcmp(pin->net->name, netlist->zero_net->name) || !strcmp(pin->net->name, netlist->one_net->name))
+            continue;
+        else {
+            multiplier_const = false;
+            break;
+        }
+    }
+
+    bool multiplicand_const = true;
+    /* going through the IN1 port */
+    for (i = 0; i < IN2_width; i++) {
+        /* corresponding pin of the port */
+        npin_t* pin = node->input_pins[IN1_width + i];
+        /* atleast equal to VCC or GND */
+        if (!strcmp(pin->net->name, netlist->zero_net->name) || !strcmp(pin->net->name, netlist->one_net->name))
+            continue;
+        else {
+            multiplicand_const = false;
+            break;
+        }
+    }
+
+    if (multiplier_const && multiplicand_const)
+        is_const = mult_port_stat_e::CONSTANT;
+    else if (multiplier_const)
+        is_const = mult_port_stat_e::MULTIPLIER_CONSTANT;
+    else if (multiplicand_const)
+        is_const = mult_port_stat_e::MULTIPICAND_CONSTANT;
+    else
+        is_const = mult_port_stat_e::NOT_CONSTANT;
+
+    return (is_const);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: check_constant_multipication )
+ * 
+ * @brief checking for constant multipication. If one port is constant,
+ * the multipication node will explode into multiple adders 
+ * 
+ * @param node pointing to the mul node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    /* to calculate return value */
+    mult_port_stat_e is_const;
+
+    /* checking multipication ports to specify whether it is constant or not */
+    if ((is_const = is_constant_multipication(node, netlist)) != mult_port_stat_e::NOT_CONSTANT) {
+        /* performaing optimization on the constant multiplication ports */
+        node = perform_const_mult_optimization(is_const, node, traverse_mark_number, netlist);
+        /* implementation of constant multipication which is actually cascading adders */
+        signal_list_t* output_signals = implement_constant_multipication(node, is_const, static_cast<short>(traverse_mark_number), netlist);
+
+        /* connecting the output pins */
+        connect_constant_mult_outputs(node, output_signals);
+    }
+
+    return (is_const != mult_port_stat_e::NOT_CONSTANT);
+}
+
+/**
+ *-------------------------------------------------------------------------------------------
+ * (function: perform_const_mult_optimization )
+ * 
+ * @brief checking for constant multipication constant port size. 
+ * if possible the extra unneccessary pins of constant port will 
+ * be reduced
+ * 
+ * @param node pointing to the mul node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ *-----------------------------------------------------------------------------------------*/
+static nnode_t* perform_const_mult_optimization(mult_port_stat_e mult_port_stat, nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    int i;
+    /* constatnt and variable port of the given multipication */
+    signal_list_t* const_port = init_signal_list();
+    signal_list_t* var_port = init_signal_list();
+    operation_list const_signedness = UNSIGNED;
+    operation_list var_signedness = UNSIGNED;
+
+    /* initialize const and var port signals */
+    if (mult_port_stat == mult_port_stat_e::MULTIPICAND_CONSTANT) {
+        /* adding var port pins to signal list */
+        for (i = 0; i < node->input_port_sizes[0]; i++) {
+            add_pin_to_signal_list(var_port, node->input_pins[i]);
+        }
+        var_signedness = node->attributes->port_a_signed;
+        /* adding const port pins to signal list */
+        for (i = node->input_port_sizes[0]; i < node->num_input_pins; i++) {
+            add_pin_to_signal_list(const_port, node->input_pins[i]);
+        }
+        const_signedness = node->attributes->port_b_signed;
+    } else if (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) {
+        /* adding var port pins to signal list */
+        for (i = 0; i < node->input_port_sizes[0]; i++) {
+            add_pin_to_signal_list(const_port, node->input_pins[i]);
+        }
+        const_signedness = node->attributes->port_a_signed;
+        /* adding const port pins to signal list */
+        for (i = node->input_port_sizes[0]; i < node->num_input_pins; i++) {
+            add_pin_to_signal_list(var_port, node->input_pins[i]);
+        }
+        var_signedness = node->attributes->port_b_signed;
+    }
+
+    int idx = -1;
+    signal_list_t* new_const_port = init_signal_list();
+    /* iterating over const port to determine useless ports */
+    for (i = const_port->count; i > 0; i--) {
+        npin_t* pin = const_port->pins[i - 1];
+        /* starting from the end and prune pins connected to GND */
+        if (!strcmp(pin->net->name, netlist->one_net->name)) {
+            idx = i;
+            break;
+        } else {
+            /* detach from the old mult node and free pin */
+            delete_npin(pin);
+        }
+    }
+    /* initializing new const port */
+    for (i = 0; i < idx; i++) {
+        npin_t* pin = const_port->pins[i];
+        add_pin_to_signal_list(new_const_port, pin);
+    }
+
+    signal_list_t* first_port = (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) ? new_const_port : var_port;
+    signal_list_t* second_port = (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) ? var_port : new_const_port;
+    /* creating new mult node */
+    int offset = 0;
+    nnode_t* new_node = make_2port_gate(node->type, first_port->count, second_port->count, node->num_output_pins, node, traverse_mark_number);
+    /* copy attributes */
+    if (mult_port_stat == mult_port_stat_e::MULTIPLIER_CONSTANT) {
+        new_node->attributes->port_a_signed = const_signedness;
+        new_node->attributes->port_b_signed = var_signedness;
+    } else {
+        new_node->attributes->port_a_signed = var_signedness;
+        new_node->attributes->port_b_signed = const_signedness;
+    }
+    /* adding first port */
+    for (i = 0; i < first_port->count; i++) {
+        remap_pin_to_new_node(first_port->pins[i], new_node, offset + i);
+    }
+    offset += first_port->count;
+    /* adding second port */
+    for (i = 0; i < second_port->count; i++) {
+        remap_pin_to_new_node(second_port->pins[i], new_node, offset + i);
+    }
+    /* remap output ports */
+    for (i = 0; i < node->num_output_pins; i++) {
+        remap_pin_to_new_node(node->output_pins[i], new_node, i);
+    }
+
+    // CLEAN UP
+    free_signal_list(const_port);
+    free_signal_list(var_port);
+    free_signal_list(new_const_port);
+    free_nnode(node);
+    node = NULL;
+
+    return (new_node);
 }
 
 bool is_ast_multiplier(ast_node_t* node) {
@@ -1322,7 +1761,6 @@ bool is_ast_multiplier(ast_node_t* node) {
 
     return is_mult;
 }
-
 /*-------------------------------------------------------------------------
  * (function: clean_multipliers)
  *
@@ -1333,6 +1771,58 @@ void clean_multipliers() {
     while (mult_list != NULL)
         mult_list = delete_in_vptr_list(mult_list);
     return;
+}
+
+/**
+ * -------------------------------------------------------------------------
+ * (function: cleanup_mult_old_node)
+ *
+ * @brief <clean up nodeo, a high level MULT node> 
+ * In split_soft_multplier function, nodeo is splitted to small multipliers, 
+ * while because of the complexity of input pin connections they have not been 
+ * remapped to new nodes, they just copied and added to new nodes. This function 
+ * will detach input pins from the nodeo. Moreover, it will connect the net of 
+ * unconnected output signals to the GND node, detach the pin from nodeo and 
+ * free the output pins to avoid memory leak.
+ * 
+ * @param nodeo representing the old adder node
+ * @param netlist representing the current netlist
+ *-----------------------------------------------------------------------*/
+static void cleanup_mult_old_node(nnode_t* nodeo, netlist_t* netlist) {
+    int i;
+    /* Disconnecting input pins from the old node side */
+    for (i = 0; i < nodeo->num_input_pins; i++) {
+        nodeo->input_pins[i] = NULL;
+    }
+
+    /* connecting the extra output pins to the gnd node */
+    for (i = 0; i < nodeo->num_output_pins; i++) {
+        npin_t* output_pin = nodeo->output_pins[i];
+
+        if (output_pin && output_pin->node) {
+            /* for now we just pass the signals directly through */
+            npin_t* zero_pin = get_zero_pin(netlist);
+            int idx_2_buffer = zero_pin->pin_net_idx;
+
+            // Dont eliminate the buffer if there are multiple drivers or the AST included it
+            if (output_pin->net->num_driver_pins <= 1) {
+                /* join all fanouts of the output net with the input pins net */
+                join_nets(zero_pin->net, output_pin->net);
+
+                /* erase the pointer to this buffer */
+                zero_pin->net->fanout_pins[idx_2_buffer] = NULL;
+            }
+
+            free_npin(zero_pin);
+            free_npin(output_pin);
+
+            /* Disconnecting output pins from the old node side */
+            nodeo->output_pins[i] = NULL;
+        }
+    }
+
+    // CLEAN UP
+    free_nnode(nodeo);
 }
 
 void free_multipliers() {

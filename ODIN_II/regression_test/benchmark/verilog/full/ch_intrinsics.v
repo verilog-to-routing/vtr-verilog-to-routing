@@ -6,7 +6,6 @@
 `define MEMORY_CONTROLLER_ADDR_SIZE 32
 `define MEMORY_CONTROLLER_DATA_SIZE 32
 
-
 module memory_controller
 (
 	clk,
@@ -28,6 +27,8 @@ reg str_write_enable;
 reg [7:0] str_in;
 wire [7:0] str_out;
 
+defparam _str.ADDR_WIDTH = 5;
+defparam _str.DATA_WIDTH = 8;
 single_port_ram _str (
 	.clk( clk ),
 	.addr( str_address ),

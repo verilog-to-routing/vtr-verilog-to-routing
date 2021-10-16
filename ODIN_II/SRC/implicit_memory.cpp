@@ -253,7 +253,7 @@ void add_dummy_input_port_to_implicit_memory(implicit_memory* memory, int size, 
     signal_list_t* signals = init_signal_list();
     int i;
     for (i = 0; i < size; i++)
-        add_pin_to_signal_list(signals, get_zero_pin(verilog_netlist));
+        add_pin_to_signal_list(signals, get_zero_pin(syn_netlist));
 
     add_input_port_to_implicit_memory(memory, signals, port_name);
 

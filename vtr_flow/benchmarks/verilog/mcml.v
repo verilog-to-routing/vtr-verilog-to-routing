@@ -87,8 +87,21 @@ module mcml (
 	result, 
 	inc_result,
 
-	calc_in_progress
-	);
+	calc_in_progress,
+
+
+	c_absorb_read_counter, c_absorb_write_counter,
+	absorb_rdaddress_mux, absorb_wraddress_mux,
+	absorb_data_mux,
+	absorb_wren_mux, 
+
+	r_state, c_state, 
+	r_counter, 
+	c_counter, 
+
+	c_const__103, c_const__102, c_const__101, c_const__100, c_const__99
+	
+);
 
 // Total number of constants
 //parameter LAST_CONSTANT = 104;
@@ -137,10 +150,15 @@ reg reset_calculator;
 
 // Combinational drivers
 //reg [31:0]			c_const[104 - 1:0];
+output [31:0] c_const__103;
 reg [31:0]			c_const__103;
+output [31:0] c_const__102;
 reg [31:0]			c_const__102;
+output [31:0] c_const__101;
 reg [31:0]			c_const__101;
+output [31:0] c_const__100;
 reg [31:0]			c_const__100;
+output [31:0] c_const__99;
 reg [31:0]			c_const__99;
 reg [31:0]			c_const__98;
 reg [31:0]			c_const__97;
@@ -242,14 +260,23 @@ reg [31:0]			c_const__2;
 reg [31:0]			c_const__1;
 reg [31:0]			c_const__0;
 
-
+output [12:0] c_counter; 
 reg [12:0]			c_counter;
 reg	c_toggle;
+
+
+output [16-1:0] c_absorb_read_counter, c_absorb_write_counter;
+output [16-1:0] absorb_rdaddress_mux, absorb_wraddress_mux;
+output [64-1:0] absorb_data_mux;
+output absorb_wren_mux;
 
 reg [16-1:0] c_absorb_read_counter, c_absorb_write_counter;
 reg [16-1:0] absorb_rdaddress_mux, absorb_wraddress_mux;
 reg [64-1:0] absorb_data_mux;
 reg absorb_wren_mux;
+
+output[3:0] r_state; 
+output[3:0] c_state; 
 
 reg [3:0]			c_state;
 
@@ -367,7 +394,7 @@ reg [31:0]			r_const__1;
 reg [31:0]			r_const__0;
 
 
-
+output [12:0] r_counter; 
 reg [12:0]			r_counter;
 reg [16-1:0] r_absorb_read_counter;
 reg [16-1:0] r_absorb_write_counter;
@@ -1750,7 +1777,9 @@ wire [31:0] dont_care_out;
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 assign dont_care_out = 32'b00000000000000000000000000000000;
-	
+
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;	
 dual_port_ram dpram1(	
   .clk (clk),
   .we1(wren),
@@ -1786,6 +1815,8 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 assign dont_care_out = 32'b00000000000000000000000000000000;
 	
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;
 dual_port_ram dpram1(	
   .clk (clk),
   .we1(wren),
@@ -1821,6 +1852,8 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 assign dont_care_out = 32'b00000000000000000000000000000000;
 	
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;
 dual_port_ram dpram1(	
   .clk (clk),
   .we1(wren),
@@ -1856,6 +1889,8 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 assign dont_care_out = 32'b00000000000000000000000000000000;
 	
+defparam dpram1.ADDR_WIDTH = 13;
+defparam dpram1.DATA_WIDTH = 32;
 dual_port_ram dpram1(	
   .clk (clk),
   .we1(wren),
@@ -1890,6 +1925,8 @@ assign const_zero = 1'b0;
 assign const_zero_data = 36'b000000000000000000000000000000000000;
 assign dont_care_out = 36'b000000000000000000000000000000000000;
 	
+defparam dpram1.ADDR_WIDTH = 16;
+defparam dpram1.DATA_WIDTH = 36;
 dual_port_ram dpram1(	
   .clk (clk),
   .we1(wren),
@@ -1924,6 +1961,8 @@ assign const_zero = 1'b0;
 assign const_zero_data = 18'b000000000000000000;
 assign dont_care_out = 18'b000000000000000000;
 	
+defparam dpram1.ADDR_WIDTH = 16;
+defparam dpram1.DATA_WIDTH = 18;
 dual_port_ram dpram1(	
   .clk (clk),
   .we1(wren),
@@ -1958,6 +1997,8 @@ assign const_zero = 1'b0;
 assign const_zero_data = 8'b00000000;
 assign dont_care_out = 8'b00000000;
 	
+defparam dpram1.ADDR_WIDTH = 16;
+defparam dpram1.DATA_WIDTH = 8;
 dual_port_ram dpram1(	
   .clk (clk),
   .we1(wren),
@@ -10426,6 +10467,9 @@ reg [`BIT_WIDTH - 1:0] log_x;
 //Log_mantissa u1(c_shifted_x, clock, mantissa);
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
+
+defparam sram_replace0.ADDR_WIDTH = `MANTISSA_PRECISION;
+defparam sram_replace0.DATA_WIDTH = 32;
 single_port_ram sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
 
 // priority encoder
@@ -18279,7 +18323,12 @@ output	[31:0]			cosp;
 //Instantiate a single port ram for odin
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
+defparam sinp_replace.ADDR_WIDTH = 10;
+defparam sinp_replace.DATA_WIDTH = 32;
 single_port_ram sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
+
+defparam cosp_replace.ADDR_WIDTH = 10;
+defparam cosp_replace.DATA_WIDTH = 32;
 single_port_ram cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
 
 			
@@ -24773,5 +24822,6 @@ module Sqrt_64b (clk, num_, res);
 
 	
 endmodule 	
+
 
 

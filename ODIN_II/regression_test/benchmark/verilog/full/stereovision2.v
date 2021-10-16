@@ -1,4 +1,39 @@
-module sv_chip2_hierarchy_no_mem (reset, tm3_clk_v0,  vidin_new_data, vidin_rgb_reg, vidin_addr_reg, svid_comp_switch, counter_out_2to1, bus_word_3_2to1, bus_word_4_2to1, bus_word_5_2to1, bus_word_6_2to1, vidin_new_data_fifo, vidin_rgb_reg_fifo_left, vidin_rgb_reg_fifo_right, vidin_addr_reg_2to0, v_nd_s1_left_2to0, v_nd_s2_left_2to0 , v_nd_s4_left_2to0 , v_d_reg_s1_left_2to0 , v_d_reg_s2_left_2to0 , v_d_reg_s4_left_2to0 , v_nd_s1_right_2to0, v_nd_s2_right_2to0 , v_nd_s4_right_2to0 , v_d_reg_s1_right_2to0 , v_d_reg_s2_right_2to0 , v_d_reg_s4_right_2to0,offchip_sram_data_in,offchip_sram_addr,offchip_sram_data_out,offchip_sram_we,offchip_sram_oe,tm3_sram_adsp);
+module sv_chip2_hierarchy_no_mem (
+	offchip_sram_data_in,
+	reset,
+	tm3_clk_v0,
+	vidin_new_data,
+	vidin_rgb_reg,
+	vidin_addr_reg,
+	svid_comp_switch,
+	v_nd_s1_left_2to0,
+	v_nd_s2_left_2to0,
+	v_nd_s4_left_2to0,
+	v_d_reg_s1_left_2to0,
+	v_d_reg_s2_left_2to0,
+	v_d_reg_s4_left_2to0,
+	v_nd_s1_right_2to0,
+	v_nd_s2_right_2to0,
+	v_nd_s4_right_2to0,
+	v_d_reg_s1_right_2to0,
+	v_d_reg_s2_right_2to0,
+	v_d_reg_s4_right_2to0,
+	
+	offchip_sram_addr,
+	offchip_sram_data_out,
+	offchip_sram_we,
+	offchip_sram_oe,
+	tm3_sram_adsp,
+	counter_out_2to1,
+	bus_word_3_2to1,
+	bus_word_4_2to1,
+	bus_word_5_2to1,
+	bus_word_6_2to1,
+	vidin_new_data_fifo,
+	vidin_rgb_reg_fifo_left,
+	vidin_rgb_reg_fifo_right,
+	vidin_addr_reg_2to0
+	);
 		
    input [63:0]offchip_sram_data_in;
    output [18:0]offchip_sram_addr;

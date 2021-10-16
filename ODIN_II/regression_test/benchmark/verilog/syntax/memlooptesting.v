@@ -15,6 +15,8 @@ reg [31:0] d_loadresult;
 
 wire [31:0] loaded_data;
 
+defparam smem_replace.ADDR_WIDTH = 4;
+defparam smem_replace.DATA_WIDTH = 32;
 single_port_ram smem_replace(
   .clk (clk),
   .we(wren),

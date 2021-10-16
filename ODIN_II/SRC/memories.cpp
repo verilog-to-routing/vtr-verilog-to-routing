@@ -26,6 +26,7 @@
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "odin_util.h"
+#include "ast_util.h"
 
 #include "netlist_utils.h"
 #include "node_creation_library.h"
@@ -46,19 +47,49 @@ t_linked_vptr* split_list;
 t_linked_vptr* memory_instances = NULL;
 t_linked_vptr* memory_port_size_list = NULL;
 
+void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
+void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
 void pad_dp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_sp_memory_width(nnode_t* node, netlist_t* netlist);
 void pad_memory_output_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
 void pad_memory_input_port(nnode_t* node, netlist_t* netlist, t_model* model, const char* port_name);
 
-void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
-void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
-void remap_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name);
-void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, char* port_name);
-
 int get_sp_ram_split_width();
 int get_dp_ram_split_width();
 void filter_memories_by_soft_logic_cutoff();
+
+/**
+ * (function: init_sp_ram_signals)
+ * 
+ * @brief initialize sp ram signal lists
+ */
+sp_ram_signals* init_sp_ram_signals() {
+    sp_ram_signals* signals = (sp_ram_signals*)vtr::malloc(sizeof(sp_ram_signals));
+
+    signals->addr = init_signal_list();
+    signals->data = init_signal_list();
+    signals->out = init_signal_list();
+
+    return (signals);
+}
+
+/**
+ * (function: init_dp_ram_signals)
+ * 
+ * @brief initialize dp ram signal lists
+ */
+dp_ram_signals* init_dp_ram_signals() {
+    dp_ram_signals* signals = (dp_ram_signals*)vtr::malloc(sizeof(dp_ram_signals));
+
+    signals->addr1 = init_signal_list();
+    signals->addr2 = init_signal_list();
+    signals->data1 = init_signal_list();
+    signals->data2 = init_signal_list();
+    signals->out1 = init_signal_list();
+    signals->out2 = init_signal_list();
+
+    return (signals);
+}
 
 long get_sp_ram_depth(nnode_t* node) {
     sp_ram_signals* signals = get_sp_ram_signals(node);
@@ -102,14 +133,14 @@ long get_memory_port_size(const char* name) {
     return -1;
 }
 
-void copy_input_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name) {
-    signal_list_t* temp = copy_input_signals(signals);
+void copy_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name) {
+    signal_list_t* temp = copy_input_signals(signalsvar);
     add_input_port_to_memory(node, temp, port_name);
     free_signal_list(temp);
 }
 
-void copy_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char* port_name) {
-    signal_list_t* temp = copy_output_signals(signals);
+void copy_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name) {
+    signal_list_t* temp = copy_output_signals(signalsvar);
     add_output_port_to_memory(node, temp, port_name);
     free_signal_list(temp);
 }
@@ -138,6 +169,8 @@ void remap_input_port_to_memory(nnode_t* node, signal_list_t* signals, const cha
     for (i = 0; i < signals->count; i++, j++) {
         npin_t* pin = signals->pins[i];
         if (strcmp(pin->mapping, port_name)) {
+            if (pin->mapping)
+                vtr::free(pin->mapping);
             pin->mapping = vtr::strdup(port_name);
         }
         remap_pin_to_new_node(pin, node, j);
@@ -169,15 +202,10 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
     // Add the new port.
     for (i = 0; i < signalsvar->count; i++, j++) {
         npin_t* pin = signalsvar->pins[i];
-        //if (pin->node && pin->node->input_pins && pin->node->input_pins[pin->pin_node_idx])
-        //	pin->node->input_pins[pin->pin_node_idx] = NULL;
         if (pin->mapping) {
             vtr::free(pin->mapping);
         }
         pin->mapping = vtr::strdup(port_name);
-        //if (pin->node)
-        //	remap_pin_to_new_node(pin, node, j);
-        //else
         add_input_pin_to_node(node, pin, j);
     }
 }
@@ -185,7 +213,7 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
 /*
  * Re-maps the given output signals to the given port name on the given memory node.
  */
-void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, char* port_name) {
+void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const char* port_name) {
     int i;
     int j = node->num_output_pins;
 
@@ -206,6 +234,8 @@ void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, char*
     for (i = 0; i < signalsvar->count; i++, j++) {
         npin_t* pin = signalsvar->pins[i];
         if (strcmp(pin->mapping, port_name)) {
+            if (pin->mapping)
+                vtr::free(pin->mapping);
             pin->mapping = vtr::strdup(port_name);
         }
         remap_pin_to_new_node(pin, node, j);
@@ -226,8 +256,8 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     for (i = 0; i < j; i++) {
         npin_t* pin = node->output_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            // error_message(NETLIST, node->loc,
-            //               "Attempted to reassign output port %s to node %s.", port_name, node->name);
+            error_message(NETLIST, node->loc,
+                          "Attempted to reassign output port %s to node %s.", port_name, node->name);
             return;
         }
     }
@@ -1231,6 +1261,100 @@ bool is_dp_ram(nnode_t* node) {
     return !strcmp(node->related_ast_node->identifier_node->types.identifier, DUAL_PORT_RAM_string);
 }
 
+/**
+ * (function: is_blif_sp_ram)
+ * 
+ * @brief to check if the given node is a valid
+ * single port ram based on VTR primitive definition
+ * 
+ * @param node pointing to a spram node 
+ */
+bool is_blif_sp_ram(nnode_t* node) {
+    oassert(node->name);
+    /* return value */
+    bool is_ram = true;
+    if (std::string(node->name).find(SINGLE_PORT_RAM_string) == std::string::npos)
+        return false;
+
+    /* check the num input/output ports */
+    is_ram = (node->num_input_port_sizes == 4) && (node->num_output_port_sizes == 1);
+
+    /* check if it is a ram */
+    if (is_ram) {
+        /* port connections were passed by name; verify input port names */
+        for (int i = 0; i < node->num_input_pins && is_ram; i++) {
+            oassert(node->input_pins[i]->mapping);
+            char* port_id = node->input_pins[i]->mapping;
+
+            /* comparision of mapping ports with single_port_ram port names */
+            if ((strcmp(port_id, "we") != 0) && (strcmp(port_id, "clk") != 0) && (strcmp(port_id, "addr") != 0) && (strcmp(port_id, "data") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+        /* port connections were passed by name; verify output port names */
+        for (int i = 0; i < node->num_output_pins && is_ram; i++) {
+            oassert(node->output_pins[i]->mapping);
+            char* port_id = node->output_pins[i]->mapping;
+
+            /* comparision of mapping ports with single_port_ram port names */
+            if ((strcmp(port_id, "out") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+    }
+
+    return (is_ram);
+}
+
+/**
+ * (function: is_blif_dp_ram)
+ * 
+ * @brief to check if the given node is a valid
+ * dual port ram based on VTR primitive definition
+ *  
+ * @param node pointing to a dpram node 
+ */
+bool is_blif_dp_ram(nnode_t* node) {
+    oassert(node->name);
+    /* return value */
+    bool is_ram = true;
+    if (std::string(node->name).find(DUAL_PORT_RAM_string) == std::string::npos)
+        return false;
+
+    /* check the num input/output ports */
+    is_ram = (node->num_input_port_sizes == 7) && (node->num_output_port_sizes == 2);
+
+    /* check if it is a ram */
+    if (is_ram) {
+        /* port connections were passed by name; verify input port names */
+        for (int i = 0; i < node->num_input_pins && is_ram; i++) {
+            oassert(node->input_pins[i]->mapping);
+            char* port_id = node->input_pins[i]->mapping;
+
+            /* comparision of mapping ports with dual_port_ram port names */
+            if ((strcmp(port_id, "clk") != 0) && (strcmp(port_id, "we1") != 0) && (strcmp(port_id, "we2") != 0) && (strcmp(port_id, "addr1") != 0) && (strcmp(port_id, "addr2") != 0) && (strcmp(port_id, "data1") != 0) && (strcmp(port_id, "data2") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+        /* port connections were passed by name; verify output port names */
+        for (int i = 0; i < node->num_output_pins && is_ram; i++) {
+            oassert(node->output_pins[i]->mapping);
+            char* port_id = node->output_pins[i]->mapping;
+
+            /* comparision of mapping ports with dual_port_ram port names */
+            if ((strcmp(port_id, "out1") != 0) && (strcmp(port_id, "out2") != 0)) {
+                is_ram = false;
+                break;
+            }
+        }
+    }
+
+    return (is_ram);
+}
+
 bool is_ast_sp_ram(ast_node_t* node) {
     bool is_ram;
     ast_node_t* instance = node->children[0];
@@ -1434,9 +1558,9 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
         /* Check that the input pin is driven */
         oassert(
             address_pin->net->num_driver_pins
-            || address_pin->net == verilog_netlist->zero_net
-            || address_pin->net == verilog_netlist->one_net
-            || address_pin->net == verilog_netlist->pad_net);
+            || address_pin->net == syn_netlist->zero_net
+            || address_pin->net == syn_netlist->one_net
+            || address_pin->net == syn_netlist->pad_net);
 
         // An AND gate to enable and disable writing.
         nnode_t* and_g = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1462,9 +1586,9 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
             /* Check that the input pin is driven */
             oassert(
                 address_pin->net->num_driver_pins
-                || address_pin->net == verilog_netlist->zero_net
-                || address_pin->net == verilog_netlist->one_net
-                || address_pin->net == verilog_netlist->pad_net);
+                || address_pin->net == syn_netlist->zero_net
+                || address_pin->net == syn_netlist->one_net
+                || address_pin->net == syn_netlist->pad_net);
 
             // A multiplexer switches between accepting incoming data and keeping existing data.
             nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1493,7 +1617,7 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
 
             // Hook the address pin up to the output mux.
             add_input_pin_to_node(output_mux, copy_input_npin(address_pin), j);
-            ff->edge_type = RISING_EDGE_SENSITIVITY;
+            ff->attributes->clk_edge_type = RISING_EDGE_SENSITIVITY;
         }
 
         npin_t* output_pin = node->output_pins[i];
@@ -1547,14 +1671,14 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 
         oassert(
             addr1_pin->net->num_driver_pins
-            || addr1_pin->net == verilog_netlist->zero_net
-            || addr1_pin->net == verilog_netlist->one_net
-            || addr1_pin->net == verilog_netlist->pad_net);
+            || addr1_pin->net == syn_netlist->zero_net
+            || addr1_pin->net == syn_netlist->one_net
+            || addr1_pin->net == syn_netlist->pad_net);
         oassert(
             addr2_pin->net->num_driver_pins
-            || addr2_pin->net == verilog_netlist->zero_net
-            || addr2_pin->net == verilog_netlist->one_net
-            || addr2_pin->net == verilog_netlist->pad_net);
+            || addr2_pin->net == syn_netlist->zero_net
+            || addr2_pin->net == syn_netlist->one_net
+            || addr2_pin->net == syn_netlist->pad_net);
 
         // Write enable and gate for address 1.
         nnode_t* and1 = make_1port_logic_gate(LOGICAL_AND, 2, node, mark);
@@ -1600,14 +1724,14 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 
             oassert(
                 addr1_pin->net->num_driver_pins
-                || addr1_pin->net == verilog_netlist->zero_net
-                || addr1_pin->net == verilog_netlist->one_net
-                || addr1_pin->net == verilog_netlist->pad_net);
+                || addr1_pin->net == syn_netlist->zero_net
+                || addr1_pin->net == syn_netlist->one_net
+                || addr1_pin->net == syn_netlist->pad_net);
             oassert(
                 addr2_pin->net->num_driver_pins
-                || addr2_pin->net == verilog_netlist->zero_net
-                || addr2_pin->net == verilog_netlist->one_net
-                || addr2_pin->net == verilog_netlist->pad_net);
+                || addr2_pin->net == syn_netlist->zero_net
+                || addr2_pin->net == syn_netlist->one_net
+                || addr2_pin->net == syn_netlist->pad_net);
 
             // The data mux selects between the two data lines for this address.
             nnode_t* data_mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
@@ -1650,7 +1774,7 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
             // Connect address lines to the output muxes for this address.
             add_input_pin_to_node(output_mux1, copy_input_npin(addr1_pin), j);
             add_input_pin_to_node(output_mux2, copy_input_npin(addr2_pin), j);
-            ff->edge_type = RISING_EDGE_SENSITIVITY;
+            ff->attributes->clk_edge_type = RISING_EDGE_SENSITIVITY;
         }
 
         npin_t* out1_pin = signals->out1->pins[i];
@@ -1701,11 +1825,11 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
     signal_list_t* not_gates = init_signal_list();
     for (long i = 0; i < num_inputs; i++) {
         if (!input_list->pins[i]->net->num_driver_pins
-            && input_list->pins[i]->net != verilog_netlist->zero_net
-            && input_list->pins[i]->net != verilog_netlist->one_net
-            && input_list->pins[i]->net != verilog_netlist->pad_net) {
+            && input_list->pins[i]->net != syn_netlist->zero_net
+            && input_list->pins[i]->net != syn_netlist->one_net
+            && input_list->pins[i]->net != syn_netlist->pad_net) {
             warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
-            add_fanout_pin_to_net(verilog_netlist->zero_net, input_list->pins[i]);
+            add_fanout_pin_to_net(syn_netlist->zero_net, input_list->pins[i]);
         }
 
         nnode_t* not_g = make_not_gate(node, mark);
@@ -1764,4 +1888,471 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
 
     free_signal_list(not_gates);
     return return_list;
+}
+
+/**
+ * (function: create_single_port_rom)
+ * 
+ * @brief create a single port ram with the given spram signals
+ *
+ * @param signals spram signals
+ * @param node corresponding netlist node
+ * 
+ * @return a new single port ram
+ */
+nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node) {
+    /* sanity checks */
+    oassert(spram_signals->clk != NULL);
+    oassert(spram_signals->we != NULL);
+    oassert(spram_signals->addr->count >= 1);
+    oassert(spram_signals->data->count >= 1);
+    if (spram_signals->out != NULL) {
+        oassert(spram_signals->data->count == spram_signals->out->count);
+    }
+
+    /* create a single port ram node */
+    nnode_t* spram = allocate_nnode(node->loc);
+
+    spram->type = MEMORY;
+    /* some information from ast node is needed in partial mapping */
+    char* hb_name = vtr::strdup(SINGLE_PORT_RAM_string);
+    spram->name = node_name(spram, hb_name);
+    spram->attributes->memory_id = vtr::strdup(node->attributes->memory_id);
+
+    /* Create a fake ast node. */
+    spram->related_ast_node = create_node_w_type(RAM, node->loc);
+    spram->related_ast_node->identifier_node = create_tree_node_id(hb_name, node->loc);
+
+    /* INPUTS */
+    /* hook address portd into spram */
+    add_input_port_to_memory(spram, spram_signals->addr, "addr");
+
+    /* hook data ports into spram */
+    add_input_port_to_memory(spram, spram_signals->data, "data");
+
+    /* hook enable pins to spram */
+    signal_list_t* we = init_signal_list();
+    add_pin_to_signal_list(we, spram_signals->we);
+    add_input_port_to_memory(spram, we, "we");
+
+    /* hook clk pin into spram */
+    signal_list_t* clk = init_signal_list();
+    add_pin_to_signal_list(clk, spram_signals->clk);
+    add_input_port_to_memory(spram, clk, "clk");
+
+    /* OUTPUT */
+    if (spram_signals->out == NULL) {
+        /* init the signal list */
+        spram_signals->out = init_signal_list();
+        for (int i = 0; i < spram_signals->data->count; i++) {
+            npin_t* new_pin = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            /* add pin as the net driver */
+            add_driver_pin_to_net(new_net, new_pin);
+            /* store them into dpram signals */
+            add_pin_to_signal_list(spram_signals->out, new_pin);
+        }
+    }
+    add_output_port_to_memory(spram, spram_signals->out, "out");
+
+    /* already compatible with SPRAM config so we leave it as is */
+    sp_memory_list = insert_in_vptr_list(sp_memory_list, spram);
+    /* register the SPRAM in arch model to have the related model in BLIF for simulation */
+    register_memory_model(spram);
+
+    // CLEAN UP
+    free_signal_list(we);
+    free_signal_list(clk);
+
+    return (spram);
+}
+
+/**
+ * (function: create_dual_port_rom)
+ * 
+ * @brief create a dual port ram with the given dpram signals
+ * 
+ * @param signals dpram signals
+ * @param node corresponding netlist node
+ * 
+ * @return a new dual port ram
+ */
+nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
+    /* sanity checks */
+    oassert(dpram_signals->clk);
+    oassert((dpram_signals->we1) && (dpram_signals->we2));
+    oassert((dpram_signals->addr1) && (dpram_signals->addr2));
+    oassert((dpram_signals->data1) && (dpram_signals->data1));
+    oassert(dpram_signals->addr1->count == dpram_signals->addr2->count);
+    oassert(dpram_signals->data1->count == dpram_signals->data2->count);
+    oassert(dpram_signals->addr1->count >= 1 && dpram_signals->data1->count >= 1);
+    oassert(dpram_signals->addr2->count >= 1 && dpram_signals->data2->count >= 1);
+
+    if (dpram_signals->out1 != NULL) {
+        oassert(dpram_signals->data1->count == dpram_signals->out1->count);
+    }
+    if (dpram_signals->out2 != NULL) {
+        oassert(dpram_signals->data2->count == dpram_signals->out2->count);
+    }
+
+    /* create a dual port ram node */
+    nnode_t* dpram = allocate_nnode(node->loc);
+
+    dpram->type = MEMORY;
+    /* some information from ast node is needed in partial mapping */
+    char* hb_name = vtr::strdup(DUAL_PORT_RAM_string);
+    dpram->name = node_name(dpram, hb_name);
+    dpram->attributes->memory_id = vtr::strdup(node->attributes->memory_id);
+
+    /* Create a fake ast node. */
+    dpram->related_ast_node = create_node_w_type(RAM, node->loc);
+    dpram->related_ast_node->identifier_node = create_tree_node_id(hb_name, node->loc);
+
+    /* INPUTS */
+    /* hook address portd into dpram */
+    add_input_port_to_memory(dpram, dpram_signals->addr1, "addr1");
+    add_input_port_to_memory(dpram, dpram_signals->addr2, "addr2");
+
+    /* hook data ports into dpram */
+    add_input_port_to_memory(dpram, dpram_signals->data1, "data1");
+    add_input_port_to_memory(dpram, dpram_signals->data2, "data2");
+
+    /* hook enable pins to dpram */
+    signal_list_t* we1 = init_signal_list();
+    add_pin_to_signal_list(we1, dpram_signals->we1);
+    add_input_port_to_memory(dpram, we1, "we1");
+
+    signal_list_t* we2 = init_signal_list();
+    add_pin_to_signal_list(we2, dpram_signals->we2);
+    add_input_port_to_memory(dpram, we2, "we2");
+
+    /* hook clk pin into dpram */
+    signal_list_t* clk = init_signal_list();
+    add_pin_to_signal_list(clk, dpram_signals->clk);
+    add_input_port_to_memory(dpram, clk, "clk");
+
+    /* OUTPUT */
+    if (dpram_signals->out1 == NULL) {
+        /* init the signal list */
+        dpram_signals->out1 = init_signal_list();
+        for (int i = 0; i < dpram_signals->data1->count; i++) {
+            npin_t* new_pin = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            /* add pin as the net driver */
+            add_driver_pin_to_net(new_net, new_pin);
+            /* store them into dpram signals */
+            add_pin_to_signal_list(dpram_signals->out1, new_pin);
+        }
+    }
+    add_output_port_to_memory(dpram, dpram_signals->out1, "out1");
+    if (dpram_signals->out2 == NULL) {
+        /* init the signal list */
+        dpram_signals->out2 = init_signal_list();
+        for (int i = 0; i < dpram_signals->data2->count; i++) {
+            npin_t* new_pin = allocate_npin();
+            nnet_t* new_net = allocate_nnet();
+            /* add pin as the net driver */
+            add_driver_pin_to_net(new_net, new_pin);
+            /* store them into dpram signals */
+            add_pin_to_signal_list(dpram_signals->out2, new_pin);
+        }
+    }
+    add_output_port_to_memory(dpram, dpram_signals->out2, "out2");
+
+    /* already compatible with DPRAM config so we leave it as is */
+    dp_memory_list = insert_in_vptr_list(dp_memory_list, dpram);
+    /* register the DPRAM in arch model to have the related model in BLIF for simulation */
+    register_memory_model(dpram);
+
+    // CLEAN UP
+    free_signal_list(we1);
+    free_signal_list(we2);
+    free_signal_list(clk);
+
+    return (dpram);
+}
+
+/**
+ * (function: register_memory_model)
+ * 
+ * @brief register the corresponding memory hard if any is 
+ * available in the given architecture
+ * 
+ * @param mem pointing to the memory node
+ */
+void register_memory_model(nnode_t* mem) {
+    /* See if the hard block declared is supported by FPGA architecture */
+    t_model* hb_model = find_hard_block(mem->related_ast_node->identifier_node->types.identifier);
+
+    if (hb_model) {
+        /* Declare the hard block as used for the blif generation */
+        hb_model->used = 1;
+    }
+}
+
+/**
+ * (function: resolve_single_port_ram)
+ * 
+ * @brief resolve the spram block by reordering the input signals 
+ * to be compatible with Odin's partial mapping phase
+ * 
+ * @param node pointing to a spram node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void resolve_single_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* /* netlist */) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 4);
+    oassert(node->num_output_port_sizes == 1);
+
+    /* check if the node is a valid spram */
+    if (!is_blif_sp_ram(node))
+        error_message(BLIF_ELABORATION, node->loc,
+                      "SPRAM (%s) ports mismatch with VTR single_port_ram hard block ports\n", node->name);
+
+    /** 
+     * blif single port ram information 
+     * 
+     * ADDR:    input port [0] 
+     * CLOCK:   input port [1] 
+     * DATAIN:  input port [2] 
+     * WE:      input port [3] 
+     * 
+     * DATAOUT: output port [0] 
+     */
+
+    int i;
+    int SP_ADDR_width = node->input_port_sizes[0];
+    int SP_CLK_width = node->input_port_sizes[1]; // should be 1
+    int SP_DATA_width = node->input_port_sizes[2];
+    int SP_WE_width = node->input_port_sizes[3]; // should be 1
+    int SP_OUT_width = node->output_port_sizes[0];
+
+    /* validate the data width */
+    oassert(SP_CLK_width == 1 && SP_WE_width == 1);
+    oassert(SP_DATA_width == node->output_port_sizes[0]);
+
+    /* creating dpram node for the range of data width */
+    int offset = 0;
+    /* creating a new node */
+    sp_ram_signals* signals = init_sp_ram_signals();
+
+    /* INPUTS */
+    /* adding the addr signals */
+    for (i = 0; i < SP_ADDR_width; i++) {
+        npin_t* pin = node->input_pins[offset + i];
+        /* detach from the main node, since it will be connected to a new dpram */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->addr, pin);
+    }
+    offset += SP_ADDR_width;
+
+    /* adding the clk signals */
+    npin_t* clk_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    clk_pin->node->input_pins[clk_pin->pin_node_idx] = NULL;
+    signals->clk = clk_pin;
+    /* increment offset */
+    offset += 1;
+
+    /* adding the data signals */
+    for (i = 0; i < SP_DATA_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->input_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->data, pin);
+    }
+    offset += SP_DATA_width;
+
+    /* adding the we signals */
+    npin_t* we_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    we_pin->node->input_pins[we_pin->pin_node_idx] = NULL;
+    signals->we = we_pin;
+
+    /* OUTPUT */
+    /* adding the output signals */
+    offset = 0;
+    for (i = 0; i < SP_OUT_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->output_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->out, pin);
+    }
+
+    /* creating a new spram with size modified input signals */
+    create_single_port_ram(signals, node);
+
+    // CLEAN UP
+    free_nnode(node);
+    free_sp_ram_signals(signals);
+}
+
+/**
+ * (function: resolve_dual_port_ram)
+ * 
+ * @brief resolve the dpram block by reordering the input signals 
+ * to be compatible with Odin's partial mapping phase
+ * 
+ * @param node pointing to a dual port ram node
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+void resolve_dual_port_ram(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+    oassert(node->num_input_port_sizes == 7);
+    oassert(node->num_output_port_sizes == 2);
+
+    /* check if the node is a valid spram */
+    if (!is_blif_dp_ram(node))
+        error_message(BLIF_ELABORATION, node->loc,
+                      "DPRAM (%s) ports mismatch with VTR dual_port_ram hard block ports\n", node->name);
+
+    /** 
+     * blif dual port ram information 
+     * 
+     * ADDR1:    input port [0] 
+     * ADDR2:    input port [1] 
+     * CLOCK:    input port [2] 
+     * DATAIN1:  input port [3] 
+     * DATAIN2:  input port [4] 
+     * WE1:      input port [5] 
+     * WE2:      input port [6] 
+     * 
+     * DATAOUT1: output port [0] 
+     * DATAOUT2: output port [1] 
+     */
+    int i;
+    int DP_ADDR1_width = node->input_port_sizes[0];
+    int DP_ADDR2_width = node->input_port_sizes[1];
+    int DP_CLK_width = node->input_port_sizes[2]; // should be 1
+    int DP_DATA1_width = node->input_port_sizes[3];
+    int DP_DATA2_width = node->input_port_sizes[4];
+    int DP_WE1_width = node->input_port_sizes[5]; // should be 1
+    int DP_WE2_width = node->input_port_sizes[6]; // should be 1
+    int DP_OUT1_width = node->output_port_sizes[0];
+    int DP_OUT2_width = node->output_port_sizes[1];
+
+    /* validate the port width */
+    oassert((DP_CLK_width == 1) && (DP_WE1_width == 1) && (DP_WE2_width == 1));
+    oassert(DP_DATA1_width == DP_DATA2_width);
+    oassert(DP_DATA1_width == node->output_port_sizes[0]);
+    oassert(DP_DATA1_width == node->output_port_sizes[1]);
+
+    int max_addr_width = std::max(DP_ADDR1_width, DP_ADDR2_width);
+
+    /* creating dpram node for the range of data width */
+    int offset = 0;
+    /* creating a new node */
+    dp_ram_signals* signals = init_dp_ram_signals();
+
+    /* INPUTS */
+    /* adding the addr1 signals */
+    for (i = 0; i < max_addr_width; i++) {
+        /* hook the addr1 pin to new node */
+        if (i < DP_ADDR1_width) {
+            npin_t* pin = node->input_pins[offset + i];
+            /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+            pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+            add_pin_to_signal_list(signals->addr1, pin);
+        } else {
+            add_pin_to_signal_list(signals->addr1, get_pad_pin(netlist));
+        }
+    }
+    offset += DP_ADDR1_width;
+
+    /* adding the addr2 signals */
+    for (i = 0; i < max_addr_width; i++) {
+        /* hook the addr1 pin to new node */
+        if (i < DP_ADDR2_width) {
+            npin_t* pin = node->input_pins[offset + i];
+            /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+            pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+            add_pin_to_signal_list(signals->addr2, pin);
+        } else {
+            add_pin_to_signal_list(signals->addr2, get_pad_pin(netlist));
+        }
+    }
+    offset += DP_ADDR2_width;
+
+    /* adding the clk signals */
+    npin_t* clk_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    clk_pin->node->input_pins[clk_pin->pin_node_idx] = NULL;
+    signals->clk = clk_pin;
+    /* increment offset */
+    offset += 1;
+
+    /* adding the data1 signals */
+    for (i = 0; i < DP_DATA1_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->input_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->data1, pin);
+    }
+    offset += DP_DATA1_width;
+
+    /* adding the data2 signals */
+    for (i = 0; i < DP_DATA2_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->input_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->data2, pin);
+    }
+    offset += DP_DATA2_width;
+
+    /* adding the we1 signals */
+    npin_t* we1_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    we1_pin->node->input_pins[we1_pin->pin_node_idx] = NULL;
+    signals->we1 = we1_pin;
+    /* increment offset */
+    offset += 1;
+
+    /* adding the we2 signals */
+    npin_t* we2_pin = node->input_pins[offset];
+    /* detach from the main node, since it will be connected to a new dpram */
+    we2_pin->node->input_pins[we2_pin->pin_node_idx] = NULL;
+    signals->we2 = we2_pin;
+
+    /* OUTPUT */
+    offset = 0;
+    /* adding the output1 signals */
+    for (i = 0; i < DP_OUT1_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->output_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->out1, pin);
+    }
+    offset += DP_OUT1_width;
+
+    /* adding the output1 signals */
+    for (i = 0; i < DP_OUT2_width; i++) {
+        /* hook the data1 pin to new node */
+        npin_t* pin = node->output_pins[offset + i];
+        /* in case of padding, pins have not been remapped, need to detach them from the BRAM node */
+        pin->node->output_pins[pin->pin_node_idx] = NULL;
+
+        add_pin_to_signal_list(signals->out2, pin);
+    }
+
+    /* creating a new dpram with size modified input signals */
+    create_dual_port_ram(signals, node);
+
+    // CLEAN UP
+    free_nnode(node);
+    free_dp_ram_signals(signals);
 }

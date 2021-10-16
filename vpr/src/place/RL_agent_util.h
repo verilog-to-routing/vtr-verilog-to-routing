@@ -3,6 +3,7 @@
 
 #include "static_move_generator.h"
 #include "simpleRL_move_generator.h"
+#include "manual_move_generator.h"
 
 //enum represents the available agent states
 enum e_agent_state {

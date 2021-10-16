@@ -31,13 +31,14 @@ SpatialRouteTreeLookup build_route_tree_spatial_lookup(ClusterNetId net, t_rt_no
 //Adds the sub-tree rooted at rt_node to the spatial look-up
 void update_route_tree_spatial_lookup_recur(t_rt_node* rt_node, SpatialRouteTreeLookup& spatial_lookup) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     auto& rr_node = device_ctx.rr_nodes[rt_node->inode];
 
-    int bin_xlow = grid_to_bin_x(rr_node.xlow(), spatial_lookup);
-    int bin_ylow = grid_to_bin_y(rr_node.ylow(), spatial_lookup);
-    int bin_xhigh = grid_to_bin_x(rr_node.xhigh(), spatial_lookup);
-    int bin_yhigh = grid_to_bin_y(rr_node.yhigh(), spatial_lookup);
+    int bin_xlow = grid_to_bin_x(rr_graph.node_xlow(rr_node.id()), spatial_lookup);
+    int bin_ylow = grid_to_bin_y(rr_graph.node_ylow(rr_node.id()), spatial_lookup);
+    int bin_xhigh = grid_to_bin_x(rr_graph.node_xhigh(rr_node.id()), spatial_lookup);
+    int bin_yhigh = grid_to_bin_y(rr_graph.node_yhigh(rr_node.id()), spatial_lookup);
 
     spatial_lookup[bin_xlow][bin_ylow].push_back(rt_node);
 
@@ -76,13 +77,13 @@ size_t grid_to_bin_y(size_t grid_y, const SpatialRouteTreeLookup& spatial_lookup
 
 bool validate_route_tree_spatial_lookup(t_rt_node* rt_node, const SpatialRouteTreeLookup& spatial_lookup) {
     auto& device_ctx = g_vpr_ctx.device();
-
+    const auto& rr_graph = device_ctx.rr_graph;
     auto& rr_node = device_ctx.rr_nodes[rt_node->inode];
 
-    int bin_xlow = grid_to_bin_x(rr_node.xlow(), spatial_lookup);
-    int bin_ylow = grid_to_bin_y(rr_node.ylow(), spatial_lookup);
-    int bin_xhigh = grid_to_bin_x(rr_node.xhigh(), spatial_lookup);
-    int bin_yhigh = grid_to_bin_y(rr_node.yhigh(), spatial_lookup);
+    int bin_xlow = grid_to_bin_x(rr_graph.node_xlow(rr_node.id()), spatial_lookup);
+    int bin_ylow = grid_to_bin_y(rr_graph.node_ylow(rr_node.id()), spatial_lookup);
+    int bin_xhigh = grid_to_bin_x(rr_graph.node_xhigh(rr_node.id()), spatial_lookup);
+    int bin_yhigh = grid_to_bin_y(rr_graph.node_yhigh(rr_node.id()), spatial_lookup);
 
     bool valid = true;
 
@@ -90,14 +91,14 @@ bool validate_route_tree_spatial_lookup(t_rt_node* rt_node, const SpatialRouteTr
     if (std::find(low_bin_rt_nodes.begin(), low_bin_rt_nodes.end(), rt_node) == low_bin_rt_nodes.end()) {
         valid = false;
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (low coord %d,%d) in spatial lookup [bin %d,%d]",
-                        rt_node->inode, rr_node.xlow(), rr_node.ylow(), bin_xlow, bin_ylow);
+                        rt_node->inode, rr_graph.node_xlow(rr_node.id()), rr_graph.node_ylow(rr_node.id()), bin_xlow, bin_ylow);
     }
 
     auto& high_bin_rt_nodes = spatial_lookup[bin_xhigh][bin_yhigh];
     if (std::find(high_bin_rt_nodes.begin(), high_bin_rt_nodes.end(), rt_node) == high_bin_rt_nodes.end()) {
         valid = false;
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (high coord %d,%d) in spatial lookup [bin %d,%d]",
-                        rt_node->inode, rr_node.xhigh(), rr_node.yhigh(), bin_xhigh, bin_yhigh);
+                        rt_node->inode, rr_graph.node_xhigh(rr_node.id()), rr_graph.node_yhigh(rr_node.id()), bin_xhigh, bin_yhigh);
     }
 
     //Recurse

@@ -14,6 +14,12 @@ if(VPR_USE_EZGL STREQUAL "on")
     add_subdirectory(libezgl)
 endif()
 
+# The VTR root CMakeFile initializes the ODIN_USE_YOSYS
+# Yosys is compiled only if the user ask for it
+if(${ODIN_USE_YOSYS})
+    add_subdirectory(libyosys)
+endif()
+
 if(${VTR_ENABLE_CAPNPROTO})
     # Override default policy for capnproto (CMake policy version 3.1)
     # Enable new IPO variables

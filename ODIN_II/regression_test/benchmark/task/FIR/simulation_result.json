@@ -2,7 +2,7 @@
     "FIR/ex1BT16_fir_20/k6_N10_40nm": {
         "test_name": "FIR/ex1BT16_fir_20/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex1BT16_fir_20.blif",
+        "generated_blif": "ex1BT16_fir_20_generated.blif",
         "max_rss(MiB)": 443.4,
         "exec_time(ms)": 3897.9,
         "simulation_time(ms)": 3754.8,
@@ -21,7 +21,7 @@
     "FIR/ex1BT16_fir_20/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex1BT16_fir_20/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex1BT16_fir_20.blif",
+        "generated_blif": "ex1BT16_fir_20_generated.blif",
         "max_rss(MiB)": 445.3,
         "exec_time(ms)": 3820,
         "simulation_time(ms)": 3641,
@@ -39,7 +39,7 @@
     },
     "FIR/ex1BT16_fir_20/no_arch": {
         "test_name": "FIR/ex1BT16_fir_20/no_arch",
-        "blif": "ex1BT16_fir_20.blif",
+        "generated_blif": "ex1BT16_fir_20_generated.blif",
         "max_rss(MiB)": 441.1,
         "exec_time(ms)": 3836.8,
         "simulation_time(ms)": 3704.9,
@@ -57,7 +57,7 @@
     "FIR/ex1EP16_fir_6/k6_N10_40nm": {
         "test_name": "FIR/ex1EP16_fir_6/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex1EP16_fir_6.blif",
+        "generated_blif": "ex1EP16_fir_6_generated.blif",
         "max_rss(MiB)": 118.8,
         "exec_time(ms)": 1241.4,
         "simulation_time(ms)": 1191.4,
@@ -76,7 +76,7 @@
     "FIR/ex1EP16_fir_6/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex1EP16_fir_6/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex1EP16_fir_6.blif",
+        "generated_blif": "ex1EP16_fir_6_generated.blif",
         "max_rss(MiB)": 128,
         "exec_time(ms)": 1299.8,
         "simulation_time(ms)": 1211.5,
@@ -94,7 +94,7 @@
     },
     "FIR/ex1EP16_fir_6/no_arch": {
         "test_name": "FIR/ex1EP16_fir_6/no_arch",
-        "blif": "ex1EP16_fir_6.blif",
+        "generated_blif": "ex1EP16_fir_6_generated.blif",
         "max_rss(MiB)": 115.7,
         "exec_time(ms)": 1236.7,
         "simulation_time(ms)": 1188.6,
@@ -112,7 +112,7 @@
     "FIR/ex1LS16_fir_41/k6_N10_40nm": {
         "test_name": "FIR/ex1LS16_fir_41/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex1LS16_fir_41.blif",
+        "generated_blif": "ex1LS16_fir_41_generated.blif",
         "max_rss(MiB)": 1050.6,
         "exec_time(ms)": 10555.3,
         "simulation_time(ms)": 10127.6,
@@ -131,7 +131,7 @@
     "FIR/ex1LS16_fir_41/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex1LS16_fir_41/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex1LS16_fir_41.blif",
+        "generated_blif": "ex1LS16_fir_41_generated.blif",
         "max_rss(MiB)": 1045.3,
         "exec_time(ms)": 10751.9,
         "simulation_time(ms)": 10268.5,
@@ -149,7 +149,7 @@
     },
     "FIR/ex1LS16_fir_41/no_arch": {
         "test_name": "FIR/ex1LS16_fir_41/no_arch",
-        "blif": "ex1LS16_fir_41.blif",
+        "generated_blif": "ex1LS16_fir_41_generated.blif",
         "max_rss(MiB)": 1046.5,
         "exec_time(ms)": 10986.2,
         "simulation_time(ms)": 10565.3,
@@ -167,7 +167,7 @@
     "FIR/ex1PM16_fir_28/k6_N10_40nm": {
         "test_name": "FIR/ex1PM16_fir_28/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex1PM16_fir_28.blif",
+        "generated_blif": "ex1PM16_fir_28_generated.blif",
         "max_rss(MiB)": 732.1,
         "exec_time(ms)": 5965.6,
         "simulation_time(ms)": 5731,
@@ -186,7 +186,7 @@
     "FIR/ex1PM16_fir_28/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex1PM16_fir_28/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex1PM16_fir_28.blif",
+        "generated_blif": "ex1PM16_fir_28_generated.blif",
         "max_rss(MiB)": 724.2,
         "exec_time(ms)": 6030.5,
         "simulation_time(ms)": 5756.1,
@@ -204,7 +204,7 @@
     },
     "FIR/ex1PM16_fir_28/no_arch": {
         "test_name": "FIR/ex1PM16_fir_28/no_arch",
-        "blif": "ex1PM16_fir_28.blif",
+        "generated_blif": "ex1PM16_fir_28_generated.blif",
         "max_rss(MiB)": 729.9,
         "exec_time(ms)": 6181.6,
         "simulation_time(ms)": 5948.3,
@@ -222,7 +222,7 @@
     "FIR/ex2BT16_fir_71/k6_N10_40nm": {
         "test_name": "FIR/ex2BT16_fir_71/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex2BT16_fir_71.blif",
+        "generated_blif": "ex2BT16_fir_71_generated.blif",
         "max_rss(MiB)": 1267.8,
         "exec_time(ms)": 12757.1,
         "simulation_time(ms)": 12288.7,
@@ -241,7 +241,7 @@
     "FIR/ex2BT16_fir_71/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex2BT16_fir_71/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex2BT16_fir_71.blif",
+        "generated_blif": "ex2BT16_fir_71_generated.blif",
         "max_rss(MiB)": 1217.8,
         "exec_time(ms)": 12707.1,
         "simulation_time(ms)": 12198.2,
@@ -259,7 +259,7 @@
     },
     "FIR/ex2BT16_fir_71/no_arch": {
         "test_name": "FIR/ex2BT16_fir_71/no_arch",
-        "blif": "ex2BT16_fir_71.blif",
+        "generated_blif": "ex2BT16_fir_71_generated.blif",
         "max_rss(MiB)": 1265.1,
         "exec_time(ms)": 12320.7,
         "simulation_time(ms)": 11846.3,
@@ -277,7 +277,7 @@
     "FIR/ex2EP16_fir_13/k6_N10_40nm": {
         "test_name": "FIR/ex2EP16_fir_13/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex2EP16_fir_13.blif",
+        "generated_blif": "ex2EP16_fir_13_generated.blif",
         "max_rss(MiB)": 169.2,
         "exec_time(ms)": 1858.6,
         "simulation_time(ms)": 1786.7,
@@ -296,7 +296,7 @@
     "FIR/ex2EP16_fir_13/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex2EP16_fir_13/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex2EP16_fir_13.blif",
+        "generated_blif": "ex2EP16_fir_13_generated.blif",
         "max_rss(MiB)": 177.5,
         "exec_time(ms)": 1968.8,
         "simulation_time(ms)": 1856.9,
@@ -314,7 +314,7 @@
     },
     "FIR/ex2EP16_fir_13/no_arch": {
         "test_name": "FIR/ex2EP16_fir_13/no_arch",
-        "blif": "ex2EP16_fir_13.blif",
+        "generated_blif": "ex2EP16_fir_13_generated.blif",
         "max_rss(MiB)": 165.3,
         "exec_time(ms)": 1925.1,
         "simulation_time(ms)": 1858.1,
@@ -332,7 +332,7 @@
     "FIR/ex2PM16_fir_119/k6_N10_40nm": {
         "test_name": "FIR/ex2PM16_fir_119/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex2PM16_fir_119.blif",
+        "generated_blif": "ex2PM16_fir_119_generated.blif",
         "max_rss(MiB)": 2004.5,
         "exec_time(ms)": 32841.3,
         "simulation_time(ms)": 31158.4,
@@ -351,7 +351,7 @@
     "FIR/ex2PM16_fir_119/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex2PM16_fir_119/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex2PM16_fir_119.blif",
+        "generated_blif": "ex2PM16_fir_119_generated.blif",
         "max_rss(MiB)": 2003.3,
         "exec_time(ms)": 27031.3,
         "simulation_time(ms)": 25158,
@@ -369,7 +369,7 @@
     },
     "FIR/ex2PM16_fir_119/no_arch": {
         "test_name": "FIR/ex2PM16_fir_119/no_arch",
-        "blif": "ex2PM16_fir_119.blif",
+        "generated_blif": "ex2PM16_fir_119_generated.blif",
         "max_rss(MiB)": 2001.2,
         "exec_time(ms)": 30766.1,
         "simulation_time(ms)": 28981.3,
@@ -387,7 +387,7 @@
     "FIR/ex3PM16_fir_61/k6_N10_40nm": {
         "test_name": "FIR/ex3PM16_fir_61/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex3PM16_fir_61.blif",
+        "generated_blif": "ex3PM16_fir_61_generated.blif",
         "max_rss(MiB)": 1597.4,
         "exec_time(ms)": 17962.9,
         "simulation_time(ms)": 17211,
@@ -406,7 +406,7 @@
     "FIR/ex3PM16_fir_61/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex3PM16_fir_61/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex3PM16_fir_61.blif",
+        "generated_blif": "ex3PM16_fir_61_generated.blif",
         "max_rss(MiB)": 1590.3,
         "exec_time(ms)": 17981,
         "simulation_time(ms)": 17115.1,
@@ -424,7 +424,7 @@
     },
     "FIR/ex3PM16_fir_61/no_arch": {
         "test_name": "FIR/ex3PM16_fir_61/no_arch",
-        "blif": "ex3PM16_fir_61.blif",
+        "generated_blif": "ex3PM16_fir_61_generated.blif",
         "max_rss(MiB)": 1599.4,
         "exec_time(ms)": 17273.4,
         "simulation_time(ms)": 16557.4,
@@ -442,7 +442,7 @@
     "FIR/ex4EP16_fir_10/k6_N10_40nm": {
         "test_name": "FIR/ex4EP16_fir_10/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex4EP16_fir_10.blif",
+        "generated_blif": "ex4EP16_fir_10_generated.blif",
         "max_rss(MiB)": 226,
         "exec_time(ms)": 2356,
         "simulation_time(ms)": 2268.7,
@@ -461,7 +461,7 @@
     "FIR/ex4EP16_fir_10/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex4EP16_fir_10/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex4EP16_fir_10.blif",
+        "generated_blif": "ex4EP16_fir_10_generated.blif",
         "max_rss(MiB)": 235.8,
         "exec_time(ms)": 2416.2,
         "simulation_time(ms)": 2290.5,
@@ -479,7 +479,7 @@
     },
     "FIR/ex4EP16_fir_10/no_arch": {
         "test_name": "FIR/ex4EP16_fir_10/no_arch",
-        "blif": "ex4EP16_fir_10.blif",
+        "generated_blif": "ex4EP16_fir_10_generated.blif",
         "max_rss(MiB)": 223.2,
         "exec_time(ms)": 2495.2,
         "simulation_time(ms)": 2411.4,
@@ -497,7 +497,7 @@
     "FIR/ex4LS16_fir/k6_N10_40nm": {
         "test_name": "FIR/ex4LS16_fir/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex4LS16_fir.blif",
+        "generated_blif": "ex4LS16_fir_generated.blif",
         "max_rss(MiB)": 2402.5,
         "exec_time(ms)": 46569.6,
         "simulation_time(ms)": 38923,
@@ -516,7 +516,7 @@
     "FIR/ex4LS16_fir/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex4LS16_fir/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex4LS16_fir.blif",
+        "generated_blif": "ex4LS16_fir_generated.blif",
         "max_rss(MiB)": 2356.4,
         "exec_time(ms)": 48542.8,
         "simulation_time(ms)": 41813.5,
@@ -534,7 +534,7 @@
     },
     "FIR/ex4LS16_fir/no_arch": {
         "test_name": "FIR/ex4LS16_fir/no_arch",
-        "blif": "ex4LS16_fir.blif",
+        "generated_blif": "ex4LS16_fir_generated.blif",
         "max_rss(MiB)": 2354.1,
         "exec_time(ms)": 49500.5,
         "simulation_time(ms)": 41744.8,
@@ -552,7 +552,7 @@
     "FIR/ex4PM16_fir_152/k6_N10_40nm": {
         "test_name": "FIR/ex4PM16_fir_152/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
-        "blif": "ex4PM16_fir_152.blif",
+        "generated_blif": "ex4PM16_fir_152_generated.blif",
         "max_rss(MiB)": 2032.1,
         "exec_time(ms)": 30013.7,
         "simulation_time(ms)": 27159.3,
@@ -571,7 +571,7 @@
     "FIR/ex4PM16_fir_152/k6_N10_mem32K_40nm": {
         "test_name": "FIR/ex4PM16_fir_152/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "ex4PM16_fir_152.blif",
+        "generated_blif": "ex4PM16_fir_152_generated.blif",
         "max_rss(MiB)": 2038.5,
         "exec_time(ms)": 35038.6,
         "simulation_time(ms)": 32110.1,
@@ -589,7 +589,7 @@
     },
     "FIR/ex4PM16_fir_152/no_arch": {
         "test_name": "FIR/ex4PM16_fir_152/no_arch",
-        "blif": "ex4PM16_fir_152.blif",
+        "generated_blif": "ex4PM16_fir_152_generated.blif",
         "max_rss(MiB)": 2025.6,
         "exec_time(ms)": 32326.5,
         "simulation_time(ms)": 29646.2,
@@ -607,7 +607,7 @@
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "blif": "n/a",
+        "generated_blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],

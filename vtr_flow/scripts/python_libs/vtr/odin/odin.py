@@ -1,11 +1,15 @@
 """
     Module to run ODIN II with its various arguments
 """
+import os
 import shutil
 from collections import OrderedDict
 from pathlib import Path
 import xml.etree.ElementTree as ET
-from vtr import file_replace, determine_memory_addr_width, verify_file, CommandRunner, paths
+import vtr
+
+# supported input file type by Odin
+FILE_TYPES = {".v": "verilog", ".vh": "verilog", ".blif": "blif"}
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -15,7 +19,7 @@ def create_circuits_list(main_circuit, include_files):
     if include_files:
         # Verify that files are Paths or convert them to Paths + check that they exist
         for include in include_files:
-            include_file = verify_file(include, "Circuit")
+            include_file = vtr.verify_file(include, "Circuit")
             circuit_list.append(include_file.name)
 
     # Append the main circuit design as the last one
@@ -34,13 +38,19 @@ def init_config_file(
     min_hard_mult_size,
     min_hard_adder_size,
 ):
-
     """initializing the raw odin config file"""
+    # specify the input files type
+    file_extension = os.path.splitext(circuit_list[0])[-1]
+    if file_extension not in FILE_TYPES:
+        raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
+    input_file_type = FILE_TYPES[file_extension]
+
     # Update the config file
-    file_replace(
+    vtr.file_replace(
         odin_config_full_path,
         {
             "YYY": architecture_file,
+            "TTT": input_file_type,
             "ZZZ": output_netlist,
             "PPP": memory_addr_width,
             "MMM": min_hard_mult_size,
@@ -52,12 +62,12 @@ def init_config_file(
     config_file = ET.parse(odin_config_full_path)
     root = config_file.getroot()
 
-    # based on the base condfig file
-    verilog_files_tag = root.find("verilog_files")
-    # remove the template line XXX, verilog_files_tag [0] is a comment
-    verilog_files_tag.remove(verilog_files_tag[0])
+    # based on the base config file
+    verilog_files_tag = root.find("inputs")
+    # remove the template line XXX, verilog_files_tag [1] is a comment
+    verilog_files_tag.remove(verilog_files_tag[1])
     for circuit in circuit_list:
-        verilog_file = ET.SubElement(verilog_files_tag, "verilog_file")
+        verilog_file = ET.SubElement(verilog_files_tag, "input_path_and_name")
         verilog_file.tail = "\n\n\t" if (circuit == circuit_list[-1]) else "\n\n\t\t"
         verilog_file.text = circuit
 
@@ -71,7 +81,7 @@ def run(
     circuit_file,
     include_files,
     output_netlist,
-    command_runner=CommandRunner(),
+    command_runner=vtr.CommandRunner(),
     temp_dir=Path("."),
     odin_args="--adder_type default",
     log_filename="odin.out",
@@ -132,15 +142,15 @@ def run(
         odin_args = OrderedDict()
 
     # Verify that files are Paths or convert them to Paths and check that they exist
-    architecture_file = verify_file(architecture_file, "Architecture")
-    circuit_file = verify_file(circuit_file, "Circuit")
-    output_netlist = verify_file(output_netlist, "Output netlist", False)
+    architecture_file = vtr.verify_file(architecture_file, "Architecture")
+    circuit_file = vtr.verify_file(circuit_file, "Circuit")
+    output_netlist = vtr.verify_file(output_netlist, "Output netlist", False)
 
     if odin_exec is None:
-        odin_exec = str(paths.odin_exe_path)
+        odin_exec = str(vtr.paths.odin_exe_path)
 
     if odin_config is None:
-        odin_base_config = str(paths.odin_cfg_path)
+        odin_base_config = str(vtr.paths.odin_cfg_path)
     else:
         odin_base_config = str(Path(odin_config).resolve())
 
@@ -157,7 +167,7 @@ def run(
         circuit_list,
         architecture_file.name,
         output_netlist.name,
-        determine_memory_addr_width(str(architecture_file)),
+        vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
     )

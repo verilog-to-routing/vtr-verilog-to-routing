@@ -1,4 +1,7 @@
 /** This file contains all functions reagrding the graphics related to the setting of place and route breakpoints **/
+#ifndef DRAW_DEBUG_H
+#define DRAW_DEBUG_H
+
 #ifndef NO_GRAPHICS
 
 #    include "breakpoint.h"
@@ -35,4 +38,6 @@ void invalid_breakpoint_entry_window(std::string error);
 bool valid_expression(std::string exp);
 void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state, bool in_placer);
 
-#endif
+#endif /*NO_GRAPHICS*/
+
+#endif /*DRAW_DEBUG_H*/

@@ -166,69 +166,55 @@ assign b0tpaj = b0t;
 assign b1tpaj = b1t;
 assign b2tpaj = b2t;
 
-wire tmp_uk;
-wire tmp_uk1;
-wire tmp_uk2;
-wire tmp_yk1;
-wire tmp_yk2;
-wire tmp_yk;
-wire tmp_ysum;
-wire tmp_utmp;
-wire tmp_a1;
-wire tmp_a2;
-wire tmp_b0;
-wire tmp_b1;
-wire tmp_b2;
-wire tmp_dout;
-wire tmp_obf_state;
-wire tmp_ready;
-
-// async reset
-assign uk = (reset)? 0: tmp_uk;
-assign uk1 = (reset)? 0: tmp_uk1;
-assign uk2 = (reset)? 0: tmp_uk2;
-assign yk1 = (reset)? 0: tmp_yk1;
-assign yk2 = (reset)? 0: tmp_yk2;
-assign yk = (reset)? 0: tmp_yk;
-assign ysum = (reset)? 0: tmp_ysum;
-assign utmp = (reset)? 0: tmp_utmp;
-assign a1 = (reset)? 0: tmp_a1;
-assign a2 = (reset)? 0: tmp_a2;
-assign b0 = (reset)? 0: tmp_b0;
-assign b1 = (reset)? 0: tmp_b1;
-assign b2 = (reset)? 0: tmp_b2;
-assign dout = (reset)? 0: tmp_dout;
-assign obf_state = (reset)? idle: tmp_obf_state;
-assign ready = (reset)? 0: tmp_ready;
-
-always @(posedge clk) begin
-	tmp_obf_state <= obf_next_state ;
-	tmp_uk1 <= temp_uk1;
-	tmp_uk2 <= temp_uk2;
-	tmp_yk <= temp_yk;
-	tmp_uk <= temp_uk ;
-	tmp_a1 <= temp_a1 ; 
-	tmp_a2 <= temp_a2 ; 
-	tmp_b0 <= temp_b0 ; 
-	tmp_b1 <= temp_b1 ; 
-	tmp_b2 <= temp_b2 ; 
-	tmp_ysum <= temp_ysum;
-	tmp_utmp <= temp_utmp;
-	tmp_dout <= temp_dout;
-	tmp_yk1 <= temp_yk1;
-	tmp_yk2 <= temp_yk2;
-	tmp_ready <= temp_ready;
+// A COEFFICENTS
+always @(posedge clk or posedge reset) begin
+	if (reset ) begin
+		uk <= 0 ;
+		uk1 <= 0 ;
+		uk2 <= 0 ;
+		yk1 <= 0 ;
+		yk2 <= 0 ;
+		yk <= 0 ;
+		ysum <= 0 ;
+		utmp <= 0 ;
+		a1 <= 0 ;
+		a2 <= 0 ;
+		b0 <= 0 ;
+		b1 <= 0 ;
+		b2 <= 0 ;
+		dout <= 0 ;
+		obf_state <= idle ;
+		ready <= 0;
+	end
+	else begin
+		obf_state <= obf_next_state ;
+		uk1 <= temp_uk1;
+		uk2 <= temp_uk2;
+		yk <= temp_yk;
+		uk <= temp_uk ;
+		a1 <= temp_a1 ; 
+		a2 <= temp_a2 ; 
+		b0 <= temp_b0 ; 
+		b1 <= temp_b1 ; 
+		b2 <= temp_b2 ; 
+		ysum <= temp_ysum;
+		utmp <= temp_utmp;
+		dout <= temp_dout;
+		yk1 <= temp_yk1;
+		yk2 <= temp_yk2;
+		ready <= temp_ready;
+	end
 end
 
 // wait counter, count 4 clock after sum is calculated, to 
 // time outputs are ready, and filter is ready to accept next
 // input
-wire tmp_wait_counter;
-assign wait_counter = (reset)? 0 : tmp_wait_counter;wire tmp_finite_counter;
-
-
-always @(posedge clk ) begin
-	tmp_wait_counter <= temp_wait_counter ;
+always @(posedge clk or posedge reset ) begin
+	if (reset )
+		wait_counter <= 0 ;
+	else begin
+		wait_counter <= temp_wait_counter ;
+	end
 end
 
 always @(posedge clk) begin

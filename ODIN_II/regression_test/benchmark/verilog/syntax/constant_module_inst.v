@@ -50,6 +50,8 @@ module bramctrlsimple (
   wire 	we;
   assign we = (mem_access == 1) ? mem_req : 0;
 
+  defparam inst1.ADDR_WIDTH = ADDR_WIDTH;
+  defparam inst1.DATA_WIDTH = DATA_WIDTH;
   single_port_ram inst1(
 		.clk	( clk ),
 		.we		( we ),
