@@ -3640,16 +3640,8 @@ static void ProcessSegments(pugi::xml_node Parent,
     /* Load the segments. */
     Node = get_first_child(Parent, "segment", loc_data);
 
-<<<<<<< HEAD
-    /*Keep track of the type of axis of the segments loaded*/
-
-    bool x_axis_seg_found=false;
-    bool y_axis_seg_found=false; 
-
-=======
     bool x_axis_seg_found = false; /*Flags to see if we have any x-directed segment type specified*/
     bool y_axis_seg_found = false; /*Flags to see if we have any y-directed segment type specified*/
->>>>>>> 467ad22a4a7512254a2a26819f2f18e327fcf798
 
     for (i = 0; i < NumSegs; ++i) {
         /* Get segment name */
