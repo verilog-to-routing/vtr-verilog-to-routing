@@ -3,6 +3,7 @@
 
 %include "common/vtr_flow.txt"
 %include "common/odin.txt"
+%include "common/yosys.txt"
 %include "common/abc.txt"
 %include "common/ace.txt"
 
