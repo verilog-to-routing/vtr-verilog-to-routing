@@ -388,6 +388,8 @@ static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
 
 static void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_type);
 
+static t_pb* get_parent_pb(t_pb* pb);
+
 /*****************************************/
 /*globally accessible function*/
 std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
@@ -1978,6 +1980,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 
     auto& atom_ctx = g_vpr_ctx.atom();
     t_pb* cur_pb = atom_ctx.lookup.atom_pb(clustered_blk_id)->parent_pb;
+    cur_pb = get_parent_pb(cur_pb);
 
     if (int(atom_ctx.nlist.net_sinks(net_id).size()) > high_fanout_net_threshold) {
         /* Optimization: It can be too runtime costly for marking all sinks for
@@ -1997,7 +2000,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
         return;
     }
 
-    while (cur_pb) {
+    //while (cur_pb) {
         /* Mark atom net as being visited, if necessary. */
 
         if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
@@ -2048,8 +2051,8 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
             cur_pb->pb_stats->num_pins_of_net_in_pb[net_id] = 0;
         }
         cur_pb->pb_stats->num_pins_of_net_in_pb[net_id]++;
-        cur_pb = cur_pb->parent_pb;
-    }
+        //cur_pb = cur_pb->parent_pb;
+    //}
 }
 
 /*****************************************/
@@ -2060,9 +2063,10 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
     auto& atom_ctx = g_vpr_ctx.atom();
     t_pb* cur_pb = pb;
 
+    cur_pb = get_parent_pb(cur_pb);
     AttractGroupId cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
 
-    while (cur_pb) {
+    //while (cur_pb) {
         for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
             //Initialize connectiongain and sharinggain if
             //they have not previously been updated for the block
@@ -2110,8 +2114,8 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
                                                  + (1.0 - alpha) * (float)cur_pb->pb_stats->gain[blk_id];
             }
         }
-        cur_pb = cur_pb->parent_pb;
-    }
+        //cur_pb = cur_pb->parent_pb;
+    //}
 }
 
 /*****************************************/
@@ -3956,4 +3960,19 @@ static void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_ty
     VTR_LOG("  LEs used for logic and registers    : %d\n", le_count[0]);
     VTR_LOG("  LEs used for logic only             : %d\n", le_count[1]);
     VTR_LOG("  LEs used for registers only         : %d\n\n", le_count[2]);
+}
+
+static t_pb* get_parent_pb(t_pb* pb) {
+	t_pb* top_level_pb;
+
+    while (pb) {
+        /* reset list of feasible blocks */
+        if (pb->is_root()) {
+            top_level_pb = pb;
+        }
+
+        pb = pb->parent_pb;
+    }
+
+	return top_level_pb;
 }
