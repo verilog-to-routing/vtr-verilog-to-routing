@@ -102,6 +102,11 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
+    /** @brief Set the rc_index of routing resource node. */
+    inline void set_node_rc_index(RRNodeId id, short new_rc_index) {
+        node_storage_.set_node_rc_index(id, new_rc_index);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
