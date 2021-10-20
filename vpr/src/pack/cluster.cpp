@@ -2000,7 +2000,6 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
         return;
     }
 
-
     /* Mark atom net as being visited, if necessary. */
 
     if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
@@ -2051,7 +2050,6 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
         cur_pb->pb_stats->num_pins_of_net_in_pb[net_id] = 0;
     }
     cur_pb->pb_stats->num_pins_of_net_in_pb[net_id]++;
-
 }
 
 /*****************************************/
@@ -2112,7 +2110,6 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
                                              + (1.0 - alpha) * (float)cur_pb->pb_stats->gain[blk_id];
         }
     }
-
 }
 
 /*****************************************/
