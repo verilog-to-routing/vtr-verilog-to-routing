@@ -3957,14 +3957,10 @@ static void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_ty
 }
 
 static t_pb* get_parent_pb(t_pb* pb) {
-    t_pb* top_level_pb = nullptr;
+    t_pb* top_level_pb;
 
     while (pb) {
-        /* reset list of feasible blocks */
-        if (pb->is_root()) {
-            top_level_pb = pb;
-        }
-
+        top_level_pb = pb;
         pb = pb->parent_pb;
     }
 
