@@ -2000,7 +2000,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
         return;
     }
 
-    //while (cur_pb) {
+
     /* Mark atom net as being visited, if necessary. */
 
     if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
@@ -2051,8 +2051,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
         cur_pb->pb_stats->num_pins_of_net_in_pb[net_id] = 0;
     }
     cur_pb->pb_stats->num_pins_of_net_in_pb[net_id]++;
-    //cur_pb = cur_pb->parent_pb;
-    //}
+
 }
 
 /*****************************************/
@@ -2066,7 +2065,6 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
     cur_pb = get_parent_pb(cur_pb);
     AttractGroupId cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
 
-    //while (cur_pb) {
     for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
         //Initialize connectiongain and sharinggain if
         //they have not previously been updated for the block
@@ -2114,8 +2112,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
                                              + (1.0 - alpha) * (float)cur_pb->pb_stats->gain[blk_id];
         }
     }
-    //cur_pb = cur_pb->parent_pb;
-    //}
+
 }
 
 /*****************************************/
