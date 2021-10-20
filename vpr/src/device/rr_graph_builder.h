@@ -73,7 +73,7 @@ class RRGraphBuilder {
      * e.g the node type is unknown. If the node type is known, the more specific routines, `set_node_pin_num()`,
      * `set_node_track_num()`and `set_node_class_num()`, for different types of nodes should be used.*/
 
-     /** @brief The ptc_num carries different meanings for different node types
+    /** @brief The ptc_num carries different meanings for different node types
      * (true in VPR RRG that is currently supported, may not be true in customized RRG)
      * CHANX or CHANY: the track id in routing channels
      * OPIN or IPIN: the index of pins in the logic block data structure
