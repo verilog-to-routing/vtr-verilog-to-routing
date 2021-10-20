@@ -2061,7 +2061,10 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
     t_pb* cur_pb = pb;
 
     cur_pb = get_parent_pb(cur_pb);
-    AttractGroupId cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
+    AttractGroupId cluster_att_grp_id;
+    if (cur_pb) {
+        cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
+    }
 
     for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
         //Initialize connectiongain and sharinggain if
