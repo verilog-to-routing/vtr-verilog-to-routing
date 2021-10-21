@@ -102,6 +102,12 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
+    /** @brief Add the side where the node physically locates on a logic block.
+     * Mainly applicable to IPIN and OPIN nodes.*/
+    inline void add_node_side(RRNodeId id, e_side new_side) {
+        node_storage_.add_node_side(id, new_side);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
