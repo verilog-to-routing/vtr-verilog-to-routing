@@ -21,7 +21,7 @@ TEST_CASE("read_interchange_netlist", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    FPGAInterchangeReadArch(kArchFile, &arch, physical_tile_types, logical_block_types);
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
     vpr_setup.user_models = arch.models;
     vpr_setup.library_models = arch.model_library;

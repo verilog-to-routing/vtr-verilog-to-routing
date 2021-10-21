@@ -221,6 +221,14 @@ struct ArchReader {
                                "Model output ports can not have combinational sink ports");
             }
 
+            model_port->min_size = 1;
+            model_port->size = 1;
+            if (port.isBus()) {
+                int s = port.getBus().getBusStart();
+                int e = port.getBus().getBusEnd();
+                model_port->size = std::abs(e - s) + 1;
+            }
+
             port_names.insert(std::pair<std::string, enum PORTS>(model_port->name, dir));
             //Add the port
             if (dir == IN_PORT) {
