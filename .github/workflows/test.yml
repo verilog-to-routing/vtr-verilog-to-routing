@@ -137,23 +137,23 @@ jobs:
         ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
-    - name: Upload artifact
+    - name: Upload regression run files
       uses: actions/upload-artifact@v2
       with:
-        name: ${{matrix.name}}_regression_log
+        name: ${{matrix.name}}_run_files
         path: |
-          vtr_flow/**/*.log
           vtr_flow/**/*.out
           vtr_flow/**/*.blif
           vtr_flow/**/*.p
           vtr_flow/**/*.net
           vtr_flow/**/*.r
 
-    - name: Upload golden results
+    - name: Upload regression results
       uses: actions/upload-artifact@v2
       with:
-        name: ${{matrix.name}}_golden_results
+        name: ${{matrix.name}}_results
         path: |
+          vtr_flow/**/*.log
           vtr_flow/**/parse_results*.txt
 
   Sanitized:
