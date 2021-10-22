@@ -1,11 +1,12 @@
 #ifndef READ_FPGAINTERCHANGE_ARCH_FILE_H
 #define READ_FPGAINTERCHANGE_ARCH_FILE_H
 
+#include "arch_types.h"
+
 #include "DeviceResources.capnp.h"
 #include "LogicalNetlist.capnp.h"
 #include "capnp/serialize.h"
 #include "capnp/serialize-packed.h"
-#include "mmap_file.h"
 #include <fcntl.h>
 #include <unistd.h>
 
