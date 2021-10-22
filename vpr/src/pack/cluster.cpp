@@ -1982,75 +1982,71 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
     t_pb* cur_pb = atom_ctx.lookup.atom_pb(clustered_blk_id)->parent_pb;
     cur_pb = get_top_level_pb(cur_pb);
 
-	if (int(atom_ctx.nlist.net_sinks(net_id).size()) > high_fanout_net_threshold) {
-		/* Optimization: It can be too runtime costly for marking all sinks for
-		 * a high fanout-net that probably has no hope of ever getting packed,
-		 * thus ignore those high fanout nets */
-		if (!is_global.count(net_id)) {
-			/* If no low/medium fanout nets, we may need to consider
-			 * high fan-out nets for packing, so select one and store it */
-			while (cur_pb->parent_pb != nullptr) {
-				cur_pb = cur_pb->parent_pb;
-			}
-			AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
-			if (!stored_net || atom_ctx.nlist.net_sinks(net_id).size() < atom_ctx.nlist.net_sinks(stored_net).size()) {
-				cur_pb->pb_stats->tie_break_high_fanout_net = net_id;
-			}
-		}
-		return;
-	}
+    if (int(atom_ctx.nlist.net_sinks(net_id).size()) > high_fanout_net_threshold) {
+        /* Optimization: It can be too runtime costly for marking all sinks for
+         * a high fanout-net that probably has no hope of ever getting packed,
+         * thus ignore those high fanout nets */
+        if (!is_global.count(net_id)) {
+            /* If no low/medium fanout nets, we may need to consider
+             * high fan-out nets for packing, so select one and store it */
+            AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
+            if (!stored_net || atom_ctx.nlist.net_sinks(net_id).size() < atom_ctx.nlist.net_sinks(stored_net).size()) {
+                cur_pb->pb_stats->tie_break_high_fanout_net = net_id;
+            }
+        }
+        return;
+    }
 
     /* Mark atom net as being visited, if necessary. */
 
-	if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
-		cur_pb->pb_stats->marked_nets.push_back(net_id);
-	}
+    if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
+        cur_pb->pb_stats->marked_nets.push_back(net_id);
+    }
 
-	/* Update gains of affected blocks. */
+    /* Update gains of affected blocks. */
 
-	if (gain_flag == GAIN) {
-		/* Check if this net is connected to it's driver block multiple times (i.e. as both an output and input)
-		 * If so, avoid double counting by skipping the first (driving) pin. */
+    if (gain_flag == GAIN) {
+        /* Check if this net is connected to it's driver block multiple times (i.e. as both an output and input)
+         * If so, avoid double counting by skipping the first (driving) pin. */
 
-		auto pins = atom_ctx.nlist.net_pins(net_id);
-		if (net_output_feeds_driving_block_input[net_id] != 0)
-			//We implicitly assume here that net_output_feeds_driver_block_input[net_id] is 2
-			//(i.e. the net loops back to the block only once)
-			pins = atom_ctx.nlist.net_sinks(net_id);
+        auto pins = atom_ctx.nlist.net_pins(net_id);
+        if (net_output_feeds_driving_block_input[net_id] != 0)
+            //We implicitly assume here that net_output_feeds_driver_block_input[net_id] is 2
+            //(i.e. the net loops back to the block only once)
+            pins = atom_ctx.nlist.net_sinks(net_id);
 
-		if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
-			for (auto pin_id : pins) {
-				auto blk_id = atom_ctx.nlist.pin_block(pin_id);
-				if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-					if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
-						cur_pb->pb_stats->marked_blocks.push_back(blk_id);
-						cur_pb->pb_stats->sharinggain[blk_id] = 1;
-						cur_pb->pb_stats->hillgain[blk_id] = 1 - num_ext_inputs_atom_block(blk_id);
-					} else {
-						cur_pb->pb_stats->sharinggain[blk_id]++;
-						cur_pb->pb_stats->hillgain[blk_id]++;
-					}
-				}
-			}
-		}
+        if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
+            for (auto pin_id : pins) {
+                auto blk_id = atom_ctx.nlist.pin_block(pin_id);
+                if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
+                    if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
+                        cur_pb->pb_stats->marked_blocks.push_back(blk_id);
+                        cur_pb->pb_stats->sharinggain[blk_id] = 1;
+                        cur_pb->pb_stats->hillgain[blk_id] = 1 - num_ext_inputs_atom_block(blk_id);
+                    } else {
+                        cur_pb->pb_stats->sharinggain[blk_id]++;
+                        cur_pb->pb_stats->hillgain[blk_id]++;
+                    }
+                }
+            }
+        }
 
-		if (connection_driven) {
-			update_connection_gain_values(net_id, clustered_blk_id, cur_pb,
-										  net_relation_to_clustered_block);
-		}
+        if (connection_driven) {
+            update_connection_gain_values(net_id, clustered_blk_id, cur_pb,
+                                          net_relation_to_clustered_block);
+        }
 
-		if (timing_driven) {
-			update_timing_gain_values(net_id, cur_pb,
-									  net_relation_to_clustered_block,
-									  timing_info,
-									  is_global);
-		}
-	}
-	if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
-		cur_pb->pb_stats->num_pins_of_net_in_pb[net_id] = 0;
-	}
-	cur_pb->pb_stats->num_pins_of_net_in_pb[net_id]++;
-
+        if (timing_driven) {
+            update_timing_gain_values(net_id, cur_pb,
+                                      net_relation_to_clustered_block,
+                                      timing_info,
+                                      is_global);
+        }
+    }
+    if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
+        cur_pb->pb_stats->num_pins_of_net_in_pb[net_id] = 0;
+    }
+    cur_pb->pb_stats->num_pins_of_net_in_pb[net_id]++;
 }
 
 /*****************************************/
@@ -2064,56 +2060,55 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
     cur_pb = get_top_level_pb(cur_pb);
     AttractGroupId cluster_att_grp_id;
 
-	cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
+    cluster_att_grp_id = cur_pb->pb_stats->attraction_grp_id;
 
-	for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
-		//Initialize connectiongain and sharinggain if
-		//they have not previously been updated for the block
-		if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
-			cur_pb->pb_stats->connectiongain[blk_id] = 0;
-		}
-		if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
-			cur_pb->pb_stats->sharinggain[blk_id] = 0;
-		}
+    for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
+        //Initialize connectiongain and sharinggain if
+        //they have not previously been updated for the block
+        if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
+            cur_pb->pb_stats->connectiongain[blk_id] = 0;
+        }
+        if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
+            cur_pb->pb_stats->sharinggain[blk_id] = 0;
+        }
 
-		/* Todo: Right now we update the gain multiple times for each block.
-		 * Eventually want to move this out of the while loop and only update it
-		 * for the top-level block in each cluster.*/
-		AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
-		if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
-			//increase gain of atom based on attraction group gain
-			float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
-			cur_pb->pb_stats->gain[blk_id] += att_grp_gain;
-		}
+        /* Todo: Right now we update the gain multiple times for each block.
+         * Eventually want to move this out of the while loop and only update it
+         * for the top-level block in each cluster.*/
+        AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
+        if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
+            //increase gain of atom based on attraction group gain
+            float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
+            cur_pb->pb_stats->gain[blk_id] += att_grp_gain;
+        }
 
-		/* Todo: This was used to explore different normalization options, can
-		 * be made more efficient once we decide on which one to use*/
-		int num_used_input_pins = atom_ctx.nlist.block_input_pins(blk_id).size();
-		int num_used_output_pins = atom_ctx.nlist.block_output_pins(blk_id).size();
-		/* end todo */
+        /* Todo: This was used to explore different normalization options, can
+         * be made more efficient once we decide on which one to use*/
+        int num_used_input_pins = atom_ctx.nlist.block_input_pins(blk_id).size();
+        int num_used_output_pins = atom_ctx.nlist.block_output_pins(blk_id).size();
+        /* end todo */
 
-		/* Calculate area-only cost function */
-		int num_used_pins = num_used_input_pins + num_used_output_pins;
-		VTR_ASSERT(num_used_pins > 0);
-		if (connection_driven) {
-			/*try to absorb as many connections as possible*/
-			cur_pb->pb_stats->gain[blk_id] = ((1 - beta)
-												  * (float)cur_pb->pb_stats->sharinggain[blk_id]
-											  + beta * (float)cur_pb->pb_stats->connectiongain[blk_id])
-											 / (num_used_pins);
-		} else {
-			cur_pb->pb_stats->gain[blk_id] = ((float)cur_pb->pb_stats->sharinggain[blk_id])
-											 / (num_used_pins);
-		}
+        /* Calculate area-only cost function */
+        int num_used_pins = num_used_input_pins + num_used_output_pins;
+        VTR_ASSERT(num_used_pins > 0);
+        if (connection_driven) {
+            /*try to absorb as many connections as possible*/
+            cur_pb->pb_stats->gain[blk_id] = ((1 - beta)
+                                                  * (float)cur_pb->pb_stats->sharinggain[blk_id]
+                                              + beta * (float)cur_pb->pb_stats->connectiongain[blk_id])
+                                             / (num_used_pins);
+        } else {
+            cur_pb->pb_stats->gain[blk_id] = ((float)cur_pb->pb_stats->sharinggain[blk_id])
+                                             / (num_used_pins);
+        }
 
-		/* Add in timing driven cost into cost function */
-		if (timing_driven) {
-			cur_pb->pb_stats->gain[blk_id] = alpha
-												 * cur_pb->pb_stats->timinggain[blk_id]
-											 + (1.0 - alpha) * (float)cur_pb->pb_stats->gain[blk_id];
-		}
-	}
-
+        /* Add in timing driven cost into cost function */
+        if (timing_driven) {
+            cur_pb->pb_stats->gain[blk_id] = alpha
+                                                 * cur_pb->pb_stats->timinggain[blk_id]
+                                             + (1.0 - alpha) * (float)cur_pb->pb_stats->gain[blk_id];
+        }
+    }
 }
 
 /*****************************************/
