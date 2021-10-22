@@ -59,9 +59,7 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
  * This report will be generated only if the last routing attempt fails, which
  * causes the whole VPR flow to fail.
  */
-void report_overused_nodes() {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+void report_overused_nodes(const RRGraphView& rr_graph) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     /* Generate overuse info lookup table */
