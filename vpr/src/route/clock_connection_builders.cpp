@@ -114,7 +114,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
 
     float R = 0.;
     float C = 0.;
-    rr_graph_builder.set_node_rc_index(node_index, find_create_rr_rc_data(R, C));
+    rr_graph_builder.set_node_rc_index(node_index, NodeRCIndex(find_create_rr_rc_data(R, C)));
 
     // Use a generic way when adding nodes to lookup.
     // However, since the SINK node has the same xhigh/xlow as well as yhigh/ylow, we can probably use a shortcut

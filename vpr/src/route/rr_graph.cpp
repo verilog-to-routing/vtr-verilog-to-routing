@@ -1437,7 +1437,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
         float R = 0.;
         float C = 0.;
-        rr_graph_builder.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
+        rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C)));
         rr_graph_builder.set_node_class_num(inode, iclass);
     }
 
@@ -1485,7 +1485,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             rr_graph_builder.set_node_capacity(inode, 1);
                             float R = 0.;
                             float C = 0.;
-                            rr_graph_builder.set_node_rc_index(inode, find_create_rr_rc_data(R, C));
+                            rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C)));
                             rr_graph_builder.set_node_pin_num(inode, ipin);
 
                             //Note that we store the grid tile location and side where the pin is located,
@@ -1674,7 +1674,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
         float C = length * seg_details[track].Cmetal();
-        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(R, C));
+        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C)));
 
         rr_graph_builder.set_node_type(node, chan_type);
         rr_graph_builder.set_node_track_num(node, track);

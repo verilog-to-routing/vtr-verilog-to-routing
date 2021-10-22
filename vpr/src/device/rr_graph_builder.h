@@ -103,7 +103,7 @@ class RRGraphBuilder {
     }
 
     /** @brief Set the rc_index of routing resource node. */
-    inline void set_node_rc_index(RRNodeId id, short new_rc_index) {
+    inline void set_node_rc_index(RRNodeId id, NodeRCIndex new_rc_index) {
         node_storage_.set_node_rc_index(id, new_rc_index);
     }
 

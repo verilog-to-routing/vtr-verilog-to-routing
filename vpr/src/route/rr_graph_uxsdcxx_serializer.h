@@ -672,7 +672,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int init_node_timing(int& inode, float C, float R) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
-        rr_graph_builder_->set_node_rc_index(node_id, find_create_rr_rc_data(R, C));
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C)));
         return inode;
     }
     inline void finish_node_timing(int& /*inode*/) final {}
@@ -790,7 +790,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     type);
         }
 
-        rr_graph_builder_->set_node_rc_index(node_id, find_create_rr_rc_data(0, 0));
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0)));
 
         return id;
     }
