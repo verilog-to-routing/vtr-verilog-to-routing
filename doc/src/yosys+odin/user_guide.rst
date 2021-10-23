@@ -9,24 +9,24 @@ Synthesis Arguments
 
 .. table::
 
-    ===================    ==============================    =================================================================================================
-           Arg                   Following Argument                                                          Description
-    ===================    ==============================    =================================================================================================
-     `-c`                   XML Configuration File            XML runtime directives for the syntesizer such as the Verilog file, and parametrized synthesis
-     `-V`                   Verilog HDL FIle                  You may specify multiple Verilog HDL files for synthesis									   
-     `-b`                   BLIF File                                                                               									
-     `-S/--tcl`             Tcl Script File                   You may utilize additional commands for the Yosys elaborator        						   
-     `-o`                   BLIF Output File                  full output path and file name for the BLIF output file                           		
-     `-a`                   Architecture File                 You may specify multiple verilog HDL files for synthesis                        		       
-     `-G`                                                     Output netlist graph in GraphViz viewable .dot format. (net.dot, opens with dotty)  		   
-     `-A`                                                     Output AST graph in in GraphViz viewable .dot format.                               		   
-     `-W`                                                     Print all warnings. (Can be substantial.)                                           		   
-     `-h`                                                     Print help                                                                          		   
-     `--coarsen`            Coarse-grained BLIF File          Performing the partial mapping for a given coarse-grained netlist in BLIF 			       
-     `--elaborator`         [odin (default), yosys]           Specify the tool that should perform the HDL elaboration.      				 	           
-     `--fflegalize`                                           Converts latches' sensitivity to the rising edge as required by VPR 						   
-     `--show_yosys_log`                                       Showing the Yosys elaboration logs in the console window           		
-    ===================    ==============================    =================================================================================================
+    =======================   ==============================    =================================================================================================
+             Arg                    Following Argument                                                          Description
+    =======================   ==============================    =================================================================================================
+     `-c`                      XML Configuration File            XML runtime directives for the syntesizer such as the Verilog file, and parametrized synthesis
+     `-V`                      Verilog HDL FIle                  You may specify multiple Verilog HDL files for synthesis									   
+     `-b`                      BLIF File                                                                               									
+     **`-S/--tcl`**            **Tcl Script File**               **You may utilize additional commands for the Yosys elaborator**        						   
+     `-o`                      BLIF Output File                  full output path and file name for the BLIF output file                           		
+     `-a`                      Architecture File                 You may specify multiple verilog HDL files for synthesis                        		       
+     `-G`                                                        Output netlist graph in GraphViz viewable .dot format. (net.dot, opens with dotty)  		   
+     `-A`                                                        Output AST graph in in GraphViz viewable .dot format.                               		   
+     `-W`                                                        Print all warnings. (Can be substantial.)                                           		   
+     `-h`                                                        Print help                                                                          		   
+     **`--coarsen`**           **Coarse-grained BLIF File**      **Performing the partial mapping for a given coarse-grained netlist in BLIF** 			     
+     **`--elaborator`**        **[odin (default), yosys]**       **Specify the tool that should perform the HDL elaboration**  				 	         
+     **`--fflegalize`**                                          **Converts latches' sensitivity to the rising edge as required by VPR** 						 
+     **`--show_yosys_log`**                                      **Showing the Yosys elaboration logs in the console window**           
+    =======================   ==============================    =================================================================================================
 
 
 
@@ -35,19 +35,12 @@ Additional Examples using Odin-II with the Yosys elaborator
 
 .. code-block:: bash
 
-    ./odin_II --elaborator yosys -V <Path/to/Verilog/file>
-
-
-Passes a Verilog file to Yosys for performing elaboration. 
-Then, a Yosys generated coarse-grained BLIF file will be parsed by Odin-II.
-The BLIF elaboration and partial mapping phases will be executed on the netlist.
-
-.. code-block:: bash
-
     ./odin_II --elaborator yosys -V <Path/to/Verilog/file> --fflegalize
 
 
-The same as above, except for all latches in the Yosys+Odin-II output files that will be rising edge.
+Passes a Verilog file to Yosys for performing elaboration. 
+The BLIF elaboration and partial mapping phases will be executed on the generated netlist.
+However, all latches in the Yosys+Odin-II output file will be rising edge.
 
 .. code-block:: bash
 
@@ -98,10 +91,12 @@ Example of Tcl script for Yosys+Odin-II
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
 
-	# convert mem block to bram/rom
-	# [NOTE]: Yosys complains about expression width more than 24 bits.
-	# E.g. [63:0] memory [18:0] ==>  ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
-	# mem will be handled using Odin-II
+	## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
+	## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
+	## However, Yosys complains about expression widths more than 24 bits.
+	## E.g. reg [63:0] memory [18:0] ==> ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
+	## Although we provided the required design files for this process (located in ODIN_II/techlib), we will handle
+	## memory blocks in the Odin-II BLIF elaborator and partial mapper. 
 	# memory_bram -rules $VTR_ROOT/ODIN_II/techlib/mem_rules.txt
 	# techmap -map $VTR_ROOT/ODIN_II/techlib/mem_map.v; 
 
@@ -125,60 +120,9 @@ Example of Tcl script for Yosys+Odin-II
 Simulation Arguments
 --------------------
 
-*To activate simulation you must pass one and only one of the following argument:*
-
-- `-g <number of random vector>`
-- `-t <input vector file>`
-  
-Simulation always produces the folowing files:
-
-- input\_vectors
-- output\_vectors
-- test.do (ModelSim)
-
-.. table::
-
-    ======    ==============================    ================================================================================================================
-     Arg      Following Argument                Description
-    ======    ==============================    ================================================================================================================
-    `-g`      Number of random test vectors     Will simulate the generated netlist with the entered number of clock cycles using pseudo-random test vectors. These vectors and the resulting output vectors are written to `input_vectors` and `output_vectors` respectively.
-    `-t`      Input Vector File                 Supply a predefined input vector file           											   	
-    `-T`      Output Vector File                The output vectors is verified against the supplied predefined output vector file              	
-    `-E`                                        Output after both edges of the clock. (Default is to output only after the falling edge.)      	
-    `-R`                                        Output after rising edge of the clock only. (Default is to output only after the falling edge.)	
-    `-p`      Comma Seperated List              Comma-separated list of additional pins/nodes to monitor during simulation. (view NOTES)       	
-    `-U0`                                       initial register value to 0      				 											   	
-    `-U1`                                       initial resigster value to 1 					 											   	
-    `-UX`                                       initial resigster value to X (unknown) (DEFAULT) 											   	
-    `-L`      Comma Seperated List              Comma-separated list of primary inputs to hold high at cycle 0, and low for all subsequent cycles.
-    `-3`                                        Generate three valued logic. (Default is binary) 			
-    ======    ==============================    ================================================================================================================
-
-
-
-Examples
---------
-
-Example for `-p`
-~~~~~~~~~~~~~~~~
-
-.. table::
-
-    ======================    =======================================================
-              Arg                                Following Argument       
-    ======================    =======================================================
-    `-p input~0,input~1`      monitors pin 0 and 1 of input                        
-    `-p input`                monitors all pins of input as a single port          
-    `-p input~`               monitors all pins of input as separate ports. (split)
-    ======================    =======================================================
-
-
 .. note::
-
-	Matching for `-p` is done via `strstr` so general strings will match all
-	similar pins and nodes. (Eg: FF\_NODE will create a single port with
-	all flipflops)
-
+    Yosys+Odin-II makes use of the Odin-II simulator. 
+    For more information please see the Odin-II `Simulation Arguments <https://docs.verilogtorouting.org/en/latest/odin/user_guide/#simulation-arguments>`_.
 
 Example of .xml configuration file for `-c`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -227,38 +171,9 @@ Example of .xml configuration file for `-c`
 
 	Additional information regarding how to compile the aforementioned file, 
 	what are the restriction for a C method signature, etc. are 
-	already mentioned in the Odin-II `user guide <https://docs.verilogtorouting.org/en/latest/odin/user_guide/#examples>`_.
+	mentioned in the Odin-II `simulation examples <https://docs.verilogtorouting.org/en/latest/odin/user_guide/#examples>`_.
 
-
-Examples vector file for `-t` or `-T`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-.. code-block:: bash
-
-	## Example vector input file
-	GLOBAL_SIM_BASE_CLK intput_1 input_2 input_3 clk_input
-	## Comment
-	0 0XA 1011 0XD 0
-	0 0XB 0011 0XF 1
-	0 0XC 1100 0X2 0
-
-
-.. code-block:: bash
-
-	## Example vector output file
-	output_1 output_2
-	## Comment
-	1011 0Xf
-	0110 0X4
-	1000 0X5
-
-.. note::
-
-	Please see the Odin-II `user guide <https://docs.verilogtorouting.org/en/latest/odin/user_guide/#examples>`_ for more information about the simulator.
-
-
-Examples using vector files `-t` and `-T`
+Examples using input/output vector files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
@@ -266,47 +181,25 @@ Examples using vector files `-t` and `-T`
 	./odin_II --elaborator yosys -V <Path/to/verilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
 
 
-An error will arise if the output vector files do not match.
-
-Without an expected vector output file the command line would be:
-
-.. code-block:: bash
-
-	./odin_II --elaborator yosys -V <Path/to/verilog/file> -t <Path/to/Input/Vector/File>
-
-
-The generated output file can be found in the current directory under the name output_vectors.
-
-**Example using vector files `-g`**
-
-This function generates N amount of random input vectors for Odin-II to simulate with.
-
-.. code-block:: bash
-
-	./odin_II --elaborator yosys -V <Path/to/verilog/file> -g 10
-
-
-This example will produce 10 autogenerated input vectors. These vectors can be found in the current directory under input_vectors and the resulting output vectors can be found under output_vectors.
+A mismatch error will arise if the output vector files do not match with the benchmark output vector, located in the `verilog` directory.
 
 Getting Help
 ------------
 
-If you have any questions or concerns there are multiple outlets to express them.
-There is a `google group <https://groups.google.com/forum/#!forum/vtr-users>`_ for users who have questions that is checked regularly by Odin-II team members.
-If you have found a bug please make an issue in the `vtr-verilog-to-routing GitHub repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues?q=is%3Aopen+is%3Aissue+label%3AOdin>`_.
+.. note::
+
+    For more information please see Odin-II `Getting Help <https://docs.verilogtorouting.org/en/latest/odin/user_guide/#getting-help>`_.
+
 
 Reporting Bugs and Feature Requests
 -----------------------------------
 
 **Creating an Issue on GitHub**
 
-Yosys+Odin-II is still in development and there may be bugs present.
-If Yosys+Odin-II doesn't perform as expected, it is important to create a `bug report <https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new/choose>`_ in the GitHub repository.
-There is a template included, but make sure to include micro-benchmark(s) that reproduces the bug. This micro-benchmark should be as simple as possible.
-It is important to link some documentation that provides insight on what Yosys+Odin-II is doing that differs from the Standard.
-Linked below is a pdf of the IEEE Standard of Verilog (2005) that could help.
+.. note::
 
-`IEEE Standard for Verilog Hardware Description Language <http://staff.ustc.edu.cn/~songch/download/IEEE.1364-2005.pdf>`_
+    For more information please see `Issue on GitHub <https://docs.verilogtorouting.org/en/latest/odin/user_guide/#creating-an-issue-on-github>`_.
+
 
 **Feature Requests**
 

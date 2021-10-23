@@ -4,32 +4,33 @@ Quickstart
 Prerequisites
 -------------
 
-- ctags
-- bison
-- flex
-- gcc 5.x
-- cmake 3.9 (minimum version)
-- time
-- cairo
-- gawk
-- xdot
-- tcl-dev
-- graphviz
-- pkg-config
-- python3
-- libffi-dev
-- libreadline-dev
-- libboost-system-dev
-- libboost-python-dev
-- libboost-filesystem-dev
-- zlib1g-dev
+* ctags
+* bison
+* flex
+* gcc 5.x
+* cmake 3.9 (minimum version)
+* time
+* cairo
+* gawk
+* xdot
+* tcl-dev
+* graphviz
+* pkg-config
+* python3
+* libffi-dev
+* libreadline-dev
+* libboost-system-dev
+* libboost-python-dev
+* libboost-filesystem-dev
+* zlib1g-dev
 
 Building
 --------
 
-To build, you may use the Makefile wrapper in the `$VTR_ROOT/ODIN_II` ``make yosys+odin``.
+To build, you may use the Makefile wrapper in the `$VTR_ROOT/ODIN_II` directory, via the ``make build ELABORATOR=yosys`` command.
 As Yosys is added as an external library to the VTR project, the debug option is only available for Odin-II.
 To build with debug mode, you may need to pass the debug flag to the CMake parameters using the previous Makefile wrapper, i.e., ``CMAKE_PARAMS="-DODIN_DEBUG=ON"``.
+To ease this process, you can build Yosys+Odin-II with Odin-II in debug mode using the ``make debug ELABORATOR=yosys`` command.
 
 The second approach to build the VTR flow with the Yosys+Odin-II front-end is to use the main VTR Makefile. i.e., calling ``make`` in the `$VTR_ROOT` directory.
 In this approach, the compile flag ``-DODIN_USE_YOSYS=ON`` should be passed to the CMake parameters as follows: ``make CMAKE_PARAMS="-DODIN_USE_YOSYS=ON"``.
@@ -41,7 +42,7 @@ In this approach, the compile flag ``-DODIN_USE_YOSYS=ON`` should be passed to t
 
 .. warning::
 
-	Once you build Yosys+Odin-II, you would run ``make test_yosys+odin`` from the `$VTR_ROOT/ODIN_II` to simulate and verify the light and heavy benchmark suites to ensure that Yosys+Odin-II is working correctly on your system.
+	Once you build Yosys+Odin-II, you would run ``make test ELABORATOR=yosys`` from the `$VTR_ROOT/ODIN_II` to simulate and verify the light and heavy benchmark suites to ensure that Yosys+Odin-II is working correctly on your system.
 
 Basic Usage
 -----------
@@ -77,7 +78,7 @@ It is assumed that they are being performed in the Odin-II directory.
    ./odin_II --elaborator yosys -V <path/to/Verilog/File>
 
 
-Passes a Verilog HDL file to Yosys for elaboration, the Odin-II performs the partial mapping and optimization. 
+Passes a Verilog HDL file to Yosys for elaboration, then Odin-II performs the partial mapping and optimization. 
 Warnings and errors may appear regarding the HDL code by Yosys.
 
 .. note::
@@ -95,7 +96,7 @@ If the output BLIF file is not specified, ``default_out.blif`` is considered the
 
 .. note::
 	
-	Once the elaboration is fully executed, Yosys generates a coarse-grained BLIF file that the Odin-II BLIF reader will read to create the netlist and perform partial technology mapping. This file is named ``coarsen_netlist.yosys.blif`` located in the current directory.
+	Once the elaboration is fully executed, Yosys generates a coarse-grained BLIF file that the Odin-II BLIF reader will read to create a netlist. This file is named ``coarsen_netlist.yosys.blif`` located in the current directory.
 
 
 .. code-block:: bash

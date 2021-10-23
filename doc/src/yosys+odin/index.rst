@@ -11,7 +11,8 @@ However, the Yosys flow forces the user to decide the discrete circuit implement
 
 .. image:: ./dev_guide/YosysOdinFlow.png
     :width: 100%    
-    :alt: The Odin-II and Yosys+Odin-II Synthesis Flow
+    :alt: The Odin-II, Yosys, and Yosys+Odin-II Synthesis Flows
+
 
 The approach taken by the Yosys synthesizer is to map all discrete components into available hard blocks or to explode them in low-level logic when not available.
 The Yosys+Odin-II improves device utilization and simplifying the flow by automating hard logic decisions with architecture awareness.

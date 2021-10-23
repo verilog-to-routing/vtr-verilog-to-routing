@@ -3,64 +3,15 @@ Contributing
 
 The Odin-II team welcomes outside help from anyone interested.
 To fix issues or add a new feature submit a PR or WIP PR following the provided guidelines.
-
-Creating a Pull Request (PR)
-----------------------------
-
-**Important** 
-
-Before creating a Pull Request (PR), if it is a bug you have happened upon and intend to fix make sure you create an issue beforehand.
-
-Pull requests are intended to correct bugs and improve Yosys+Odin-II's performance.
-To create a pull request, clone the `vtr-verilog-to-routing repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing>`_ and branch from the master.
-Make changes to the branch that improve Yosys+Odin-II and correct the bug.
-
-**Important** 
-
-In addition to correcting the bug, it is required that test cases (benchmarks) are created that reproduce the issue and are included in the regression tests.
-An example of a good test case could be the benchmark found in the `Issue` being addressed.
-The results of these new tests need to be regenerate in Yosys+Odin-II regression tests.
-See :ref:`regression_test` for further instruction.
-Push these changes to the cloned repository and create the pull request.
-Add a description of the changes made and reference the `Issue` that it corrects.
-There is a template provided on the GitHub repository.
-
-Creating a "Work in Progress" (WIP) PR
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Important** 
-
-Before creating a WIP PR, if it is a bug you have happened upon and intend to fix make sure you create an issue beforehand.
-
-A `Work in Progress` PR is a pull request that isn't complete or ready to be merged.
-It is intended to demonstrate that an issue is being addressed and indicates to other developers that they don't need to fix it.
-Creating a WIP PR is similar to a regular PR with a few adjustments.
-First, clone the `vtr-verilog-to-routing repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing>`_ and branch from the master.
-Make changes to that branch.
-
-Since Yosys is added to the VTR repository as an external library, no changes are allowed to be made to its codebase.
-Instead, contributions concerning improving the Yosys elaboration script, Odin-II BLIF elaboration, and Odin-II partial mapping could be possible alterations for the Yosys+Odin-II synthesizer.
-Then, create a pull request with that branch and **include WIP in the title.**
-This will automatically indicate that this PR is not ready to be merged.
-Continue to work on the branch, pushing the commits regularly.
-Like a PR, test cases are also needed to be included through the use of benchmarks.
-See :ref:`regression_test` for further instruction.
-
-Formating
-~~~~~~~~~
-
-Odin-II shares the same contributing philosophy as `VPR <https://docs.verilogtorouting.org/en/latest/dev/contributing/contributing/>`_.
-Most importantly PRs will be rejected if they do not respect the coding standard: see `VPRs coding standard <https://docs.verilogtorouting.org/en/latest/dev/developing/#code-formatting>`_
-
-To overcome the formatting issue, simply run ``make format`` to adapt the newly added code to VPR's coding standard.
-If you have made alterations to python scripts, you would probably need to run ``make format-py`` and ``./dev/pylint_check.py`` from the VTR root directory to correct the python code formatting and check for lint errors. 
+The instruction for Yosys+Odin-II contribution is similar to Odin-II.
+For more information about how to contribute and make a WIP pull request please see the Odin-II `contribution documentation <https://docs.verilogtorouting.org/en/latest/odin/dev_guide/contributing/#contributing>`_.
 
 Yosys+Odin-II's Flow
---------------------
+====================
 
 Yosys+Odin-II functions via two CAD tools, Yosys and Odin-II, by executing a set of steps determined by the files and arguments passed in.
-The figure below illustrates the synthesis flow of Yosys+Odin-II and Odin-II if a Verilog file is passed, with an optional FPGA Architecture Specification File.
-The synthesis process includes: reading the HDL file and performing a coarse-grained synthesis by Yosys, elaborating the generated coarse-grained netlist by Odin-II, and ultimately performing partial technology mapping and unused logic removal with the FPGA architecture awareness again by Odin-II. 
+The figure below illustrates the synthesis flow of Odin-II, Yosys, and Yosys+Odin-II if a Verilog file is passed, with an optional FPGA Architecture Specification File.
+The Yosys+Odin-II synthesis process includes: reading the HDL file and performing a coarse-grained synthesis by Yosys, elaborating the generated coarse-grained netlist by Odin-II, and ultimately performing partial technology mapping and unused logic removal with the FPGA architecture awareness again by Odin-II. 
 The simulator is only activated if an input vector file is passed in which creates the output vector file.
 
 Fine-grained BLIF files, usually generated by Odin-II, being passed in are only used for simulation; no partial mapping takes place.
@@ -90,7 +41,7 @@ The flow is depicted in the figure below.
 
 	# Make name convention more readable
 	autoname;
-	# Translate processes to entlist components such as MUXs, FFs and latches
+	# Translate processes to netlist components such as MUXs, FFs and latches
 	procs; opt;
 	# Extraction and optimization of finite state machines
 	fsm; opt;
@@ -103,10 +54,12 @@ The flow is depicted in the figure below.
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
 
-	# convert mem block to bram/rom
-	# [NOTE]: Yosys complains about expression width more than 24 bits.
-	# E.g. [63:0] memory [18:0] ==>  ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
-	# mem will be handled using Odin-II
+	## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
+	## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
+	## However, Yosys complains about expression widths more than 24 bits.
+	## E.g. reg [63:0] memory [18:0] ==> ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
+	## Although we provided the required design files for this process (located in ODIN_II/techlib), we will handle
+	## memory blocks in the Odin-II BLIF elaborator and partial mapper. 
 	# memory_bram -rules $VTR_ROOT/ODIN_II/techlib/mem_rules.txt
 	# techmap -map $VTR_ROOT/ODIN_II/techlib/mem_map.v; 
 
@@ -127,10 +80,10 @@ The flow is depicted in the figure below.
 
 
 Yosys Elaboration
-~~~~~~~~~~~~~~~~~
+-----------------
 
 Yosys, as an open synthesis suite, reads the input digital circuits and creates the corresponding data structures, such as netlist and Abstract Syntax Tree (AST).
-As shown in Algorithm 1, the Tcl script, including the step-by-step generic coarse-grained synthesis commands required to be run by Yosys, is developed at ``$VTR_ROOT/ODIN_II/regression_test/tools/synth.tcl``.
+As shown in Algorithm 1, the Tcl script, including the step-by-step generic coarse-grained synthesis commands required to be run by Yosys, is available at ``$VTR_ROOT/ODIN_II/regression_test/tools/synth.tcl``.
 Utilizing these commands for the Yosys API inside the Odin-II codebase, the Yosys synthesizer performs the elaboration of the input digital design.
 The generic coarse-grained synthesis commands includes: 
 
@@ -140,14 +93,15 @@ The generic coarse-grained synthesis commands includes:
 4. Performing extraction and optimization of finite state machines by the ``fsm`` command.
 5. Collecting memories and their ports, then creating a multiport memory cell, by the ``memory_collect`` command.
 6. Converting asynchronous memory ports to synchronous ones by merging ports and the related DFFs at their interfaces, using the ``memory_dff`` command.
-7. Examining errors like combinatorial loops, wires with multiple drivers and used wires without any driver by the ``check`` command.
+7. Checking for errors like combinatorial loops, wires with multiple drivers and used wires without any driver by the ``check`` command.
 
-After performing basic synthesis steps, the ``techmap`` command with the input ``addf2dff`` transforms asynchronous DFFs to the synchronous form using the design provided by Yosys.
-The next command follows the same approach but with a modified version of ``adff2dff`` for asynchronous DFFs with the enable signal.
+After performing basic synthesis steps, the ``techmap`` command with the input ``adff2dff`` transforms DFFs with asynchronous reset to the synchronous form using the design provided by Yosys.
+The next command follows the same approach but with a modified version of the provided design file for DFFs with asynchronous reset and synchronous data enable signals.
 
 The ``flatten`` command generates an output netlist with only one module, representing the HDL circuit design's top module.
 The ``pmuxtree`` pass is used to transforms `pmux`, a sub-circuit representing parallel cases, into trees of regular multiplexers.
-In the ``autoname`` passes, Yosys generates an easy-to-read BLIF file by transforming signal names into the short format. This would help the Odin-II BLIF reader reading necessary data, regardless of additional debugging information used in the Yosys name convention.
+In the ``autoname`` passes, Yosys generates an easy-to-read BLIF file by transforming signal names into a shorter format.
+This command removes some debugging information, such as the path to the source file, that Yosys inserts in names by default and generally gives easier-to-interpret names.
 
 Then, the optimization pass is called to make the netlist ready for output.
 The option ``undriven`` ensures that all nets without a driver are removed, while the ``full`` optimization option is used to remove duplicated inputs in `AND`, `OR` and `MUX` gates.
@@ -160,10 +114,10 @@ The option ``param`` prints some additional information about logic cells into t
 
 
 BLIF Reader and Building the Netlist
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------
 
 In this step, Odin-II reads the Yosys generated coarse-grained BLIF file and creates the corresponding netlist data structure.
-Previously, only the simulation option was available when a BLIF file was passed to Odin-II.
+Previously, the simulation option was only available when a BLIF file was passed to Odin-II.
 However, the option for performing the partial mapping phase on input BLIF files have become available with the Yosys+Odin-II integration.
 Using the ``--elaborator yosys`` command argument, the Odin-II BLIF reader reads the Yosys generated coarse-grained BLIF file.
 Additionally, if a coarse-grained BLIF file is already created, the user can perform Odin-II partial mapping on that using the ``-b design.blif --coarsen`` command arguments. 
@@ -173,7 +127,7 @@ Additionally, if a coarse-grained BLIF file is already created, the user can per
 	The netlist can be viewed via graphviz using the command ``-G``. The file will appear in the main directory under ``net.dot``.
 
 BLIF Elaboration
-~~~~~~~~~~~~~~~~
+----------------
 
 As depicted in Yosys+Odin-II synthesis flow, the difference between fine-grained and coarse-grained netlists is the BLIF elaboration and partial mapping phases in Odin-II technology mapping flow.
 Technically, the infrastructure of Odin-II and Yosys differ from each other. 
@@ -183,8 +137,8 @@ Therefore, these complex modules are required to be transformed into simpler des
 
 
 
-Partial Mapping
-~~~~~~~~~~~~~~~
+Partial Technology Mapping
+--------------------------
 
 During the partial mapping, Odin-II maps the logic using an architecture.
 If no architecture is passed in, Odin-II will create the soft logic and use LUTs for mapping.
@@ -195,20 +149,7 @@ With the integration of Yosys+Odin-II, the Odin-II partial mapping features such
 For instance, using optimization command arguments, a user can force the partial mapper to infer at least a user-defined percentage of multipliers in soft logic.
 
 Simulator
-~~~~~~~~~
+---------
 
 The simulator of Odin-II takes an input vector file and creates an output vector file determined by the behaviour described in the Verilog file or BLIF file.
-This section is comprehensivly decribed in :ref:`user_guide`.
-
-Useful tools of Odin-II for Developers
---------------------------------------
-
-When making improvements to Yosys+Odin-II, there are some features the developer should be aware of to make their job easier.
-For instance, Odin-II has a ``-G`` command that prints the netlist viewable with GraphViz.
-These files can be found in the ODIN_II directory.
-This is very helpful to visualize what is being created and how everything is related to each other in the Netlist and AST.
-
-Another feature to be aware of is ``make test_yosys+odin``.
-This build runs through all the regression tests and will list all the benchmarks that fail, using Yosys+Odin-II synthesizer.
-It is important to run this after every major change implemented to ensure the change only affects benchmarks it was intended to effect (if any).
-It sheds insight on what needs to be fixed and how close it is to being merged with the master.
+This section is comprehensivly decribed in the Yosys+Odin-II :ref:`user_guide` and the Odin-II `Simulation Arguments <https://docs.verilogtorouting.org/en/latest/odin/user_guide/#simulation-arguments>`_.
