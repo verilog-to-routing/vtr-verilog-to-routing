@@ -1,6 +1,18 @@
 ODIN_ROOT=$(PWD)
 NB_OF_PROCESS ?= $(shell /usr/bin/env python3 -c "import multiprocessing; print(multiprocessing.cpu_count())")
 
+# handling elaborator name
+ifdef ELABORATOR
+_ELABORATOR=$(shell echo $(ELABORATOR) | tr '[:lower:]' '[:upper:]')
+else
+_ELABORATOR=ODIN
+endif
+
+# Yosys+Odin-II compile flags
+ifeq ($(_ELABORATOR), YOSYS)
+_YOSYS_COMPILE_FLAG="-DODIN_USE_YOSYS=ON"
+endif
+
 ################
 # build with ninja when doable
 ################
@@ -57,33 +69,29 @@ $(ODIN_BUILD_DIR)/.%.build: _init
 
 _set_build: $(ODIN_BUILD_DIR)/.regular.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) $(_YOSYS_COMPILE_FLAG) ..
 
 _set_debug: $(ODIN_BUILD_DIR)/.debug.build 
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_DEBUG=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) $(_YOSYS_COMPILE_FLAG) -DODIN_DEBUG=on ..
 
 _set_warn: $(ODIN_BUILD_DIR)/.warn.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_WARN=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) $(_YOSYS_COMPILE_FLAG) -DODIN_WARN=on ..
 
 _set_gcov: $(ODIN_BUILD_DIR)/.gcov.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_COVERAGE=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) $(_YOSYS_COMPILE_FLAG) -DODIN_COVERAGE=on ..
 
 _set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 	cd $(BUILD_DIR) &&\
-	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) $(_YOSYS_COMPILE_FLAG) -DODIN_TIDY=on ..
 
 _set_sanitize: $(ODIN_BUILD_DIR)/.sanitize.build
 	cd $(BUILD_DIR) &&\
-	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_SANITIZE=on ..
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) $(_YOSYS_COMPILE_FLAG) -DODIN_SANITIZE=on ..
 
-_set_yosys+odin: $(ODIN_BUILD_DIR)/.yosys+odin.build
-	cd $(BUILD_DIR) &&\
-	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_USE_YOSYS=ON ..
-
-BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize yosys+odin
+BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize
 $(foreach  t,$(BUILD_IT_TARGETS), $(eval $(call _build_it_gen,$(t))))
 
 scrub:
@@ -105,6 +113,7 @@ test_coverage:
 	$(MAKE) gcovr
 
 test:
+ifeq ($(_ELABORATOR), ODIN)
 	$(MAKE) sanitize \
 	&& ./verify_odin.sh --no_report -j $(NB_OF_PROCESS) \
 			-t regression_test/benchmark/suite/light_suite \
@@ -112,10 +121,19 @@ test:
 	&& $(MAKE) build \
 	&& ./verify_odin.sh --no_report --continue -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/heavy_suite; \
-	./verify_odin.sh --status_only	
-
+	./verify_odin.sh --status_only
+else ifeq ($(_ELABORATOR), YOSYS)
+	$(MAKE) sanitize ELABORATOR=YOSYS \
+	&& ./verify_odin.sh --no_report -j $(NB_OF_PROCESS) \
+			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite \
+	&& $(MAKE) build ELABORATOR=YOSYS \
+	&& ./verify_odin.sh --no_report --continue -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/yosys+odin/techmap_heavysuite; \
+	./verify_odin.sh --status_only
+endif
 
 generate_expectation:
+ifeq ($(_ELABORATOR), ODIN)
 	$(MAKE) sanitize \
 	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
 			-t regression_test/benchmark/suite/light_suite \
@@ -124,8 +142,18 @@ generate_expectation:
 	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/heavy_suite; \
 	./verify_odin.sh --status_only	
+else ifeq ($(_ELABORATOR), YOSYS)
+	$(MAKE) sanitize ELABORATOR=YOSYS \
+	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
+			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite \
+	$(MAKE) build ELABORATOR=YOSYS \
+	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/yosys+odin/techmap_heavysuite; \
+	./verify_odin.sh --status_only
+endif
 
 regenerate_expectation:
+ifeq ($(_ELABORATOR), ODIN)
 	$(MAKE) sanitize \
 	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
 			-t regression_test/benchmark/suite/light_suite \
@@ -134,3 +162,12 @@ regenerate_expectation:
 	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/heavy_suite; \
 	./verify_odin.sh --status_only	
+else ifeq ($(_ELABORATOR), YOSYS)
+	$(MAKE) sanitize ELABORATOR=YOSYS \
+	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
+			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite \
+	$(MAKE) build ELABORATOR=YOSYS \
+	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/yosys+odin/techmap_heavysuite; \
+	./verify_odin.sh --status_only
+endif
