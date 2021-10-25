@@ -103,10 +103,16 @@ class RRGraphBuilder {
     }
 
     /** @brief Reserve the lists of edges to be memory efficient.
-         * This function is mainly used to reserve memory space inside RRGraph,
-         * when adding a large number of edges in order to avoid memory fragements */
+     * This function is mainly used to reserve memory space inside RRGraph,
+     * when adding a large number of edges in order to avoid memory fragements */
     inline void reserve_edges(size_t num_edges) {
         node_storage_.reserve_edges(num_edges);
+    }
+
+    /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph. */
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch);
     }
 
     /* -- Internal data storage -- */
