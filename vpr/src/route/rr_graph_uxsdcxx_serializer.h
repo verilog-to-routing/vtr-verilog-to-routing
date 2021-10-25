@@ -887,7 +887,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             bind.set_ignore();
         }
 
-        rr_nodes_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
+        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
         return bind;
     }
     inline void finish_rr_edges_edge(MetadataBind& bind) final {
