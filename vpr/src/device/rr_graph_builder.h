@@ -102,6 +102,13 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
+    /** @brief Reserve the lists of edges to be memory efficient.
+         * This function is mainly used to reserve memory space inside RRGraph,
+         * when adding a large number of edges in order to avoid memory fragements */
+    inline void reserve_edges(size_t num_edges) {
+        node_storage_.reserve_edges(num_edges);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
