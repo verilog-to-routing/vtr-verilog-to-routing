@@ -115,6 +115,11 @@ class RRGraphBuilder {
         node_storage_.emplace_back_edge(src, dest, edge_switch);
     }
 
+    /** @brief alloc_and_load_edges; It adds a batch of edges.  */
+    inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
+        node_storage_.alloc_and_load_edges(rr_edges_to_create);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
