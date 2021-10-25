@@ -1687,9 +1687,8 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
     rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
 }
 
-void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, t_rr_graph_storage& L_rr_node,
-                          const t_rr_edge_info_set& rr_edges_to_create) {
-	rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
+void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, t_rr_graph_storage& L_rr_node, const t_rr_edge_info_set& rr_edges_to_create) {
+    rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
 }
 
 /* allocate pin to track map for each segment type individually and then combine into a single
