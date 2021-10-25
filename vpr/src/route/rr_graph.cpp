@@ -1688,7 +1688,7 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
 }
 
 void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, const t_rr_edge_info_set& rr_edges_to_create) {
-	rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
+    rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
 }
 
 /* allocate pin to track map for each segment type individually and then combine into a single
