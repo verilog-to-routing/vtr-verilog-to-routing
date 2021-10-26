@@ -110,7 +110,6 @@ class t_rr_node {
     void set_rc_index(short);
 
     void set_side(e_side);
-    void add_side(e_side);
 
     void next_node() {
         id_ = RRNodeId((size_t)(id_) + 1);
