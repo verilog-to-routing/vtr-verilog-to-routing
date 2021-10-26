@@ -630,6 +630,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
         auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
         const auto& rr_graph = (*rr_graph_);
 
         if (uxsd::enum_loc_side::UXSD_INVALID == side) {
@@ -643,7 +644,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             std::bitset<NUM_SIDES> sides_to_add = from_uxsd_loc_side(side);
             for (const e_side& side_to_add : SIDES) {
                 if (sides_to_add[side_to_add]) {
-                    node.add_side(side_to_add);
+                    rr_graph_builder_->add_node_side(node_id, side_to_add);
                 }
             }
         }
