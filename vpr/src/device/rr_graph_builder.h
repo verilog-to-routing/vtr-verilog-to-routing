@@ -108,6 +108,11 @@ class RRGraphBuilder {
         node_storage_.add_node_side(id, new_side);
     }
 
+    /** @brief It maps arch_switch_inf indicies to rr_switch_inf indicies. */
+    inline void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
+        node_storage_.remap_rr_node_switch_indices(switch_fanin);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
