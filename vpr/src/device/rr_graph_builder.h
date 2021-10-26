@@ -114,7 +114,7 @@ class RRGraphBuilder {
         size_t num_arch_switches,
         t_arch_switch_inf* arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins) {
-        node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+       return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
     /* -- Internal data storage -- */
