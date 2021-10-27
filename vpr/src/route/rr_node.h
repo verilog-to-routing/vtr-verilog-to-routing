@@ -107,7 +107,6 @@ class t_rr_node {
 
   public: //Mutators
     void set_cost_index(RRIndexedDataId);
-    void set_rc_index(short);
 
     void set_side(e_side);
 

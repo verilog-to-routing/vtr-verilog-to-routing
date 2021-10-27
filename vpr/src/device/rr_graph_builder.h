@@ -102,6 +102,11 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
+    /** @brief Set the rc_index of routing resource node. */
+    inline void set_node_rc_index(RRNodeId id, NodeRCIndex new_rc_index) {
+        node_storage_.set_node_rc_index(id, new_rc_index);
+    }
+
     /** @brief Add the side where the node physically locates on a logic block.
      * Mainly applicable to IPIN and OPIN nodes.*/
     inline void add_node_side(RRNodeId id, e_side new_side) {

@@ -690,8 +690,8 @@ void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_co
     node.cost_index_ = (size_t)new_cost_index;
 }
 
-void t_rr_graph_storage::set_node_rc_index(RRNodeId id, short new_rc_index) {
-    node_storage_[id].rc_index_ = new_rc_index;
+void t_rr_graph_storage::set_node_rc_index(RRNodeId id, NodeRCIndex new_rc_index) {
+    node_storage_[id].rc_index_ = (size_t)new_rc_index;
 }
 
 void t_rr_graph_storage::set_node_capacity(RRNodeId id, short new_capacity) {
