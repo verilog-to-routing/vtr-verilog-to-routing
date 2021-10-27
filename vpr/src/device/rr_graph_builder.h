@@ -113,6 +113,15 @@ class RRGraphBuilder {
         node_storage_.remap_rr_node_switch_indices(switch_fanin);
     }
 
+    /** @brief Counts the number of rr switches needed based on fan in to support mux
+     * size dependent switch delays. */
+    inline size_t count_rr_switches(
+        size_t num_arch_switches,
+        t_arch_switch_inf* arch_switch_inf,
+        t_arch_switch_fanin& arch_switch_fanins) {
+        return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 

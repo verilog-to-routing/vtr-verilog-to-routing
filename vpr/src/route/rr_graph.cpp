@@ -819,7 +819,7 @@ static void alloc_rr_switch_inf(t_arch_switch_fanin& arch_switch_fanins) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     /* allocate space for the rr_switch_inf array */
-    size_t num_rr_switches = device_ctx.rr_nodes.count_rr_switches(
+    size_t num_rr_switches = device_ctx.rr_graph_builder.count_rr_switches(
         device_ctx.num_arch_switches,
         device_ctx.arch_switch_inf,
         arch_switch_fanins);
