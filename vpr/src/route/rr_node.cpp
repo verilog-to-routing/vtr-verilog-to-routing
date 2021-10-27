@@ -54,7 +54,3 @@ bool t_rr_node::validate() const {
 void t_rr_node::set_cost_index(RRIndexedDataId new_cost_index) {
     storage_->set_node_cost_index(id_, new_cost_index);
 }
-
-void t_rr_node::add_side(e_side new_side) {
-    storage_->add_node_side(id_, new_side);
-}

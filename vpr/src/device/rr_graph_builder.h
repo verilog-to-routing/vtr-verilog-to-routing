@@ -107,6 +107,21 @@ class RRGraphBuilder {
         node_storage_.set_node_rc_index(id, new_rc_index);
     }
 
+    /** @brief Add the side where the node physically locates on a logic block.
+     * Mainly applicable to IPIN and OPIN nodes.*/
+    inline void add_node_side(RRNodeId id, e_side new_side) {
+        node_storage_.add_node_side(id, new_side);
+    }
+
+    /** @brief Counts the number of rr switches needed based on fan in to support mux
+     * size dependent switch delays. */
+    inline size_t count_rr_switches(
+        size_t num_arch_switches,
+        t_arch_switch_inf* arch_switch_inf,
+        t_arch_switch_fanin& arch_switch_fanins) {
+        return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 

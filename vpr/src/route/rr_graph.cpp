@@ -819,7 +819,7 @@ static void alloc_rr_switch_inf(t_arch_switch_fanin& arch_switch_fanins) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     /* allocate space for the rr_switch_inf array */
-    size_t num_rr_switches = device_ctx.rr_nodes.count_rr_switches(
+    size_t num_rr_switches = device_ctx.rr_graph_builder.count_rr_switches(
         device_ctx.num_arch_switches,
         device_ctx.arch_switch_inf,
         arch_switch_fanins);
@@ -1494,7 +1494,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             //for the pin on all sides at which it exists
                             //As such, multipler driver problem can be avoided.
                             rr_graph_builder.set_node_coordinates(inode, i + width_offset, j + height_offset, i + width_offset, j + height_offset);
-                            L_rr_node.add_node_side(inode, side);
+                            rr_graph_builder.add_node_side(inode, side);
 
                             // Sanity check
                             VTR_ASSERT(rr_graph.is_node_on_specific_side(RRNodeId(inode), side));
