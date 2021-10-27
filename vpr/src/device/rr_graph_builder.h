@@ -117,6 +117,12 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
+    /** @brief Sorts edge data such that configurable edges appears before
+     *  non-configurable edges. */
+    inline void partition_edges() {
+        node_storage_.partition_edges();
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
