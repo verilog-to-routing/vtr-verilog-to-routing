@@ -1546,7 +1546,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     void finish_load() final {
         process_rr_node_indices();
 
-        rr_nodes_->init_fan_in();
+        rr_graph_builder_->init_fan_in();
 
         alloc_and_load_rr_indexed_data(
             segment_inf_,
