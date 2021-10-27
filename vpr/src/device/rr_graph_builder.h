@@ -117,6 +117,11 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
+    /** brief Validate that edge data is partitioned correctly */
+    inline bool validate() const {
+        return node_storage_.validate();
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
