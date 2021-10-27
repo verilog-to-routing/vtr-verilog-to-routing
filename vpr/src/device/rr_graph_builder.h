@@ -117,6 +117,11 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
+    /** @brief Marks that edge switch values are rr switch indicies*/
+    inline void mark_edges_as_rr_switch_ids() {
+        node_storage_.mark_edges_as_rr_switch_ids();
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
