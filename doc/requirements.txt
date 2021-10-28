@@ -25,7 +25,7 @@ sphinxcontrib-bibtex==0.4.2
 #See:
 #  * https://github.com/sphinx-doc/sphinx/issues/3951
 #  * https://sourceforge.net/p/docutils/bugs/304/
-docutils>=0.14
+docutils==0.17.1
 
 #Generates a project specific 404 (page not found) page
 sphinx-notfound-page
