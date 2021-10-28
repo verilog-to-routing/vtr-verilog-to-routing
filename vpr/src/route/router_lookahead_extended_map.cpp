@@ -177,7 +177,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     auto& device_ctx = g_vpr_ctx.device();
     const auto& temp_rr_graph = device_ctx.rr_graph; //TODO Once the uses of rr_graph in the next line are removed, this will be renamed to rr_graph from temp_rr_graph
     auto& rr_graph = device_ctx.rr_nodes;
-
+    
     int from_x = rr_graph.node_xlow(from_node);
     int from_y = rr_graph.node_ylow(from_node);
 
@@ -195,7 +195,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
         return std::make_pair(0., 0.);
     }
 
-    int from_seg_index = cost_map_.node_to_segment(size_t(from_node));
+    RRSegmentId from_seg_index = (RRSegmentId)cost_map_.node_to_segment(size_t(from_node));
     util::Cost_Entry cost_entry = cost_map_.find_cost(from_seg_index, dx, dy);
 
     if (!cost_entry.valid()) {
@@ -230,7 +230,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     float expected_cost = expected_delay_cost + expected_cong_cost;
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
-    const std::string& segment_name = device_ctx.rr_segments[from_seg_index].name;
+    const std::string& segment_name = temp_rr_graph.rr_segments(from_seg_index).name;
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n",
                    segment_name.c_str(), from_seg_index,
                    dx, dy);
