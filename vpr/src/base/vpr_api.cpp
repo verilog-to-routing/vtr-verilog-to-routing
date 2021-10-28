@@ -701,6 +701,8 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     const auto& router_opts = vpr_setup.RouterOpts;
     const auto& filename_opts = vpr_setup.FileNameOpts;
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     if (router_opts.doRouting == STAGE_SKIP) {
         //Assume successful
@@ -762,7 +764,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Otherwise, remind the user of this possible report option
             if (router_opts.generate_rr_node_overuse_report) {
                 VTR_LOG("See report_overused_nodes.rpt for a detailed report on the RR node overuse information.\n");
-                report_overused_nodes();
+                report_overused_nodes(rr_graph);
             } else {
                 VTR_LOG("For a detailed report on the RR node overuse information (report_overused_nodes.rpt), specify --generate_rr_node_overuse_report on.\n");
             }

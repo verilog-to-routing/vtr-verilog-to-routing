@@ -3,16 +3,6 @@
 #include "globals.h"
 #include "vpr_error.h"
 
-/* Member function of "t_rr_node" used to retrieve a routing *
- * resource type string by its index, which is defined by           *
- * "t_rr_type type".												*/
-
-const char* t_rr_node::type_string() const {
-    // ESR API The contents of this function have been temporarily replaced
-    // Once the RRGraphView API is complete, this function will be removed completely
-    return rr_node_typename[g_vpr_ctx.device().rr_graph.node_type(id_)];
-}
-
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
     return std::max(
