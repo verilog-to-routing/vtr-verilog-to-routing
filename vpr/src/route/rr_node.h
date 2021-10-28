@@ -77,9 +77,6 @@ class t_rr_node {
         , id_(id) {}
 
   public: //Accessors
-    //t_rr_type type() const; // ESR API This function has been replaced by RRGraphView::node_type()
-    const char* type_string() const; /* Retrieve type as a string */
-
     edge_idx_range edges() const;
     edge_idx_range configurable_edges() const;
     edge_idx_range non_configurable_edges() const;
@@ -107,7 +104,6 @@ class t_rr_node {
 
   public: //Mutators
     void set_cost_index(RRIndexedDataId);
-    void set_rc_index(short);
 
     void set_side(e_side);
 
