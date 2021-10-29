@@ -1235,17 +1235,18 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                 while (tptr != nullptr) {
                     int inode = tptr->index;
-                    t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
-                    int ilow = rr_graph.node_xlow(RRNodeId(inode));
-                    int jlow = rr_graph.node_ylow(RRNodeId(inode));
+                    auto rr_node = RRNodeId(inode);
+                    t_rr_type rr_type = rr_graph.node_type(rr_node);
+                    int ilow = rr_graph.node_xlow(rr_node);
+                    int jlow = rr_graph.node_ylow(rr_node);
 
                     fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode,
-                            device_ctx.rr_nodes[inode].type_string(), ilow, jlow);
+                            rr_graph.node_type_string(rr_node), ilow, jlow);
 
-                    if ((ilow != rr_graph.node_xhigh(RRNodeId(inode)))
-                        || (jlow != rr_graph.node_yhigh(RRNodeId(inode))))
-                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(RRNodeId(inode)),
-                                rr_graph.node_yhigh(RRNodeId(inode)));
+                    if ((ilow != rr_graph.node_xhigh(rr_node))
+                        || (jlow != rr_graph.node_yhigh(rr_node)))
+                        fprintf(fp, "to (%d,%d) ", rr_graph.node_xhigh(rr_node),
+                                rr_graph.node_yhigh(rr_node));
 
                     switch (rr_type) {
                         case IPIN:
@@ -1274,7 +1275,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                         default:
                             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                             "in print_route: Unexpected traceback element type: %d (%s).\n",
-                                            rr_type, device_ctx.rr_nodes[inode].type_string());
+                                            rr_type, rr_graph.node_type_string(rr_node));
                             break;
                     }
 
@@ -1656,7 +1657,7 @@ void print_rr_node_route_inf_dot() {
     VTR_LOG("\tnode[shape=record]\n");
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
-            VTR_LOG("\tnode%zu[label=\"{%zu (%s)", inode, inode, device_ctx.rr_nodes[inode].type_string());
+            VTR_LOG("\tnode%zu[label=\"{%zu (%s)", inode, inode, rr_graph.node_type_string(RRNodeId(inode)));
             if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(RRNodeId(inode))) {
                 VTR_LOG(" x");
             }

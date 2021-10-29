@@ -244,6 +244,11 @@ class RRGraphView {
         return node_storage_.is_node_on_specific_side(node, side);
     }
 
+    /** @brief Get the side string of a routing resource node. This function is inlined for runtime optimization. */
+    inline const char* node_side_string(RRNodeId node) const {
+        return node_storage_.node_side_string(node);
+    }
+
     /** @brief Get the cost index of a routing resource node. This function is inlined for runtime optimization. */
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
