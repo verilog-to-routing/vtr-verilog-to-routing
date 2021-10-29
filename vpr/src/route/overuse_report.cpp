@@ -59,9 +59,7 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
  * This report will be generated only if the last routing attempt fails, which
  * causes the whole VPR flow to fail.
  */
-void report_overused_nodes() {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+void report_overused_nodes(const RRGraphView& rr_graph) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     /* Generate overuse info lookup table */
@@ -85,11 +83,11 @@ void report_overused_nodes() {
         os << "Overused RR node #" << inode << '\n';
         os << "Node id = " << size_t(node_id) << '\n';
         os << "Occupancy = " << route_ctx.rr_node_route_inf[size_t(node_id)].occ() << '\n';
-        os << "Capacity = " << device_ctx.rr_nodes.node_capacity(node_id) << "\n\n";
+        os << "Capacity = " << rr_graph.node_capacity(node_id) << "\n\n";
 
         /* Report selective info based on the rr node type */
         auto node_type = rr_graph.node_type(node_id);
-        os << "Node type = " << device_ctx.rr_nodes.node_type_string(node_id) << '\n';
+        os << "Node type = " << rr_graph.node_type_string(node_id) << '\n';
 
         switch (node_type) {
             case IPIN:
@@ -162,7 +160,7 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
         "Non-track RR node should not span across multiple grid blocks.");
 
     os << "Pin number = " << device_ctx.rr_nodes.node_pin_num(node_id) << '\n';
-    os << "Side = " << device_ctx.rr_nodes.node_side_string(node_id) << "\n\n";
+    os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
 
     //Add block type for IPINs/OPINs in overused rr-node report
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
@@ -268,10 +266,10 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     VTR_LOG(" %10d", route_ctx.rr_node_route_inf[size_t(node_id)].occ());
 
     //Capacity
-    VTR_LOG(" %9d", device_ctx.rr_nodes.node_capacity(node_id));
+    VTR_LOG(" %9d", rr_graph.node_capacity(node_id));
 
     //RR node type
-    VTR_LOG(" %8s", device_ctx.rr_nodes.node_type_string(node_id));
+    VTR_LOG(" %8s", rr_graph.node_type_string(node_id));
 
     //Direction
     if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
@@ -282,7 +280,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
 
     //Side
     if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
-        VTR_LOG(" %7s", device_ctx.rr_nodes.node_side_string(node_id));
+        VTR_LOG(" %7s", rr_graph.node_side_string(node_id));
     } else {
         VTR_LOG(" %7s", "N/A");
     }
