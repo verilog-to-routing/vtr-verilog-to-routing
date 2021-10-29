@@ -893,7 +893,7 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
 static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    device_ctx.rr_nodes.remap_rr_node_switch_indices(switch_fanin);
+    device_ctx.rr_graph_builder.remap_rr_node_switch_indices(switch_fanin);
 }
 
 static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,

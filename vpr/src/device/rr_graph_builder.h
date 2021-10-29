@@ -113,6 +113,11 @@ class RRGraphBuilder {
         node_storage_.add_node_side(id, new_side);
     }
 
+    /** @brief It maps arch_switch_inf indicies to rr_switch_inf indicies. */
+    inline void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
+        node_storage_.remap_rr_node_switch_indices(switch_fanin);
+    }
+
     /** @brief Counts the number of rr switches needed based on fan in to support mux
      * size dependent switch delays. */
     inline size_t count_rr_switches(
