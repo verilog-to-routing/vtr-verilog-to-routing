@@ -191,7 +191,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
     //Create the final flywieghted t_rr_rc_data
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        mutable_device_ctx.rr_nodes[inode].set_rc_index(find_create_rr_rc_data(rr_graph.node_R(RRNodeId(inode)), rr_node_C[inode]));
+        mutable_device_ctx.rr_graph_builder.set_node_rc_index(RRNodeId(inode), NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(RRNodeId(inode)), rr_node_C[inode])));
     }
 
     free(Couts_to_add);
