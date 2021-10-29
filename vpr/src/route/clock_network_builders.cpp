@@ -316,7 +316,6 @@ int ClockRib::create_chanx_wire(int x_start,
                                 RRGraphBuilder& rr_graph_builder) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
-    auto node = rr_nodes->back();
     RRNodeId chanx_node = RRNodeId(node_index);
 
     rr_graph_builder.set_node_type(chanx_node, CHANX);
@@ -622,7 +621,6 @@ int ClockSpine::create_chany_wire(int y_start,
                                   int num_segments) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
-    auto node = rr_nodes->back();
     RRNodeId chany_node = RRNodeId(node_index);
 
     rr_graph_builder.set_node_type(chany_node, CHANY);
