@@ -175,8 +175,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& temp_rr_graph = device_ctx.rr_graph; //TODO Once the uses of rr_graph in the next line are removed, this will be renamed to rr_graph from temp_rr_graph
-    auto& rr_graph = device_ctx.rr_nodes;
+    const auto& rr_graph = device_ctx.rr_graph;
 
     int from_x = rr_graph.node_xlow(from_node);
     int from_y = rr_graph.node_ylow(from_node);
@@ -188,7 +187,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     dx = to_x - from_x;
     dy = to_y - from_y;
 
-    e_rr_type from_type = temp_rr_graph.node_type(from_node);
+    e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
         return this->get_src_opin_cost(from_node, dx, dy, params);
     } else if (from_type == IPIN) {
@@ -202,8 +201,8 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
         // there is no route
         VTR_LOGV_DEBUG(f_router_debug,
                        "Not connected %d (%s, %d) -> %d (%s)\n",
-                       size_t(from_node), device_ctx.rr_nodes[size_t(from_node)].type_string(), from_seg_index,
-                       size_t(to_node), device_ctx.rr_nodes[size_t(to_node)].type_string());
+                       size_t(from_node), rr_graph.node_type_string(from_node), from_seg_index,
+                       size_t(to_node), rr_graph.node_type_string(to_node));
         float infinity = std::numeric_limits<float>::infinity();
         return std::make_pair(infinity, infinity);
     }
@@ -265,7 +264,7 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
                                      const std::vector<util::Search_Path>& paths,
                                      util::RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     RRNodeId node = current.rr_node;
 
