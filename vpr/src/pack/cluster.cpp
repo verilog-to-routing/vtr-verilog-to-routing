@@ -2072,9 +2072,6 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
             cur_pb->pb_stats->sharinggain[blk_id] = 0;
         }
 
-        /* Todo: Right now we update the gain multiple times for each block.
-         * Eventually want to move this out of the while loop and only update it
-         * for the top-level block in each cluster.*/
         AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
         if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
             //increase gain of atom based on attraction group gain
@@ -3955,6 +3952,11 @@ static void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_ty
     VTR_LOG("  LEs used for registers only         : %d\n\n", le_count[2]);
 }
 
+/**
+ * Given a pointer to a pb in a cluster, this routine returns
+ * a pointer to the top-level pb of the given pb.
+ * This is needed when updating the gain for a cluster.
+ */
 static t_pb* get_top_level_pb(t_pb* pb) {
     t_pb* top_level_pb = pb;
 
