@@ -1263,7 +1263,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         };
     }
 
-    L_rr_node.init_fan_in();
+    rr_graph_builder.init_fan_in();
 
     return update_chan_width;
 }

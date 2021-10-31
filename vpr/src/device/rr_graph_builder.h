@@ -127,6 +127,14 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
+    /** @brief Init per node fan-in data.  Should only be called after all edges have
+     * been allocated.
+     * @note
+     * This is an expensive, O(N), operation so it should be called once you
+     * have a complete rr-graph and not called often. */
+    inline void init_fan_in() {
+        node_storage_.init_fan_in();
+    }
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
