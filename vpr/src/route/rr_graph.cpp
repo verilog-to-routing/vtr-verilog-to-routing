@@ -579,7 +579,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         expected_node_count += ClockRRGraphBuilder::estimate_additional_nodes(grid);
         device_ctx.rr_graph_builder.reserve_nodes(expected_node_count);
     }
-    device_ctx.rr_nodes.resize(num_rr_nodes);
+    device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
 
     /* These are data structures used by the the unidir opin mapping. They are used
      * to spread connections evenly for each segment type among the available
