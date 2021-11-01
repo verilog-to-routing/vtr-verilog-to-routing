@@ -705,13 +705,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
 
         auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+
         if (GRAPH_GLOBAL == graph_type_) {
-            node.set_cost_index(RRIndexedDataId(0));
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(0));
         } else if (rr_graph.node_type(node.id()) == CHANX) {
-            node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + segment_id));
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_id));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == CHANY) {
-            node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id));
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
         return inode;
@@ -774,16 +776,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case CHANY:
                 break;
             case SOURCE:
-                node.set_cost_index(RRIndexedDataId(SOURCE_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(SOURCE_COST_INDEX));
                 break;
             case SINK:
-                node.set_cost_index(RRIndexedDataId(SINK_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(SINK_COST_INDEX));
                 break;
             case OPIN:
-                node.set_cost_index(RRIndexedDataId(OPIN_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
                 break;
             case IPIN:
-                node.set_cost_index(RRIndexedDataId(IPIN_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
                 break;
             default:
                 report_error(
@@ -1547,7 +1549,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     void finish_load() final {
         process_rr_node_indices();
 
-        rr_nodes_->init_fan_in();
+        rr_graph_builder_->init_fan_in();
 
         alloc_and_load_rr_indexed_data(
             segment_inf_,

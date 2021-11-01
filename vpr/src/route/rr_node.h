@@ -103,8 +103,6 @@ class t_rr_node {
     bool validate() const;
 
   public: //Mutators
-    void set_cost_index(RRIndexedDataId);
-
     void set_side(e_side);
 
     void next_node() {
