@@ -236,7 +236,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 
-void alloc_and_load_edges(t_rr_graph_storage& L_rr_node,
+void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
                           const t_rr_edge_info_set& rr_edges_to_create);
 
 static void alloc_and_load_rr_switch_inf(const int num_arch_switches,
@@ -1178,7 +1178,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
             //Create the actual SOURCE->OPIN, IPIN->SINK edges
             uniquify_edges(rr_edges_to_create);
-            alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
             rr_edges_to_create.clear();
         }
     }
@@ -1206,7 +1206,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                 //Create the actual OPIN->CHANX/CHANY edges
                 uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
                 rr_edges_to_create.clear();
             }
         }
@@ -1228,7 +1228,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                 //Create the actual CHAN->CHAN edges
                 uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
                 rr_edges_to_create.clear();
             }
             if (j > 0) {
@@ -1243,7 +1243,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                 //Create the actual CHAN->CHAN edges
                 uniquify_edges(rr_edges_to_create);
-                alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
                 rr_edges_to_create.clear();
             }
         }
@@ -1255,7 +1255,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         ClockRRGraphBuilder builder(chan_width, grid, &L_rr_node, &rr_graph_builder);
         builder.create_and_append_clock_rr_graph(num_seg_types, &rr_edges_to_create);
         uniquify_edges(rr_edges_to_create);
-        alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+        alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
         rr_edges_to_create.clear();
         update_chan_width = [builder](t_chan_width* c) {
             builder.update_chan_width(c);
@@ -1685,9 +1685,8 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
     rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
 }
 
-void alloc_and_load_edges(t_rr_graph_storage& L_rr_node,
-                          const t_rr_edge_info_set& rr_edges_to_create) {
-    L_rr_node.alloc_and_load_edges(&rr_edges_to_create);
+void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, const t_rr_edge_info_set& rr_edges_to_create) {
+    rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
 }
 
 /* allocate pin to track map for each segment type individually and then combine into a single

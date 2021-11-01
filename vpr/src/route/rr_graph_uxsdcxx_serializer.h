@@ -872,7 +872,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
-        rr_nodes_->reserve_edges(size);
+        rr_graph_builder_->reserve_edges(size);
         if (read_edge_metadata_) {
             rr_edge_metadata_->reserve(size);
         }
@@ -891,7 +891,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             bind.set_ignore();
         }
 
-        rr_nodes_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
+        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
         return bind;
     }
     inline void finish_rr_edges_edge(MetadataBind& bind) final {
