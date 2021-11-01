@@ -251,6 +251,12 @@ static void ProcessPower(pugi::xml_node parent,
 
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data);
 
+static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+static void processTopology(pugi::xml_node topology_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+static void processRouter(pugi::xml_node router_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
+
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
 
@@ -265,6 +271,8 @@ e_side string_to_side(std::string side_str);
 
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
+
+static bool parse_noc_router_connection_list(std::vector<int>* connection_list, std::string connection_list_attribute_value);
 
 /*
  *
@@ -4512,6 +4520,158 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
         /* get the next clock item */
         Node = Node.next_sibling(Node.name());
     }
+
+    
+}
+
+static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data)
+{
+    // a vector representing all the possible attributes within the noc tag
+    std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency"};
+
+    std::vector<std::string> expected_noc_children_tags = {"topology"};
+
+    pugi::xml_node noc_topology;
+
+    // if we are here, then the user has a NoC in their architecture, so need to add it
+    arch->noc = (t_noc_inf*)vtr::malloc(sizeof(t_noc_inf));
+    t_noc_inf* noc_ref = arch->noc;
+
+    /* process the noc attributes first */
+
+    // quick error check to make sure that we dont have unexpected attributes
+    pugiutil::expect_only_attributes(noc_tag, expected_noc_attributes, loc_data);
+
+    // now go through and parse the required attributes for noc tag
+    noc_ref->link_bandwidth = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_int();
+
+    noc_ref->link_latency = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_int();
+
+    noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_int();
+
+    // the noc parameters can only be non-zero positive values
+    if ((noc_ref->link_bandwidth <= 0) || (noc_ref->link_latency <= 0) || (noc_ref->router_latency <= 0))
+    {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
+                               "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero value.");
+    }
+
+    /* We processed the NoC node, so now process the topology*/
+
+    // make sure that only the topology tag is found under NoC
+    pugiutil::expect_only_children(noc_tag, expected_noc_children_tags, loc_data);
+
+    noc_topology = pugiutil::get_single_child(noc_tag, "topology", loc_data, pugiutil::REQUIRED);
+
+    processTopology(noc_topology, arch, loc_data);
+
+
+
+
+    
+
+ 
+
+
+
+
+
+
+
+
+    return;
+}
+
+static void processTopology(pugi::xml_node topology_tag, t_arch* arch, const pugiutil::loc_data& loc_data)
+{   
+    // The topology tag should have no attributes, check that
+    pugiutil::expect_only_attributes(topology_tag, {}, loc_data);
+
+    /* a tracker that stores all the routers (using id) that should
+       be within the noc (based on connections). And keeps a record
+       of whether the router was included within the topology description.
+    */
+    std::unordered_map<int,bool> router_list;
+
+    /* Now go through the children tags of topology, which is basically
+       each router found within the NoC 
+    */
+   for (pugi::xml_node router : topology_tag.children()) {    
+       // we can only have router tags within the topology
+       if (router.name() != std::string("router")) {
+           bad_tag(router, loc_data, topology_tag, {"router"});
+       }
+       else {
+           // curent tag is a valid router, so process it
+           processRouter(router, arch, loc_data);
+       }
+   }
+
+    return;
+}
+
+static void processRouter(pugi::xml_node router_tag, t_arch* arch, const pugiutil::loc_data& loc_data)
+{   
+    // identifier that lets us know when we could not properly convert an attribute value to a integer
+    int attribute_conversion_failure = -1;
+
+    // an accepted list of attributes for the router tag
+    std::vector<std::string> expected_router_attributes = {"id", "positionx", "positiony", "connections"};
+
+    // variable to store current router info
+    t_router router_info; 
+
+    // router connection list attribute information
+    std::string router_connection_list_attribute_value;
+
+    // lets us know if there was an error processing the router connection list
+    bool router_connection_list_result = true;
+
+    // check that only the accepted router attributes are found in the tag
+    pugiutil::expect_only_attributes(router_tag, expected_router_attributes, loc_data);
+
+    // store the router information from the attributes
+    router_info.id = pugiutil::get_attribute(router_tag, "id", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+
+    router_info.device_x_position = pugiutil::get_attribute(router_tag, "positionx", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+
+    router_info.device_y_position = pugiutil::get_attribute(router_tag, "positiony", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+
+    // verify whether the attribute information was legal
+    if ((router_info.id == attribute_conversion_failure) || (router_info.device_x_position == attribute_conversion_failure) || (router_info.device_y_position == attribute_conversion_failure)) {
+
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+                               "The router id, and position (x & y) for the router must be a positive number.");
+    }
+
+    // get the current router connection list as a string
+    router_connection_list_attribute_value.assign(pugiutil::get_attribute(router_tag, "connections", loc_data, pugiutil::REQUIRED).as_string());
+
+    // if the connections attrbiute was not provided or it was empty, then we don't process it and throw a warning
+
+    if (router_connection_list_attribute_value.compare("") != 0)
+    {
+        // process the router connection list
+        router_connection_list_result = parse_noc_router_connection_list(&(router_info.connection_list), router_connection_list_attribute_value);
+
+        // check if the user provided a legal router connection list
+        if (!router_connection_list_result)
+        {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+                            "The connections attribute for the router must be a space seperated list of integers, where each integer represents a router id that the current router is connected to");
+        }
+
+    }
+    else
+    {
+        VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(router_tag),
+                          "The router with id:%d either has an empty 'connections' attrtibute or does not have any associated connections to other routers in the NoC.", router_info.id);
+    }
+
+    // at this point the current router information was completely legal, so we store the newly created router within the noc
+    arch->noc->router_list.push_back(router_info);
+
+    return;
 }
 
 std::string inst_port_to_port_name(std::string inst_port) {
@@ -4576,4 +4736,49 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
 
     archfpga_throw(__FILE__, __LINE__,
                    "Could not find type: %s\n", type_name);
+}
+
+static bool parse_noc_router_connection_list(std::vector<int>* connection_list, std::string connection_list_attribute_value)
+{   
+    // we wil be modifying the string so store it in a temporary variable
+    // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
+    std::string modified_attribute_value= connection_list_attribute_value + " ";
+    std::string delimiter = " ";
+    std::stringstream single_connection;
+    int converted_connection;
+
+    size_t position = 0;
+    
+    bool result = true;
+
+    // find the position of the first space in the connection list string
+    while ((position = modified_attribute_value.find(delimiter)) != std::string::npos)
+    {
+        // the string upto the space represent a single connection, so grab the substring
+        single_connection << modified_attribute_value.substr(0, position);
+
+        // convert the connection to an integer
+        single_connection >> converted_connection;
+
+        /* we expect the connection list to be a string of integers seperated by spaces, where each integer represents a router id that the current router is connected to. So we make sure that the router id was an integer.
+        */
+       if (single_connection.fail())
+       {
+           // if we are here, then an integer was not supplied
+           result = false;
+           break;
+       }
+
+        // if we are here then a legal router id was supplied, so store it
+        connection_list->push_back(converted_connection);
+
+        // before we process the next router connection, we need to delete the substring (current router connection)
+        modified_attribute_value.erase(0 + position + delimiter.length());
+
+        // clear the buffer that stores the router connection in a string format for the next iteration
+        single_connection.clear();
+    }
+
+    return result;
+
 }
