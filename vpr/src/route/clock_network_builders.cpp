@@ -316,7 +316,6 @@ int ClockRib::create_chanx_wire(int x_start,
                                 RRGraphBuilder& rr_graph_builder) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
-    auto node = rr_nodes->back();
     RRNodeId chanx_node = RRNodeId(node_index);
 
     rr_graph_builder.set_node_type(chanx_node, CHANX);
@@ -342,7 +341,7 @@ int ClockRib::create_chanx_wire(int x_start,
             VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
             break;
     }
-    node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + seg_index)); // Actual value set later
+    rr_graph_builder.set_node_cost_index(chanx_node, RRIndexedDataId(CHANX_COST_INDEX_START + seg_index)); // Actual value set later
 
     /* Add the node to spatial lookup */
     auto& rr_graph = (*rr_nodes);
@@ -622,7 +621,6 @@ int ClockSpine::create_chany_wire(int y_start,
                                   int num_segments) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
-    auto node = rr_nodes->back();
     RRNodeId chany_node = RRNodeId(node_index);
 
     rr_graph_builder.set_node_type(chany_node, CHANY);
@@ -648,7 +646,7 @@ int ClockSpine::create_chany_wire(int y_start,
             VTR_ASSERT_MSG(false, "Unidentified direction type for clock rib");
             break;
     }
-    node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + num_segments + seg_index));
+    rr_graph_builder.set_node_cost_index(chany_node, RRIndexedDataId(CHANX_COST_INDEX_START + num_segments + seg_index));
 
     /* Add the node to spatial lookup */
     auto& rr_graph = (*rr_nodes);
