@@ -1789,6 +1789,28 @@ struct t_lut_element {
     bool operator==(const t_lut_element& other) const {
         return site_type == other.site_type && width == other.width && lut_bels == other.lut_bels;
     }
+
+};
+
+/* Network-on-chip(NoC) Router data type used to identify 
+connections regarding individual routers in the network. */
+struct t_router {
+    int id = -1;
+
+    int device_x_position = -1;
+    int device_y_position = -1;
+    
+    std::vector<int> connection_list;
+};
+
+/* Network-on-chip(NoC) data type used to store the network 
+properties and used when builidng a dedicated on-chip network*/
+struct t_noc_inf {
+    int link_bandwidth; // in Gbps
+    int link_latency; // in nanoseconds
+    int router_latency; // in nanoseconds
+
+    std::vector<t_router> router_list;
 };
 
 /*   Detailed routing architecture */
@@ -1851,6 +1873,9 @@ struct t_arch {
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
     t_clock_arch_spec clock_arch; // Clock related data types
+
+    // if we have an embedded NoC in the architecture, then we store it here
+    t_noc_inf* noc = nullptr;
 };
 
 #endif
