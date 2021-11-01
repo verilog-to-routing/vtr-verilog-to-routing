@@ -122,6 +122,11 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
+    /** @brief This function reserve storage for RR nodes. */
+    inline void reserve_nodes(size_t size) {
+        node_storage_.reserve(size);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
