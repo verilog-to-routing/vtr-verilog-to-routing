@@ -122,7 +122,11 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
-    /** brief Validate that edge data is partitioned correctly */
+    /** brief Validate that edge data is partitioned correctly
+     * @note This function is used to validate the correctness of the routing resource graph in terms
+     * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
+     * graph. If you need more advance checks, which are related to architecture features, you should
+     * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
     inline bool validate() const {
         return node_storage_.validate();
     }
