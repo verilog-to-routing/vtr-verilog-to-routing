@@ -127,6 +127,11 @@ class RRGraphBuilder {
         node_storage_.reserve(size);
     }
 
+    /** @brief This function resize node storage to accomidate size RR nodes. */
+    inline void resize_nodes(size_t size) {
+        node_storage_.resize(size);
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 
