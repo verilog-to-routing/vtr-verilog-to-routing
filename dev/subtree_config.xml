@@ -1,42 +1,47 @@
 <subtrees>
-    <subtree 
-        name="abc" 
-        internal_path="abc" 
+    <subtree
+        name="abc"
+        internal_path="abc"
         external_url="https://github.com/berkeley-abc/abc.git"
         default_external_ref="master"/>
-    <subtree 
+    <subtree
         name="libargparse"
         internal_path="libs/EXTERNAL/libargparse"
         external_url="https://github.com/kmurray/libargparse.git"
         default_external_ref="master"/>
-    <subtree 
-        name="libblifparse" 
-        internal_path="libs/EXTERNAL/libblifparse" 
-        external_url="https://github.com/verilog-to-routing/libblifparse.git" 
+    <subtree
+        name="libblifparse"
+        internal_path="libs/EXTERNAL/libblifparse"
+        external_url="https://github.com/verilog-to-routing/libblifparse.git"
         default_external_ref="master"/>
-    <subtree 
-        name="libsdcparse" 
-        internal_path="libs/EXTERNAL/libsdcparse" 
-        external_url="https://github.com/verilog-to-routing/libsdcparse.git" 
+    <subtree
+        name="libsdcparse"
+        internal_path="libs/EXTERNAL/libsdcparse"
+        external_url="https://github.com/verilog-to-routing/libsdcparse.git"
         default_external_ref="master"/>
-    <subtree 
-        name="libtatum" 
-        internal_path="libs/EXTERNAL/libtatum" 
-        external_url="https://github.com/verilog-to-routing/tatum.git" 
+    <subtree
+        name="libtatum"
+        internal_path="libs/EXTERNAL/libtatum"
+        external_url="https://github.com/verilog-to-routing/tatum.git"
         default_external_ref="master"/>
-    <subtree 
-        name="libezgl" 
-        internal_path="libs/EXTERNAL/libezgl" 
-        external_url="https://github.com/mariobadr/ezgl.git" 
+    <subtree
+        name="libezgl"
+        internal_path="libs/EXTERNAL/libezgl"
+        external_url="https://github.com/mariobadr/ezgl.git"
         default_external_ref="master"/>
-    <subtree 
-        name="capnproto" 
-        internal_path="libs/EXTERNAL/capnproto" 
-        external_url="https://github.com/capnproto/capnproto.git" 
+    <subtree
+        name="capnproto"
+        internal_path="libs/EXTERNAL/capnproto"
+        external_url="https://github.com/capnproto/capnproto.git"
         default_external_ref="v0.7.0"/>
-    <subtree 
-        name="libyosys" 
-        internal_path="libs/EXTERNAL/libyosys" 
+    <subtree
+        name="libyosys"
+        internal_path="libs/EXTERNAL/libyosys"
         external_url="https://github.com/YosysHQ/yosys.git"
         default_external_ref="master"/>
+    <subtree
+        name="libinterchange"
+        internal_path="libs/EXTERNAL/libinterchange"
+        external_url="https://github.com/chipsalliance/fpga-interchange-schema.git"
+        default_external_ref="main"/>
 </subtrees>
