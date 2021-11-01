@@ -753,7 +753,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline void preallocate_rr_nodes_node(void*& /*ctx*/, size_t size) final {
-        rr_nodes_->reserve(size);
+        rr_graph_builder_->reserve_nodes(size);
     }
     inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type) final {
         // make_room_in_vector will not allocate if preallocate_rr_nodes_node

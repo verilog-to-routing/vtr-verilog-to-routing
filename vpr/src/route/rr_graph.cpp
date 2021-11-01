@@ -577,7 +577,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
         expected_node_count += ClockRRGraphBuilder::estimate_additional_nodes(grid);
-        device_ctx.rr_nodes.reserve(expected_node_count);
+        device_ctx.rr_graph_builder.reserve_nodes(expected_node_count);
     }
     device_ctx.rr_nodes.resize(num_rr_nodes);
 
