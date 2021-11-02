@@ -95,7 +95,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             AtomPinId pin = *netlist.block_pins(blk_id).begin();
 
             std::string blk_name = netlist.block_name(blk_id);
-            std::string out_name(blk_name.begin() + 4, blk_name.end()); //+4 to trim out: prefix
+            std::string out_name(blk_name.begin(), blk_name.end()); //+4 to trim out: prefix
 
             fprintf(f, "%s%s", INDENT, out_name.c_str());
 
@@ -307,7 +307,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             ports.push_back(port_id);
         }
 
-        fprintf(f, ".subckt %s \\\n", blk_model->name);
+        fprintf(f, ".subckt %s \\\n", netlist.block_name(blk_id).c_str());
         for (size_t i = 0; i < ports.size(); i++) {
             auto width = netlist.port_width(ports[i]);
             for (size_t j = 0; j < width; ++j) {

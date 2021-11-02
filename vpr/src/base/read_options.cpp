@@ -69,6 +69,8 @@ struct ParseCircuitFormat {
             conv_value.set_value(e_circuit_format::BLIF);
         else if (str == "eblif")
             conv_value.set_value(e_circuit_format::EBLIF);
+        else if (str == "fpga-interchange")
+            conv_value.set_value(e_circuit_format::FPGA_INTERCHANGE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_circuit_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -84,16 +86,18 @@ struct ParseCircuitFormat {
             conv_value.set_value("auto");
         else if (val == e_circuit_format::BLIF)
             conv_value.set_value("blif");
-        else {
-            VTR_ASSERT(val == e_circuit_format::EBLIF);
+        else if (val == e_circuit_format::EBLIF)
             conv_value.set_value("eblif");
+        else {
+            VTR_ASSERT(val == e_circuit_format::FPGA_INTERCHANGE);
+            conv_value.set_value("fpga-interchange");
         }
 
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"auto", "blif", "eblif"};
+        return {"auto", "blif", "eblif", "fpga-interchange"};
     }
 };
 struct ParseRoutePredictor {
@@ -1112,7 +1116,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     auto& pos_grp = parser.add_argument_group("positional arguments");
     pos_grp.add_argument(args.ArchFile, "architecture")
-        .help("FPGA Architecture description file (XML)");
+        .help(
+            "FPGA Architecture description file \n"
+            "    (XML or FPGA Interchange if --fpga_interchange_device specified)");
 
     pos_grp.add_argument(args.CircuitName, "circuit")
         .help("Circuit file (or circuit name if --circuit_file specified)");
@@ -1146,6 +1152,23 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         "\n"
         "If the implementation is illegal analysis can be forced by explicitly\n"
         "specifying the --analysis option.");
+
+    auto& FPGAInterchage_grp = parser.add_argument_group("FPGA Interchange options");
+
+    FPGAInterchage_grp.add_argument<bool, ParseOnOff>(args.FPGAInterchangeDevice, "--fpga_interchange_device")
+        .help("Read arch file as FPGA Interchange format")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
+    FPGAInterchage_grp.add_argument<bool, ParseOnOff>(args.do_packing, "--fpga_interchange_netlist")
+        .help("Read circuit file as FPGA Interchange format")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
+    FPGAInterchage_grp.add_argument<bool, ParseOnOff>(args.do_packing, "--fpga_interchange_physical")
+        .help("Write physical placement in FPGA Interchange format")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
 
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
@@ -1380,7 +1403,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "           .conn  - Connection between two wires\n"
             "           .cname - Custom name for atom primitive\n"
             "           .param - Parameter on atom primitive\n"
-            "           .attr  - Attribute on atom primitive\n")
+            "           .attr  - Attribute on atom primitive\n"
+            " * fpga-interchage: Logical netlist in FPGA Interchange schema format\n")
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1394,6 +1418,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     file_grp.add_argument(args.RouteFile, "--route_file")
         .help("Path to routing file")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.FPGAInterchangePhysicalFile, "--physical_file")
+        .help("Path to FPGA Interchange Physical file")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.SDCFile, "--sdc_file")
@@ -2472,7 +2500,7 @@ void set_conditional_defaults(t_options& args) {
     }
 
     if (args.SDCFile.provenance() != Provenance::SPECIFIED) {
-        //Use the full path specified in the original circuit name,
+        //Use the full path specified in the originial circuit name,
         //and append the expected .sdc extension
         std::string sdc_file = default_output_name + ".sdc";
         args.SDCFile.set(sdc_file, Provenance::INFERRED);
@@ -2494,6 +2522,12 @@ void set_conditional_defaults(t_options& args) {
         std::string route_file = args.out_file_prefix;
         route_file += default_output_name + ".route";
         args.RouteFile.set(route_file, Provenance::INFERRED);
+    }
+
+    if (args.FPGAInterchangePhysicalNet.provenance() == Provenance::SPECIFIED && args.FPGAInterchangePhysicalFile.provenance() != Provenance::SPECIFIED) {
+        std::string physical_file = args.out_file_prefix;
+        physical_file += default_output_name + ".phys";
+        args.FPGAInterchangePhysicalFile.set(physical_file, Provenance::INFERRED);
     }
 
     if (args.ActFile.provenance() != Provenance::SPECIFIED) {

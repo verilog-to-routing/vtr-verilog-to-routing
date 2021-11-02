@@ -12,16 +12,23 @@ list(REMOVE_ITEM LIB_SOURCES ${EXEC_SOURCES})
 
 #Create the library
 add_library(libarchfpga STATIC
-             ${LIB_HEADERS}
-             ${LIB_SOURCES})
+    ${LIB_HEADERS}
+    ${LIB_SOURCES}
+)
+
 target_include_directories(libarchfpga PUBLIC ${LIB_INCLUDE_DIRS})
+
 set_target_properties(libarchfpga PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependancies
 target_link_libraries(libarchfpga
                         libvtrutil
                         libpugixml
-                        libpugiutil)
+                        libpugiutil
+                        libvtrcapnproto
+)
+
+target_compile_definitions(libarchfpga PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 
 #Create the test executable
 add_executable(read_arch ${EXEC_SOURCES})
