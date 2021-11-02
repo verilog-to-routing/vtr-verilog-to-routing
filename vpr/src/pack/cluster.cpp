@@ -3959,6 +3959,7 @@ static void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_ty
  */
 static t_pb* get_top_level_pb(t_pb* pb) {
     t_pb* top_level_pb = pb;
+
     while (pb) {
         top_level_pb = pb;
         pb = pb->parent_pb;
