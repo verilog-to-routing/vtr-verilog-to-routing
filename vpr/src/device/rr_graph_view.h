@@ -259,6 +259,10 @@ class RRGraphView {
         return node_lookup_;
     }
 
+    inline const t_segment_inf& rr_segments(int seg_id) const {
+        return rr_segments_[seg_id];
+    }
+
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
   private:
