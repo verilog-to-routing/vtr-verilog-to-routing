@@ -103,6 +103,24 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
+    /** @brief Reserve the lists of edges to be memory efficient.
+     * This function is mainly used to reserve memory space inside RRGraph,
+     * when adding a large number of edges in order to avoid memory fragements */
+    inline void reserve_edges(size_t num_edges) {
+        node_storage_.reserve_edges(num_edges);
+    }
+
+    /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph. */
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch);
+    }
+
+    /** @brief alloc_and_load_edges; It adds a batch of edges.  */
+    inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
+        node_storage_.alloc_and_load_edges(rr_edges_to_create);
+    }
+
     /** @brief set_node_cost_index gets the index of cost data in the list of cost_indexed_data data structure
      * It contains the routing cost for different nodes in the RRGraph
      * when used in evaluate different routing paths
@@ -144,6 +162,15 @@ class RRGraphBuilder {
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
+    }
+
+    /** brief Validate that edge data is partitioned correctly
+     * @note This function is used to validate the correctness of the routing resource graph in terms
+     * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
+     * graph. If you need more advance checks, which are related to architecture features, you should
+     * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
+    inline bool validate() const {
+        return node_storage_.validate();
     }
 
     /** @brief Init per node fan-in data.  Should only be called after all edges have
