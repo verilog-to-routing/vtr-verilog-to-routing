@@ -154,6 +154,16 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
+    /** @brief This function reserve storage for RR nodes. */
+    inline void reserve_nodes(size_t size) {
+        node_storage_.reserve(size);
+    }
+
+    /** @brief This function resize node storage to accomidate size RR nodes. */
+    inline void resize_nodes(size_t size) {
+        node_storage_.resize(size);
+    }
+
     /** brief Validate that edge data is partitioned correctly
      * @note This function is used to validate the correctness of the routing resource graph in terms
      * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
