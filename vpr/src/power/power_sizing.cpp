@@ -378,6 +378,7 @@ static double power_count_transistors_switchbox() {
                            power_ctx.arch->mux_transistor_size));
 
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     for (size_t seg_idx = 0; seg_idx < device_ctx.rr_segments.size(); seg_idx++) {
         /* In each switchbox, the different types of segments occur with relative freqencies.
@@ -385,12 +386,12 @@ static double power_count_transistors_switchbox() {
          * The (x2) factor accounts for vertical and horizontal tracks.
          * Of the wires of each segment type only (1/seglength) will have a mux&buffer.
          */
-        float freq_frac = (float)device_ctx.rr_segments[seg_idx].frequency
+        float freq_frac = (float)rr_graph.rr_segments(seg_idx).frequency
                           / (float)MAX_CHANNEL_WIDTH;
 
         transistor_cnt += transistors_per_buf_mux * 2 * freq_frac
                           * power_ctx.solution_inf.channel_width
-                          * (1 / (float)device_ctx.rr_segments[seg_idx].length);
+                          * (1 / (float)rr_graph.rr_segments(seg_idx).length);
     }
 
     return transistor_cnt;

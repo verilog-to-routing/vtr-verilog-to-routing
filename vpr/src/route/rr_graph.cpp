@@ -2444,7 +2444,7 @@ std::string describe_rr_node(int inode) {
         if (seg_index < (int)device_ctx.rr_segments.size()) {
             msg += vtr::string_fmt(" track: %d longline: %d",
                                    rr_node.track_num(),
-                                   device_ctx.rr_segments[seg_index].longline);
+                                   rr_graph.rr_segments(seg_index).longline);
         } else {
             msg += vtr::string_fmt(" track: %d seg_type: ILLEGAL_SEG_INDEX %d",
                                    rr_node.track_num(),
