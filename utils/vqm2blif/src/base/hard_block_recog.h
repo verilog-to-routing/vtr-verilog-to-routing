@@ -1,3 +1,6 @@
+#ifndef HARD_BLOCK_RECOG_H
+#define HARD_BLOCK_RECOG_H
+
 /* VQM new primitive hard block recognition header file
 *
 *  The purpose of this file is to identify and instantiate
@@ -10,18 +13,16 @@
 * 
 *  This file also contains all the declarations of functions that can be
 *  used to interact with and manipulate the main data structures. Additionally,
-*  some utility functions are added to help identify whether a hard block was *  included within the design. For more information, 
-*  refer to 'hard_block_recog.cpp'.
+*  some utility functions are added to help identify whether a hard block was
+*  included within the design.
+*  For more information, refer to 'hard_block_recog.cpp'.
 *
 */
 
 
 // need to use vtr::malloc for memory allocation (only in the files here)
-// no need to run VTR assert, after memory allocation, this is checked in the function already
+// no need to rcheck for failed malloc (NULL pointer), this is already checked in vtr::malloc
 
-
-#ifndef HARD_BLOCK_RECOG_H
-#define HARD_BLOCK_RECOG_H
 
 // user VTR libraries
 #include "vqm_dll.h"
@@ -63,18 +64,27 @@
 // each level of hierarchy (module within module) is seperated by the delimiter character defined below. The last level of hierarchy is the output net of the block 
 #define VQM_NODE_NAME_DELIMITER "|"
 
+// a port that is a bus is a vectored port. So a single port name with multiple indices.
+// We use the size of the port to determine whether the port is a bus or not.
+// A port size of 1 represents a port that is not a bus, whereas a port size greater than 1 represents a bus. 
+// So a non-bus port size is represented below 
 #define PORT_NOT_BUS 1
 
+// We use regex to extract the port name and index from the vqm netlist.
+// For example, given the string payload[1]~QIC_DANGLING_PORT_I, we would extract 'payload' and '1'.
+// For the case where a port is not a bus, we would just extract the port name.
+// Now the extracted information is stored in an array of strings, and the indices of where the port name and index are stored is found below. 
 #define PORT_NAME 1
 #define PORT_INDEX 2
 
+// used to identify the case where a hard block instance is not found within the netlist
 #define HARD_BLOCK_INSTANCE_DOES_NOT_EXIST -1
 
 // define how flip flops and LUT will be identified within a given node type (within t_node struct)
 #define LUT_TYPE "stratixiv_lcell_comb"
 #define DFF_TYPE "dffeas" 
 
-// define the number of ports a LUT that represents a hard block instance output port would have 
+// define the number of output ports a LUT that represents a hard block instance output port would have 
 #define LUT_OUTPUT_PORT_SIZE 1
 
 // names of the output port for a LUT and DFF
@@ -88,11 +98,12 @@
 
 
 /*
-*   The purpose of this data structure is to
-*   store the port information (in an array) for an arbritary user defined
-*   hard block design. Then a mapping is provided which can 
+*   The port information (in an array) for an arbritary user defined
+*   hard block in the design is stored in s_hard_block_port_info. Then a 
+*   mapping is provided which can       
 *   help identify the specific location within the port array 
-*   that a given port name begins at.
+*   that a given port name begins at. This data structure is created
+*   for each type of hard block.
 */
 typedef struct s_hard_block_port_info
 {
@@ -115,12 +126,13 @@ typedef struct s_hard_block_port_info
 *   This node will then be stored within a node array and enclosed
 *   within a 't_module' variable (refer to 'vqm_dll.h').
 *
-*
-*   The purpose of the data structure below is to keep a reference to a 
-*   single hard block node (one instance of a hard block within the design). *   This way, the node can be accessed quickly whenever changes need to be 
+*   A reference to a single hard block node (one instance of a hard block
+*   within the design) is stored inside s_hard_block, so it essentially
+*   represents a hard block instance.
+*   This way, the node can be accessed quickly whenever changes need to be 
 *   applied. Additional information about the hard block is also stored as well.
 *   
-*   THe node itself is stored internally within the a node array. And
+*   The node itself is stored internally within the a node array. And
 *   located inside a module.
 */
 typedef struct s_hard_block
@@ -141,13 +153,11 @@ typedef struct s_hard_block
 *   the names and port info of every type of user defined hard blocks. It
 *   also stores all hard blocks that were instantiated within
 *   the user design and an accompanying data strcuture to quickly identify
-*   a specific hard block instance. All functiions will primarily interact
+*   a specific hard block instance. All functions will primarily interact
 *   with this data structure.
 */
 typedef struct s_hard_block_recog
 {
-    // names of all the user defined hard blocks
-    //std::vector<std::string>* hard_block_type_names; // hb_type_names (probably do not need)
     
     // store the port information of each and every type of
     // user defined hard blocks. All ports connected to each
@@ -158,7 +168,8 @@ typedef struct s_hard_block_recog
     // user design
     std::vector<t_hard_block> hard_block_instances;
 
-    /* given a specific hard block instance name, we need to quickly
+    /* 
+       Given a specific hard block instance name, we need to quickly
        identify the corresponding hard block structure instance.
        We do this by using the map data structure below,
        where a hard block instance name is associated with an index
@@ -169,17 +180,27 @@ typedef struct s_hard_block_recog
     /* 
        The luts and dffeas used to model ports are all stored as nodes and
        we will need to remove them from the netlist after adding all the
-       hard blocks to the netlist.The ports that are modelled by the luts and dffeas aren't needed once all the hard blocks within the design are added to the netlist.The luts and dffeas are simply repeating the port information, so we can remove them.
+       hard blocks to the netlist.The ports that are modelled by the luts and dffeas 
+       aren't needed once all the hard blocks within the design are added to the netlist.
+       The luts and dffeas are simply repeating the port information, so we can remove them.
         
-       The nodelist is simply an array. Now deleting lut/dffeas nodes while still creating additional hard block nodes could cause some problems, so we will delete all these nodes at the end. Therefore we need to keep a 
-       reference for all the luts and dffeas nodes that represent hard block ports here, so we can them remove later on.*/
+       The nodelist is simply an array. Now deleting lut/dffeas nodes while still creating additional 
+       hard block nodes could cause some problems, so we will delete all these nodes at the end. 
+	   Therefore we need to keep a reference for all the luts and dffeas nodes that
+       represent hard block ports here, so we can them remove later on.
+    */
     std::vector<t_node*> luts_dffeas_nodes_to_remove; // look into using array index instead
 
 }t_hard_block_recog;
 
 /*
-*   When we go through the .vqm file, the ports of any user defined hard block  *   will be represented as a LUT (stratix_lcell), or flip flop (dffeas) (for *   more info refer to 'hard_block_recog.cpp'). The generated names found in *   the .vqm file for the two previous blocks contain a lot of information     *   about the hard block. The structure below is used to store the information, 
-*   which includes the hard block name, hard block type, the specfic hard    *   block port and if the port is a bus, then the specific index.
+*   When we go through the .vqm file, the ports of any user defined hard block 
+*   will be represented as a LUT (stratix_lcell), or flip flop (dffeas) 
+*   (for more info refer to 'hard_block_recog.cpp'). The generated names found  
+*   in the .vqm file for the two previous blocks contain a lot of information 
+*   about the hard block. The structure below is used to store the information, 
+*   which includes the hard block name, hard block type, the specfic hard 
+*   block port and if the port is a bus, then the specific index.
 */
 typedef struct s_parsed_hard_block_port_info
 {
@@ -195,7 +216,7 @@ typedef struct s_parsed_hard_block_port_info
     std::string hard_block_port_name = "";
 
     // index of the port defined in the current block (LUT or dffeas)
-    // initialized to an index equivalent to what a port thas is not a bus would have
+    // initialized to an index equivalent to what a port that is not a bus would have
     int hard_block_port_index = DEFAULT_PORT_INDEX;
 
 }t_parsed_hard_block_port_info;

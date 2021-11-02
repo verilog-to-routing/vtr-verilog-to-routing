@@ -1,7 +1,7 @@
 /*
 *   The purpose of this file is to support netlists that
 *   contain new types of hard blocks. Specifically, user defined
-*   hard blocks are indetified within the netlist and then instantiated
+*   hard blocks are identified within the netlist and then instantiated
 *   so that they are later written to the generated .blif file.
 *
 *   For example, consider a user design that contains a new hard block
