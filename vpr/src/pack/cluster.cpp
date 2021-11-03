@@ -3964,6 +3964,7 @@ static t_pb* get_top_level_pb(t_pb* pb) {
         top_level_pb = pb;
         pb = pb->parent_pb;
     }
+
     VTR_ASSERT(top_level_pb != nullptr);
 
     return top_level_pb;
