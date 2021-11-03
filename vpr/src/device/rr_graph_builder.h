@@ -145,6 +145,11 @@ class RRGraphBuilder {
         node_storage_.remap_rr_node_switch_indices(switch_fanin);
     }
 
+    /** @brief Marks that edge switch values are rr switch indicies*/
+    inline void mark_edges_as_rr_switch_ids() {
+        node_storage_.mark_edges_as_rr_switch_ids();
+    }
+
     /** @brief Counts the number of rr switches needed based on fan in to support mux
      * size dependent switch delays. */
     inline size_t count_rr_switches(
@@ -152,6 +157,16 @@ class RRGraphBuilder {
         t_arch_switch_inf* arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins) {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+    }
+
+    /** @brief This function reserve storage for RR nodes. */
+    inline void reserve_nodes(size_t size) {
+        node_storage_.reserve(size);
+    }
+
+    /** @brief This function resize node storage to accomidate size RR nodes. */
+    inline void resize_nodes(size_t size) {
+        node_storage_.resize(size);
     }
 
     /** brief Validate that edge data is partitioned correctly
