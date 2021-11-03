@@ -69,7 +69,7 @@ class ExtendedMapLookahead : public RouterLookahead {
     /**
      * @brief Computes the extended lookahead map
      */
-    void compute(const std::vector<t_segment_inf>& segment_inf) override;
+    void compute(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) override;
 
     /**
      * @brief Reads the extended lookahead map

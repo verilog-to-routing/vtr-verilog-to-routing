@@ -147,7 +147,7 @@ static bool should_apply_switch_override(int switch_override);
  * step, if we were closer to target before last more, undo it
  * and end up with a result that uses fewer tracks than given. */
 std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
-                                            const std::vector<t_segment_inf>& segment_inf,
+                                            const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                             const bool use_full_seg_groups) {
     std::unique_ptr<int[]> result;
     int imax, freq_sum, assigned, size;
@@ -161,17 +161,17 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
     scale = 1;
     freq_sum = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
-        scale *= segment_inf[i].length;
-        freq_sum += segment_inf[i].frequency;
+        scale *= segment_inf[RRSegmentId (i)].length;
+        freq_sum += segment_inf[RRSegmentId (i)].frequency;
     }
     reduce = scale * freq_sum;
 
     /* Init assignments to 0 and set the demand values */
     for (size_t i = 0; i < segment_inf.size(); ++i) {
         result[i] = 0;
-        demand[i] = scale * num_sets * segment_inf[i].frequency;
+        demand[i] = scale * num_sets * segment_inf[RRSegmentId (i)].frequency;
         if (use_full_seg_groups) {
-            demand[i] /= segment_inf[i].length;
+            demand[i] /= segment_inf[RRSegmentId (i)].length;
         }
     }
 
@@ -190,7 +190,7 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
         }
 
         /* Assign tracks to the type and reduce the types demand */
-        size = (use_full_seg_groups ? segment_inf[imax].length : 1);
+        size = (use_full_seg_groups ? segment_inf[RRSegmentId (imax)].length : 1);
         demand[imax] -= reduce;
         result[imax] += size;
         assigned += size;
@@ -207,7 +207,7 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
 
 t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                                           const int max_len,
-                                          const std::vector<t_segment_inf>& segment_inf,
+                                          const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                           const bool use_full_seg_groups,
                                           const bool is_global_graph,
                                           const enum e_directionality directionality,
@@ -265,21 +265,21 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             continue;
         }
         /* Avoid divide by 0 if ntracks */
-        longline = segment_inf[i].longline;
-        length = segment_inf[i].length;
+        longline = segment_inf[RRSegmentId (i)].longline;
+        length = segment_inf[RRSegmentId (i)].length;
         if (longline) {
             length = max_len;
         }
 
-        arch_wire_switch = segment_inf[i].arch_wire_switch;
-        arch_opin_switch = segment_inf[i].arch_opin_switch;
+        arch_wire_switch = segment_inf[RRSegmentId (i)].arch_wire_switch;
+        arch_opin_switch = segment_inf[RRSegmentId (i)].arch_opin_switch;
         VTR_ASSERT((arch_wire_switch == arch_opin_switch) || (directionality != UNI_DIRECTIONAL));
 
         /* Set up the tracks of same type */
         group_start = 0;
         for (itrack = 0; itrack < ntracks; itrack++) {
             /* set the name of the segment type this track belongs to */
-            seg_details[cur_track].type_name = segment_inf[i].name;
+            seg_details[cur_track].type_name = segment_inf[RRSegmentId (i)].name;
 
             /* Remember the start track of the current wire group */
             if ((itrack / fac) % length == 0 && (itrack % fac) == 0) {
@@ -318,8 +318,8 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                     seg_details[cur_track].cb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].cb.size();
-                    seg_details[cur_track].cb[j] = segment_inf[i].cb[index];
+                    index = j % segment_inf[RRSegmentId (i)].cb.size();
+                    seg_details[cur_track].cb[j] = segment_inf[RRSegmentId (i)].cb[index];
                 }
             }
             for (j = 0; j < (length + 1); ++j) {
@@ -327,13 +327,13 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].sb.size();
-                    seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
+                    index = j % segment_inf[RRSegmentId (i)].sb.size();
+                    seg_details[cur_track].sb[j] = segment_inf[RRSegmentId (i)].sb[index];
                 }
             }
 
-            seg_details[cur_track].Rmetal = segment_inf[i].Rmetal;
-            seg_details[cur_track].Cmetal = segment_inf[i].Cmetal;
+            seg_details[cur_track].Rmetal = segment_inf[RRSegmentId (i)].Rmetal;
+            seg_details[cur_track].Cmetal = segment_inf[RRSegmentId (i)].Cmetal;
             //seg_details[cur_track].Cmetal_per_m = segment_inf[i].Cmetal_per_m;
 
             seg_details[cur_track].arch_wire_switch = arch_wire_switch;

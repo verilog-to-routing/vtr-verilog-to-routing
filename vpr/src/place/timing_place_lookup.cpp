@@ -146,7 +146,7 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
 
-static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf);
+static int get_longest_segment_length(vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 
 static void fix_empty_coordinates(vtr::Matrix<float>& delta_delays);
 static void fix_uninitialized_coordinates(vtr::Matrix<float>& delta_delays);
@@ -158,7 +158,7 @@ static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y,
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
                                                            t_det_routing_arch* det_routing_arch,
-                                                           std::vector<t_segment_inf>& segment_inf,
+                                                           vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
                                                            const t_direct_inf* directs,
                                                            const int num_directs) {
@@ -292,13 +292,13 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
     return best_classes;
 }
 
-static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
+static int get_longest_segment_length(vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     int length;
 
     length = 0;
     for (size_t i = 0; i < segment_inf.size(); i++) {
-        if (segment_inf[i].length > length)
-            length = segment_inf[i].length;
+        if (segment_inf[RRSegmentId(i)].length > length)
+            length = segment_inf[RRSegmentId(i)].length;
     }
     return (length);
 }

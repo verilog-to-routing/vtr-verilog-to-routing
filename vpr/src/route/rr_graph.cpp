@@ -190,7 +190,7 @@ static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 5>& track
                                                     const int Fc,
                                                     const enum e_directionality directionality);
 
-static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type_ptr type, const vtr::Matrix<int>& Fc_out, const int max_chan_width, const std::vector<t_segment_inf>& segment_inf);
+static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type_ptr type, const vtr::Matrix<int>& Fc_out, const int max_chan_width, const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
 static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
@@ -252,7 +252,7 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
 
 static void alloc_rr_switch_inf(t_arch_switch_fanin& switch_fanin);
 
-static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+static void rr_graph_externals(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                int wire_to_rr_ipin_switch,
                                enum e_base_cost_type base_cost_type);
 
@@ -267,7 +267,7 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
+                                                              const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                                               const int* sets_per_seg_type,
                                                               const int max_chan_width,
                                                               const e_fc_type fc_type,
@@ -288,7 +288,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf> switchblocks,
                            const int num_arch_switches,
-                           const std::vector<t_segment_inf>& segment_inf,
+                           const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
                            const int delayless_switch,
@@ -309,7 +309,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_chan_width nodes_per_chan,
                      const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
-                     const std::vector<t_segment_inf>& segment_inf,
+                     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
                      const t_direct_inf* directs,
                      const int num_directs,
@@ -408,7 +408,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf> switchblocks,
                            const int num_arch_switches,
-                           const std::vector<t_segment_inf>& segment_inf,
+                           const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
                            const int delayless_switch,
@@ -896,7 +896,7 @@ static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin
     device_ctx.rr_nodes.remap_rr_node_switch_indices(switch_fanin);
 }
 
-static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+static void rr_graph_externals(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                int wire_to_rr_ipin_switch,
                                enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -991,7 +991,7 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
 /* Calculates the number of track connections from each block pin to each segment type */
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
+                                                              const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                                               const int* sets_per_seg_type,
                                                               const int max_chan_width,
                                                               const e_fc_type fc_type,
@@ -1042,14 +1042,14 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
                                         fac, fc_spec.fc_value,
                                         block_type_pin_index_to_name(&type, fc_spec.pins[0]).c_str(),
-                                        segment_inf[iseg].name.c_str());
+                                        segment_inf[RRSegmentId(iseg)].name.c_str());
                     }
 
                     if (fc_spec.fc_value < fac) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
                                         fac, fc_spec.fc_value,
                                         block_type_pin_index_to_name(&type, fc_spec.pins[0]).c_str(),
-                                        segment_inf[iseg].name.c_str());
+                                        segment_inf[RRSegmentId(iseg)].name.c_str());
                     }
 
                     total_connections = vtr::nint(fc_spec.fc_value) * fc_spec.pins.size();
@@ -2444,7 +2444,7 @@ std::string describe_rr_node(int inode) {
         if (seg_index < (int)device_ctx.rr_segments.size()) {
             msg += vtr::string_fmt(" track: %d longline: %d",
                                    rr_node.track_num(),
-                                   rr_graph.rr_segments(seg_index).longline);
+                                   rr_graph.rr_segments(RRSegmentId(seg_index)).longline);
         } else {
             msg += vtr::string_fmt(" track: %d seg_type: ILLEGAL_SEG_INDEX %d",
                                    rr_node.track_num(),
@@ -2811,7 +2811,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type_ptr type,
                                                       const vtr::Matrix<int>& Fc_out,
                                                       const int max_chan_width,
-                                                      const std::vector<t_segment_inf>& segment_inf) {
+                                                      const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     int i, Fc_max, iclass, num_wire_types;
     int num, max_primes, factor, num_factors;
     int* prime_factors;
@@ -2833,7 +2833,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
         return perturb_opins;
     } else {
         /* There are as many wire start points as the value of L */
-        num_wire_types = segment_inf[0].length;
+        num_wire_types = segment_inf[RRSegmentId(0)].length;
     }
 
     /* get Fc_max */

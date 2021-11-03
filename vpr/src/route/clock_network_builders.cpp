@@ -10,26 +10,26 @@ void static populate_segment_values(int seg_index,
                                     std::string name,
                                     int length,
                                     MetalLayer layer,
-                                    std::vector<t_segment_inf>& segment_inf);
+                                    vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 
 void populate_segment_values(int seg_index,
                              std::string name,
                              int length,
                              MetalLayer layer,
-                             std::vector<t_segment_inf>& segment_inf) {
-    segment_inf[seg_index].name = name;
-    segment_inf[seg_index].length = length;
-    segment_inf[seg_index].frequency = 1;
-    segment_inf[seg_index].Rmetal = layer.r_metal;
-    segment_inf[seg_index].Cmetal = layer.c_metal;
-    segment_inf[seg_index].directionality = UNI_DIRECTIONAL;
-    segment_inf[seg_index].longline = false;
+                             vtr::vector<RRSegmentId,t_segment_inf>& segment_inf) {
+    segment_inf[RRSegmentId(seg_index)].name = name;
+    segment_inf[RRSegmentId(seg_index)].length = length;
+    segment_inf[RRSegmentId(seg_index)].frequency = 1;
+    segment_inf[RRSegmentId(seg_index)].Rmetal = layer.r_metal;
+    segment_inf[RRSegmentId(seg_index)].Cmetal = layer.c_metal;
+    segment_inf[RRSegmentId(seg_index)].directionality = UNI_DIRECTIONAL;
+    segment_inf[RRSegmentId(seg_index)].longline = false;
 
     // unused values tagged with -1 (only used RR graph creation)
-    segment_inf[seg_index].arch_wire_switch = -1;
-    segment_inf[seg_index].arch_opin_switch = -1;
-    segment_inf[seg_index].frac_cb = -1;
-    segment_inf[seg_index].frac_sb = -1;
+    segment_inf[RRSegmentId(seg_index)].arch_wire_switch = -1;
+    segment_inf[RRSegmentId(seg_index)].arch_opin_switch = -1;
+    segment_inf[RRSegmentId(seg_index)].frac_cb = -1;
+    segment_inf[RRSegmentId(seg_index)].frac_sb = -1;
 }
 
 /*
@@ -140,7 +140,7 @@ void ClockRib::set_tap_name(std::string name) {
  * ClockRib (member functions)
  */
 
-void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
+void ClockRib::create_segments(vtr::vector<RRSegmentId,t_segment_inf>& segment_inf) {
     int index;
     std::string name;
     int length;
@@ -442,7 +442,7 @@ void ClockSpine::set_tap_name(std::string name) {
  * ClockSpine (member functions)
  */
 
-void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
+void ClockSpine::create_segments(vtr::vector<RRSegmentId,t_segment_inf>& segment_inf) {
     int index;
     std::string name;
     int length;
@@ -682,7 +682,7 @@ void ClockSpine::record_tap_locations(unsigned y_start,
  */
 
 //TODO: Implement clock Htree generation code
-void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
+void ClockHTree::create_segments(vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     //Remove unused parameter warning
     (void)segment_inf;
 

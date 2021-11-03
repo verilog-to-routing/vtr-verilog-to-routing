@@ -108,7 +108,7 @@ class ClockNetwork {
                                                  RRGraphBuilder& rr_graph_builder,
                                                  t_rr_edge_info_set* rr_edges_to_create,
                                                  int num_segments);
-    virtual void create_segments(std::vector<t_segment_inf>& segment_inf) = 0;
+    virtual void create_segments(vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) = 0;
     virtual void create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                                      t_rr_graph_storage* rr_nodes,
                                                                      RRGraphBuilder& rr_graph_builder,
@@ -164,7 +164,7 @@ class ClockRib : public ClockNetwork {
     /*
      * Member functions
      */
-    void create_segments(std::vector<t_segment_inf>& segment_inf) override;
+    void create_segments(vtr::vector<RRSegmentId,t_segment_inf>& segment_inf) override;
     void create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                              t_rr_graph_storage* rr_nodes,
                                                              RRGraphBuilder& rr_graph_builder,
@@ -225,7 +225,7 @@ class ClockSpine : public ClockNetwork {
     /*
      * Member functions
      */
-    void create_segments(std::vector<t_segment_inf>& segment_inf) override;
+    void create_segments(vtr::vector<RRSegmentId,t_segment_inf>& segment_inf) override;
     void create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                              t_rr_graph_storage* rr_nodes,
                                                              RRGraphBuilder& rr_graph_builder,
@@ -262,7 +262,7 @@ class ClockHTree : private ClockNetwork {
   public:
     ClockType get_network_type() const override { return ClockType::H_TREE; }
     // TODO: Unimplemented member function
-    void create_segments(std::vector<t_segment_inf>& segment_inf) override;
+    void create_segments(vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) override;
     void create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
                                                              t_rr_graph_storage* rr_nodes,
                                                              RRGraphBuilder& rr_graph_builder,

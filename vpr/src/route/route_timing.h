@@ -20,7 +20,7 @@ int get_max_pins_per_net();
 
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
-                             const std::vector<t_segment_inf>& segment_inf,
+                             const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                              ClbNetPinsMatrix<float>& net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,

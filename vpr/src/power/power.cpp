@@ -912,7 +912,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                     wire_length = rr_graph.node_yhigh(rr_node) - rr_graph.node_ylow(rr_node) + 1;
                 }
                 int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_node)].seg_index;
-                C_wire = wire_length * rr_graph.rr_segments(seg_index).Cmetal;
+                C_wire = wire_length * rr_graph.rr_segments(RRSegmentId(seg_index)).Cmetal;
                 //(double)power_ctx.commonly_used->tile_length);
                 VTR_ASSERT(node_power->selected_input < node_fan_in);
 

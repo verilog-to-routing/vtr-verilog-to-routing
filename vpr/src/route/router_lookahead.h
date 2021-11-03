@@ -16,7 +16,7 @@ class RouterLookahead {
     virtual std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
 
     // Compute router lookahead (if needed).
-    virtual void compute(const std::vector<t_segment_inf>& segment_inf) = 0;
+    virtual void compute(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) = 0;
 
     // Read router lookahead data (if any) from specified file.
     // May be unimplemented, in which case method should throw an exception.
@@ -37,7 +37,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
     std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf);
+    const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 
 // Clear router lookahead cache (e.g. when changing or free rrgraph).
 void invalidate_router_lookahead_cache();
@@ -50,14 +50,14 @@ const RouterLookahead* get_cached_router_lookahead(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
     std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf);
+    const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 
 class ClassicLookahead : public RouterLookahead {
   public:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
-    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
+    void compute(const vtr::vector<RRSegmentId, t_segment_inf>& /*segment_inf*/) override {
     }
 
     void read(const std::string& /*file*/) override {
@@ -76,7 +76,7 @@ class NoOpLookahead : public RouterLookahead {
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
-    void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
+    void compute(const vtr::vector<RRSegmentId, t_segment_inf>& /*segment_inf*/) override {
     }
     void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "Read not supported for NoOpLookahead");

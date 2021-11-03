@@ -27,7 +27,7 @@ static const e_trans_area_eq trans_area_eq = AREA_IMPROVED_NMOS_ONLY;
 
 static void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
 
-static void count_unidir_routing_transistors(std::vector<t_segment_inf>& segment_inf,
+static void count_unidir_routing_transistors(vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                              int wire_to_ipin_switch,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
@@ -52,7 +52,7 @@ static float trans_per_R(float Rtrans, float R_minW_trans);
 void count_routing_transistors(enum e_directionality directionality,
                                int num_switch,
                                int wire_to_ipin_switch,
-                               std::vector<t_segment_inf>& segment_inf,
+                               vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                float R_minW_nmos,
                                float R_minW_pmos) {
     /* Counts how many transistors are needed to implement the FPGA routing      *
@@ -295,7 +295,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
     VTR_LOG("\n");
 }
 
-void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*/,
+void count_unidir_routing_transistors(vtr::vector<RRSegmentId, t_segment_inf>& /*segment_inf*/,
                                       int wire_to_ipin_switch,
                                       float R_minW_nmos,
                                       float R_minW_pmos,

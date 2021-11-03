@@ -174,7 +174,7 @@ struct DeviceContext : public Context {
     std::vector<t_rr_switch_inf> rr_switch_inf;
 
     ///@brief Wire segment types in RR graph
-    std::vector<t_segment_inf> rr_segments;
+    vtr::vector<RRSegmentId, t_segment_inf> rr_segments;
 
     int num_arch_switches;
     t_arch_switch_inf* arch_switch_inf; // [0..(num_arch_switches-1)]
@@ -373,7 +373,7 @@ struct RoutingContext : public Context {
      *
      * Cache key: (lookahead type, read lookahead (if any), segment definitions).
      */
-    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
+    vtr::Cache<std::tuple<e_router_lookahead, std::string, vtr::vector<RRSegmentId, t_segment_inf>>,
                RouterLookahead>
         cached_router_lookahead_;
 };

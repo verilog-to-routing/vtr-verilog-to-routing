@@ -1686,7 +1686,7 @@ struct t_vpr_setup {
     t_analysis_opts AnalysisOpts;   ///<Analysis options
     t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
-    std::vector<t_segment_inf> Segments; ///<wires in routing architecture
+    vtr::vector<RRSegmentId, t_segment_inf> Segments; ///<wires in routing architecture
     t_timing_inf Timing;                 ///<timing information
     float constant_net_delay;            ///<timing information when place and route not run
     bool ShowGraphics;                   ///<option to show graphics

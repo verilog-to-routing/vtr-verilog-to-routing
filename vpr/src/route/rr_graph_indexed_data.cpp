@@ -36,7 +36,7 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment);
 
 static std::vector<size_t> count_rr_segment_types();
 
-static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf);
+static void print_rr_index_info(const char* fname, const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 
 /******************** Subroutine definitions *********************************/
 
@@ -53,7 +53,7 @@ static void print_rr_index_info(const char* fname, const std::vector<t_segment_i
  * etc. more expensive than others.  I give each segment type in an          *
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
-void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
+void alloc_and_load_rr_indexed_data(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
                                     int wire_to_ipin_switch,
                                     enum e_base_cost_type base_cost_type) {
     int iseg, length, i, index;
@@ -89,10 +89,10 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
             device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index + num_segment;
         }
 
-        if (segment_inf[iseg].longline)
+        if (segment_inf[RRSegmentId (iseg)].longline)
             length = device_ctx.grid.width();
         else
-            length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.width());
+            length = std::min<int>(segment_inf[RRSegmentId (iseg)].length, device_ctx.grid.width());
 
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
@@ -108,10 +108,10 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
             device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index - num_segment;
         }
 
-        if (segment_inf[iseg].longline)
+        if (segment_inf[RRSegmentId (iseg)].longline)
             length = device_ctx.grid.height();
         else
-            length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.height());
+            length = std::min<int>(segment_inf[RRSegmentId (iseg)].length, device_ctx.grid.height());
 
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
@@ -533,7 +533,7 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment) {
     }
 }
 
-static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf) {
+static void print_rr_index_info(const char* fname, const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::ofstream out_file;
@@ -561,9 +561,9 @@ static void print_rr_index_info(const char* fname, const std::vector<t_segment_i
         } else if (cost_index == IPIN_COST_INDEX) {
             string_stream << cost_index << " IPIN";
         } else if (cost_index <= IPIN_COST_INDEX + segment_inf.size()) {
-            string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name.c_str();
+            string_stream << cost_index << " CHANX " << segment_inf[RRSegmentId(index_data.seg_index)].name.c_str();
         } else {
-            string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name.c_str();
+            string_stream << cost_index << " CHANY " << segment_inf[RRSegmentId(index_data.seg_index)].name.c_str();
         }
 
         std::string cost_index_str = string_stream.str();

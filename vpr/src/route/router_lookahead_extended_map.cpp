@@ -229,7 +229,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     float expected_cost = expected_delay_cost + expected_cong_cost;
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
-    const std::string& segment_name = rr_graph.rr_segments(from_seg_index).name;
+    const std::string& segment_name = rr_graph.rr_segments(RRSegmentId(from_seg_index)).name;
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n",
                    segment_name.c_str(), from_seg_index,
                    dx, dy);
@@ -409,7 +409,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 }
 
 // compute the cost maps for lookahead
-void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
+void ExtendedMapLookahead::compute(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     this->src_opin_delays = util::compute_router_src_opin_lookahead();
     this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
 
@@ -476,7 +476,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 
             if (path_count > 0) {
                 VTR_LOG("Expanded %d paths of segment type %s(%d) starting at (%d, %d) from %d segments, max_cost %e %e (%g paths/sec)\n",
-                        path_count, segment_inf[region.segment_type].name.c_str(), region.segment_type,
+                        path_count, segment_inf[RRSegmentId(region.segment_type)].name.c_str(), region.segment_type,
                         point.location.x(), point.location.y(),
                         (int)point.nodes.size(),
                         max_delay_cost, max_base_cost,
@@ -502,7 +502,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 
         if (total_path_count == 0) {
             VTR_LOG_WARN("No paths found for sample region %s(%d, %d)\n",
-                         segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
+                         segment_inf[RRSegmentId(region.segment_type)].name.c_str(), region.grid_location.x(), region.grid_location.y());
         }
 
         // combine the cost map from this run with the final cost maps for each segment
@@ -550,7 +550,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS)
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
         VTR_LOG("cost map for %s(%d)\n",
-                segment_inf[iseg].name.c_str(), iseg);
+                segment_inf[RRSegmentId(iseg)].name.c_str(), iseg);
         cost_map_.print(iseg);
     }
 #endif

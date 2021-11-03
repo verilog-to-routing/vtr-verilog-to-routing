@@ -13,7 +13,7 @@
 
 /******************* Subroutine definitions ********************************/
 
-void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
+void get_segment_usage_stats(vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     /* Computes statistics on the fractional utilization of segments by type    *
      * (index) and by length.  This routine needs a valid rr_graph, and a       *
      * completed routing.  Note that segments cut off by the end of the array   *
@@ -33,12 +33,12 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     max_segment_length = 0;
     int max_segment_name_length = 0;
     for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
-        if (segment_inf[seg_type].longline == false) {
+        if (segment_inf[RRSegmentId(seg_type)].longline == false) {
             max_segment_length = std::max(max_segment_length,
-                                          segment_inf[seg_type].length);
+                                          segment_inf[RRSegmentId(seg_type)].length);
         }
 
-        max_segment_name_length = std::max(max_segment_name_length, static_cast<int>(segment_inf[seg_type].name.size()));
+        max_segment_name_length = std::max(max_segment_name_length, static_cast<int>(segment_inf[RRSegmentId(seg_type)].name.size()));
     }
 
     seg_occ_by_length = (int*)vtr::calloc((max_segment_length + 1),
@@ -54,8 +54,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             cost_index = rr_graph.node_cost_index(RRNodeId(inode));
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-            if (!segment_inf[seg_type].longline)
-                length = segment_inf[seg_type].length;
+            if (!segment_inf[RRSegmentId(seg_type)].longline)
+                length = segment_inf[RRSegmentId(seg_type)].length;
             else
                 length = LONGLINE;
             const short& inode_capacity = rr_graph.node_capacity(RRNodeId(inode));
@@ -72,7 +72,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
 
     for (size_t seg_type = 0; seg_type < segment_inf.size(); seg_type++) {
         if (seg_cap_by_type[seg_type] != 0) {
-            std::string seg_name = segment_inf[seg_type].name;
+            std::string seg_name = segment_inf[RRSegmentId(seg_type)].name;
             int seg_name_size = static_cast<int>(seg_name.size());
             utilization = (float)seg_occ_by_type[seg_type] / (float)seg_cap_by_type[seg_type];
             VTR_LOG("                               %s%s %4d %11.3g\n", std::string(std::max(4 - seg_name_size, (max_segment_name_length - seg_name_size)), ' ').c_str(), seg_name.c_str(), seg_type, utilization);

@@ -205,7 +205,7 @@ t_wire_cost_map f_wire_cost_map;
 
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
+static void compute_router_wire_lookahead(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 
 /* returns index of a node from which to start routing */
 static RRNodeId get_start_node(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
@@ -227,7 +227,7 @@ static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y);
 static void adjust_rr_wire_position(const RRNodeId rr, int& x, int& y);
 static void adjust_rr_src_sink_position(const RRNodeId rr, int& x, int& y);
 
-static void print_wire_cost_map(const std::vector<t_segment_inf>& segment_inf);
+static void print_wire_cost_map(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf);
 static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 
 /******** Interface class member function definitions ********/
@@ -364,7 +364,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
-void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
+void MapLookahead::compute(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
     //First compute the delay map when starting from the various wire types
@@ -404,7 +404,7 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
     return f_wire_cost_map[chan_index][seg_index][delta_x][delta_y];
 }
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf) {
+static void compute_router_wire_lookahead(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -504,8 +504,8 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             if (sample_nodes[chan_type].empty()) {
                 VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
                              rr_node_typename[chan_type],
-                             segment_inf[iseg].name.c_str(),
-                             segment_inf[iseg].length);
+                             segment_inf[RRSegmentId(iseg)].name.c_str(),
+                             segment_inf[RRSegmentId(iseg)].length);
             } else {
                 //reset cost for this segment
                 routing_cost_map.fill(Expansion_Cost_Entry());
@@ -1077,15 +1077,15 @@ static void adjust_rr_src_sink_position(const RRNodeId rr, int& x, int& y) {
     y = vtr::nint((rr_graph.node_ylow(rr) + rr_graph.node_yhigh(rr)) / 2.);
 }
 
-static void print_wire_cost_map(const std::vector<t_segment_inf>& segment_inf) {
+static void print_wire_cost_map(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (size_t chan_index = 0; chan_index < f_wire_cost_map.dim_size(0); chan_index++) {
         for (size_t iseg = 0; iseg < f_wire_cost_map.dim_size(1); iseg++) {
             vtr::printf("Seg %d (%s, length %d) %d\n",
                         iseg,
-                        segment_inf[iseg].name.c_str(),
-                        segment_inf[iseg].length,
+                        segment_inf[RRSegmentId(iseg)].name.c_str(),
+                        segment_inf[RRSegmentId(iseg)].length,
                         chan_index);
             for (size_t iy = 0; iy < device_ctx.grid.height(); iy++) {
                 for (size_t ix = 0; ix < device_ctx.grid.width(); ix++) {

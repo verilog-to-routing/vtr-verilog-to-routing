@@ -386,12 +386,12 @@ static double power_count_transistors_switchbox() {
          * The (x2) factor accounts for vertical and horizontal tracks.
          * Of the wires of each segment type only (1/seglength) will have a mux&buffer.
          */
-        float freq_frac = (float)rr_graph.rr_segments(seg_idx).frequency
+        float freq_frac = (float)rr_graph.rr_segments(RRSegmentId(seg_idx)).frequency
                           / (float)MAX_CHANNEL_WIDTH;
 
         transistor_cnt += transistors_per_buf_mux * 2 * freq_frac
                           * power_ctx.solution_inf.channel_width
-                          * (1 / (float)rr_graph.rr_segments(seg_idx).length);
+                          * (1 / (float)rr_graph.rr_segments(RRSegmentId(seg_idx)).length);
     }
 
     return transistor_cnt;

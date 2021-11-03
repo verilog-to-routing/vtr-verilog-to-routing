@@ -19,10 +19,10 @@ static MetalLayer get_metal_layer_from_name(
     std::string metal_layer_name,
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
     std::string clock_network_name);
-static void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector<t_segment_inf>& segment_inf);
+static void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, vtr::vector<RRSegmentId,t_segment_inf>& segment_inf);
 static void setup_clock_connections(const t_arch& Arch, FormulaParser& p);
 
-void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
+void setup_clock_networks(const t_arch& Arch, vtr::vector<RRSegmentId,t_segment_inf>& segment_inf) {
     FormulaParser p;
     setup_clock_network_wires(Arch, p, segment_inf);
     setup_clock_connections(Arch, p);
@@ -32,7 +32,7 @@ void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segmen
  * @brief Parses the clock architecture information and modifies
  *        the architecture segment information.
  */
-void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector<t_segment_inf>& segment_inf) {
+void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, vtr::vector<RRSegmentId,t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_networks_device = device_ctx.clock_networks;
     auto& grid = device_ctx.grid;
