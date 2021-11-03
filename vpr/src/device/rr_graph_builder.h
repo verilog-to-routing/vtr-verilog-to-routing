@@ -178,6 +178,12 @@ class RRGraphBuilder {
         return node_storage_.validate();
     }
 
+    /** @brief Sorts edge data such that configurable edges appears before
+     *  non-configurable edges. */
+    inline void partition_edges() {
+        node_storage_.partition_edges();
+    }
+
     /** @brief Init per node fan-in data.  Should only be called after all edges have
      * been allocated.
      * @note
