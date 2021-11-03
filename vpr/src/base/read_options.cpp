@@ -1112,7 +1112,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     auto& pos_grp = parser.add_argument_group("positional arguments");
     pos_grp.add_argument(args.ArchFile, "architecture")
-        .help("FPGA Architecture description file (XML)");
+        .help(
+            "FPGA Architecture description file\n"
+            "   - XML: this is the default frontend format\n"
+            "   - FPGA Interchange: this is enabled with the --fpga_interchange_device flag");
 
     pos_grp.add_argument(args.CircuitName, "circuit")
         .help("Circuit file (or circuit name if --circuit_file specified)");
@@ -1146,6 +1149,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         "\n"
         "If the implementation is illegal analysis can be forced by explicitly\n"
         "specifying the --analysis option.");
+
+    auto& FPGAInterchage_grp = parser.add_argument_group("FPGA Interchange options");
+
+    FPGAInterchage_grp.add_argument<bool, ParseOnOff>(args.FPGAInterchangeDevice, "--fpga_interchange_device")
+        .help("Read arch file as FPGA Interchange format")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
 
     auto& gfx_grp = parser.add_argument_group("graphics options");
 
@@ -2472,7 +2482,7 @@ void set_conditional_defaults(t_options& args) {
     }
 
     if (args.SDCFile.provenance() != Provenance::SPECIFIED) {
-        //Use the full path specified in the original circuit name,
+        //Use the full path specified in the originial circuit name,
         //and append the expected .sdc extension
         std::string sdc_file = default_output_name + ".sdc";
         args.SDCFile.set(sdc_file, Provenance::INFERRED);

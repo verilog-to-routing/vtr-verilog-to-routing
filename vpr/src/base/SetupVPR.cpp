@@ -15,6 +15,7 @@
 
 #include "globals.h"
 #include "read_xml_arch_file.h"
+#include "read_fpga_interchange_arch.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
@@ -109,11 +110,20 @@ void SetupVPR(const t_options* Options,
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
-        XmlReadArch(Options->ArchFile.value().c_str(),
-                    TimingEnabled,
-                    Arch,
-                    device_ctx.physical_tile_types,
-                    device_ctx.logical_block_types);
+        if (Options->FPGAInterchangeDevice) {
+            FPGAInterchangeReadArch(Options->FPGAInterchangeDeviceFile().value().c_str(),
+                                    TimingEnabled,
+                                    Arch,
+                                    device_ctx.physical_tile_types,
+                                    device_ctx.logical_block_types);
+            VTR_LOG("Use FPGA Interchange device\n");
+        } else {
+            XmlReadArch(Options->ArchFile.value().c_str(),
+                        TimingEnabled,
+                        Arch,
+                        device_ctx.physical_tile_types,
+                        device_ctx.logical_block_types);
+        }
     }
     VTR_LOG("\n");
 

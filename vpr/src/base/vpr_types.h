@@ -748,6 +748,7 @@ struct t_file_name_opts {
     std::string NetFile;
     std::string PlaceFile;
     std::string RouteFile;
+    std::string FPGAInterchangePhysicalFile;
     std::string ActFile;
     std::string PowerFile;
     std::string CmosTechFile;
