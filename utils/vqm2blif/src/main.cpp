@@ -141,7 +141,7 @@ t_boolean print_unused_subckt_pins; //user-set flag which controls whether subck
                                     //this option to be true.
 t_boolean eblif_format;             //If true, writes circuit in extended BLIF (.eblif) format (supported by YOSYS & VPR)
 
-t_boolean identify_and_instantiate_custom_hard_blocks; // user-set flag. Which if true, helps find and filter user-defined hard blocks within the netlist (based on the supplied hard block names) and then instantiates the hard blocks within the blif file. 
+t_boolean insert_custom_hard_blocks; // user-set flag. Which if true, helps find and filter user-defined hard blocks within the netlist (based on the supplied hard block names) and then instantiates the hard blocks within the blif file. 
 									// or if false, then the netlist is processed without identifying any hard blocks.
 									// this option should only be used if the original user-design contained custom hard-blocks.
 									// The user-defined hard block names need to be provided
@@ -380,7 +380,7 @@ int main(int argc, char* argv[])
 	}
 
 	// only process the netlist for any custom hard blocks if the user provided valid hard block names
-	if (identify_and_instantiate_custom_hard_blocks)
+	if (insert_custom_hard_blocks)
 	{	
 		cout << "\n>> Identifying and instantiating custom hard blocks within the netlist.\n";
 		
@@ -501,7 +501,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
     remove_const_nets = T_FALSE;
     print_unused_subckt_pins = T_FALSE;
     eblif_format = T_FALSE;
-	identify_and_instantiate_custom_hard_blocks = T_FALSE;
+	insert_custom_hard_blocks = T_FALSE;
 
 	// temporary storage to hold hard block names from the argument list
 	std::string curr_hard_block_name; 
@@ -625,7 +625,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_EBLIF_FORMAT:
                     eblif_format = T_TRUE;
                     break;
-				case OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS:
+				case OT_INSERT_CUSTOM_HARD_BLOCKS:
 					// first check whether an accompanying hard block type name was supplied (user provides the names of all the various types of custom hard blocks within the design, essentially this is the module names in their HDL design)
 					if ( i+1 == argc ){
 						// no hard block type name was supplied so throw an error
@@ -645,7 +645,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 							// When we come here, we need to finish processing further command line arguments for hard block type names. Since we have a different command-line option.
 
 							// case one below is when the user didnt provide any hard block type names and just provided the next command-line option
-							if (!identify_and_instantiate_custom_hard_blocks)
+							if (!insert_custom_hard_blocks)
 							{
 								// since no hard block type names were supplied, we throw an error
 								cout << "ERROR: Missing Hard Block Module Names.\n"; 
@@ -669,7 +669,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 							cleanup_hard_block_type_name(&curr_hard_block_name);
 
 							// if we are here then the provided name was valid.
-							identify_and_instantiate_custom_hard_blocks = T_TRUE;
+							insert_custom_hard_blocks = T_TRUE;
 							
 							// check to see whether the user repeated a hard block type name
 							if ((std::find(hard_block_type_name_list->begin(), hard_block_type_name_list->end(), curr_hard_block_name)) == hard_block_type_name_list->end())
@@ -747,7 +747,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-remove_const_nets", OT_REMOVE_CONST_NETS));
 	tokens->insert(tokpair("-include_unused_subckt_pins", OT_INCLUDE_UNUSED_SUBCKT_PINS));
 	tokens->insert(tokpair("-eblif_format", OT_EBLIF_FORMAT));
-	tokens->insert(tokpair("-identify_and_instantiate_custom_hard_blocks", OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS));
+	tokens->insert(tokpair("-insert_custom_hard_blocks", OT_INSERT_CUSTOM_HARD_BLOCKS));
 }
 
 //============================================================================================

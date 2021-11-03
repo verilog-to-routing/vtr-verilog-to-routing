@@ -84,7 +84,7 @@ enum v_OptionBaseToken
     OT_INCLUDE_UNUSED_SUBCKT_PINS,
     OT_EBLIF_FORMAT,
 	OT_UNKNOWN,
-  OT_IDENTIFY_AND_INSTANTIATE_CUSTOM_HARD_BLOCKS
+  OT_INSERT_CUSTOM_HARD_BLOCKS
 };
 
 struct cstrcomp{	//operator structure to compare C-strings within a map class

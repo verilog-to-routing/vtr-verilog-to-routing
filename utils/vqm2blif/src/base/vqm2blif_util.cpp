@@ -21,7 +21,7 @@ void print_usage (t_boolean terminate){
     cout << "\t-include_unused_subckt_pins\n";
     cout << "\t-remove_const_nets\n";
     cout << "\t-eblif_format\n";
-    cout << "\t-identify_and_instantiate_custom_hard_blocks <hard_block_1_module_name> <hard_block_2_module_name> ...\n";
+    cout << "\t-insert_custom_hard_blocks <hard_block_1_module_name> <hard_block_2_module_name> ...\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
