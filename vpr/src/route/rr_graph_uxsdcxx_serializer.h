@@ -958,7 +958,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // Partition the rr graph edges for efficient access to
         // configurable/non-configurable edge subsets. Must be done after RR
         // switches have been allocated.
-        rr_nodes_->mark_edges_as_rr_switch_ids();
+        rr_graph_builder_->mark_edges_as_rr_switch_ids();
         rr_nodes_->partition_edges();
 
         for (int source_node = 0; source_node < (ssize_t)rr_nodes_->size(); ++source_node) {

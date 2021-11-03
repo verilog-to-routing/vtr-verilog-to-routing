@@ -145,6 +145,11 @@ class RRGraphBuilder {
         node_storage_.remap_rr_node_switch_indices(switch_fanin);
     }
 
+    /** @brief Marks that edge switch values are rr switch indicies*/
+    inline void mark_edges_as_rr_switch_ids() {
+        node_storage_.mark_edges_as_rr_switch_ids();
+    }
+
     /** @brief Counts the number of rr switches needed based on fan in to support mux
      * size dependent switch delays. */
     inline size_t count_rr_switches(
