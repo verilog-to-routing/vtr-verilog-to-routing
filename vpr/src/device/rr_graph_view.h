@@ -249,6 +249,26 @@ class RRGraphView {
         return node_storage_.node_side_string(node);
     }
 
+    /** @brief Get the ptc num of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_ptc_num(RRNodeId node) const {
+        return node_storage_.node_ptc_num(node);
+    }
+
+    /** @brief Get the pin num of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_pin_num(RRNodeId node) const {
+        return node_storage_.node_pin_num(node);
+    }
+
+    /** @brief Get the track num of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_track_num(RRNodeId node) const {
+        return node_storage_.node_track_num(node);
+    }
+
+    /** @brief Get the class num of a routing resource node. This function is inlined for runtime optimization. */
+    inline short node_class_num(RRNodeId node) const {
+        return node_storage_.node_class_num(node);
+    }
+
     /** @brief Get the cost index of a routing resource node. This function is inlined for runtime optimization. */
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);

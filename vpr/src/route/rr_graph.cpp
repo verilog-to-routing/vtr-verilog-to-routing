@@ -1497,7 +1497,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
                             // Sanity check
                             VTR_ASSERT(rr_graph.is_node_on_specific_side(RRNodeId(inode), side));
-                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node.node_pin_num(inode)]);
+                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][rr_graph.node_pin_num(RRNodeId(inode))]);
                         }
                     }
                 }
@@ -2440,24 +2440,24 @@ std::string describe_rr_node(int inode) {
 
         if (seg_index < (int)device_ctx.rr_segments.size()) {
             msg += vtr::string_fmt(" track: %d longline: %d",
-                                   rr_node.track_num(),
+                                   rr_graph.node_track_num(RRNodeId(inode)),
                                    device_ctx.rr_segments[seg_index].longline);
         } else {
             msg += vtr::string_fmt(" track: %d seg_type: ILLEGAL_SEG_INDEX %d",
-                                   rr_node.track_num(),
+                                   rr_graph.node_track_num(RRNodeId(inode)),
                                    seg_index);
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
         auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
-        std::string pin_name = block_type_pin_index_to_name(type, rr_node.pin_num());
+        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node.id()));
 
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
-                               rr_node.pin_num(),
+                               rr_graph.node_pin_num(rr_node.id()),
                                pin_name.c_str());
     } else {
         VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK);
 
-        msg += vtr::string_fmt(" class: %d", rr_node.class_num());
+        msg += vtr::string_fmt(" class: %d", rr_graph.node_class_num(RRNodeId(inode)));
     }
 
     msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
