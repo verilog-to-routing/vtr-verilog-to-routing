@@ -190,7 +190,7 @@ static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    os << "Track number = " <<  rr_graph.node_track_num(node_id) << '\n';
+    os << "Track number = " << rr_graph.node_track_num(node_id) << '\n';
     //Print out associated RC characteristics as they will be non-zero
     os << "Resistance = " << rr_graph.node_R(node_id) << '\n';
     os << "Capacitance = " << rr_graph.node_C(node_id) << '\n';
