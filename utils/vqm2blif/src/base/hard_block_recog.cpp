@@ -8,7 +8,8 @@
 *   called "router". This hard block is embedded within the FPGA architecture
 *   but the Quartus synthesis tool has no reference to what a "router" block is.
 *   Since the tool has no information to the hard block, the generated netlist
-*   does not properly model the hard blocks. Instead of declaring a single hard *   block in the netlist, it was found that the generated .vqm netlist
+*   does not properly model the hard blocks. Instead of declaring a single hard 
+*   block in the netlist, it was found that the generated .vqm netlist
 *   from Quartus inserted a LUT for every input port of the hard block
 *   and then a LUT & DFF for every output port of the hard block.
 *   An example is shown below:
@@ -216,7 +217,7 @@ bool sort_hard_blocks_by_valid_connections(t_hard_block, t_hard_block);
  *                    the netlist are also included.
  * 
  * @param main_arch This contains all the information regarding the FPGA
- *                  architeture that the design will be mapped to. 
+ *                  architecture that the design will be mapped to. 
  * 
  * @param list_hard_block_type_names A list of the hard block names that need
  *                                   to be properly added to the netlist.
@@ -234,6 +235,16 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
     int number_of_hard_blocks_added = 0;
     int number_of_luts_flip_flops_removed = 0;
 
+
+    /*
+        We catch any errors that occur during the initialization procedure.
+        Some errors that can occur are when the provided hard block names
+        from the user were not found in the architecture file or the hard
+        block models in the architecture file do not have any ports. 
+        All the errors in this step are related to the architecture file, so
+        once we catch the error, we append the architecture file location and
+        throw another error to force program termination.
+    */
     try
     {
 
@@ -248,6 +259,12 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
         throw vtr::VtrError((std::string)error.what() + " The FPGA architecture is described in " + arch_file_name + ".");
     }
 
+    /*
+        We catch any errors that occur during the procedure of reading the
+        netlist and inserting custom hard blocks whereever necessary. 
+        All the errors in this step are related to the provided .vqm netlist file, so once we catch the error, we append the netlist file location
+        and throw another error to force program termination.
+    */
     try
     {
 
@@ -347,7 +364,9 @@ void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* h
  *          is connected to the same net as the node that represented that port.
  *          If the hard block was already created, then it is not created again.
  *          Finally the nodes that were identified as representing hard block
- *          ports are stored for reference.
+ *          ports are stored for reference. The nodes are stored so that they
+ *          can be removed from the netlist and deleted, since they are replaced
+ *          by the corresponding hard blocks themselves.
  *  
  * @param main_module This contains all the netlist information, such as luts,
  *                    flip flops, and other types of blocks. All the nets within
@@ -455,6 +474,9 @@ void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vec
  *                                   information of the hard blocks are stored
  *                                   in here.
  * 
+ * @return A boolean value is returned indicating whether the hard block within
+ *         the FPGA had any ports.
+ * 
  */
 bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info)
 {
@@ -523,9 +545,13 @@ void create_hard_block_port_info_structure(t_hard_block_recog* storage_of_hard_b
 }
 
 /**
- * @details The port information for all new types of hard blocks
- *          can be found within the FPGA architecture. For each hard block
- *          the ports can be found in a structure called 't_model_ports'
+ * @details For a given hard block in the architecture, this function converts
+ *          the ports of the hard block from 't_model_ports' to a 't_array_ref'
+ *          type. Then the converted ports are stored.
+ * 
+ *          The port information for all new types of hard blocks
+ *          can be found within the FPGA architecture. For each hard block,
+ *          the ports info can be found in a structure called 't_model_ports'
  *          (found in 'logic_types.h'). The ports are arranged in a linked lsit
  *          structure.
  * 
@@ -644,8 +670,8 @@ t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports
 }
 
 /**
- * @details Creates a unconnected hard block port in the form of the
- *          form of a 't_node_port_association' structure (found in 
+ * @details Creates a unconnected hard block port in the form of
+ *          a 't_node_port_association' structure (found in 
  *          'vqm_dll.h'). 
  * 
  * @param port_name A string describing the name of the port to be
@@ -778,11 +804,11 @@ t_array_ref* create_and_initialize_t_array_ref_struct(void)
 }
 
 /**
- * @details Every time a hard block instance is added to module
+ * @details Every time a hard block instance is added to the module
  *          (netlist), a reference is stored inside a list of
  *          hard blocks within the design. This function returns
- *          an index to a hard block instance within the above list
- *          using the hard block instance name. 
+ *          an index to a hard block instance within the list of stored
+ *          hard blocks in the module using the hard block instance name. 
  * 
  * @param module_hard_block_node_refs_and_info This is a data structure of type
  *                                   't_hard_block_recog', which can be found
@@ -863,6 +889,10 @@ int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_refs_and
  *                              parameter is used to determine the hard
  *                              block instance name and the type of hard
  *                              block.
+ * 
+ * @return An integer that represents an index within a list of hard block
+ *         instances in the netlist (module) that represents the position 
+ *         of a hard block instance that was newly added within this function. 
  * 
  */
 int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
@@ -1056,7 +1086,8 @@ t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_ne
 
 /**
  * @details All the ports of a hard block are arranged within
- *          an. This function returns the index of where a port
+ *          an array that is inside a t_array_ref structure.  
+ *          This function returns the index of where a port
  *          is located within the array.
  * 
  * @param curr_hard_block_type_port_info This is a 't_hard_block_port_info'
@@ -1135,7 +1166,7 @@ int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info
    // verify if the current port index is out of ranged by chekcing if it is larger than the maximum index for the port
    if (identified_port_index > port_end_index)
    {
-       // port index is out of range, so throw and error and indicate it to the user
+       // port index is out of range, so throw an error and indicate it to the user
         throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port: '" + curr_module_node_info->hard_block_port_name +"' at index: " + std::to_string(curr_module_node_info->hard_block_port_index) + ", within hard block model: '" + curr_module_node_info->hard_block_type + "'. But this port index is out of range in the given hard block model as described in the architecture file.");
    }
 
@@ -1374,9 +1405,8 @@ t_node* create_new_hard_block_instance_node(t_array_ref* curr_hard_block_instanc
  *            hard blocks in the design
  *          - Finally, the index of the 't_hard_block' structure within the
  *            previous vector is stored inside a map datastructure and the 
- *            key was the name of the hard block instance within the design.
- *            This was needed so that the hard block could be found quicly with
- *            just its name.
+ *            key was the name of the hard block instance within the design
+ *            and this was done for a quick lookup.
  * 
  * @param module_hard_block_node_refs_and_info This is a data structure of type
  *                                   't_hard_block_recog', which can be found
@@ -1783,11 +1813,11 @@ void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module* main_modul
 /**
  * @details This function goes through all the newly added hard block nodes
  *          to the module (netlsit) and checks to see that every port has a
- *          valid connected to a net. If a port is unassigned for any hard
+ *          valid connection to a net. If a port is unassigned for any hard
  *          block, then an error is thrown.
  * 
- *          We expect every hard block should have all its port assigned to a
- *          net, even if the connection is 'ground' of 'vdd. Having an
+ *          We expect that every hard block should have all its port assigned 
+ *          to a net, even if the connection 'ground' of 'vdd. Having an
  *          unconnected port implies that the generate vqm netlist was 
  *          incorrect and we check for this here. 
  * 
@@ -1866,13 +1896,13 @@ void verify_hard_blocks(t_hard_block_recog* module_hard_block_node_refs_and_info
  *          for each hard block. We handle the deletion of this
  *          memory here.
  * 
- * @param hard_block_type_name_to_port_info_map A map datastrcuture
+ * @param hard_block_type_name_to_port_info_map A map 
  *                                  that contains all the 
  *                                  't_hard_block_port_info' structures,
  *                                  which store the port information
  *                                  for all the new hard blocks. This
- *                                  datastrcuture can be found within
- *                                  the 't_hard_block_recog' structure. 
+ *                                  data structure can be found within
+ *                                  't_hard_block_recog'. 
  * 
  */
 void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_type_name_to_port_info_map)
