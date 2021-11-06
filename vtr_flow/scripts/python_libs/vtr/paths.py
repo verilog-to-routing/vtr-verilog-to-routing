@@ -16,6 +16,11 @@ odin_verify_path = odin_path / "verify_odin.sh"
 odin_benchmark_path = odin_path / "regression_test" / "benchmark"
 odin_output_on_error_path = odin_path / "regression_test" / ".library" / "output_on_error.conf"
 
+# YOSYS paths
+yosys_exe_path = root_path / "libs" / "EXTERNAL" / "libyosys" / "yosys"
+yosys_lib_path = vtr_flow_path / "misc" / "yosyslib"
+yosys_script_path = yosys_lib_path / "synthesis.ys"
+
 # ABC paths
 abc_path = root_path / "abc"
 abc_exe_path = abc_path / "abc"

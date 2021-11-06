@@ -1776,7 +1776,7 @@ wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 
 defparam dpram1.ADDR_WIDTH = 13;
 defparam dpram1.DATA_WIDTH = 32;	
@@ -1813,7 +1813,7 @@ wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 	
 defparam dpram1.ADDR_WIDTH = 13;
 defparam dpram1.DATA_WIDTH = 32;
@@ -1850,7 +1850,7 @@ wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 	
 defparam dpram1.ADDR_WIDTH = 13;
 defparam dpram1.DATA_WIDTH = 32;
@@ -1887,7 +1887,7 @@ wire [31:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
-assign dont_care_out = 32'b00000000000000000000000000000000;
+// assign dont_care_out = 32'b00000000000000000000000000000000;
 	
 defparam dpram1.ADDR_WIDTH = 13;
 defparam dpram1.DATA_WIDTH = 32;
@@ -1923,7 +1923,7 @@ wire [35:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 36'b000000000000000000000000000000000000;
-assign dont_care_out = 36'b000000000000000000000000000000000000;
+// assign dont_care_out = 36'b000000000000000000000000000000000000;
 	
 defparam dpram1.ADDR_WIDTH = 16;
 defparam dpram1.DATA_WIDTH = 36;
@@ -1959,7 +1959,7 @@ wire [17:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 18'b000000000000000000;
-assign dont_care_out = 18'b000000000000000000;
+// assign dont_care_out = 18'b000000000000000000;
 	
 defparam dpram1.ADDR_WIDTH = 16;
 defparam dpram1.DATA_WIDTH = 18;
@@ -1995,7 +1995,7 @@ wire [7:0] dont_care_out;
 
 assign const_zero = 1'b0;
 assign const_zero_data = 8'b00000000;
-assign dont_care_out = 8'b00000000;
+// assign dont_care_out = 8'b00000000;
 	
 defparam dpram1.ADDR_WIDTH = 16;
 defparam dpram1.DATA_WIDTH = 8;

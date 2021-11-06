@@ -77,9 +77,6 @@ class t_rr_node {
         , id_(id) {}
 
   public: //Accessors
-    //t_rr_type type() const; // ESR API This function has been replaced by RRGraphView::node_type()
-    const char* type_string() const; /* Retrieve type as a string */
-
     edge_idx_range edges() const;
     edge_idx_range configurable_edges() const;
     edge_idx_range non_configurable_edges() const;
@@ -106,16 +103,7 @@ class t_rr_node {
     bool validate() const;
 
   public: //Mutators
-    void set_ptc_num(short);
-    void set_pin_num(short);   //Same as set_ptc_num() by checks type() is consistent
-    void set_track_num(short); //Same as set_ptc_num() by checks type() is consistent
-    void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
-
-    void set_cost_index(RRIndexedDataId);
-    void set_rc_index(short);
-
     void set_side(e_side);
-    void add_side(e_side);
 
     void next_node() {
         id_ = RRNodeId((size_t)(id_) + 1);

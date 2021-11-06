@@ -25,10 +25,14 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         BUILD_TYPE: release
-      run: ./.github/scripts/build.sh
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
 
 
   Format:
@@ -81,12 +85,16 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         #In order to get compilation warnings produced per source file, we must do a non-IPO build
         #We also turn warnings into errors for this target by doing a strict compile
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
-      run: ./.github/scripts/build.sh
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
 
 
   Regression:
@@ -130,24 +138,34 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
       run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
-    - name: Upload artifact
+    - name: Upload regression run files
       uses: actions/upload-artifact@v2
       with:
-        name: failed_${{matrix.name}}_regression_log
+        name: ${{matrix.name}}_run_files
         path: |
-          vtr_flow/**/*.log
           vtr_flow/**/*.out
           vtr_flow/**/*.blif
           vtr_flow/**/*.p
           vtr_flow/**/*.net
           vtr_flow/**/*.r
+
+    - name: Upload regression results
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.name}}_results
+        path: |
+          vtr_flow/**/*.log
+          vtr_flow/**/parse_results*.txt
 
   Sanitized:
     runs-on: ubuntu-18.04
@@ -166,12 +184,15 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2 -skip_qor
@@ -188,11 +209,14 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
         BUILD_TYPE: debug
       run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j2
 
@@ -208,10 +232,13 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         BUILD_TYPE: release
       run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
 
@@ -236,11 +263,14 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON'
         BUILD_TYPE: debug
       run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j2
 
@@ -268,12 +298,16 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         MATRIX_EVAL: ${{ matrix.eval }}
         BUILD_TYPE: ${{ matrix.build }}
-      run: ./.github/scripts/build.sh
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
 
 
   Coverity:
@@ -298,9 +332,13 @@ jobs:
     - uses: actions/checkout@v2
     - run: ./.github/scripts/install_dependencies.sh
 
+    - uses: hendrikmuhs/ccache-action@v1
+
     - name: Test
       env:
         CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
         _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
         _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
-      run: ./.github/scripts/build.sh
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
