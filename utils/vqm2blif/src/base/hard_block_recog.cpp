@@ -129,67 +129,65 @@
 //			INTERNAL FUNCTION DECLARATIONS
 //============================================================================================
 
-void initialize_hard_block_models(t_arch*, std::vector<std::string>*, t_hard_block_recog*);
+static void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* hard_block_type_names, t_hard_block_recog* storage_of_hard_block_info);
 
-void process_module_nodes_and_create_hard_blocks(t_module*, std::vector<std::string>*, t_hard_block_recog*);
+static void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vector<std::string>* hard_block_type_name_list, t_hard_block_recog* module_hard_block_node_refs_and_info);
 
-bool create_and_initialize_all_hard_block_ports(t_model*, t_hard_block_recog*);
+static bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info);
 
-void create_hard_block_port_info_structure(t_hard_block_recog*, std::string);
+static void create_hard_block_port_info_structure(t_hard_block_recog* storage_of_hard_block_info, std::string hard_block_type_name);
 
-int extract_and_store_hard_block_model_ports(t_hard_block_recog*, t_model_ports*, std::string, int, std::string);
+static int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard_block_info, t_model_ports* curr_hard_block_model_port, std::string curr_hard_block_type_name,int port_index, std::string port_type);
 
-t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports*);
+static t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports* hard_block_model_port);
 
-t_node_port_association* create_unconnected_node_port_association(char*, int ,int);
+static t_node_port_association* create_unconnected_node_port_association(char *port_name, int port_index, int wire_index);
 
-void store_hard_block_port_info(t_hard_block_recog*, std::string, std::string,t_array_ref**, int*);
+static void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_type_name,std::string curr_port_name, t_array_ref** curr_port_array, int* port_index);
 
-void copy_array_ref(t_array_ref*, t_array_ref*);
+static void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy);
 
-t_array_ref* create_and_initialize_t_array_ref_struct(void);
+static t_array_ref* create_and_initialize_t_array_ref_struct(void);
 
-int find_hard_block_instance(t_hard_block_recog*, t_parsed_hard_block_port_info*);
+static int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info);
 
-void assign_net_to_hard_block_instance_port(t_node*, t_parsed_hard_block_port_info*, t_hard_block_recog*, int);
+static void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_hard_block_port_info* curr_module_node_info, t_hard_block_recog* module_hard_block_node_refs_and_info, int curr_hard_block_instance_index);
 
-t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node*);
+static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node);
 
-int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info*, t_parsed_hard_block_port_info*, t_node*);
+static int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node);
 
-void handle_net_assignment(t_node*, t_hard_block*, int, t_node_port_association*, t_parsed_hard_block_port_info*);
+static void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_block_instance, int port_to_assign_index, t_node_port_association* port_connected_to_hard_block_instance_net, t_parsed_hard_block_port_info* curr_module_node_info);
 
-bool is_hard_block_port_legal(t_node*);
+static bool is_hard_block_port_legal(t_node* curr_module_node);
 
-int create_new_hard_block_instance(t_array_ref*, t_hard_block_recog*, t_parsed_hard_block_port_info*);
+static int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info);
 
-t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info*);
+static t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info* curr_hard_block_type_port_info);
 
-t_node* create_new_hard_block_instance_node(t_array_ref*, t_parsed_hard_block_port_info*);
+static t_node* create_new_hard_block_instance_node(t_array_ref* curr_hard_block_instance_ports, t_parsed_hard_block_port_info* curr_hard_block_instance_info);
 
-int store_new_hard_block_instance_info(t_hard_block_recog*, t_hard_block_port_info*, t_node*, t_parsed_hard_block_port_info*);
+static int store_new_hard_block_instance_info(t_hard_block_recog* module_hard_block_node_refs_and_info, t_hard_block_port_info* curr_hard_block_type_port_info, t_node* new_hard_block_instance_node, t_parsed_hard_block_port_info* curr_module_node_info);
 
-t_array_ref* create_t_array_ref_from_array(void**, int);
+static t_array_ref* create_t_array_ref_from_array(void** array_to_store, int array_size);
 
-void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>*);
+static void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_type_name_to_port_info_map);
 
-t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node*, std::vector<std::string>*);
+static t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node* curr_module_node, std::vector<std::string>* hard_block_type_name_list);
 
-std::string identify_hard_block_type(std::vector<std::string>*, std::string);
+static std::string identify_hard_block_type(std::vector<std::string>* hard_block_type_name_list, std::string curr_node_name_component);
 
-void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info*, std::string);
+static void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* curr_hard_block_port, std::string curr_node_name_component);
 
-void split_node_name(std::string, std::vector<std::string>*, std::string);
+static void split_node_name(std::string original_node_name, std::vector<std::string>* node_name_components, std::string delimiter);
 
-std::string construct_hard_block_name(std::vector<std::string>*, std::string);
+static std::string construct_hard_block_name(std::vector<std::string>*node_name_components, std::string delimiter);
 
-void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module*, t_hard_block_recog*);
+static void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module* main_module, t_hard_block_recog* module_hard_block_node_refs_and_info);
 
-void verify_hard_blocks(t_hard_block_recog*);
+static void verify_hard_blocks(t_hard_block_recog* module_hard_block_node_refs_and_info);
 
 // utility functions
-
-void store_hard_block_names(char**, int, std::vector<std::string>*);
 
 bool sort_hard_blocks_by_valid_connections(t_hard_block, t_hard_block);
 
@@ -321,7 +319,7 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
  *                                   information of the hard blocks are stored
  *                                   in here.
  */
-void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* hard_block_type_names, t_hard_block_recog* storage_of_hard_block_info)
+static void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* hard_block_type_names, t_hard_block_recog* storage_of_hard_block_info)
 {
     t_model* hard_block_model = NULL;
     std::vector<std::string>::iterator hard_block_type_name_traverser;
@@ -381,7 +379,7 @@ void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* h
  *                                     information of the hard blocks are stored
  *                                     in here.
  */
-void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vector<std::string>* hard_block_type_name_list, t_hard_block_recog* module_hard_block_node_refs_and_info)
+static void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vector<std::string>* hard_block_type_name_list, t_hard_block_recog* module_hard_block_node_refs_and_info)
 {   
     // represents a block in the netlist
     // refer to 'vqm_dll.h' for more info on t_node
@@ -478,7 +476,7 @@ void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vec
  *         the FPGA had any ports.
  * 
  */
-bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info)
+static bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info)
 {
     int hard_block_port_index = 0;
     std::string hard_block_arch_model_name = hard_block_arch_model->name;
@@ -524,7 +522,7 @@ bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, 
  *                             created in here when storing it inside
  *                             the 't_hard_block_recog' structure. 
  */
-void create_hard_block_port_info_structure(t_hard_block_recog* storage_of_hard_block_info, std::string hard_block_type_name)
+static void create_hard_block_port_info_structure(t_hard_block_recog* storage_of_hard_block_info, std::string hard_block_type_name)
 {
     t_hard_block_port_info curr_hard_block_port_storage;
 
@@ -597,7 +595,7 @@ void create_hard_block_port_info_structure(t_hard_block_recog* storage_of_hard_b
  *                  being processed are input or output ports.
  *  
  */
-int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard_block_info, t_model_ports* curr_hard_block_model_port, std::string curr_hard_block_type_name,int port_index, std::string port_type)
+static int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard_block_info, t_model_ports* curr_hard_block_model_port, std::string curr_hard_block_type_name,int port_index, std::string port_type)
 {
     t_array_ref* equivalent_hard_block_node_port_array = NULL;
     int starting_port_index = port_index;
@@ -637,7 +635,7 @@ int extract_and_store_hard_block_model_ports(t_hard_block_recog* storage_of_hard
  *                              for a hard block.
  * 
  */
-t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports* hard_block_model_port)
+static t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports* hard_block_model_port)
 {
     t_node_port_association* curr_hard_block_node_port = NULL;
     t_array_ref* port_array = NULL;
@@ -686,7 +684,7 @@ t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_model_ports
  *                   associated with this port.
  * 
  */
-t_node_port_association* create_unconnected_node_port_association(char *port_name, int port_index, int wire_index)
+static t_node_port_association* create_unconnected_node_port_association(char *port_name, int port_index, int wire_index)
 {
     // allocate memory for the port
     t_node_port_association* curr_hard_block_node_port = NULL;
@@ -733,7 +731,7 @@ t_node_port_association* create_unconnected_node_port_association(char *port_nam
  *                   that the current port is located at.
  * 
  */
-void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_type_name,std::string curr_port_name, t_array_ref** curr_port_array, int* port_index)
+static void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_info, std::string curr_hard_block_type_name,std::string curr_port_name, t_array_ref** curr_port_array, int* port_index)
 {
        
     std::unordered_map<std::string,t_hard_block_port_info>::iterator curr_port_info = ((storage_of_hard_block_port_info->hard_block_type_name_to_port_info).find(curr_hard_block_type_name));
@@ -770,7 +768,7 @@ void store_hard_block_port_info(t_hard_block_recog* storage_of_hard_block_port_i
  * @param array_ref_copy The 't_array_ref' structure that will have copied
  *                       contents added to its array.
  */
-void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
+static void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
 {
     int array_size = array_ref_orig->array_size;
 
@@ -787,7 +785,7 @@ void copy_array_ref(t_array_ref* array_ref_orig, t_array_ref* array_ref_copy)
  * @details Creates and initializes an empty 't_array_ref' structure.
  * 
  */
-t_array_ref* create_and_initialize_t_array_ref_struct(void)
+static t_array_ref* create_and_initialize_t_array_ref_struct(void)
 {
     t_array_ref* empty_array = NULL;
 
@@ -830,7 +828,7 @@ t_array_ref* create_and_initialize_t_array_ref_struct(void)
  *                              block.
  * 
  */
-int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
+static int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
 {
     int hard_block_instance_index = 0;
 
@@ -895,7 +893,7 @@ int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_refs_and
  *         of a hard block instance that was newly added within this function. 
  * 
  */
-int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
+static int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info)
 {
     // index to to the new 't_hard_block' struct being created here that is found within the 'hard_block_instances' vector
     int created_hard_block_instance_index = 0;
@@ -969,7 +967,7 @@ int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_r
  *                                       lut or dff node.
  * 
  */
-void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_hard_block_port_info* curr_module_node_info, t_hard_block_recog* module_hard_block_node_refs_and_info, int curr_hard_block_instance_index)
+static void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_hard_block_port_info* curr_module_node_info, t_hard_block_recog* module_hard_block_node_refs_and_info, int curr_hard_block_instance_index)
 {
     t_hard_block* curr_hard_block_instance = &(module_hard_block_node_refs_and_info->hard_block_instances[curr_hard_block_instance_index]);
 
@@ -1007,7 +1005,7 @@ void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_h
  *                         (netlist).
  * 
  */
-t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node)
+static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node)
 {
     t_node_port_association* port_connected_to_hard_block_instance_net = NULL;
 
@@ -1115,7 +1113,7 @@ t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_ne
  *                         (netlist). Used to report error information.
  * 
  */
-int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node)
+static int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node)
 {
     int identified_port_index = 0;
     
@@ -1208,7 +1206,7 @@ int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info
  *                              block instance name and the type of hard
  *                              block.
  */
-void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_block_instance, int port_to_assign_index, t_node_port_association* port_connected_to_hard_block_instance_net, t_parsed_hard_block_port_info* curr_module_node_info)
+static void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_block_instance, int port_to_assign_index, t_node_port_association* port_connected_to_hard_block_instance_net, t_parsed_hard_block_port_info* curr_module_node_info)
 {
     std::string curr_module_node_name = curr_module_node->name;
 
@@ -1253,7 +1251,7 @@ void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_blo
  *                         a lut or dff node within the module (netlist).
  * 
  */
-bool is_hard_block_port_legal(t_node* curr_module_node)
+static bool is_hard_block_port_legal(t_node* curr_module_node)
 {
 
     bool result = false;
@@ -1295,7 +1293,7 @@ bool is_hard_block_port_legal(t_node* curr_module_node)
  *                                       information about the hard block.
  * 
  */
-t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info* curr_hard_block_type_port_info)
+static t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info* curr_hard_block_type_port_info)
 {
     t_array_ref* template_for_hard_block_ports = &(curr_hard_block_type_port_info->hard_block_ports);
     t_array_ref* hard_block_instance_port_array = NULL;
@@ -1358,7 +1356,7 @@ t_array_ref* create_unconnected_hard_block_instance_ports(t_hard_block_port_info
  *                                       block.
  * 
  */
-t_node* create_new_hard_block_instance_node(t_array_ref* curr_hard_block_instance_ports, t_parsed_hard_block_port_info* curr_hard_block_instance_info)
+static t_node* create_new_hard_block_instance_node(t_array_ref* curr_hard_block_instance_ports, t_parsed_hard_block_port_info* curr_hard_block_instance_info)
 {
     t_node* new_hard_block_instance = NULL;
 
@@ -1439,7 +1437,7 @@ t_node* create_new_hard_block_instance_node(t_array_ref* curr_hard_block_instanc
  *                             hard block instance within the design.
  * 
  */
-int store_new_hard_block_instance_info(t_hard_block_recog* module_hard_block_node_refs_and_info, t_hard_block_port_info* curr_hard_block_type_port_info, t_node* new_hard_block_instance_node, t_parsed_hard_block_port_info* curr_module_node_info)
+static int store_new_hard_block_instance_info(t_hard_block_recog* module_hard_block_node_refs_and_info, t_hard_block_port_info* curr_hard_block_type_port_info, t_node* new_hard_block_instance_node, t_parsed_hard_block_port_info* curr_module_node_info)
 {
     int new_hard_block_instance_index = 0;
 
@@ -1474,7 +1472,7 @@ int store_new_hard_block_instance_info(t_hard_block_recog* module_hard_block_nod
  * @param array_size size of the array passed to this function
  * 
  */
-t_array_ref* create_t_array_ref_from_array(void** array_to_store, int array_size)
+static t_array_ref* create_t_array_ref_from_array(void** array_to_store, int array_size)
 {   
     t_array_ref* array_reference = NULL;
     int array_allocated_size = 0;
@@ -1514,7 +1512,7 @@ t_array_ref* create_t_array_ref_from_array(void** array_to_store, int array_size
  *                                  to be properly added to the netlist.
  * 
  */
-t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node* curr_module_node, std::vector<std::string>* hard_block_type_name_list)
+static t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_node* curr_module_node, std::vector<std::string>* hard_block_type_name_list)
 {
     std::string curr_module_node_name = curr_module_node->name;
 
@@ -1586,7 +1584,7 @@ t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_node(t_no
  *                  pieces.
  * 
  */
-void split_node_name(std::string original_node_name, std::vector<std::string>* node_name_components, std::string delimiter)
+static void split_node_name(std::string original_node_name, std::vector<std::string>* node_name_components, std::string delimiter)
 {
 
     // positional trackers to determine the beginning and end position of each hierarchy level (component of the node name) of the current node within the design. The positions are updated as we go through the node name and identify every level of hierarchy.
@@ -1625,7 +1623,7 @@ void split_node_name(std::string original_node_name, std::vector<std::string>* n
  *                                 structure.
  * 
  */
-std::string identify_hard_block_type(std::vector<std::string>* hard_block_type_name_list, std::string curr_node_name_component)
+static std::string identify_hard_block_type(std::vector<std::string>* hard_block_type_name_list, std::string curr_node_name_component)
 {
     std::vector<std::string>::iterator hard_block_type_name_traverser;
     
@@ -1680,7 +1678,7 @@ std::string identify_hard_block_type(std::vector<std::string>* hard_block_type_n
  *                  above in the generated string output.
  * 
  */
-std::string construct_hard_block_name(std::vector<std::string>*node_name_components, std::string delimiter)
+static std::string construct_hard_block_name(std::vector<std::string>*node_name_components, std::string delimiter)
 {
     // stores the full name of the hard block the current node is part of, the current node represents a port of a hard block
     std::string curr_hard_block_name = "";
@@ -1732,7 +1730,7 @@ std::string construct_hard_block_name(std::vector<std::string>*node_name_compone
  *                     component is passed for this parameter.      
  * 
  */
-void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* curr_hard_block_port, std::string curr_node_name_component)
+static void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* curr_hard_block_port, std::string curr_node_name_component)
 {   
     // identifer to check whether the port defined in the current node name is a bus (ex. payload[1]~QIC_DANGLING_PORT_I)
     std::regex port_is_a_bus ("(.*)[[]([0-9]*)\]~(?:.*)");
@@ -1785,7 +1783,7 @@ void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* cur
  *                                   removed should be found here.
  * 
  */
-void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module* main_module, t_hard_block_recog* module_hard_block_node_refs_and_info)
+static void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module* main_module, t_hard_block_recog* module_hard_block_node_refs_and_info)
 {
     // reference to the list of luts/dffeas nodes we need to remove
     std::vector<t_node*>* list_of_nodes_to_remove = &(module_hard_block_node_refs_and_info->luts_dffeas_nodes_to_remove);
@@ -1828,7 +1826,7 @@ void remove_luts_dffeas_nodes_representing_hard_block_ports(t_module* main_modul
  *                                   stored in here.
  * 
  */
-void verify_hard_blocks(t_hard_block_recog* module_hard_block_node_refs_and_info)
+static void verify_hard_blocks(t_hard_block_recog* module_hard_block_node_refs_and_info)
 {   
 
     // If we find a hard block instance that has ports unassigned, we store its information in the variables below
@@ -1905,7 +1903,7 @@ void verify_hard_blocks(t_hard_block_recog* module_hard_block_node_refs_and_info
  *                                  't_hard_block_recog'. 
  * 
  */
-void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_type_name_to_port_info_map)
+static void delete_hard_block_port_info(std::unordered_map<std::string, t_hard_block_port_info>* hard_block_type_name_to_port_info_map)
 {
     std::unordered_map<std::string, t_hard_block_port_info>::iterator curr_hard_block_port_info = hard_block_type_name_to_port_info_map->begin();
 

@@ -247,6 +247,6 @@ typedef struct s_parsed_hard_block_port_info
         std::string - the name of the Quartus generated netlist file (".vqm")
 *
 */
-void add_hard_blocks_to_netlist(t_module*, t_arch*, std::vector<std::string>*, std::string, std::string);
+void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::vector<std::string>* list_hard_block_type_names, std::string arch_file_name, std::string vqm_file_name);
 
 #endif
