@@ -210,7 +210,6 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
 static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const int i,
                                    const int j,
-                                   t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const int delayless_switch,
                                    const DeviceGrid& grid);
@@ -1173,7 +1172,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* Connection SINKS and SOURCES to their pins. */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            build_rr_sinks_sources(rr_graph_builder, i, j, L_rr_node, rr_edges_to_create,
+            build_rr_sinks_sources(rr_graph_builder, i, j, rr_edges_to_create,
                                    delayless_switch, grid);
 
             //Create the actual SOURCE->OPIN, IPIN->SINK edges
@@ -1363,7 +1362,6 @@ void free_rr_graph() {
 static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const int i,
                                    const int j,
-                                   t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const int delayless_switch,
                                    const DeviceGrid& grid) {
