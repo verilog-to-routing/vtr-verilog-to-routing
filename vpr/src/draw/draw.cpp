@@ -2193,18 +2193,18 @@ ezgl::rectangle draw_get_rr_chan_bbox(int inode) {
                     + draw_coords->get_tile_width();
             bottom = draw_coords->tile_y[rr_graph.node_ylow(rr_node)]
                      + draw_coords->get_tile_width()
-                     + (1. + rr_graph.node_ptc_num(rr_node));
+                     + (1. + rr_graph.node_track_num(rr_node));
             top = draw_coords->tile_y[rr_graph.node_ylow(rr_node)]
                   + draw_coords->get_tile_width()
-                  + (1. + rr_graph.node_ptc_num(rr_node));
+                  + (1. + rr_graph.node_track_num(rr_node));
             break;
         case CHANY:
             left = draw_coords->tile_x[rr_graph.node_xlow(rr_node)]
                    + draw_coords->get_tile_width()
-                   + (1. + rr_graph.node_ptc_num(rr_node));
+                   + (1. + rr_graph.node_track_num(rr_node));
             right = draw_coords->tile_x[rr_graph.node_xlow(rr_node)]
                     + draw_coords->get_tile_width()
-                    + (1. + rr_graph.node_ptc_num(rr_node));
+                    + (1. + rr_graph.node_track_num(rr_node));
             bottom = draw_coords->tile_y[rr_graph.node_ylow(rr_node)];
             top = draw_coords->tile_y[rr_graph.node_yhigh(rr_node)]
                   + draw_coords->get_tile_width();
@@ -2257,7 +2257,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int ipin = rr_graph.node_ptc_num(RRNodeId(inode));
+    int ipin = rr_graph.node_pin_num(RRNodeId(inode));
 
     g->set_color(color);
 
@@ -2305,7 +2305,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
     xc = draw_coords->tile_x[i];
     yc = draw_coords->tile_y[j];
 
-    ipin = rr_graph.node_ptc_num(rr_node);
+    ipin = rr_graph.node_pin_num(rr_node);
     type = device_ctx.grid[i][j].type;
     pins_per_sub_tile = type->num_pins / type->capacity;
     k = ipin / pins_per_sub_tile;
@@ -2364,7 +2364,7 @@ static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g) {
         {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
 
     std::string str = vtr::string_fmt("%d",
-                                      rr_graph.node_ptc_num(RRNodeId(inode)));
+                                      rr_graph.node_class_num(RRNodeId(inode)));
     g->set_color(ezgl::BLACK);
     g->draw_text({xcen, ycen}, str.c_str(), 2 * draw_coords->pin_size,
                  2 * draw_coords->pin_size);
@@ -2620,7 +2620,7 @@ static int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, c
     RRNodeId rr_node = RRNodeId(inode);
 
     if (get_draw_state_vars()->draw_route_type == DETAILED)
-        return (rr_graph.node_ptc_num(rr_node));
+        return (rr_graph.node_track_num(rr_node));
 
     /* GLOBAL route stuff below. */
 
@@ -2766,7 +2766,7 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
                 t_physical_tile_type_ptr type = device_ctx.grid[i][j].type;
                 int width_offset = device_ctx.grid[i][j].width_offset;
                 int height_offset = device_ctx.grid[i][j].height_offset;
-                int ipin = rr_graph.node_ptc_num(rr_node);
+                int ipin = rr_graph.node_pin_num(rr_node);
                 float xcen, ycen;
                 for (const e_side& iside : SIDES) {
                     // If pin exists on this side of the block, then get pin coordinates

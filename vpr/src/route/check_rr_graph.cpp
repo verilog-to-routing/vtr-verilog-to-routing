@@ -282,7 +282,7 @@ static bool rr_node_is_global_clb_ipin(RRNodeId inode) {
     if (rr_graph.node_type(inode) != IPIN)
         return (false);
 
-    ipin = rr_graph.node_ptc_num(inode);
+    ipin = rr_graph.node_pin_num(inode);
 
     return type->is_ignored_pin[ipin];
 }

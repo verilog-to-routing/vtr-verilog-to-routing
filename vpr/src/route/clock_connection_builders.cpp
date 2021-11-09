@@ -103,7 +103,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
 
     int max_ptc = 0;
     for (RRNodeId inode : nodes_at_loc) {
-        max_ptc = std::max<int>(max_ptc, temp_rr_graph.node_ptc_num(inode));
+        max_ptc = std::max<int>(max_ptc, temp_rr_graph.node_class_num(inode));
     }
     int ptc = max_ptc + 1;
 

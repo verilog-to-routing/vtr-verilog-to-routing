@@ -214,7 +214,7 @@ static void check_source(RRNodeId inode, ClusterNetId net_id) {
     int i = rr_graph.node_xlow(inode);
     int j = rr_graph.node_ylow(inode);
     /* for sinks and sources, ptc_num is class */
-    int ptc_num = rr_graph.node_ptc_num(inode);
+    int ptc_num = rr_graph.node_class_num(inode);
     /* First node_block for net is the source */
     ClusterBlockId blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
     auto type = device_ctx.grid[i][j].type;
@@ -574,7 +574,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                     size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, inode, rr_type);
                 }
 
-                ipin = rr_graph.node_ptc_num(RRNodeId(inode));
+                ipin = rr_graph.node_pin_num(RRNodeId(inode));
                 if (physical_tile_type(blk_id)->pin_class[ipin] != iclass) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s):\n"

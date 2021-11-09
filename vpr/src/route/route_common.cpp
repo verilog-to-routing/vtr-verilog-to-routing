@@ -1283,7 +1283,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                     auto physical_tile = device_ctx.grid[ilow][jlow].type;
                     if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
-                        int pin_num = rr_graph.node_ptc_num(rr_node);
+                        int pin_num = rr_graph.node_pin_num(rr_node);
                         int xoffset = device_ctx.grid[ilow][jlow].width_offset;
                         int yoffset = device_ctx.grid[ilow][jlow].height_offset;
                         int sub_tile_offset = physical_tile->get_sub_tile_loc_from_pin(pin_num);
