@@ -22,6 +22,7 @@ void print_usage (t_boolean terminate){
     cout << "\t-remove_const_nets\n";
     cout << "\t-eblif_format\n";
     cout << "\t-insert_custom_hard_blocks <hard_block_1_module_name> <hard_block_2_module_name> ...\n";
+    cout << "\t-device <device name> (if not provided then default is 'stratixiv')\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
@@ -83,6 +84,43 @@ void verify_hard_block_type_name(string curr_hard_block_type_name){
 
         exit(1);
 
+    }
+
+    return;
+
+}
+
+//============================================================================================
+//============================================================================================
+
+void verify_device(string device_name)
+{
+    /* 
+        The list of devices that this program can support and their parameters are stored within a map structure ('device_parameter_database'). We
+        check whether the provided device by the user supported by comparing it
+        to the devices within the map. 
+    */
+
+    std::map<std::string, DeviceInfo>::const_iterator device_support_status;
+
+    device_support_status = device_parameter_database.find(device_name);
+
+    // checks to see whether we support the given device
+    if (device_support_status == device_parameter_database.end())
+    {
+        // if we are here then we don't support the user supplied device
+        std::cout << "ERROR:The provided device is not supported.";
+        std::cout << " Only the following devices are supported:\n";
+
+        device_support_status = device_parameter_database.begin();
+
+        while (device_support_status != device_parameter_database.end())
+        {
+            std::cout << device_support_status->first << "\n";
+            device_support_status++;
+        }
+
+        exit(1);
     }
 
     return;

@@ -191,6 +191,9 @@ typedef struct s_hard_block_recog
     */
     std::vector<t_node*> luts_dffeas_nodes_to_remove; // look into using array index instead
 
+    // variable to store parameters specific to the fpga device used
+    DeviceInfo target_device_info;
+
 }t_hard_block_recog;
 
 /*
@@ -247,6 +250,6 @@ typedef struct s_parsed_hard_block_port_info
         std::string - the name of the Quartus generated netlist file (".vqm")
 *
 */
-void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::vector<std::string>* list_hard_block_type_names, std::string arch_file_name, std::string vqm_file_name);
+void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::vector<std::string>* list_hard_block_type_names, std::string arch_file_name, std::string vqm_file_name, std::string device);
 
 #endif

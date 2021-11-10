@@ -84,7 +84,8 @@ enum v_OptionBaseToken
     OT_INCLUDE_UNUSED_SUBCKT_PINS,
     OT_EBLIF_FORMAT,
 	OT_UNKNOWN,
-  OT_INSERT_CUSTOM_HARD_BLOCKS
+  OT_INSERT_CUSTOM_HARD_BLOCKS,
+  OT_DEVICE
 };
 
 struct cstrcomp{	//operator structure to compare C-strings within a map class
@@ -108,6 +109,17 @@ struct RamInfo {
     t_node_port_association* port_b_output_clock = nullptr;
 };
 
+// stores relevant information for a given FPGA device
+// currently, just storing the strings used to idenitify luts and dff primitives and their ports within the vqm netlist
+// add additional parameters as needed
+struct DeviceInfo {
+    std::string lut_type_name;
+    std::string lut_output_port;
+    int lut_output_port_size;
+
+    std::string dff_type_name;
+    std::string dff_output_port;
+}; 
 
 //============================================================================================
 //				GLOBAL FUNCTIONS
@@ -119,6 +131,9 @@ void verify_format (string* filename, string extension);	//verifies a given stri
 
 // verifies whether the hard block type name provided by the user meets verilog naming rules
 void verify_hard_block_type_name(string curr_hard_block_name);
+
+// checks to see that the device name supplied matches the devices we can support
+void verify_device(string device_name);
 
 // if the hard block type name was escaped by '\', we need to remove the '\' character from the name (refer to function above)
 void cleanup_hard_block_type_name(string* curr_hard_block_name);
@@ -171,6 +186,19 @@ typedef enum v_Clean_Mode { CL_NONE, CL_BUFF, CL_ALL } e_clean;
 extern e_clean clean_mode;	//user-set flag dictating how to clean away buffers/invertors
 
 extern t_boolean buffd_outs;	//user-set flag that regulates whether to keep buffered outputs
+
+//============================================================================================
+//				DEVICE SPECIFIC INFORMATION 
+//============================================================================================
+
+/*
+  A database that stores parameters for different types of FPGA devices.
+  Currently only the stratix 4 device parameters are stored.
+*/
+const map<std::string, DeviceInfo> device_parameter_database {
+    // stratix 4 device
+    {"stratixiv", {"stratixiv_lcell_comb", "combout", 1, "dffeas", "q" }}
+};
 
 #endif
 

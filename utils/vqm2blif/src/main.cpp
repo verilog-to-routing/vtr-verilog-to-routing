@@ -151,8 +151,8 @@ t_boolean insert_custom_hard_blocks; // user-set flag. Which if true, helps find
 //============================================================================================
 
 //Setup Functions
-void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
-			   string* outfile, std::vector<std::string>* hard_block_list);
+void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, string* outfile,
+			   string* device, std::vector<std::string>* hard_block_list);
 	void setup_tokens (tokmap* tokens);
 
 //Execution Functions
@@ -272,6 +272,10 @@ int main(int argc, char* argv[])
 	// a list which stores all the user supplied custom hard block type names
 	std::vector<std::string> hard_block_type_name_list;
 
+	// indicates the type of device the circuit is targetting
+	// we set the default value to the stratix 4 device
+	string device = "stratixiv";
+
 //*************************************************************************************************
 //	Begin Conversion
 //*************************************************************************************************
@@ -280,7 +284,7 @@ int main(int argc, char* argv[])
 	cout << "This parser reads a .vqm file and converts it to .blif format.\n\n" ;
 	
 	//verify command-line is correct, populate input variables and global mode flags.
-	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &hard_block_type_name_list);
+	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &device,&hard_block_type_name_list);
 
 	setup_lut_support_map ();	//initialize LUT support for cleanup and elaborate functions
 
@@ -388,7 +392,7 @@ int main(int argc, char* argv[])
 		
 		try
 		{
-			add_hard_blocks_to_netlist(my_module,&arch,&hard_block_type_name_list, arch_file, source_file);
+			add_hard_blocks_to_netlist(my_module,&arch,&hard_block_type_name_list, arch_file, source_file, device);
 		}
 		catch(const vtr::VtrError& error)
 		{
@@ -458,8 +462,8 @@ int main(int argc, char* argv[])
 //			SETUP FUNCTIONS
 //============================================================================================
 
-void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
-			   string* outfile, std::vector<std::string>* hard_block_type_name_list){
+void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, string* outfile,
+			   string* device, std::vector<std::string>* hard_block_type_name_list){
 /*  Interpret the command-line arguments, accepting the input files, output file, and various
  *  mode settings from the user. 
  *
@@ -695,6 +699,16 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 						}
 					}
 					break;
+				case OT_DEVICE:
+					if ( i+1 == argc ){
+						cout << "\nERROR: Missing device type.\n" ;
+						print_usage(T_TRUE);
+					}
+					//Store the next argument as the device type
+					device->assign((string)argv[i+1]);
+					verify_device(*device); // make sure we can support the provided device
+					i++; //Increment past the next argument
+					break;
 				default:
 					//Should never get here; unknown tokens aren't mapped.
 					cout << "\nERROR: Token " << argv[i] << " mishandled.\n" ;
@@ -748,6 +762,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-include_unused_subckt_pins", OT_INCLUDE_UNUSED_SUBCKT_PINS));
 	tokens->insert(tokpair("-eblif_format", OT_EBLIF_FORMAT));
 	tokens->insert(tokpair("-insert_custom_hard_blocks", OT_INSERT_CUSTOM_HARD_BLOCKS));
+	tokens->insert(tokpair("-device", OT_DEVICE));
 }
 
 //============================================================================================

@@ -153,13 +153,13 @@ static int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_r
 
 static void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_parsed_hard_block_port_info* curr_module_node_info, t_hard_block_recog* module_hard_block_node_refs_and_info, int curr_hard_block_instance_index);
 
-static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node);
+static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node, DeviceInfo target_device_info);
 
 static int identify_port_index_within_hard_block_type_port_array(t_hard_block_port_info* curr_hard_block_type_port_info, t_parsed_hard_block_port_info* curr_module_node_info, t_node* curr_module_node);
 
 static void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_hard_block_instance, int port_to_assign_index, t_node_port_association* port_connected_to_hard_block_instance_net, t_parsed_hard_block_port_info* curr_module_node_info);
 
-static bool is_hard_block_port_legal(t_node* curr_module_node);
+static bool is_hard_block_port_legal(t_node* curr_module_node, DeviceInfo target_device_info);
 
 static int create_new_hard_block_instance(t_array_ref* module_node_list, t_hard_block_recog* module_hard_block_node_refs_and_info, t_parsed_hard_block_port_info* curr_module_node_info);
 
@@ -225,7 +225,7 @@ bool sort_hard_blocks_by_valid_connections(t_hard_block, t_hard_block);
  * 
  * @param vqm_file_name Name of the quartus generated .vqm netlist file. 
  */
-void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::vector<std::string>* list_hard_block_type_names, std::string arch_file_name, std::string vqm_file_name)
+void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::vector<std::string>* list_hard_block_type_names, std::string arch_file_name, std::string vqm_file_name, std::string device)
 {
     t_hard_block_recog module_hard_block_node_refs_and_info;
 
@@ -233,6 +233,8 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
     int number_of_hard_blocks_added = 0;
     int number_of_luts_flip_flops_removed = 0;
 
+    // based on the device supplied, store the corresponding parameters related to that device
+    module_hard_block_node_refs_and_info.target_device_info = (device_parameter_database.find(device))->second;
 
     /*
         We catch any errors that occur during the initialization procedure.
@@ -405,7 +407,7 @@ static void process_module_nodes_and_create_hard_blocks(t_module* main_module, s
         curr_module_node_type.assign(curr_module_node->type);
 
         // hard block ports are only represented in nodes that are either a LUT or flip flop block
-        if ((curr_module_node_type.compare(LUT_TYPE) == 0) || (curr_module_node_type.compare(DFF_TYPE) == 0))
+        if ((curr_module_node_type.compare((module_hard_block_node_refs_and_info->target_device_info).lut_type_name) == 0) || (curr_module_node_type.compare((module_hard_block_node_refs_and_info->target_device_info).dff_type_name) == 0))
         {
 
             curr_module_node_info = extract_hard_block_port_info_from_module_node(curr_module_node, hard_block_type_name_list);
@@ -418,7 +420,7 @@ static void process_module_nodes_and_create_hard_blocks(t_module* main_module, s
                 // if we are here, the current node is a LUT or DFF node that represents a hard block instance port //
 
                 /* referring to the diagram at the top, if the node is a lut that represents an output port, its connected net is an internal connection, which is not a legal netlist connection, so we cannot process the node any further. Therefore we only process nodes that are LUTs representing input ports or DFFs. */
-                if (is_hard_block_port_legal(curr_module_node))
+                if (is_hard_block_port_legal(curr_module_node, module_hard_block_node_refs_and_info->target_device_info))
                 {
 
                     // get the index to the current hard block instance we need to work with
@@ -975,7 +977,7 @@ static void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_p
 
     int port_to_assign_index = 0;
 
-    t_node_port_association* curr_module_node_port_connected_to_hard_block_instance_net = get_lut_dffeas_port_connected_to_hard_block_instance_net(curr_module_node);
+    t_node_port_association* curr_module_node_port_connected_to_hard_block_instance_net = get_lut_dffeas_port_connected_to_hard_block_instance_net(curr_module_node, module_hard_block_node_refs_and_info->target_device_info);
 
     port_to_assign_index = identify_port_index_within_hard_block_type_port_array(&(curr_hard_block_type_port_info->second), curr_module_node_info, curr_module_node);
 
@@ -1005,7 +1007,7 @@ static void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_p
  *                         (netlist).
  * 
  */
-static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node)
+static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_instance_net(t_node* curr_module_node, DeviceInfo target_device_info)
 {
     t_node_port_association* port_connected_to_hard_block_instance_net = NULL;
 
@@ -1019,7 +1021,7 @@ static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_inst
     // store what type of port we expect the net to be connected to 
     std::string expected_port_type;
 
-    if (!(curr_module_node_type.compare(LUT_TYPE)))
+    if (!(curr_module_node_type.compare(target_device_info.lut_type_name)))
     {
 
         // we are here if the current node is LUT
@@ -1040,10 +1042,10 @@ static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_inst
 
         curr_port_name.assign(curr_module_node->array_of_ports[i]->port_name);
 
-        if (!(curr_module_node_type.compare(LUT_TYPE)))
+        if (!(curr_module_node_type.compare(target_device_info.lut_type_name)))
         {
             // if the node is a LUT //
-            if (curr_port_name.compare(LUT_OUTPUT_PORT))
+            if (curr_port_name.compare(target_device_info.lut_output_port))
             {
                 // if the port is not the LUT output ie. "combout" port //
 
@@ -1058,7 +1060,7 @@ static t_node_port_association* get_lut_dffeas_port_connected_to_hard_block_inst
         else
         {
             // if the node is a flip flop //
-            if (!(curr_port_name.compare(DFF_OUTPUT_PORT)))
+            if (!(curr_port_name.compare(target_device_info.dff_output_port)))
             {
                 // if the port is a D flip flop output ie. "q" port //
 
@@ -1251,7 +1253,7 @@ static void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_h
  *                         a lut or dff node within the module (netlist).
  * 
  */
-static bool is_hard_block_port_legal(t_node* curr_module_node)
+static bool is_hard_block_port_legal(t_node* curr_module_node, DeviceInfo target_device_info)
 {
 
     bool result = false;
@@ -1259,7 +1261,7 @@ static bool is_hard_block_port_legal(t_node* curr_module_node)
     std::string curr_module_node_type = curr_module_node->type;
 
     // now we check whether the current node is a lut that represents an input port or the current node is a DFF
-    if ((curr_module_node->number_of_ports != LUT_OUTPUT_PORT_SIZE) || (!(curr_module_node_type.compare(DFF_TYPE))))
+    if ((curr_module_node->number_of_ports != target_device_info.lut_output_port_size) || (!(curr_module_node_type.compare(target_device_info.dff_type_name))))
     {
         result = true;
     }
