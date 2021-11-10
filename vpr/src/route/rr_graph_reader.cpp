@@ -47,8 +47,9 @@ void load_rr_file(const t_graph_type graph_type,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    device_ctx.rr_segments = segment_inf;
-
+    //device_ctx.rr_segments = segment_inf;
+    size_t num_segments = segment_inf.size();
+    device_ctx.rr_segments.reserve(num_segments);
     RrGraphSerializer reader(
         graph_type,
         base_cost_type,
