@@ -80,20 +80,6 @@
 // used to identify the case where a hard block instance is not found within the netlist
 #define HARD_BLOCK_INSTANCE_DOES_NOT_EXIST -1
 
-// define how flip flops and LUT will be identified within a given node type (within t_node struct)
-#define LUT_TYPE "stratixiv_lcell_comb"
-#define DFF_TYPE "dffeas" 
-
-// define the number of output ports a LUT that represents a hard block instance output port would have 
-#define LUT_OUTPUT_PORT_SIZE 1
-
-// names of the output port for a LUT and DFF
-#define LUT_OUTPUT_PORT "combout"
-#define DFF_OUTPUT_PORT "q"
-
-
-
-
 /* Structure Declarations */ 
 
 
