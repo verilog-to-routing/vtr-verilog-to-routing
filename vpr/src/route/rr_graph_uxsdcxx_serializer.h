@@ -265,7 +265,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
-        const std::vector<t_segment_inf>& segment_inf,
+        const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
         const DeviceGrid& grid,
         MetadataStorage<int>* rr_node_metadata,
