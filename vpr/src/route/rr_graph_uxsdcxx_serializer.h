@@ -1150,7 +1150,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline int get_segment_id(const t_segment_inf*& segment) final {
-        return segment - &segment_inf_.at(0);
+        return segment - &segment_inf_.at(RRSegmentId(0));
     }
     inline const char* get_segment_name(const t_segment_inf*& segment) final {
         return segment->name.c_str();
@@ -1178,14 +1178,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
     inline const t_segment_inf* add_segments_segment(void*& /*ctx*/, int id) final {
-        return &segment_inf_.at(id);
+        return &segment_inf_.at(RRSegmentId(id));
     }
     inline void finish_segments_segment(const t_segment_inf*& /*iter*/) final {}
     inline size_t num_segments_segment(void*& /*iter*/) final {
         return segment_inf_.size();
     }
     inline const t_segment_inf* get_segments_segment(int n, void*& /*ctx*/) final {
-        return &segment_inf_.at(n);
+        return &segment_inf_.at(RRSegmentId(n));
     }
 
     inline void* init_rr_graph_segments(void*& /*ctx*/) final {
@@ -1871,7 +1871,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
-    const std::vector<t_segment_inf>& segment_inf_;
+    const vtr::vector<RRSegmentId,t_segment_inf>& segment_inf_;
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
     MetadataStorage<int>* rr_node_metadata_;
