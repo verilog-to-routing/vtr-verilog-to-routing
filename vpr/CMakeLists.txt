@@ -259,7 +259,7 @@ install(TARGETS vpr libvpr DESTINATION bin)
 file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
 add_executable(test_vpr ${TEST_SOURCES})
 target_link_libraries(test_vpr
-                        libcatch
+                        PRIVATE Catch2::Catch2WithMain
                         libvpr)
 
 #Supress IPO link warnings if IPO is enabled

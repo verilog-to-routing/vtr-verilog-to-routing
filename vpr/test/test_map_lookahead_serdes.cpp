@@ -1,4 +1,6 @@
-#include "catch.hpp"
+//#include "catch.hpp"
+
+#include "catch2/catch_test_macros.hpp"
 
 #include "router_lookahead_map.h"
 

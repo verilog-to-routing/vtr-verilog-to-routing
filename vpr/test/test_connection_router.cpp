@@ -1,4 +1,4 @@
-#include "catch.hpp"
+//#include "catch.hpp"
 
 #include "vpr_api.h"
 #include "vpr_signal_handler.h"
@@ -7,6 +7,7 @@
 #include "place_and_route.h"
 #include "route_tree_timing.h"
 #include "timing_place_lookup.h"
+#include "catch2/catch_test_macros.hpp"
 
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
 static constexpr int kMaxHops = 10;
