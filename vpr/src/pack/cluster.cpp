@@ -2072,13 +2072,6 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
             cur_pb->pb_stats->sharinggain[blk_id] = 0;
         }
 
-        AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
-        if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
-            //increase gain of atom based on attraction group gain
-            float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
-            cur_pb->pb_stats->gain[blk_id] += att_grp_gain;
-        }
-
         /* Todo: This was used to explore different normalization options, can
          * be made more efficient once we decide on which one to use*/
         int num_used_input_pins = atom_ctx.nlist.block_input_pins(blk_id).size();
@@ -2104,6 +2097,13 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
             cur_pb->pb_stats->gain[blk_id] = alpha
                                                  * cur_pb->pb_stats->timinggain[blk_id]
                                              + (1.0 - alpha) * (float)cur_pb->pb_stats->gain[blk_id];
+        }
+
+        AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
+        if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
+            //increase gain of atom based on attraction group gain
+            float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
+            cur_pb->pb_stats->gain[blk_id] += att_grp_gain;
         }
     }
 }
