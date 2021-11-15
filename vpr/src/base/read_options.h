@@ -10,17 +10,17 @@
 struct t_options {
     /* File names */
     argparse::ArgValue<std::string> ArchFile;
-    const argparse::ArgValue<std::string>& FPGAInterchangeDeviceFile() const { return ArchFile; }
     argparse::ArgValue<std::string> CircuitName;
     argparse::ArgValue<std::string> NetFile;
     argparse::ArgValue<std::string> PlaceFile;
     argparse::ArgValue<std::string> RouteFile;
-    argparse::ArgValue<std::string> BlifFile;
+    argparse::ArgValue<std::string> CircuitFile;
     argparse::ArgValue<std::string> ActFile;
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
 
+    argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
 
     argparse::ArgValue<std::string> out_file_prefix;
@@ -53,7 +53,6 @@ struct t_options {
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
     argparse::ArgValue<size_t> num_workers;
-    argparse::ArgValue<bool> FPGAInterchangeDevice;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
     argparse::ArgValue<bool> CreateEchoFile;
