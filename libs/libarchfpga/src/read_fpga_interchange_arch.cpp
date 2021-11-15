@@ -13,12 +13,12 @@
 #include "vtr_log.h"
 #include "vtr_util.h"
 
-#include "arch_types.h"
-#include "arch_util.h"
+#include "arch_check.h"
 #include "arch_error.h"
+#include "arch_util.h"
+#include "arch_types.h"
 
 #include "read_fpga_interchange_arch.h"
-#include "read_common_func.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -42,6 +42,7 @@ struct ArchReader {
         , ar_(arch_reader)
         , ptypes_(phys_types)
         , ltypes_(logical_types) {
+        set_arch_file_name(arch_file);
     }
 
     void read_arch() {

@@ -27,8 +27,6 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
                              std::vector<t_physical_tile_type>& PhysicalTileTypes,
                              std::vector<t_logical_block_type>& LogicalBlockTypes);
 
-const char* get_fpga_interchange_arch_file_name();
-
 #ifdef __cplusplus
 }
 #endif
