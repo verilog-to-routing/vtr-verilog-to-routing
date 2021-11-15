@@ -263,7 +263,7 @@ class RRGraphView {
       *  @note The routing segments here may not be exactly same as those defined in architecture file. They have been adapted to fit the context of routing resource graphs.
       */
 
-    inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
+    inline const  t_segment_inf& rr_segments(RRSegmentId seg_id) const {
         return rr_segments_[seg_id];
     }
 

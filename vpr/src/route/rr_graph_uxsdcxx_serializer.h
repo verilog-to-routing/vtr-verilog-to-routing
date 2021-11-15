@@ -16,7 +16,7 @@
 #include "check_rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-
+#include "globals.h"
 class MetadataBind {
   public:
     MetadataBind(vtr::string_internment* strings, vtr::interned_string empty)
@@ -1308,6 +1308,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return std::make_pair(tile, &tile->class_inf[n]);
     }
 
+
     /** Generated for complex type "block_type":
      * <xs:complexType name="block_type">
      *   <xs:sequence>
@@ -1543,14 +1544,21 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void* get_rr_graph_rr_nodes(void*& /*ctx*/) final {
         return nullptr;
     }
-
     void finish_load() final {
+        auto& device_ctx = g_vpr_ctx.mutable_device();
         process_rr_node_indices();
 
-        rr_nodes_->init_fan_in();
+		rr_nodes_->init_fan_in();
 
-        alloc_and_load_rr_indexed_data(
-            segment_inf_,
+		auto& segment_inf = segment_inf_;
+        size_t num_segments = segment_inf_.size();
+        device_ctx.rr_segments.reserve(num_segments);
+        for (long unsigned int iseg = 0; iseg <num_segments; ++iseg) {
+        device_ctx.rr_segments.push_back(segment_inf_[RRSegmentId(iseg)]);
+        }
+
+       alloc_and_load_rr_indexed_data(
+    		segment_inf,
             *wire_to_rr_ipin_switch_,
             base_cost_type_);
 
@@ -1846,6 +1854,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     // Temporary storage
     vtr::vector<RRIndexedDataId, short> seg_index_;
+    vtr::vector<RRSegmentId, short> seg_id_;
     std::string temp_string_;
 
     // Constant mapping which is frequently used
@@ -1871,7 +1880,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
-    const vtr::vector<RRSegmentId,t_segment_inf>& segment_inf_;
+    const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
     MetadataStorage<int>* rr_node_metadata_;

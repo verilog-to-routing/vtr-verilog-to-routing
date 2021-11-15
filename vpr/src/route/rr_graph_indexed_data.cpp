@@ -53,7 +53,7 @@ static void print_rr_index_info(const char* fname, const std::vector<t_segment_i
  * etc. more expensive than others.  I give each segment type in an          *
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
-void alloc_and_load_rr_indexed_data(const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
+void  alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
                                     int wire_to_ipin_switch,
                                     enum e_base_cost_type base_cost_type) {
     int iseg, length, i, index;
