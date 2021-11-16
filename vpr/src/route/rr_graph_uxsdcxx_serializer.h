@@ -1545,21 +1545,22 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     void finish_load() final {
         //auto& device_ctx = g_vpr_ctx.mutable_device();
         process_rr_node_indices();
-        	rr_nodes_->init_fan_in();
-        	/* Create a temp copy to convert from vtr::vector to std::vector
-        	 * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data type for ``rr_segments``
-        	 * Note that this is a dirty fix (to avoid massive code changes)
-        	 * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
-        	 */
-        	//std::vector<RRSegmentId, t_segment_inf> temp_rr_segs;
-        	//device_ctx.rr_segments.reserve(segment_inf_.size());
-        	//for (auto& temp_rr_seg : temp_rr_segs) {
-        		//device_ctx.rr_segments.push_back(temp_rr_segs[temp_rr_seg]);
-        	//}
-        	alloc_and_load_rr_indexed_data(
-		            temp_rr_segs,
-		            *wire_to_rr_ipin_switch_,
-		            base_cost_type_);
+        rr_nodes_->init_fan_in();
+        /* Create a temp copy to convert from vtr::vector to std::vector
+        * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
+        * type for ``rr_segments``
+        * Note that this is a dirty fix (to avoid massive code changes)
+        * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
+         */
+        //std::vector<RRSegmentId, t_segment_inf> temp_rr_segs;
+        //device_ctx.rr_segments.reserve(segment_inf_.size());
+        //for (auto& temp_rr_seg : temp_rr_segs) {
+        //device_ctx.rr_segments.push_back(temp_rr_segs[temp_rr_seg]);
+        //}
+        alloc_and_load_rr_indexed_data(
+		           temp_rr_segs,
+		           *wire_to_rr_ipin_switch_,
+		           base_cost_type_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {
