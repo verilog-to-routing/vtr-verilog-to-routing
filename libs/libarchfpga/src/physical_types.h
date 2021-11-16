@@ -1446,6 +1446,7 @@ struct t_segment_inf {
     std::vector<bool> cb;
     std::vector<bool> sb;
 
+
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
