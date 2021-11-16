@@ -8,7 +8,6 @@
 #include "route_tree_timing.h"
 #include "timing_place_lookup.h"
 
-
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
 static constexpr int kMaxHops = 10;
 
