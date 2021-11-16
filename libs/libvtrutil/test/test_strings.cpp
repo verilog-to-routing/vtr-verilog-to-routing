@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "vtr_string_view.h"
 #include "vtr_string_interning.h"

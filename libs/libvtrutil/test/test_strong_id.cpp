@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "vtr_strong_id.h"
 #include "vtr_strong_id_range.h"

@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "vtr_map_util.h"
 #include "vtr_range.h"
