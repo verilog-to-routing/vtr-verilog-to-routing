@@ -1,13 +1,12 @@
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
-add_subdirectory(libcatch)
-add_subdirectory(libcatch2)
 
 #External libraries synchronized with 'git subtree'
 add_subdirectory(libargparse)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
+add_subdirectory(libcatch2)
 
 #VPR_USE_EZGL is initialized in the root CMakeLists. 
 #compile libezgl only if the user asks for or has its dependencies installed.
