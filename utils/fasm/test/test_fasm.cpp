@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "vpr_api.h"
 #include "vtr_util.h"
@@ -24,9 +25,9 @@ namespace {
 
 using Catch::Matchers::Equals;
 using Catch::Matchers::StartsWith;
-using Catch::Matchers::Contains;
+using Catch::Matchers::ContainsSubstring;
 
-class RegexMatcher : public Catch::MatcherBase<std::string> {
+class RegexMatcher : public Catch::Matchers::MatcherBase<std::string> {
 
     std::string m_RegexStr;
     std::regex  m_Regex;
@@ -456,14 +457,14 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
             // Check correct substitution of "" and "_SING"
             if (loc_y == 1) {
-                CHECK_THAT(line,  Contains("_SING"));
+                CHECK_THAT(line,  ContainsSubstring("_SING"));
             }
             else {
-                CHECK_THAT(line, !Contains("_SING"));
+                CHECK_THAT(line, !ContainsSubstring("_SING"));
             }
 
             // Check that all tags were substituted
-            CHECK_THAT(line, !Contains("{") && !Contains("}"));
+            CHECK_THAT(line, !ContainsSubstring("{") && !ContainsSubstring("}"));
 
             // Check LUT
             auto pos = line.find("LUT[");
