@@ -1307,8 +1307,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline const std::pair<const t_physical_tile_type*, const t_class*> get_block_type_pin_class(int n, const t_physical_tile_type*& tile) final {
         return std::make_pair(tile, &tile->class_inf[n]);
     }
-
-
     /** Generated for complex type "block_type":
      * <xs:complexType name="block_type">
      *   <xs:sequence>
@@ -1545,21 +1543,20 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return nullptr;
     }
     void finish_load() final {
-        auto& device_ctx = g_vpr_ctx.mutable_device();
+        //auto& device_ctx = g_vpr_ctx.mutable_device();
         process_rr_node_indices();
-
 		rr_nodes_->init_fan_in();
 
-		/* Create a temp copy to convert from vtr::vector to std::vector
-		 * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data type for ``rr_segments``
-		 * Note that this is a dirty fix (to avoid massive code changes)
-		 * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
-		 */
+	/* Create a temp copy to convert from vtr::vector to std::vector
+	* This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data type for ``rr_segments``
+	 * Note that this is a dirty fix (to avoid massive code changes)
+	* TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
+	*/
 		std::vector<t_segment_inf> temp_rr_segs;
-		device_ctx.rr_segments.reserve(segment_inf_.size());
-		for (const auto& temp_rr_seg : temp_rr_segs) {
-			device_ctx.rr_segments.push_back(temp_rr_seg);
-		}
+		//device_ctx.rr_segments.reserve(segment_inf_.size());
+		//for (const auto& temp_rr_seg : temp_rr_segs) {
+			//device_ctx.rr_segments.push_back(temp_rr_seg);
+		//}
 		alloc_and_load_rr_indexed_data(
 		            temp_rr_segs,
 		            *wire_to_rr_ipin_switch_,

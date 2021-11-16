@@ -209,7 +209,7 @@ class RRGraphView {
         if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
-            coordinate_string += rr_segments(RRSegmentId(seg_index)).name;                   //Write the segment name
+            coordinate_string += rr_segments(RRSegmentId(seg_index)).name;		 //Write the segment name
             coordinate_string += " length:" + std::to_string(node_length(node)); //add the length of the segment
             //Figure out the starting and ending coordinate of the segment depending on the direction
 
@@ -260,7 +260,7 @@ class RRGraphView {
     }
 
     /** @brief Return detailed routing segment information with a given id
-      *  @note The routing segments here may not be exactly same as those defined in architecture file. They have been adapted to fit the context of routing resource graphs.
+      * @note The routing segments here may not be exactly same as those defined in architecture file. They have been adapted to fit the context of routing resource graphs.
       */
 
     inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
