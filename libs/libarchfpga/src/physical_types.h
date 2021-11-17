@@ -1745,16 +1745,10 @@ struct t_lut_bel {
     std::string output_pin;
 };
 
-struct t_package_pin {
-    std::string name;
-
-    std::string site_name;
-    std::string bel_name;
-};
-
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
+    std::vector<vtr::interned_string> interned_strings;
 
     char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
 
@@ -1787,10 +1781,6 @@ struct t_arch {
     // Luts
     std::vector<t_lut_cell> lut_cells;
     std::vector<t_lut_bel> lut_bels;
-
-    // Package pins
-    // TODO: add possibility to have multiple packages
-    std::vector<t_package_pin> pad_bels;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).
