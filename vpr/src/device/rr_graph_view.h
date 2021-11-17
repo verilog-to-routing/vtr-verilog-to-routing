@@ -202,11 +202,11 @@ class RRGraphView {
             // and the end to the lower coordinate
             start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
             start_y = std::to_string(node_yhigh(node)) + ")";
-            end_x = "";
-            end_y = "";
-            arrow = "";
-        }
-        if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
+        } else if (node_type(node) == SOURCE || node_type(node) == SINK) {
+            // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
+            start_x = "(" + std::to_string(node_xhigh(node)) + ",";
+            start_y = std::to_string(node_yhigh(node)) + ")";
+        } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
             coordinate_string += rr_segments_[seg_index].name;                   //Write the segment name
