@@ -26,8 +26,16 @@
  *   @param subtile     Specifies whether to write out the constraint regions with or without
  *                      subtile values.
  */
-void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile);
+void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split);
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);
+
+void setup_vpr_floorplan_constraints_halves(VprConstraints& constraints);
+
+void setup_vpr_floorplan_constraints_quadrants(VprConstraints& constraints);
+
+void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints);
+
+void create_partition(Partition& part, std::string part_name, int xmin, int ymin, int xmax, int ymax);
 
 #endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

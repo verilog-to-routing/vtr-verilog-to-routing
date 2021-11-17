@@ -132,6 +132,7 @@ struct t_options {
     argparse::ArgValue<float> place_crit_limit;
     argparse::ArgValue<int> place_constraint_expand;
     argparse::ArgValue<bool> place_constraint_subtile;
+    argparse::ArgValue<constraints_split_factor> floorplan_split;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;

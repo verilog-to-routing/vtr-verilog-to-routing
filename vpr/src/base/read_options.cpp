@@ -455,6 +455,46 @@ struct ParseFixPins {
     }
 };
 
+struct ParseFloorplanSplit {
+    ConvertedValue<constraints_split_factor> from_str(std::string str) {
+        ConvertedValue<constraints_split_factor> conv_value;
+        if (str == "halves")
+            conv_value.set_value(HALVES);
+        else if (str == "quadrants")
+            conv_value.set_value(QUADRANTS);
+        else if (str == "sixteenths")
+        	conv_value.set_value(SIXTEENTHS);
+        else if (str == "one_spot")
+        	conv_value.set_value(ONE_SPOT);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to constraints_split_factor (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(constraints_split_factor val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == HALVES)
+            conv_value.set_value("halves");
+        else if (val == QUADRANTS)
+            conv_value.set_value("quadrants");
+        else if (val == SIXTEENTHS)
+            conv_value.set_value("sixteenths");
+        else {
+            VTR_ASSERT(val == ONE_SPOT);
+            conv_value.set_value("one_spot");
+        }
+        return conv_value;
+    }
+
+
+    std::vector<std::string> default_choices() {
+        return {"halves", "quadrants", "sixteenths", "one_spot"};
+    }
+};
+
 struct ParseClusterSeed {
     ConvertedValue<e_cluster_seed> from_str(std::string str) {
         ConvertedValue<e_cluster_seed> conv_value;
@@ -1902,6 +1942,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<constraints_split_factor, ParseFloorplanSplit>(args.floorplan_split, "--floorplan_split")
+		.help("Used to say how many partitions the floorplan constraints file should split the blocks into.")
+        .default_value("halves")
+        .choices({"halves", "quadrants", "sixteenths", "one_spot"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
     /*
      * place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
      * .help(
