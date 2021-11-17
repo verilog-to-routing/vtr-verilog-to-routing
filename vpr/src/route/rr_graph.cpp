@@ -452,7 +452,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     for (long unsigned int iseg = 0; iseg < num_segments; ++iseg) {
     	device_ctx.rr_segments.push_back(segment_inf[(iseg)]);
     }
-
     int num_seg_details = 0;
     t_seg_details* seg_details = nullptr;
 
@@ -1356,6 +1355,8 @@ void free_rr_graph() {
 
     device_ctx.rr_indexed_data.clear();
 
+    device_ctx.rr_segments.clear();
+
     device_ctx.rr_switch_inf.clear();
 
     device_ctx.switch_fanin_remap.clear();
@@ -1363,8 +1364,6 @@ void free_rr_graph() {
     device_ctx.rr_node_metadata.clear();
 
     device_ctx.rr_edge_metadata.clear();
-
-    device_ctx.rr_segments.clear();
 
     invalidate_router_lookahead_cache();
 }
