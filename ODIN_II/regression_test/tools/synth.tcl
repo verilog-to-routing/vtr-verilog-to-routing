@@ -4,7 +4,7 @@ yosys -import
 # Feel free to specify file paths using "$env(VTR_ROOT)/ ..." 
 
 # Read the hardware decription Verilog
-read_verilog -nomem2reg -nolatches $env(VTR_ROOT)/ODIN_II/regression_test/benchmark/verilog/common/mux.v;
+read_verilog -nomem2reg -nolatches $env(TCL_CIRCUIT);
 # Check that cells match libraries and find top module
 hierarchy -check -auto-top;
 
@@ -20,8 +20,8 @@ memory_collect; memory_dff; opt;
 # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
 check;
 # resolve asynchronous dffs
-techmap -map $env(VTR_ROOT)/ODIN_II/techlib/adff2dff.v;
-techmap -map $env(VTR_ROOT)/ODIN_II/techlib/adffe2dff.v;
+techmap -map $env(ODIN_TECHLIB)/adff2dff.v;
+techmap -map $env(ODIN_TECHLIB)/adffe2dff.v;
 # convert mem block to bram/rom
 
 # [NOTE]: Yosys complains about expression width more than 24 bits.
@@ -40,3 +40,5 @@ opt -undriven -full; # -noff #potential option to remove all sdff and etc. Only 
 autoname;
 # Print statistics
 stat;
+
+write_blif -param -impltf $env(TCL_BLIF);
