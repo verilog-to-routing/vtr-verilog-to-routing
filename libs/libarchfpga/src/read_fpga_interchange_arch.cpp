@@ -2,6 +2,7 @@
 #include <kj/std/iostream.h>
 #include <limits>
 #include <map>
+#include <regex>
 #include <set>
 #include <stdlib.h>
 #include <string>
@@ -34,6 +35,18 @@
 using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
+
+struct t_package_pin {
+    std::string name;
+
+    std::string site_name;
+    std::string bel_name;
+};
+
+struct t_bel_cell_mapping {
+    int cell;
+    std::vector<std::pair<int, int>> pins;
+};
 
 /****************** Utility functions ******************/
 
@@ -113,7 +126,7 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
     return 0.;
 }
 
-static t_model_ports* get_model_port(t_arch* arch, std::string model, std::string port) {
+static t_model_ports* get_model_port(t_arch* arch, std::string model, std::string port, bool fail = true) {
     for (t_model* m : {arch->models, arch->model_library}) {
         for (; m != nullptr; m = m->next) {
             if (std::string(m->name) != model)
@@ -126,8 +139,11 @@ static t_model_ports* get_model_port(t_arch* arch, std::string model, std::strin
         }
     }
 
-    archfpga_throw(__FILE__, __LINE__,
-                   "Could not find model port: %s (%s)\n", port.c_str(), model.c_str());
+    if (fail)
+        archfpga_throw(__FILE__, __LINE__,
+                       "Could not find model port: %s (%s)\n", port.c_str(), model.c_str());
+
+    return nullptr;
 }
 
 static t_model* get_model(t_arch* arch, std::string model) {
@@ -168,6 +184,7 @@ static t_port get_generic_port(t_arch* arch,
     port.equivalent = PortEquivalence::NONE;
     port.type = dir;
     port.is_clock = false;
+    port.is_non_clock_global = false;
     port.model_port = nullptr;
     port.port_class = vtr::strdup(nullptr);
     port.port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
@@ -194,16 +211,9 @@ struct ArchReader {
         , ltypes_(logical_types) {
         set_arch_file_name(arch_file);
 
-        for (auto cell_bel : ar_.getCellBelMap()) {
-            auto name = str(cell_bel.getCell());
-            for (auto site_bels : cell_bel.getCommonPins()[0].getSiteTypes()) {
-                auto site_type = str(site_bels.getSiteType());
-                for (auto bel : site_bels.getBels()) {
-                    auto bel_name = str(bel);
-                    std::pair<std::string, std::string> key(site_type, bel_name);
-                    bel_cell_mapping_[key].push_back(name);
-                }
-            }
+        for (std::string str : ar_.getStrList()) {
+            auto interned_string = arch_->strings.intern_string(vtr::string_view(str.c_str()));
+            arch_->interned_strings.push_back(interned_string);
         }
     }
 
@@ -211,6 +221,8 @@ struct ArchReader {
         // Preprocess arch information
         process_luts();
         process_package_pins();
+        process_cell_bel_mappings();
+        process_constants();
 
         process_models();
         process_device();
@@ -236,12 +248,17 @@ struct ArchReader {
 
     t_default_fc_spec default_fc_;
 
-    //                siteTypeName, belName     , list of cell names
-    std::map<std::pair<std::string, std::string>, std::vector<std::string>> bel_cell_mapping_;
+    // Package pins
+
+    // TODO: add possibility to have multiple packages
+    std::vector<t_package_pin> pad_bels_;
+
+    // Bel Cell mappings
+    std::unordered_map<uint32_t, std::vector<t_bel_cell_mapping>> bel_cell_mappings_;
 
     // Utils
     std::string str(int idx) {
-        return std::string(ar_.getStrList()[idx].cStr());
+        return arch_->interned_strings[idx].get(&arch_->strings);
     }
 
     int get_bel_type_count(Device::SiteType::Reader& site, Device::BELCategory category) {
@@ -263,6 +280,26 @@ struct ArchReader {
 
     std::string get_ic_prefix(Device::SiteType::Reader& site, Device::BEL::Reader& bel) {
         return bel.getCategory() == Device::BELCategory::SITE_PORT ? str(site.getName()) : str(bel.getName());
+    }
+
+    bool is_lut(std::string name) {
+        for (auto cell : arch_->lut_cells)
+            if (cell.name == name)
+                return true;
+
+        for (auto bel : arch_->lut_bels)
+            if (bel.name == name)
+                return true;
+
+        return false;
+    }
+
+    bool is_pad(std::string name) {
+        for (auto pad : pad_bels_)
+            if (pad.bel_name == name)
+                return true;
+
+        return false;
     }
 
     std::unordered_map<std::string, std::tuple<std::string, std::string, e_interconnect, bool>> get_ics(Device::SiteType::Reader& site) {
@@ -288,6 +325,7 @@ struct ArchReader {
                     is_mux = bel.getCategory() == Device::BELCategory::ROUTING;
                 }
             }
+
             VTR_ASSERT(!std::get<1>(out_pin).empty());
 
             // Stores all output BELs connected to the same out_pin
@@ -304,7 +342,7 @@ struct ArchReader {
                 auto bel = get_bel_reader(site, str(bel_pin.getBel()));
                 auto out_bel_name = get_ic_prefix(site, bel);
 
-                for (auto pad_bel : arch_->pad_bels) {
+                for (auto pad_bel : pad_bels_) {
                     is_pad = pad_bel.bel_name == out_bel_name || is_pad;
                     pad_bel_name = pad_bel.bel_name == out_bel_name ? out_bel_name : pad_bel_name;
                     pad_bel_pin_name = pad_bel.bel_name == out_bel_name ? out_bel_pin_name : pad_bel_pin_name;
@@ -362,18 +400,17 @@ struct ArchReader {
                     auto res = ics.emplace(ic_name, std::make_tuple(istr, ostr, DIRECT_INTERC, is_pad));
 
                     if (!res.second) {
-                        std::tie(inputs, outputs, ic_type, std::ignore) = res.first->second;
-                        if (inputs.empty())
-                            inputs = istr;
-                        else
-                            inputs += " " + istr;
+                        std::string ins, outs;
+                        std::tie(ins, outs, ic_type, std::ignore) = res.first->second;
 
-                        if (outputs.empty())
-                            outputs = ostr;
-                        else
-                            outputs += " " + ostr;
+                        VTR_ASSERT(ins == istr);
 
-                        res.first->second = std::make_tuple(inputs, outputs, ic_type, is_pad);
+                        if (outs.empty())
+                            outs = ostr;
+                        else
+                            outs += " " + ostr;
+
+                        res.first->second = std::make_tuple(ins, outs, ic_type, is_pad);
                     }
                 }
             }
@@ -381,6 +418,119 @@ struct ArchReader {
 
         return ics;
     }
+
+    /**
+     * Preprocessors:
+     *   - process_luts: processes information on which cells and bels are LUTs
+     *   - process_package_pins: processes information on the device's pinout and which sites and bels
+     *                           contain IO pads
+     *   - process_cell_bel_mapping: processes mappings between a cell and the possible BELs location for that cell
+     */
+
+    void process_luts() {
+        // Add LUT Cell definitions
+        // This is helpful to understand which cells are LUTs
+        auto lut_def = ar_.getLutDefinitions();
+
+        for (auto lut_cell : lut_def.getLutCells()) {
+            t_lut_cell cell;
+            cell.name = lut_cell.getCell().cStr();
+            for (auto input : lut_cell.getInputPins())
+                cell.inputs.push_back(input.cStr());
+
+            auto equation = lut_cell.getEquation();
+            if (equation.isInitParam())
+                cell.init_param = equation.getInitParam().cStr();
+
+            arch_->lut_cells.push_back(cell);
+        }
+
+        for (auto lut_elem : lut_def.getLutElements()) {
+            for (auto lut : lut_elem.getLuts()) {
+                for (auto bel : lut.getBels()) {
+                    t_lut_bel lut_bel;
+
+                    std::string name = bel.getName().cStr();
+                    lut_bel.name = name;
+
+                    // Check for duplicates
+                    auto is_duplicate = [name](t_lut_bel l) { return l.name == name; };
+                    auto res = std::find_if(arch_->lut_bels.begin(), arch_->lut_bels.end(), is_duplicate);
+                    if (res != arch_->lut_bels.end())
+                        continue;
+
+                    std::vector<std::string> ipins;
+                    for (auto pin : bel.getInputPins())
+                        ipins.push_back(pin.cStr());
+
+                    lut_bel.input_pins = ipins;
+                    lut_bel.output_pin = bel.getOutputPin().cStr();
+
+                    arch_->lut_bels.push_back(lut_bel);
+                }
+            }
+        }
+    }
+
+    void process_package_pins() {
+        for (auto package : ar_.getPackages()) {
+            for (auto pin : package.getPackagePins()) {
+                t_package_pin pckg_pin;
+                pckg_pin.name = str(pin.getPackagePin());
+
+                if (pin.getBel().isBel())
+                    pckg_pin.bel_name = str(pin.getBel().getBel());
+
+                if (pin.getSite().isSite())
+                    pckg_pin.site_name = str(pin.getSite().getSite());
+
+                pad_bels_.push_back(pckg_pin);
+            }
+        }
+    }
+
+    void process_cell_bel_mappings() {
+        for (auto cell_mapping : ar_.getCellBelMap()) {
+            int cell_name = cell_mapping.getCell();
+
+            for (auto common_pins : cell_mapping.getCommonPins()) {
+                std::vector<std::pair<int, int>> pins;
+
+                for (auto pin_map : common_pins.getPins())
+                    pins.emplace_back(pin_map.getCellPin(), pin_map.getBelPin());
+
+                for (auto site_type_entry : common_pins.getSiteTypes()) {
+                    for (auto bel : site_type_entry.getBels()) {
+                        t_bel_cell_mapping mapping;
+
+                        mapping.cell = cell_name;
+                        mapping.pins = pins;
+
+                        std::vector<t_bel_cell_mapping> maps{mapping};
+
+                        auto res = bel_cell_mappings_.emplace(bel, maps);
+                        if (!res.second)
+                            res.first->second.push_back(mapping);
+                    }
+                }
+            }
+        }
+    }
+
+    void process_constants() {
+        auto consts = ar_.getConstants();
+
+        arch_->gnd_cell = str(consts.getGndCellType());
+        arch_->vcc_cell = str(consts.getVccCellType());
+
+        if (consts.getGndNetName().isName())
+            arch_->gnd_net = str(consts.getGndNetName().getName());
+
+        if (consts.getVccNetName().isName())
+            arch_->vcc_net = str(consts.getVccNetName().getName());
+    }
+
+    /* end preprocessors */
 
     // Model processing
     void process_models() {
@@ -399,11 +549,7 @@ struct ArchReader {
             if (str(primitive.getLib()) == std::string("primitives")) {
                 std::string prim_name = str(primitive.getName());
 
-                bool is_lut = false;
-                for (auto lut_cell : arch_->lut_cells)
-                    is_lut = lut_cell.name == prim_name || is_lut;
-
-                if (is_lut)
+                if (is_lut(prim_name))
                     continue;
 
                 try {
@@ -529,7 +675,7 @@ struct ArchReader {
 
             pb_type->name = vtr::strdup(name.c_str());
             pb_type->num_pb = 1;
-            process_block_ports(pb_type, name, site);
+            process_block_ports(pb_type, site);
 
             // Process modes (for simplicity, only the default mode is allowed for the time being)
             pb_type->num_modes = 1;
@@ -554,41 +700,23 @@ struct ArchReader {
                 auto bel_name = str(bel.getName());
                 std::pair<std::string, std::string> key(name, bel_name);
 
-                auto cell_name = bel_name;
+                auto mid_pb_type = new t_pb_type;
+                mid_pb_type->name = vtr::strdup(bel_name.c_str());
+                mid_pb_type->num_pb = 1;
+                mid_pb_type->parent_mode = mode;
+                mid_pb_type->blif_model = nullptr;
 
-                if (bel_cell_mapping_.find(key) != bel_cell_mapping_.end()) {
-                    VTR_ASSERT(bel_cell_mapping_[key].size() == 1);
-                    cell_name = bel_cell_mapping_[key][0];
-                }
+                if (!is_pad(bel_name))
+                    process_block_ports(mid_pb_type, site, false);
 
-                auto leaf_pb_type = new t_pb_type;
-                leaf_pb_type->name = vtr::strdup(bel_name.c_str());
-                leaf_pb_type->num_pb = 1;
-                leaf_pb_type->parent_mode = mode;
+                if (is_lut(bel_name))
+                    process_lut_block(mid_pb_type);
+                else if (is_pad(bel_name))
+                    process_pad_block(mid_pb_type, bel, site);
+                else
+                    process_generic_block(mid_pb_type, bel);
 
-                // TODO: fix this to make it dynamic. This will need the usage of CellBelMapping
-
-                auto find_lut = [cell_name](t_lut_cell l) { return l.name == cell_name; };
-                bool is_lut = std::find_if(arch_->lut_cells.begin(), arch_->lut_cells.end(), find_lut) != arch_->lut_cells.end();
-
-                auto find_pad = [bel_name](t_package_pin p) { return p.bel_name == bel_name; };
-                bool is_pad = std::find_if(arch_->pad_bels.begin(), arch_->pad_bels.end(), find_pad) != arch_->pad_bels.end();
-
-                if (!is_pad)
-                    process_block_ports(leaf_pb_type, cell_name, site, false, is_lut);
-
-                if (is_lut) {
-                    leaf_pb_type->blif_model = nullptr;
-                    process_lut_block(leaf_pb_type);
-                } else if (is_pad) {
-                    leaf_pb_type->blif_model = nullptr;
-                    process_pad_block(leaf_pb_type, bel, site);
-                } else {
-                    leaf_pb_type->blif_model = vtr::strdup((std::string(".subckt ") + cell_name).c_str());
-                    leaf_pb_type->model = get_model(arch_, cell_name);
-                }
-
-                mode->pb_type_children[count++] = *leaf_pb_type;
+                mode->pb_type_children[count++] = *mid_pb_type;
             }
 
             process_interconnects(mode, site);
@@ -791,15 +919,103 @@ struct ArchReader {
         imode->interconnect[0] = *i_ic;
     }
 
-    void process_block_ports(t_pb_type* pb_type, std::string cell_name, Device::SiteType::Reader& site, bool is_root = true, bool is_model_library = false) {
-        std::unordered_set<std::string> names;
+    void process_generic_block(t_pb_type* pb_type, Device::BEL::Reader& bel) {
+        std::string pb_name = std::string(pb_type->name);
 
+        auto maps = bel_cell_mappings_[bel.getName()];
+        int num_modes = maps.size();
+
+        pb_type->num_modes = num_modes;
+        pb_type->modes = new t_mode[num_modes];
+
+        int count = 0;
+        for (auto map : maps) {
+            int idx = count++;
+            auto mode = &pb_type->modes[idx];
+            auto name = str(map.cell);
+            mode->name = vtr::strdup(name.c_str());
+            mode->parent_pb_type = pb_type;
+            mode->index = idx;
+            mode->num_pb_type_children = 1;
+            mode->pb_type_children = new t_pb_type[1];
+
+            auto leaf = &mode->pb_type_children[0];
+            std::string leaf_name = name == std::string(pb_type->name) ? name + std::string("_leaf") : name;
+            leaf->name = vtr::strdup(leaf_name.c_str());
+            leaf->num_pb = 1;
+            leaf->parent_mode = mode;
+
+            int num_ports = map.pins.size();
+            leaf->num_ports = num_ports;
+            leaf->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+            leaf->blif_model = vtr::strdup((std::string(".subckt ") + name).c_str());
+            leaf->model = get_model(arch_, name);
+
+            mode->num_interconnect = num_ports;
+            mode->interconnect = new t_interconnect[num_ports];
+            std::unordered_map<std::string, std::pair<PORTS, int>> pins;
+            int ic_count = 0;
+            for (auto pin_map : map.pins) {
+                auto cell_pin = str(pin_map.first);
+                auto bel_pin = str(pin_map.second);
+
+                if (cell_pin == arch_->vcc_cell || cell_pin == arch_->gnd_cell)
+                    continue;
+
+                std::smatch regex_matches;
+                std::string pin_suffix;
+                const std::regex port_regex("([0-9A-Za-z-]+)\\[([0-9]+)\\]");
+                if (std::regex_match(cell_pin, regex_matches, port_regex)) {
+                    cell_pin = regex_matches[1].str();
+                    pin_suffix = std::string("[") + regex_matches[2].str() + std::string("]");
+                }
+
+                auto model_port = get_model_port(arch_, name, cell_pin, false);
+
+                if (model_port == nullptr)
+                    continue;
+
+                auto size = model_port->size;
+                auto dir = model_port->dir;
+
+                pins.emplace(cell_pin, std::make_pair(dir, size));
+
+                std::string istr, ostr, ic_name;
+                switch (dir) {
+                    case IN_PORT:
+                        istr = pb_name + std::string(".") + bel_pin;
+                        ostr = leaf_name + std::string(".") + cell_pin + pin_suffix;
+                        break;
+                    case OUT_PORT:
+                        istr = leaf_name + std::string(".") + cell_pin + pin_suffix;
+                        ostr = pb_name + std::string(".") + bel_pin;
+                        break;
+                    default:
+                        VTR_ASSERT(0);
+                }
+
+                ic_name = istr + std::string("_") + ostr;
+
+                auto ic = &mode->interconnect[ic_count++];
+                ic->name = vtr::strdup(ic_name.c_str());
+                ic->type = DIRECT_INTERC;
+                ic->parent_mode_index = idx;
+                ic->parent_mode = mode;
+                ic->input_string = vtr::strdup(istr.c_str());
+                ic->output_string = vtr::strdup(ostr.c_str());
+            }
+
+            create_ports(leaf, pins, name);
+        }
+    }
+
+    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, bool is_root = true) {
         // Prepare data based on pb_type level
-        std::unordered_map<std::string, PORTS> pins;
+        std::unordered_map<std::string, std::pair<PORTS, int>> pins;
         if (is_root) {
             for (auto pin : site.getPins()) {
                 auto dir = pin.getDir() == LogicalNetlist::Netlist::Direction::INPUT ? IN_PORT : OUT_PORT;
-                pins.emplace(str(pin.getName()), dir);
+                pins.emplace(str(pin.getName()), std::make_pair(dir, 1));
             }
         } else {
             for (auto bel : site.getBels()) {
@@ -812,10 +1028,16 @@ struct ArchReader {
                 for (auto bel_pin : bel.getPins()) {
                     auto pin = site.getBelPins()[bel_pin];
                     auto dir = pin.getDir() == LogicalNetlist::Netlist::Direction::INPUT ? IN_PORT : OUT_PORT;
-                    pins.emplace(str(pin.getName()), dir);
+                    pins.emplace(str(pin.getName()), std::make_pair(dir, 1));
                 }
             }
         }
+
+        create_ports(pb_type, pins);
+    }
+
+    void create_ports(t_pb_type* pb_type, std::unordered_map<std::string, std::pair<PORTS, int>>& pins, std::string model = "") {
+        std::unordered_set<std::string> names;
 
         auto num_ports = pins.size();
         auto ports = new t_port[num_ports];
@@ -830,7 +1052,9 @@ struct ArchReader {
             int pins_dir_count = 0;
             for (auto pin_pair : pins) {
                 auto pin_name = pin_pair.first;
-                auto pin_dir = pin_pair.second;
+                PORTS pin_dir;
+                int num_pins;
+                std::tie(pin_dir, num_pins) = pin_pair.second;
 
                 if (pin_dir != dir)
                     continue;
@@ -841,14 +1065,14 @@ struct ArchReader {
                 pb_type->num_input_pins += is_input ? 1 : 0;
                 pb_type->num_output_pins += is_input ? 0 : 1;
 
-                auto port = get_generic_port(arch_, pb_type, dir, pin_name);
+                auto port = get_generic_port(arch_, pb_type, dir, pin_name, /*string_model=*/"", num_pins);
                 ports[pin_count] = port;
                 port.index = pin_count++;
                 port.port_index_by_type = pins_dir_count++;
                 port.absolute_first_pin_index = pin_abs++;
 
-                if (!is_root && !is_model_library)
-                    port.model_port = get_model_port(arch_, cell_name, pin_name);
+                if (!model.empty())
+                    port.model_port = get_model_port(arch_, model, pin_name);
             }
         }
     }
@@ -935,20 +1159,15 @@ struct ArchReader {
 
             setup_pin_classes(&ptype);
 
-            bool is_pad = false;
+            bool is_io = false;
             for (auto site : tile.getSiteTypes()) {
                 auto site_type = ar_.getSiteTypeList()[site.getPrimaryType()];
 
-                for (auto bel : site_type.getBels()) {
-                    auto bel_name = str(bel.getName());
-                    auto is_pad_func = [bel_name](t_package_pin p) { return p.bel_name == bel_name; };
-                    auto res = std::find_if(arch_->pad_bels.begin(), arch_->pad_bels.end(), is_pad_func);
-
-                    is_pad = res != arch_->pad_bels.end() || is_pad;
-                }
+                for (auto bel : site_type.getBels())
+                    is_io = is_pad(str(bel.getName())) || is_io;
             }
 
-            ptype.is_input_type = ptype.is_output_type = is_pad;
+            ptype.is_input_type = ptype.is_output_type = is_io;
 
             ptypes_.push_back(ptype);
         }
@@ -1068,68 +1287,6 @@ struct ArchReader {
         }
     }
 
-    void process_luts() {
-        // Add LUT Cell definitions
-        // This is helpful to understand which cells are LUTs
-        auto lut_def = ar_.getLutDefinitions();
-
-        for (auto lut_cell : lut_def.getLutCells()) {
-            t_lut_cell cell;
-            cell.name = lut_cell.getCell().cStr();
-            for (auto input : lut_cell.getInputPins())
-                cell.inputs.push_back(input.cStr());
-
-            auto equation = lut_cell.getEquation();
-            if (equation.isInitParam())
-                cell.init_param = equation.getInitParam().cStr();
-
-            arch_->lut_cells.push_back(cell);
-        }
-
-        for (auto lut_elem : lut_def.getLutElements()) {
-            for (auto lut : lut_elem.getLuts()) {
-                for (auto bel : lut.getBels()) {
-                    t_lut_bel lut_bel;
-
-                    std::string name = bel.getName().cStr();
-                    lut_bel.name = name;
-
-                    // Check for duplicates
-                    auto is_duplicate = [name](t_lut_bel l) { return l.name == name; };
-                    auto res = std::find_if(arch_->lut_bels.begin(), arch_->lut_bels.end(), is_duplicate);
-                    if (res != arch_->lut_bels.end())
-                        continue;
-
-                    std::vector<std::string> ipins;
-                    for (auto pin : bel.getInputPins())
-                        ipins.push_back(pin.cStr());
-
-                    lut_bel.input_pins = ipins;
-                    lut_bel.output_pin = bel.getOutputPin().cStr();
-
-                    arch_->lut_bels.push_back(lut_bel);
-                }
-            }
-        }
-    }
-
-    void process_package_pins() {
-        for (auto package : ar_.getPackages()) {
-            for (auto pin : package.getPackagePins()) {
-                t_package_pin pckg_pin;
-                pckg_pin.name = str(pin.getPackagePin());
-
-                if (pin.getBel().isBel())
-                    pckg_pin.bel_name = str(pin.getBel().getBel());
-
-                if (pin.getSite().isSite())
-                    pckg_pin.site_name = str(pin.getSite().getSite());
-
-                arch_->pad_bels.push_back(pckg_pin);
-            }
-        }
-    }
-
     // Layout Processing
     void process_layout() {
         auto tileList = ar_.getTileList();
@@ -1167,8 +1324,6 @@ struct ArchReader {
                 size_t pos = tile_prefix.find(tile_type);
                 if (pos != std::string::npos && pos == 0)
                     tile_prefix.erase(pos, tile_type.length() + 1);
-                data.add(arch_->strings.intern_string(vtr::string_view("fasm_prefix")),
-                         arch_->strings.intern_string(vtr::string_view(tile_prefix.c_str())));
                 t_grid_loc_def single(tile_type, 1);
                 single.x.start_expr = std::to_string(tile.getCol());
                 single.y.start_expr = std::to_string(tile.getRow());

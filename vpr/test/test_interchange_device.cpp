@@ -18,7 +18,7 @@ TEST_CASE("read_interchange_models", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    std::unordered_set<std::string> models = {"IB", "OB", "DFF", "GND", "VCC"};
+    std::unordered_set<std::string> models = {"IB", "OB", "DFFR", "DFFS", "GND", "VCC"};
 
     // Check that there are exactly the expected models
     for (auto* model = arch.models; model != nullptr; model = model->next) {
@@ -74,39 +74,26 @@ TEST_CASE("read_interchange_luts", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    std::unordered_set<std::string> lut_cell_pins = {"A0", "A1", "A2", "A3"};
-    std::unordered_set<std::string> lut_bel_pins = {"I0", "I1", "I2", "I3"};
+    std::unordered_set<std::string> lut_cells = {"LUT1", "LUT2", "LUT3", "LUT4"};
+    std::unordered_set<std::string> lut_bels = {"ALUT", "BLUT"};
+    std::unordered_set<std::string> lut_cell_pins = {"I0", "I1", "I2", "I3"};
+    std::unordered_set<std::string> lut_bel_pins = {"A1", "A2", "A3", "A4"};
 
-    REQUIRE(arch.lut_cells.size() == 1);
-    REQUIRE(arch.lut_bels.size() == 1);
+    REQUIRE(arch.lut_cells.size() == 4);
+    REQUIRE(arch.lut_bels.size() == 2);
 
-    auto lut_cell = arch.lut_cells[0];
-    REQUIRE(lut_cell.name == std::string("LUT"));
-    REQUIRE(lut_cell.init_param == std::string("INIT"));
-    for (auto lut_pin : lut_cell_pins)
-        CHECK(std::find(lut_cell.inputs.begin(), lut_cell.inputs.end(), lut_pin) != lut_cell.inputs.end());
+    for (auto lut_cell : arch.lut_cells) {
+        CHECK(std::find(lut_cells.begin(), lut_cells.end(), lut_cell.name) != lut_cells.end());
+        REQUIRE(lut_cell.init_param == std::string("INIT"));
+        for (auto lut_pin : lut_cell.inputs)
+            CHECK(std::find(lut_cell_pins.begin(), lut_cell_pins.end(), lut_pin) != lut_cell_pins.end());
+    }
 
-    auto lut_bel = arch.lut_bels[0];
-    REQUIRE(lut_bel.name == std::string("LUT"));
-    REQUIRE(lut_bel.output_pin == std::string("O"));
-    for (auto lut_pin : lut_bel_pins)
-        CHECK(std::find(lut_bel.input_pins.begin(), lut_bel.input_pins.end(), lut_pin) != lut_bel.input_pins.end());
-}
-
-TEST_CASE("read_interchange_pin_packages", "[vpr]") {
-    t_arch arch;
-    std::vector<t_physical_tile_type> physical_tile_types;
-    std::vector<t_logical_block_type> logical_block_types;
-
-    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
-
-    // The device architecture file contains 35 perimetral PADs
-    REQUIRE(arch.pad_bels.size() == 35);
-
-    int ipad = 0;
-    for (auto pad_bel : arch.pad_bels) {
-        REQUIRE(pad_bel.name == std::string("A") + std::to_string(ipad++));
-        REQUIRE(pad_bel.bel_name == std::string("PAD"));
+    for (auto lut_bel : arch.lut_bels) {
+        CHECK(std::find(lut_bels.begin(), lut_bels.end(), lut_bel.name) != lut_bels.end());
+        REQUIRE(lut_bel.output_pin == std::string("O"));
+        for (auto lut_pin : lut_bel.input_pins)
+            CHECK(std::find(lut_bel_pins.begin(), lut_bel_pins.end(), lut_pin) != lut_bel_pins.end());
     }
 }
 
@@ -144,15 +131,23 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
     std::unordered_set<std::string> ltypes = {"NULL", "IOPAD", "SLICE", "POWER"};
 
     std::unordered_map<std::string, PORTS> slice_ports = {
-        {"L0", PORTS::IN_PORT},
-        {"L1", PORTS::IN_PORT},
-        {"L2", PORTS::IN_PORT},
-        {"L3", PORTS::IN_PORT},
-        {"R", PORTS::IN_PORT},
-        {"C", PORTS::IN_PORT},
-        {"D", PORTS::IN_PORT},
-        {"O", PORTS::OUT_PORT},
-        {"Q", PORTS::OUT_PORT}};
+        {"L0_0", PORTS::IN_PORT},
+        {"L1_0", PORTS::IN_PORT},
+        {"L2_0", PORTS::IN_PORT},
+        {"L3_0", PORTS::IN_PORT},
+        {"R_0", PORTS::IN_PORT},
+        {"D_0", PORTS::IN_PORT},
+        {"O_0", PORTS::OUT_PORT},
+        {"Q_0", PORTS::OUT_PORT},
+        {"L0_1", PORTS::IN_PORT},
+        {"L1_1", PORTS::IN_PORT},
+        {"L2_1", PORTS::IN_PORT},
+        {"L3_1", PORTS::IN_PORT},
+        {"R_1", PORTS::IN_PORT},
+        {"D_1", PORTS::IN_PORT},
+        {"O_1", PORTS::OUT_PORT},
+        {"Q_1", PORTS::OUT_PORT},
+        {"CLK", PORTS::IN_PORT}};
 
     // Check that there are exactly the expected models
     for (auto ltype : logical_block_types) {
