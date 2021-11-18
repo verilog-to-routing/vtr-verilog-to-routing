@@ -1555,12 +1555,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::vector<t_segment_inf> temp_rr_segs;
         temp_rr_segs.reserve(segment_inf_.size());
         for (auto& rr_seg : device_ctx.rr_segments) {
-            temp_rr_segs.push_back(rr_seg);
-          }
+        	temp_rr_segs.push_back(rr_seg);
+        }
         alloc_and_load_rr_indexed_data(
-        	temp_rr_segs,
-			*wire_to_rr_ipin_switch_,
-			base_cost_type_);
+        		temp_rr_segs,
+				*wire_to_rr_ipin_switch_,
+				base_cost_type_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {

@@ -446,7 +446,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /* START SEG_DETAILS */
-    //device_ctx.rr_segments = segment_inf;
     size_t num_segments = segment_inf.size();
     device_ctx.rr_segments.reserve(num_segments);
     for (long unsigned int iseg = 0; iseg < num_segments; ++iseg) {
