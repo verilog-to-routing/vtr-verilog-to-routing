@@ -1553,10 +1553,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
          * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
          */
         std::vector<t_segment_inf> temp_rr_segs;
-        device_ctx.rr_segments.reserve(segment_inf_.size());
-        for (auto& temp_rr_seg : temp_rr_segs) {
-        	device_ctx.rr_segments.push_back(temp_rr_seg);
-        }
+          temp_rr_segs.reserve(segment_inf_.size());
+          for (auto& rr_seg : device_ctx.rr_segments) {
+            temp_rr_segs.push_back(rr_seg);
+          }
         alloc_and_load_rr_indexed_data(
         	temp_rr_segs,
 			*wire_to_rr_ipin_switch_,
