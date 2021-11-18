@@ -2464,7 +2464,7 @@ std::string describe_rr_node(int inode) {
     msg += vtr::string_fmt(" fan-in: %d", rr_graph.node_fan_in(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-out: %d", rr_node.num_edges());
 
-    msg += rr_graph.node_coordinate_to_string(RRNodeId(inode));
+    msg += " " + rr_graph.node_coordinate_to_string(RRNodeId(inode));
 
     return msg;
 }
