@@ -2,6 +2,7 @@
 #include "rr_graph_storage.h"
 #include "globals.h"
 #include "vpr_error.h"
+#include "rr_graph.h"
 
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
@@ -20,9 +21,12 @@ bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
 
 bool t_rr_node::validate() const {
     //Check internal assumptions about RR node are valid
+	auto& device_ctx = g_vpr_ctx.device();
+	const auto& rr_graph = device_ctx.rr_graph;
+
     t_edge_size iedge = 0;
     for (auto edge : edges()) {
-        if (edge < num_configurable_edges()) {
+        if (edge < rr_graph.num_configurable_edges(RRNodeId(id_))) {
             if (!edge_is_configurable(edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node non-configurable edge found in configurable edge list");
             }

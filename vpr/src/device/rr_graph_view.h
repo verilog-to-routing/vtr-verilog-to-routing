@@ -249,6 +249,10 @@ class RRGraphView {
         return node_storage_.node_side_string(node);
     }
 
+    inline t_edge_size num_configurable_edges(RRNodeId node) const {
+        return node_storage_.num_configurable_edges(node);
+    }
+
     /** @brief Get the cost index of a routing resource node. This function is inlined for runtime optimization. */
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
