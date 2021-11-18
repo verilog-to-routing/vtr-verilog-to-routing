@@ -47,7 +47,7 @@ set(TEST_SOURCES
   test/test_utils.cpp
   )
 add_executable(test_fasm ${TEST_SOURCES})
-target_link_libraries(test_fasm fasm libcatch)
+target_link_libraries(test_fasm fasm Catch2::Catch2WithMain)
 
 #Supress IPO link warnings if IPO is enabled
 get_target_property(TEST_FASM_USES_IPO test_fasm INTERPROCEDURAL_OPTIMIZATION)

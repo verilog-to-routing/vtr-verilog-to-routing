@@ -44,4 +44,9 @@
         internal_path="libs/EXTERNAL/libinterchange"
         external_url="https://github.com/chipsalliance/fpga-interchange-schema.git"
         default_external_ref="main"/>
+    <subtree
+        name="libcatch2"
+        internal_path="libs/EXTERNAL/libcatch2"
+        external_url="https://github.com/catchorg/Catch2.git"
+        default_external_ref="devel"/>
 </subtrees>
