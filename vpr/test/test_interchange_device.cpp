@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "read_fpga_interchange_arch.h"
 #include "arch_util.h"
@@ -8,8 +8,6 @@
 #include <vector>
 
 namespace {
-
-using Catch::Matchers::Equals;
 
 static constexpr const char kArchFile[] = "testarch.device";
 
