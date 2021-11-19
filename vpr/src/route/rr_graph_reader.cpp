@@ -49,7 +49,7 @@ void load_rr_file(const t_graph_type graph_type,
     size_t num_segments = segment_inf.size();
     device_ctx.rr_segments.reserve(num_segments);
     for (long unsigned int iseg = 0; iseg < num_segments; ++iseg) {
-    	device_ctx.rr_segments.push_back(segment_inf[(iseg)]);
+        device_ctx.rr_segments.push_back(segment_inf[(iseg)]);
     }
     RrGraphSerializer reader(
         graph_type,
