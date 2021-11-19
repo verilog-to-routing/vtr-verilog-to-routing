@@ -40,7 +40,7 @@ As a result, hard/soft logic trade-off decisions and heterogeneous logic inferen
    :maxdepth: 2
    :Caption: Verilog Support
 
-   verilog_support
+   ../yosys/verilog_support
 
 .. toctree::
    :glob:
