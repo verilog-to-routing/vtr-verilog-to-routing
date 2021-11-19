@@ -21,8 +21,9 @@ bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
 
 bool t_rr_node::validate() const {
     //Check internal assumptions about RR node are valid
-	auto& device_ctx = g_vpr_ctx.device();
-	const auto& rr_graph = device_ctx.rr_graph;
+    auto& device_ctx = g_vpr_ctx.device();
+
+    const auto& rr_graph = device_ctx.rr_graph;
 
     t_edge_size iedge = 0;
     for (auto edge : edges()) {
