@@ -20,6 +20,21 @@ static void free_pb_type(t_pb_type* pb_type);
 
 /******************** End Subroutine declarations ****************************/
 
+/* This gives access to the architecture file name to
+ * all architecture-parser functions       */
+static const char* arch_file_name = nullptr;
+
+void set_arch_file_name(const char* arch) {
+    arch_file_name = arch;
+}
+
+/* Used by functions outside read_xml_util.c to gain access to arch filename */
+const char* get_arch_file_name() {
+    VTR_ASSERT(arch_file_name != nullptr);
+
+    return arch_file_name;
+}
+
 InstPort::InstPort(std::string str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");
 
@@ -1236,40 +1251,6 @@ void SyncModelsPbTypes_rec(t_arch* arch,
     }
 }
 
-void UpdateAndCheckModels(t_arch* arch) {
-    t_model* cur_model;
-    t_model_ports* port;
-    int i, j;
-    cur_model = arch->models;
-    while (cur_model) {
-        if (cur_model->pb_types == nullptr) {
-            archfpga_throw(get_arch_file_name(), 0,
-                           "No pb_type found for model %s\n", cur_model->name);
-        }
-        port = cur_model->inputs;
-        i = 0;
-        j = 0;
-        while (port) {
-            if (port->is_clock) {
-                port->index = i;
-                i++;
-            } else {
-                port->index = j;
-                j++;
-            }
-            port = port->next;
-        }
-        port = cur_model->outputs;
-        i = 0;
-        while (port) {
-            port->index = i;
-            i++;
-            port = port->next;
-        }
-        cur_model = cur_model->next;
-    }
-}
-
 /* Date:July 10th, 2013
  * Author: Daniel Chen
  * Purpose: Attempts to match a clock_name specified in an
@@ -1370,4 +1351,46 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
         }
     }
     return false;
+}
+
+const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type) {
+    VTR_ASSERT(annot_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN);
+
+    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
+        InstPort annot_in(annot->input_pins);
+        if (annot_in.port_name() == port->name) {
+            for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
+                if (annot->prop[iprop] == annot_type) {
+                    return annot;
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port) {
+    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
+        for (const auto& annot_in_str : vtr::split(annot->input_pins)) {
+            InstPort in_pins(annot_in_str);
+            for (const auto& annot_out_str : vtr::split(annot->output_pins)) {
+                InstPort out_pins(annot_out_str);
+                if (in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
+                    for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
+                        if (annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                            || annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
+                            return annot;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return nullptr;
 }

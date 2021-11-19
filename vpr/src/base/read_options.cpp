@@ -60,6 +60,38 @@ struct ParseOnOff {
     }
 };
 
+struct ParseArchFormat {
+    ConvertedValue<e_arch_format> from_str(std::string str) {
+        ConvertedValue<e_arch_format> conv_value;
+        if (str == "vtr")
+            conv_value.set_value(e_arch_format::VTR);
+        else if (str == "fpga-interchange")
+            conv_value.set_value(e_arch_format::FPGAInterchange);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_arch_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_arch_format val) {
+        ConvertedValue<std::string> conv_value;
+
+        if (val == e_arch_format::VTR)
+            conv_value.set_value("vtr");
+        else {
+            VTR_ASSERT(val == e_arch_format::FPGAInterchange);
+            conv_value.set_value("fpga-interchange");
+        }
+
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"vtr", "fpga-interchange"};
+    }
+};
 struct ParseCircuitFormat {
     ConvertedValue<e_circuit_format> from_str(std::string str) {
         ConvertedValue<e_circuit_format> conv_value;
@@ -1112,7 +1144,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     auto& pos_grp = parser.add_argument_group("positional arguments");
     pos_grp.add_argument(args.ArchFile, "architecture")
-        .help("FPGA Architecture description file (XML)");
+        .help(
+            "FPGA Architecture description file\n"
+            "   - XML: this is the default frontend format\n"
+            "   - FPGA Interchange: device architecture file in the FPGA Interchange format");
 
     pos_grp.add_argument(args.CircuitName, "circuit")
         .help("Circuit file (or circuit name if --circuit_file specified)");
@@ -1367,7 +1402,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     auto& file_grp = parser.add_argument_group("file options");
 
-    file_grp.add_argument(args.BlifFile, "--circuit_file")
+    file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
+        .help(
+            "File format for the input atom-level circuit/netlist.\n"
+            " * vtr: Architecture expressed in the explicit VTR format"
+            " * fpga-interchage: Architecture expressed in the FPGA Interchange schema format\n")
+        .default_value("vtr")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.CircuitFile, "--circuit_file")
         .help("Path to technology mapped circuit")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2456,7 +2499,7 @@ void set_conditional_defaults(t_options& args) {
     VTR_ASSERT(args.CircuitName.provenance() == Provenance::SPECIFIED);
     auto name_ext = vtr::split_ext(args.CircuitName);
 
-    if (args.BlifFile.provenance() != Provenance::SPECIFIED) {
+    if (args.CircuitFile.provenance() != Provenance::SPECIFIED) {
         //If the blif file wasn't explicitly specified, interpret the circuit name
         //as the blif file, and split off the extension
         args.CircuitName.set(vtr::basename(name_ext[0]), Provenance::SPECIFIED);
@@ -2464,11 +2507,11 @@ void set_conditional_defaults(t_options& args) {
 
     std::string default_output_name = args.CircuitName;
 
-    if (args.BlifFile.provenance() != Provenance::SPECIFIED) {
+    if (args.CircuitFile.provenance() != Provenance::SPECIFIED) {
         //Use the full path specified in the original circuit name,
         //and append the expected .blif extension
         std::string blif_file = name_ext[0] + name_ext[1];
-        args.BlifFile.set(blif_file, Provenance::INFERRED);
+        args.CircuitFile.set(blif_file, Provenance::INFERRED);
     }
 
     if (args.SDCFile.provenance() != Provenance::SPECIFIED) {

@@ -15,6 +15,7 @@
 
 #include "globals.h"
 #include "read_xml_arch_file.h"
+#include "read_fpga_interchange_arch.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
@@ -87,7 +88,7 @@ void SetupVPR(const t_options* Options,
     //TODO: Move FileNameOpts setup into separate function
     FileNameOpts->CircuitName = Options->CircuitName;
     FileNameOpts->ArchFile = Options->ArchFile;
-    FileNameOpts->BlifFile = Options->BlifFile;
+    FileNameOpts->CircuitFile = Options->CircuitFile;
     FileNameOpts->NetFile = Options->NetFile;
     FileNameOpts->PlaceFile = Options->PlaceFile;
     FileNameOpts->RouteFile = Options->RouteFile;
@@ -109,11 +110,25 @@ void SetupVPR(const t_options* Options,
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
-        XmlReadArch(Options->ArchFile.value().c_str(),
-                    TimingEnabled,
-                    Arch,
-                    device_ctx.physical_tile_types,
-                    device_ctx.logical_block_types);
+        switch (Options->arch_format) {
+            case e_arch_format::VTR:
+                XmlReadArch(Options->ArchFile.value().c_str(),
+                            TimingEnabled,
+                            Arch,
+                            device_ctx.physical_tile_types,
+                            device_ctx.logical_block_types);
+                break;
+            case e_arch_format::FPGAInterchange:
+                VTR_LOG("Use FPGA Interchange device\n");
+                FPGAInterchangeReadArch(Options->ArchFile.value().c_str(),
+                                        TimingEnabled,
+                                        Arch,
+                                        device_ctx.physical_tile_types,
+                                        device_ctx.logical_block_types);
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Invalid architecture format!");
+        }
     }
     VTR_LOG("\n");
 
@@ -470,7 +485,7 @@ void SetupPackerOpts(const t_options& Options,
                      t_packer_opts* PackerOpts) {
     PackerOpts->output_file = Options.NetFile;
 
-    PackerOpts->blif_file_name = Options.BlifFile;
+    PackerOpts->circuit_file_name = Options.CircuitFile;
 
     if (Options.do_packing) {
         PackerOpts->doPacking = STAGE_DO;

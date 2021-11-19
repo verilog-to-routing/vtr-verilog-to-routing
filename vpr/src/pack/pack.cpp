@@ -48,7 +48,7 @@ bool try_pack(t_packer_opts* packer_opts,
     int num_models;
     std::vector<t_pack_patterns> list_of_packing_patterns;
     std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
-    VTR_LOG("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
+    VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     /* determine number of models in the architecture */
     num_models = 0;

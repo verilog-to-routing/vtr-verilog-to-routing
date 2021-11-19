@@ -14,12 +14,13 @@ struct t_options {
     argparse::ArgValue<std::string> NetFile;
     argparse::ArgValue<std::string> PlaceFile;
     argparse::ArgValue<std::string> RouteFile;
-    argparse::ArgValue<std::string> BlifFile;
+    argparse::ArgValue<std::string> CircuitFile;
     argparse::ArgValue<std::string> ActFile;
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
 
+    argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
 
     argparse::ArgValue<std::string> out_file_prefix;

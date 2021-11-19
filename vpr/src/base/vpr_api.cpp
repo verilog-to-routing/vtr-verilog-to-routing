@@ -314,7 +314,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     /* Read blif file and sweep unused components */
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     atom_ctx.nlist = read_and_process_circuit(options->circuit_format,
-                                              vpr_setup->PackerOpts.blif_file_name.c_str(),
+                                              vpr_setup->PackerOpts.circuit_file_name.c_str(),
                                               vpr_setup->user_models,
                                               vpr_setup->library_models,
                                               vpr_setup->NetlistOpts.const_gen_inference,

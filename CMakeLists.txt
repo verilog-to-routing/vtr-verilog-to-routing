@@ -40,6 +40,7 @@ option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VP
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
 option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
+option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
@@ -120,6 +121,11 @@ endif()
 #
 # Build type flags
 #
+
+set(EXTRA_FLAGS "")
+if(VPR_ENABLE_INTERCHANGE)
+    set(EXTRA_FLAGS "-lz")
+endif()
 
 if(NOT MSVC)
     # for GCC and Clang
@@ -295,7 +301,7 @@ endif()
 # Set final flags
 #
 separate_arguments(
-    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE} ${EXTRA_FLAGS}"
     )
 separate_arguments(
     WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
@@ -365,7 +371,6 @@ if (VPR_USE_EZGL STREQUAL "auto")
         message(STATUS "VPR Graphics: Disabled (required libraries missing, on debian/ubuntu try: sudo apt install libgtk-3-dev libx11-dev")
     endif()
 endif()
-
 
 #Add the various sub-projects
 if(${WITH_ABC})
