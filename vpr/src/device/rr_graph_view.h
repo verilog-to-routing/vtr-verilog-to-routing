@@ -123,10 +123,12 @@ class RRGraphView {
     inline short node_yhigh(RRNodeId node) const {
         return node_storage_.node_yhigh(node);
     }
+
     /** @brief Get the first edge of resource node. This function is inlined for runtime optimization. */
     inline RREdgeId node_first_edge(RRNodeId node) const {
         return node_storage_.first_edge(node);
     }
+
     /** @brief Get the length (number of grid tile units spanned by the wire, including the endpoints) of a routing resource node.
      * node_length() only applies to CHANX or CHANY and is always a positive number
      * This function is inlined for runtime optimization.
@@ -144,8 +146,6 @@ class RRGraphView {
                  && (node_xlow(node) == -1) && (node_ylow(node) == -1)
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
-
-    
 
     /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
      * This function is used for error checking; it checks if two nodes are physically adjacent (could be connected) based on their geometry.
