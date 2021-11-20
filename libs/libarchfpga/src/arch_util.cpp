@@ -206,7 +206,7 @@ void free_arch(t_arch* arch) {
     }
 
     if (arch->noc) {
-        vtr::free(arch->noc);
+        delete (arch->noc);
     }
 }
 
