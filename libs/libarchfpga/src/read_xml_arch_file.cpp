@@ -253,9 +253,9 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
 
 static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
 
-static void processTopology(pugi::xml_node topology_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
 
-static void processRouter(pugi::xml_node router_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
 
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
@@ -436,6 +436,14 @@ void XmlReadArch(const char* ArchFile,
                 free(clocks_fake);
             }
         }
+
+        // process NoC (optional)
+        Next = get_single_child(architecture, "noc", loc_data, pugiutil::OPTIONAL);
+
+        if (Next){
+            ProcessNoc(Next, arch, loc_data);
+        }
+
         SyncModelsPbTypes(arch, LogicalBlockTypes);
         check_models(arch);
 
@@ -4533,8 +4541,11 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
 
     pugi::xml_node noc_topology;
 
+    // identifier that lets us know when we could not properly convert an attribute value to a integer
+    int attribute_conversion_failure = -1;
+
     // if we are here, then the user has a NoC in their architecture, so need to add it
-    arch->noc = (t_noc_inf*)vtr::malloc(sizeof(t_noc_inf));
+    arch->noc = new t_noc_inf;
     t_noc_inf* noc_ref = arch->noc;
 
     /* process the noc attributes first */
@@ -4543,17 +4554,17 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
     pugiutil::expect_only_attributes(noc_tag, expected_noc_attributes, loc_data);
 
     // now go through and parse the required attributes for noc tag
-    noc_ref->link_bandwidth = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_int();
+    noc_ref->link_bandwidth = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
 
-    noc_ref->link_latency = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_int();
+    noc_ref->link_latency = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
 
-    noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_int();
+    noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
 
     // the noc parameters can only be non-zero positive values
-    if ((noc_ref->link_bandwidth <= 0) || (noc_ref->link_latency <= 0) || (noc_ref->router_latency <= 0))
+    if ((noc_ref->link_bandwidth < 0) || (noc_ref->link_latency < 0) || (noc_ref->router_latency < 0))
     {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
-                               "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero value.");
+                               "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero integer.");
     }
 
     /* We processed the NoC node, so now process the topology*/
@@ -4563,7 +4574,7 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
 
     noc_topology = pugiutil::get_single_child(noc_tag, "topology", loc_data, pugiutil::REQUIRED);
 
-    processTopology(noc_topology, arch, loc_data);
+    processTopology(noc_topology, loc_data, noc_ref);
 
 
 
@@ -4582,16 +4593,10 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
     return;
 }
 
-static void processTopology(pugi::xml_node topology_tag, t_arch* arch, const pugiutil::loc_data& loc_data)
+static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref)
 {   
     // The topology tag should have no attributes, check that
     pugiutil::expect_only_attributes(topology_tag, {}, loc_data);
-
-    /* a tracker that stores all the routers (using id) that should
-       be within the noc (based on connections). And keeps a record
-       of whether the router was included within the topology description.
-    */
-    std::unordered_map<int,bool> router_list;
 
     /* Now go through the children tags of topology, which is basically
        each router found within the NoC 
@@ -4603,14 +4608,23 @@ static void processTopology(pugi::xml_node topology_tag, t_arch* arch, const pug
        }
        else {
            // curent tag is a valid router, so process it
-           processRouter(router, arch, loc_data);
+           processRouter(router, loc_data, noc_ref);
        }
    }
+
+   // check whether any routers were supplied
+   if (noc_ref->router_list.size() == 0)
+   {
+       archfpga_throw(loc_data.filename_c_str(), loc_data.line(topology_tag),
+                               "No routers were supplied for the NoC.");
+   }
+
+   std::cout << noc_ref->router_list.size() << "\n";
 
     return;
 }
 
-static void processRouter(pugi::xml_node router_tag, t_arch* arch, const pugiutil::loc_data& loc_data)
+static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref)
 {   
     // identifier that lets us know when we could not properly convert an attribute value to a integer
     int attribute_conversion_failure = -1;
@@ -4638,7 +4652,7 @@ static void processRouter(pugi::xml_node router_tag, t_arch* arch, const pugiuti
     router_info.device_y_position = pugiutil::get_attribute(router_tag, "positiony", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
 
     // verify whether the attribute information was legal
-    if ((router_info.id == attribute_conversion_failure) || (router_info.device_x_position == attribute_conversion_failure) || (router_info.device_y_position == attribute_conversion_failure)) {
+    if ((router_info.id < 0) || (router_info.device_x_position < 0) || (router_info.device_y_position < 0)) {
 
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
                                "The router id, and position (x & y) for the router must be a positive number.");
@@ -4658,18 +4672,18 @@ static void processRouter(pugi::xml_node router_tag, t_arch* arch, const pugiuti
         if (!router_connection_list_result)
         {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
-                            "The connections attribute for the router must be a space seperated list of integers, where each integer represents a router id that the current router is connected to");
+                            "The 'connections' attribute for the router must be a list of integers seperated by spaces, where each integer represents a router id that the current router is connected to.");
         }
 
     }
     else
     {
         VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(router_tag),
-                          "The router with id:%d either has an empty 'connections' attrtibute or does not have any associated connections to other routers in the NoC.", router_info.id);
+                          "The router with id:%d either has an empty 'connections' attrtibute or does not have any associated connections to other routers in the NoC.\n", router_info.id);
     }
 
     // at this point the current router information was completely legal, so we store the newly created router within the noc
-    arch->noc->router_list.push_back(router_info);
+    noc_ref->router_list.push_back(router_info);
 
     return;
 }
@@ -4773,7 +4787,7 @@ static bool parse_noc_router_connection_list(std::vector<int>& connection_list, 
         connection_list.push_back(converted_connection);
 
         // before we process the next router connection, we need to delete the substring (current router connection)
-        modified_attribute_value.erase(0 + position + delimiter.length());
+        modified_attribute_value.erase(0, position + delimiter.length());
 
         // clear the buffer that stores the router connection in a string format for the next iteration
         single_connection.clear();
