@@ -26,7 +26,7 @@ bool t_rr_node::validate() const {
     const auto& rr_graph = device_ctx.rr_graph;
 
     t_edge_size iedge = 0;
-    for (auto edge : edges()) {
+    for (auto edge : rr_graph.edges(RRNodeId(id_))) {
         if (edge < rr_graph.num_configurable_edges(RRNodeId(id_))) {
             if (!edge_is_configurable(edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node non-configurable edge found in configurable edge list");
