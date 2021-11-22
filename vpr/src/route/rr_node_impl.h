@@ -75,10 +75,6 @@ inline t_edge_size t_rr_node::num_edges() const {
     return storage_->num_edges(id_);
 }
 
-inline edge_idx_range t_rr_node::edges() const {
-    return storage_->edges(id_);
-}
-
 inline edge_idx_range t_rr_node::configurable_edges() const {
     return storage_->configurable_edges(id_);
 }
