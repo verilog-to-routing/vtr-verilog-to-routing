@@ -254,7 +254,7 @@ class RRGraphView {
         return node_storage_.num_configurable_edges(node);
     }
 
-    /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
+    /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
     inline edge_idx_range edges(RRNodeId node) const {
         return node_storage_.edges(node);
     }
