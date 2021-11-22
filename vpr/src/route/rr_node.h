@@ -92,11 +92,6 @@ class t_rr_node {
 
     signed short length() const;
 
-    short ptc_num() const;
-    short pin_num() const;   //Same as ptc_num() but checks that type() is consistent
-    short track_num() const; //Same as ptc_num() but checks that type() is consistent
-    short class_num() const; //Same as ptc_num() but checks that type() is consistent
-
     RRIndexedDataId cost_index() const;
     short rc_index() const;
 
