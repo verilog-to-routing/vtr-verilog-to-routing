@@ -31,6 +31,7 @@
 #include "build_switchblocks.h"
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
+#include "rr_graph_fpga_interchange.h"
 #include "router_lookahead_map.h"
 #include "rr_graph_clock.h"
 #include "edge_groups.h"
@@ -315,7 +316,8 @@ void create_rr_graph(const t_graph_type graph_type,
                      int* Warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-    if (!det_routing_arch->read_rr_graph_filename.empty()) {
+
+    if (!det_routing_arch->read_rr_graph_filename.empty() || router_opts.FPGAInterchange) {
         if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
             free_rr_graph();
 
@@ -327,6 +329,25 @@ void create_rr_graph(const t_graph_type graph_type,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          router_opts.read_rr_edge_metadata,
                          router_opts.do_check_rr_graph);
+            if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
+                mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                                  router_opts.reorder_rr_graph_nodes_threshold,
+                                                                  router_opts.reorder_rr_graph_nodes_seed);
+            }
+        } else if (!device_ctx.read_rr_graph_filename.size() && router_opts.FPGAInterchange) {
+            free_rr_graph();
+
+            VTR_LOG("Custom RR_graph generator\n");
+            build_rr_graph_fpga_interchange(graph_type,
+                                            grid,
+                                            segment_inf,
+                                            router_opts.base_cost_type,
+                                            &det_routing_arch->wire_to_rr_ipin_switch,
+                                            det_routing_arch->read_rr_graph_filename.c_str(),
+                                            router_opts.read_rr_edge_metadata,
+                                            router_opts.do_check_rr_graph);
+
+            exit(0);
             if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                 mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                                   router_opts.reorder_rr_graph_nodes_threshold,
