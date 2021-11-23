@@ -84,7 +84,7 @@ modules:	/* Empty */ {}
 			|	modules module {}
 			;
 
-module:		header declarations statements footer
+module:		header body footer
 			{
                 if(parse_info->pass_type == COUNT_PASS) {
                     parse_info->number_of_modules++;
@@ -126,10 +126,16 @@ header:		TOKEN_MODULE TOKEN_REGULARID '(' IdentifierList ')' ';'
 			}
 			;
 
-
-declarations:	/* Empty */ {}
-			|	declarations declaration {}
+body:           /* Empty */ {}
+			|	body declaration_statement {}
 			;
+
+
+declaration_statement:	        declaration
+			|
+                                statement  
+			;
+
 
 declaration:	PinType IdentifierList ';'
 				{
@@ -158,9 +164,7 @@ declaration:	PinType IdentifierList ';'
 footer:		TOKEN_ENDMODULE	{}
 			;
 
-statements:	/* Empty */ {}
-			| statements statement {}
-			;
+
 
 statement:		AssignStatement {}
 			|	TriStatement {}
