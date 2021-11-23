@@ -255,7 +255,7 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
 
 static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
 
-static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
+static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, std::map<int, std::pair<int, int>>&routers_info_in_arch);
 
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
@@ -272,7 +272,11 @@ e_side string_to_side(std::string side_str);
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
 
-static bool parse_noc_router_connection_list(std::vector<int>& connection_list, std::string connection_list_attribute_value);
+static bool parse_noc_router_connection_list(std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>&routers_in_arch_info);
+
+static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>&routers_in_arch_info);
+
+static void verify_noc_topology(std::map<int, std::pair<int, int>>&routers_in_arch_info);
 
 /*
  *
@@ -4600,6 +4604,10 @@ static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_dat
     // The topology tag should have no attributes, check that
     pugiutil::expect_only_attributes(topology_tag, {}, loc_data);
 
+    // stores router information that includes the number of connections a router has within a given topology and also the number of times a router was declared in the arch file using the <router> tag
+    // in the datastructure below, the router id is the key and stored data is a pair, where the first element is describes the number router declarations and the second element describes the numbe router connections
+    std::map<int, std::pair<int, int>> routers_in_arch_info;
+
     /* Now go through the children tags of topology, which is basically
        each router found within the NoC 
     */
@@ -4610,7 +4618,8 @@ static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_dat
        }
        else {
            // curent tag is a valid router, so process it
-           processRouter(router, loc_data, noc_ref);
+           processRouter(router, loc_data, noc_ref, routers_in_arch_info);
+
        }
    }
 
@@ -4621,12 +4630,13 @@ static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_dat
                                "No routers were supplied for the NoC.");
    }
 
-   std::cout << noc_ref->router_list.size() << "\n";
+   // check that the topology of the noc was correctly described in the arch file
+   verify_noc_topology(routers_in_arch_info);
 
     return;
 }
 
-static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref)
+static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, std::map<int, std::pair<int, int>>&routers_in_arch_info)
 {   
     // identifier that lets us know when we could not properly convert an attribute value to a integer
     int attribute_conversion_failure = -1;
@@ -4668,7 +4678,7 @@ static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& l
     if (router_connection_list_attribute_value.compare("") != 0)
     {
         // process the router connection list
-        router_connection_list_result = parse_noc_router_connection_list(router_info.connection_list, router_connection_list_attribute_value);
+        router_connection_list_result = parse_noc_router_connection_list(router_info.connection_list, router_connection_list_attribute_value, routers_in_arch_info);
 
         // check if the user provided a legal router connection list
         if (!router_connection_list_result)
@@ -4686,6 +4696,9 @@ static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& l
 
     // at this point the current router information was completely legal, so we store the newly created router within the noc
     noc_ref->router_list.push_back(router_info);
+
+    // update the number of declarations info for the current router (since we just finished processing one <router> tag)
+    update_router_info_in_arch(router_info.id, false, routers_in_arch_info);
 
     return;
 }
@@ -4754,7 +4767,7 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
                    "Could not find type: %s\n", type_name);
 }
 
-static bool parse_noc_router_connection_list(std::vector<int>& connection_list, std::string connection_list_attribute_value)
+static bool parse_noc_router_connection_list(std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>&routers_in_arch_info)
 {   
     // we wil be modifying the string so store it in a temporary variable
     // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
@@ -4788,6 +4801,9 @@ static bool parse_noc_router_connection_list(std::vector<int>& connection_list, 
         // if we are here then a legal router id was supplied, so store it
         connection_list.push_back(converted_connection);
 
+        // update the connection information for the current router in the connection list
+        update_router_info_in_arch(converted_connection, true, routers_in_arch_info);
+
         // before we process the next router connection, we need to delete the substring (current router connection)
         modified_attribute_value.erase(0, position + delimiter.length());
 
@@ -4797,4 +4813,80 @@ static bool parse_noc_router_connection_list(std::vector<int>& connection_list, 
 
     return result;
 
+}
+
+/* Each router needs a sperate <router> tag in the architecture description
+   to declare it. The number of declarations for each router in the 
+   architecture file is updated here.
+
+   Additionally, for any given topology, a router can connect to other routers.
+   THe number of connections for each router is also updated here. 
+
+*/
+static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>&routers_in_arch_info) {
+
+    // get the corresponding router info for the given router id
+    std::map<int, std::pair<int, int>>::iterator curr_router_info = routers_in_arch_info.find(router_id);
+
+    // check if the router previously existed in the router indo database
+    if (curr_router_info == routers_in_arch_info.end()) {
+
+        // case where the router did not exist previosuly, so we add it here and also get a reference to it
+        // initially a router has no declarations or connections
+        curr_router_info = routers_in_arch_info.insert(std::pair<int, std::pair<int, int>>(router_id, std::pair<int, int>(0, 0))).first;
+
+    }
+    
+    // case where the current router was provided while parsing the connections of another router
+    if (router_updated_as_a_connection) {
+
+        // since we are within the case where the current router is being processed as a connection to another router we just increment its number of connections
+        (curr_router_info->second.second)++;
+
+    }
+    else {
+
+        // since we are within the case where the current router is processed from a <router> tag, we just increment its number of declarations
+        (curr_router_info->second.first)++;
+
+    }
+
+    return;
+
+}
+
+/*
+    Verify each router in the noc by checking whether they satisfy the following conditions:
+        - The router has only one declaration in the arch file
+        - The router has atleast one connection to another router
+    If any of the conditions above are not met, then an error is thrown. 
+*/
+static void verify_noc_topology(std::map<int, std::pair<int, int>>&routers_in_arch_info)
+{
+
+    for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++)
+    {
+        // case where the router was included in the architecture and had no connections to other routers
+        if ((router_info->second.first == 1) && (router_info->second.second == 0)) {
+            
+            archfpga_throw("",-1,
+                               "The router with id:'%d' is not connected to any other router inb the NoC.", router_info->first);
+        
+        } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (ie. missing)
+        else if ((router_info->second.first == 0) && (router_info->second.second > 0)){
+
+            archfpga_throw("",-1,
+                               "The router with id:'%d' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.", router_info->first);
+
+        } // case where the router was delcared multiple times in the architecture file (multiple <router> tags for the same router)
+        else if (router_info->second.first > 1){
+        
+            archfpga_throw("",-1,
+                               "The router with id:'%d' was included more than once in the architecture file. Routers should only be declared once.", router_info->first);
+
+        }
+    }
+
+    return;
+    
 }
