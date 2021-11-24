@@ -1915,6 +1915,11 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         pos = strchr(pos + 1, '[');
         if (!pos) {
             pos = pre_pos;
+
+            const char* pos_colon = strchr(pos + 1, ':');
+            if (pos_colon) {
+                pos = NULL;
+            }
             break;
         }
     }
