@@ -944,20 +944,20 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 												AttractionInfo& attraction_groups) {
     int i, j;
 
+    AttractGroupId cluster_att_grp = pb->pb_stats->attraction_grp_id;
+
     for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
         if (pb->pb_stats->feasible_blocks[i] == molecule) {
             return; /* already in queue, do nothing */
         }
     }
 
-
-
     if (pb->pb_stats->num_feasible_blocks >= max_queue_size - 1) {
         /* maximum size for array, remove smallest gain element and sort */
-        if (get_molecule_gain(molecule, gain, attraction_groups) > get_molecule_gain(pb->pb_stats->feasible_blocks[0], gain), attraction_groups) {
+        if (get_molecule_gain(molecule, gain, cluster_att_grp, attraction_groups) > get_molecule_gain(pb->pb_stats->feasible_blocks[0], gain, cluster_att_grp, attraction_groups)) {
             /* single loop insertion sort */
             for (j = 0; j < pb->pb_stats->num_feasible_blocks - 1; j++) {
-                if (get_molecule_gain(molecule, gain) <= get_molecule_gain(pb->pb_stats->feasible_blocks[j + 1], gain)) {
+                if (get_molecule_gain(molecule, gain, cluster_att_grp, attraction_groups) <= get_molecule_gain(pb->pb_stats->feasible_blocks[j + 1], gain, cluster_att_grp, attraction_groups)) {
                     pb->pb_stats->feasible_blocks[j] = molecule;
                     break;
                 } else {
@@ -971,7 +971,7 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
     } else {
         /* Expand array and single loop insertion sort */
         for (j = pb->pb_stats->num_feasible_blocks - 1; j >= 0; j--) {
-            if (get_molecule_gain(pb->pb_stats->feasible_blocks[j], gain) > get_molecule_gain(molecule, gain)) {
+            if (get_molecule_gain(pb->pb_stats->feasible_blocks[j], gain, cluster_att_grp, attraction_groups) > get_molecule_gain(molecule, gain, cluster_att_grp, attraction_groups)) {
                 pb->pb_stats->feasible_blocks[j + 1] = pb->pb_stats->feasible_blocks[j];
             } else {
                 pb->pb_stats->feasible_blocks[j + 1] = molecule;
