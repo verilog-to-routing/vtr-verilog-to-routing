@@ -259,6 +259,11 @@ class RRGraphView {
         return node_storage_.edges(node);
     }
 
+    /** @brief Get the number of edges. This function is inlined for runtime optimization. */
+    inline t_edge_size num_edges(RRNodeId node) const {
+        return node_storage_.num_edges(node);
+    }
+
     /** @brief Get the cost index of a routing resource node. This function is inlined for runtime optimization. */
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);

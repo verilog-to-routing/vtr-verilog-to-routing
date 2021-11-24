@@ -71,7 +71,7 @@ void check_rr_graph(const t_graph_type graph_type,
         }
 
         t_rr_type rr_type = rr_graph.node_type(rr_node);
-        int num_edges = device_ctx.rr_nodes[inode].num_edges();
+        int num_edges = rr_graph.num_edges(RRNodeId(inode));
 
         check_rr_node(inode, route_type, device_ctx);
 
@@ -483,7 +483,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     }
 
     /* Check that the number of (out) edges is reasonable. */
-    num_edges = device_ctx.rr_nodes[inode].num_edges();
+    num_edges = rr_graph.num_edges(RRNodeId(inode));
 
     if (rr_type != SINK && rr_type != IPIN) {
         if (num_edges <= 0) {
@@ -544,7 +544,7 @@ static void check_unbuffered_edges(int from_node) {
     if (from_rr_type != CHANX && from_rr_type != CHANY)
         return;
 
-    from_num_edges = device_ctx.rr_nodes[from_node].num_edges();
+    from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
     for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
         to_node = device_ctx.rr_nodes[from_node].edge_sink_node(from_edge);
@@ -562,7 +562,7 @@ static void check_unbuffered_edges(int from_node) {
          * check that there is a corresponding edge from to_node back to         *
          * from_node.                                                            */
 
-        to_num_edges = device_ctx.rr_nodes[to_node].num_edges();
+        to_num_edges = rr_graph.num_edges(RRNodeId(to_node));
         trans_matched = false;
 
         for (to_edge = 0; to_edge < to_num_edges; to_edge++) {

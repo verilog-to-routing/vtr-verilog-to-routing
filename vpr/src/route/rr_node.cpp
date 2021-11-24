@@ -39,7 +39,7 @@ bool t_rr_node::validate() const {
         ++iedge;
     }
 
-    if (iedge != num_edges()) {
+    if (iedge != rr_graph.num_edges(RRNodeId(id_))) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node Edge iteration does not match edge size");
     }
 
