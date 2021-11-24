@@ -1354,6 +1354,8 @@ void free_rr_graph() {
 
     device_ctx.rr_switch_inf.clear();
 
+    device_ctx.rr_segments.clear();
+
     device_ctx.switch_fanin_remap.clear();
 
     device_ctx.rr_node_metadata.clear();
