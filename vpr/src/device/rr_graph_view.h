@@ -38,7 +38,7 @@ class RRGraphView {
     RRGraphView(const t_rr_graph_storage& node_storage,
                 const RRSpatialLookup& node_lookup,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                const std::vector<t_segment_inf>& rr_segments);
+                const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -209,7 +209,7 @@ class RRGraphView {
         } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
-            coordinate_string += rr_segments_[seg_index].name;                   //Write the segment name
+            coordinate_string += rr_segments(RRSegmentId(seg_index)).name;       //Write the segment name
             coordinate_string += " length:" + std::to_string(node_length(node)); //add the length of the segment
             //Figure out the starting and ending coordinate of the segment depending on the direction
 
@@ -258,7 +258,13 @@ class RRGraphView {
      * This API is very powerful and developers should not use it unless it is necessary, 
      * e.g the node type is unknown. If the node type is known, the more specific routines, `node_pin_num()`, 
      * `node_track_num()`and `node_class_num()`, for different types of nodes should be used.*/
+    /** @brief Return detailed routing segment information with a given id* @note The routing segments here may not be exactly same as those defined in architecture file. They have been
+     * adapted to fit the context of routing resource graphs.
+     */
 
+    inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
+        return rr_segments_[seg_id];
+    }
     inline short node_ptc_num(RRNodeId node) const {
         return node_storage_.node_ptc_num(node);
     }
@@ -303,7 +309,7 @@ class RRGraphView {
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
     /* Segment info for rr nodes */
-    const std::vector<t_segment_inf>& rr_segments_;
+    const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
 };
 
 #endif

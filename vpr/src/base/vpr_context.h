@@ -174,7 +174,7 @@ struct DeviceContext : public Context {
     std::vector<t_rr_switch_inf> rr_switch_inf;
 
     ///@brief Wire segment types in RR graph
-    std::vector<t_segment_inf> rr_segments;
+    vtr::vector<RRSegmentId, t_segment_inf> rr_segments;
 
     int num_arch_switches;
     t_arch_switch_inf* arch_switch_inf; // [0..(num_arch_switches-1)]

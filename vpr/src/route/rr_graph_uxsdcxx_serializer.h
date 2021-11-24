@@ -16,7 +16,7 @@
 #include "check_rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-
+#include "globals.h"
 class MetadataBind {
   public:
     MetadataBind(vtr::string_internment* strings, vtr::interned_string empty)
@@ -265,7 +265,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
-        const std::vector<t_segment_inf>& segment_inf,
+        const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
         const DeviceGrid& grid,
         MetadataStorage<int>* rr_node_metadata,
@@ -1152,7 +1152,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline int get_segment_id(const t_segment_inf*& segment) final {
-        return segment - &segment_inf_.at(0);
+        return segment - &segment_inf_.at(RRSegmentId(0));
     }
     inline const char* get_segment_name(const t_segment_inf*& segment) final {
         return segment->name.c_str();
@@ -1180,14 +1180,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
     inline const t_segment_inf* add_segments_segment(void*& /*ctx*/, int id) final {
-        return &segment_inf_.at(id);
+        return &segment_inf_.at(RRSegmentId(id));
     }
     inline void finish_segments_segment(const t_segment_inf*& /*iter*/) final {}
     inline size_t num_segments_segment(void*& /*iter*/) final {
         return segment_inf_.size();
     }
     inline const t_segment_inf* get_segments_segment(int n, void*& /*ctx*/) final {
-        return &segment_inf_.at(n);
+        return &segment_inf_.at(RRSegmentId(n));
     }
 
     inline void* init_rr_graph_segments(void*& /*ctx*/) final {
@@ -1547,12 +1547,24 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     void finish_load() final {
+        auto& device_ctx = g_vpr_ctx.mutable_device();
         process_rr_node_indices();
 
         rr_graph_builder_->init_fan_in();
+        /* Create a temp copy to convert from vtr::vector to std::vector
+         * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
+         * type for ``rr_segments``
+         * Note that this is a dirty fix (to avoid massive code changes)
+         * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
+         */
+        std::vector<t_segment_inf> temp_rr_segs;
+        temp_rr_segs.reserve(segment_inf_.size());
+        for (auto& rr_seg : device_ctx.rr_segments) {
+            temp_rr_segs.push_back(rr_seg);
+        }
 
         alloc_and_load_rr_indexed_data(
-            segment_inf_,
+            temp_rr_segs,
             *wire_to_rr_ipin_switch_,
             base_cost_type_);
 
@@ -1873,7 +1885,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
-    const std::vector<t_segment_inf>& segment_inf_;
+    const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
     MetadataStorage<int>* rr_node_metadata_;
