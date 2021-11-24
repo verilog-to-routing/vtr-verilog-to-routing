@@ -261,7 +261,7 @@ void YYosys::execute() {
         // -noff #potential option to remove all sdffXX and etc. Only dff will remain
         // "opt_muxtree" removes dead branches, "opt_expr" performs const folding and
         // removes "undef" from mux inputs and replace muxes with buffers and inverters
-        run_pass(std::string("opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;")); 
+        run_pass(std::string("opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;"));
         // Use a readable name convention
         run_pass(std::string("autoname"));
         // Print statistics

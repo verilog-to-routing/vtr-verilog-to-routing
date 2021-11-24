@@ -1126,9 +1126,9 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
 
                     if (i == input_count) {
                         if (!strcmp(output_bit_map, "1")) {
-                            if (input_count == 1) 
+                            if (input_count == 1)
                                 to_return = BUF_NODE;
-                            else 
+                            else
                                 to_return = LOGICAL_AND;
                         } else if (!strcmp(output_bit_map, "0")) {
                             to_return = LOGICAL_NAND;
@@ -1163,22 +1163,20 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
                     to_return = LOGICAL_XNOR;
                 }
                 /* SMUX_2 */
-                else if (((strcmp(bit_map[0], "01-") == 0) && (strcmp(bit_map[1], "1-1") == 0)) ||
-                         ((strcmp(bit_map[0], "1-0") == 0) && (strcmp(bit_map[1], "-11") == 0))) {
+                else if (((strcmp(bit_map[0], "01-") == 0) && (strcmp(bit_map[1], "1-1") == 0)) || ((strcmp(bit_map[0], "1-0") == 0) && (strcmp(bit_map[1], "-11") == 0))) {
                     to_return = SMUX_2;
-                    
+
                     /** 
                      * if in some BLIF files the mux selector is considered as 
                      * the last input instead of the first, here we handle it 
                      * to move the selector to the first port
-                    */
+                     */
                     if (strcmp(bit_map[0], "1-0") == 0) {
                         char* selector_name = names[2];
                         names[2] = names[1];
                         names[1] = names[0];
                         names[0] = selector_name;
                     }
-
                 }
             } else if (line_count_bitmap == 4) {
                 /* ADDER_FUNC */

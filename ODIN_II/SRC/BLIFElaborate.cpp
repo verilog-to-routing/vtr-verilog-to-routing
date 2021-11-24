@@ -560,7 +560,7 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
             /* postpone to partial mapping phase */
             break;
         }
-        case MUX_2:  //fallthrough
+        case MUX_2: //fallthrough
         case MULTI_PORT_MUX: {
             error_message(BLIF_ELABORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;
