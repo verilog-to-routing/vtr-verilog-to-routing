@@ -2570,7 +2570,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                         if (success) {
                             add_molecule_to_pb_stats_candidates(molecule,
                                                                 cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size);
-                            VTR_LOG("Added atom %d to attraction group\n", blk_id);
+                            //VTR_LOG("Added atom %d to attraction group\n", blk_id);
                         }
                     }
                 }
