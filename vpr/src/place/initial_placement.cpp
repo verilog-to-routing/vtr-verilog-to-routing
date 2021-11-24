@@ -179,11 +179,15 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
 
+    //int num_tiles_tried = 0;
     std::vector<Region> regions = pr.get_partition_region();
 
     bool placed = false;
 
     t_pl_loc to_loc;
+
+    //ClusterBlockId head_block_id = pl_macro.members[0].blk_index;
+    //ClusterBlockId failing_block_id(595);
 
     for (unsigned int reg = 0; reg < regions.size() && placed == false; reg++) {
         vtr::Rect<int> rect = regions[reg].get_region_rect();
@@ -231,6 +235,10 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
 
                             for (int st = st_low; st <= st_high && placed == false; st++) {
                                 to_loc.sub_tile = st;
+                                /*if (head_block_id == failing_block_id) {
+                                	num_tiles_tried++;
+                                	VTR_LOG("checking position x: %d, y: %d, subtile: %d for 595, %d tiles tried \n", to_loc.x, to_loc.y, to_loc.sub_tile, num_tiles_tried);
+                                }*/
                                 if (place_ctx.grid_blocks[to_loc.x][to_loc.y].blocks[to_loc.sub_tile] == EMPTY_BLOCK_ID) {
                                     placed = try_place_macro(pl_macro, to_loc);
 
@@ -320,8 +328,18 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
 
     bool macro_placed = false;
 
+    //ClusterBlockId head_block_id = pl_macro.members[0].blk_index;
+    //ClusterBlockId failing_block_id(595);
+
+    /*if (head_block_id == failing_block_id) {
+    	VTR_LOG("Trying position x: %d, y: %d, subtile: %d for 595 \n", head_pos.x, head_pos.y, head_pos.sub_tile);
+    }*/
+
     // If that location is occupied, do nothing.
     if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.sub_tile] != EMPTY_BLOCK_ID) {
+        /*if (head_block_id == failing_block_id) {
+        	VTR_LOG("Position x: %d, y: %d, subtile: %d is not empty for 595 \n", head_pos.x, head_pos.y, head_pos.sub_tile);
+        }*/
         return (macro_placed);
     }
 
@@ -336,6 +354,7 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
             ClusterBlockId iblk = pl_macro.members[imember].blk_index;
 
             set_block_location(iblk, member_pos);
+            //VTR_LOG("Block %d placed at x: %d, y: %d, subtile: %d \n", iblk, member_pos.x, member_pos.y, member_pos.sub_tile);
 
         } // Finish placing all the members in the macro
     }
@@ -347,6 +366,9 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
     bool macro_placed;
     int itry;
     ClusterBlockId blk_id;
+
+    //ClusterBlockId head_block_id = pl_macro.members[0].blk_index;
+    //ClusterBlockId failing_block_id(595);
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -388,6 +410,9 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
             }
 
         } // Finished all tries
+        /*if (head_block_id == failing_block_id) {
+        	VTR_LOG("Finished random tries for 595 \n");
+        }*/
 
         if (!macro_placed) {
             // if a macro still could not be placed after macros_max_num_tries times,
@@ -397,6 +422,9 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
             // if there are no legal positions, error out
 
             // Exhaustive placement of carry macros
+            /*if (head_block_id == failing_block_id) {
+            	VTR_LOG("Trying exhaustive placement for 595 \n");
+            }*/
             macro_placed = try_exhaustive_placement(pl_macro, pr, block_type, pad_loc_type);
 
             // If macro could not be placed after exhaustive placement, error out

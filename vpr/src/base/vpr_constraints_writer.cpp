@@ -20,9 +20,9 @@
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
     //Fill in the constraints object to be printed out.
-    VprConstraints constraints;
+    //VprConstraints constraints;
 
-    if (floorplan_split == HALVES) {
+    /*if (floorplan_split == HALVES) {
     	VTR_LOG("Splitting grid floorplan constraints into halves \n");
     	setup_vpr_floorplan_constraints_halves(constraints);
     } else if (floorplan_split == QUADRANTS) {
@@ -43,6 +43,72 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
         fp.precision(std::numeric_limits<float>::max_digits10);
         void* context;
         uxsd::write_vpr_constraints_xml(writer, context, fp);
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Unknown extension on output %s",
+                        file_name);
+    }*/
+
+    //Fill in the constraints object to be printed out.
+    VprConstraints constraints_half;
+
+	VTR_LOG("Splitting grid floorplan constraints into halves \n");
+	setup_vpr_floorplan_constraints_halves(constraints_half);
+
+    VprConstraintsSerializer writer_half(constraints_half);
+
+    const char* file_name_half = "half.xml";
+
+    if (vtr::check_file_name_extension(file_name, ".xml")) {
+        std::fstream fp;
+        fp.open(file_name_half, std::fstream::out | std::fstream::trunc);
+        fp.precision(std::numeric_limits<float>::max_digits10);
+        void* context;
+        uxsd::write_vpr_constraints_xml(writer_half, context, fp);
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Unknown extension on output %s",
+                        file_name);
+    }
+
+    //Fill in the constraints object to be printed out.
+    VprConstraints constraints_quad;
+
+	VTR_LOG("Splitting grid floorplan constraints into quadrants \n");
+	setup_vpr_floorplan_constraints_quadrants(constraints_quad);
+
+    VprConstraintsSerializer writer_quad(constraints_quad);
+
+    const char* file_name_quad = "quad.xml";
+
+    if (vtr::check_file_name_extension(file_name, ".xml")) {
+        std::fstream fp;
+        fp.open(file_name_quad, std::fstream::out | std::fstream::trunc);
+        fp.precision(std::numeric_limits<float>::max_digits10);
+        void* context;
+        uxsd::write_vpr_constraints_xml(writer_quad, context, fp);
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Unknown extension on output %s",
+                        file_name);
+    }
+
+    //Fill in the constraints object to be printed out.
+    VprConstraints constraints_six;
+
+	VTR_LOG("Splitting grid floorplan constraints into sixteenths \n");
+	setup_vpr_floorplan_constraints_sixteenths(constraints_six);
+
+    VprConstraintsSerializer writer_six(constraints_six);
+
+    const char* file_name_six = "six.xml";
+
+    if (vtr::check_file_name_extension(file_name, ".xml")) {
+        std::fstream fp;
+        fp.open(file_name_six, std::fstream::out | std::fstream::trunc);
+        fp.precision(std::numeric_limits<float>::max_digits10);
+        void* context;
+        uxsd::write_vpr_constraints_xml(writer_six, context, fp);
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "Unknown extension on output %s",

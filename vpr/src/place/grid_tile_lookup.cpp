@@ -10,6 +10,8 @@ void GridTileLookup::initialize_grid_tile_matrices() {
         vtr::NdMatrix<int, 2> type_count({device_ctx.grid.width(), device_ctx.grid.height()});
         fill_type_matrix(&type, type_count);
         block_type_matrices.push_back(type_count);
+        ///VTR_LOG("Printing matrix for type %s \n", type.name);
+        //print_type_matrix(type_count);
     }
 }
 

@@ -41,7 +41,7 @@ struct AttractionGroup {
      * Atoms belonging to this attraction group will receive this gain if they
      * are potential candidates to be put in a cluster with the same attraction group.
      */
-    float gain = 5;
+    float gain = 0.05;
 
     /*
      * If the group is made up from a partition of atoms that are confined to a size one spot

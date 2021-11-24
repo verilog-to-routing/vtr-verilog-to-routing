@@ -659,6 +659,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      clb_index,
                                                      packer_opts.pack_verbosity);
             prev_molecule = istart;
+            int num_failed_feasibility = 0;
             while (next_molecule != nullptr && prev_molecule != next_molecule) {
                 block_pack_status = try_pack_molecule(cur_cluster_placement_stats_ptr,
                                                       atom_molecules,
@@ -700,6 +701,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                      next_molecule->pack_pattern->name, next_molecule->atom_block_ids.size());
                             VTR_LOG("\n");
                             fflush(stdout);
+                        }
+                    }
+
+                    if (block_pack_status != BLK_FAILED_ROUTE && block_pack_status != BLK_FAILED_FLOORPLANNING) {
+                        num_failed_feasibility++;
+                        if (num_failed_feasibility > 8) {
+                        	fflush(stdout);
+                        	break;
                         }
                     }
 
@@ -2106,6 +2115,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven, bool 
             cur_pb->pb_stats->gain[blk_id] += att_grp_gain;
         }
     }
+
 }
 
 /*****************************************/
@@ -2560,6 +2570,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                         if (success) {
                             add_molecule_to_pb_stats_candidates(molecule,
                                                                 cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size);
+                            VTR_LOG("Added atom %d to attraction group\n", blk_id);
                         }
                     }
                 }
