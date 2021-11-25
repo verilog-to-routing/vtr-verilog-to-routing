@@ -744,10 +744,11 @@ struct t_grid_blocks {
 struct t_file_name_opts {
     std::string ArchFile;
     std::string CircuitName;
-    std::string BlifFile;
+    std::string CircuitFile;
     std::string NetFile;
     std::string PlaceFile;
     std::string RouteFile;
+    std::string FPGAInterchangePhysicalFile;
     std::string ActFile;
     std::string PowerFile;
     std::string CmosTechFile;
@@ -788,7 +789,7 @@ enum e_packer_algorithm {
 };
 
 struct t_packer_opts {
-    std::string blif_file_name;
+    std::string circuit_file_name;
     std::string sdc_file_name;
     std::string output_file;
     bool global_clocks;

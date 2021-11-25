@@ -210,7 +210,6 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
 static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const int i,
                                    const int j,
-                                   t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const int delayless_switch,
                                    const DeviceGrid& grid);
@@ -1175,7 +1174,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* Connection SINKS and SOURCES to their pins. */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            build_rr_sinks_sources(rr_graph_builder, i, j, L_rr_node, rr_edges_to_create,
+            build_rr_sinks_sources(rr_graph_builder, i, j, rr_edges_to_create,
                                    delayless_switch, grid);
 
             //Create the actual SOURCE->OPIN, IPIN->SINK edges
@@ -1365,7 +1364,6 @@ void free_rr_graph() {
 static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const int i,
                                    const int j,
-                                   t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const int delayless_switch,
                                    const DeviceGrid& grid) {
@@ -1499,7 +1497,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
                             // Sanity check
                             VTR_ASSERT(rr_graph.is_node_on_specific_side(RRNodeId(inode), side));
-                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][L_rr_node.node_pin_num(inode)]);
+                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][rr_graph.node_pin_num(RRNodeId(inode))]);
                         }
                     }
                 }
@@ -2442,31 +2440,31 @@ std::string describe_rr_node(int inode) {
 
         if (seg_index < (int)device_ctx.rr_segments.size()) {
             msg += vtr::string_fmt(" track: %d longline: %d",
-                                   rr_node.track_num(),
+                                   rr_graph.node_track_num(RRNodeId(inode)),
                                    device_ctx.rr_segments[seg_index].longline);
         } else {
             msg += vtr::string_fmt(" track: %d seg_type: ILLEGAL_SEG_INDEX %d",
-                                   rr_node.track_num(),
+                                   rr_graph.node_track_num(RRNodeId(inode)),
                                    seg_index);
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
         auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
-        std::string pin_name = block_type_pin_index_to_name(type, rr_node.pin_num());
+        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node.id()));
 
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
-                               rr_node.pin_num(),
+                               rr_graph.node_pin_num(rr_node.id()),
                                pin_name.c_str());
     } else {
         VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK);
 
-        msg += vtr::string_fmt(" class: %d", rr_node.class_num());
+        msg += vtr::string_fmt(" class: %d", rr_graph.node_class_num(RRNodeId(inode)));
     }
 
     msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-in: %d", rr_graph.node_fan_in(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-out: %d", rr_graph.num_edges(RRNodeId(inode)));
 
-    msg += rr_graph.node_coordinate_to_string(RRNodeId(inode));
+    msg += " " + rr_graph.node_coordinate_to_string(RRNodeId(inode));
 
     return msg;
 }

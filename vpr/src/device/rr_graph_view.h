@@ -202,11 +202,11 @@ class RRGraphView {
             // and the end to the lower coordinate
             start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
             start_y = std::to_string(node_yhigh(node)) + ")";
-            end_x = "";
-            end_y = "";
-            arrow = "";
-        }
-        if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
+        } else if (node_type(node) == SOURCE || node_type(node) == SINK) {
+            // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
+            start_x = "(" + std::to_string(node_xhigh(node)) + ",";
+            start_y = std::to_string(node_yhigh(node)) + ")";
+        } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
             coordinate_string += rr_segments_[seg_index].name;                   //Write the segment name
@@ -262,6 +262,38 @@ class RRGraphView {
     /** @brief Get the number of edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_edges(RRNodeId node) const {
         return node_storage_.num_edges(node);
+    }
+
+    /** @brief The ptc_num carries different meanings for different node types 
+     * (true in VPR RRG that is currently supported, may not be true in customized RRG) 
+     * CHANX or CHANY: the track id in routing channels 
+     * OPIN or IPIN: the index of pins in the logic block data structure 
+     * SOURCE and SINK: the class id of a pin (indicating logic equivalence of pins) in the logic block data structure  
+     * @note  
+     * This API is very powerful and developers should not use it unless it is necessary, 
+     * e.g the node type is unknown. If the node type is known, the more specific routines, `node_pin_num()`, 
+     * `node_track_num()`and `node_class_num()`, for different types of nodes should be used.*/
+
+    inline short node_ptc_num(RRNodeId node) const {
+        return node_storage_.node_ptc_num(node);
+    }
+
+    /** @brief Get the pin num of a routing resource node. This is designed for logic blocks, 
+     * which are IPIN and OPIN nodes. This function is inlined for runtime optimization. */
+    inline short node_pin_num(RRNodeId node) const {
+        return node_storage_.node_pin_num(node);
+    }
+
+    /** @brief Get the track num of a routing resource node. This is designed for routing tracks, 
+     * which are CHANX and CHANY nodes. This function is inlined for runtime optimization. */
+    inline short node_track_num(RRNodeId node) const {
+        return node_storage_.node_track_num(node);
+    }
+
+    /** @brief Get the class num of a routing resource node. This is designed for routing source and sinks,
+     *  which are SOURCE and SINK nodes. This function is inlined for runtime optimization. */
+    inline short node_class_num(RRNodeId node) const {
+        return node_storage_.node_class_num(node);
     }
 
     /** @brief Get the cost index of a routing resource node. This function is inlined for runtime optimization. */

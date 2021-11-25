@@ -306,7 +306,7 @@ template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
 t_src_opin_delays compute_router_src_opin_lookahead() {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     t_src_opin_delays src_opin_delays;
 
@@ -438,7 +438,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
     root.delay = 0.;
     root.node = node;
 
-    int ptc = rr_graph.node_ptc_num(node);
+    int ptc = temp_rr_graph.node_ptc_num(node);
 
     /*
      * Perform Djikstra from the SOURCE/OPIN of interest, stopping at the the first
@@ -567,13 +567,13 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
         e_rr_type curr_rr_type = temp_rr_graph.node_type(curr.node);
         if (curr_rr_type == IPIN) {
-            int node_x = rr_graph.node_xlow(curr.node);
-            int node_y = rr_graph.node_ylow(curr.node);
+            int node_x = temp_rr_graph.node_xlow(curr.node);
+            int node_y = temp_rr_graph.node_ylow(curr.node);
 
             auto tile_type = device_ctx.grid[node_x][node_y].type;
             int itile = tile_type->index;
 
-            int ptc = rr_graph.node_ptc_num(curr.node);
+            int ptc = temp_rr_graph.node_ptc_num(curr.node);
 
             if (ptc >= int(chan_ipins_delays[itile].size())) {
                 chan_ipins_delays[itile].resize(ptc + 1); //Inefficient but functional...

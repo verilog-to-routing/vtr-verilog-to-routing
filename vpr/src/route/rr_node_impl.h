@@ -90,20 +90,4 @@ inline short t_rr_node::edge_switch(t_edge_size iedge) const {
     return storage_->edge_switch(id_, iedge);
 }
 
-inline short t_rr_node::ptc_num() const {
-    return storage_->node_ptc_num(id_);
-}
-
-inline short t_rr_node::pin_num() const {
-    return storage_->node_pin_num(id_);
-}
-
-inline short t_rr_node::track_num() const {
-    return storage_->node_track_num(id_);
-}
-
-inline short t_rr_node::class_num() const {
-    return storage_->node_class_num(id_);
-}
-
 #endif /* _RR_NODE_IMPL_H_ */

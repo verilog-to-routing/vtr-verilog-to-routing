@@ -39,7 +39,7 @@ RED=$'\033[31;1m'
 NC=$'\033[0m' # No Color
 
 # defaults
-_YOSYS_EXEC="yosys"
+_YOSYS_EXEC="${VTR_DIR}/libs/EXTERNAL/libyosys/yosys"
 _TEST_INPUT_LIST=()
 _VERILOG_INPUT_LIST=()
 _REGENERATE_BLIF="off"

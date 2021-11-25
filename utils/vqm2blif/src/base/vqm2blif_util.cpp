@@ -21,6 +21,8 @@ void print_usage (t_boolean terminate){
     cout << "\t-include_unused_subckt_pins\n";
     cout << "\t-remove_const_nets\n";
     cout << "\t-eblif_format\n";
+    cout << "\t-insert_custom_hard_blocks <hard_block_1_module_name> <hard_block_2_module_name> ...\n";
+    cout << "\t-device <device name> (if not provided then default is 'stratixiv')\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
@@ -48,6 +50,113 @@ void verify_format (string* filename, string extension){
 
 //============================================================================================
 //============================================================================================
+
+
+
+void verify_hard_block_type_name(string curr_hard_block_type_name){
+// verifies whether the hard block name (type of hard block) provided by the user meets verilog/VHDL naming rules. VHDL naming rules are a subset of verilog, so we just check verilog. (Using verilog 2001 standard)
+
+    // naming rules have 2 main conditions:
+    // Condition 1: the first charatcer must be a lowercase/uppercase alphabetical character. Or the first character can be a underscore.
+    // Condition 2: The remaning characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character
+    // the rules above are checked with the identifier below 
+    std::regex verilog_VHDL_naming_rules_one ("^[a-zA-Z_][a-zA-Z_\$0-9]*[a-zA-Z_\$0-9]$");
+
+    // verilog names can also contain any characters, as long as they are escaped with a '\' at the start of the identifer. For example, \reset-
+    // we check this using the identifier below
+    std::regex verilog_VHDL_naming_rules_two ("[\\](.*)", std::regex_constants::extended); // need std::regex_constants::extended as it supports '\\' character
+
+   if ((!(std::regex_match(curr_hard_block_type_name, verilog_VHDL_naming_rules_one))) && (!(std::regex_match(curr_hard_block_type_name, verilog_VHDL_naming_rules_two))))
+    {
+        // the hard block type name did not meet the verilog naming rules
+        // Display error message to user
+        std::cout << "ERROR:The provided Hard Block Type Name '" << curr_hard_block_type_name << "' did not meet the verilog/VHDL naming rules.\n";
+
+        std::cout << "********\n";
+
+        std::cout << "Please ensure the provided Hard Block Type Names follow the conditions below:\n";
+
+        std::cout << "\tCondition 1: The first character of the Hard Block Type Name should either be a-z, A-Z or _\n";
+
+        std::cout << "\tCondition 2: The remaining characters of the Hard Block Type Name should either be a-z, A-Z, 0-9, _ or $\n";
+
+        std::cout << "Alternatively, any character can be used for the hard block type name, as long as the name is escaped using '\\' character. For example, '\\reset-' would be legal.\n";
+
+        exit(1);
+
+    }
+
+    return;
+
+}
+
+//============================================================================================
+//============================================================================================
+
+void verify_device(string device_name)
+{
+    /* 
+        The list of devices that this program can support and their parameters are stored within a map structure ('device_parameter_database'). We
+        check whether the provided device by the user supported by comparing it
+        to the devices within the map. 
+    */
+
+    std::map<std::string, DeviceInfo>::const_iterator device_support_status;
+
+    device_support_status = device_parameter_database.find(device_name);
+
+    // checks to see whether we support the given device
+    if (device_support_status == device_parameter_database.end())
+    {
+        // if we are here then we don't support the user supplied device
+        std::cout << "ERROR:The provided device is not supported.";
+        std::cout << " Only the following devices are supported:\n";
+
+        device_support_status = device_parameter_database.begin();
+
+        while (device_support_status != device_parameter_database.end())
+        {
+            std::cout << device_support_status->first << "\n";
+            device_support_status++;
+        }
+
+        exit(1);
+    }
+
+    return;
+
+}
+
+//============================================================================================
+//============================================================================================
+
+//============================================================================================
+//============================================================================================
+
+void cleanup_hard_block_type_name(string* curr_hard_block_type_name){
+// if the hard block type name was escaped by '\', we need to remove the '\' character from the name
+
+    // matching token below tries to determine whether the current hard block type name was escaped with '\'
+    std::regex verilog_naming_rules ("[\\](.*)", std::regex_constants::extended);
+
+    // stores the hard block type name without the '\' character
+    std::smatch matches;
+
+    // store the matched strings and also determine whether
+    // the hard block type name is actually escaped. if not escaped, then we do not need to do anything
+    if (std::regex_match(*curr_hard_block_type_name, matches, verilog_naming_rules, std::regex_constants::match_default))
+    {
+        // if we are here, there should be two string matches
+        // the first match is the entire hard block type name with the escape character '\'
+        // the second match should just be the hard block type name without the escape character '\'
+
+        // below we just store the second match
+        curr_hard_block_type_name->assign(matches[matches.size() - 1]);
+    }
+
+    return;
+
+}
 
 void construct_filename (char* filename, const char* path, const char* ext){
 //Constructs a char* filename from a given path and extension.
