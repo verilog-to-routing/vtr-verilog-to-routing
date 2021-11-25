@@ -318,7 +318,7 @@ void create_rr_graph(const t_graph_type graph_type,
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     if (!det_routing_arch->read_rr_graph_filename.empty() || router_opts.FPGAInterchange) {
-        if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
+        if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename && !router_opts.FPGAInterchange) {
             free_rr_graph();
 
             load_rr_file(graph_type,
@@ -343,11 +343,7 @@ void create_rr_graph(const t_graph_type graph_type,
                                             segment_inf,
                                             router_opts.base_cost_type,
                                             &det_routing_arch->wire_to_rr_ipin_switch,
-                                            det_routing_arch->read_rr_graph_filename.c_str(),
-                                            router_opts.read_rr_edge_metadata,
                                             router_opts.do_check_rr_graph);
-
-            exit(0);
             if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                 mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                                   router_opts.reorder_rr_graph_nodes_threshold,

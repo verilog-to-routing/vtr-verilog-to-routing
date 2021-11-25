@@ -21,6 +21,7 @@
 #include "arch_types.h"
 
 #include "read_fpga_interchange_arch.h"
+#include "fpga_interchange_arch_utils.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -77,82 +78,6 @@ struct t_ic_data {
 };
 
 /****************** Utility functions ******************/
-
-/**
- * @brief The FPGA interchange timing model includes three different corners (min, typ and max) for each of the two
- * speed_models (slow and fast).
- *
- * Timing data can be found on PIPs, nodes, site pins and bel pins.
- * This function retrieves the timing value based on the wanted speed model and the wanted corner.
- *
- * More information on the FPGA Interchange timing model can be found here:
- *   - https://github.com/chipsalliance/fpga-interchange-schema/blob/main/interchange/DeviceResources.capnp
- */
-static float get_corner_value(Device::CornerModel::Reader model, const char* speed_model, const char* value) {
-    bool slow_model = std::string(speed_model) == std::string("slow");
-    bool fast_model = std::string(speed_model) == std::string("fast");
-
-    bool min_corner = std::string(value) == std::string("min");
-    bool typ_corner = std::string(value) == std::string("typ");
-    bool max_corner = std::string(value) == std::string("max");
-
-    if (!slow_model && !fast_model) {
-        archfpga_throw("", __LINE__,
-                       "Wrong speed model `%s`. Expected `slow` or `fast`\n", speed_model);
-    }
-
-    if (!min_corner && !typ_corner && !max_corner) {
-        archfpga_throw("", __LINE__,
-                       "Wrong corner model `%s`. Expected `min`, `typ` or `max`\n", value);
-    }
-
-    bool has_fast = model.getFast().hasFast();
-    bool has_slow = model.getSlow().hasSlow();
-
-    if (slow_model && has_slow) {
-        auto half = model.getSlow().getSlow();
-        if (min_corner && half.getMin().isMin()) {
-            return half.getMin().getMin();
-        } else if (typ_corner && half.getTyp().isTyp()) {
-            return half.getTyp().getTyp();
-        } else if (max_corner && half.getMax().isMax()) {
-            return half.getMax().getMax();
-        } else {
-            if (half.getMin().isMin()) {
-                return half.getMin().getMin();
-            } else if (half.getTyp().isTyp()) {
-                return half.getTyp().getTyp();
-            } else if (half.getMax().isMax()) {
-                return half.getMax().getMax();
-            } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
-            }
-        }
-    } else if (fast_model && has_fast) {
-        auto half = model.getFast().getFast();
-        if (min_corner && half.getMin().isMin()) {
-            return half.getMin().getMin();
-        } else if (typ_corner && half.getTyp().isTyp()) {
-            return half.getTyp().getTyp();
-        } else if (max_corner && half.getMax().isMax()) {
-            return half.getMax().getMax();
-        } else {
-            if (half.getMin().isMin()) {
-                return half.getMin().getMin();
-            } else if (half.getTyp().isTyp()) {
-                return half.getTyp().getTyp();
-            } else if (half.getMax().isMax()) {
-                return half.getMax().getMax();
-            } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
-            }
-        }
-    }
-
-    return 0.;
-}
 
 /** @brief Returns the port corresponding to the given model in the architecture */
 static t_model_ports* get_model_port(t_arch* arch, std::string model, std::string port, bool fail = true) {
@@ -2457,17 +2382,11 @@ struct ArchReader {
             }
         }
 
-        // FIXME: have only one segment type for the time being, so that
-        //        the RR graph generation is correct.
-        //        This can be removed once the RR graph reader from the interchange
-        //        device is ready and functional.
-        size_t num_seg = 1; //wire_names.size();
+        int num_seg = wire_names.size();
 
         arch_->Segments.resize(num_seg);
         size_t index = 0;
         for (auto i : wire_names) {
-            if (index >= num_seg) break;
-
             // Use default values as we will populate rr_graph with correct values
             // This segments are just declaration of future use
             arch_->Segments[index].name = str(i);
