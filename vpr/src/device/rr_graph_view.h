@@ -260,6 +260,11 @@ class RRGraphView {
     }
 
     /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range configurable_edges(RRNodeId node) const {
+        return node_storage_.configurable_edges(node);
+    }
+
+    /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
     inline edge_idx_range edges(RRNodeId node) const {
         return node_storage_.edges(node);
     }

@@ -71,9 +71,6 @@ inline t_rr_node t_rr_graph_storage::back() {
     return t_rr_node(this, RRNodeId(size() - 1));
 }
 
-inline edge_idx_range t_rr_node::configurable_edges() const {
-    return storage_->configurable_edges(id_);
-}
 inline edge_idx_range t_rr_node::non_configurable_edges() const {
     return storage_->non_configurable_edges(id_);
 }
