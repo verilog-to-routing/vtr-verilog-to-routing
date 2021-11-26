@@ -129,7 +129,7 @@ class RRGraphView {
         return node_storage_.first_edge(node);
     }
 
-    /** @brief Get the last edge of resource node. This function is inlined for runtime optimization. */
+    /** @brief Get the last out coming edge of resource node. This function is inlined for runtime optimization. */
     inline RREdgeId node_last_edge(RRNodeId node) const {
         return node_storage_.last_edge(node);
     }
