@@ -18,7 +18,7 @@ TEST_CASE("read_interchange_models", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    std::unordered_set<std::string> models = {"IB", "OB", "LUT", "DFF", "GND", "VCC"};
+    std::unordered_set<std::string> models = {"IB", "OB", "DFF", "GND", "VCC"};
 
     // Check that there are exactly the expected models
     for (auto* model = arch.models; model != nullptr; model = model->next) {
@@ -65,6 +65,126 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
     for (auto type : tile_types) {
         CHECK(type.second);
     }
+}
+
+TEST_CASE("read_interchange_luts", "[vpr]") {
+    t_arch arch;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
+
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+
+    std::unordered_set<std::string> lut_cell_pins = {"A0", "A1", "A2", "A3"};
+    std::unordered_set<std::string> lut_bel_pins = {"I0", "I1", "I2", "I3"};
+
+    REQUIRE(arch.lut_cells.size() == 1);
+    REQUIRE(arch.lut_bels.size() == 1);
+
+    auto lut_cell = arch.lut_cells[0];
+    REQUIRE(lut_cell.name == std::string("LUT"));
+    REQUIRE(lut_cell.init_param == std::string("INIT"));
+    for (auto lut_pin : lut_cell_pins)
+        CHECK(std::find(lut_cell.inputs.begin(), lut_cell.inputs.end(), lut_pin) != lut_cell.inputs.end());
+
+    auto lut_bel = arch.lut_bels[0];
+    REQUIRE(lut_bel.name == std::string("LUT"));
+    REQUIRE(lut_bel.output_pin == std::string("O"));
+    for (auto lut_pin : lut_bel_pins)
+        CHECK(std::find(lut_bel.input_pins.begin(), lut_bel.input_pins.end(), lut_pin) != lut_bel.input_pins.end());
+}
+
+TEST_CASE("read_interchange_pin_packages", "[vpr]") {
+    t_arch arch;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
+
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+
+    // The device architecture file contains 35 perimetral PADs
+    REQUIRE(arch.pad_bels.size() == 35);
+
+    int ipad = 0;
+    for (auto pad_bel : arch.pad_bels) {
+        REQUIRE(pad_bel.name == std::string("A") + std::to_string(ipad++));
+        REQUIRE(pad_bel.bel_name == std::string("PAD"));
+    }
+}
+
+TEST_CASE("read_interchange_tiles", "[vpr]") {
+    t_arch arch;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
+
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+
+    std::unordered_set<std::string> ptypes = {"NULL", "IOB", "PWR", "CLB"};
+
+    // Check that there are exactly the expected models
+    for (auto ptype : physical_tile_types) {
+        std::string name = ptype.name;
+        REQUIRE(ptypes.find(name) != ptypes.end());
+        ptypes.erase(name);
+
+        if (name == std::string("IOB")) {
+            CHECK(ptype.is_input_type);
+            CHECK(ptype.is_output_type);
+        }
+    }
+
+    REQUIRE(ptypes.size() == 0);
+}
+
+TEST_CASE("read_interchange_pb_types", "[vpr]") {
+    t_arch arch;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
+
+    FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
+
+    std::unordered_set<std::string> ltypes = {"NULL", "IOPAD", "SLICE", "POWER"};
+
+    std::unordered_map<std::string, PORTS> slice_ports = {
+        {"L0", PORTS::IN_PORT},
+        {"L1", PORTS::IN_PORT},
+        {"L2", PORTS::IN_PORT},
+        {"L3", PORTS::IN_PORT},
+        {"R", PORTS::IN_PORT},
+        {"C", PORTS::IN_PORT},
+        {"D", PORTS::IN_PORT},
+        {"O", PORTS::OUT_PORT},
+        {"Q", PORTS::OUT_PORT}};
+
+    // Check that there are exactly the expected models
+    for (auto ltype : logical_block_types) {
+        std::string name = ltype.name;
+        REQUIRE(ltypes.find(name) != ltypes.end());
+        ltypes.erase(name);
+
+        if (ltype.pb_type == nullptr) {
+            REQUIRE(name == std::string("NULL"));
+            continue;
+        }
+
+        bool check_pb_type = name == std::string("SLICE");
+        size_t num_visited = 0;
+        for (auto iport = 0; iport < ltype.pb_type->num_ports; iport++) {
+            auto port = ltype.pb_type->ports[iport];
+
+            REQUIRE(port.name != nullptr);
+
+            if (!check_pb_type)
+                continue;
+
+            auto res = slice_ports.find(std::string(port.name));
+            REQUIRE(res != slice_ports.end());
+            REQUIRE(res->second == port.type);
+            num_visited++;
+        }
+
+        REQUIRE((num_visited == slice_ports.size() || !check_pb_type));
+    }
+
+    REQUIRE(ltypes.size() == 0);
 }
 
 } // namespace
