@@ -60,8 +60,8 @@ void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors);
 
 t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, int* low_index);
 
-t_physical_tile_type SetupEmptyPhysicalType();
-t_logical_block_type SetupEmptyLogicalType();
+t_physical_tile_type get_empty_physical_type(std::string name);
+t_logical_block_type get_empty_logical_type(std::string name);
 
 std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type);
 
@@ -100,4 +100,8 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
 const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
 const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
 
+void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                                 std::vector<t_logical_block_type>& LogicalBlockTypes);
+
+void setup_pin_classes(t_physical_tile_type* type);
 #endif
