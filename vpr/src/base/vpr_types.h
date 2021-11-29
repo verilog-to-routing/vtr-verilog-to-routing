@@ -90,8 +90,6 @@ enum class ScreenUpdatePriority {
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
 constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
-constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
-
 /*
  * Files
  */
