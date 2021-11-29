@@ -259,9 +259,14 @@ class RRGraphView {
         return node_storage_.num_non_configurable_edges(node);
     }
 
-    /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
+    /** @brief Get ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return node_storage_.configurable_edges(node);
+    }
+
+    /** @brief Get ID range for non-configurable edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range non_configurable_edges(RRNodeId node) const {
+        return node_storage_.non_configurable_edges(node);
     }
 
     /** @brief Get ID range for edges. This function is inlined for runtime optimization. */

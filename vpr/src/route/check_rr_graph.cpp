@@ -191,7 +191,7 @@ void check_rr_graph(const t_graph_type graph_type,
             }
         }
 
-        for (auto edge : device_ctx.rr_nodes[inode].non_configurable_edges()) {
+        for (auto edge : rr_graph.non_configurable_edges(RRNodeId(inode))) {
             if (device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
                                 inode, edge);
