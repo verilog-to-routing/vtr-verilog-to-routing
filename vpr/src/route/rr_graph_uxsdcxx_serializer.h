@@ -16,7 +16,6 @@
 #include "check_rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-#include "globals.h"
 class MetadataBind {
   public:
     MetadataBind(vtr::string_internment* strings, vtr::interned_string empty)
@@ -1547,7 +1546,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     void finish_load() final {
-        auto& device_ctx = g_vpr_ctx.mutable_device();
         process_rr_node_indices();
 
         rr_graph_builder_->init_fan_in();
@@ -1559,7 +1557,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
          */
         std::vector<t_segment_inf> temp_rr_segs;
         temp_rr_segs.reserve(segment_inf_.size());
-        for (auto& rr_seg : device_ctx.rr_segments) {
+        for (auto& rr_seg : segment_inf_) {
             temp_rr_segs.push_back(rr_seg);
         }
 
