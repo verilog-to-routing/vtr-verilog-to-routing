@@ -34,6 +34,16 @@ using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
 
+/**
+ * @brief The FPGA interchange timing model includes three different corners (min, typ and max) for each of the two
+ * speed_models (slow and fast).
+ *
+ * Timing data can be found on PIPs, nodes, site pins and bel pins.
+ * This function retrieves the timing value based on the wanted speed model and the wanted corner.
+ *
+ * More information on the FPGA Interchange timing model can be found here:
+ *   - https://github.com/chipsalliance/fpga-interchange-schema/blob/main/interchange/DeviceResources.capnp
+ */
 static float get_corner_value(Device::CornerModel::Reader model, const char* speed_model, const char* value) {
     bool slow_model = std::string(speed_model) == std::string("slow");
     bool fast_model = std::string(speed_model) == std::string("fast");
@@ -250,10 +260,16 @@ struct ArchReader {
 
         grid_def.grid_type = GridDefType::FIXED;
         std::string name = std::string(ar_.getName());
+
         if (name == "auto") {
+            // At the moment, the interchange specifies fixed-layout only architectures,
+            // and allowing for auto-sizing could potentially be implemented later on
+            // to allow for experimentation on new architectures.
+            // For the time being the layout is restricted to be only fixed.
             archfpga_throw(arch_file_, __LINE__,
                            "The name auto is reserved for auto-size layouts; please choose another name");
         }
+
         grid_def.name = name;
         for (auto tile : tileList) {
             t_metadata_dict data;
@@ -287,6 +303,9 @@ struct ArchReader {
          *
          * As the interchange format develops further, with possibly more details, this function can
          * become dynamic, allowing for different parameters for the different architectures.
+         *
+         * FIXME: This will require to be dynamically assigned, and a suitable representation added
+         *        to the FPGA interchange device schema.
          */
         arch_->R_minW_nmos = 6065.520020;
         arch_->R_minW_pmos = 18138.500000;
@@ -362,6 +381,7 @@ struct ArchReader {
                 std::string mux_type_string = entry.first ? "mux_" : "passGate_";
                 name << mux_type_string;
 
+                // FIXME: allow to dynamically choose different speed models and corners
                 R = get_corner_value(model.getOutputResistance(), "slow", "min");
                 name << "R" << std::scientific << R;
 
@@ -437,6 +457,10 @@ struct ArchReader {
             arch_->Segments[index].Rmetal = 0;
             arch_->Segments[index].Cmetal = 0;
             arch_->Segments[index].parallel_axis = BOTH_AXIS;
+
+            // TODO: Only bi-directional segments are created, but it the interchange format
+            //       has directionality information on PIPs, which may be used to infer the
+            //       segments' directonality.
             arch_->Segments[index].directionality = BI_DIRECTIONAL;
             arch_->Segments[index].arch_wire_switch = 1;
             arch_->Segments[index].arch_opin_switch = 1;
