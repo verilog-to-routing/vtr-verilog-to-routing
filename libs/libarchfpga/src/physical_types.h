@@ -1764,6 +1764,21 @@ struct t_arch {
     t_clock_arch* clocks = nullptr;
 
     // Constants
+    // VCC and GND cells are special virtual cells that are
+    // used to handle the constant network of the device.
+    //
+    // Similarly, the constant nets are defined to identify
+    // the generic name for the constant network.
+    //
+    // Given that usually, the constants have a dedicated network in
+    // real FPGAs, this information becomes relevant to identify which
+    // nets from the circuit netlist are belonging to the constant network,
+    // and assigned to it accordingly.
+    //
+    // NOTE: At the moment, the constant cells and nets are primarly used
+    // for the interchange netlist format, to determine which are the constants
+    // net names and which virtual cell is responsible to generate them.
+    // The information is present in the device database.
     std::string gnd_cell;
     std::string vcc_cell;
 

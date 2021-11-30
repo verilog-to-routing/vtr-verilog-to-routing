@@ -38,7 +38,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
 
-        VTR_LOG("%s\n", circuit_file);
+        VTR_LOGV(verbosity, "Circuit file: %s\n", circuit_file);
         if (name_ext[1] == ".blif") {
             circuit_format = e_circuit_format::BLIF;
         } else if (name_ext[1] == ".eblif") {
@@ -62,7 +62,9 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
                 netlist = read_interchange_netlist(circuit_file, arch);
                 break;
             default:
-                VTR_ASSERT(false);
+                VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST,
+                                "Unable to identify circuit file format for '%s'. Expect [blif|eblif|fpga-interchange]!\n",
+                                circuit_file);
                 break;
         }
     }
