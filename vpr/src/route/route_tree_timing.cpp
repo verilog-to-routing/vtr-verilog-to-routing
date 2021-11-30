@@ -428,7 +428,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
             t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
 
             if (!child_rt_node) continue;
-            int iswitch = device_ctx.rr_nodes[rr_node].edge_switch(iedge);
+            int iswitch = rr_graph.edge_switch(RREdgeId(iedge));
 
             //Create the edge
             t_linked_rt_edge* linked_rt_edge = alloc_linked_rt_edge();

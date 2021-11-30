@@ -1772,7 +1772,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                        switch_type = rr_graph.edge_switch(RREdgeId(iedge));
                         draw_chanx_to_chanx_edge(RRNodeId(inode), RRNodeId(to_node),
                                                  to_ptc_num, switch_type, g);
                         break;
@@ -2519,7 +2519,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
         auto iedge = find_edge(prev_node, inode);
-        auto switch_type = device_ctx.rr_nodes[prev_node].edge_switch(iedge);
+        auto switch_type = rr_graph.edge_switch(RREdgeId(iedge));
 
         switch (rr_type) {
             case OPIN: {

@@ -94,7 +94,7 @@ void check_rr_graph(const t_graph_type graph_type,
             edges.emplace_back(to_node, iedge);
             total_edges_to_node[to_node]++;
 
-            auto switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
+            auto switch_type =rr_graph.edge_switch(RREdgeId(iedge));
 
             if (switch_type < 0 || switch_type >= num_rr_switches) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -553,7 +553,7 @@ static void check_unbuffered_edges(int from_node) {
         if (to_rr_type != CHANX && to_rr_type != CHANY)
             continue;
 
-        from_switch_type = device_ctx.rr_nodes[from_node].edge_switch(from_edge);
+        from_switch_type = rr_graph.edge_switch(RREdgeId(from_edge));
 
         if (device_ctx.rr_switch_inf[from_switch_type].buffered())
             continue;
@@ -606,7 +606,7 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     //Check that to to_node's fan-in is correct, given the switch type
-    int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+    int iswitch = rr_graph.edge_switch(RREdgeId(iedge));
     auto switch_type = device_ctx.rr_switch_inf[iswitch].type();
 
     int to_fanin = rr_graph.node_fan_in(RRNodeId(to_node));
