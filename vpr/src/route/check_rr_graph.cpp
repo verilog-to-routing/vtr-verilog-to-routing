@@ -158,7 +158,7 @@ void check_rr_graph(const t_graph_type graph_type,
             std::map<short, int> switch_counts;
             for (const auto& to_edge : vtr::Range<decltype(edges)::const_iterator>(range.first, range.second)) {
                 auto edge = to_edge.second;
-                auto edge_switch = device_ctx.rr_nodes[inode].edge_switch(edge);
+                auto edge_switch = rr_graph.edge_switch(RREdgeId(edge));
 
                 switch_counts[edge_switch]++;
             }
@@ -567,7 +567,7 @@ static void check_unbuffered_edges(int from_node) {
 
         for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
             if (device_ctx.rr_nodes[to_node].edge_sink_node(to_edge) == from_node
-                && device_ctx.rr_nodes[to_node].edge_switch(to_edge) == from_switch_type) {
+                && rr_graph.edge_switch(RREdgeId(to_edge)) == from_switch_type) {
                 trans_matched = true;
                 break;
             }

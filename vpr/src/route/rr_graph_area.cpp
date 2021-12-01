@@ -253,7 +253,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 shared_opin_buffer_trans = 0.;
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
-                    iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+                    iswitch = rr_graph.edge_switch(RREdgeId(iedge));
                     ntrans_no_sharing += unsharable_switch_trans[iswitch]
                                          + sharable_switch_trans[iswitch];
                     ntrans_sharing += unsharable_switch_trans[iswitch];

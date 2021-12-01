@@ -984,7 +984,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                 for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
                     if (rr_graph.edge_switch(RREdgeId(iedge)) == routing_arch->wire_to_rr_ipin_switch) {
                         connectionbox_fanout++;
-                    } else if (node.edge_switch(iedge) == routing_arch->delayless_switch) {
+                    } else if (rr_graph.edge_switch(RREdgeId(iedge)) == routing_arch->delayless_switch) {
                         /* Do nothing */
                     } else {
                         switchbox_fanout++;
@@ -1228,7 +1228,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
                     if (rr_graph.edge_switch(RREdgeId(iedge)) == routing_arch->wire_to_rr_ipin_switch) {
                         fanout_to_IPIN++;
-                    } else if (node.edge_switch(iedge) != routing_arch->delayless_switch) {
+                    } else if (rr_graph.edge_switch(RREdgeId(iedge)) != routing_arch->delayless_switch) {
                         fanout_to_seg++;
                     }
                 }
@@ -1263,7 +1263,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
         for (t_edge_size edge_idx = 0; edge_idx < node.num_edges(); edge_idx++) {
             if (node.edge_sink_node(edge_idx) != OPEN) {
                 if (rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == OPEN) {
-                    rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type = node.edge_switch(edge_idx);
+                    rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type = rr_graph.edge_switch(RREdgeId(edge_idx));
                 } else {
                     VTR_ASSERT(rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == node.edge_switch(edge_idx));
                 }
