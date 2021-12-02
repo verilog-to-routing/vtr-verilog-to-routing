@@ -1860,7 +1860,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                        switch_type =rr_graph.edge_switch(RREdgeId(iedge));
                         draw_chany_to_chany_edge(RRNodeId(inode), RRNodeId(to_node),
                                                  to_ptc_num, switch_type, g);
                         break;

@@ -1265,7 +1265,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 if (rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == OPEN) {
                     rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type = rr_graph.edge_switch(RREdgeId(edge_idx));
                 } else {
-                    VTR_ASSERT(rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == node.edge_switch(edge_idx));
+                    VTR_ASSERT(rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == rr_graph.edge_switch(RREdgeId(edge_idx)));
                 }
             }
         }

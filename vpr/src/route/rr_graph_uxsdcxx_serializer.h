@@ -151,7 +151,6 @@ class EdgeWalker {
         current_src_inode_ = 0;
         current_edge_ = 0;
         current_idx_ = 0;
-
         for (const auto& node : *nodes) {
             num_edges_ += node.num_edges();
         }
@@ -169,8 +168,9 @@ class EdgeWalker {
         return (*nodes_)[current_src_inode_].edge_sink_node(current_edge_);
     }
     int current_switch_id_node() const {
+
         VTR_ASSERT(current_src_inode_ < nodes_->size());
-        return (*nodes_)[current_src_inode_].edge_switch(current_edge_);
+        return (*rr_graph_).edge_switch(RREdgeId(current_edge_));
     }
 
     size_t advance(int n) {
@@ -204,6 +204,7 @@ class EdgeWalker {
 
   private:
     const t_rr_graph_storage* nodes_;
+    const RRGraphView* rr_graph_;
     size_t num_edges_;
     size_t current_src_inode_;
     size_t current_edge_;
