@@ -61,7 +61,7 @@ assign                                      return TOKEN_ASSIGN;
                                                 yylval.value = atoi(yytext); 
                                                 return TOKEN_INTCONSTANT;
                                             }
-\\[^ ^\t]+                                  {
+\\[^ ^\t^;]+                                  {
                                                 yylval.string = (char *)malloc(yyleng);
                                                 strcpy(yylval.string, yytext+1);
                                                 return TOKEN_ESCAPEDID;
