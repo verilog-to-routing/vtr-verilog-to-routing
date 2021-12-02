@@ -124,6 +124,16 @@ class RRGraphView {
         return node_storage_.node_yhigh(node);
     }
 
+    /** @brief Get the first out coming edge of resource node. This function is inlined for runtime optimization. */
+    inline RREdgeId node_first_edge(RRNodeId node) const {
+        return node_storage_.first_edge(node);
+    }
+
+    /** @brief Get the last out coming edge of resource node. This function is inlined for runtime optimization. */
+    inline RREdgeId node_last_edge(RRNodeId node) const {
+        return node_storage_.last_edge(node);
+    }
+
     /** @brief Get the length (number of grid tile units spanned by the wire, including the endpoints) of a routing resource node.
      * node_length() only applies to CHANX or CHANY and is always a positive number
      * This function is inlined for runtime optimization.
