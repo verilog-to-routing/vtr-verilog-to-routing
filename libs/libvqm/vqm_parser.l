@@ -72,7 +72,7 @@ assign                                      return TOKEN_ASSIGN;
                                                 yylval.string[yyleng-2] = 0;
                                                 return TOKEN_STRING;
                                             }
-[1-9][0-9]*'b[0-9]+                         {
+[1-9][0-9]*'[b|h][0-9|A-F]+                         {
                                                 yylval.string = (char *)malloc(yyleng+1);
                                                 strcpy(yylval.string, yytext);
                                                 return TOKEN_BITSTRING;
