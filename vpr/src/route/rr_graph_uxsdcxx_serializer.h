@@ -170,7 +170,8 @@ class EdgeWalker {
     }
     int current_switch_id_node() const {
         VTR_ASSERT(current_src_inode_ < nodes_->size());
-        return (*nodes_)[current_src_inode_].edge_switch(current_edge_);
+        return nodes_->edge_switch(RRNodeId(current_src_inode_), current_edge_);
+        ;
     }
 
     size_t advance(int n) {

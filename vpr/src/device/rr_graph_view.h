@@ -248,6 +248,13 @@ class RRGraphView {
     inline const char* node_side_string(RRNodeId node) const {
         return node_storage_.node_side_string(node);
     }
+    /*@brief Get the switch used for the iedge'th edge from specified RRNodeId.*/
+    inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_switch(id, iedge);
+    }
+    inline short edge_switch(const RREdgeId& edge) const {
+        return node_storage_.edge_switch(edge);
+    }
 
     /** @brief The ptc_num carries different meanings for different node types 
      * (true in VPR RRG that is currently supported, may not be true in customized RRG) 

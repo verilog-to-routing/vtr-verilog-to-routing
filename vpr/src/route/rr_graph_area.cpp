@@ -178,7 +178,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                     switch (to_rr_type) {
                         case CHANX:
                         case CHANY:
-                            iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+                            iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
 
                             if (device_ctx.rr_switch_inf[iswitch].buffered()) {
                                 iseg = seg_index_of_sblock(from_node, size_t(to_node));
@@ -253,7 +253,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 shared_opin_buffer_trans = 0.;
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
-                    iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+                    iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
                     ntrans_no_sharing += unsharable_switch_trans[iswitch]
                                          + sharable_switch_trans[iswitch];
                     ntrans_sharing += unsharable_switch_trans[iswitch];
@@ -377,7 +377,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                         case CHANX:
                         case CHANY:
                             if (!chan_node_switch_done[size_t(to_node)]) {
-                                int switch_index = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+                                int switch_index = rr_graph.edge_switch(RRNodeId(from_node), iedge);
                                 auto switch_type = device_ctx.rr_switch_inf[switch_index].type();
 
                                 int fan_in = rr_graph.node_fan_in(to_node);

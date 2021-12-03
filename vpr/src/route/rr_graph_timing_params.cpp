@@ -59,7 +59,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                 if (to_rr_type == CHANX || to_rr_type == CHANY) {
-                    switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                    switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
+                    ;
                     Cin = device_ctx.rr_switch_inf[switch_index].Cin;
                     Cout = device_ctx.rr_switch_inf[switch_index].Cout;
                     buffered = device_ctx.rr_switch_inf[switch_index].buffered();
@@ -150,7 +151,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         /* End node is CHANX or CHANY */
         else if (from_rr_type == OPIN) {
             for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
-                switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
                 to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
@@ -174,7 +175,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     Couts_to_add = (float*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(float));
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
-            switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
+            switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
             to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
             to_rr_type = rr_graph.node_type(RRNodeId(to_node));
             if (to_rr_type == CHANX || to_rr_type == CHANY) {

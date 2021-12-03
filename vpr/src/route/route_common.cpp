@@ -627,6 +627,7 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     //Record the non-configurable out-going edges
     std::vector<t_edge_size> unvisited_non_configurable_edges;
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
         VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
 
@@ -654,7 +655,7 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
         //Recursive case: intermediate node with non-configurable edges
         for (auto iedge : unvisited_non_configurable_edges) {
             int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
-            int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
+            int iswitch = rr_graph.edge_switch(RRNodeId(node), iedge);
 
             VTR_ASSERT(!trace_nodes.count(to_node));
             trace_nodes.insert(node);
@@ -1561,7 +1562,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
             //Check there is an edge connecting trace and next
 
             auto& device_ctx = g_vpr_ctx.device();
-
+            const auto& rr_graph = device_ctx.rr_graph;
             bool found = false;
             for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
                 int to_node = device_ctx.rr_nodes[trace->index].edge_sink_node(iedge);
@@ -1570,7 +1571,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
                     found = true;
 
                     //Verify that the switch matches
-                    int rr_iswitch = device_ctx.rr_nodes[trace->index].edge_switch(iedge);
+                    int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
                     if (trace->iswitch != rr_iswitch) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
                                         trace->iswitch, rr_iswitch,

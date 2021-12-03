@@ -11,10 +11,9 @@ short t_rr_node::length() const {
 }
 
 bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
-    auto iswitch = edge_switch(iedge);
-
     auto& device_ctx = g_vpr_ctx.device();
-
+    const auto& rr_graph = device_ctx.rr_graph;
+    auto iswitch = rr_graph.edge_switch(RREdgeId(iedge));
     return device_ctx.rr_switch_inf[iswitch].configurable();
 }
 
