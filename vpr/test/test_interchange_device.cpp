@@ -50,8 +50,8 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
 
     auto& gd = arch.grid_layouts[0];
     REQUIRE(gd.grid_type == GridDefType::FIXED);
-    REQUIRE(gd.height == 10);
-    REQUIRE(gd.width == 10);
+    REQUIRE(gd.height == 12);
+    REQUIRE(gd.width == 12);
 
     std::unordered_map<std::string, bool> tile_types({{"NULL", false}, {"PWR", false}, {"IOB", false}, {"CLB", false}});
     for (auto& loc : gd.loc_defs) {
