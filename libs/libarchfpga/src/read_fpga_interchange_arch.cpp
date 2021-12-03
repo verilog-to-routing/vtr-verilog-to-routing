@@ -252,6 +252,8 @@ struct ArchReader {
 
     // TODO: add possibility to have multiple packages
     std::vector<t_package_pin> pad_bels_;
+    std::string pad_out_suffix_ = "_out";
+    std::string pad_in_suffix_ = "_in";
 
     // Bel Cell mappings
     std::unordered_map<uint32_t, std::vector<t_bel_cell_mapping>> bel_cell_mappings_;
@@ -312,46 +314,50 @@ struct ArchReader {
             std::string wire_name = str(wire.getName());
 
             // pin name, bel name
-            std::tuple<unsigned int, std::string, std::string> out_pin;
+            std::tuple<unsigned int, std::string, std::string> out_pin_tuple;
             bool is_mux = false;
+            int pin_id = OPEN;
             for (auto pin : wire.getPins()) {
                 auto bel_pin = site.getBelPins()[pin];
-                auto bel = get_bel_reader(site, str(bel_pin.getBel()));
-                auto bel_name = get_ic_prefix(site, bel);
+                auto dir = bel_pin.getDir();
 
-                bool is_output = bel_pin.getDir() == LogicalNetlist::Netlist::Direction::OUTPUT;
-                if (is_output) {
-                    VTR_ASSERT(std::get<1>(out_pin).empty());
-                    out_pin = std::make_tuple(pin, str(bel_pin.getName()), bel_name);
-                    is_mux = bel.getCategory() == Device::BELCategory::ROUTING;
+                if (dir == LogicalNetlist::Netlist::Direction::OUTPUT) {
+                    pin_id = pin;
+                    break;
                 }
+
+                if (dir == LogicalNetlist::Netlist::Direction::INOUT)
+                    pin_id = pin;
             }
 
-            VTR_ASSERT(!std::get<1>(out_pin).empty());
+            VTR_ASSERT(pin_id != OPEN);
+
+            auto out_pin = site.getBelPins()[pin_id];
+            auto pin_bel = get_bel_reader(site, str(out_pin.getBel()));
+            auto pin_bel_name = get_ic_prefix(site, pin_bel);
+            out_pin_tuple = std::make_tuple(pin_id, str(out_pin.getName()), pin_bel_name);
+            is_mux = pin_bel.getCategory() == Device::BELCategory::ROUTING;
 
             // Stores all output BELs connected to the same out_pin
             std::string pad_bel_name;
             std::string pad_bel_pin_name;
             bool is_pad = false;
             for (auto pin : wire.getPins()) {
-                if (pin == std::get<0>(out_pin))
-                    continue;
-
                 auto bel_pin = site.getBelPins()[pin];
-                std::string out_bel_pin_name = str(bel_pin.getName());
+                std::string bel_pin_name = str(bel_pin.getName());
 
                 auto bel = get_bel_reader(site, str(bel_pin.getBel()));
-                auto out_bel_name = get_ic_prefix(site, bel);
+                auto bel_name = get_ic_prefix(site, bel);
 
                 for (auto pad_bel : pad_bels_) {
-                    is_pad = pad_bel.bel_name == out_bel_name || is_pad;
-                    pad_bel_name = pad_bel.bel_name == out_bel_name ? out_bel_name : pad_bel_name;
-                    pad_bel_pin_name = pad_bel.bel_name == out_bel_name ? out_bel_pin_name : pad_bel_pin_name;
+                    is_pad = pad_bel.bel_name == bel_name || is_pad;
+                    pad_bel_name = pad_bel.bel_name == bel_name ? bel_name : pad_bel_name;
+                    pad_bel_pin_name = pad_bel.bel_name == bel_name ? bel_pin_name : pad_bel_pin_name;
                 }
             }
 
             for (auto pin : wire.getPins()) {
-                if (pin == std::get<0>(out_pin))
+                if (pin == std::get<0>(out_pin_tuple))
                     continue;
 
                 auto bel_pin = site.getBelPins()[pin];
@@ -360,8 +366,8 @@ struct ArchReader {
                 auto bel = get_bel_reader(site, str(bel_pin.getBel()));
                 auto out_bel_name = get_ic_prefix(site, bel);
 
-                auto in_bel_name = std::get<2>(out_pin);
-                auto in_bel_pin_name = std::get<1>(out_pin);
+                auto in_bel_name = std::get<2>(out_pin_tuple);
+                auto in_bel_pin_name = std::get<1>(out_pin_tuple);
 
                 std::string ostr = out_bel_name + "." + out_bel_pin_name;
                 std::string istr = in_bel_name + "." + in_bel_pin_name;
@@ -389,12 +395,12 @@ struct ArchReader {
                     }
                 } else {
                     auto ic_name = wire_name + "_" + out_bel_pin_name;
-                    if (is_pad && bel.getCategory() == Device::BELCategory::LOGIC) {
+                    if (is_pad) {
                         if (out_bel_name == pad_bel_name)
-                            ostr += "_in";
+                            ostr += pad_in_suffix_;
                         else { // Create new wire to connect PAD output to the BELs input
-                            ic_name = wire_name + "_" + pad_bel_pin_name + "_out";
-                            istr = pad_bel_name + "." + pad_bel_pin_name + "_out";
+                            ic_name = wire_name + "_" + pad_bel_pin_name + pad_out_suffix_;
+                            istr = pad_bel_name + "." + pad_bel_pin_name + pad_out_suffix_;
                         }
                     }
 
@@ -805,8 +811,8 @@ struct ArchReader {
         // Add PAD pb_type ports
         VTR_ASSERT(bel.getPins().size() == 1);
         std::string pin = str(site.getBelPins()[bel.getPins()[0]].getName());
-        std::string ipin = pin + "_in";
-        std::string opin = pin + "_out";
+        std::string ipin = pin + pad_in_suffix_;
+        std::string opin = pin + pad_out_suffix_;
 
         auto num_ports = 2;
         auto ports = new t_port[num_ports];
@@ -1102,22 +1108,16 @@ struct ArchReader {
             t_interconnect* ic = &mode->interconnect[curr_ic++];
 
             if (add_pack_pattern) {
-                ic->num_annotations = 1;
+                auto outs = vtr::split(outputs, " ");
+                auto ins = vtr::split(inputs, " ");
+                ic->num_annotations = outs.size();
+                ic->annotations = new t_pin_to_pin_annotation[outs.size()];
+                VTR_ASSERT(ins.size() == 1);
+
                 // pack pattern
-                auto pp = new t_pin_to_pin_annotation;
-
-                pp->prop = (int*)vtr::calloc(1, sizeof(int));
-                pp->value = (char**)vtr::calloc(1, sizeof(char*));
-
-                pp->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
-                pp->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-                pp->prop[0] = (int)E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
-                pp->value[0] = vtr::strdup(ic_name.c_str());
-                pp->input_pins = vtr::strdup(inputs.c_str());
-                pp->output_pins = vtr::strdup(outputs.c_str());
-                pp->num_value_prop_pairs = 1;
-                pp->clock = nullptr;
-                ic->annotations = pp;
+                int index = 0;
+                for (auto output : outs)
+                    ic->annotations[index++] = get_pack_pattern(ic_name, inputs, output);
             }
 
             // No line num for interconnects, as line num is XML specific
@@ -1133,6 +1133,26 @@ struct ArchReader {
             ic->input_string = vtr::strdup(inputs.c_str());
             ic->output_string = vtr::strdup(outputs.c_str());
         }
+    }
+
+    t_pin_to_pin_annotation get_pack_pattern(std::string ic_name, std::string input, std::string output) {
+        auto pp = new t_pin_to_pin_annotation;
+
+        std::string pp_name = ic_name + "_" + output;
+
+        pp->prop = (int*)vtr::calloc(1, sizeof(int));
+        pp->value = (char**)vtr::calloc(1, sizeof(char*));
+
+        pp->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
+        pp->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
+        pp->prop[0] = (int)E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
+        pp->value[0] = vtr::strdup(pp_name.c_str());
+        pp->input_pins = vtr::strdup(input.c_str());
+        pp->output_pins = vtr::strdup(output.c_str());
+        pp->num_value_prop_pairs = 1;
+        pp->clock = nullptr;
+
+        return *pp;
     }
 
     // Physical Tiles
@@ -1318,6 +1338,9 @@ struct ArchReader {
                 grid_def.width = std::max(grid_def.width, tile.getCol() + 1);
                 grid_def.height = std::max(grid_def.height, tile.getRow() + 1);
             }
+
+            grid_def.width += 2;
+            grid_def.height += 2;
 
             grid_def.grid_type = GridDefType::FIXED;
 
