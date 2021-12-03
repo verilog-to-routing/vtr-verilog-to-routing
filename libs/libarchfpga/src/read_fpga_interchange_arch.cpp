@@ -227,16 +227,16 @@ struct ArchReader {
         process_models();
         process_device();
 
+        process_layout();
+        process_switches();
+        process_segments();
+
         process_blocks();
         process_tiles();
         link_physical_logical_types(ptypes_, ltypes_);
 
         SyncModelsPbTypes(arch_, ltypes_);
         check_models(arch_);
-
-        process_layout();
-        process_switches();
-        process_segments();
     }
 
   private:
@@ -255,6 +255,7 @@ struct ArchReader {
 
     // Bel Cell mappings
     std::unordered_map<uint32_t, std::vector<t_bel_cell_mapping>> bel_cell_mappings_;
+    std::unordered_map<std::string, int> segment_name_to_segment_idx;
 
     // Utils
     std::string str(int idx) {
@@ -1147,13 +1148,13 @@ struct ArchReader {
             t_physical_tile_type ptype;
             auto name = str(tile.getName());
 
-            if (name == std::string("NULL"))
+            if (name == EMPTY.name)
                 continue;
 
             ptype.name = vtr::strdup(name.c_str());
             ptype.index = ++index;
             ptype.width = ptype.height = ptype.area = 1;
-            ptype.capacity = 1;
+            ptype.capacity = 0;
 
             process_sub_tiles(ptype, tile);
 
@@ -1169,6 +1170,9 @@ struct ArchReader {
 
             ptype.is_input_type = ptype.is_output_type = is_io;
 
+            ptype.switchblock_locations = vtr::Matrix<e_sb_type>({{1, 1}}, e_sb_type::FULL);
+            ptype.switchblock_switch_overrides = vtr::Matrix<int>({{1, 1}}, DEFAULT_SWITCH);
+
             ptypes_.push_back(ptype);
         }
     }
@@ -1180,15 +1184,20 @@ struct ArchReader {
             t_sub_tile sub_tile;
 
             auto site = siteTypeList[site_in_tile.getPrimaryType()];
+            auto pins_to_wires = site_in_tile.getPrimaryPinsToTileWires();
 
-            sub_tile.index = 0;
+            sub_tile.index = type.capacity;
             sub_tile.name = vtr::strdup(str(site.getName()).c_str());
-            sub_tile.capacity.set(0, 0);
+            sub_tile.capacity.set(type.capacity, type.capacity);
+            type.capacity++;
 
             int port_idx = 0;
             int abs_first_pin_idx = 0;
             int icount = 0;
             int ocount = 0;
+
+            std::unordered_map<std::string, std::string> port_name_to_wire_name;
+            int idx = 0;
             for (auto dir : {LogicalNetlist::Netlist::Direction::INPUT, LogicalNetlist::Netlist::Direction::OUTPUT}) {
                 int port_idx_by_type = 0;
                 for (auto pin : site.getPins()) {
@@ -1198,14 +1207,20 @@ struct ArchReader {
                     t_physical_tile_port port;
 
                     port.name = vtr::strdup(str(pin.getName()).c_str());
+
+                    port_name_to_wire_name[std::string(port.name)] = str(pins_to_wires[idx++]);
+
                     port.equivalent = PortEquivalence::NONE;
                     port.num_pins = 1;
 
-                    sub_tile.sub_tile_to_tile_pin_indices.push_back(port_idx);
+                    sub_tile.sub_tile_to_tile_pin_indices.push_back(type.num_pins + port_idx);
                     port.index = port_idx++;
 
                     port.absolute_first_pin_index = abs_first_pin_idx++;
                     port.port_index_by_type = port_idx_by_type++;
+
+                    port.is_clock = false;
+                    port.is_non_clock_global = false;
 
                     if (dir == LogicalNetlist::Netlist::Direction::INPUT) {
                         port.type = IN_PORT;
@@ -1220,14 +1235,14 @@ struct ArchReader {
             }
 
             auto pins_size = site.getPins().size();
-            sub_tile.num_phy_pins += pins_size * type.capacity;
-            type.num_pins += pins_size * type.capacity;
+            sub_tile.num_phy_pins += pins_size;
+            type.num_pins += pins_size;
             type.num_inst_pins += pins_size;
 
             type.num_input_pins += icount;
             type.num_output_pins += ocount;
-            type.num_receivers += icount * type.capacity;
-            type.num_drivers += ocount * type.capacity;
+            type.num_receivers += icount;
+            type.num_drivers += ocount;
 
             type.pin_width_offset.resize(type.num_pins, 0);
             type.pin_height_offset.resize(type.num_pins, 0);
@@ -1260,7 +1275,7 @@ struct ArchReader {
             for (const auto& port : sub_tile.ports) {
                 t_fc_specification fc_spec;
 
-                fc_spec.seg_index = 0;
+                fc_spec.seg_index = segment_name_to_segment_idx[port_name_to_wire_name[std::string(port.name)]];
 
                 //Apply type and defaults
                 if (port.type == IN_PORT) {
@@ -1325,8 +1340,8 @@ struct ArchReader {
                 if (pos != std::string::npos && pos == 0)
                     tile_prefix.erase(pos, tile_type.length() + 1);
                 t_grid_loc_def single(tile_type, 1);
-                single.x.start_expr = std::to_string(tile.getCol());
-                single.y.start_expr = std::to_string(tile.getRow());
+                single.x.start_expr = std::to_string(tile.getCol() + 1);
+                single.y.start_expr = std::to_string(tile.getRow() + 1);
 
                 single.x.end_expr = single.x.start_expr + " + w - 1";
                 single.y.end_expr = single.y.start_expr + " + h - 1";
@@ -1496,8 +1511,8 @@ struct ArchReader {
             arch_->Segments[index].name = str(i);
             arch_->Segments[index].length = 1;
             arch_->Segments[index].frequency = 1;
-            arch_->Segments[index].Rmetal = 0;
-            arch_->Segments[index].Cmetal = 0;
+            arch_->Segments[index].Rmetal = 1e-12;
+            arch_->Segments[index].Cmetal = 1e-12;
             arch_->Segments[index].parallel_axis = BOTH_AXIS;
 
             // TODO: Only bi-directional segments are created, but it the interchange format
@@ -1511,6 +1526,7 @@ struct ArchReader {
             arch_->Segments[index].sb.resize(2);
             arch_->Segments[index].sb[0] = true;
             arch_->Segments[index].sb[1] = true;
+            segment_name_to_segment_idx[str(i)] = index;
             ++index;
         }
     }
