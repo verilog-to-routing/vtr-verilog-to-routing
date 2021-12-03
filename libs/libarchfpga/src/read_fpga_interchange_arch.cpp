@@ -1295,7 +1295,10 @@ struct ArchReader {
             for (const auto& port : sub_tile.ports) {
                 t_fc_specification fc_spec;
 
-                fc_spec.seg_index = segment_name_to_segment_idx[port_name_to_wire_name[std::string(port.name)]];
+                // FIXME: Use always one segment for the time being.
+                //        Can use the right segment for this IOPIN as soon
+                //        as the RR graph reading from the interchange is complete.
+                fc_spec.seg_index = 0;
 
                 //Apply type and defaults
                 if (port.type == IN_PORT) {
@@ -1525,10 +1528,18 @@ struct ArchReader {
                 wire_names.insert(wires[pip.getWire1()]);
             }
         }
-        int num_seg = wire_names.size();
+
+        // FIXME: have only one segment type for the time being, so that
+        //        the RR graph generation is correct.
+        //        This can be removed once the RR graph reader from the interchange
+        //        device is ready and functional.
+        int num_seg = 1; //wire_names.size();
+
         arch_->Segments.resize(num_seg);
         uint32_t index = 0;
         for (auto i : wire_names) {
+            if (index >= num_seg) break;
+
             // Use default values as we will populate rr_graph with correct values
             // This segments are just declaration of future use
             arch_->Segments[index].name = str(i);
