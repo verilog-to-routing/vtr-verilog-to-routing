@@ -677,7 +677,16 @@ IdentifierList:		Identifier
 					}
 				;
 
-Identifier:		TOKEN_ESCAPEDID
+Identifier:	TOKEN_ESCAPEDID '[' TOKEN_INTCONSTANT ']'
+				{
+                    if(parse_info->pass_type == COUNT_PASS) {
+                        //pass
+                    } else {
+                        /* Allocate space for an identifier. Specify index used */
+                        $$ = (uintptr_t) allocate_identifier($1, T_TRUE, $3);
+                    }
+				}
+			|	TOKEN_ESCAPEDID
 				{
                     if(parse_info->pass_type == COUNT_PASS) {
                         //pass
