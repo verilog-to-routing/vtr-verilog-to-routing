@@ -254,11 +254,6 @@ class RRGraphView {
     inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_switch(id, iedge);
     }
-    /*It is recommended to use API edge_switch(RRNodeId id, t_edge_size iedge) rather than this one. It may be deprecated later.
-     */
-    inline short edge_switch(const RREdgeId& edge) const {
-        return node_storage_.edge_switch(edge);
-    }
 
     /** @brief The ptc_num carries different meanings for different node types 
      * (true in VPR RRG that is currently supported, may not be true in customized RRG) 

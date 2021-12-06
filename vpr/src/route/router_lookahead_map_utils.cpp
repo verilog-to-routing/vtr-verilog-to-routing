@@ -266,7 +266,7 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
     const auto& rr_graph = device_ctx.rr_graph;
     for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
         int child_node_ind = parent_node.edge_sink_node(iedge);
-        int switch_ind = rr_graph.edge_switch(RREdgeId(iedge));
+        int switch_ind = rr_graph.edge_switch(parent,iedge);
 
         /* skip this child if it has already been expanded from */
         if ((*node_expanded)[child_node_ind]) {
