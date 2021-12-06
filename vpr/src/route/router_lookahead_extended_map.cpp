@@ -311,7 +311,6 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
             delta};
 
         if (size_t(this_node) != size_t(start_node)) {
-            auto& parent_node = device_ctx.rr_nodes[size_t(parent)];
             start_to_here = Entry(this_node, rr_graph.edge_switch(RRNodeId(parent), paths[*it].edge), &start_to_here);
             parent = this_node;
         }

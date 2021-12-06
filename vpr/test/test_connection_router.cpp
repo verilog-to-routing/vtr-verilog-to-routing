@@ -16,7 +16,6 @@ namespace {
 // Route from source_node to sink_node, returning either the delay, or infinity if unroutable.
 static float do_one_route(int source_node, int sink_node, const t_router_opts& router_opts, const std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
 
