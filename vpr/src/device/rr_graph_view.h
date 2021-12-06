@@ -248,10 +248,14 @@ class RRGraphView {
     inline const char* node_side_string(RRNodeId node) const {
         return node_storage_.node_side_string(node);
     }
-    /*@brief Get the switch used for the iedge'th edge from specified RRNodeId.*/
+    /*Get the switch id that represents the iedge'th outgoing edge from a specific node
+     * TODO: We may need to revisit this API and think about higher level APIs, like ``switch_delay()``
+     */
     inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_switch(id, iedge);
     }
+    /*It is recommended to use API edge_switch(RRNodeId id, t_edge_size iedge) rather than this one. It may be deprecated later.
+     */
     inline short edge_switch(const RREdgeId& edge) const {
         return node_storage_.edge_switch(edge);
     }

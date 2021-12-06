@@ -1804,7 +1804,7 @@ void print_switch_usage() {
         const t_rr_node& from_node = device_ctx.rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int switch_index = rr_graph.edge_switch(RREdgeId(iedge));
+            int switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
             int to_node_index = from_node.edge_sink_node(iedge);
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch

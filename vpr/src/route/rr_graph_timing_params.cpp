@@ -60,7 +60,6 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
                 if (to_rr_type == CHANX || to_rr_type == CHANY) {
                     switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
-                    ;
                     Cin = device_ctx.rr_switch_inf[switch_index].Cin;
                     Cout = device_ctx.rr_switch_inf[switch_index].Cout;
                     buffered = device_ctx.rr_switch_inf[switch_index].buffered();
