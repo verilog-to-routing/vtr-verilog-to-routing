@@ -236,6 +236,7 @@ void YYosys::execute() {
         // Transform asynchronous dffs to synchronous dffs using techlib files provided by Yosys
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
+        // To resolve Yosys internal indexed part-select circuitries
         run_pass(std::string("techmap */t:$shift */t:$shiftx"));
 
         /**

@@ -78,7 +78,7 @@ Example of Tcl script for Yosys+Odin-II
 
 	# Make name convention more readable
 	autoname;
-	# Translate processes to entlist components such as MUXs, FFs and latches
+	# Translate processes to netlist components such as MUXs, FFs and latches
 	procs; opt;
 	# Extraction and optimization of finite state machines
 	fsm; opt;
@@ -90,6 +90,8 @@ Example of Tcl script for Yosys+Odin-II
 	# resolve asynchronous dffs
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
+    # To resolve Yosys internal indexed part-select circuitry
+    techmap */t:$shift */t:$shiftx;
 
 	## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
 	## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
@@ -104,12 +106,19 @@ Example of Tcl script for Yosys+Odin-II
 	flatten;
 	# Transforms pmux into trees of regular multiplexers
 	pmuxtree;
-	# undirven to ensure there is no wire without drive
-	opt -undriven -full; # -noff #potential option to remove all sdff and etc. Only dff will remain
+    # To possibly reduce words size
+    wreduce;
+	# "undirven" to ensure there is no wire without drive
+    # "opt_muxtree" removes dead branches, "opt_expr" performs constant folding,
+    # removes "undef" inputs from mux cells, and replaces muxes with buffers and inverters.
+    # "-noff" a potential option to remove all sdff and etc. Only dff will remain
+	opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;
 	# Make name convention more readable
 	autoname;
 	# Print statistics
 	stat;
+	# Output BLIF
+	write_blif -param -impltf TCL_BLIF;
 
 
 .. note::
