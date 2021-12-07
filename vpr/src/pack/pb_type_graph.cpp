@@ -1098,9 +1098,6 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         return false; //clb[9:0]123
     }
     (*token_index)++;
-    if (!checkTokenType(tokens[*token_index], TOKEN_STRING)) {
-        return false; //clb[9:0].123
-    }
 
     /* parse ports and port pins of pb */
     port_name = tokens[*token_index].data;
