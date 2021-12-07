@@ -34,15 +34,6 @@ target_compile_definitions(libarchfpga PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 add_executable(read_arch ${EXEC_SOURCES})
 target_link_libraries(read_arch libarchfpga)
 
-# 
-# Unit Tests
-#
-file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
-add_executable(test_libarchfpga ${TEST_SOURCES})
-target_link_libraries(test_libarchfpga
-                        libarchfpga
-                        Catch2::Catch2WithMain)
-
 #Supress IPO link warnings if IPO is enabled
 get_target_property(READ_ARCH_USES_IPO read_arch INTERPROCEDURAL_OPTIMIZATION)
 if (READ_ARCH_USES_IPO)
@@ -50,3 +41,10 @@ if (READ_ARCH_USES_IPO)
 endif()
 
 install(TARGETS libarchfpga read_arch DESTINATION bin)
+
+# 
+# Unit Tests
+#
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+add_executable(test_archfpga ${TEST_SOURCES})
+target_link_libraries(test_archfpga Catch2::Catch2WithMain libarchfpga)
