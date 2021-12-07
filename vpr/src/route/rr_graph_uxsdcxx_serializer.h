@@ -153,7 +153,7 @@ class EdgeWalker {
         current_edge_ = 0;
         current_idx_ = 0;
 
-        // TODO: Once rr_graph_storage is fully shadowed by RRGraphView, the cached nodes_ will be removed.      
+        // TODO: Once rr_graph_storage is fully shadowed by RRGraphView, the cached nodes_ will be removed.
         for (const auto& node : *nodes) {
             num_edges_ += rr_graph_->num_edges(node.id());
         }
@@ -1002,7 +1002,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
         EdgeWalker walker;
-        walker.initialize(rr_nodes_,rr_graph_);
+        walker.initialize(rr_nodes_, rr_graph_);
         return walker;
     }
 
