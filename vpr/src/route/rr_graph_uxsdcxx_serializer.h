@@ -145,15 +145,17 @@ class t_metadata_dict_iterator {
 
 class EdgeWalker {
   public:
-    void initialize(const t_rr_graph_storage* nodes) {
+    void initialize(const t_rr_graph_storage* nodes, RRGraphView* rr_graph) {
         nodes_ = nodes;
+        rr_graph_ = rr_graph;
         num_edges_ = 0;
         current_src_inode_ = 0;
         current_edge_ = 0;
         current_idx_ = 0;
 
+        // TODO: Once rr_graph_storage is fully shadowed by RRGraphView, the cached nodes_ will be removed.      
         for (const auto& node : *nodes) {
-            num_edges_ += nodes_->num_edges(node.id());
+            num_edges_ += rr_graph_->num_edges(node.id());
         }
     }
 
@@ -181,7 +183,7 @@ class EdgeWalker {
             current_edge_ += 1;
         }
 
-        if (current_edge_ >= nodes_->num_edges(RRNodeId(current_src_inode_))) {
+        if (current_edge_ >= rr_graph_->num_edges(RRNodeId(current_src_inode_))) {
             // Done with current_src_inode_, advance to the end of the
             // node list, or the next node with at least 1 edge.
             current_edge_ = 0;
@@ -194,7 +196,7 @@ class EdgeWalker {
                     VTR_ASSERT(current_idx_ + 1 == num_edges_);
                     return current_idx_++;
                 }
-            } while (nodes_->num_edges(RRNodeId(current_src_inode_)) < 1);
+            } while (rr_graph_->num_edges(RRNodeId(current_src_inode_)) < 1);
         }
 
         VTR_ASSERT(current_src_inode_ < nodes_->size());
@@ -204,6 +206,7 @@ class EdgeWalker {
 
   private:
     const t_rr_graph_storage* nodes_;
+    RRGraphView* rr_graph_;
     size_t num_edges_;
     size_t current_src_inode_;
     size_t current_edge_;
@@ -999,7 +1002,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
         EdgeWalker walker;
-        walker.initialize(rr_nodes_);
+        walker.initialize(rr_nodes_,rr_graph_);
         return walker;
     }
 
