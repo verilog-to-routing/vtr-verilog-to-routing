@@ -1743,6 +1743,20 @@ struct t_lut_bel {
 
     std::vector<std::string> input_pins;
     std::string output_pin;
+
+    bool operator==(const t_lut_bel& other) const {
+        return name == other.name && input_pins == other.input_pins && output_pin == other.output_pin;
+    }
+};
+
+struct t_lut_element {
+    std::string site_type;
+    int width;
+    std::vector<t_lut_bel> lut_bels;
+
+    bool operator==(const t_lut_element& other) const {
+        return site_type == other.site_type && width == other.width && lut_bels == other.lut_bels;
+    }
 };
 
 /*   Detailed routing architecture */
@@ -1795,7 +1809,7 @@ struct t_arch {
 
     // Luts
     std::vector<t_lut_cell> lut_cells;
-    std::vector<t_lut_bel> lut_bels;
+    std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).

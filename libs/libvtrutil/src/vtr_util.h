@@ -118,6 +118,8 @@ void uniquify(Container container) {
 
 int get_pid();
 
+char* stringf(const char* format, ...);
+
 } // namespace vtr
 
 #endif

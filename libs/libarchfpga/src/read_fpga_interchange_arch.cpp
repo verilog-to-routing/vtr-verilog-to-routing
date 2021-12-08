@@ -391,16 +391,42 @@ struct ArchReader {
     }
 
     /** @brief Returns true in case the input argument corresponds to the name of a LUT */
-    bool is_lut(std::string name) {
+    bool is_lut(std::string name, const std::string site = std::string()) {
         for (auto cell : arch_->lut_cells)
             if (cell.name == name)
                 return true;
 
-        for (auto bel : arch_->lut_bels)
-            if (bel.name == name)
-                return true;
+        for (const auto& it : arch_->lut_elements) {
+            if (!site.empty() && site != it.first) {
+                continue;
+            }
+
+            for (const auto& lut_element : it.second) {
+                for (const auto& lut_bel : lut_element.lut_bels) {
+                    if (lut_bel.name == name) {
+                        return true;
+                    }
+                }
+            }
+        }
 
         return false;
+    }
+
+    t_lut_element* get_lut_element_for_bel(const std::string& site_type, const std::string& bel_name) {
+        if (!arch_->lut_elements.count(site_type)) {
+            return nullptr;
+        }
+
+        for (auto& lut_element : arch_->lut_elements.at(site_type)) {
+            for (auto& lut_bel : lut_element.lut_bels) {
+                if (lut_bel.name == bel_name) {
+                    return &lut_element;
+                }
+            }
+        }
+
+        return nullptr;
     }
 
     /** @brief Returns true in case the input argument corresponds to a PAD BEL */
@@ -412,8 +438,11 @@ struct ArchReader {
     std::unordered_map<std::string, t_ic_data> get_interconnects(Device::SiteType::Reader& site) {
         // dictionary:
         //   - key: interconnect name
-        //   - value: (inputs string, outputs string, interconnect type)
+        //   - value: interconnect data
         std::unordered_map<std::string, t_ic_data> ics;
+
+        const std::string site_type = str(site.getName());
+
         for (auto wire : site.getSiteWires()) {
             std::string wire_name = str(wire.getName());
 
@@ -486,6 +515,32 @@ struct ArchReader {
                 bool skip_out_bel = out_bel.getCategory() == Device::BELCategory::LOGIC && take_bels_.count(out_bel.getName()) == 0;
                 if (skip_in_bel || skip_out_bel)
                     continue;
+
+                // LUT bels are nested under pb_types which represent LUT
+                // elements. Check if a BEL belongs to a LUT element and
+                // adjust pb_type name in the interconnect accordingly.
+                auto get_lut_element_index = [&](const std::string& bel_name) {
+                    auto lut_element = get_lut_element_for_bel(site_type, bel_name);
+                    if (lut_element == nullptr) {
+                        return -1;
+                    }
+
+                    const auto& lut_elements = arch_->lut_elements.at(site_type);
+                    auto it = std::find(lut_elements.begin(), lut_elements.end(), *lut_element);
+                    VTR_ASSERT(it != lut_elements.end());
+                    return (int)std::distance(lut_elements.begin(), it);
+                };
+
+                int index = -1;
+
+                index = get_lut_element_index(out_bel_name);
+                if (index >= 0) {
+                    out_bel_name = "LUT" + std::to_string(index);
+                }
+                index = get_lut_element_index(in_bel_name);
+                if (index >= 0) {
+                    in_bel_name = "LUT" + std::to_string(index);
+                }
 
                 std::string ostr = out_bel_name + "." + out_bel_pin_name;
                 std::string istr = in_bel_name + "." + in_bel_pin_name;
@@ -615,27 +670,25 @@ struct ArchReader {
 
         for (auto lut_elem : lut_def.getLutElements()) {
             for (auto lut : lut_elem.getLuts()) {
+                t_lut_element element;
+                element.site_type = lut_elem.getSite().cStr();
+                element.width = lut.getWidth();
+
                 for (auto bel : lut.getBels()) {
                     t_lut_bel lut_bel;
-
-                    std::string name = bel.getName().cStr();
-                    lut_bel.name = name;
-
-                    // Check for duplicates
-                    auto is_duplicate = [name](t_lut_bel l) { return l.name == name; };
-                    auto res = std::find_if(arch_->lut_bels.begin(), arch_->lut_bels.end(), is_duplicate);
-                    if (res != arch_->lut_bels.end())
-                        continue;
-
+                    lut_bel.name = bel.getName().cStr();
                     std::vector<std::string> ipins;
+
                     for (auto pin : bel.getInputPins())
                         ipins.push_back(pin.cStr());
 
                     lut_bel.input_pins = ipins;
                     lut_bel.output_pin = bel.getOutputPin().cStr();
 
-                    arch_->lut_bels.push_back(lut_bel);
+                    element.lut_bels.push_back(lut_bel);
                 }
+
+                arch_->lut_elements[element.site_type].push_back(element);
             }
         }
     }
@@ -919,12 +972,31 @@ struct ArchReader {
             mode->name = vtr::strdup("default");
             mode->disable_packing = false;
 
-            int bel_count = get_bel_type_count(site, Device::BELCategory::LOGIC) + get_bel_type_count(site, Device::BELCategory::ROUTING);
-            mode->num_pb_type_children = bel_count;
-            mode->pb_type_children = new t_pb_type[bel_count];
+            // Get LUT elements for this site
+            std::vector<t_lut_element> lut_elements;
+            if (arch_->lut_elements.count(name)) {
+                lut_elements = arch_->lut_elements.at(name);
+            }
 
-            // Iterate over all the BELs to create intermedite complex block types
+            // Count non-LUT BELs plus LUT elements
+            int block_count = 0;
             int count = 0;
+
+            for (auto bel : site.getBels()) {
+                if (bel.getCategory() != Device::BELCategory::LOGIC) {
+                    continue;
+                }
+                if (is_lut(str(bel.getName()), name)) {
+                    continue;
+                }
+                block_count++;
+            }
+            block_count += lut_elements.size();
+
+            mode->num_pb_type_children = block_count;
+            mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
+
+            // Add regular BELs
             for (auto bel : bels) {
                 auto category = bel.getCategory();
                 if (bel.getCategory() == Device::BELCategory::SITE_PORT)
@@ -933,6 +1005,9 @@ struct ArchReader {
                 bool is_logic = category == Device::BELCategory::LOGIC;
 
                 if (take_bels_.count(bel.getName()) == 0 && is_logic)
+                    continue;
+
+                if (is_lut(str(bel.getName()), name))
                     continue;
 
                 auto bel_name = str(bel.getName());
@@ -949,9 +1024,7 @@ struct ArchReader {
                 if (!is_pad(bel_name))
                     process_block_ports(mid_pb_type, site, bel.getName());
 
-                if (is_lut(bel_name))
-                    process_lut_block(mid_pb_type);
-                else if (is_pad(bel_name))
+                if (is_pad(bel_name))
                     process_pad_block(mid_pb_type, bel, site);
                 else if (is_logic)
                     process_generic_block(mid_pb_type, bel, site);
@@ -959,8 +1032,19 @@ struct ArchReader {
                     VTR_ASSERT(category == Device::BELCategory::ROUTING);
                     process_routing_block(mid_pb_type);
                 }
+            }
 
-                mode->pb_type_children[count++] = *mid_pb_type;
+            // Add LUT elements
+            for (size_t i = 0; i < lut_elements.size(); ++i) {
+                const auto& lut_element = lut_elements[i];
+
+                auto mid_pb_type = &mode->pb_type_children[count++];
+                mid_pb_type->name = vtr::stringf("LUT%d", i);
+                mid_pb_type->num_pb = 1;
+                mid_pb_type->parent_mode = mode;
+                mid_pb_type->blif_model = nullptr;
+
+                process_lut_element(mid_pb_type, lut_element);
             }
 
             process_interconnects(mode, site);
@@ -968,77 +1052,178 @@ struct ArchReader {
         }
     }
 
-    /** @brief Generates a LUT primitive block starting from the intermediate pb type */
-    void process_lut_block(t_pb_type* lut) {
-        lut->num_modes = 1;
-        lut->modes = new t_mode[1];
-
-        // Check for duplicates
-        std::string lut_name = lut->name;
-        auto find_lut = [lut_name](t_lut_bel l) { return l.name == lut_name; };
-        auto res = std::find_if(arch_->lut_bels.begin(), arch_->lut_bels.end(), find_lut);
-        VTR_ASSERT(res != arch_->lut_bels.end());
-        auto lut_bel = *res;
-
-        auto mode = &lut->modes[0];
-        mode->name = vtr::strdup("lut");
-        mode->parent_pb_type = lut;
-        mode->index = 0;
-        mode->num_pb_type_children = 1;
-        mode->pb_type_children = new t_pb_type[1];
-
-        auto new_leaf = new t_pb_type;
-        new_leaf->name = vtr::strdup("lut_child");
-        new_leaf->num_pb = 1;
-        new_leaf->parent_mode = mode;
-
-        int num_ports = 2;
-        new_leaf->num_ports = num_ports;
-        new_leaf->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
-        new_leaf->blif_model = vtr::strdup(MODEL_NAMES);
-        new_leaf->model = get_model(arch_, std::string(MODEL_NAMES));
-
-        auto in_size = lut_bel.input_pins.size();
-        new_leaf->ports[0] = get_generic_port(arch_, new_leaf, IN_PORT, "in", MODEL_NAMES, in_size);
-        new_leaf->ports[1] = get_generic_port(arch_, new_leaf, OUT_PORT, "out", MODEL_NAMES);
-
-        mode->pb_type_children[0] = *new_leaf;
-
-        // Num inputs + 1 (output pin)
-        int num_pins = in_size + 1;
-
-        mode->num_interconnect = num_pins;
-        mode->interconnect = new t_interconnect[num_pins];
-
-        for (int i = 0; i < num_pins; i++) {
-            auto ic = new t_interconnect;
-
-            std::stringstream istr;
-            std::stringstream ostr;
-            std::string input_string;
-            std::string output_string;
-
-            if (i < num_pins - 1) {
-                istr << lut_bel.input_pins[i];
-                ostr << "in[" << i << "]";
-                input_string = std::string(lut->name) + std::string(".") + istr.str();
-                output_string = std::string(new_leaf->name) + std::string(".") + ostr.str();
-            } else {
-                istr << "out";
-                ostr << lut_bel.output_pin;
-                input_string = std::string(new_leaf->name) + std::string(".") + istr.str();
-                output_string = std::string(lut->name) + std::string(".") + ostr.str();
+    /** @brief Processes a LUT element starting from the intermediate pb type */
+    void process_lut_element(t_pb_type* parent, const t_lut_element& lut_element) {
+        // Collect ports for the parent pb_type representing the whole LUT
+        // element
+        std::set<std::tuple<std::string, PORTS, int>> parent_ports;
+        for (const auto& lut_bel : lut_element.lut_bels) {
+            for (const auto& name : lut_bel.input_pins) {
+                parent_ports.emplace(name, IN_PORT, 1);
             }
-            std::string name = istr.str() + std::string("_") + ostr.str();
-            ic->name = vtr::strdup(name.c_str());
-            ic->type = DIRECT_INTERC;
-            ic->parent_mode_index = 0;
-            ic->parent_mode = mode;
-            ic->input_string = vtr::strdup(input_string.c_str());
-            ic->output_string = vtr::strdup(output_string.c_str());
 
-            mode->interconnect[i] = *ic;
+            parent_ports.emplace(lut_bel.output_pin, OUT_PORT, 1);
         }
+
+        // Create the ports
+        create_ports(parent, parent_ports);
+
+        // Make a single mode for each member LUT of the LUT element
+        parent->num_modes = (int)lut_element.lut_bels.size();
+        parent->modes = new t_mode[parent->num_modes];
+
+        for (size_t i = 0; i < lut_element.lut_bels.size(); ++i) {
+            const t_lut_bel& lut_bel = lut_element.lut_bels[i];
+            auto mode = &parent->modes[i];
+
+            mode->name = vtr::strdup(lut_bel.name.c_str());
+            mode->parent_pb_type = parent;
+            mode->index = i;
+
+            // Leaf pb_type block for the LUT
+            mode->num_pb_type_children = 1;
+            mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
+
+            auto pb_type = &mode->pb_type_children[0];
+            pb_type->name = vtr::strdup(lut_bel.name.c_str());
+            pb_type->num_pb = 1;
+            pb_type->parent_mode = mode;
+            pb_type->blif_model = nullptr;
+
+            process_lut_block(pb_type, lut_bel);
+
+            // Mode interconnect
+            mode->num_interconnect = lut_bel.input_pins.size() + 1;
+            mode->interconnect = new t_interconnect[mode->num_interconnect];
+
+            // Inputs
+            for (size_t j = 0; j < lut_bel.input_pins.size(); ++j) {
+                auto* ic = &mode->interconnect[j];
+
+                ic->type = DIRECT_INTERC;
+                ic->parent_mode = mode;
+                ic->parent_mode_index = mode->index;
+
+                ic->input_string = vtr::stringf("%s.%s", parent->name, lut_bel.input_pins[j].c_str());
+                ic->output_string = vtr::stringf("%s.in[%d]", pb_type->name, j);
+                ic->name = vtr::stringf("%s_to_%s",
+                                        ic->input_string,
+                                        ic->output_string);
+            }
+
+            // Output
+            auto* ic = &mode->interconnect[mode->num_interconnect - 1];
+            ic->type = DIRECT_INTERC;
+            ic->parent_mode = mode;
+            ic->parent_mode_index = mode->index;
+
+            ic->input_string = vtr::stringf("%s.out", pb_type->name);
+            ic->output_string = vtr::stringf("%s.%s", parent->name, lut_bel.output_pin.c_str());
+            ic->name = vtr::stringf("%s_to_%s",
+                                    ic->input_string,
+                                    ic->output_string);
+        }
+    }
+
+    /** @brief Processes a LUT primitive starting from the intermediate pb type */
+    void process_lut_block(t_pb_type* pb_type, const t_lut_bel& lut_bel) {
+        // Create port list
+        size_t width = lut_bel.input_pins.size();
+
+        std::set<std::tuple<std::string, PORTS, int>> ports;
+        ports.emplace("in", IN_PORT, width);
+        ports.emplace("out", OUT_PORT, 1);
+
+        create_ports(pb_type, ports);
+
+        // Make two modes. One for LUT-thru and another for the actual LUT bel
+        pb_type->num_modes = 2;
+        pb_type->modes = new t_mode[pb_type->num_modes];
+
+        // ................................................
+        // LUT-thru
+        t_mode* mode = &pb_type->modes[0];
+
+        // Mode
+        mode->name = vtr::strdup("wire");
+        mode->parent_pb_type = pb_type;
+        mode->index = 0;
+        mode->num_pb_type_children = 0;
+
+        // Mode interconnect
+        mode->num_interconnect = 1;
+        mode->interconnect = new t_interconnect[mode->num_interconnect];
+        t_interconnect* ic = &mode->interconnect[0];
+
+        ic->input_string = vtr::stringf("%s.in", pb_type->name);
+        ic->output_string = vtr::stringf("%s.out", pb_type->name);
+        ic->name = vtr::strdup("passthrough");
+
+        ic->type = COMPLETE_INTERC;
+        ic->parent_mode = mode;
+        ic->parent_mode_index = mode->index;
+
+        // ................................................
+        // LUT BEL
+        mode = &pb_type->modes[1];
+
+        // Mode
+        mode->name = vtr::strdup("lut");
+        mode->parent_pb_type = pb_type;
+        mode->index = 1;
+
+        // Leaf pb_type
+        mode->num_pb_type_children = 1;
+        mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
+
+        auto lut = &mode->pb_type_children[0];
+        lut->name = vtr::strdup("lut");
+        lut->num_pb = 1;
+        lut->parent_mode = mode;
+
+        lut->blif_model = vtr::strdup(MODEL_NAMES);
+        lut->model = get_model(arch_, std::string(MODEL_NAMES));
+
+        lut->num_ports = 2;
+        lut->ports = (t_port*)vtr::calloc(lut->num_ports, sizeof(t_port));
+        lut->ports[0] = get_generic_port(arch_, lut, IN_PORT, "in", MODEL_NAMES, width);
+        lut->ports[1] = get_generic_port(arch_, lut, OUT_PORT, "out", MODEL_NAMES);
+
+        lut->ports[0].equivalent = PortEquivalence::FULL;
+
+        // Set classes
+        pb_type->class_type = LUT_CLASS;
+        lut->class_type = LUT_CLASS;
+        lut->ports[0].port_class = vtr::strdup("lut_in");
+        lut->ports[1].port_class = vtr::strdup("lut_out");
+
+        // Mode interconnect
+        mode->num_interconnect = 2;
+        mode->interconnect = new t_interconnect[mode->num_interconnect];
+
+        // Input
+        ic = &mode->interconnect[0];
+        ic->type = DIRECT_INTERC;
+        ic->parent_mode = mode;
+        ic->parent_mode_index = mode->index;
+
+        ic->input_string = vtr::stringf("%s.in", pb_type->name);
+        ic->output_string = vtr::stringf("%s.in", lut->name);
+        ic->name = vtr::stringf("%s_to_%s",
+                                ic->input_string,
+                                ic->output_string);
+
+        // Output
+        ic = &mode->interconnect[1];
+        ic->type = DIRECT_INTERC;
+        ic->parent_mode = mode;
+        ic->parent_mode_index = mode->index;
+
+        ic->input_string = vtr::stringf("%s.out", lut->name);
+        ic->output_string = vtr::stringf("%s.out", pb_type->name);
+        ic->name = vtr::stringf("%s_to_%s",
+                                ic->input_string,
+                                ic->output_string);
     }
 
     /** @brief Generates the leaf pb types for the PAD type */
@@ -2029,10 +2214,10 @@ struct ArchReader {
         //        the RR graph generation is correct.
         //        This can be removed once the RR graph reader from the interchange
         //        device is ready and functional.
-        int num_seg = 1; //wire_names.size();
+        size_t num_seg = 1; //wire_names.size();
 
         arch_->Segments.resize(num_seg);
-        int index = 0;
+        size_t index = 0;
         for (auto i : wire_names) {
             if (index >= num_seg) break;
 

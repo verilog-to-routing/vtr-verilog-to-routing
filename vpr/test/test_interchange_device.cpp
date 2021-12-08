@@ -80,8 +80,6 @@ TEST_CASE("read_interchange_luts", "[vpr]") {
     std::unordered_set<std::string> lut_bel_pins = {"A1", "A2", "A3", "A4"};
 
     REQUIRE(arch.lut_cells.size() == 4);
-    REQUIRE(arch.lut_bels.size() == 2);
-
     for (auto lut_cell : arch.lut_cells) {
         CHECK(std::find(lut_cells.begin(), lut_cells.end(), lut_cell.name) != lut_cells.end());
         REQUIRE(lut_cell.init_param == std::string("INIT"));
@@ -89,11 +87,19 @@ TEST_CASE("read_interchange_luts", "[vpr]") {
             CHECK(std::find(lut_cell_pins.begin(), lut_cell_pins.end(), lut_pin) != lut_cell_pins.end());
     }
 
-    for (auto lut_bel : arch.lut_bels) {
-        CHECK(std::find(lut_bels.begin(), lut_bels.end(), lut_bel.name) != lut_bels.end());
-        REQUIRE(lut_bel.output_pin == std::string("O"));
-        for (auto lut_pin : lut_bel.input_pins)
-            CHECK(std::find(lut_bel_pins.begin(), lut_bel_pins.end(), lut_pin) != lut_bel_pins.end());
+    for (const auto& it : arch.lut_elements) {
+        const auto& lut_elements = it.second;
+
+        for (const auto& lut_element : lut_elements) {
+            REQUIRE(lut_element.lut_bels.size() == 2);
+
+            for (auto lut_bel : lut_element.lut_bels) {
+                CHECK(std::find(lut_bels.begin(), lut_bels.end(), lut_bel.name) != lut_bels.end());
+                REQUIRE(lut_bel.output_pin == std::string("O"));
+                for (auto lut_pin : lut_bel.input_pins)
+                    CHECK(std::find(lut_bel_pins.begin(), lut_bel_pins.end(), lut_pin) != lut_bel_pins.end());
+            }
+        }
     }
 }
 
