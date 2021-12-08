@@ -310,7 +310,7 @@ static bool check_adjacent(int from_node, int to_node) {
     reached = false;
 
     for (t_edge_size iconn = 0; iconn < device_ctx.rr_nodes[from_node].num_edges(); iconn++) {
-        if (size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn)) == to_node) {
+        if (size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn)) == size_t(to_node)) {
             reached = true;
             break;
         }

@@ -1176,7 +1176,7 @@ bool directconnect_exists(int src_rr_node, int sink_rr_node) {
             if (rr_graph.node_type(RRNodeId(ipin_rr_node)) != IPIN) continue;
 
             for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_nodes[ipin_rr_node].num_edges(); ++i_ipin_edge) {
-                if (sink_rr_node == size_t(rr_graph.edge_sink_node(RRNodeId(ipin_rr_node), i_ipin_edge))) {
+                if (size_t(sink_rr_node) == size_t(rr_graph.edge_sink_node(RRNodeId(ipin_rr_node), i_ipin_edge))) {
                     return true;
                 }
             }

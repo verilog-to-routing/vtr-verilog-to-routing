@@ -3785,7 +3785,7 @@ static t_edge_size find_edge(int prev_inode, int inode) {
     const auto& rr_graph = device_ctx.rr_graph;
     for (t_edge_size iedge = 0;
          iedge < device_ctx.rr_nodes[prev_inode].num_edges(); ++iedge) {
-        if (size_t(rr_graph.edge_sink_node(RRNodeId(prev_inode), iedge)) == inode) {
+        if (size_t(rr_graph.edge_sink_node(RRNodeId(prev_inode), iedge)) == size_t(inode)) {
             return iedge;
         }
     }

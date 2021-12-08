@@ -566,7 +566,7 @@ static void check_unbuffered_edges(int from_node) {
         trans_matched = false;
 
         for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-            if (size_t(rr_graph.edge_sink_node(RRNodeId(to_node), to_edge)) == from_node
+            if (size_t(rr_graph.edge_sink_node(RRNodeId(to_node), to_edge)) == size_t(from_node)
                 && rr_graph.edge_switch(RRNodeId(to_node), to_edge) == from_switch_type) {
                 trans_matched = true;
                 break;
