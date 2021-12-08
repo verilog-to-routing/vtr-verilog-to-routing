@@ -1800,8 +1800,8 @@ void print_switch_usage() {
     // a node can have multiple inward switches, so
     // map key: switch index; map value: count (fanin)
     std::map<int, int>* inward_switch_inf = new std::map<int, int>[device_ctx.rr_nodes.size()];
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        const t_rr_node& from_node = device_ctx.rr_nodes[inode];
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        const t_rr_node& from_node = device_ctx.rr_nodes[(size_t)id];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.edge_switch(iedge);
@@ -1815,9 +1815,9 @@ void print_switch_usage() {
             inward_switch_inf[to_node_index][switch_index]++;
         }
     }
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
         std::map<int, int>::iterator itr;
-        for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
+        for (itr = inward_switch_inf[(size_t)id].begin(); itr != inward_switch_inf[(size_t)id].end(); itr++) {
             int switch_index = itr->first;
             int fanin = itr->second;
             float Tdel = device_ctx.rr_switch_inf[switch_index].Tdel;
@@ -1864,12 +1864,12 @@ void print_switch_usage() {
  * map<int, int> used_wire_count;
  * map<int, int> total_wire_count;
  * auto& device_ctx = g_vpr_ctx.device();
- * for (int inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
- * if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_node[inode].type() == CHANY) {
- * //int length = abs(rr_graph.node_xhigh(RRNodeId(inode)) + rr_graph.node_yhigh(RRNodeId(inode))
- * //             - rr_graph.node_xlow(RRNodeId(inode)) - rr_graph.node_ylow(RRNodeId(inode)));
- * int length = device_ctx.rr_nodes[inode].get_length();
- * if (rr_node_route_inf[inode].occ() > 0) {
+ * for (const RRNodeId& id : device_ctx.rr_graph.nodes()){
+ * if (rr_graph.node_type(id) == CHANX || rr_node[(size_t)id].type() == CHANY) {
+ * //int length = abs(rr_graph.node_xhigh(id) + rr_graph.node_yhigh(id)
+ * //             - rr_graph.node_xlow(id) - rr_graph.node_ylow(id));
+ * int length = device_ctx.rr_nodes[(size_t)id].get_length();
+ * if (rr_node_route_inf[(size_t)id].occ() > 0) {
  * if (used_wire_count.count(length) == 0)
  * used_wire_count[length] = 0;
  * used_wire_count[length] ++;

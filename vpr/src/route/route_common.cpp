@@ -334,8 +334,8 @@ bool feasible_routing() {
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(RRNodeId(inode))) {
+    for (const RRNodeId& id : rr_graph.nodes()) {
+        if (route_ctx.rr_node_route_inf[(size_t)id].occ() > rr_graph.node_capacity(id)) {
             return (false);
         }
     }
@@ -350,14 +350,15 @@ std::vector<int> collect_congested_rr_nodes() {
     auto& route_ctx = g_vpr_ctx.routing();
 
     std::vector<int> congested_rr_nodes;
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = rr_graph.node_capacity(RRNodeId(inode));
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        short occ = route_ctx.rr_node_route_inf[(size_t)id].occ();
+        short capacity = rr_graph.node_capacity(id);
 
         if (occ > capacity) {
-            congested_rr_nodes.push_back(inode);
+            congested_rr_nodes.push_back((size_t)id);
         }
     }
+
     return congested_rr_nodes;
 }
 
@@ -436,13 +437,13 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(RRNodeId(inode));
+    for (const RRNodeId& id : rr_graph.nodes()) {
+        int overuse = route_ctx.rr_node_route_inf[(size_t)id].occ() - rr_graph.node_capacity(id);
 
         // If overused, update the acc_cost and add this node to the overuse info
         // If not, do nothing
         if (overuse > 0) {
-            route_ctx.rr_node_route_inf[inode].acc_cost += overuse * acc_fac;
+            route_ctx.rr_node_route_inf[(size_t)id].acc_cost += overuse * acc_fac;
 
             ++overused_nodes;
             total_overuse += overuse;
@@ -959,8 +960,8 @@ void reset_rr_node_route_structs() {
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_nodes.size()));
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        auto& node_inf = route_ctx.rr_node_route_inf[inode];
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        auto& node_inf = route_ctx.rr_node_route_inf[(size_t)id];
 
         node_inf.prev_node = NO_PREVIOUS;
         node_inf.prev_edge = RREdgeId::INVALID();
@@ -1612,9 +1613,10 @@ void print_invalid_routing_info() {
         }
     }
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)id;
         int occ = route_ctx.rr_node_route_inf[inode].occ();
-        int cap = rr_graph.node_capacity(RRNodeId(inode));
+        int cap = rr_graph.node_capacity(id);
         if (occ > cap) {
             VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
 

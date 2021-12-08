@@ -1668,10 +1668,10 @@ static size_t calculate_wirelength_available() {
 
     size_t available_wirelength = 0;
     // But really what's happening is that this for loop iterates over every node and determines the available wirelength
-    for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
-        const t_rr_type channel_type = rr_graph.node_type(RRNodeId(i));
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        const t_rr_type channel_type = rr_graph.node_type(id);
         if (channel_type == CHANX || channel_type == CHANY) {
-            available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * rr_graph.node_length(RRNodeId(i));
+            available_wirelength += rr_graph.node_capacity(id) * rr_graph.node_length(id);
         }
     }
     return available_wirelength;

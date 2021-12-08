@@ -54,6 +54,16 @@ class RRGraphView {
      * kind of accessors
      */
   public:
+    /** @brief Iterate over nodes. This function is inlined for runtime optimization. */
+    inline vtr::StrongIdRange<RRNodeId> nodes() const {
+        return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(size()));
+    }
+
+    /** @brief Return number of nodes. This function is inlined for runtime optimization. */
+    inline size_t size() const {
+        return node_storage_.size();
+    }
+
     /** @brief Get the type of a routing resource node. This function is inlined for runtime optimization. */
     inline t_rr_type node_type(RRNodeId node) const {
         return node_storage_.node_type(node);
@@ -314,6 +324,7 @@ class RRGraphView {
     const t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     const RRSpatialLookup& node_lookup_;
+    vtr::vector<RRNodeId, t_rr_node_data> node_ids_; /* Unique identifiers for the nodes */
 
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;

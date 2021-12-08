@@ -47,11 +47,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
     std::vector<float> rr_node_C(device_ctx.rr_nodes.size(), 0.); //Stores the final C
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)id;
         //The C may have already been partly initialized (e.g. with metal capacitance)
-        rr_node_C[inode] += rr_graph.node_C(RRNodeId(inode));
+        rr_node_C[inode] += rr_graph.node_C(id);
 
-        from_rr_type = rr_graph.node_type(RRNodeId(inode));
+        from_rr_type = rr_graph.node_type(id);
 
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
             for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
@@ -130,11 +131,11 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
              * }     */
 
             if (from_rr_type == CHANX) {
-                iseg_low = rr_graph.node_xlow(RRNodeId(inode));
-                iseg_high = rr_graph.node_xhigh(RRNodeId(inode));
+                iseg_low = rr_graph.node_xlow(id);
+                iseg_high = rr_graph.node_xhigh(id);
             } else { /* CHANY */
-                iseg_low = rr_graph.node_ylow(RRNodeId(inode));
-                iseg_high = rr_graph.node_yhigh(RRNodeId(inode));
+                iseg_low = rr_graph.node_ylow(id);
+                iseg_high = rr_graph.node_yhigh(id);
             }
 
             for (icblock = iseg_low; icblock <= iseg_high; icblock++) {
@@ -172,7 +173,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      * not the reverse.  Therefore I need to go through all the possible edges to figure
      * out what the Cout's should be */
     Couts_to_add = (float*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(float));
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)id;
         for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
             switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
             to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
@@ -185,13 +187,13 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             }
         }
     }
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        rr_node_C[inode] += Couts_to_add[inode];
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        rr_node_C[(size_t)id] += Couts_to_add[(size_t)id];
     }
 
     //Create the final flywieghted t_rr_rc_data
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        mutable_device_ctx.rr_graph_builder.set_node_rc_index(RRNodeId(inode), NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(RRNodeId(inode)), rr_node_C[inode])));
+    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+        mutable_device_ctx.rr_graph_builder.set_node_rc_index(id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(id), rr_node_C[(size_t)id])));
     }
 
     free(Couts_to_add);

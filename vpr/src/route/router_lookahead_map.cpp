@@ -473,7 +473,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             if (!sample_nodes[chan_type].empty()) continue;
 
             //Try an exhaustive search to find a suitable sample point
-            for (int inode = 0; inode < int(device_ctx.rr_nodes.size()); ++inode) {
+            for (int inode = 0; inode < int(device_ctx.rr_nodes.size()); ++inode) { // StrongId range is already used in this source file, so it can't be used here
                 auto rr_node = RRNodeId(inode);
                 auto rr_type = temp_rr_graph.node_type(rr_node);
                 if (rr_type != chan_type) continue;

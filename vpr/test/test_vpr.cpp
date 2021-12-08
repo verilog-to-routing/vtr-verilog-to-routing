@@ -135,9 +135,9 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         const auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;
 
-        for (int inode = 0; inode < (int)device_ctx.rr_nodes.size(); ++inode) {
-            if ((rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) && device_ctx.rr_nodes[inode].num_edges() > 0) {
-                src_inode = inode;
+        for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+            if ((rr_graph.node_type(id) == CHANX || rr_graph.node_type(id) == CHANY) && device_ctx.rr_nodes[(size_t)id].num_edges() > 0) {
+                src_inode = (size_t)id;
                 break;
             }
         }
