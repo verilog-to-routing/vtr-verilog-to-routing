@@ -145,7 +145,7 @@ class t_metadata_dict_iterator {
 
 class EdgeWalker {
   public:
-    void initialize(const t_rr_graph_storage* nodes, RRGraphView* rr_graph) {
+    void initialize(const t_rr_graph_storage* nodes, const RRGraphView* rr_graph) {
         nodes_ = nodes;
         rr_graph_ = rr_graph;
         num_edges_ = 0;
@@ -206,7 +206,7 @@ class EdgeWalker {
 
   private:
     const t_rr_graph_storage* nodes_;
-    RRGraphView* rr_graph_;
+    const RRGraphView* rr_graph_;
     size_t num_edges_;
     size_t current_src_inode_;
     size_t current_edge_;
