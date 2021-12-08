@@ -55,7 +55,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
             for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
-                to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+                to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                 if (to_rr_type == CHANX || to_rr_type == CHANY) {
@@ -151,7 +151,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         else if (from_rr_type == OPIN) {
             for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
                 switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
-                to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+                to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                 if (to_rr_type != CHANX && to_rr_type != CHANY)
@@ -159,7 +159,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
                 if (rr_graph.node_direction(RRNodeId(to_node)) == Direction::BIDIR) {
                     Cout = device_ctx.rr_switch_inf[switch_index].Cout;
-                    to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge); /* Will be CHANX or CHANY */
+                    to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge)); /* Will be CHANX or CHANY */
                     rr_node_C[to_node] += Cout;
                 }
             }
@@ -175,7 +175,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
             switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
-            to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+            to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
             to_rr_type = rr_graph.node_type(RRNodeId(to_node));
             if (to_rr_type == CHANX || to_rr_type == CHANY) {
                 if (rr_graph.node_direction(RRNodeId(to_node)) != Direction::BIDIR) {

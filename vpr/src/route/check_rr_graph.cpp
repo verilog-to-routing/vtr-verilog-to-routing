@@ -80,7 +80,7 @@ void check_rr_graph(const t_graph_type graph_type,
         edges.reserve(num_edges);
 
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
 
             if (to_node < 0 || to_node >= (int)device_ctx.rr_nodes.size()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -110,7 +110,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
         //Check that multiple edges between the same from/to nodes make sense
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
 
             auto range = std::equal_range(edges.begin(), edges.end(),
                                           to_node, node_edge_sorter());
@@ -547,7 +547,7 @@ static void check_unbuffered_edges(int from_node) {
     from_num_edges = device_ctx.rr_nodes[from_node].num_edges();
 
     for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
-        to_node = device_ctx.rr_nodes[from_node].edge_sink_node(from_edge);
+        to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), from_edge));
         to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
         if (to_rr_type != CHANX && to_rr_type != CHANY)
@@ -566,7 +566,7 @@ static void check_unbuffered_edges(int from_node) {
         trans_matched = false;
 
         for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-            if (device_ctx.rr_nodes[to_node].edge_sink_node(to_edge) == from_node
+            if (size_t(rr_graph.edge_sink_node(RRNodeId(to_node), to_edge)) == from_node
                 && rr_graph.edge_switch(RRNodeId(to_node), to_edge) == from_switch_type) {
                 trans_matched = true;
                 break;

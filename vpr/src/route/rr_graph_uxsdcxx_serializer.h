@@ -145,8 +145,9 @@ class t_metadata_dict_iterator {
 
 class EdgeWalker {
   public:
-    void initialize(const t_rr_graph_storage* nodes) {
+    void initialize(const t_rr_graph_storage* nodes, const RRGraphView* rr_graph) {
         nodes_ = nodes;
+        rr_graph_ = rr_graph;
         num_edges_ = 0;
         current_src_inode_ = 0;
         current_edge_ = 0;
@@ -166,12 +167,11 @@ class EdgeWalker {
     }
     int current_sink_node() const {
         VTR_ASSERT(current_src_inode_ < nodes_->size());
-        return (*nodes_)[current_src_inode_].edge_sink_node(current_edge_);
+        return size_t(rr_graph_->edge_sink_node(RRNodeId(current_src_inode_), current_edge_));
     }
     int current_switch_id_node() const {
         VTR_ASSERT(current_src_inode_ < nodes_->size());
-        return nodes_->edge_switch(RRNodeId(current_src_inode_), current_edge_);
-        ;
+        return rr_graph_->edge_switch(RRNodeId(current_src_inode_), current_edge_);
     }
 
     size_t advance(int n) {
@@ -205,6 +205,7 @@ class EdgeWalker {
 
   private:
     const t_rr_graph_storage* nodes_;
+    const RRGraphView* rr_graph_;
     size_t num_edges_;
     size_t current_src_inode_;
     size_t current_edge_;
@@ -1000,7 +1001,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
         EdgeWalker walker;
-        walker.initialize(rr_nodes_);
+        walker.initialize(rr_nodes_, rr_graph_);
         return walker;
     }
 

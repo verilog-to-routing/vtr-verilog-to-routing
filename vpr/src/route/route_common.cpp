@@ -631,7 +631,7 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
         VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
 
-        int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+        int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
 
         if (!trace_nodes.count(to_node)) {
             unvisited_non_configurable_edges.push_back(iedge);
@@ -654,7 +654,7 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     } else {
         //Recursive case: intermediate node with non-configurable edges
         for (auto iedge : unvisited_non_configurable_edges) {
-            int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
             int iswitch = rr_graph.edge_switch(RRNodeId(node), iedge);
 
             VTR_ASSERT(!trace_nodes.count(to_node));
@@ -1427,7 +1427,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             from_node = route_ctx.rr_blk_source[blk_id][iclass];
             num_edges = device_ctx.rr_nodes[from_node].num_edges();
             for (iconn = 0; iconn < num_edges; iconn++) {
-                to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
+                to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn));
 
                 VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == OPIN);
 
@@ -1565,7 +1565,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
             const auto& rr_graph = device_ctx.rr_graph;
             bool found = false;
             for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
-                int to_node = device_ctx.rr_nodes[trace->index].edge_sink_node(iedge);
+                int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
 
                 if (to_node == next->index) {
                     found = true;
