@@ -80,7 +80,7 @@ void check_rr_graph(const t_graph_type graph_type,
         edges.reserve(num_edges);
 
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
+            int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
 
             if (to_node < 0 || to_node >= (int)device_ctx.rr_nodes.size()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -94,7 +94,7 @@ void check_rr_graph(const t_graph_type graph_type,
             edges.emplace_back(to_node, iedge);
             total_edges_to_node[to_node]++;
 
-            auto switch_type = rr_graph.edge_switch(RRNodeId(inode), iedge);
+            auto switch_type = rr_graph.edge_switch(rr_node, iedge);
 
             if (switch_type < 0 || switch_type >= num_rr_switches) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -110,7 +110,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
         //Check that multiple edges between the same from/to nodes make sense
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
+            int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
 
             auto range = std::equal_range(edges.begin(), edges.end(),
                                           to_node, node_edge_sorter());
@@ -158,7 +158,7 @@ void check_rr_graph(const t_graph_type graph_type,
             std::map<short, int> switch_counts;
             for (const auto& to_edge : vtr::Range<decltype(edges)::const_iterator>(range.first, range.second)) {
                 auto edge = to_edge.second;
-                auto edge_switch = rr_graph.edge_switch(RRNodeId(inode), edge);
+                auto edge_switch = rr_graph.edge_switch(rr_node, edge);
 
                 switch_counts[edge_switch]++;
             }

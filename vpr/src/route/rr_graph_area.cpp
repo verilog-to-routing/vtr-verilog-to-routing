@@ -167,7 +167,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 num_edges = device_ctx.rr_nodes[from_node].num_edges();
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
-                    RRNodeId to_node = RRNodeId(size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iedge)));
+                    RRNodeId to_node = RRNodeId(rr_graph.edge_sink_node(RRNodeId(from_node), iedge));
                     to_rr_type = rr_graph.node_type(to_node);
 
                     /* Ignore any uninitialized rr_graph nodes */
@@ -365,7 +365,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
                 /* Increment number of inputs per cblock if IPIN */
                 for (iedge = 0; iedge < num_edges; iedge++) {
-                    RRNodeId to_node = RRNodeId(size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iedge)));
+                    RRNodeId to_node = RRNodeId(rr_graph.edge_sink_node(RRNodeId(from_node), iedge));
                     to_rr_type = rr_graph.node_type(to_node);
 
                     /* Ignore any uninitialized rr_graph nodes */

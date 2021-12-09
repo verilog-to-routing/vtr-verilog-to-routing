@@ -982,9 +982,9 @@ static void power_usage_routing(t_power_usage* power_usage,
                 connectionbox_fanout = 0;
                 switchbox_fanout = 0;
                 for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
-                    if (rr_graph.edge_switch(RRNodeId(rr_node_idx), iedge) == routing_arch->wire_to_rr_ipin_switch) {
+                    if (rr_graph.edge_switch(rr_node, iedge) == routing_arch->wire_to_rr_ipin_switch) {
                         connectionbox_fanout++;
-                    } else if (rr_graph.edge_switch(RRNodeId(rr_node_idx), iedge) == routing_arch->delayless_switch) {
+                    } else if (rr_graph.edge_switch(rr_node, iedge) == routing_arch->delayless_switch) {
                         /* Do nothing */
                     } else {
                         switchbox_fanout++;

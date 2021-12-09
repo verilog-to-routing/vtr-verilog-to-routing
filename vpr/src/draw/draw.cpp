@@ -1686,10 +1686,10 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
         return; /* Nothing to draw. */
     }
 
-    from_ptc_num = rr_graph.node_ptc_num(RRNodeId(inode));
+    from_ptc_num = rr_graph.node_ptc_num(rr_node);
 
     for (t_edge_size iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
-        to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
+        to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
         to_type = rr_graph.node_type(RRNodeId(to_node));
         to_ptc_num = rr_graph.node_ptc_num(RRNodeId(to_node));
         bool edge_configurable = device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
@@ -1773,7 +1773,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                             g->set_color(blk_DARKGREEN);
                         }
                         switch_type = rr_graph.edge_switch(RRNodeId(inode), iedge);
-                        draw_chanx_to_chanx_edge(RRNodeId(inode), RRNodeId(to_node),
+                        draw_chanx_to_chanx_edge(rr_node, RRNodeId(to_node),
                                                  to_ptc_num, switch_type, g);
                         break;
 
@@ -1789,7 +1789,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = rr_graph.edge_switch(RRNodeId(inode), iedge);
+                        switch_type = rr_graph.edge_switch(rr_node, iedge);
                         draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
                                                  to_ptc_num, FROM_X_TO_Y, switch_type, g);
                         break;
@@ -1842,7 +1842,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = rr_graph.edge_switch(RRNodeId(inode), iedge);
+                        switch_type = rr_graph.edge_switch(rr_node, iedge);
                         draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
                                                  from_ptc_num, FROM_Y_TO_X, switch_type, g);
                         break;
@@ -1860,8 +1860,8 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = rr_graph.edge_switch(RRNodeId(inode), iedge);
-                        draw_chany_to_chany_edge(RRNodeId(inode), RRNodeId(to_node),
+                        switch_type = rr_graph.edge_switch(rr_node, iedge);
+                        draw_chany_to_chany_edge(rr_node, RRNodeId(to_node),
                                                  to_ptc_num, switch_type, g);
                         break;
 
