@@ -98,6 +98,7 @@ int seg_index_of_sblock(int from_node, int to_node) {
 void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
     size_t v_num = graph.size();
 
     if (router_opts.reorder_rr_graph_nodes_algorithm == DONT_REORDER) return;
@@ -129,7 +130,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
                 RRNodeId u = que.front();
                 que.pop();
                 degree[u] += graph.num_edges(u);
-                for (RREdgeId edge = graph.first_edge(u); edge < graph.last_edge(u); edge = RREdgeId(size_t(edge) + 1)) {
+                for (RREdgeId edge = rr_graph.node_first_edge(u); edge < rr_graph.node_last_edge(u); edge = RREdgeId(size_t(edge) + 1)) {
                     RRNodeId v = graph.edge_sink_node(edge);
                     degree[v]++;
                     if (bfs_idx[v]) continue;
