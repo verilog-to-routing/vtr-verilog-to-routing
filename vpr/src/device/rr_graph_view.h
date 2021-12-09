@@ -280,13 +280,6 @@ class RRGraphView {
      * This API is very powerful and developers should not use it unless it is necessary, 
      * e.g the node type is unknown. If the node type is known, the more specific routines, `node_pin_num()`, 
      * `node_track_num()`and `node_class_num()`, for different types of nodes should be used.*/
-    /** @brief Return detailed routing segment information with a given id* @note The routing segments here may not be exactly same as those defined in architecture file. They have been
-     * adapted to fit the context of routing resource graphs.
-     */
-
-    inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
-        return rr_segments_[seg_id];
-    }
     inline short node_ptc_num(RRNodeId node) const {
         return node_storage_.node_ptc_num(node);
     }
@@ -312,6 +305,13 @@ class RRGraphView {
     /** @brief Get the cost index of a routing resource node. This function is inlined for runtime optimization. */
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
+    }
+    /** @brief Return detailed routing segment information with a given id* @note The routing segments here may not be exactly same as those defined in architecture file. They have been
+     * adapted to fit the context of routing resource graphs.
+     */
+
+    inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
+        return rr_segments_[seg_id];
     }
 
     /** @brief Return the fast look-up data structure for queries from client functions */
