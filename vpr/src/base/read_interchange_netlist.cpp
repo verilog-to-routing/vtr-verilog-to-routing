@@ -168,7 +168,9 @@ struct NetlistReader {
                 // TODO: export this to a library function to have generic parameter decoding
                 if (entry.which() == LogicalNetlist::Netlist::PropertyMap::Entry::TEXT_VALUE) {
                     const std::regex vhex_regex("[0-9]+'h([0-9A-Z]+)");
-                    const std::regex vbit_regex("[0-9]+'b([0-9A-Z]+)");
+                    const std::regex vbit_regex("[0-9]+'b([0-9]+)");
+                    const std::regex chex_regex("0x([0-9A-Za-z]+)");
+                    const std::regex cbit_regex("0b([0-9]+)");
                     const std::regex bit_regex("[0-1]+");
                     std::string init_str = str_list[entry.getTextValue()];
                     std::smatch regex_matches;
@@ -180,7 +182,16 @@ struct NetlistReader {
                             for (int bit = 3; bit >= 0; bit--)
                                 init.push_back((value >> bit) & 1);
                         }
+                    else if (std::regex_match(init_str, regex_matches, chex_regex))
+                        for (const char& c : regex_matches[1].str()) {
+                            int value = std::stoi(std::string(1, c), 0, 16);
+                            for (int bit = 3; bit >= 0; bit--)
+                                init.push_back((value >> bit) & 1);
+                        }
                     else if (std::regex_match(init_str, regex_matches, vbit_regex))
+                        for (const char& c : regex_matches[1].str())
+                            init.push_back((bool)std::stoi(std::string(1, c), 0, 2));
+                    else if (std::regex_match(init_str, regex_matches, cbit_regex))
                         for (const char& c : regex_matches[1].str())
                             init.push_back((bool)std::stoi(std::string(1, c), 0, 2));
                     else if (std::regex_match(init_str, regex_matches, bit_regex))
@@ -260,6 +271,9 @@ struct NetlistReader {
 
             int inum = 0;
             for (auto port : cell_lib.getPorts()) {
+                if (port_net_map.find(port) == port_net_map.end())
+                    continue;
+
                 auto net_name = port_net_map.at(port);
                 AtomNetId net_id = main_netlist_.create_net(net_name);
 
