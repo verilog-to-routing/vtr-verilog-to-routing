@@ -70,7 +70,9 @@
 #include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
-#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
+#include "constraints_report.h"
+
+#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 25 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
 //Constant allowing all cluster pins to be used
@@ -710,7 +712,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
                     if (block_pack_status != BLK_FAILED_ROUTE && block_pack_status != BLK_FAILED_FLOORPLANNING) {
                         num_failed_feasibility++;
-                        if (num_failed_feasibility > 8) {
+                        if (num_failed_feasibility > 30) {
                         	fflush(stdout);
                         	break;
                         }
@@ -2467,7 +2469,10 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
     }
 
     // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
-    add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups, feasible_block_array_size);
+    if (cur_pb->pb_stats->num_feasible_blocks < 1) {
+    	//VTR_LOG("Adding cluster candidates from attraction group \n");
+    	add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups, feasible_block_array_size);
+    }
 
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
@@ -2568,22 +2573,24 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
     if (grp_id != AttractGroupId::INVALID()) {
         AttractionGroup group = attraction_groups.get_attraction_group_info(grp_id);
+        int num_atoms = group.group_atoms.size();
 
-        for (AtomBlockId blk_id : group.group_atoms) {
-            if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-                auto rng = atom_molecules.equal_range(blk_id);
-                for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
-                    t_pack_molecule* molecule = kv.second;
-                    if (molecule->valid) {
-                        bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
-                        if (success) {
-                            add_molecule_to_pb_stats_candidates(molecule,
-                                                                cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
-                            //VTR_LOG("Added atom %d to attraction group\n", blk_id);
-                        }
-                    }
-                }
-            }
+        for (int i = 0; i < 10; i++) {
+			int selected_atom = rand() % num_atoms;
+			AtomBlockId blk_id = group.group_atoms[selected_atom];
+				if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
+					auto rng = atom_molecules.equal_range(blk_id);
+					for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
+						t_pack_molecule* molecule = kv.second;
+						if (molecule->valid) {
+							bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
+							if (success) {
+								add_molecule_to_pb_stats_candidates(molecule,
+																	cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
+							}
+						}
+					}
+				}
         }
     }
 }
@@ -2755,6 +2762,9 @@ static void check_clustering() {
                             atom_ctx.nlist.block_name(blk_id).c_str());
         }
     }
+
+    //Check that none of the floorplan regions are overfull with clusters
+    check_constraints_filling();
 }
 
 /*Print the contents of each cluster to an echo file*/
@@ -3166,7 +3176,6 @@ static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, 
         if (blk_id) {
             if (blk_gain.count(blk_id) > 0) {
                 gain += blk_gain[blk_id];
-                //VTR_LOG("In get_molecule_gain, block gain is %f for atom %s\n", gain, atom_ctx.nlist.block_name(blk_id).c_str());
             } else {
                 /* This block has no connection with current cluster, penalize molecule for having this block
                  */
@@ -3190,18 +3199,16 @@ static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, 
                 }
             }
             AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
-            if (atom_grp_id == cluster_attraction_group_id) {
-            	gain += 0.08;
-            	//VTR_LOG("Increased gain by 1  to %f for atom %s due to attraction\n", gain, atom_ctx.nlist.block_name(blk_id).c_str());
-            	//return gain;
+            if (atom_grp_id == cluster_attraction_group_id && cluster_attraction_group_id != AttractGroupId::INVALID()) {
+            	gain += 0.08; //make this gain the same as the attraction group gain, don't put in a random number
+            } else if (cluster_attraction_group_id != AttractGroupId::INVALID() && atom_grp_id != cluster_attraction_group_id) {
+            	gain -= 0.1;
             }
         }
     }
 
     gain += molecule->base_gain * 0.0001; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
     gain -= num_introduced_inputs_of_indirectly_related_block * (0.001);
-
-    //VTR_LOG("In get_molecule_gain, returning gain as %f \n", gain);
 
     return gain;
 }

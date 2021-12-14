@@ -30,11 +30,19 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);
 
+void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expand, bool subtile);
+
 void setup_vpr_floorplan_constraints_halves(VprConstraints& constraints);
+
+void setup_vpr_floorplan_constraints_halves_half(VprConstraints& constraints);
 
 void setup_vpr_floorplan_constraints_quadrants(VprConstraints& constraints);
 
+void setup_vpr_floorplan_constraints_quadrants_half(VprConstraints& constraints);
+
 void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints);
+
+void setup_vpr_floorplan_constraints_sixteenths_half(VprConstraints& constraints);
 
 void create_partition(Partition& part, std::string part_name, int xmin, int ymin, int xmax, int ymax);
 

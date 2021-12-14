@@ -10,9 +10,11 @@ void GridTileLookup::initialize_grid_tile_matrices() {
         vtr::NdMatrix<int, 2> type_count({device_ctx.grid.width(), device_ctx.grid.height()});
         fill_type_matrix(&type, type_count);
         block_type_matrices.push_back(type_count);
-        ///VTR_LOG("Printing matrix for type %s \n", type.name);
+        //VTR_LOG("Printing matrix for type %s \n", type.name);
         //print_type_matrix(type_count);
     }
+
+    //print_type_indices_matrix();
 }
 
 void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 2>& type_count) {
@@ -146,6 +148,29 @@ void GridTileLookup::print_type_matrix(vtr::NdMatrix<int, 2>& type_count) {
     for (int i_col = type_count.dim_size(0) - 1; i_col >= 0; i_col--) {
         for (int j_row = type_count.dim_size(1) - 1; j_row >= 0; j_row--) {
             VTR_LOG("%d ", type_count[i_col][j_row]);
+        }
+        VTR_LOG("\n");
+    }
+}
+
+void GridTileLookup::print_type_indices_matrix() {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    int num_rows = device_ctx.grid.height();
+    int num_cols = device_ctx.grid.width();
+
+    for (int i_row = 0; i_row <= (num_rows - 1); i_row++) {
+        for (int j_col = 0; j_col <= (num_cols - 1); j_col++) {
+            auto& tile = device_ctx.grid[i_row][j_col].type;
+            VTR_LOG(" %s", tile->name);
+        }
+        VTR_LOG("\n");
+    }
+
+    for (int row = 0; row <= (num_rows - 1); row++) {
+        for (int col = 0; col <= (num_cols - 1); col++) {
+            auto& tile = device_ctx.grid[row][col].type;
+            VTR_LOG(" %d", tile->index);
         }
         VTR_LOG("\n");
     }

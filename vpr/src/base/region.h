@@ -85,6 +85,15 @@ bool do_regions_intersect(Region r1, Region r2);
  */
 Region intersection(const Region& r1, const Region& r2);
 
+/**
+ * @brief Returns true if the two regions passed in have the same rectangle coordinates
+ * and subtile values, false otherwise. Used to determine whether two clusters have the
+ * same region after clustering.
+ *
+ *   @param r1, r2     The two regions to be checked for equality
+ */
+bool regions_equal(Region r1, Region r2);
+
 ///@brief Used to print data from a Region
 void print_region(FILE* fp, Region region);
 

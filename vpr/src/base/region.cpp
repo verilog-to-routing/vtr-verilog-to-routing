@@ -55,6 +55,10 @@ bool Region::is_loc_in_reg(t_pl_loc loc) {
     return is_loc_in_reg;
 }
 
+bool regions_equal(Region r1, Region r2) {
+	return (r1.get_region_rect() == r2.get_region_rect() && r1.get_sub_tile() == r2.get_sub_tile());
+}
+
 bool do_regions_intersect(Region r1, Region r2) {
     bool intersect = true;
 

@@ -23,6 +23,8 @@ class GridTileLookup {
 
     void print_type_matrix(vtr::NdMatrix<int, 2>& type_count);
 
+    void print_type_indices_matrix();
+
     int region_tile_count(const Region& reg, t_logical_block_type_ptr block_type);
 
     int region_with_subtile_count(const Region& reg, t_logical_block_type_ptr block_type);
