@@ -627,7 +627,8 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     //Record the non-configurable out-going edges
     std::vector<t_edge_size> unvisited_non_configurable_edges;
     auto& device_ctx = g_vpr_ctx.device();
-    for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
+    const auto& rr_graph = device_ctx.rr_graph;
+    for (auto iedge : rr_graph.non_configurable_edges(RRNodeId(node))) {
         VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
 
         int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
@@ -1424,7 +1425,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
             from_node = route_ctx.rr_blk_source[blk_id][iclass];
-            num_edges = device_ctx.rr_nodes[from_node].num_edges();
+            num_edges = rr_graph.num_edges(RRNodeId(from_node));
             for (iconn = 0; iconn < num_edges; iconn++) {
                 to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
 
@@ -1561,9 +1562,10 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
             //Check there is an edge connecting trace and next
 
             auto& device_ctx = g_vpr_ctx.device();
+            const auto& rr_graph = device_ctx.rr_graph;
 
             bool found = false;
-            for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
+            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
                 int to_node = device_ctx.rr_nodes[trace->index].edge_sink_node(iedge);
 
                 if (to_node == next->index) {

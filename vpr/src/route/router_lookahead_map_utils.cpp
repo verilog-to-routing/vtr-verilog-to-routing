@@ -259,11 +259,13 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
                                                     std::greater<Entry>>* pq) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId parent = parent_entry.rr_node;
 
     auto& parent_node = rr_nodes[size_t(parent)];
 
-    for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
+    for (int iedge = 0; iedge < rr_graph.num_edges(RRNodeId(parent)); iedge++) {
         int child_node_ind = parent_node.edge_sink_node(iedge);
         int switch_ind = parent_node.edge_switch(iedge);
 

@@ -259,6 +259,36 @@ class RRGraphView {
         return node_storage_.node_side_string(node);
     }
 
+    /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
+    inline t_edge_size num_configurable_edges(RRNodeId node) const {
+        return node_storage_.num_configurable_edges(node);
+    }
+
+    /** @brief Get the number of non-configurable edges. This function is inlined for runtime optimization. */
+    inline t_edge_size num_non_configurable_edges(RRNodeId node) const {
+        return node_storage_.num_non_configurable_edges(node);
+    }
+
+    /** @brief Get ID range for configurable edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range configurable_edges(RRNodeId node) const {
+        return node_storage_.configurable_edges(node);
+    }
+
+    /** @brief Get ID range for non-configurable edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range non_configurable_edges(RRNodeId node) const {
+        return node_storage_.non_configurable_edges(node);
+    }
+
+    /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range edges(RRNodeId node) const {
+        return node_storage_.edges(node);
+    }
+
+    /** @brief Get the number of edges. This function is inlined for runtime optimization. */
+    inline t_edge_size num_edges(RRNodeId node) const {
+        return node_storage_.num_edges(node);
+    }
+
     /** @brief The ptc_num carries different meanings for different node types 
      * (true in VPR RRG that is currently supported, may not be true in customized RRG) 
      * CHANX or CHANY: the track id in routing channels 
