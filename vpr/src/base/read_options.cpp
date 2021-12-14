@@ -101,6 +101,8 @@ struct ParseCircuitFormat {
             conv_value.set_value(e_circuit_format::BLIF);
         else if (str == "eblif")
             conv_value.set_value(e_circuit_format::EBLIF);
+        else if (str == "fpga-interchange")
+            conv_value.set_value(e_circuit_format::FPGA_INTERCHANGE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_circuit_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -116,16 +118,18 @@ struct ParseCircuitFormat {
             conv_value.set_value("auto");
         else if (val == e_circuit_format::BLIF)
             conv_value.set_value("blif");
-        else {
-            VTR_ASSERT(val == e_circuit_format::EBLIF);
+        else if (val == e_circuit_format::EBLIF)
             conv_value.set_value("eblif");
+        else {
+            VTR_ASSERT(val == e_circuit_format::FPGA_INTERCHANGE);
+            conv_value.set_value("fpga-interchange");
         }
 
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"auto", "blif", "eblif"};
+        return {"auto", "blif", "eblif", "fpga-interchange"};
     }
 };
 struct ParseRoutePredictor {
@@ -1423,7 +1427,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "           .conn  - Connection between two wires\n"
             "           .cname - Custom name for atom primitive\n"
             "           .param - Parameter on atom primitive\n"
-            "           .attr  - Attribute on atom primitive\n")
+            "           .attr  - Attribute on atom primitive\n"
+            " * fpga-interchage: Logical netlist in FPGA Interchange schema format\n")
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
