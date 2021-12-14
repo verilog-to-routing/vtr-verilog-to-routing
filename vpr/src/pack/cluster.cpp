@@ -451,6 +451,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
     vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing;
 
@@ -830,6 +831,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 free_pb_stats_recursive(cur_pb);
             } else {
                 /* Free up data structures and requeue used molecules */
+                PartitionRegion empty_pr;
+                floorplanning_ctx.cluster_constraints[clb_index] = empty_pr;
                 num_used_type_instances[cluster_ctx.clb_nlist.block_type(clb_index)]--;
                 revalid_molecules(cluster_ctx.clb_nlist.block_pb(clb_index), atom_molecules);
                 cluster_ctx.clb_nlist.remove_block(clb_index);
