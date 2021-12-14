@@ -71,6 +71,18 @@ inline t_rr_node t_rr_graph_storage::back() {
     return t_rr_node(this, RRNodeId(size() - 1));
 }
 
+inline t_edge_size t_rr_node::num_edges() const {
+     return storage_->num_edges(id_);
+}
+
+inline edge_idx_range t_rr_node::edges() const {
+     return storage_->edges(id_);
+}
+
+inline t_edge_size t_rr_node::num_configurable_edges() const {
+     return storage_->num_configurable_edges(id_);
+}
+
 inline int t_rr_node::edge_sink_node(t_edge_size iedge) const {
     size_t inode = (size_t)storage_->edge_sink_node(id_, iedge);
     return inode;
