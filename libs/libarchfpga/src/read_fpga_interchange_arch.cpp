@@ -36,6 +36,17 @@ using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
 
+// Necessary to reduce code verbosity when getting the pin directions
+static const auto INPUT = LogicalNetlist::Netlist::Direction::INPUT;
+static const auto OUTPUT = LogicalNetlist::Netlist::Direction::OUTPUT;
+static const auto INOUT = LogicalNetlist::Netlist::Direction::INOUT;
+
+// Enum for pack pattern expansion direction
+enum e_pp_dir {
+    FORWARD = 0,
+    BACKWARD = 1
+};
+
 struct t_package_pin {
     std::string name;
 
@@ -44,13 +55,21 @@ struct t_package_pin {
 };
 
 struct t_bel_cell_mapping {
-    int cell;
-    int site;
-    std::vector<std::pair<int, int>> pins;
+    size_t cell;
+    size_t site;
+    std::vector<std::pair<size_t, size_t>> pins;
 
     bool operator<(const t_bel_cell_mapping& other) const {
         return cell < other.cell || (cell == other.cell && site < other.site);
     }
+};
+
+// Intermediate data type to store information on interconnects to be created
+struct t_ic_data {
+    std::string input;
+    std::vector<std::string> outputs;
+
+    bool requires_pack_pattern;
 };
 
 /****************** Utility functions ******************/
@@ -284,7 +303,7 @@ struct ArchReader {
     std::unordered_map<std::string, int> segment_name_to_segment_idx;
 
     // Utils
-    std::string str(int idx) {
+    std::string str(size_t idx) {
         return arch_->interned_strings[idx].get(&arch_->strings);
     }
 
@@ -346,11 +365,21 @@ struct ArchReader {
         return pad_bels_.count(name) != 0;
     }
 
-    std::unordered_map<std::string, std::tuple<std::string, std::string, e_interconnect, bool>> get_interconnects(Device::SiteType::Reader& site) {
+    std::string remove_bel_suffix(std::string bel) {
+        std::smatch regex_matches;
+        std::string regex = std::string("(.*)") + bel_dedup_suffix_;
+        const std::regex bel_regex(regex.c_str());
+        if (std::regex_match(bel, regex_matches, bel_regex))
+            return regex_matches[1].str();
+
+        return bel;
+    }
+
+    std::unordered_map<std::string, t_ic_data> get_interconnects(Device::SiteType::Reader& site) {
         // dictionary:
         //   - key: interconnect name
         //   - value: (inputs string, outputs string, interconnect type)
-        std::unordered_map<std::string, std::tuple<std::string, std::string, e_interconnect, bool>> ics;
+        std::unordered_map<std::string, t_ic_data> ics;
         for (auto wire : site.getSiteWires()) {
             std::string wire_name = str(wire.getName());
 
@@ -371,14 +400,14 @@ struct ArchReader {
                 auto bel_is_pad = is_pad(bel_name);
 
                 pad_exists |= bel_is_pad;
-                all_inout_pins &= dir == LogicalNetlist::Netlist::Direction::INOUT;
+                all_inout_pins &= dir == INOUT;
 
                 if (bel_is_pad) {
                     pad_bel_name = bel_name;
                     pad_bel_pin_name = bel_pin_name;
                 }
 
-                if (dir == LogicalNetlist::Netlist::Direction::OUTPUT)
+                if (dir == OUTPUT)
                     pin_id = pin;
             }
 
@@ -429,18 +458,27 @@ struct ArchReader {
 
                 // TODO: If the bel pin is INOUT (e.g. PULLDOWN/PULLUP in Series7)
                 //       for now treat as input only and assign the in suffix
-                if (bel_pin.getDir() == LogicalNetlist::Netlist::Direction::INOUT && !all_inout_pins && !is_pad(out_bel_name))
+                if (bel_pin.getDir() == INOUT && !all_inout_pins && !is_pad(out_bel_name))
                     ostr += in_suffix_;
 
                 auto ic_name = wire_name + "_" + out_bel_pin_name;
 
-                std::vector<std::tuple<std::string, std::string, std::string>> strs;
+                bool requires_pack_pattern = pad_exists;
+
+                std::vector<std::pair<std::string, t_ic_data>> ics_data;
                 if (all_inout_pins) {
                     std::string extra_istr = out_bel_name + "." + out_bel_pin_name + out_suffix_;
                     std::string extra_ostr = in_bel_name + "." + in_bel_pin_name + in_suffix_;
                     std::string extra_ic_name = ic_name + "_extra";
 
-                    strs.push_back(std::make_tuple(extra_ic_name, extra_istr, extra_ostr));
+                    std::vector<std::string> extra_ostrs{extra_ostr};
+                    t_ic_data extra_ic_data = {
+                        extra_istr,           // ic input
+                        extra_ostrs,          // ic outputs
+                        requires_pack_pattern // pack pattern required
+                    };
+
+                    ics_data.push_back(std::make_pair(extra_ic_name, extra_ic_data));
 
                     istr += out_suffix_;
                     ostr += in_suffix_;
@@ -453,28 +491,28 @@ struct ArchReader {
                     }
                 }
 
-                strs.push_back(std::make_tuple(ic_name, istr, ostr));
+                std::vector<std::string> ostrs{ostr};
+                t_ic_data ic_data = {
+                    istr,
+                    ostrs,
+                    requires_pack_pattern};
 
-                bool add_pack_pattern = in_bel.getCategory() == Device::BELCategory::LOGIC && out_bel.getCategory() == Device::BELCategory::LOGIC && pad_exists;
+                ics_data.push_back(std::make_pair(ic_name, ic_data));
 
-                for (auto s : strs) {
-                    auto name = std::get<0>(s); // interconnect name
-                    auto i = std::get<1>(s);    // interconnect input
-                    auto o = std::get<2>(s);    // interconnect output
-                    auto res = ics.emplace(name, std::make_tuple(i, o, DIRECT_INTERC, add_pack_pattern));
+                for (auto entry : ics_data) {
+                    auto name = entry.first;
+                    auto data = entry.second;
 
-                    e_interconnect ic_type;
+                    auto res = ics.emplace(name, data);
+
                     if (!res.second) {
-                        std::string ins, outs;
-                        std::tie(ins, outs, ic_type, std::ignore) = res.first->second;
+                        auto old_data = res.first->second;
 
-                        VTR_ASSERT(ins == i);
+                        VTR_ASSERT(old_data.input == data.input);
+                        VTR_ASSERT(data.outputs.size() == 1);
 
-                        if (outs.empty())
-                            outs = o;
-                        else
-                            outs += " " + o;
-                        res.first->second = std::make_tuple(ins, outs, ic_type, add_pack_pattern);
+                        res.first->second.outputs.push_back(data.outputs[0]);
+                        res.first->second.requires_pack_pattern |= data.requires_pack_pattern;
                     }
                 }
             }
@@ -593,18 +631,18 @@ struct ArchReader {
         auto portList = primLib.getPortList();
 
         for (auto cell_mapping : ar_.getCellBelMap()) {
-            int cell_name = cell_mapping.getCell();
+            size_t cell_name = cell_mapping.getCell();
 
             int found_valid_prim = false;
             for (auto primitive : primLib.getCellDecls()) {
                 bool is_prim = str(primitive.getLib()) == std::string("primitives");
-                bool is_cell = cell_name == (int)primitive.getName();
+                bool is_cell = cell_name == primitive.getName();
 
                 bool has_inout = false;
                 for (auto port_idx : primitive.getPorts()) {
                     auto port = portList[port_idx];
 
-                    if (port.getDir() == LogicalNetlist::Netlist::Direction::INOUT) {
+                    if (port.getDir() == INOUT) {
                         has_inout = true;
                         break;
                     }
@@ -620,13 +658,13 @@ struct ArchReader {
                 continue;
 
             for (auto common_pins : cell_mapping.getCommonPins()) {
-                std::vector<std::pair<int, int>> pins;
+                std::vector<std::pair<size_t, size_t>> pins;
 
                 for (auto pin_map : common_pins.getPins())
                     pins.emplace_back(pin_map.getCellPin(), pin_map.getBelPin());
 
                 for (auto site_type_entry : common_pins.getSiteTypes()) {
-                    int site_type = site_type_entry.getSiteType();
+                    size_t site_type = site_type_entry.getSiteType();
 
                     for (auto bel : site_type_entry.getBels()) {
                         t_bel_cell_mapping mapping;
@@ -691,7 +729,7 @@ struct ArchReader {
                         continue;
 
                     for (auto map : bel_cell_map.second)
-                        has_bel |= (int)primitive.getName() == map.cell;
+                        has_bel |= primitive.getName() == map.cell;
                 }
 
                 if (!has_bel)
@@ -739,13 +777,13 @@ struct ArchReader {
             auto port = portList[port_idx];
             enum PORTS dir = ERR_PORT;
             switch (port.getDir()) {
-                case LogicalNetlist::Netlist::Direction::INPUT:
+                case INPUT:
                     dir = IN_PORT;
                     break;
-                case LogicalNetlist::Netlist::Direction::OUTPUT:
+                case OUTPUT:
                     dir = OUT_PORT;
                     break;
-                case LogicalNetlist::Netlist::Direction::INOUT:
+                case INOUT:
                     return false;
                     break;
                 default:
@@ -1096,7 +1134,7 @@ struct ArchReader {
         std::vector<t_bel_cell_mapping> map_to_erase;
         for (auto map : maps) {
             auto name = str(map.cell);
-            bool is_compatible = map.site == (int)site.getName();
+            bool is_compatible = map.site == site.getName();
             for (auto pin_map : map.pins) {
                 if (is_compatible == false)
                     break;
@@ -1109,7 +1147,7 @@ struct ArchReader {
 
                 // Assign suffix to bel pin as it is a inout pin which was split in out and in ports
                 auto pin_reader = get_bel_pin_reader(site, bel, bel_pin);
-                bool is_inout = pin_reader.getDir() == LogicalNetlist::Netlist::Direction::INOUT;
+                bool is_inout = pin_reader.getDir() == INOUT;
 
                 auto model_port = get_model_port(arch_, name, cell_pin, false);
 
@@ -1134,7 +1172,7 @@ struct ArchReader {
 
         int count = 0;
         for (auto map : maps) {
-            if (map.site != (int)site.getName())
+            if (map.site != site.getName())
                 continue;
 
             int idx = count++;
@@ -1195,7 +1233,7 @@ struct ArchReader {
 
                 // Assign suffix to bel pin as it is a inout pin which was split in out and in ports
                 auto pin_reader = get_bel_pin_reader(site, bel, bel_pin);
-                bool is_inout = pin_reader.getDir() == LogicalNetlist::Netlist::Direction::INOUT;
+                bool is_inout = pin_reader.getDir() == INOUT;
 
                 pins.emplace(cell_pin, std::make_pair(dir, size));
 
@@ -1279,17 +1317,17 @@ struct ArchReader {
         ic->output_string = vtr::strdup(ostr.c_str());
     }
 
-    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, int bel_name = OPEN) {
+    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = OPEN) {
         // Prepare data based on pb_type level
         std::unordered_map<std::string, std::pair<PORTS, int>> pins;
-        if (bel_name == OPEN) {
+        if (bel_name == (size_t)OPEN) {
             for (auto pin : site.getPins()) {
-                auto dir = pin.getDir() == LogicalNetlist::Netlist::Direction::INPUT ? IN_PORT : OUT_PORT;
+                auto dir = pin.getDir() == INPUT ? IN_PORT : OUT_PORT;
                 pins.emplace(str(pin.getName()), std::make_pair(dir, 1));
             }
         } else {
             for (auto bel : site.getBels()) {
-                if ((int)bel.getName() != bel_name)
+                if (bel.getName() != bel_name)
                     continue;
 
                 for (auto bel_pin : bel.getPins()) {
@@ -1297,13 +1335,13 @@ struct ArchReader {
                     auto dir = pin.getDir();
 
                     switch (dir) {
-                        case LogicalNetlist::Netlist::Direction::INPUT:
+                        case INPUT:
                             pins.emplace(str(pin.getName()), std::make_pair(IN_PORT, 1));
                             break;
-                        case LogicalNetlist::Netlist::Direction::OUTPUT:
+                        case OUTPUT:
                             pins.emplace(str(pin.getName()), std::make_pair(OUT_PORT, 1));
                             break;
-                        case LogicalNetlist::Netlist::Direction::INOUT:
+                        case INOUT:
                             pins.emplace(str(pin.getName()) + in_suffix_, std::make_pair(IN_PORT, 1));
                             pins.emplace(str(pin.getName()) + out_suffix_, std::make_pair(OUT_PORT, 1));
                             break;
@@ -1370,51 +1408,172 @@ struct ArchReader {
 
         // Handle site wires, namely direct interconnects
         for (auto ic_pair : ics) {
-            std::string ic_name = ic_pair.first;
+            auto ic_name = ic_pair.first;
+            auto ic_data = ic_pair.second;
 
-            std::string inputs;
-            std::string outputs;
-            e_interconnect ic_type;
-            bool add_pack_pattern;
+            auto input = ic_data.input;
+            auto outputs = ic_data.outputs;
 
-            std::tie(inputs, outputs, ic_type, add_pack_pattern) = ic_pair.second;
+            auto merge_string = [](std::string& ss, std::string& s) {
+                return ss.empty() ? s : ss + " " + s;
+            };
+
+            std::string outputs_str = std::accumulate(outputs.begin(), outputs.end(), std::string(), merge_string);
 
             t_interconnect* ic = &mode->interconnect[curr_ic++];
-
-            if (add_pack_pattern) {
-                auto outs = vtr::split(outputs, " ");
-                auto ins = vtr::split(inputs, " ");
-                ic->num_annotations = outs.size();
-                ic->annotations = new t_pin_to_pin_annotation[outs.size()];
-                VTR_ASSERT(ins.size() == 1);
-
-                // TODO: propagate pack pattern until the block root.
-
-                // pack pattern
-                int index = 0;
-                for (auto output : outs)
-                    ic->annotations[index++] = get_pack_pattern(ic_name, inputs, output);
-            }
 
             // No line num for interconnects, as line num is XML specific
             // TODO: probably line_num should be deprecated as it is dependent
             //       on the input architecture format.
             ic->line_num = 0;
-            ic->type = ic_type;
+            ic->type = DIRECT_INTERC;
             ic->parent_mode_index = mode->index;
             ic->parent_mode = mode;
 
             VTR_ASSERT(names.insert(ic_name).second);
             ic->name = vtr::strdup(ic_name.c_str());
-            ic->input_string = vtr::strdup(inputs.c_str());
-            ic->output_string = vtr::strdup(outputs.c_str());
+            ic->input_string = vtr::strdup(input.c_str());
+            ic->output_string = vtr::strdup(outputs_str.c_str());
         }
+
+        for (size_t iic = 0; iic < num_ic; iic++) {
+            t_interconnect* ic = &mode->interconnect[iic];
+
+            auto ic_data = ics.at(std::string(ic->name));
+
+            if (ic_data.requires_pack_pattern) {
+                auto backward_pps_map = propagate_pack_patterns(ic, site, BACKWARD);
+                auto forward_pps_map = propagate_pack_patterns(ic, site, FORWARD);
+
+                std::unordered_map<t_interconnect*, std::set<std::string>> pps_map;
+
+                for (auto pp : backward_pps_map)
+                    pps_map.emplace(pp.first, std::set<std::string>{});
+
+                for (auto pp : forward_pps_map)
+                    pps_map.emplace(pp.first, std::set<std::string>{});
+
+                for (auto for_pp_pair : forward_pps_map)
+                    for (auto back_pp_pair : backward_pps_map)
+                        for (auto for_pp : for_pp_pair.second)
+                            for (auto back_pp : back_pp_pair.second) {
+                                std::string pp_name = for_pp + "_" + back_pp;
+                                pps_map.at(for_pp_pair.first).insert(pp_name);
+                                pps_map.at(back_pp_pair.first).insert(pp_name);
+                            }
+
+                for (auto pair : pps_map) {
+                    t_interconnect* pp_ic = pair.first;
+
+                    auto num_pp = pair.second.size();
+                    pp_ic->num_annotations = num_pp;
+                    pp_ic->annotations = new t_pin_to_pin_annotation[num_pp];
+
+                    int idx = 0;
+                    for (auto pp_name : pair.second)
+                        pp_ic->annotations[idx++] = get_pack_pattern(pp_name, pp_ic->input_string, pp_ic->output_string);
+                }
+            }
+        }
+    }
+
+    // Propagates and generates all pack_patterns required for the given ic.
+    // This is necessary to find all root blocks that generate the pack pattern.
+    std::unordered_map<t_interconnect*, std::set<std::string>> propagate_pack_patterns(t_interconnect* ic, Device::SiteType::Reader& site, e_pp_dir direction) {
+        auto site_pins = site.getBelPins();
+
+        std::string endpoint = direction == BACKWARD ? ic->input_string : ic->output_string;
+        auto ic_endpoints = vtr::split(endpoint, " ");
+
+        std::unordered_map<t_interconnect*, std::set<std::string>> pps_map;
+
+        bool is_backward = direction == BACKWARD;
+
+        for (auto ep : ic_endpoints) {
+            auto parts = vtr::split(ep, ".");
+            auto bel = parts[0];
+            auto pin = parts[1];
+
+            if (bel == str(site.getName()))
+                return pps_map;
+
+            // Assign mode and pb_type
+            t_mode* parent_mode = ic->parent_mode;
+            t_pb_type* pb_type = nullptr;
+            for (int ipb = 0; ipb < parent_mode->num_pb_type_children; ipb++)
+                if (std::string(parent_mode->pb_type_children[ipb].name) == bel)
+                    pb_type = &parent_mode->pb_type_children[ipb];
+
+            VTR_ASSERT(pb_type != nullptr);
+
+            auto bel_reader = get_bel_reader(site, remove_bel_suffix(bel));
+
+            // Passing through routing mux. Check at the muxes input pins interconnects
+            if (bel_reader.getCategory() == Device::BELCategory::ROUTING) {
+                for (auto bel_pin : bel_reader.getPins()) {
+                    auto pin_reader = site_pins[bel_pin];
+                    auto pin_name = str(pin_reader.getName());
+
+                    if (pin_reader.getDir() != (is_backward ? INPUT : OUTPUT))
+                        continue;
+
+                    for (int iic = 0; iic < parent_mode->num_interconnect; iic++) {
+                        t_interconnect* other_ic = &parent_mode->interconnect[iic];
+
+                        if (std::string(ic->name) == std::string(other_ic->name))
+                            continue;
+
+                        std::string ic_to_find = bel + "." + pin_name;
+
+                        bool found = false;
+                        for (auto out : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                            found |= out == ic_to_find;
+                        }
+
+                        if (found) {
+                            // An output interconnect to propagate was found, continue searching
+                            auto res = propagate_pack_patterns(other_ic, site, direction);
+
+                            for (auto pp_map : res)
+                                pps_map.emplace(pp_map.first, pp_map.second);
+                        }
+                    }
+                }
+            } else {
+                VTR_ASSERT(bel_reader.getCategory() == Device::BELCategory::LOGIC);
+
+                for (int imode = 0; imode < pb_type->num_modes; imode++) {
+                    t_mode* mode = &pb_type->modes[imode];
+
+                    for (int iic = 0; iic < mode->num_interconnect; iic++) {
+                        t_interconnect* other_ic = &mode->interconnect[iic];
+
+                        bool found = false;
+                        for (auto other_ep : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                            found |= other_ep == ep;
+                        }
+
+                        if (found) {
+                            std::string pp_name = std::string(pb_type->name) + "." + std::string(mode->name);
+
+                            std::set<std::string> pp{pp_name};
+                            auto res = pps_map.emplace(other_ic, pp);
+
+                            if (!res.second)
+                                res.first->second.insert(pp_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        return pps_map;
     }
 
     t_pin_to_pin_annotation get_pack_pattern(std::string ic_name, std::string input, std::string output) {
         auto pp = new t_pin_to_pin_annotation;
 
-        std::string pp_name = ic_name + "_" + output;
+        std::string pp_name = ic_name;
 
         pp->prop = (int*)vtr::calloc(1, sizeof(int));
         pp->value = (char**)vtr::calloc(1, sizeof(char*));
@@ -1507,7 +1666,7 @@ struct ArchReader {
 
             std::unordered_map<std::string, std::string> port_name_to_wire_name;
             int idx = 0;
-            for (auto dir : {LogicalNetlist::Netlist::Direction::INPUT, LogicalNetlist::Netlist::Direction::OUTPUT}) {
+            for (auto dir : {INPUT, OUTPUT}) {
                 int port_idx_by_type = 0;
                 for (auto pin : site.getPins()) {
                     if (pin.getDir() != dir)
@@ -1531,7 +1690,7 @@ struct ArchReader {
                     port.is_clock = false;
                     port.is_non_clock_global = false;
 
-                    if (dir == LogicalNetlist::Netlist::Direction::INPUT) {
+                    if (dir == INPUT) {
                         port.type = IN_PORT;
                         icount++;
                     } else {
@@ -1737,7 +1896,7 @@ struct ArchReader {
             pip_timing_models_list.push_back(entry);
         }
 
-        auto num_switches = pip_timing_models.size() + 2;
+        size_t num_switches = pip_timing_models.size() + 2;
         std::string switch_name;
 
         arch_->num_switches = num_switches;
@@ -1747,7 +1906,7 @@ struct ArchReader {
         }
 
         float R, Cin, Cint, Cout, Tdel;
-        for (int i = 0; i < (int)num_switches; ++i) {
+        for (size_t i = 0; i < num_switches; ++i) {
             t_arch_switch_inf* as = &arch_->Switches[i];
 
             R = Cin = Cint = Cout = Tdel = 0.0;
@@ -1838,7 +1997,7 @@ struct ArchReader {
         int num_seg = 1; //wire_names.size();
 
         arch_->Segments.resize(num_seg);
-        uint32_t index = 0;
+        int index = 0;
         for (auto i : wire_names) {
             if (index >= num_seg) break;
 
