@@ -127,7 +127,7 @@ header:		TOKEN_MODULE TOKEN_REGULARID '(' IdentifierList ')' ';'
 			;
 
 body:           /* Empty */ {}
-			|	body declaration_statement {}
+			|	body declaration_statement {} /* the body consists of a mix of declarations and statements */
 			;
 
 
