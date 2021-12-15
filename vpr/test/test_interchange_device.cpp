@@ -53,7 +53,7 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
     REQUIRE(gd.height == 12);
     REQUIRE(gd.width == 12);
 
-    std::unordered_map<std::string, bool> tile_types({{"NULL", false}, {"PWR", false}, {"IOB", false}, {"CLB", false}});
+    std::unordered_map<std::string, bool> tile_types({{"PWR", false}, {"IOB", false}, {"CLB", false}});
     for (auto& loc : gd.loc_defs) {
         auto ret = tile_types.find(loc.block_type);
         REQUIRE(ret != tile_types.end());
