@@ -75,11 +75,11 @@ int GridTileLookup::total_type_tiles(t_logical_block_type_ptr block_type) {
  * The region with subtile case is taken care of by a helper routine, region_with_subtile_count().
  */
 int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_ptr block_type) {
-	auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
     int subtile = reg.get_sub_tile();
 
     Region grid_reg;
-    grid_reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() -1);
+    grid_reg.set_region_rect(0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
     Region intersect_reg;
     intersect_reg = intersection(reg, grid_reg);
 

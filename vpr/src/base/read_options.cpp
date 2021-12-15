@@ -499,9 +499,9 @@ struct ParseFloorplanSplit {
         else if (str == "quadrants")
             conv_value.set_value(QUADRANTS);
         else if (str == "sixteenths")
-        	conv_value.set_value(SIXTEENTHS);
+            conv_value.set_value(SIXTEENTHS);
         else if (str == "one_spot")
-        	conv_value.set_value(ONE_SPOT);
+            conv_value.set_value(ONE_SPOT);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to constraints_split_factor (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -524,7 +524,6 @@ struct ParseFloorplanSplit {
         }
         return conv_value;
     }
-
 
     std::vector<std::string> default_choices() {
         return {"halves", "quadrants", "sixteenths", "one_spot"};
@@ -1991,7 +1990,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<constraints_split_factor, ParseFloorplanSplit>(args.floorplan_split, "--floorplan_split")
-		.help("Used to say how many partitions the floorplan constraints file should split the blocks into.")
+        .help("Used to say how many partitions the floorplan constraints file should split the blocks into.")
         .default_value("halves")
         .choices({"halves", "quadrants", "sixteenths", "one_spot"})
         .show_in(argparse::ShowIn::HELP_ONLY);

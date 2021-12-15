@@ -931,10 +931,10 @@ enum e_pad_loc_type {
 };
 
 enum constraints_split_factor {
-	HALVES,
-	QUADRANTS,
-	SIXTEENTHS,
-	ONE_SPOT
+    HALVES,
+    QUADRANTS,
+    SIXTEENTHS,
+    ONE_SPOT
 };
 
 /**

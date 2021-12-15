@@ -110,14 +110,14 @@ static void print_unplaced_blocks() {
     int unplaced_blocks = 0;
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-    	if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
-    		VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name);
-    		unplaced_blocks++;
-    	}
+        if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
+            VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name);
+            unplaced_blocks++;
+        }
     }
 
     if (unplaced_blocks > 0) {
-    	VPR_FATAL_ERROR(VPR_ERROR_PLACE, "%d blocks could not be placed during initial placement\n", unplaced_blocks);
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE, "%d blocks could not be placed during initial placement\n", unplaced_blocks);
     }
 }
 
