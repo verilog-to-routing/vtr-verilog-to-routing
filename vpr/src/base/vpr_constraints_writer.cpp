@@ -19,199 +19,192 @@
 #include "vpr_constraints_writer.h"
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
-    //Fill in the constraints object to be printed out.
-    //VprConstraints constraints;
 
-    /*if (floorplan_split == HALVES) {
+    if (floorplan_split == HALVES) {
     	VTR_LOG("Splitting grid floorplan constraints into halves \n");
-    	setup_vpr_floorplan_constraints_halves(constraints);
+
+        //Split all blocks between two partitions
+        VprConstraints constraints_half;
+
+    	setup_vpr_floorplan_constraints_halves(constraints_half);
+
+        VprConstraintsSerializer writer_half(constraints_half);
+
+        const char* file_name_half = "half.xml";
+
+        if (vtr::check_file_name_extension(file_name_half, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_half, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_half, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
+        //Split half of all blocks between two partitions
+        VprConstraints constraints_half_2;
+
+    	setup_vpr_floorplan_constraints_halves_half(constraints_half_2);
+
+        VprConstraintsSerializer writer_half_2(constraints_half_2);
+
+        const char* file_name_half_2 = "half_2.xml";
+
+        if (vtr::check_file_name_extension(file_name_half_2, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_half_2, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_half_2, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
     } else if (floorplan_split == QUADRANTS) {
     	VTR_LOG("Splitting grid floorplan constraints into quadrants \n");
-    	setup_vpr_floorplan_constraints_quadrants(constraints);
+
+    	//Split all blocks between four partitions
+        VprConstraints constraints_quad;
+
+    	VTR_LOG("Splitting grid floorplan constraints into quadrants \n");
+    	setup_vpr_floorplan_constraints_quadrants(constraints_quad);
+
+        VprConstraintsSerializer writer_quad(constraints_quad);
+
+        const char* file_name_quad = "quad.xml";
+
+        if (vtr::check_file_name_extension(file_name_quad, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_quad, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_quad, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
+        //Splitting half of all blocks between four partitions
+        VprConstraints constraints_quad_2;
+
+    	VTR_LOG("Splitting grid floorplan constraints into quadrants \n");
+    	setup_vpr_floorplan_constraints_quadrants_half(constraints_quad_2);
+
+        VprConstraintsSerializer writer_quad_2(constraints_quad_2);
+
+        const char* file_name_quad_2 = "quad_2.xml";
+
+        if (vtr::check_file_name_extension(file_name_quad_2, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_quad_2, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_quad_2, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
     } else if (floorplan_split == SIXTEENTHS) {
     	VTR_LOG("Splitting grid floorplan constraints into sixteenths \n");
-    	setup_vpr_floorplan_constraints_sixteenths(constraints);
+
+    	//Splitting all blocks between sixteen partitions
+        VprConstraints constraints_six;
+
+    	setup_vpr_floorplan_constraints_sixteenths(constraints_six);
+
+        VprConstraintsSerializer writer_six(constraints_six);
+
+        const char* file_name_six = "sixteenth.xml";
+
+        if (vtr::check_file_name_extension(file_name_six, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_six, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_six, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
+        //Splitting half of all blocks between sixteen partitions
+        VprConstraints constraints_six_2;
+
+    	VTR_LOG("Splitting grid floorplan constraints into sixteenths \n");
+    	setup_vpr_floorplan_constraints_sixteenths_half(constraints_six_2);
+
+        VprConstraintsSerializer writer_six_2(constraints_six_2);
+
+        const char* file_name_six_2 = "sixteenth_2.xml";
+
+        if (vtr::check_file_name_extension(file_name_six_2, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_six_2, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_six_2, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
     } else { //one_spot
-    	setup_vpr_floorplan_constraints(constraints, expand, subtile);
+    	VTR_LOG("Creating floorplan partition of size one for each cluster \n");
+
+    	//Put all clusters into partitions of size one
+        VprConstraints constraints_fixed;
+
+    	setup_vpr_floorplan_constraints(constraints_fixed, expand, subtile);
+
+        VprConstraintsSerializer writer_fixed(constraints_fixed);
+
+        const char* file_name_fixed = "fixed.xml";
+
+        if (vtr::check_file_name_extension(file_name_fixed, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_fixed, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_fixed, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
+    	//Put half of all clusters into partitions of size one
+        VprConstraints constraints_fixed_2;
+
+    	setup_vpr_floorplan_constraints_half(constraints_fixed_2, expand, subtile);
+
+        VprConstraintsSerializer writer_fixed_2(constraints_fixed_2);
+
+        const char* file_name_fixed_2 = "fixed_2.xml";
+
+        if (vtr::check_file_name_extension(file_name_fixed_2, ".xml")) {
+            std::fstream fp;
+            fp.open(file_name_fixed_2, std::fstream::out | std::fstream::trunc);
+            fp.precision(std::numeric_limits<float>::max_digits10);
+            void* context;
+            uxsd::write_vpr_constraints_xml(writer_fixed_2, context, fp);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Unknown extension on output %s",
+                            file_name);
+        }
+
     }
 
-    VprConstraintsSerializer writer(constraints);
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }*/
-
-
-
-
-
-
-    //Fill in the constraints object to be printed out.
-    /*VprConstraints constraints_half;
-
-	VTR_LOG("Splitting grid floorplan constraints into halves \n");
-	setup_vpr_floorplan_constraints_halves(constraints_half);
-
-    VprConstraintsSerializer writer_half(constraints_half);
-
-    const char* file_name_half = "half.xml";
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name_half, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer_half, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }
-
-    //Fill in the constraints object to be printed out.
-    VprConstraints constraints_quad;
-
-	VTR_LOG("Splitting grid floorplan constraints into quadrants \n");
-	setup_vpr_floorplan_constraints_quadrants(constraints_quad);
-
-    VprConstraintsSerializer writer_quad(constraints_quad);
-
-    const char* file_name_quad = "quad.xml";
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name_quad, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer_quad, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }
-
-    //Fill in the constraints object to be printed out.
-    VprConstraints constraints_six;
-
-	VTR_LOG("Splitting grid floorplan constraints into sixteenths \n");
-	setup_vpr_floorplan_constraints_sixteenths(constraints_six);
-
-    VprConstraintsSerializer writer_six(constraints_six);
-
-    const char* file_name_six = "six.xml";
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name_six, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer_six, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }*/
-
-
-
-
-
-
-    //Fill in the constraints object to be printed out.
-    VprConstraints constraints_half;
-
-	VTR_LOG("Splitting grid floorplan constraints into halves \n");
-	setup_vpr_floorplan_constraints_halves_half(constraints_half);
-
-    VprConstraintsSerializer writer_half(constraints_half);
-
-    const char* file_name_half = "half_2.xml";
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name_half, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer_half, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }
-
-    //Fill in the constraints object to be printed out.
-    VprConstraints constraints_quad;
-
-	VTR_LOG("Splitting grid floorplan constraints into quadrants \n");
-	setup_vpr_floorplan_constraints_quadrants_half(constraints_quad);
-
-    VprConstraintsSerializer writer_quad(constraints_quad);
-
-    const char* file_name_quad = "quad_2.xml";
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name_quad, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer_quad, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }
-
-    //Fill in the constraints object to be printed out.
-    VprConstraints constraints_six;
-
-	VTR_LOG("Splitting grid floorplan constraints into sixteenths \n");
-	setup_vpr_floorplan_constraints_sixteenths_half(constraints_six);
-
-    VprConstraintsSerializer writer_six(constraints_six);
-
-    const char* file_name_six = "six_2.xml";
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name_six, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer_six, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }
-
-    //Fill in the constraints object to be printed out.
-    VprConstraints constraints_fixed;
-
-	VTR_LOG("Splitting grid floorplan constraints into sixteenths \n");
-	setup_vpr_floorplan_constraints_half(constraints_fixed, expand, subtile);
-
-    VprConstraintsSerializer writer_fixed(constraints_fixed);
-
-    const char* file_name_fixed = "fixed_2.xml";
-
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
-        std::fstream fp;
-        fp.open(file_name_fixed, std::fstream::out | std::fstream::trunc);
-        fp.precision(std::numeric_limits<float>::max_digits10);
-        void* context;
-        uxsd::write_vpr_constraints_xml(writer_fixed, context, fp);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Unknown extension on output %s",
-                        file_name);
-    }
 }
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile) {
@@ -265,12 +258,21 @@ void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expan
     ClusterAtomsLookup atoms_lookup;
 
     int part_id = 0;
+    int block_count = 0;
+
     /*
      * For each cluster block, create a partition filled with the atoms that are currently in the cluster.
      * The PartitionRegion will be the location of the block in current placement, modified by the expansion factor.
      * The subtile can also optionally be set in the PartitionRegion, based on the value passed in by the user.
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+
+    	if (block_count % 2 == 0) {
+    		block_count++;
+    		continue;
+    	}
+    	block_count++;
+
         std::string part_name;
         part_name = cluster_ctx.clb_nlist.block_name(blk_id);
         PartitionId partid(part_id);
