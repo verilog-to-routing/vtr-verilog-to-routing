@@ -1659,6 +1659,8 @@ struct t_vpr_setup {
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
     bool exit_before_pack;                     ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
+    bool include_noc;                   ///<options to model the noc within the FPGA device
+    std::string noc_router_tile_name;   ///<name of the router tile located in the FPGA
 };
 
 class RouteStatus {

@@ -38,6 +38,7 @@
 #include "place.h"
 #include "SetupGrid.h"
 #include "setup_clocks.h"
+#include "setup_noc.h"
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -436,6 +437,16 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
+   for(int i = 0; i < device_ctx.grid.width(); i++)
+    {
+        for (int j = 0; j < device_ctx.grid.height(); j++)
+        {
+            t_grid_tile test = device_ctx.grid[i][j];
+
+            std::cout << test.height_offset << std::endl;
+        }
+    }
+
     /*
      *Report on the device
      */
@@ -495,6 +506,15 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if (vpr_setup.clock_modeling == DEDICATED_NETWORK) {
         setup_clock_networks(Arch, vpr_setup.Segments);
+    }
+}
+
+void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch)
+{
+    // check if the user provided the option to model the noc
+    if (vpr_setup.include_noc == true)
+    {
+        setup_noc(arch, vpr_setup.noc_router_tile_name);
     }
 }
 

@@ -126,6 +126,8 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);
+// @brief Create the NoC
+void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
