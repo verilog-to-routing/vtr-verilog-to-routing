@@ -7,6 +7,18 @@
     <output name="data_out" num_pins="40" equivalent="full"/>
     <output name="cout" num_pins="1" equivalent="none"/>
     <clock name="clk" num_pins="1"/>
+    <mode name="LAB">
+      <pb_type name="alm" num_pb="10">
+        <input name="data_in" num_pins="8"/>
+        <input name="control" num_pins="5"/>
+        <input name="cin" num_pins="1"/>
+        <output name="data_out" num_pins="6"/>
+        <output name="cout" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <mode name="alm">
 
+        </mode>
+      </pb_type>
+    </mode>
   </pb_type>
   </complexblocklist>
