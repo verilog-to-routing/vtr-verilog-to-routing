@@ -1392,7 +1392,9 @@ static bool cleanup_pb(t_pb* pb) {
 }
 
 /**
- * Try pack molecule into current cluster
+ * Performs legality checks to see whether the selected molecule can fit into the cluster.
+ * Returns a pack status that either lets the upper-level clustering routine know that
+ * the molecule passed the legality check, or that it failed a certain legality check.
  */
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -3173,6 +3175,8 @@ static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, 
     auto& atom_ctx = g_vpr_ctx.atom();
 
     gain = 0;
+    float attraction_group_penalty = 0.1;
+
     num_introduced_inputs_of_indirectly_related_block = 0;
     for (i = 0; i < get_array_size_of_molecule(molecule); i++) {
         auto blk_id = molecule->atom_block_ids[i];
@@ -3203,9 +3207,10 @@ static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, 
             }
             AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
             if (atom_grp_id == cluster_attraction_group_id && cluster_attraction_group_id != AttractGroupId::INVALID()) {
-            	gain += 0.08; //make this gain the same as the attraction group gain, don't put in a random number
+            	float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
+            	gain += att_grp_gain;
             } else if (cluster_attraction_group_id != AttractGroupId::INVALID() && atom_grp_id != cluster_attraction_group_id) {
-            	gain -= 0.1;
+            	gain -= attraction_group_penalty;
             }
         }
     }
