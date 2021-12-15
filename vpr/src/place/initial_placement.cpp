@@ -97,6 +97,10 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type);
 
+/**
+ * @brief If any blocks are unplaced after initial placement, this routine
+ * prints an error message showing the names, types, and IDs of the unplaced blocks
+ */
 static void print_unplaced_blocks();
 
 static void print_unplaced_blocks() {
@@ -107,13 +111,13 @@ static void print_unplaced_blocks() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
     	if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
-    		VTR_LOG("Block %s (# %d) of type %s has not been placed \n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name);
+    		VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name);
     		unplaced_blocks++;
     	}
     }
 
     if (unplaced_blocks > 0) {
-    	VPR_FATAL_ERROR(VPR_ERROR_PLACE, "%d blocks were not placed during initial placement\n", unplaced_blocks);
+    	VPR_FATAL_ERROR(VPR_ERROR_PLACE, "%d blocks could not be placed during initial placement\n", unplaced_blocks);
     }
 }
 
@@ -428,15 +432,7 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
                 tried_types.push_back(tile_type->name);
             }
             std::string tried_types_str = "{" + vtr::join(tried_types, ", ") + "}";
-            //VTR_LOG("Warning: block wasn't placed \n");
             break;
-
-            // Error out
-            /*VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Initial placement failed.\n"
-                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type(s) %s.\n"
-                            "Please manually size the FPGA because VPR can't do this yet.\n",
-                            pl_macro.members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), tried_types_str.c_str());*/
         }
     }
 }
