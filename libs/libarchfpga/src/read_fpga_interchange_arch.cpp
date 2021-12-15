@@ -150,6 +150,7 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
     return 0.;
 }
 
+/** @brief Returns the port corresponding to the given model in the architecture */
 static t_model_ports* get_model_port(t_arch* arch, std::string model, std::string port, bool fail = true) {
     for (t_model* m : {arch->models, arch->model_library}) {
         for (; m != nullptr; m = m->next) {
@@ -170,6 +171,7 @@ static t_model_ports* get_model_port(t_arch* arch, std::string model, std::strin
     return nullptr;
 }
 
+/** @brief Returns the specified architecture model */
 static t_model* get_model(t_arch* arch, std::string model) {
     for (t_model* m : {arch->models, arch->model_library})
         for (; m != nullptr; m = m->next)
@@ -180,6 +182,7 @@ static t_model* get_model(t_arch* arch, std::string model) {
                    "Could not find model: %s\n", model.c_str());
 }
 
+/** @brief Returns the physical or logical type by its name */
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
     for (auto& type : types) {
@@ -192,6 +195,7 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
                    "Could not find type: %s\n", type_name);
 }
 
+/** @brief Returns a generic port instantiation for a complex block */
 static t_port get_generic_port(t_arch* arch,
                                t_pb_type* pb_type,
                                PORTS dir,
@@ -219,6 +223,7 @@ static t_port get_generic_port(t_arch* arch,
     return port;
 }
 
+/** @brief Returns true if a given port name exists in the given complex block */
 static bool block_port_exists(t_pb_type* pb_type, std::string port_name) {
     for (int iport = 0; iport < pb_type->num_ports; iport++) {
         const t_port port = pb_type->ports[iport];
@@ -228,6 +233,25 @@ static bool block_port_exists(t_pb_type* pb_type, std::string port_name) {
     }
 
     return false;
+}
+
+/** @brief Returns a pack pattern given it's name, input and output strings */
+static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string input, std::string output) {
+    t_pin_to_pin_annotation pp;
+
+    pp.prop = (int*)vtr::calloc(1, sizeof(int));
+    pp.value = (char**)vtr::calloc(1, sizeof(char*));
+
+    pp.type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
+    pp.format = E_ANNOT_PIN_TO_PIN_CONSTANT;
+    pp.prop[0] = (int)E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
+    pp.value[0] = vtr::strdup(pp_name.c_str());
+    pp.input_pins = vtr::strdup(input.c_str());
+    pp.output_pins = vtr::strdup(output.c_str());
+    pp.num_value_prop_pairs = 1;
+    pp.clock = nullptr;
+
+    return pp;
 }
 
 /****************** End Utility functions ******************/
@@ -303,10 +327,13 @@ struct ArchReader {
     std::unordered_map<std::string, int> segment_name_to_segment_idx;
 
     // Utils
+
+    /** @brief Returns the string corresponding to the given index */
     std::string str(size_t idx) {
         return arch_->interned_strings[idx].get(&arch_->strings);
     }
 
+    /** @brief Get the BEL count of a site depending on its category (e.g. logic or routing BELs) */
     int get_bel_type_count(Device::SiteType::Reader& site, Device::BELCategory category) {
         int count = 0;
         for (auto bel : site.getBels()) {
@@ -321,6 +348,7 @@ struct ArchReader {
         return count;
     }
 
+    /** @brief Get the BEL reader given its name and site */
     Device::BEL::Reader get_bel_reader(Device::SiteType::Reader& site, std::string bel_name) {
         for (auto bel : site.getBels())
             if (str(bel.getName()) == bel_name)
@@ -328,6 +356,7 @@ struct ArchReader {
         VTR_ASSERT(0);
     }
 
+    /** @brief Get the BEL pin reader given its name, site and corresponding BEL */
     Device::BELPin::Reader get_bel_pin_reader(Device::SiteType::Reader& site, Device::BEL::Reader& bel, std::string pin_name) {
         auto bel_pins = site.getBelPins();
 
@@ -339,7 +368,8 @@ struct ArchReader {
         VTR_ASSERT(0);
     }
 
-    std::string get_ic_prefix(Device::SiteType::Reader& site, Device::BEL::Reader& bel) {
+    /** @brief Get the BEL name, with an optional deduplication suffix in case its name collides with the site name */
+    std::string get_bel_name(Device::SiteType::Reader& site, Device::BEL::Reader& bel) {
         if (bel.getCategory() == Device::BELCategory::SITE_PORT)
             return str(site.getName());
 
@@ -349,6 +379,18 @@ struct ArchReader {
         return site_name == bel_name ? bel_name + bel_dedup_suffix_ : bel_name;
     }
 
+    /** @brief Returns the name of the input argument BEL with optionally the de-duplication suffix removed */
+    std::string remove_bel_suffix(std::string bel) {
+        std::smatch regex_matches;
+        std::string regex = std::string("(.*)") + bel_dedup_suffix_;
+        const std::regex bel_regex(regex.c_str());
+        if (std::regex_match(bel, regex_matches, bel_regex))
+            return regex_matches[1].str();
+
+        return bel;
+    }
+
+    /** @brief Returns true in case the input argument corresponds to the name of a LUT */
     bool is_lut(std::string name) {
         for (auto cell : arch_->lut_cells)
             if (cell.name == name)
@@ -361,20 +403,12 @@ struct ArchReader {
         return false;
     }
 
+    /** @brief Returns true in case the input argument corresponds to a PAD BEL */
     bool is_pad(std::string name) {
         return pad_bels_.count(name) != 0;
     }
 
-    std::string remove_bel_suffix(std::string bel) {
-        std::smatch regex_matches;
-        std::string regex = std::string("(.*)") + bel_dedup_suffix_;
-        const std::regex bel_regex(regex.c_str());
-        if (std::regex_match(bel, regex_matches, bel_regex))
-            return regex_matches[1].str();
-
-        return bel;
-    }
-
+    /** @brief Returns an intermediate map representing all the interconnects to be added in a site */
     std::unordered_map<std::string, t_ic_data> get_interconnects(Device::SiteType::Reader& site) {
         // dictionary:
         //   - key: interconnect name
@@ -395,7 +429,7 @@ struct ArchReader {
                 std::string bel_pin_name = str(bel_pin.getName());
 
                 auto bel = get_bel_reader(site, str(bel_pin.getBel()));
-                auto bel_name = get_ic_prefix(site, bel);
+                auto bel_name = get_bel_name(site, bel);
 
                 auto bel_is_pad = is_pad(bel_name);
 
@@ -419,7 +453,7 @@ struct ArchReader {
                     std::string bel_pin_name = str(bel_pin.getName());
 
                     auto bel = get_bel_reader(site, str(bel_pin.getBel()));
-                    auto bel_name = get_ic_prefix(site, bel);
+                    auto bel_name = get_bel_name(site, bel);
 
                     if (!is_pad(bel_name))
                         continue;
@@ -442,10 +476,10 @@ struct ArchReader {
                 std::string out_bel_pin_name = str(bel_pin.getName());
 
                 auto out_bel = get_bel_reader(site, str(bel_pin.getBel()));
-                auto out_bel_name = get_ic_prefix(site, out_bel);
+                auto out_bel_name = get_bel_name(site, out_bel);
 
                 auto in_bel = out_pin_bel;
-                auto in_bel_name = get_ic_prefix(site, in_bel);
+                auto in_bel_name = get_bel_name(site, in_bel);
                 auto in_bel_pin_name = out_pin_name;
 
                 bool skip_in_bel = in_bel.getCategory() == Device::BELCategory::LOGIC && take_bels_.count(in_bel.getName()) == 0;
@@ -530,7 +564,6 @@ struct ArchReader {
      *   - process_cell_bel_mapping: processes mappings between a cell and the possible BELs location for that cell
      *   - process_constants: processes constants cell and net names
      */
-
     void process_bels_and_sites() {
         auto tiles = ar_.getTileList();
         auto tile_types = ar_.getTileTypeList();
@@ -719,6 +752,8 @@ struct ArchReader {
                 if (is_lut(prim_name))
                     continue;
 
+                // Check whether the model can be placed in at least one
+                // BEL that was marked as valid (e.g. added to the take_bels_ data structure)
                 bool has_bel = false;
                 for (auto bel_cell_map : bel_cell_mappings_) {
                     auto bel_name = bel_cell_map.first;
@@ -842,6 +877,7 @@ struct ArchReader {
         auto siteTypeList = ar_.getSiteTypeList();
 
         int index = 0;
+        // TODO: Make this dynamic depending on data from the interchange
         auto EMPTY = get_empty_logical_type(std::string("NULL"));
         EMPTY.index = index;
         ltypes_.push_back(EMPTY);
@@ -887,6 +923,7 @@ struct ArchReader {
             mode->num_pb_type_children = bel_count;
             mode->pb_type_children = new t_pb_type[bel_count];
 
+            // Iterate over all the BELs to create intermedite complex block types
             int count = 0;
             for (auto bel : bels) {
                 auto category = bel.getCategory();
@@ -931,6 +968,7 @@ struct ArchReader {
         }
     }
 
+    /** @brief Generates a LUT primitive block starting from the intermediate pb type */
     void process_lut_block(t_pb_type* lut) {
         lut->num_modes = 1;
         lut->modes = new t_mode[1];
@@ -1003,6 +1041,7 @@ struct ArchReader {
         }
     }
 
+    /** @brief Generates the leaf pb types for the PAD type */
     void process_pad_block(t_pb_type* pad, Device::BEL::Reader& bel, Device::SiteType::Reader& site) {
         // For now, hard-code two modes for pads, so that PADs can either be IPADs or OPADs
         pad->num_modes = 2;
@@ -1126,6 +1165,9 @@ struct ArchReader {
         imode->interconnect[0] = *i_ic;
     }
 
+    /** @brief Generates the leaf pb types for a generic intermediate block, with as many modes
+     *         as the number of models that can be used in this complex block.
+     */
     void process_generic_block(t_pb_type* pb_type, Device::BEL::Reader& bel, Device::SiteType::Reader& site) {
         std::string pb_name = std::string(pb_type->name);
 
@@ -1209,7 +1251,7 @@ struct ArchReader {
 
             mode->num_interconnect = num_ports;
             mode->interconnect = new t_interconnect[num_ports];
-            std::unordered_map<std::string, std::pair<PORTS, int>> pins;
+            std::set<std::tuple<std::string, PORTS, int>> pins;
             ic_count = 0;
             for (auto pin_map : map.pins) {
                 auto cell_pin = str(pin_map.first);
@@ -1235,7 +1277,7 @@ struct ArchReader {
                 auto pin_reader = get_bel_pin_reader(site, bel, bel_pin);
                 bool is_inout = pin_reader.getDir() == INOUT;
 
-                pins.emplace(cell_pin, std::make_pair(dir, size));
+                pins.emplace(cell_pin, dir, size);
 
                 std::string istr, ostr, ic_name;
                 switch (dir) {
@@ -1268,6 +1310,9 @@ struct ArchReader {
         }
     }
 
+    /** @brief Generates a routing block to allow for cascading routing blocks to be
+     *         placed in the same complex block type.
+     */
     void process_routing_block(t_pb_type* pb_type) {
         pb_type->num_modes = 1;
         pb_type->modes = new t_mode[1];
@@ -1317,37 +1362,38 @@ struct ArchReader {
         ic->output_string = vtr::strdup(ostr.c_str());
     }
 
+    /** @brief Processes all the ports of a given complex block.
+     *         If a bel name index is specified, the bel pins are processed, otherwise the site ports
+     *         are processed instead.
+     */
     void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = OPEN) {
         // Prepare data based on pb_type level
-        std::unordered_map<std::string, std::pair<PORTS, int>> pins;
+        std::set<std::tuple<std::string, PORTS, int>> pins;
         if (bel_name == (size_t)OPEN) {
             for (auto pin : site.getPins()) {
                 auto dir = pin.getDir() == INPUT ? IN_PORT : OUT_PORT;
-                pins.emplace(str(pin.getName()), std::make_pair(dir, 1));
+                pins.emplace(str(pin.getName()), dir, 1);
             }
         } else {
-            for (auto bel : site.getBels()) {
-                if (bel.getName() != bel_name)
-                    continue;
+            auto bel = get_bel_reader(site, str(bel_name));
 
-                for (auto bel_pin : bel.getPins()) {
-                    auto pin = site.getBelPins()[bel_pin];
-                    auto dir = pin.getDir();
+            for (auto bel_pin : bel.getPins()) {
+                auto pin = site.getBelPins()[bel_pin];
+                auto dir = pin.getDir();
 
-                    switch (dir) {
-                        case INPUT:
-                            pins.emplace(str(pin.getName()), std::make_pair(IN_PORT, 1));
-                            break;
-                        case OUTPUT:
-                            pins.emplace(str(pin.getName()), std::make_pair(OUT_PORT, 1));
-                            break;
-                        case INOUT:
-                            pins.emplace(str(pin.getName()) + in_suffix_, std::make_pair(IN_PORT, 1));
-                            pins.emplace(str(pin.getName()) + out_suffix_, std::make_pair(OUT_PORT, 1));
-                            break;
-                        default:
-                            VTR_ASSERT(0);
-                    }
+                switch (dir) {
+                    case INPUT:
+                        pins.emplace(str(pin.getName()), IN_PORT, 1);
+                        break;
+                    case OUTPUT:
+                        pins.emplace(str(pin.getName()), OUT_PORT, 1);
+                        break;
+                    case INOUT:
+                        pins.emplace(str(pin.getName()) + in_suffix_, IN_PORT, 1);
+                        pins.emplace(str(pin.getName()) + out_suffix_, OUT_PORT, 1);
+                        break;
+                    default:
+                        VTR_ASSERT(0);
                 }
             }
         }
@@ -1355,7 +1401,8 @@ struct ArchReader {
         create_ports(pb_type, pins);
     }
 
-    void create_ports(t_pb_type* pb_type, std::unordered_map<std::string, std::pair<PORTS, int>>& pins, std::string model = "") {
+    /** @brief Generates all the port for a complex block, given its pointer and a map of ports (key) and their direction and width */
+    void create_ports(t_pb_type* pb_type, std::set<std::tuple<std::string, PORTS, int>>& pins, std::string model = "") {
         std::unordered_set<std::string> names;
 
         auto num_ports = pins.size();
@@ -1369,16 +1416,14 @@ struct ArchReader {
         int pin_count = 0;
         for (auto dir : {IN_PORT, OUT_PORT}) {
             int pins_dir_count = 0;
-            for (auto pin_pair : pins) {
-                auto pin_name = pin_pair.first;
+            for (auto pin_tuple : pins) {
+                std::string pin_name;
                 PORTS pin_dir;
                 int num_pins;
-                std::tie(pin_dir, num_pins) = pin_pair.second;
+                std::tie(pin_name, pin_dir, num_pins) = pin_tuple;
 
                 if (pin_dir != dir)
                     continue;
-
-                VTR_ASSERT(names.insert(pin_name).second);
 
                 bool is_input = dir == IN_PORT;
                 pb_type->num_input_pins += is_input ? 1 : 0;
@@ -1396,6 +1441,7 @@ struct ArchReader {
         }
     }
 
+    /** @brief Processes and creates the interconnects corresponding to a given mode */
     void process_interconnects(t_mode* mode, Device::SiteType::Reader& site) {
         auto ics = get_interconnects(site);
         auto num_ic = ics.size();
@@ -1436,6 +1482,7 @@ struct ArchReader {
             ic->output_string = vtr::strdup(outputs_str.c_str());
         }
 
+        // Checks and, in case, adds all the necessary pack patterns to the marked interconnects
         for (size_t iic = 0; iic < num_ic; iic++) {
             t_interconnect* ic = &mode->interconnect[iic];
 
@@ -1453,6 +1500,13 @@ struct ArchReader {
                 for (auto pp : forward_pps_map)
                     pps_map.emplace(pp.first, std::set<std::string>{});
 
+                // Cross-product of all pack-patterns added both when exploring backwards and forward.
+                // E.g.:
+                //   Generated pack patterns
+                //      - backward: OBUFDS, OBUF
+                //      - forward: OPAD
+                //  Final pack patterns:
+                //      - OBUFDS_OPAD, OBUF_OPAD
                 for (auto for_pp_pair : forward_pps_map)
                     for (auto back_pp_pair : backward_pps_map)
                         for (auto for_pp : for_pp_pair.second)
@@ -1477,8 +1531,9 @@ struct ArchReader {
         }
     }
 
-    // Propagates and generates all pack_patterns required for the given ic.
-    // This is necessary to find all root blocks that generate the pack pattern.
+    /** @brief Propagates and generates all pack_patterns required for the given ic.
+     *         This is necessary to find all root blocks that generate the pack pattern.
+     */
     std::unordered_map<t_interconnect*, std::set<std::string>> propagate_pack_patterns(t_interconnect* ic, Device::SiteType::Reader& site, e_pp_dir direction) {
         auto site_pins = site.getBelPins();
 
@@ -1568,26 +1623,6 @@ struct ArchReader {
         }
 
         return pps_map;
-    }
-
-    t_pin_to_pin_annotation get_pack_pattern(std::string ic_name, std::string input, std::string output) {
-        auto pp = new t_pin_to_pin_annotation;
-
-        std::string pp_name = ic_name;
-
-        pp->prop = (int*)vtr::calloc(1, sizeof(int));
-        pp->value = (char**)vtr::calloc(1, sizeof(char*));
-
-        pp->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
-        pp->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-        pp->prop[0] = (int)E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
-        pp->value[0] = vtr::strdup(pp_name.c_str());
-        pp->input_pins = vtr::strdup(input.c_str());
-        pp->output_pins = vtr::strdup(output.c_str());
-        pp->num_value_prop_pairs = 1;
-        pp->clock = nullptr;
-
-        return *pp;
     }
 
     // Physical Tiles
