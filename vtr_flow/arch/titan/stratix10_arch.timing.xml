@@ -16,7 +16,60 @@
         <output name="cout" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
         <mode name="alm">
-
+          <pb_type name="lut" num_pb="2">
+            <input name="lin" num_pins="8"/>
+            <input name="cin" num_pins="1"/>
+            <output name="combout" num_pins="1"/>
+            <output name="sumout" num_pins="1"/>
+            <output name="cout" num_pins="1"/>
+            <mode name="fourteennm_lcell">
+              <pb_type blif_model=".subckt stratix10_lcell_comb" name="lcell_comb" num_pb="1">
+                <input name="dataa" num_pins="1"/>
+                <input name="datab" num_pins="1"/>
+                <input name="datac" num_pins="1"/>
+                <input name="datad" num_pins="1"/>
+                <input name="datae" num_pins="1"/>
+                <input name="dataf" num_pins="1"/>
+                <input name="datag" num_pins="1"/>
+                <input name="datah" num_pins="1"/>
+                <input name="cin" num_pins="1"/>
+                <output name="combout" num_pins="1"/>
+                <output name="sumout" num_pins="1"/>
+                <output name="cout" num_pins="1"/>
+              </pb_type>
+              <interconnect>
+                <!-- LUT inputs -->
+                <direct input="lut.lin[0]" name="in_comp1" output="lcell_comb.dataa"/>
+                <direct input="lut.lin[1]" name="in_comp2" output="lcell_comb.datab"/>
+                <direct input="lut.lin[2]" name="in_comp3" output="lcell_comb.datac"/>
+                <direct input="lut.lin[3]" name="in_comp4" output="lcell_comb.datad"/>
+                <direct input="lut.lin[4]" name="in_comp5" output="lcell_comb.datae"/>
+                <direct input="lut.lin[5]" name="in_comp6" output="lcell_comb.dataf"/>
+                <direct input="lut.lin[6]" name="in_comp7" output="lcell_comb.datag"/>
+                <direct input="lut.lin[7]" name="in_comp8" output="lcell_comb.datah"/>
+                <!-- LUT outputs -->
+                <direct input="lcell_comb.combout" name="out_comp1" output="lut.combout"/>
+                <direct input="lcell_comb.sumout" name="out_comp2" output="lut.sumout"/>
+                <!-- LUT carry chain -->
+                <direct input="lut.cin" name="lut_cin" output="lcell_comb.cin">
+                  <pack_pattern name="LAB_carry_chain" in_port="lut.cin" out_port="lcell_comb.cin"/>
+                </direct>
+                <direct input="lcell_comb.cout" name="out_comp3" output="lut.cout">
+                  <pack_pattern name="LAB_carry_chain" in_port="lcell_comb.cout" out_port="lut.cout"/>
+                </direct>
+              </interconnect>
+            </mode>
+            <mode name="names_lut">
+              <pb_type blif_model=".names" class="lut" name="lut6" num_pb="1">
+                <input name="in" num_pins="6" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+              </pb_type>
+              <interconnect>
+                <complete input="lut.lin" name="l_complete1" output="lut6.in[5:0]"/>
+                <complete input="lut6.out" name="l_complete2" output="lut.sumout lut.combout"/>
+              </interconnect>
+            </mode>
+          </pb_type>
         </mode>
       </pb_type>
     </mode>
