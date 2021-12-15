@@ -36,6 +36,7 @@ echo "Host adding PPAs"
 echo "----------------------------------------"
 wget --no-check-certificate -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
 sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ xenial main'
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 echo "----------------------------------------"
 
 echo
@@ -55,20 +56,30 @@ sudo apt-get install -y \
         bison \
         build-essential \
         ca-certificates \
+        clang \
         cmake \
         colordiff \
         coreutils \
         curl \
         flex \
+        gawk \
+        gcc-9 \
+        g++-9 \
         git \
         graphviz \
         inkscape \
         jq \
+        libboost-filesystem-dev \
+        libboost-python-dev \
+        libboost-system-dev \
+        libffi-dev \
         libgtk-3-dev \
+        libreadline-dev \
         libx11-dev \
         make \
         ninja-build \
         nodejs \
+        pkg-config \
         psmisc \
         python \
         python3 \
@@ -76,27 +87,22 @@ sudo apt-get install -y \
         python3-virtualenv \
         python3-yaml \
         qt5-default \
-        virtualenv \
-        clang \
-	    libreadline-dev \
-        gawk \
         tcl-dev \
-        libffi-dev \
+        virtualenv \
         xdot \
-        pkg-config \
-        libboost-system-dev \
-	    libboost-python-dev \
-        libboost-filesystem-dev \
-        zlib1g-dev \
+        zlib1g-dev
         #Don't include libtbb-dev since it may increase memory usage
         #libtbb-dev \
 
 export PATH="$PATH:/home/kbuilder/.local/bin"
 
+export CC=gcc-9
+export CXX=g++-9
+
 pyenv install -f 3.6.3
 pyenv global 3.6.3
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python3 get-pip.py   
+python3 get-pip.py
 rm get-pip.py
 python3 -m pip install -r requirements.txt
 

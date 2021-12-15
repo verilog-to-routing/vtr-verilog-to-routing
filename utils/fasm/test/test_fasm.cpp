@@ -1,4 +1,5 @@
-#include "catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "vpr_api.h"
 #include "vtr_util.h"
@@ -24,9 +25,9 @@ namespace {
 
 using Catch::Matchers::Equals;
 using Catch::Matchers::StartsWith;
-using Catch::Matchers::Contains;
+using Catch::Matchers::ContainsSubstring;
 
-class RegexMatcher : public Catch::MatcherBase<std::string> {
+class RegexMatcher : public Catch::Matchers::MatcherBase<std::string> {
 
     std::string m_RegexStr;
     std::regex  m_Regex;
@@ -192,7 +193,7 @@ static std::string get_pin_feature (size_t inode) {
     int ilow = rr_graph.node_xlow(RRNodeId(inode));
     int jlow = rr_graph.node_ylow(RRNodeId(inode));
     auto physical_tile = device_ctx.grid[ilow][jlow].type;
-    int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+    int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
     // Get the sub tile (type, not instance) and index of its pin that matches
     // the node index.
@@ -254,7 +255,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         auto &device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
         for(size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-            for(t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
+            for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(inode)); ++iedge) {
                 auto sink_inode = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 auto switch_id = device_ctx.rr_nodes[inode].edge_switch(iedge);
                 auto value = vtr::string_fmt("%d_%d_%zu",
@@ -456,14 +457,14 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
             // Check correct substitution of "" and "_SING"
             if (loc_y == 1) {
-                CHECK_THAT(line,  Contains("_SING"));
+                CHECK_THAT(line,  ContainsSubstring("_SING"));
             }
             else {
-                CHECK_THAT(line, !Contains("_SING"));
+                CHECK_THAT(line, !ContainsSubstring("_SING"));
             }
 
             // Check that all tags were substituted
-            CHECK_THAT(line, !Contains("{") && !Contains("}"));
+            CHECK_THAT(line, !ContainsSubstring("{") && !ContainsSubstring("}"));
 
             // Check LUT
             auto pos = line.find("LUT[");

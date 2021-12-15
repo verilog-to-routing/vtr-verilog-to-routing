@@ -255,8 +255,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
  * from the specified source to the specified target */
 std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& temp_rr_graph = device_ctx.rr_graph; //TODO rename to rr_graph once the variable on the next line is unneeded
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     int delta_x, delta_y;
     get_xy_deltas(from_node, to_node, &delta_x, &delta_y);
@@ -266,7 +265,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     float expected_delay_cost = std::numeric_limits<float>::infinity();
     float expected_cong_cost = std::numeric_limits<float>::infinity();
 
-    e_rr_type from_type = temp_rr_graph.node_type(from_node);
+    e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == SOURCE || from_type == OPIN) {
         //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
         //cost to reach them) in src_opin_delays. Once we know what wire types are
@@ -336,7 +335,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
-        auto from_cost_index = temp_rr_graph.node_cost_index(from_node);
+        auto from_cost_index = rr_graph.node_cost_index(from_node);
         int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
 
         VTR_ASSERT(from_seg_index >= 0);

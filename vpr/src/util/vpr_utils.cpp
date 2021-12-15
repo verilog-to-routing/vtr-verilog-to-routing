@@ -193,17 +193,17 @@ std::string rr_node_arch_name(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    const t_rr_node& rr_node = device_ctx.rr_nodes[inode];
+    auto rr_node = RRNodeId(inode);
 
     std::string rr_node_arch_name;
     if (rr_graph.node_type(RRNodeId(inode)) == OPIN || rr_graph.node_type(RRNodeId(inode)) == IPIN) {
         //Pin names
-        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
-        rr_node_arch_name += block_type_pin_index_to_name(type, rr_node.ptc_num());
+        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
+        rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node));
     } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
         //Set of pins associated with SOURCE/SINK
-        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
-        auto pin_names = block_type_class_index_to_pin_names(type, rr_node.ptc_num());
+        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
+        auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node));
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_graph.node_type_string(RRNodeId(inode));
             rr_node_arch_name += " connected to ";
@@ -219,7 +219,7 @@ std::string rr_node_arch_name(int inode) {
         auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-        rr_node_arch_name += device_ctx.rr_segments[seg_index].name;
+        rr_node_arch_name += rr_graph.rr_segments(RRSegmentId(seg_index)).name;
     }
 
     return rr_node_arch_name;
@@ -1788,6 +1788,7 @@ static int convert_switch_index(int* switch_index, int* fanin) {
  */
 void print_switch_usage() {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     if (device_ctx.switch_fanin_remap.empty()) {
         VTR_LOG_WARN("Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
@@ -1802,7 +1803,7 @@ void print_switch_usage() {
     std::map<int, int>* inward_switch_inf = new std::map<int, int>[device_ctx.rr_nodes.size()];
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         const t_rr_node& from_node = device_ctx.rr_nodes[inode];
-        int num_edges = from_node.num_edges();
+        int num_edges = rr_graph.num_edges(RRNodeId(inode));
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.edge_switch(iedge);
             int to_node_index = from_node.edge_sink_node(iedge);

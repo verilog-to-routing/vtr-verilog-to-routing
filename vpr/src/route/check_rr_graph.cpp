@@ -71,7 +71,7 @@ void check_rr_graph(const t_graph_type graph_type,
         }
 
         t_rr_type rr_type = rr_graph.node_type(rr_node);
-        int num_edges = device_ctx.rr_nodes[inode].num_edges();
+        int num_edges = rr_graph.num_edges(RRNodeId(inode));
 
         check_rr_node(inode, route_type, device_ctx);
 
@@ -184,14 +184,14 @@ void check_rr_graph(const t_graph_type graph_type,
         check_unbuffered_edges(inode);
 
         //Check that all config/non-config edges are appropriately organized
-        for (auto edge : device_ctx.rr_nodes[inode].configurable_edges()) {
+        for (auto edge : rr_graph.configurable_edges(RRNodeId(inode))) {
             if (!device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
                                 inode, edge);
             }
         }
 
-        for (auto edge : device_ctx.rr_nodes[inode].non_configurable_edges()) {
+        for (auto edge : rr_graph.non_configurable_edges(RRNodeId(inode))) {
             if (device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
                                 inode, edge);
@@ -237,7 +237,7 @@ void check_rr_graph(const t_graph_type graph_type,
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
                         if (has_adjacent_channel(node, device_ctx.grid)) {
                             auto block_type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
-                            std::string pin_name = block_type_pin_index_to_name(block_type, node.pin_num());
+                            std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node));
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : SIDES) {
                                 if (!rr_graph.is_node_on_specific_side(rr_node, node_side)) {
@@ -282,7 +282,7 @@ static bool rr_node_is_global_clb_ipin(RRNodeId inode) {
     if (rr_graph.node_type(inode) != IPIN)
         return (false);
 
-    ipin = device_ctx.rr_nodes[size_t(inode)].ptc_num();
+    ipin = rr_graph.node_pin_num(inode);
 
     return type->is_ignored_pin[ipin];
 }
@@ -306,7 +306,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     xhigh = rr_graph.node_xhigh(rr_node);
     ylow = rr_graph.node_ylow(rr_node);
     yhigh = rr_graph.node_yhigh(rr_node);
-    ptc_num = device_ctx.rr_nodes[inode].ptc_num();
+    ptc_num = rr_graph.node_ptc_num(rr_node);
     capacity = rr_graph.node_capacity(rr_node);
     cost_index = rr_graph.node_cost_index(rr_node);
     type = nullptr;
@@ -483,7 +483,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     }
 
     /* Check that the number of (out) edges is reasonable. */
-    num_edges = device_ctx.rr_nodes[inode].num_edges();
+    num_edges = rr_graph.num_edges(RRNodeId(inode));
 
     if (rr_type != SINK && rr_type != IPIN) {
         if (num_edges <= 0) {
@@ -544,7 +544,7 @@ static void check_unbuffered_edges(int from_node) {
     if (from_rr_type != CHANX && from_rr_type != CHANY)
         return;
 
-    from_num_edges = device_ctx.rr_nodes[from_node].num_edges();
+    from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
     for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
         to_node = device_ctx.rr_nodes[from_node].edge_sink_node(from_edge);
@@ -562,7 +562,7 @@ static void check_unbuffered_edges(int from_node) {
          * check that there is a corresponding edge from to_node back to         *
          * from_node.                                                            */
 
-        to_num_edges = device_ctx.rr_nodes[to_node].num_edges();
+        to_num_edges = rr_graph.num_edges(RRNodeId(to_node));
         trans_matched = false;
 
         for (to_edge = 0; to_edge < to_num_edges; to_edge++) {

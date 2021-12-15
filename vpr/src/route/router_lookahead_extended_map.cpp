@@ -66,7 +66,7 @@ static std::pair<float, int> run_dijkstra(RRNodeId start_node,
 
 std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
     //cost to reach them) in f_src_opin_delays. Once we know what wire types are
@@ -141,7 +141,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
 
 float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     e_rr_type to_type = rr_graph.node_type(to_node);
     VTR_ASSERT(to_type == SINK || to_type == IPIN);
@@ -229,7 +229,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     float expected_cost = expected_delay_cost + expected_cong_cost;
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
-    const std::string& segment_name = device_ctx.rr_segments[from_seg_index].name;
+    const std::string& segment_name = rr_graph.rr_segments(RRSegmentId(from_seg_index)).name;
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n",
                    segment_name.c_str(), from_seg_index,
                    dx, dy);

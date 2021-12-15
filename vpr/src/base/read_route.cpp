@@ -249,7 +249,6 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
         } else if (tokens[0] == "Node:") {
             /*An actual line, go through each node and add it to the route tree*/
             inode = atoi(tokens[1].c_str());
-            auto node = device_ctx.rr_nodes[inode];
 
             /*First node needs to be source. It is isolated to correctly set heap head.*/
             if (node_count == 0 && tokens[2] != "SOURCE") {
@@ -309,7 +308,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             }
 
             ptc = atoi(tokens[5 + offset].c_str());
-            if (node.ptc_num() != ptc) {
+            if (rr_graph.node_ptc_num(RRNodeId(inode)) != ptc) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The ptc num of node %d does not match the rr graph", inode);
             }
@@ -318,7 +317,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
                 if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
-                    int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+                    int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
                     auto type = device_ctx.grid[x][y].type;
                     int height_offset = device_ctx.grid[x][y].height_offset;
