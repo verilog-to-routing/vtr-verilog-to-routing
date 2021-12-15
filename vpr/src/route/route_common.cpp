@@ -628,7 +628,7 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     std::vector<t_edge_size> unvisited_non_configurable_edges;
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
+    for (auto iedge : rr_graph.non_configurable_edges(RRNodeId(node))) {
         VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
 
         int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
