@@ -64,9 +64,49 @@
                 <input name="in" num_pins="6" port_class="lut_in"/>
                 <output name="out" num_pins="1" port_class="lut_out"/>
               </pb_type>
+
+
               <interconnect>
                 <complete input="lut.lin" name="l_complete1" output="lut6.in[5:0]"/>
                 <complete input="lut6.out" name="l_complete2" output="lut.sumout lut.combout"/>
+              </interconnect>
+            </mode>
+          </pb_type>
+          <pb_type name="dff" num_pb="4">
+            <input name="clrn" num_pins="1"/>
+            <input name="sclr" num_pins="1"/>
+            <input name="ena" num_pins="1"/>
+            <input name="d" num_pins="1"/>
+            <output name="q" num_pins="1"/>
+            <clock name="clk" num_pins="1"/>
+            <mode name="stratix10_ff">
+              <pb_type blif_model=".subckt fourteennm_ff" name="fourteennm_ff" num_pb="1">
+                <input name="clrn" num_pins="1"/>
+                <input name="sclr" num_pins="1"/>
+                <input name="ena" num_pins="1"/>
+                <input name="d" num_pins="1"/>
+                <output name="q" num_pins="1"/>
+                <clock name="clk" num_pins="1"/>
+              </pb_type>
+              <interconnect>
+                <direct input="dff.clrn" name="fourteennm_ff_clrn" output="fourteennm_ff.clrn"/>
+                <direct input="dff.sclr" name="fourteennm_ff_sclr" output="fourteennm_ff.sclr"/>
+                <direct input="dff.ena" name="fourteennm_ff_ena" output="fourteennm_ff.ena"/>
+                <direct input="dff.d" name="fourteennm_ff_d" output="fourteennm_ff.d"/>
+                <direct input="fourteennm_ff.q" name="fourteennm_ff_q" output="dff.q"/>
+                <direct input="dff.clk" name="fourteennm_ff_clk" output="fourteennm_ff.clk"/>
+              </interconnect>
+            </mode>
+            <mode name="latch">
+              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+                <input name="D" num_pins="1" port_class="D"/>
+                <output name="Q" num_pins="1" port_class="Q"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+              </pb_type>
+              <interconnect>
+                <direct input="dff.d" name="ff_d" output="ff.D"/>
+                <direct input="ff.Q" name="ff_q" output="dff.q"/>
+                <direct input="dff.clk" name="ff_clk" output="ff.clk"/>
               </interconnect>
             </mode>
           </pb_type>
