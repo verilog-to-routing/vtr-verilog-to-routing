@@ -408,6 +408,16 @@ struct FloorplanningContext : public Context {
 };
 
 /**
+ * @brief State of the Network on Chip (NoC)
+ *
+ * This should only contain data structures related to descrbing the
+ * NoC within the device.
+ */
+struct NocContext : public Context {
+
+};
+
+/**
  * @brief This object encapsulates VPR's state.
  *
  * There is typically a single instance which is
@@ -484,6 +494,9 @@ class VprContext : public Context {
     const FloorplanningContext& floorplanning() const { return constraints_; }
     FloorplanningContext& mutable_floorplanning() { return constraints_; }
 
+    const NocContext& noc() const { return noc_; }
+    NocContext& mutable_noc() { return noc_; }
+
   private:
     DeviceContext device_;
 
@@ -498,6 +511,7 @@ class VprContext : public Context {
     PlacementContext placement_;
     RoutingContext routing_;
     FloorplanningContext constraints_;
+    NocContext noc_;
 };
 
 #endif
