@@ -1,0 +1,12 @@
+
+  <complexblocklist>
+  <pb_type name="LAB">
+    <input name="data_in" num_pins="80" equivalent="full"/>
+    <input name="control_in" num_pins="5" equivalent="none"/>
+    <input name="cin" num_pins="1" equivalent="none"/>
+    <output name="data_out" num_pins="40" equivalent="full"/>
+    <output name="cout" num_pins="1" equivalent="none"/>
+    <clock name="clk" num_pins="1"/>
+
+  </pb_type>
+  </complexblocklist>
