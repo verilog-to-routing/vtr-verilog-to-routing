@@ -1425,7 +1425,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
             from_node = route_ctx.rr_blk_source[blk_id][iclass];
-            num_edges = device_ctx.rr_nodes[from_node].num_edges();
+            num_edges = rr_graph.num_edges(RRNodeId(from_node));
             for (iconn = 0; iconn < num_edges; iconn++) {
                 to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn));
 

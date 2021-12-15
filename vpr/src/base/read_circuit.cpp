@@ -1,5 +1,6 @@
 #include "read_circuit.h"
 #include "read_blif.h"
+#include "read_interchange_netlist.h"
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
 #include "echo_files.h"
@@ -21,20 +22,23 @@ static void process_circuit(AtomNetlist& netlist,
 
 static void show_circuit_stats(const AtomNetlist& netlist);
 
-AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
-                                     const char* circuit_file,
-                                     const t_model* user_models,
-                                     const t_model* library_models,
-                                     e_const_gen_inference const_gen_inference,
-                                     bool should_absorb_buffers,
-                                     bool should_sweep_dangling_primary_ios,
-                                     bool should_sweep_dangling_nets,
-                                     bool should_sweep_dangling_blocks,
-                                     bool should_sweep_constant_primary_outputs,
-                                     int verbosity) {
+AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setup& vpr_setup, t_arch& arch) {
+    // Options
+    const char* circuit_file = vpr_setup.PackerOpts.circuit_file_name.c_str();
+    const t_model* user_models = vpr_setup.user_models;
+    const t_model* library_models = vpr_setup.library_models;
+    e_const_gen_inference const_gen_inference = vpr_setup.NetlistOpts.const_gen_inference;
+    bool should_absorb_buffers = vpr_setup.NetlistOpts.absorb_buffer_luts;
+    bool should_sweep_dangling_primary_ios = vpr_setup.NetlistOpts.sweep_dangling_primary_ios;
+    bool should_sweep_dangling_nets = vpr_setup.NetlistOpts.sweep_dangling_nets;
+    bool should_sweep_dangling_blocks = vpr_setup.NetlistOpts.sweep_dangling_blocks;
+    bool should_sweep_constant_primary_outputs = vpr_setup.NetlistOpts.sweep_constant_primary_outputs;
+    bool verbosity = vpr_setup.NetlistOpts.netlist_verbosity;
+
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
 
+        VTR_LOGV(verbosity, "Circuit file: %s\n", circuit_file);
         if (name_ext[1] == ".blif") {
             circuit_format = e_circuit_format::BLIF;
         } else if (name_ext[1] == ".eblif") {
@@ -49,10 +53,20 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format,
     {
         vtr::ScopedStartFinishTimer t("Load circuit");
 
-        VTR_ASSERT(circuit_format == e_circuit_format::BLIF
-                   || circuit_format == e_circuit_format::EBLIF);
-
-        netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
+        switch (circuit_format) {
+            case e_circuit_format::BLIF:
+            case e_circuit_format::EBLIF:
+                netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
+                break;
+            case e_circuit_format::FPGA_INTERCHANGE:
+                netlist = read_interchange_netlist(circuit_file, arch);
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST,
+                                "Unable to identify circuit file format for '%s'. Expect [blif|eblif|fpga-interchange]!\n",
+                                circuit_file);
+                break;
+        }
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {

@@ -1274,13 +1274,11 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     /* Find Max Fanout of Routing Buffer	 */
     t_edge_size max_seg_fanout = 0;
     for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        auto node = device_ctx.rr_nodes[rr_node_idx];
-
         switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
             case CHANX:
             case CHANY:
-                if (node.num_edges() > max_seg_fanout) {
-                    max_seg_fanout = node.num_edges();
+                if (rr_graph.num_edges(RRNodeId(rr_node_idx)) > max_seg_fanout) {
+                    max_seg_fanout = rr_graph.num_edges(RRNodeId(rr_node_idx));
                 }
                 break;
             default:

@@ -259,6 +259,8 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
                                                     std::greater<Entry>>* pq) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId parent = parent_entry.rr_node;
 
     auto& parent_node = rr_nodes[size_t(parent)];

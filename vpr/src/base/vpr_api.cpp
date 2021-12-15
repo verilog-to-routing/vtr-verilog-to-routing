@@ -313,17 +313,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     /* Read blif file and sweep unused components */
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.nlist = read_and_process_circuit(options->circuit_format,
-                                              vpr_setup->PackerOpts.circuit_file_name.c_str(),
-                                              vpr_setup->user_models,
-                                              vpr_setup->library_models,
-                                              vpr_setup->NetlistOpts.const_gen_inference,
-                                              vpr_setup->NetlistOpts.absorb_buffer_luts,
-                                              vpr_setup->NetlistOpts.sweep_dangling_primary_ios,
-                                              vpr_setup->NetlistOpts.sweep_dangling_nets,
-                                              vpr_setup->NetlistOpts.sweep_dangling_blocks,
-                                              vpr_setup->NetlistOpts.sweep_constant_primary_outputs,
-                                              vpr_setup->NetlistOpts.netlist_verbosity);
+    atom_ctx.nlist = read_and_process_circuit(options->circuit_format, *vpr_setup, *arch);
 
     if (vpr_setup->PowerOpts.do_power) {
         //Load the net activity file for power estimation

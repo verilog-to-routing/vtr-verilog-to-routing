@@ -9,6 +9,8 @@
 
 enum e_vpr_error {
     VPR_ERROR_UNKNOWN = 0,
+
+    // Flow errors
     VPR_ERROR_ARCH,
     VPR_ERROR_PACK,
     VPR_ERROR_PLACE,
@@ -16,9 +18,13 @@ enum e_vpr_error {
     VPR_ERROR_TIMING,
     VPR_ERROR_POWER,
     VPR_ERROR_SDC,
-    VPR_ERROR_NET_F,
-    VPR_ERROR_PLACE_F,
-    VPR_ERROR_BLIF_F,
+
+    // File parsing errors
+    VPR_ERROR_NET_F,        // Error while parsing the packed netlist file
+    VPR_ERROR_PLACE_F,      // Error while parsning the placement file
+    VPR_ERROR_BLIF_F,       // Error while parsing the blif file
+    VPR_ERROR_IC_NETLIST_F, // Error while parsing the interchange netlist file
+
     VPR_ERROR_IMPL_NETLIST_WRITER,
     VPR_ERROR_NETLIST,
     VPR_ERROR_ATOM_NETLIST,

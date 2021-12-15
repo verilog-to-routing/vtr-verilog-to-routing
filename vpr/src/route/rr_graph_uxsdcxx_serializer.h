@@ -152,8 +152,9 @@ class EdgeWalker {
         current_edge_ = 0;
         current_idx_ = 0;
 
+        // TODO: Once rr_graph_storage is fully shadowed by RRGraphView, the cached nodes_ will be removed.
         for (const auto& node : *nodes) {
-            num_edges_ += node.num_edges();
+            num_edges_ += rr_graph_->num_edges(node.id());
         }
     }
 
@@ -181,7 +182,7 @@ class EdgeWalker {
             current_edge_ += 1;
         }
 
-        if (current_edge_ >= (*nodes_)[current_src_inode_].num_edges()) {
+        if (current_edge_ >= rr_graph_->num_edges(RRNodeId(current_src_inode_))) {
             // Done with current_src_inode_, advance to the end of the
             // node list, or the next node with at least 1 edge.
             current_edge_ = 0;
@@ -194,7 +195,7 @@ class EdgeWalker {
                     VTR_ASSERT(current_idx_ + 1 == num_edges_);
                     return current_idx_++;
                 }
-            } while ((*nodes_)[current_src_inode_].num_edges() < 1);
+            } while (rr_graph_->num_edges(RRNodeId(current_src_inode_)) < 1);
         }
 
         VTR_ASSERT(current_src_inode_ < nodes_->size());

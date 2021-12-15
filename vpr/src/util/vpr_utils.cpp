@@ -1802,7 +1802,7 @@ void print_switch_usage() {
     std::map<int, int>* inward_switch_inf = new std::map<int, int>[device_ctx.rr_nodes.size()];
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         const t_rr_node& from_node = device_ctx.rr_nodes[inode];
-        int num_edges = from_node.num_edges();
+        int num_edges = rr_graph.num_edges(RRNodeId(inode));
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
             int to_node_index = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));

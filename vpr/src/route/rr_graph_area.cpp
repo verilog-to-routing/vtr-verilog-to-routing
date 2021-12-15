@@ -164,7 +164,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
         switch (from_rr_type) {
             case CHANX:
             case CHANY:
-                num_edges = device_ctx.rr_nodes[from_node].num_edges();
+                num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
                     RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iedge);
@@ -249,7 +249,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 break;
 
             case OPIN:
-                num_edges = device_ctx.rr_nodes[from_node].num_edges();
+                num_edges = rr_graph.num_edges(RRNodeId(from_node));
                 shared_opin_buffer_trans = 0.;
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
@@ -361,7 +361,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
         switch (from_rr_type) {
             case CHANX:
             case CHANY:
-                num_edges = device_ctx.rr_nodes[from_node].num_edges();
+                num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
                 /* Increment number of inputs per cblock if IPIN */
                 for (iedge = 0; iedge < num_edges; iedge++) {
