@@ -41,6 +41,10 @@ static const auto INPUT = LogicalNetlist::Netlist::Direction::INPUT;
 static const auto OUTPUT = LogicalNetlist::Netlist::Direction::OUTPUT;
 static const auto INOUT = LogicalNetlist::Netlist::Direction::INOUT;
 
+static const auto LOGIC = Device::BELCategory::LOGIC;
+static const auto ROUTING = Device::BELCategory::ROUTING;
+static const auto SITE_PORT = Device::BELCategory::SITE_PORT;
+
 // Enum for pack pattern expansion direction
 enum e_pp_dir {
     FORWARD = 0,
@@ -67,7 +71,7 @@ struct t_bel_cell_mapping {
 // Intermediate data type to store information on interconnects to be created
 struct t_ic_data {
     std::string input;
-    std::vector<std::string> outputs;
+    std::set<std::string> outputs;
 
     bool requires_pack_pattern;
 };
@@ -334,10 +338,14 @@ struct ArchReader {
     }
 
     /** @brief Get the BEL count of a site depending on its category (e.g. logic or routing BELs) */
-    int get_bel_type_count(Device::SiteType::Reader& site, Device::BELCategory category) {
+    int get_bel_type_count(Device::SiteType::Reader& site, Device::BELCategory category, bool skip_lut = false) {
         int count = 0;
         for (auto bel : site.getBels()) {
-            bool is_logic = category == Device::BELCategory::LOGIC;
+            auto bel_name = str(bel.getName());
+            bool is_logic = category == LOGIC;
+
+            if (skip_lut && is_lut(bel_name, str(site.getName())))
+                continue;
 
             bool skip_bel = is_logic && take_bels_.count(bel.getName()) == 0;
 
@@ -370,7 +378,7 @@ struct ArchReader {
 
     /** @brief Get the BEL name, with an optional deduplication suffix in case its name collides with the site name */
     std::string get_bel_name(Device::SiteType::Reader& site, Device::BEL::Reader& bel) {
-        if (bel.getCategory() == Device::BELCategory::SITE_PORT)
+        if (bel.getCategory() == SITE_PORT)
             return str(site.getName());
 
         auto site_name = str(site.getName());
@@ -511,8 +519,8 @@ struct ArchReader {
                 auto in_bel_name = get_bel_name(site, in_bel);
                 auto in_bel_pin_name = out_pin_name;
 
-                bool skip_in_bel = in_bel.getCategory() == Device::BELCategory::LOGIC && take_bels_.count(in_bel.getName()) == 0;
-                bool skip_out_bel = out_bel.getCategory() == Device::BELCategory::LOGIC && take_bels_.count(out_bel.getName()) == 0;
+                bool skip_in_bel = in_bel.getCategory() == LOGIC && take_bels_.count(in_bel.getName()) == 0;
+                bool skip_out_bel = out_bel.getCategory() == LOGIC && take_bels_.count(out_bel.getName()) == 0;
                 if (skip_in_bel || skip_out_bel)
                     continue;
 
@@ -521,25 +529,54 @@ struct ArchReader {
                 // adjust pb_type name in the interconnect accordingly.
                 auto get_lut_element_index = [&](const std::string& bel_name) {
                     auto lut_element = get_lut_element_for_bel(site_type, bel_name);
-                    if (lut_element == nullptr) {
+                    if (lut_element == nullptr)
                         return -1;
-                    }
 
                     const auto& lut_elements = arch_->lut_elements.at(site_type);
                     auto it = std::find(lut_elements.begin(), lut_elements.end(), *lut_element);
                     VTR_ASSERT(it != lut_elements.end());
+
                     return (int)std::distance(lut_elements.begin(), it);
                 };
 
-                int index = -1;
+                // TODO: This avoids having LUTs that can be used in other ways than LUTs, e.g. as DRAMs.
+                //       Once support is added for macro expansion, all the connections currently marked as
+                //       invalid will be re-enabled.
+                auto is_lut_connection_valid = [&](const std::string& bel_name, const std::string& pin_name) {
+                    auto lut_element = get_lut_element_for_bel(site_type, bel_name);
+                    if (lut_element == nullptr)
+                        return false;
 
-                index = get_lut_element_index(out_bel_name);
+                    bool pin_found = false;
+                    for (auto lut_bel : lut_element->lut_bels) {
+                        for (auto lut_bel_pin : lut_bel.input_pins)
+                            pin_found |= lut_bel_pin == pin_name;
+
+                        pin_found |= lut_bel.output_pin == pin_name;
+                    }
+
+                    if (!pin_found)
+                        return false;
+
+                    return true;
+                };
+
+                int index = get_lut_element_index(out_bel_name);
+                bool valid_lut = is_lut_connection_valid(out_bel_name, out_bel_pin_name);
                 if (index >= 0) {
                     out_bel_name = "LUT" + std::to_string(index);
+
+                    if (!valid_lut)
+                        continue;
                 }
+
                 index = get_lut_element_index(in_bel_name);
+                valid_lut = is_lut_connection_valid(in_bel_name, in_bel_pin_name);
                 if (index >= 0) {
                     in_bel_name = "LUT" + std::to_string(index);
+
+                    if (!valid_lut)
+                        continue;
                 }
 
                 std::string ostr = out_bel_name + "." + out_bel_pin_name;
@@ -560,7 +597,7 @@ struct ArchReader {
                     std::string extra_ostr = in_bel_name + "." + in_bel_pin_name + in_suffix_;
                     std::string extra_ic_name = ic_name + "_extra";
 
-                    std::vector<std::string> extra_ostrs{extra_ostr};
+                    std::set<std::string> extra_ostrs{extra_ostr};
                     t_ic_data extra_ic_data = {
                         extra_istr,           // ic input
                         extra_ostrs,          // ic outputs
@@ -580,7 +617,7 @@ struct ArchReader {
                     }
                 }
 
-                std::vector<std::string> ostrs{ostr};
+                std::set<std::string> ostrs{ostr};
                 t_ic_data ic_data = {
                     istr,
                     ostrs,
@@ -600,7 +637,8 @@ struct ArchReader {
                         VTR_ASSERT(old_data.input == data.input);
                         VTR_ASSERT(data.outputs.size() == 1);
 
-                        res.first->second.outputs.push_back(data.outputs[0]);
+                        for (auto out : data.outputs)
+                            res.first->second.outputs.insert(out);
                         res.first->second.requires_pack_pattern |= data.requires_pack_pattern;
                     }
                 }
@@ -974,35 +1012,23 @@ struct ArchReader {
 
             // Get LUT elements for this site
             std::vector<t_lut_element> lut_elements;
-            if (arch_->lut_elements.count(name)) {
+            if (arch_->lut_elements.count(name))
                 lut_elements = arch_->lut_elements.at(name);
-            }
 
             // Count non-LUT BELs plus LUT elements
-            int block_count = 0;
-            int count = 0;
-
-            for (auto bel : site.getBels()) {
-                if (bel.getCategory() != Device::BELCategory::LOGIC) {
-                    continue;
-                }
-                if (is_lut(str(bel.getName()), name)) {
-                    continue;
-                }
-                block_count++;
-            }
-            block_count += lut_elements.size();
+            int block_count = get_bel_type_count(site, LOGIC, true) + get_bel_type_count(site, ROUTING, true) + lut_elements.size();
 
             mode->num_pb_type_children = block_count;
             mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
 
             // Add regular BELs
+            int count = 0;
             for (auto bel : bels) {
                 auto category = bel.getCategory();
-                if (bel.getCategory() == Device::BELCategory::SITE_PORT)
+                if (bel.getCategory() == SITE_PORT)
                     continue;
 
-                bool is_logic = category == Device::BELCategory::LOGIC;
+                bool is_logic = category == LOGIC;
 
                 if (take_bels_.count(bel.getName()) == 0 && is_logic)
                     continue;
@@ -1013,7 +1039,7 @@ struct ArchReader {
                 auto bel_name = str(bel.getName());
                 std::pair<std::string, std::string> key(name, bel_name);
 
-                auto mid_pb_type = new t_pb_type;
+                auto mid_pb_type = &mode->pb_type_children[count++];
                 std::string mid_pb_type_name = bel_name == name ? bel_name + bel_dedup_suffix_ : bel_name;
 
                 mid_pb_type->name = vtr::strdup(mid_pb_type_name.c_str());
@@ -1029,7 +1055,7 @@ struct ArchReader {
                 else if (is_logic)
                     process_generic_block(mid_pb_type, bel, site);
                 else {
-                    VTR_ASSERT(category == Device::BELCategory::ROUTING);
+                    VTR_ASSERT(category == ROUTING);
                     process_routing_block(mid_pb_type);
                 }
             }
@@ -1362,6 +1388,7 @@ struct ArchReader {
         for (auto map : maps) {
             auto name = str(map.cell);
             bool is_compatible = map.site == site.getName();
+
             for (auto pin_map : map.pins) {
                 if (is_compatible == false)
                     break;
@@ -1378,9 +1405,8 @@ struct ArchReader {
 
                 auto model_port = get_model_port(arch_, name, cell_pin, false);
 
-                if (is_inout && model_port != nullptr) {
+                if (is_inout && model_port != nullptr)
                     bel_pin = model_port->dir == IN_PORT ? bel_pin + in_suffix_ : bel_pin + out_suffix_;
-                }
 
                 is_compatible &= block_port_exists(pb_type, bel_pin);
             }
@@ -1394,6 +1420,8 @@ struct ArchReader {
 
         int num_modes = maps.size();
 
+        VTR_ASSERT(num_modes > 0);
+
         pb_type->num_modes = num_modes;
         pb_type->modes = new t_mode[num_modes];
 
@@ -1403,7 +1431,7 @@ struct ArchReader {
                 continue;
 
             int idx = count++;
-            auto mode = &pb_type->modes[idx];
+            t_mode* mode = &pb_type->modes[idx];
             auto name = str(map.cell);
             mode->name = vtr::strdup(name.c_str());
             mode->parent_pb_type = pb_type;
@@ -1645,7 +1673,7 @@ struct ArchReader {
             auto input = ic_data.input;
             auto outputs = ic_data.outputs;
 
-            auto merge_string = [](std::string& ss, std::string& s) {
+            auto merge_string = [](std::string ss, std::string s) {
                 return ss.empty() ? s : ss + " " + s;
             };
 
@@ -1740,6 +1768,7 @@ struct ArchReader {
             // Assign mode and pb_type
             t_mode* parent_mode = ic->parent_mode;
             t_pb_type* pb_type = nullptr;
+
             for (int ipb = 0; ipb < parent_mode->num_pb_type_children; ipb++)
                 if (std::string(parent_mode->pb_type_children[ipb].name) == bel)
                     pb_type = &parent_mode->pb_type_children[ipb];
@@ -1749,7 +1778,7 @@ struct ArchReader {
             auto bel_reader = get_bel_reader(site, remove_bel_suffix(bel));
 
             // Passing through routing mux. Check at the muxes input pins interconnects
-            if (bel_reader.getCategory() == Device::BELCategory::ROUTING) {
+            if (bel_reader.getCategory() == ROUTING) {
                 for (auto bel_pin : bel_reader.getPins()) {
                     auto pin_reader = site_pins[bel_pin];
                     auto pin_name = str(pin_reader.getName());
@@ -1766,9 +1795,8 @@ struct ArchReader {
                         std::string ic_to_find = bel + "." + pin_name;
 
                         bool found = false;
-                        for (auto out : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                        for (auto out : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " "))
                             found |= out == ic_to_find;
-                        }
 
                         if (found) {
                             // An output interconnect to propagate was found, continue searching
@@ -1780,7 +1808,7 @@ struct ArchReader {
                     }
                 }
             } else {
-                VTR_ASSERT(bel_reader.getCategory() == Device::BELCategory::LOGIC);
+                VTR_ASSERT(bel_reader.getCategory() == LOGIC);
 
                 for (int imode = 0; imode < pb_type->num_modes; imode++) {
                     t_mode* mode = &pb_type->modes[imode];
