@@ -72,7 +72,7 @@
 
 #include "constraints_report.h"
 
-#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 25 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
+#define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
 //Constant allowing all cluster pins to be used
@@ -711,9 +711,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                         }
                     }
 
-                    if (block_pack_status != BLK_FAILED_ROUTE && block_pack_status != BLK_FAILED_FLOORPLANNING) {
+                    if (block_pack_status != BLK_FAILED_ROUTE && block_pack_status != BLK_FAILED_FLOORPLANNING && attraction_groups.num_attraction_groups() > 0) {
                         num_failed_feasibility++;
-                        if (num_failed_feasibility > 30) {
+                        if (num_failed_feasibility > 60) {
                             fflush(stdout);
                             break;
                         }
