@@ -12,7 +12,7 @@
         <input name="data_in" num_pins="8"/>
         <input name="control" num_pins="5"/>
         <input name="cin" num_pins="1"/>
-        <output name="data_out" num_pins="6"/>
+        <output name="data_out" num_pins="4"/>
         <output name="cout" num_pins="1"/>
         <clock name="clock" num_pins="1"/>
         <mode name="alm">
@@ -152,10 +152,8 @@
             <!-- ALM Outputs-->
             <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out0" output="alm.data_out[0]">
             <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out1" output="alm.data_out[1]">
-            <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out1" output="alm.data_out[2]">
-            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out2" output="alm.data_out[3]">
-            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out3" output="alm.data_out[4]">
-            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out4" output="alm.data_out[5]">
+            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out2" output="alm.data_out[2]">
+            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out3" output="alm.data_out[3]">
 
             <!-- FF Clocks -->
             <direct input="alm.clock" name="clock_dff0" output="dff[0].clk"/>
@@ -198,6 +196,7 @@
           </interconnect>
         </mode>
       </pb_type>
+  
     </mode>
   </pb_type>
   </complexblocklist>
