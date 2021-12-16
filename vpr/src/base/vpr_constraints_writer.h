@@ -10,7 +10,22 @@
  * Routines related to writing out the file are in vpr/src/base/vpr_constraints_serializer.h. For more information on how
  * the writing interface works, refer to vpr/src/route/SCHEMA_GENERATOR.md
  *
+ * The option --write_vpr_constraints can be used to generate the constraints files.
  *
+ * Users can also use the VPR option --floorplan_split to specify which constraints files they would like to generate.
+ * The options for floorplan_split include halves, quadrants, sixteenths and one_spot. Two constraints files will be generated
+ * in each case. The default setting for floorplan_split is halves.
+ *
+ * If the user specified halves, two floorplanning partitions would be created which each take up one half the grid.
+ * One of the constraints files assigns all cluster blocks to one of these two partitions, while the other constraints
+ * file would assign half of all cluster blocks to one of the two partitions (meaning the other half are unconstrained).
+ * The same idea applies for the quadrants and sixteenths options, except that the floorplan partitions would split the
+ * grid into quadrants and sixteenths respectively, as the names imply.
+ *
+ * If the one_spot option is specified, all blocks will be locked to their original placement spot in one file, and half
+ * of all blocks will be locked to their original placement spot in the other file. The vpr options --place_constraint_subtile
+ * and --place_constraint_expand can be used in this case to specify whether the blocks should also be locked down to a particular
+ * subtile, or whether the constraint region should expand beyond one spot.
  */
 
 #ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
