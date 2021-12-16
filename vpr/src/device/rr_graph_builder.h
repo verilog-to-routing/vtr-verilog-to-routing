@@ -59,6 +59,8 @@ class RRGraphBuilder {
     /** @brief Clear all the underlying data storage */
     void clear();
 
+    void reorder_rr_graph_nodes_(const t_router_opts& router_opts);
+
     /** @brief Set capacity of this node (number of routes that can use it). */
     inline void set_node_capacity(RRNodeId id, short new_capacity) {
         node_storage_.set_node_capacity(id, new_capacity);

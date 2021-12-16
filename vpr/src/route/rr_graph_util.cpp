@@ -96,6 +96,9 @@ int seg_index_of_sblock(int from_node, int to_node) {
 // NOTE: Re-ordering will invalidate any references to rr_graph nodes, so this
 //       should generally be called before creating such references.
 void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
+  		return reorder_rr_graph_nodes (router_opts);
+}
+ /*
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& graph = device_ctx.rr_nodes;
     auto& rr_graph = device_ctx.rr_graph;
@@ -167,7 +170,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
                                std::get<2>(edge));
     });
 }
-
+*/
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list() {
     auto& rr_nodes = g_vpr_ctx.device().rr_nodes;
 
