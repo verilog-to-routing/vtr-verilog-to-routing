@@ -196,7 +196,68 @@
           </interconnect>
         </mode>
       </pb_type>
-  
+      <interconnect>
+        <!--LAB-ALM Interconnect-->
+        <!-- LAB Input: Global Routing to ALM inputs -->
+        <complete input="LAB.data_in" name="LAB_datain" output="alm[9:0].data_in"/>
+
+        <!-- ALM feedback: The ALM outputs feedback to the ALM inputs  -->
+        <complete input="alm[9:0].data_out[3:0]" name="LAB_alm_feedback" output="alm[9:0].data_in"/>
+
+        <!-- ALM Outputs: directly drive global routing -->
+        <complete input="alm[9:0].data_out[3:0]" name="LAB_dataout" output="LAB.data_out"/>
+
+        <!-- ALM Control Inputs -->
+        <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control"/>
+
+        <!-- LAB Clocks -->
+        <direct input="LAB.clk" name="LAB_clock" output="alm[0].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[1].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[2].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[3].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[4].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[5].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[6].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[7].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[8].clock"/>
+        <direct input="LAB.clk" name="LAB_clock" output="alm[9].clock"/>
+
+        <!--LAB carry chain-->
+        <direct input="LAB.cin" name="LAB_cin" output="alm[0].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="LAB.cin" out_port="alm[0].cin"/>
+        </direct>
+        <direct input="alm[0].cout" name="alm0_alm1_carry" output="alm[1].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[0].cout" out_port="alm[1].cin"/>
+        </direct>
+        <direct input="alm[1].cout" name="alm1_alm2_carry" output="alm[2].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[1].cout" out_port="alm[2].cin"/>
+        </direct>
+        <direct input="alm[2].cout" name="alm2_alm3_carry" output="alm[3].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[2].cout" out_port="alm[3].cin"/>
+        </direct>
+        <direct input="alm[3].cout" name="alm3_alm4_carry" output="alm[4].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[3].cout" out_port="alm[4].cin"/>
+        </direct>
+        <direct input="alm[4].cout" name="alm4_alm5_carry" output="alm[5].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[4].cout" out_port="alm[5].cin"/>
+        </direct>
+        <direct input="alm[5].cout" name="alm5_alm6_carry" output="alm[6].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[5].cout" out_port="alm[6].cin"/>
+        </direct>
+        <direct input="alm[6].cout" name="alm6_alm7_carry" output="alm[7].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[6].cout" out_port="alm[7].cin"/>
+        </direct>
+        <direct input="alm[7].cout" name="alm7_alm8_carry" output="alm[8].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[7].cout" out_port="alm[8].cin"/>
+        </direct>
+        <direct input="alm[8].cout" name="alm8_alm9_carry" output="alm[9].cin">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[8].cout" out_port="alm[9].cin"/>
+        </direct>
+        <direct input="alm[9].cout" name="LAB_cout" output="LAB.cout">
+          <pack_pattern name="LAB_carry_chain" in_port="alm[9].cout" out_port="LAB.cout"/>
+        </direct>
+
+      </interconnect>
     </mode>
   </pb_type>
   </complexblocklist>
