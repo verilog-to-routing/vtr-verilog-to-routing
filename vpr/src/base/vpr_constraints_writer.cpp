@@ -319,17 +319,11 @@ void setup_vpr_floorplan_constraints_halves(VprConstraints& constraints) {
     PartitionId right_part_id(1);
     create_partition(right_partition, "right_partition", mid_x, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    int block_count = 0;
     /*
      * For each cluster block, see whether it belongs to the left partition or right partition
      * by seeing whether the x value is above or below mid_x. Add to the appropriate partition.
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (block_count % 2 == 0) {
-            block_count++;
-            continue;
-        }
-        block_count++;
 
         std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
         int num_atoms = atoms.size();
