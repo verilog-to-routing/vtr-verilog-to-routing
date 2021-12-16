@@ -984,6 +984,7 @@ void init_draw_coords(float width_val) {
         draw_state->draw_rr_node = (t_draw_rr_node*)vtr::realloc(
             draw_state->draw_rr_node,
             (device_ctx.rr_nodes.size()) * sizeof(t_draw_rr_node));
+        /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
         for (const RRNodeId& id : rr_graph.nodes()) {
             draw_state->draw_rr_node[(size_t)id].color = DEFAULT_RR_NODE_COLOR;
             draw_state->draw_rr_node[(size_t)id].node_highlighted = false;

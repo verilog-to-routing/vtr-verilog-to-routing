@@ -499,7 +499,7 @@ void recompute_occupancy_from_scratch() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* First set the occupancy of everything to zero. */
-
+    /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
     for (const RRNodeId& id : device_ctx.rr_graph.nodes())
         route_ctx.rr_node_route_inf[(size_t)id].set_occ(0);
 

@@ -54,7 +54,17 @@ class RRGraphView {
      * kind of accessors
      */
   public:
-    /** @brief Iterate over nodes. This function is inlined for runtime optimization. */
+    /* Aggregates: create range-based loops for nodes
+     * To iterate over the nodes in a RRGraph,  
+     *    using a range-based loop is suggested. 
+     *  ----------------------------------------------------------------- 
+     *    Example: iterate over all the nodes 
+     *      // Strongly suggest to use a read-only rr_graph object 
+     *      const RRGraph& rr_graph; 
+     *      for (const RRNodeId& node : rr_graph.nodes()) { 
+     *        // Do something with each node 
+     *      } 
+     */
     inline vtr::StrongIdRange<RRNodeId> nodes() const {
         return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(size()));
     }
