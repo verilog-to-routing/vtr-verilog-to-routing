@@ -137,6 +137,65 @@
               </interconnect>
             </mode>
           </pb_type>
+          <interconnect>
+            <!-- Inputs to LUTs -->
+            <direct input="alm.data_in[2:7]" name="in_lut_2_7" output="comb_block.lin[2:7]"/>
+            <mux input="alm.data_in[0] dff[0].d dff[0].q" name="in_lut_0" output="comb_block.lin[0]">
+            <mux input="alm.data_in[1] dff[2].d dff[2].q" name="in_lut_1" output="comb_block.lin[1]">
+
+            <!-- Inputs to FFs -->
+            <mux input="alm.data_in[0] comb_block.sumout[0]" name="in_dff_0" output="dff[0].d">
+            <direct input="comb_block.combout[0]" name="in_dff_1" output="dff[1].d">
+            <mux input="alm.data_in[1] comb_block.combout[0] comb_block.sumout[1]" name="in_dff_2" output="dff[2].d">
+            <direct input="comb_block.combout[1]" name="in_dff_3" output="dff[3].d">
+
+            <!-- ALM Outputs-->
+            <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out0" output="alm.data_out[0]">
+            <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out1" output="alm.data_out[1]">
+            <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out1" output="alm.data_out[2]">
+            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out2" output="alm.data_out[3]">
+            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out3" output="alm.data_out[4]">
+            <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out4" output="alm.data_out[5]">
+
+            <!-- FF Clocks -->
+            <direct input="alm.clock" name="clock_dff0" output="dff[0].clk"/>
+            <direct input="alm.clock" name="clock_dff1" output="dff[1].clk"/>
+
+            <!-- ALM Carry Chain -->
+            <direct input="alm.cin" name="alm_cin" output="comb_block.cin">
+              <pack_pattern name="LAB_carry_chain" in_port="alm.cin" out_port="comb_block.cin"/>
+            </direct>
+            <direct input="comb_block.cout" name="lut_to_lut_carry" output="comb_block.cin">
+              <pack_pattern name="LAB_carry_chain" in_port="comb_block.cout" out_port="comb_block.cin"/>
+            </direct>
+            <direct input="comb_block.cout" name="alm_cout" output="alm.cout">
+              <pack_pattern name="LAB_carry_chain" in_port="comb_block.cout" out_port="alm.cout"/>
+            </direct>
+
+            <!-- FF Control Signals -->
+
+            <!--
+              Here is how the alm control signals correspond to the lab wide control signals listed in Stratix 10 LAB user guide:
+
+              synclr0 -> alm.control[0]
+              labclkena0 -> alm.control[1]
+              labclkena1 -> alm.control[2]
+              synclr1 -> alm.control[3]
+              labclr1 -> alm.control[4]
+            -->
+            <direct input="alm.control[4]" name="control_1_dff0" output="dff[0].clrn"/>
+            <direct input="alm.control[2]" name="control_2_dff0" output="dff[0].ena"/>
+            <direct input="alm.control[3]" name="control_3_dff0" output="dff[0].sclr"/>
+            <direct input="alm.control[4]" name="control_1_dff1" output="dff[1].clrn"/>
+            <direct input="alm.control[2]" name="control_2_dff1" output="dff[1].ena"/>
+            <direct input="alm.control[3]" name="control_3_dff1" output="dff[1].sclr"/>
+            <direct input="alm.control[4]" name="control_1_dff2" output="dff[2].clrn"/>
+            <direct input="alm.control[1]" name="control_2_dff2" output="dff[2].ena"/>
+            <direct input="alm.control[0]" name="control_3_dff2" output="dff[2].sclr"/>
+            <direct input="alm.control[4]" name="control_1_dff3" output="dff[3].clrn"/>
+            <direct input="alm.control[1]" name="control_2_dff3" output="dff[3].ena"/>
+            <direct input="alm.control[0]" name="control_3_dff3" output="dff[3].sclr"/>
+          </interconnect>
         </mode>
       </pb_type>
     </mode>
