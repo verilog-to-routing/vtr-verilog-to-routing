@@ -1165,7 +1165,7 @@ bool directconnect_exists(int src_rr_node, int sink_rr_node) {
     VTR_ASSERT(rr_graph.node_type(RRNodeId(src_rr_node)) == SOURCE && rr_graph.node_type(RRNodeId(sink_rr_node)) == SINK);
 
     //TODO: This is a constant depth search, but still may be too slow
-    for (t_edge_size i_src_edge = 0; rr_graph.num_edges(RRNodeId(src_rr_node)); ++i_src_edge) {
+    for (t_edge_size i_src_edge = 0; i_src_edge < rr_graph.num_edges(RRNodeId(src_rr_node)); ++i_src_edge) {
         int opin_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(src_rr_node), i_src_edge));
 
         if (rr_graph.node_type(RRNodeId(opin_rr_node)) != OPIN) continue;

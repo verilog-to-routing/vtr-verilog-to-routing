@@ -820,7 +820,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                 continue;
             }
 
-            for (t_edge_size edge_idx = 0; rr_graph.num_edges(RRNodeId(trace->index)); edge_idx++) {
+            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(RRNodeId(trace->index)); edge_idx++) {
                 const auto& next_node_id = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), edge_idx));
                 if (next_node_id != size_t(OPEN)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
