@@ -13,7 +13,11 @@
 #include "place_constraints.h"
 
 /*
- * Check if any constraints regions are overfull, give an error message if they are
+ * Check if any constraints regions are overfull,
+ * i.e. the region contains more clusters of a certain type
+ * than it has room for.
+ * If the region is overfull, a message is printed saying which
+ * region is overfull, and by how many clusters.
  */
 void check_constraints_filling();
 

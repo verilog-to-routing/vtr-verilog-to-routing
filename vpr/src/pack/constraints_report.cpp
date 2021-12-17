@@ -38,29 +38,28 @@ void check_constraints_filling() {
         PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
         std::vector<Region> regions = pr.get_partition_region();
 
-        for(unsigned int i_reg = 0; i_reg < regions.size(); i_reg++) {
+        for (unsigned int i_reg = 0; i_reg < regions.size(); i_reg++) {
+            Region current_reg = regions[i_reg];
 
-        	Region current_reg = regions[i_reg];
+            for (unsigned int k = 0; k < regions_count_info.size(); k++) {
+                if (regions_equal(current_reg, regions_count_info[k].reg)) {
+                    found_region = true;
+                    regions_count_info[k].block_type_counts[bt->index]++;
+                }
+            }
 
-			for (unsigned int k = 0; k < regions_count_info.size(); k++) {
-				if (regions_equal(current_reg, regions_count_info[k].reg)) {
-					found_region = true;
-					regions_count_info[k].block_type_counts[bt->index]++;
-				}
-			}
+            if (!found_region) {
+                region_content_info new_region_info;
+                new_region_info.reg = current_reg;
 
-			if (!found_region) {
-				region_content_info new_region_info;
-				new_region_info.reg = current_reg;
+                for (unsigned int i = 0; i < block_types.size(); i++) {
+                    new_region_info.block_type_counts.push_back(0);
+                }
 
-				for (unsigned int i = 0; i < block_types.size(); i++) {
-					new_region_info.block_type_counts.push_back(0);
-				}
+                new_region_info.block_type_counts[bt->index]++;
 
-				new_region_info.block_type_counts[bt->index]++;
-
-				regions_count_info.push_back(new_region_info);
-			}
+                regions_count_info.push_back(new_region_info);
+            }
         }
     }
 
