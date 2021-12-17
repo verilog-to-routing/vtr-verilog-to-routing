@@ -2486,7 +2486,6 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
     // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
     if (cur_pb->pb_stats->num_feasible_blocks < 1) {
-        //VTR_LOG("Adding cluster candidates from attraction group \n");
         add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups, feasible_block_array_size);
     }
 
@@ -2779,7 +2778,9 @@ static void check_clustering() {
         }
     }
 
-    //Check that none of the floorplan regions are overfull with clusters
+    /* Check that none of the floorplan regions have more clusters
+     * than they can fit.
+     */
     check_constraints_filling();
 }
 
