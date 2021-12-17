@@ -430,8 +430,6 @@ int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_bl
 
     int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);
 
-    //VTR_LOG("Block %d has %d tiles\n", blk_id, num_pr_tiles);
-
     if (num_pr_tiles == 0) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "Initial placement failed.\n"

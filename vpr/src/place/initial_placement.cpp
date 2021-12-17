@@ -117,7 +117,10 @@ static void print_unplaced_blocks() {
     }
 
     if (unplaced_blocks > 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_PLACE, "%d blocks could not be placed during initial placement\n", unplaced_blocks);
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                        "%d blocks could not be placed during initial placement, no spaces were available for them on the grid.\n"
+                        "If VPR was run with floorplan constraints, the constraints may be too tight.\n",
+                        unplaced_blocks);
     }
 }
 
