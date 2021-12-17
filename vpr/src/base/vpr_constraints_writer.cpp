@@ -324,7 +324,6 @@ void setup_vpr_floorplan_constraints_halves(VprConstraints& constraints) {
      * by seeing whether the x value is above or below mid_x. Add to the appropriate partition.
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-
         std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
         int num_atoms = atoms.size();
 

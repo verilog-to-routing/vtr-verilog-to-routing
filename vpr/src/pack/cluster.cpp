@@ -1401,9 +1401,12 @@ static bool cleanup_pb(t_pb* pb) {
 }
 
 /**
- * Performs legality checks to see whether the selected molecule can fit into the cluster.
- * Returns a pack status that either lets the upper-level clustering routine know that
- * the molecule passed the legality check, or that it failed a certain legality check.
+ * Performs legality checks to see whether the selected molecule can be
+ * packed into the current cluster. The legality checks are related to
+ * floorplanning, pin feasibility, and routing (if detailed route
+ * checking is enabled). The routine returns BLK_PASSED if the molecule
+ * can be packed in the cluster. Otherwise, it returns the appropriate
+ * failed pack status based on which legality check the molecule failed.
  */
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
