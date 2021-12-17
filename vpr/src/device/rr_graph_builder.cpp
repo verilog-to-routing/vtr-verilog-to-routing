@@ -54,19 +54,7 @@ void RRGraphBuilder::clear() {
     node_lookup_.clear();
 }
 
-// Reorder RRNodeId's using one of these algorithms:
-//   - DONT_REORDER: The identity reordering (does nothing.)
-//   - DEGREE_BFS: Order by degree primarily, and BFS traversal order secondarily.
-//   - RANDOM_SHUFFLE: Shuffle using the specified seed. Great for testing.
-// The DEGREE_BFS algorithm was selected because it had the best performance of seven
-// existing algorithms here: https://github.com/SymbiFlow/vtr-rrgraph-reordering-tool
-// It might be worth further research, as the DEGREE_BFS algorithm is simple and
-// makes some arbitrary choices, such as the starting node.
-// Nonetheless, it does improve performance ~7% for the SymbiFlow Xilinx Artix 7 graph.
-//
-// NOTE: Re-ordering will invalidate any references to rr_graph nodes, so this
-//       should generally be called before creating such references.
-void RRGraphBuilder::reorder_rr_graph_nodes_(const t_router_opts& router_opts) {
+void RRGraphBuilder::reorder_rr_graph_nodes(const t_router_opts& router_opts) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& rr_graph = device_ctx.rr_graph;
     size_t v_num = node_storage_.size();

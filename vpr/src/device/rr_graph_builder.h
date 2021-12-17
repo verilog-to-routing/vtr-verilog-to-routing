@@ -59,7 +59,19 @@ class RRGraphBuilder {
     /** @brief Clear all the underlying data storage */
     void clear();
 
-    void reorder_rr_graph_nodes_(const t_router_opts& router_opts);
+    // Reorder RRNodeId's using one of these algorithms:
+    //   - DONT_REORDER: The identity reordering (does nothing.)
+    //   - DEGREE_BFS: Order by degree primarily, and BFS traversal order secondarily.
+    //   - RANDOM_SHUFFLE: Shuffle using the specified seed. Great for testing.
+    // The DEGREE_BFS algorithm was selected because it had the best performance of seven
+    // existing algorithms here: https://github.com/SymbiFlow/vtr-rrgraph-reordering-tool
+    // It might be worth further research, as the DEGREE_BFS algorithm is simple and
+    // makes some arbitrary choices, such as the starting node.
+    // Nonetheless, it does improve performance ~7% for the SymbiFlow Xilinx Artix 7 graph.
+    //
+    // NOTE: Re-ordering will invalidate any references to rr_graph nodes, so this
+    //       should generally be called before creating such references.
+    void reorder_rr_graph_nodes(const t_router_opts& router_opts);
 
     /** @brief Set capacity of this node (number of routes that can use it). */
     inline void set_node_capacity(RRNodeId id, short new_capacity) {

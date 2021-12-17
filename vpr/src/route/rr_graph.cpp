@@ -34,6 +34,7 @@
 #include "router_lookahead_map.h"
 #include "rr_graph_clock.h"
 #include "edge_groups.h"
+#include "rr_graph_builder.h"
 
 #include "rr_types.h"
 
@@ -313,6 +314,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const int num_directs,
                      int* Warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
         if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
@@ -327,7 +329,7 @@ void create_rr_graph(const t_graph_type graph_type,
                          router_opts.read_rr_edge_metadata,
                          router_opts.do_check_rr_graph);
 
-            reorder_rr_graph_nodes(router_opts);
+            mutable_device_ctx.rr_graph_builder.reorder_rr_graph_nodes(router_opts);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -357,7 +359,7 @@ void create_rr_graph(const t_graph_type graph_type,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
                        Warnings);
-        reorder_rr_graph_nodes(router_opts);
+        mutable_device_ctx.rr_graph_builder.reorder_rr_graph_nodes(router_opts);
     }
 
     process_non_config_sets();
