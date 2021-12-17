@@ -1688,7 +1688,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
 
     from_ptc_num = rr_graph.node_ptc_num(rr_node);
 
-    for (t_edge_size iedge = 0, l = device_ctx.rr_nodes[inode].num_edges(); iedge < l; iedge++) {
+    for (t_edge_size iedge = 0, l = rr_graph.num_edges(RRNodeId(inode)); iedge < l; iedge++) {
         to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
         to_type = rr_graph.node_type(RRNodeId(to_node));
         to_ptc_num = rr_graph.node_ptc_num(RRNodeId(to_node));
@@ -3784,7 +3784,7 @@ static t_edge_size find_edge(int prev_inode, int inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     for (t_edge_size iedge = 0;
-         iedge < device_ctx.rr_nodes[prev_inode].num_edges(); ++iedge) {
+         iedge < rr_graph.num_edges(RRNodeId(prev_inode)); ++iedge) {
         if (size_t(rr_graph.edge_sink_node(RRNodeId(prev_inode), iedge)) == size_t(inode)) {
             return iedge;
         }
