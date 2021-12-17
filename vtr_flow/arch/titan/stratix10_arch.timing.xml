@@ -259,5 +259,134 @@
 
       </interconnect>
     </mode>
+    <mode name="MLAB">
+      <pb_type name="MLAB" num_pb="1">
+        <clock name="clk0" num_pins="1"/>
+        <input name="ena0" num_pins="1"/>
+        <input name="clr" num_pins="1"/>
+        <input name="portaaddr" num_pins="5"/>
+        <input name="portabyteenamasks" num_pins="20"/>
+        <input name="portadatain" num_pins="20"/>
+        <input name="portbaddr" num_pins="5"/>
+        <output name="portbdataout" num_pins="20"/>
+        <pb_type blif_model=".subckt fourteennm_mlab_cell" name="mlab_cell" num_pb="10">
+          <input name="ena0" num_pins="1"/>
+          <clock name="clk0" num_pins="1"/>
+          <input name="clr" num_pins="1"/>
+          <input name="portaaddr" num_pins="5"/>
+          <input name="portabyteenamasks" num_pins="2"/>
+          <input name="portadatain" num_pins="2"/>
+          <input name="portbaddr" num_pins="5"/>
+          <output name="portbdataout" num_pins="2"/>
+        </pb_type>
+        <interconnect>
+            <!-- Enable Input: From MLAB block to MLAB cells enable input -->
+            <direct input="MLAB.ena0" name="ena0" output="mlab_cell[0].ena0"/>
+            <direct input="MLAB.ena0" name="ena1" output="mlab_cell[1].ena0"/>
+            <direct input="MLAB.ena0" name="ena2" output="mlab_cell[2].ena0"/>
+            <direct input="MLAB.ena0" name="ena3" output="mlab_cell[3].ena0"/>
+            <direct input="MLAB.ena0" name="ena4" output="mlab_cell[4].ena0"/>
+            <direct input="MLAB.ena0" name="ena5" output="mlab_cell[5].ena0"/>
+            <direct input="MLAB.ena0" name="ena6" output="mlab_cell[6].ena0"/>
+            <direct input="MLAB.ena0" name="ena7" output="mlab_cell[7].ena0"/>
+            <direct input="MLAB.ena0" name="ena8" output="mlab_cell[8].ena0"/>
+            <direct input="MLAB.ena0" name="ena9" output="mlab_cell[9].ena0"/>
+
+            <!-- Clear Input: From MLAB block to MLAB cells clear input -->
+            <direct input="MLAB.clr" name="clr0" output="mlab_cell[0].clr"/>
+            <direct input="MLAB.clr" name="clr1" output="mlab_cell[1].clr"/>
+            <direct input="MLAB.clr" name="clr2" output="mlab_cell[2].clr"/>
+            <direct input="MLAB.clr" name="clr3" output="mlab_cell[3].clr"/>
+            <direct input="MLAB.clr" name="clr4" output="mlab_cell[4].clr"/>
+            <direct input="MLAB.clr" name="clr5" output="mlab_cell[5].clr"/>
+            <direct input="MLAB.clr" name="clr6" output="mlab_cell[6].clr"/>
+            <direct input="MLAB.clr" name="clr7" output="mlab_cell[7].clr"/>
+            <direct input="MLAB.clr" name="clr8" output="mlab_cell[8].clr"/>
+            <direct input="MLAB.clr" name="clr9" output="mlab_cell[9].clr0"/>
+
+            <!-- Write Address: Input write address to the MLAB cells -->
+            <direct input="MLAB.portaaddr" name="portaaddr0" output="mlab_cell[0].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr1" output="mlab_cell[1].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr2" output="mlab_cell[2].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr3" output="mlab_cell[3].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr4" output="mlab_cell[4].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr5" output="mlab_cell[5].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr6" output="mlab_cell[6].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr7" output="mlab_cell[7].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr8" output="mlab_cell[8].portaaddr"/>
+            <direct input="MLAB.portaaddr" name="portaaddr9" output="mlab_cell[9].portaaddr"/>
+
+            <!-- Byte Enable Mask: Input byte enable mask to the MLAB cells -->
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks0" output="mlab_cell[0].portabyteenamasks[1:0]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks1" output="mlab_cell[1].portabyteenamasks[3:2]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks2" output="mlab_cell[2].portabyteenamasks[5:4]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks3" output="mlab_cell[3].portabyteenamasks[7:6]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks4" output="mlab_cell[4].portabyteenamasks[9:8]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks5" output="mlab_cell[5].portabyteenamasks[11:10]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks6" output="mlab_cell[6].portabyteenamasks[13:12]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks7" output="mlab_cell[7].portabyteenamasks[15:14]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks8" output="mlab_cell[8].portabyteenamasks[17:16]"/>
+            <direct input="MLAB.portabyteenamasks" name="portabytenamasks9" output="mlab_cell[9].portabyteenamasks[19:18]"/>
+
+            <!-- Write Data: Input data to the MLAB cells -->
+            <direct input="MLAB.portadatain" name="portadatain0" output="mlab_cell[0].portadatain[1:0]"/>
+            <direct input="MLAB.portadatain" name="portadatain1" output="mlab_cell[1].portadatain[3:2]"/>
+            <direct input="MLAB.portadatain" name="portadatain2" output="mlab_cell[2].portadatain[5:4]"/>
+            <direct input="MLAB.portadatain" name="portadatain3" output="mlab_cell[3].portadatain[7:6]"/>
+            <direct input="MLAB.portadatain" name="portadatain4" output="mlab_cell[4].portadatain[9:8]"/>
+            <direct input="MLAB.portadatain" name="portadatain5" output="mlab_cell[5].portadatain[11:10]"/>
+            <direct input="MLAB.portadatain" name="portadatain6" output="mlab_cell[6].portadatain[13:12]"/>
+            <direct input="MLAB.portadatain" name="portadatain7" output="mlab_cell[7].portadatain[15:14]"/>
+            <direct input="MLAB.portadatain" name="portadatain8" output="mlab_cell[8].portadatain[17:16]"/>
+            <direct input="MLAB.portadatain" name="portadatain9" output="mlab_cell[9].portadatain[19:18]"/>
+
+            <!-- Read Address: Input read address to the MLAB cells -->
+            <direct input="MLAB.portbaddr" name="portbaddr0" output="mlab_cell[0].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr1" output="mlab_cell[1].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr2" output="mlab_cell[2].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr3" output="mlab_cell[3].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr4" output="mlab_cell[4].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr5" output="mlab_cell[5].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr6" output="mlab_cell[6].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr7" output="mlab_cell[7].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr8" output="mlab_cell[8].portbaddr"/>
+            <direct input="MLAB.portbaddr" name="portbaddr9" output="mlab_cell[9].portbaddr"/>
+
+            <!-- Read data: Output data from MLAB cells to the MLAB output -->
+            <direct input="mlab_cell[0].portbdataout" name="portbdataout" output="MLAB.portbdataout[1:0]"/>
+            <direct input="mlab_cell[1].portbdataout" name="portbdataout" output="MLAB.portbdataout[3:2]"/>
+            <direct input="mlab_cell[2].portbdataout" name="portbdataout" output="MLAB.portbdataout[5:4]"/>
+            <direct input="mlab_cell[3].portbdataout" name="portbdataout" output="MLAB.portbdataout[7:6]"/>
+            <direct input="mlab_cell[4].portbdataout" name="portbdataout" output="MLAB.portbdataout[9:8]"/>
+            <direct input="mlab_cell[5].portbdataout" name="portbdataout" output="MLAB.portbdataout[11:10]"/>
+            <direct input="mlab_cell[6].portbdataout" name="portbdataout" output="MLAB.portbdataout[13:12]"/>
+            <direct input="mlab_cell[7].portbdataout" name="portbdataout" output="MLAB.portbdataout[15:14]"/>
+            <direct input="mlab_cell[8].portbdataout" name="portbdataout" output="MLAB.portbdataout[17:16]"/>
+            <direct input="mlab_cell[9].portbdataout" name="portbdataout" output="MLAB.portbdataout[19:18]"/>
+
+            <!-- MLAB cell clocks -->
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[0].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[1].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[2].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[3].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[4].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[5].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[6].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[7].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[8].clk0"/>
+            <direct input="MLAB.clk0" name="clk0" output="mlab_cell[9].clk0"/>
+          </interconnect>
+      </pb_type>
+      <interconnect>
+        <complete input="LAB.clk" name="mlab_clk" output="MLAB.clk0"/>
+        <complete input="LAB.data_in" name="mlab_in1" output="MLAB.ena0"/>
+        <complete input="LAB.data_in" name="mlab_in1" output="MLAB.clr0"/>
+        <complete input="LAB.data_in" name="mlab_in2" output="MLAB.portaaddr"/>
+        <complete input="LAB.data_in" name="mlab_in3" output="MLAB.portabyteenamasks"/>
+        <complete input="LAB.data_in" name="mlab_in4" output="MLAB.portadatain"/>
+        <complete input="LAB.data_in" name="mlab_in5" output="MLAB.portbaddr"/>
+        <complete input="MLAB.portbdataout" name="mlab_out" output="LAB.data_out"/>
+      </interconnect>
+    </mode>
   </pb_type>
   </complexblocklist>
