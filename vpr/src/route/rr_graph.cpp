@@ -328,8 +328,9 @@ void create_rr_graph(const t_graph_type graph_type,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          router_opts.read_rr_edge_metadata,
                          router_opts.do_check_rr_graph);
-
-            mutable_device_ctx.rr_graph_builder.reorder_rr_graph_nodes(router_opts);
+            if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER){
+            	mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts);
+            }
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -359,7 +360,9 @@ void create_rr_graph(const t_graph_type graph_type,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
                        Warnings);
-        mutable_device_ctx.rr_graph_builder.reorder_rr_graph_nodes(router_opts);
+        if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER){
+        mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts);
+        }
     }
 
     process_non_config_sets();

@@ -71,7 +71,7 @@ class RRGraphBuilder {
     //
     // NOTE: Re-ordering will invalidate any references to rr_graph nodes, so this
     //       should generally be called before creating such references.
-    void reorder_rr_graph_nodes(const t_router_opts& router_opts);
+    void reorder_nodes(const t_router_opts& router_opts);
 
     /** @brief Set capacity of this node (number of routes that can use it). */
     inline void set_node_capacity(RRNodeId id, short new_capacity) {
