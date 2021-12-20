@@ -259,12 +259,12 @@ class RRGraphView {
         return node_storage_.node_side_string(node);
     }
 
-    /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
+    /** @brief Get the number of configurable edges, each configurable edge is controlled by a programmable memory bit. This function is inlined for runtime optimization. */
     inline t_edge_size num_configurable_edges(RRNodeId node) const {
         return node_storage_.num_configurable_edges(node);
     }
 
-    /** @brief Get the number of non-configurable edges. This function is inlined for runtime optimization. */
+    /** @brief Get the number of non-configurable edges, each non-configurable edge is a hard-wired connection. This function is inlined for runtime optimization. */
     inline t_edge_size num_non_configurable_edges(RRNodeId node) const {
         return node_storage_.num_non_configurable_edges(node);
     }
