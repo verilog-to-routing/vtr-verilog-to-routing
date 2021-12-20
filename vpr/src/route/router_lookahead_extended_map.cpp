@@ -399,8 +399,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
             path_count++;
             this->add_paths<Entry>(start_node, current, *paths, routing_costs);
         } else {
-            util::expand_dijkstra_neighbours(device_ctx.rr_nodes,
-                                             current, paths, node_expanded, &pq);
+            util::expand_dijkstra_neighbours(current, paths, node_expanded, &pq);
             (*node_expanded)[size_t(node)] = true;
         }
     }

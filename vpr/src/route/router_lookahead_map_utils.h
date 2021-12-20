@@ -238,8 +238,7 @@ struct Search_Path {
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 template<typename Entry>
-void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
-                                const Entry& parent_entry,
+void expand_dijkstra_neighbours(const Entry& parent_entry,
                                 std::vector<Search_Path>* paths,
                                 std::vector<bool>* node_expanded,
                                 std::priority_queue<Entry,
