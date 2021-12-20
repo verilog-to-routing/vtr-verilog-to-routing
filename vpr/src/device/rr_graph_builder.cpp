@@ -55,14 +55,16 @@ void RRGraphBuilder::clear() {
     node_lookup_.clear();
 }
 
-void RRGraphBuilder::reorder_nodes(const t_router_opts& router_opts) {
+void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm, int reorder_rr_graph_nodes_threshold, int reorder_rr_graph_nodes_seed) {
     //auto& device_ctx = g_vpr_ctx.mutable_device();
     //auto& rr_graph = device_ctx.rr_graph;
     size_t v_num = node_storage_.size();
     DeviceContext deviceContext_;
+    //int reorder_rr_graph_nodes_threshold = 0;
+    //  int reorder_rr_graph_nodes_seed = 1;
 
     //if (router_opts.reorder_rr_graph_nodes_algorithm == DONT_REORDER) return;
-    if (router_opts.reorder_rr_graph_nodes_threshold < 0 || v_num < (size_t)router_opts.reorder_rr_graph_nodes_threshold) return;
+    if (reorder_rr_graph_nodes_threshold < 0 || v_num < (size_t)reorder_rr_graph_nodes_threshold) return;
 
     vtr::ScopedStartFinishTimer timer("Reordering rr_graph nodes");
 
@@ -75,7 +77,7 @@ void RRGraphBuilder::reorder_nodes(const t_router_opts& router_opts) {
     // This method works well. The intution is that highly connected nodes are enumerated first (together),
     // and since there will be a lot of nodes with the same degree, they are then ordered based on some
     // distance from the starting node.
-    if (router_opts.reorder_rr_graph_nodes_algorithm == DEGREE_BFS) {
+    if (reorder_rr_graph_nodes_algorithm == DEGREE_BFS) {
         vtr::vector<RRNodeId, size_t> bfs_idx(v_num);
         vtr::vector<RRNodeId, size_t> degree(v_num);
         std::queue<RRNodeId> que;
@@ -107,8 +109,8 @@ void RRGraphBuilder::reorder_nodes(const t_router_opts& router_opts) {
                  auto deg_b = degree[b];
                  return deg_a > deg_b || (deg_a == deg_b && bfs_idx[a] < bfs_idx[b]);
              });
-    } else if (router_opts.reorder_rr_graph_nodes_algorithm == RANDOM_SHUFFLE) {
-        std::mt19937 g(router_opts.reorder_rr_graph_nodes_seed);
+    } else if (reorder_rr_graph_nodes_algorithm == RANDOM_SHUFFLE) {
+        std::mt19937 g(reorder_rr_graph_nodes_seed);
         std::shuffle(src_order.begin(), src_order.end(), g);
     }
     vtr::vector<RRNodeId, RRNodeId> dest_order(v_num);
