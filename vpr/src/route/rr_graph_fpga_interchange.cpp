@@ -497,7 +497,8 @@ struct RR_Graph_Builder {
                 }
             }
             existing_nodes.erase(vertex->loc);
-            delete (vertex);
+            VTR_ASSERT(vertex != root_node);
+            delete vertex;
         }
 
         for (auto& node : existing_nodes) {
@@ -518,11 +519,11 @@ struct RR_Graph_Builder {
      * Removes dangling nodes from a graph represented by the root node.
      * Dangling nodes are nodes that do not connect to a pin, a pip or other non-dangling node.
      */
-    int reduce_graph_and_count_nodes(node_* root) {
+    int reduce_graph_and_count_nodes(node_*& root) {
         int cnt = 0;
         std::queue<node_*> walker;
         std::stack<node_*> back_walker;
-        walker.push(root);
+        walker.emplace(root);
         root->visited = root;
         bool all_nulls;
         while (!walker.empty()) {
@@ -559,7 +560,9 @@ struct RR_Graph_Builder {
                         temp->links[(i + 2) % 4] = nullptr;
                     }
                 }
-                delete (vertex);
+                if (vertex == root)
+                    root = nullptr;
+                delete vertex;
             } else if (vertex->on_route) {
                 vertex->visited->on_route = true;
                 if (vertex->visited->segment_id == -1)
@@ -577,12 +580,12 @@ struct RR_Graph_Builder {
 
         std::queue<node_*> walker;
         std::stack<node_*> back_walker;
-        walker.emplace(root);
+        walker.push(root);
         bool all_nulls, is_chanx, is_chany;
         while (!walker.empty()) {
             node_* vertex = walker.front();
             walker.pop();
-            back_walker.emplace(vertex);
+            back_walker.push(vertex);
             is_chany = false;
             is_chanx = vertex->has_pins;
             all_nulls = true;
@@ -594,7 +597,7 @@ struct RR_Graph_Builder {
                         is_chany = i == 1 ? true : is_chany;
                     }
                     if (vertex->links[i]->visited == vertex) {
-                        walker.emplace(vertex->links[i]);
+                        walker.push(vertex->links[i]);
                     }
                 }
             }
@@ -717,17 +720,18 @@ struct RR_Graph_Builder {
      * Clean up of earlier stages
      */
     void delete_nodes(node_* root) {
-        std::queue<node_*> walker;
-        std::stack<node_*> back_walker;
-        walker.emplace(root);
+        std::queue<node_*, std::list<node_*>> walker;
+        std::stack<node_*, std::list<node_*>> back_walker;
+        walker.push(root);
         while (!walker.empty()) {
             node_* vertex = walker.front();
             walker.pop();
-            back_walker.emplace(vertex);
+            back_walker.push(vertex);
+            location loc = vertex->loc;
             for (int i = 0; i < 4; ++i) {
                 if (vertex->links[i] != nullptr) {
                     if (vertex->links[i]->visited == vertex) {
-                        walker.emplace(vertex->links[i]);
+                        walker.push(vertex->links[i]);
                     }
                 }
             }
@@ -742,7 +746,7 @@ struct RR_Graph_Builder {
                     temp->links[(i + 2) % 4] = nullptr;
                 }
             }
-            delete (vertex);
+            delete vertex;
         }
     }
 
@@ -752,7 +756,7 @@ struct RR_Graph_Builder {
     void process_nodes() {
         auto wires = ar_.getWires();
         for (auto const& node : ar_.getNodes()) {
-            std::tuple<int, int> base_wire_{wires[node.getWires()[0]].getTile(), wires[node.getWires()[0]].getWire()};
+            std::tuple<int, int> base_wire_(wires[node.getWires()[0]].getTile(), wires[node.getWires()[0]].getWire());
             int node_id = wire_to_node_[base_wire_];
             std::set<location> all_possible_tiles = node_to_locs_[node_id];
             int root_x, root_y;
@@ -766,6 +770,8 @@ struct RR_Graph_Builder {
 
             node_* root = build_node_graph(node_id, all_possible_tiles, empties, root_x, root_y);
             int div = reduce_graph_and_count_nodes(root);
+            if (root == nullptr)
+                continue;
             float capacitance, resistance;
             auto model = ar_.getNodeTimings()[node.getNodeTiming()];
             capacitance = get_corner_value(model.getCapacitance(), "slow", "typ") / div;
