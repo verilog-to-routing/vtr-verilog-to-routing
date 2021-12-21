@@ -720,13 +720,13 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                      * keep being recommended even if they are failing the feasiblity filter.
                      * The check below ensures that there is an exit from the while loop if this behaviour occurs.
                      */
-                    if (block_pack_status != BLK_FAILED_ROUTE && block_pack_status != BLK_FAILED_FLOORPLANNING && attraction_groups.num_attraction_groups() > 0) {
-                        num_failed_feasibility++;
-                        if (num_failed_feasibility > 60) {
-                            fflush(stdout);
-                            break;
-                        }
-                    }
+                    /*if (block_pack_status != BLK_FAILED_ROUTE && block_pack_status != BLK_FAILED_FLOORPLANNING && attraction_groups.num_attraction_groups() > 0) {
+                     * num_failed_feasibility++;
+                     * if (num_failed_feasibility > 60) {
+                     * fflush(stdout);
+                     * break;
+                     * }
+                     * }*/
 
                     next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                              atom_molecules,
