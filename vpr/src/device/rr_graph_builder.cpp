@@ -2,8 +2,8 @@
 #include "rr_graph_builder.h"
 #include "vtr_time.h"
 #include <queue>
-#include "vpr_context.h"
-//#include "globals.h"
+//#include "vpr_context.h"
+#include "globals.h"
 
 RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage)
     : node_storage_(*node_storage) {
@@ -56,7 +56,7 @@ void RRGraphBuilder::clear() {
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm, int reorder_rr_graph_nodes_threshold, int reorder_rr_graph_nodes_seed) {
-    //auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     //auto& rr_graph = device_ctx.rr_graph;
     size_t v_num = node_storage_.size();
     DeviceContext deviceContext_;
@@ -122,8 +122,8 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
 
     node_lookup().reorder(dest_order);
 
-    deviceContext_.rr_node_metadata.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
-    deviceContext_.rr_edge_metadata.remap_keys([&](std::tuple<int, int, short> edge) {
+    device_ctx.rr_node_metadata.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
+    device_ctx.rr_edge_metadata.remap_keys([&](std::tuple<int, int, short> edge) {
         return std::make_tuple(size_t(dest_order[RRNodeId(std::get<0>(edge))]),
                                size_t(dest_order[RRNodeId(std::get<1>(edge))]),
                                std::get<2>(edge));
