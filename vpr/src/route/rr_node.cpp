@@ -10,7 +10,7 @@ short t_rr_node::length() const {
         storage_->node_yhigh(id_) - storage_->node_ylow(id_),
         storage_->node_xhigh(id_) - storage_->node_xlow(id_));
 }
-
+/* TODO: This API should be reworked once rr_switch APIs are in RRGraphView. */
 bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;

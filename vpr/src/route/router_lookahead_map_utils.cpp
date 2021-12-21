@@ -252,14 +252,13 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
 }
 
 template<typename Entry>
-void expand_dijkstra_neighbours(const Entry& parent_entry,
+void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
+                                const Entry& parent_entry,
                                 std::vector<util::Search_Path>* paths,
                                 std::vector<bool>* node_expanded,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
                                                     std::greater<Entry>>* pq) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId parent = parent_entry.rr_node;
 
     for (int iedge = 0; iedge < rr_graph.num_edges(parent); iedge++) {
@@ -285,13 +284,15 @@ void expand_dijkstra_neighbours(const Entry& parent_entry,
     }
 }
 
-template void expand_dijkstra_neighbours(const PQ_Entry_Delay& parent_entry,
+template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
+                                         const PQ_Entry_Delay& parent_entry,
                                          std::vector<Search_Path>* paths,
                                          std::vector<bool>* node_expanded,
                                          std::priority_queue<PQ_Entry_Delay,
                                                              std::vector<PQ_Entry_Delay>,
                                                              std::greater<PQ_Entry_Delay>>* pq);
-template void expand_dijkstra_neighbours(const PQ_Entry_Base_Cost& parent_entry,
+template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
+                                         const PQ_Entry_Base_Cost& parent_entry,
                                          std::vector<Search_Path>* paths,
                                          std::vector<bool>* node_expanded,
                                          std::priority_queue<PQ_Entry_Base_Cost,
