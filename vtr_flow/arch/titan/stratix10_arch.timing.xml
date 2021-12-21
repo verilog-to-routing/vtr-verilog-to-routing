@@ -1,3 +1,50 @@
+  <models>
+    <!-- LAB Primitives -->
+    <model name="fourteennm_lcell_comb">
+      <input_ports>
+        <port name="dataa" combinational_sink_ports="combout sumout cout"/>
+        <port name="datab" combinational_sink_ports="combout sumout cout"/>
+        <port name="datac" combinational_sink_ports="combout sumout cout"/>
+        <port name="datad" combinational_sink_ports="combout sumout cout"/>
+        <port name="datae" combinational_sink_ports="combout"/>
+        <port name="dataf" combinational_sink_ports="combout"/>
+        <port name="datag" combinational_sink_ports="combout"/>
+        <port name="datah" combinational_sink_ports="combout"/>
+        <port name="cin" combinational_sink_ports="sumout cout"/>
+      </input_ports>
+      <output_ports>
+        <port name="combout"/>
+        <port name="sumout"/>
+        <port name="cout"/>
+      </output_ports>
+    </model>
+    <model name="fourteennm_ff">
+      <input_ports>
+        <port name="clk" is_clock="1"/>
+        <port name="ena" clock="clk"/>
+        <port name="clrn" clock="clk"/>
+        <port name="sclr" clock="clk"/>
+        <port name="d" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="q" clock="clk"/>
+      </output_ports>
+    </model>
+    <model name="fourteennm_mlab_cell">
+      <input_ports>
+        <port name="clk0" is_clock="1"/>
+        <port name="ena0" clock="clk0"/>
+        <port name="clr" clock="clk0"/>
+        <port name="portaaddr" clock="clk0"/>
+        <port name="portabyteenamasks" clock="clk0"/>
+        <port name="portadatain" clock="clk0"/>
+        <port name="portbaddr" clock="clk0"/>
+      </input_ports>
+      <output_ports>
+        <port name="portbdataout" clock="clk0"/>
+      </output_ports>
+    </model>
+  </models>
   <tiles>
     <tile name="LAB">
       <sub_tile name="LAB">
