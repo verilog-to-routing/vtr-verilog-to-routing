@@ -334,10 +334,10 @@ struct NetlistReader {
             auto port_net_map = get_port_net_map(inst_idx);
 
             auto cell = decl_list[inst_list[inst_idx].getCell()];
-            if (str_list[cell.getName()] == arch_.vcc_cell)
-                inst_name = arch_.vcc_cell;
-            else if (str_list[cell.getName()] == arch_.gnd_cell)
-                inst_name = arch_.gnd_cell;
+            if (str_list[cell.getName()] == arch_.vcc_cell.first)
+                inst_name = arch_.vcc_cell.first;
+            else if (str_list[cell.getName()] == arch_.gnd_cell.first)
+                inst_name = arch_.gnd_cell.first;
 
             if (main_netlist_.find_block(inst_name))
                 continue;
@@ -351,9 +351,9 @@ struct NetlistReader {
                 auto port_bit = port_net.first.second;
 
                 auto net_name = port_net.second;
-                if (inst_name == arch_.vcc_cell)
+                if (inst_name == arch_.vcc_cell.first)
                     net_name = arch_.vcc_net;
-                else if (inst_name == arch_.gnd_cell)
+                else if (inst_name == arch_.gnd_cell.first)
                     net_name = arch_.gnd_net;
 
                 auto port = port_list[port_idx];
@@ -453,11 +453,25 @@ struct NetlistReader {
     }
 
     std::unordered_map<std::pair<unsigned int, unsigned int>, std::string, vtr::hash_pair> get_port_net_map(unsigned int inst_idx) {
-        auto top_cell = nr_.getCellList()[nr_.getTopInst().getCell()];
+        auto inst_list = nr_.getInstList();
+        auto decl_list = nr_.getCellDecls();
         auto str_list = nr_.getStrList();
+
+        auto top_cell = nr_.getCellList()[nr_.getTopInst().getCell()];
         std::unordered_map<std::pair<unsigned int, unsigned int>, std::string, vtr::hash_pair> map;
         for (auto net : top_cell.getNets()) {
             std::string net_name = str_list[net.getName()];
+
+            for (auto port : net.getPortInsts()) {
+                auto port_inst = port.getInst();
+                auto cell = inst_list[port_inst].getCell();
+                if (str_list[decl_list[cell].getName()] == arch_.gnd_cell.first)
+                    net_name = arch_.gnd_net;
+
+                if (str_list[decl_list[cell].getName()] == arch_.vcc_cell.first)
+                    net_name = arch_.vcc_net;
+            }
+
             for (auto port : net.getPortInsts()) {
                 if (!port.isInst() || port.getInst() != inst_idx)
                     continue;

@@ -289,6 +289,8 @@ struct ArchReader {
         process_bels_and_sites();
 
         process_models();
+        process_constant_model();
+
         process_device();
 
         process_layout();
@@ -296,7 +298,10 @@ struct ArchReader {
         process_segments();
 
         process_sites();
+        process_constant_block();
+
         process_tiles();
+        process_constant_tile();
 
         link_physical_logical_types(ptypes_, ltypes_);
 
@@ -314,6 +319,7 @@ struct ArchReader {
     t_default_fc_spec default_fc_;
 
     std::string bel_dedup_suffix_ = "_bel";
+    std::string const_block_ = "constant_block";
 
     std::unordered_set<int> take_bels_;
     std::unordered_set<int> take_sites_;
@@ -361,7 +367,7 @@ struct ArchReader {
         for (auto bel : site.getBels())
             if (str(bel.getName()) == bel_name)
                 return bel;
-        VTR_ASSERT(0);
+        VTR_ASSERT_MSG(0, "Could not find the BEL reader!\n");
     }
 
     /** @brief Get the BEL pin reader given its name, site and corresponding BEL */
@@ -373,7 +379,7 @@ struct ArchReader {
             if (str(pin_reader.getName()) == pin_name)
                 return pin_reader;
         }
-        VTR_ASSERT(0);
+        VTR_ASSERT_MSG(0, "Could not find the BEL pin reader!\n");
     }
 
     /** @brief Get the BEL name, with an optional deduplication suffix in case its name collides with the site name */
@@ -440,6 +446,74 @@ struct ArchReader {
     /** @brief Returns true in case the input argument corresponds to a PAD BEL */
     bool is_pad(std::string name) {
         return pad_bels_.count(name) != 0;
+    }
+
+    void fill_sub_tile(t_physical_tile_type& type, t_sub_tile& sub_tile, int num_pins, int input_count, int output_count) {
+        sub_tile.num_phy_pins += num_pins;
+        type.num_pins += num_pins;
+        type.num_inst_pins += num_pins;
+
+        type.num_input_pins += input_count;
+        type.num_output_pins += output_count;
+        type.num_receivers += input_count;
+        type.num_drivers += output_count;
+
+        type.pin_width_offset.resize(type.num_pins, 0);
+        type.pin_height_offset.resize(type.num_pins, 0);
+
+        type.pinloc.resize({1, 1, 4}, std::vector<bool>(type.num_pins, false));
+        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+            for (int pin = 0; pin < type.num_pins; pin++) {
+                type.pinloc[0][0][side][pin] = true;
+                type.pin_width_offset[pin] = 0;
+                type.pin_height_offset[pin] = 0;
+            }
+        }
+
+        vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
+
+        for (int npin = 0; npin < type.num_pins; npin++) {
+            t_physical_pin physical_pin(npin);
+            t_logical_pin logical_pin(npin);
+
+            directs_map.insert(logical_pin, physical_pin);
+        }
+
+        auto ltype = get_type_by_name<t_logical_block_type>(sub_tile.name, ltypes_);
+        sub_tile.equivalent_sites.push_back(ltype);
+
+        type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
+
+        // Assign FC specs
+        int iblk_pin = 0;
+        for (const auto& port : sub_tile.ports) {
+            t_fc_specification fc_spec;
+
+            // FIXME: Use always one segment for the time being.
+            //        Can use the right segment for this IOPIN as soon
+            //        as the RR graph reading from the interchange is complete.
+            fc_spec.seg_index = 0;
+
+            //Apply type and defaults
+            if (port.type == IN_PORT) {
+                fc_spec.fc_type = e_fc_type::IN;
+                fc_spec.fc_value_type = default_fc_.in_value_type;
+                fc_spec.fc_value = default_fc_.in_value;
+            } else {
+                VTR_ASSERT(port.type == OUT_PORT);
+                fc_spec.fc_type = e_fc_type::OUT;
+                fc_spec.fc_value_type = default_fc_.out_value_type;
+                fc_spec.fc_value = default_fc_.out_value;
+            }
+
+            //Add all the pins from this port
+            for (int iport_pin = 0; iport_pin < port.num_pins; ++iport_pin) {
+                int true_physical_blk_pin = sub_tile.sub_tile_to_tile_pin_indices[iblk_pin++];
+                fc_spec.pins.push_back(true_physical_blk_pin);
+            }
+
+            type.fc_specs.push_back(fc_spec);
+        }
     }
 
     /** @brief Returns an intermediate map representing all the interconnects to be added in a site */
@@ -811,14 +885,11 @@ struct ArchReader {
     void process_constants() {
         auto consts = ar_.getConstants();
 
-        arch_->gnd_cell = str(consts.getGndCellType());
-        arch_->vcc_cell = str(consts.getVccCellType());
+        arch_->gnd_cell = std::make_pair(str(consts.getGndCellType()), str(consts.getGndCellPin()));
+        arch_->vcc_cell = std::make_pair(str(consts.getVccCellType()), str(consts.getVccCellPin()));
 
-        if (consts.getGndNetName().isName())
-            arch_->gnd_net = str(consts.getGndNetName().getName());
-
-        if (consts.getVccNetName().isName())
-            arch_->vcc_net = str(consts.getVccNetName().getName());
+        arch_->gnd_net = consts.getGndNetName().isName() ? str(consts.getGndNetName().getName()) : "$__gnd_net";
+        arch_->vcc_net = consts.getVccNetName().isName() ? str(consts.getVccNetName().getName()) : "$__vcc_net";
     }
 
     /* end preprocessors */
@@ -1413,7 +1484,7 @@ struct ArchReader {
                 auto cell_pin = str(pin_map.first);
                 auto bel_pin = str(pin_map.second);
 
-                if (cell_pin == arch_->vcc_cell || cell_pin == arch_->gnd_cell)
+                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first)
                     continue;
 
                 // Assign suffix to bel pin as it is a inout pin which was split in out and in ports
@@ -1467,7 +1538,7 @@ struct ArchReader {
             for (auto pin_map : map.pins) {
                 auto cell_pin = str(pin_map.first);
 
-                if (cell_pin == arch_->vcc_cell || cell_pin == arch_->gnd_cell)
+                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first)
                     continue;
 
                 ic_count++;
@@ -1487,7 +1558,7 @@ struct ArchReader {
                 auto cell_pin = str(pin_map.first);
                 auto bel_pin = str(pin_map.second);
 
-                if (cell_pin == arch_->vcc_cell || cell_pin == arch_->gnd_cell)
+                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first)
                     continue;
 
                 std::smatch regex_matches;
@@ -1899,6 +1970,7 @@ struct ArchReader {
 
             ptype.is_input_type = ptype.is_output_type = is_io;
 
+            // TODO: remove the following once the RR graph generation is fully enabled from the device database
             ptype.switchblock_locations = vtr::Matrix<e_sb_type>({{1, 1}}, e_sb_type::FULL);
             ptype.switchblock_switch_overrides = vtr::Matrix<int>({{1, 1}}, DEFAULT_SWITCH);
 
@@ -1943,17 +2015,11 @@ struct ArchReader {
 
                     port_name_to_wire_name[std::string(port.name)] = str(pins_to_wires[idx++]);
 
-                    port.equivalent = PortEquivalence::NONE;
-                    port.num_pins = 1;
-
                     sub_tile.sub_tile_to_tile_pin_indices.push_back(type.num_pins + port_idx);
                     port.index = port_idx++;
 
                     port.absolute_first_pin_index = abs_first_pin_idx++;
                     port.port_index_by_type = port_idx_by_type++;
-
-                    port.is_clock = false;
-                    port.is_non_clock_global = false;
 
                     if (dir == INPUT) {
                         port.type = IN_PORT;
@@ -1968,74 +2034,157 @@ struct ArchReader {
             }
 
             auto pins_size = site.getPins().size();
-            sub_tile.num_phy_pins += pins_size;
-            type.num_pins += pins_size;
-            type.num_inst_pins += pins_size;
-
-            type.num_input_pins += icount;
-            type.num_output_pins += ocount;
-            type.num_receivers += icount;
-            type.num_drivers += ocount;
-
-            type.pin_width_offset.resize(type.num_pins, 0);
-            type.pin_height_offset.resize(type.num_pins, 0);
-
-            type.pinloc.resize({1, 1, 4}, std::vector<bool>(type.num_pins, false));
-            for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                for (int pin = 0; pin < type.num_pins; pin++) {
-                    type.pinloc[0][0][side][pin] = true;
-                    type.pin_width_offset[pin] = 0;
-                    type.pin_height_offset[pin] = 0;
-                }
-            }
-
-            auto ltype = get_type_by_name<t_logical_block_type>(sub_tile.name, ltypes_);
-            vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
-
-            for (int npin = 0; npin < type.num_pins; npin++) {
-                t_physical_pin physical_pin(npin);
-                t_logical_pin logical_pin(npin);
-
-                directs_map.insert(logical_pin, physical_pin);
-            }
-
-            sub_tile.equivalent_sites.push_back(ltype);
-
-            type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
-
-            // Assign FC specs
-            int iblk_pin = 0;
-            for (const auto& port : sub_tile.ports) {
-                t_fc_specification fc_spec;
-
-                // FIXME: Use always one segment for the time being.
-                //        Can use the right segment for this IOPIN as soon
-                //        as the RR graph reading from the interchange is complete.
-                fc_spec.seg_index = 0;
-
-                //Apply type and defaults
-                if (port.type == IN_PORT) {
-                    fc_spec.fc_type = e_fc_type::IN;
-                    fc_spec.fc_value_type = default_fc_.in_value_type;
-                    fc_spec.fc_value = default_fc_.in_value;
-                } else {
-                    VTR_ASSERT(port.type == OUT_PORT);
-                    fc_spec.fc_type = e_fc_type::OUT;
-                    fc_spec.fc_value_type = default_fc_.out_value_type;
-                    fc_spec.fc_value = default_fc_.out_value;
-                }
-
-                //Add all the pins from this port
-                for (int iport_pin = 0; iport_pin < port.num_pins; ++iport_pin) {
-                    int true_physical_blk_pin = sub_tile.sub_tile_to_tile_pin_indices[iblk_pin++];
-                    fc_spec.pins.push_back(true_physical_blk_pin);
-                }
-
-                type.fc_specs.push_back(fc_spec);
-            }
+            fill_sub_tile(type, sub_tile, pins_size, icount, ocount);
 
             type.sub_tiles.push_back(sub_tile);
         }
+    }
+
+    void process_constant_block() {
+        std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
+
+        // Create constant complex block
+        t_logical_block_type block;
+
+        block.name = vtr::strdup(const_block_.c_str());
+        block.index = ltypes_.size();
+
+        auto pb_type = new t_pb_type;
+        block.pb_type = pb_type;
+
+        pb_type->name = vtr::strdup(const_block_.c_str());
+        pb_type->num_pb = 1;
+
+        pb_type->num_modes = 1;
+        pb_type->modes = new t_mode[pb_type->num_modes];
+
+        pb_type->num_ports = 2;
+        pb_type->ports = (t_port*)vtr::calloc(pb_type->num_ports, sizeof(t_port));
+
+        pb_type->num_output_pins = 2;
+        pb_type->num_input_pins = 0;
+        pb_type->num_clock_pins = 0;
+        pb_type->num_pins = 2;
+
+        auto mode = &pb_type->modes[0];
+        mode->parent_pb_type = pb_type;
+        mode->index = 0;
+        mode->name = vtr::strdup("default");
+        mode->disable_packing = false;
+
+        mode->num_interconnect = 2;
+        mode->interconnect = new t_interconnect[mode->num_interconnect];
+
+        mode->num_pb_type_children = 2;
+        mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
+
+        int count = 0;
+        for (auto const_cell : const_cells) {
+            auto leaf_pb_type = &mode->pb_type_children[count];
+
+            std::string leaf_name = const_cell.first;
+            leaf_pb_type->name = vtr::strdup(leaf_name.c_str());
+            leaf_pb_type->num_pb = 1;
+            leaf_pb_type->parent_mode = mode;
+            leaf_pb_type->blif_model = nullptr;
+
+            leaf_pb_type->num_output_pins = 1;
+            leaf_pb_type->num_input_pins = 0;
+            leaf_pb_type->num_clock_pins = 0;
+            leaf_pb_type->num_pins = 1;
+
+            int num_ports = 1;
+            leaf_pb_type->num_ports = num_ports;
+            leaf_pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+            leaf_pb_type->blif_model = vtr::strdup(const_cell.first.c_str());
+            leaf_pb_type->model = get_model(arch_, const_cell.first);
+
+            leaf_pb_type->ports[0] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.second, const_cell.first);
+            pb_type->ports[count] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.first + "_" + const_cell.second);
+
+            std::string istr = leaf_name + "." + const_cell.second;
+            std::string ostr = const_block_ + "." + const_cell.first + "_" + const_cell.second;
+            std::string ic_name = const_cell.first;
+
+            auto ic = &mode->interconnect[count];
+
+            ic->name = vtr::strdup(ic_name.c_str());
+            ic->type = DIRECT_INTERC;
+            ic->parent_mode_index = 0;
+            ic->parent_mode = mode;
+            ic->input_string = vtr::strdup(istr.c_str());
+            ic->output_string = vtr::strdup(ostr.c_str());
+
+            count++;
+        }
+
+        ltypes_.push_back(block);
+    }
+
+    void process_constant_model() {
+        std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
+
+        // Create constant models
+        for (auto const_cell : const_cells) {
+            t_model* model = new t_model;
+            model->index = arch_->models->index + 1;
+
+            model->never_prune = true;
+            model->name = vtr::strdup(const_cell.first.c_str());
+
+            t_model_ports* model_port = new t_model_ports;
+            model_port->dir = OUT_PORT;
+            model_port->name = vtr::strdup(const_cell.second.c_str());
+
+            model_port->min_size = 1;
+            model_port->size = 1;
+            model_port->next = model->outputs;
+            model->outputs = model_port;
+
+            model->next = arch_->models;
+            arch_->models = model;
+        }
+    }
+
+    void process_constant_tile() {
+        std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
+        // Create constant tile
+        t_physical_tile_type constant;
+        constant.name = vtr::strdup(const_block_.c_str());
+        constant.index = ptypes_.size();
+        constant.width = constant.height = constant.area = 1;
+        constant.capacity = 1;
+        constant.is_input_type = constant.is_output_type = false;
+
+        constant.switchblock_locations = vtr::Matrix<e_sb_type>({{1, 1}}, e_sb_type::FULL);
+        constant.switchblock_switch_overrides = vtr::Matrix<int>({{1, 1}}, DEFAULT_SWITCH);
+
+        t_sub_tile sub_tile;
+        sub_tile.index = 0;
+        sub_tile.name = vtr::strdup(const_block_.c_str());
+        int count = 0;
+        for (auto const_cell : const_cells) {
+            sub_tile.sub_tile_to_tile_pin_indices.push_back(count);
+
+            t_physical_tile_port port;
+            port.type = OUT_PORT;
+            port.num_pins = 1;
+
+            port.name = vtr::strdup((const_cell.first + "_" + const_cell.second).c_str());
+
+            port.index = port.absolute_first_pin_index = port.port_index_by_type = 0;
+
+            sub_tile.ports.push_back(port);
+
+            count++;
+        }
+
+        fill_sub_tile(constant, sub_tile, 2, 0, 2);
+        constant.sub_tiles.push_back(sub_tile);
+
+        setup_pin_classes(&constant);
+
+        ptypes_.push_back(constant);
     }
 
     // Layout Processing
@@ -2102,6 +2251,16 @@ struct ArchReader {
                 single.meta = single.owned_meta.get();
                 grid_def.loc_defs.emplace_back(std::move(single));
             }
+
+            // The constant source tile will be placed at (0, 0)
+            t_grid_loc_def constant(const_block_, 1);
+            constant.x.start_expr = std::to_string(1);
+            constant.y.start_expr = std::to_string(1);
+
+            constant.x.end_expr = constant.x.start_expr + " + w - 1";
+            constant.y.end_expr = constant.y.start_expr + " + h - 1";
+
+            grid_def.loc_defs.emplace_back(std::move(constant));
 
             arch_->grid_layouts.emplace_back(std::move(grid_def));
         }
@@ -2210,7 +2369,7 @@ struct ArchReader {
                 Tdel = get_corner_value(model.getInternalDelay(), "slow", "min");
                 name << "Tdel" << std::scientific << Tdel;
 
-                switch_name = name.str();
+                switch_name = name.str() + std::to_string(i);
                 type = entry.first ? SwitchType::MUX : SwitchType::PASS_GATE;
             }
 
