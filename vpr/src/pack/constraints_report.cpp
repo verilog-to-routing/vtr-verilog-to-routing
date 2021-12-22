@@ -11,7 +11,6 @@ void check_constraints_filling() {
     //GridTileLookup class provides info needed for calculating number of tiles covered by a region
     //TO-DO: Find better way of accessing grid tiles so you don't have to initialize it in two different locations (initial placement and here)
     GridTileLookup grid_tiles;
-    grid_tiles.initialize_grid_tile_matrices();
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();

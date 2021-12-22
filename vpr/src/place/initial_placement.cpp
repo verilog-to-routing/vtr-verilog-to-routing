@@ -455,7 +455,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     //GridTileLookup class provides info needed for calculating number of tiles covered by a region
     GridTileLookup grid_tiles;
-    grid_tiles.initialize_grid_tile_matrices();
 
     /*
      * For the blocks with no floorplan constraints, and the blocks that are not part of macros,
