@@ -666,7 +666,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      clb_index,
                                                      packer_opts.pack_verbosity);
             prev_molecule = istart;
-            int num_failed_feasibility = 0;
+
             while (next_molecule != nullptr && prev_molecule != next_molecule) {
                 block_pack_status = try_pack_molecule(cur_cluster_placement_stats_ptr,
                                                       atom_molecules,
