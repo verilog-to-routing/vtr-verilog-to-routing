@@ -2,12 +2,18 @@
 #include "rr_graph_builder.h"
 #include "vtr_time.h"
 #include <queue>
-//#include "vpr_context.h"
-#include "globals.h"
+#include <random>
+//#include <algorithm>
 
-RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage)
-    : node_storage_(*node_storage) {
-}
+//#include "globals.h"
+
+RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage,
+        MetadataStorage<int>* rr_node_metadata,
+        MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata
+    ): node_storage_(*node_storage)
+      , rr_node_metadata_(*rr_node_metadata)
+      , rr_edge_metadata_(*rr_edge_metadata){
+    }
 
 t_rr_graph_storage& RRGraphBuilder::node_storage() {
     return node_storage_;
@@ -55,19 +61,12 @@ void RRGraphBuilder::clear() {
     node_lookup_.clear();
 }
 
-void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm, int reorder_rr_graph_nodes_threshold, int reorder_rr_graph_nodes_seed) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    //auto& rr_graph = device_ctx.rr_graph;
+void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
+    int reorder_rr_graph_nodes_threshold,
+    int reorder_rr_graph_nodes_seed) {
     size_t v_num = node_storage_.size();
-    DeviceContext deviceContext_;
-    //int reorder_rr_graph_nodes_threshold = 0;
-    //  int reorder_rr_graph_nodes_seed = 1;
-
-    //if (router_opts.reorder_rr_graph_nodes_algorithm == DONT_REORDER) return;
     if (reorder_rr_graph_nodes_threshold < 0 || v_num < (size_t)reorder_rr_graph_nodes_threshold) return;
-
     vtr::ScopedStartFinishTimer timer("Reordering rr_graph nodes");
-
     vtr::vector<RRNodeId, RRNodeId> src_order(v_num); // new id -> old id
     size_t cur_idx = 0;
     for (RRNodeId& n : src_order) { // Initialize to [0, 1, 2 ...]
@@ -122,8 +121,8 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
 
     node_lookup().reorder(dest_order);
 
-    device_ctx.rr_node_metadata.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
-    device_ctx.rr_edge_metadata.remap_keys([&](std::tuple<int, int, short> edge) {
+    rr_node_metadata_.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
+    rr_edge_metadata_.remap_keys([&](std::tuple<int, int, short> edge) {
         return std::make_tuple(size_t(dest_order[RRNodeId(std::get<0>(edge))]),
                                size_t(dest_order[RRNodeId(std::get<1>(edge))]),
                                std::get<2>(edge));
