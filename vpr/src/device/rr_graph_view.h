@@ -259,22 +259,29 @@ class RRGraphView {
         return node_storage_.node_side_string(node);
     }
 
-    /** @brief Get the number of configurable edges, each configurable edge is controlled by a programmable memory bit. This function is inlined for runtime optimization. */
+    /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_configurable_edges(RRNodeId node) const {
         return node_storage_.num_configurable_edges(node);
     }
 
-    /** @brief Get the number of non-configurable edges, each non-configurable edge is a hard-wired connection. This function is inlined for runtime optimization. */
+    /** @brief Get the number of non-configurable edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_non_configurable_edges(RRNodeId node) const {
         return node_storage_.num_non_configurable_edges(node);
     }
 
-    /** @brief Get ID range for configurable edges. This function is inlined for runtime optimization. */
+    /** @brief A configurable edge represents a programmable switch between routing resources, which could be 
+     * a multiplexer
+     * a tri-state buffer
+     * a pass gate 
+     * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return node_storage_.configurable_edges(node);
     }
 
-    /** @brief Get ID range for non-configurable edges. This function is inlined for runtime optimization. */
+    /** @brief A non-configurable edge represents a hard-wired connection between routing resources, which could be 
+     * a non-configurable buffer that can not be turned off
+     * a short metal connection that can not be turned off
+     * This API gets ID range for non-configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range non_configurable_edges(RRNodeId node) const {
         return node_storage_.non_configurable_edges(node);
     }
