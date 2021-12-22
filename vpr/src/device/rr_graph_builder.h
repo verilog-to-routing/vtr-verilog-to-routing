@@ -22,10 +22,8 @@ class RRGraphBuilder {
   public:
     /* See detailed comments about the data structures in the internal data storage section of this file */
     RRGraphBuilder(t_rr_graph_storage* node_storage,
-	        MetadataStorage<int>* rr_node_metadata,
-	        MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata
-	    );
-
+                   MetadataStorage<int>* rr_node_metadata,
+                   MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -76,9 +74,9 @@ class RRGraphBuilder {
      * NOTE: Re-ordering will invalidate any references to rr_graph nodes, so this
      *       should generally be called before creating such references.
      */
-    void reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm, 
-                        int reorder_rr_graph_nodes_threshold, 
-                        int reorder_rr_graph_nodes_seed);
+    void reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
+                       int reorder_rr_graph_nodes_threshold,
+                       int reorder_rr_graph_nodes_seed);
 
     /** @brief Set capacity of this node (number of routes that can use it). */
     inline void set_node_capacity(RRNodeId id, short new_capacity) {
@@ -229,9 +227,8 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     RRSpatialLookup node_lookup_;
-MetadataStorage<int>& rr_node_metadata_;
+    MetadataStorage<int>& rr_node_metadata_;
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
-
 };
 
 #endif

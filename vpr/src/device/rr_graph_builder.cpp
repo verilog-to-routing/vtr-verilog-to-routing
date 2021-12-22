@@ -8,12 +8,12 @@
 //#include "globals.h"
 
 RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage,
-        MetadataStorage<int>* rr_node_metadata,
-        MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata
-    ): node_storage_(*node_storage)
-      , rr_node_metadata_(*rr_node_metadata)
-      , rr_edge_metadata_(*rr_edge_metadata){
-    }
+                               MetadataStorage<int>* rr_node_metadata,
+                               MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata)
+    : node_storage_(*node_storage)
+    , rr_node_metadata_(*rr_node_metadata)
+    , rr_edge_metadata_(*rr_edge_metadata) {
+}
 
 t_rr_graph_storage& RRGraphBuilder::node_storage() {
     return node_storage_;
@@ -62,8 +62,8 @@ void RRGraphBuilder::clear() {
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
-    int reorder_rr_graph_nodes_threshold,
-    int reorder_rr_graph_nodes_seed) {
+                                   int reorder_rr_graph_nodes_threshold,
+                                   int reorder_rr_graph_nodes_seed) {
     size_t v_num = node_storage_.size();
     if (reorder_rr_graph_nodes_threshold < 0 || v_num < (size_t)reorder_rr_graph_nodes_threshold) return;
     vtr::ScopedStartFinishTimer timer("Reordering rr_graph nodes");
