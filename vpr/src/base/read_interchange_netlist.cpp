@@ -90,8 +90,11 @@ struct NetlistReader {
             std::string name = str_list[port.getName()];
             auto dir = port.getDir();
 
-            int bus_size, start_bit;
-            std::tie(bus_size, start_bit) = get_bus_size(port);
+            int start, end;
+            std::tie(start, end) = get_bus_range(port);
+
+            int bus_size = std::abs(end - start) + 1;
+            int start_bit = start < end ? start : end;
 
             for (int bit = start_bit; bit < start_bit + bus_size; bit++) {
                 auto port_name = name;
@@ -431,31 +434,30 @@ struct NetlistReader {
         return nullptr;
     }
 
-    std::pair<int, int> get_bus_size(LogicalNetlist::Netlist::Port::Reader port_reader) {
+    std::pair<int, int> get_bus_range(LogicalNetlist::Netlist::Port::Reader port_reader) {
         if (port_reader.isBus()) {
             int s = port_reader.getBus().getBusStart();
             int e = port_reader.getBus().getBusEnd();
 
-            if (e < s)
-                return std::make_pair(s - e + 1, e);
-            else
-                return std::make_pair(e - s + 1, s);
+            return std::make_pair(s, e);
         }
 
-        return std::make_pair(1, 0);
+        return std::make_pair(0, 0);
     }
 
     unsigned int get_port_bit(LogicalNetlist::Netlist::PortInstance::Reader port_inst_reader) {
+        unsigned int port_bit = 0;
         if (port_inst_reader.getBusIdx().which() == LogicalNetlist::Netlist::PortInstance::BusIdx::IDX)
-            return port_inst_reader.getBusIdx().getIdx();
+            port_bit = port_inst_reader.getBusIdx().getIdx();
 
-        return 0;
+        return port_bit;
     }
 
     std::unordered_map<std::pair<unsigned int, unsigned int>, std::string, vtr::hash_pair> get_port_net_map(unsigned int inst_idx) {
         auto inst_list = nr_.getInstList();
         auto decl_list = nr_.getCellDecls();
         auto str_list = nr_.getStrList();
+        auto port_list = nr_.getPortList();
 
         auto top_cell = nr_.getCellList()[nr_.getTopInst().getCell()];
         std::unordered_map<std::pair<unsigned int, unsigned int>, std::string, vtr::hash_pair> map;
@@ -463,6 +465,9 @@ struct NetlistReader {
             std::string net_name = str_list[net.getName()];
 
             for (auto port : net.getPortInsts()) {
+                if (port.isExtPort())
+                    continue;
+
                 auto port_inst = port.getInst();
                 auto cell = inst_list[port_inst].getCell();
                 if (str_list[decl_list[cell].getName()] == arch_.gnd_cell.first)
@@ -477,7 +482,16 @@ struct NetlistReader {
                     continue;
 
                 unsigned int port_bit = get_port_bit(port);
-                auto pair = std::make_pair(port.getPort(), port_bit);
+
+                auto port_idx = port.getPort();
+                int start, end;
+                std::tie(start, end) = get_bus_range(port_list[port_idx]);
+
+                int bus_size = std::abs(end - start);
+
+                port_bit = start < end ? port_bit : bus_size - port_bit;
+
+                auto pair = std::make_pair(port_idx, port_bit);
                 map.emplace(pair, net_name);
             }
         }
