@@ -58,8 +58,8 @@ class Region {
      */
     bool is_loc_in_reg(t_pl_loc loc);
 
-    bool operator==(const Region &reg) const{
-    	return (reg.get_region_rect() == this->get_region_rect() && reg.get_sub_tile() == this->get_sub_tile());
+    bool operator==(const Region& reg) const {
+        return (reg.get_region_rect() == this->get_region_rect() && reg.get_sub_tile() == this->get_sub_tile());
     }
 
   private:
@@ -96,7 +96,7 @@ namespace std {
 template<>
 struct hash<Region> {
     std::size_t operator()(const Region& reg) const noexcept {
-    	vtr::Rect<int> rect = reg.get_region_rect();
+        vtr::Rect<int> rect = reg.get_region_rect();
         std::size_t seed = std::hash<int>{}(rect.xmin());
         vtr::hash_combine(seed, rect.ymin());
         vtr::hash_combine(seed, rect.xmax());

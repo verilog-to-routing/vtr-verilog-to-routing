@@ -8,8 +8,6 @@
 #include "constraints_report.h"
 
 void check_constraints_filling() {
-    //GridTileLookup class provides info needed for calculating number of tiles covered by a region
-    //TO-DO: Find better way of accessing grid tiles so you don't have to initialize it in two different locations (initial placement and here)
     GridTileLookup grid_tiles;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -35,7 +33,7 @@ void check_constraints_filling() {
             auto got = regions_count_info.find(current_reg);
 
             if (got == regions_count_info.end()) {
-            	std::vector<int> block_type_counts(block_types.size(), 0);
+                std::vector<int> block_type_counts(block_types.size(), 0);
 
                 block_type_counts[bt->index]++;
 
@@ -44,7 +42,6 @@ void check_constraints_filling() {
             } else {
                 got->second[bt->index]++;
             }
-
         }
     }
 
