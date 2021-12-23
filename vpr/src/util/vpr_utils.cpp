@@ -1789,7 +1789,6 @@ static int convert_switch_index(int* switch_index, int* fanin) {
 void print_switch_usage() {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-
     if (device_ctx.switch_fanin_remap.empty()) {
         VTR_LOG_WARN("Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
         return;
@@ -1802,11 +1801,10 @@ void print_switch_usage() {
     // map key: switch index; map value: count (fanin)
     std::map<int, int>* inward_switch_inf = new std::map<int, int>[device_ctx.rr_nodes.size()];
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        const t_rr_node& from_node = device_ctx.rr_nodes[inode];
         int num_edges = rr_graph.num_edges(RRNodeId(inode));
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int switch_index = from_node.edge_switch(iedge);
-            int to_node_index = from_node.edge_sink_node(iedge);
+            int switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
+            int to_node_index = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node

@@ -1686,10 +1686,10 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
         return; /* Nothing to draw. */
     }
 
-    from_ptc_num = rr_graph.node_ptc_num(RRNodeId(inode));
+    from_ptc_num = rr_graph.node_ptc_num(rr_node);
 
     for (t_edge_size iedge = 0, l = rr_graph.num_edges(RRNodeId(inode)); iedge < l; iedge++) {
-        to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+        to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
         to_type = rr_graph.node_type(RRNodeId(to_node));
         to_ptc_num = rr_graph.node_ptc_num(RRNodeId(to_node));
         bool edge_configurable = device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
@@ -1772,8 +1772,8 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
-                        draw_chanx_to_chanx_edge(RRNodeId(inode), RRNodeId(to_node),
+                        switch_type = rr_graph.edge_switch(rr_node, iedge);
+                        draw_chanx_to_chanx_edge(rr_node, RRNodeId(to_node),
                                                  to_ptc_num, switch_type, g);
                         break;
 
@@ -1789,7 +1789,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                        switch_type = rr_graph.edge_switch(rr_node, iedge);
                         draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
                                                  to_ptc_num, FROM_X_TO_Y, switch_type, g);
                         break;
@@ -1842,7 +1842,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                        switch_type = rr_graph.edge_switch(rr_node, iedge);
                         draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
                                                  from_ptc_num, FROM_Y_TO_X, switch_type, g);
                         break;
@@ -1860,8 +1860,8 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         } else {
                             g->set_color(blk_DARKGREEN);
                         }
-                        switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
-                        draw_chany_to_chany_edge(RRNodeId(inode), RRNodeId(to_node),
+                        switch_type = rr_graph.edge_switch(rr_node, iedge);
+                        draw_chany_to_chany_edge(rr_node, RRNodeId(to_node),
                                                  to_ptc_num, switch_type, g);
                         break;
 
@@ -2519,7 +2519,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
         auto iedge = find_edge(prev_node, inode);
-        auto switch_type = device_ctx.rr_nodes[prev_node].edge_switch(iedge);
+        auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
 
         switch (rr_type) {
             case OPIN: {
@@ -2698,12 +2698,11 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-
     for (auto node : nodes) {
         /* Highlight the fanout nodes in red. */
         for (t_edge_size iedge = 0, l = rr_graph.num_edges(RRNodeId(node));
              iedge < l; iedge++) {
-            int fanout_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+            int fanout_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
 
             if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA
                 && draw_state->draw_rr_node[fanout_node].color
@@ -2722,8 +2721,7 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
             for (t_edge_size iedge = 0, l = rr_graph.num_edges(RRNodeId(inode)); iedge < l;
                  iedge++) {
-                int fanout_node = device_ctx.rr_nodes[inode].edge_sink_node(
-                    iedge);
+                int fanout_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
                 if (fanout_node == node) {
                     if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA
                         && draw_state->draw_rr_node[inode].color
@@ -2825,13 +2823,12 @@ void draw_expand_non_configurable_rr_nodes_recurr(int from_node,
                                                   std::set<int>& expanded_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-
     expanded_nodes.insert(from_node);
 
     for (t_edge_size iedge = 0;
          iedge < rr_graph.num_edges(RRNodeId(from_node)); ++iedge) {
         bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iedge);
-        int to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iedge);
+        int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iedge));
 
         if (!edge_configurable && !expanded_nodes.count(to_node)) {
             draw_expand_non_configurable_rr_nodes_recurr(to_node,
@@ -3788,7 +3785,7 @@ static t_edge_size find_edge(int prev_inode, int inode) {
     const auto& rr_graph = device_ctx.rr_graph;
     for (t_edge_size iedge = 0;
          iedge < rr_graph.num_edges(RRNodeId(prev_inode)); ++iedge) {
-        if (device_ctx.rr_nodes[prev_inode].edge_sink_node(iedge) == inode) {
+        if (size_t(rr_graph.edge_sink_node(RRNodeId(prev_inode), iedge)) == size_t(inode)) {
             return iedge;
         }
     }

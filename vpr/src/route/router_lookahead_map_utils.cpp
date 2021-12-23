@@ -252,22 +252,18 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
 }
 
 template<typename Entry>
-void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                 const Entry& parent_entry,
                                 std::vector<util::Search_Path>* paths,
                                 std::vector<bool>* node_expanded,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
                                                     std::greater<Entry>>* pq) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId parent = parent_entry.rr_node;
 
-    auto& parent_node = rr_nodes[size_t(parent)];
-
-    for (int iedge = 0; iedge < rr_graph.num_edges(RRNodeId(parent)); iedge++) {
-        int child_node_ind = parent_node.edge_sink_node(iedge);
-        int switch_ind = parent_node.edge_switch(iedge);
+    for (int iedge = 0; iedge < rr_graph.num_edges(parent); iedge++) {
+        int child_node_ind = size_t(rr_graph.edge_sink_node(RRNodeId(parent), iedge));
+        int switch_ind = rr_graph.edge_switch(parent, iedge);
 
         /* skip this child if it has already been expanded from */
         if ((*node_expanded)[child_node_ind]) {
@@ -288,14 +284,14 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
     }
 }
 
-template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                          const PQ_Entry_Delay& parent_entry,
                                          std::vector<Search_Path>* paths,
                                          std::vector<bool>* node_expanded,
                                          std::priority_queue<PQ_Entry_Delay,
                                                              std::vector<PQ_Entry_Delay>,
                                                              std::greater<PQ_Entry_Delay>>* pq);
-template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                          const PQ_Entry_Base_Cost& parent_entry,
                                          std::vector<Search_Path>* paths,
                                          std::vector<bool>* node_expanded,
