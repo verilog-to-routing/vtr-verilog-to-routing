@@ -174,8 +174,8 @@ void add_segment_with_default_values(t_segment_inf& seg, std::string name) {
     seg.name = name;
     seg.length = 1;
     seg.frequency = 1;
-    seg.Rmetal = 1e-12;
-    seg.Cmetal = 1e-12;
+    seg.Rmetal = 1e2;
+    seg.Cmetal = 1e-15;
     seg.parallel_axis = BOTH_AXIS;
 
     // TODO: Only bi-directional segments are created, but it the interchange format
@@ -2250,12 +2250,29 @@ struct ArchReader {
     void process_segments() {
         // Segment names will be taken from wires connected to pips
         // They are good representation for nodes
+
+        auto wires = ar_.getWires();
+        auto wire_types = ar_.getWireTypes();
+
+        std::unordered_map<size_t, Device::WireCategory> wire_map;
+        for (auto wire : wires) {
+            auto type = wire_types[wire.getType()];
+            wire_map.emplace(wire.getWire(), type.getCategory());
+        }
+
         std::set<uint32_t> wire_names;
         for (auto tile_type : ar_.getTileTypeList()) {
-            auto wires = tile_type.getWires();
+            auto tile_wires = tile_type.getWires();
+
             for (auto pip : tile_type.getPips()) {
-                wire_names.insert(wires[pip.getWire0()]);
-                wire_names.insert(wires[pip.getWire1()]);
+                auto wire0 = tile_wires[pip.getWire0()];
+                auto wire1 = tile_wires[pip.getWire1()];
+
+                if (wire_map[wire0] == Device::WireCategory::GENERAL)
+                    wire_names.insert(wire0);
+
+                if (wire_map[wire1] == Device::WireCategory::GENERAL)
+                    wire_names.insert(wire1);
             }
         }
 

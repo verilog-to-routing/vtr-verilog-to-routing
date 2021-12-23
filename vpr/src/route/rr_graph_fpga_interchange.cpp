@@ -99,9 +99,14 @@ struct RR_Graph_Builder {
             tile_type_to_pb_type_[std::string(type.name)] = &type;
         }
 
-        for (size_t i = 0; i < segment_inf.size(); ++i) {
+        auto wire_types = ar_.getWireTypes();
+        for (auto wire : ar_.getWires())
+            if (wire_types[wire.getType()].getCategory() != Device::WireCategory::GENERAL)
+                wire_name_to_seg_idx_[str(wire.getWire())] = 0;
+
+        // segment at index 0 is the generic one
+        for (size_t i = 1; i < segment_inf.size(); ++i)
             wire_name_to_seg_idx_[segment_inf_[RRSegmentId(i)].name] = i;
-        }
 
         std::unordered_map<uint32_t, std::set<t_bel_cell_mapping>> temp_;
         auto func = std::bind(&RR_Graph_Builder::str, this, std::placeholders::_1);
