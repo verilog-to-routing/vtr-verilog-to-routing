@@ -770,7 +770,9 @@ struct RR_Graph_Builder {
         for (intermediate_node* root : roots) {
             if (root == last)
                 continue;
+            VTR_ASSERT(redirect_.find(std::make_tuple(node_id, last->loc)) != redirect_.end());
             auto key1 = redirect_[std::make_tuple(node_id, last->loc)];
+            VTR_ASSERT(redirect_.find(std::make_tuple(node_id, root->loc)) != redirect_.end());
             auto key2 = redirect_[std::make_tuple(node_id, root->loc)];
 
             shorts_.emplace_back(std::get<0>(key1), std::get<1>(key1), std::get<2>(key1),
@@ -1074,6 +1076,7 @@ struct RR_Graph_Builder {
                 bool input;
                 int node_id;
                 std::tie(input, std::ignore, node_id) = pin_vec[j];
+                VTR_ASSERT(redirect_.find(std::make_tuple(node_id, loc)) != redirect_.end());
                 auto chan_key = redirect_[std::make_tuple(node_id, loc)];
                 e_rr_type pin = input ? e_rr_type::SINK : e_rr_type::SOURCE;
                 e_rr_type mux = input ? e_rr_type::IPIN : e_rr_type::OPIN;
@@ -1116,6 +1119,14 @@ struct RR_Graph_Builder {
         }
     }
 
+    char* int_to_string(char* buff, int value) {
+        if (value < 10) {
+            return &(*buff = '0' + value) + 1;
+        } else {
+            return &(*int_to_string(buff, value / 10) = '0' + value % 10) + 1;
+        }
+    }
+
     void pack_pips() {
         for (auto& i : pips_) {
             int node1, node2;
@@ -1128,7 +1139,9 @@ struct RR_Graph_Builder {
             bool forward;
             std::tie(name, wire0, wire1, forward) = metadata;
             location loc = tile_to_loc_[tile_id];
+            VTR_ASSERT(redirect_.find(std::make_tuple(node1, loc)) != redirect_.end());
             auto key1 = redirect_[std::make_tuple(node1, loc)];
+            VTR_ASSERT(redirect_.find(std::make_tuple(node2, loc)) != redirect_.end());
             auto key2 = redirect_[std::make_tuple(node2, loc)];
 
             VTR_ASSERT(loc_type_idx_to_rr_idx_.find(key1) != loc_type_idx_to_rr_idx_.end());
@@ -1139,14 +1152,19 @@ struct RR_Graph_Builder {
             sink = loc_type_idx_to_rr_idx_[key2];
             device_ctx_.rr_graph_builder.emplace_back_edge(RRNodeId(src), RRNodeId(sink), sw_id);
 
-            vtr::interned_string name_(empty_);
-            vtr::interned_string value_(empty_);
-
             char metadata_[100];
-            sprintf(metadata_, "%d,%d,%d,%d", name, wire0, wire1, forward ? 1 : 0);
+            char* temp = int_to_string(metadata_, name);
+            *temp++ = ',';
+            temp = int_to_string(temp, wire0);
+            *temp++ = ',';
+            temp = int_to_string(temp, wire1);
+            *temp++ = ',';
+            temp = int_to_string(temp, forward ? 1 : 0);
+            *temp++ = 0;
 
-            name_ = device_ctx_.arch->strings.intern_string(vtr::string_view("FPGAInterchange"));
-            value_ = device_ctx_.arch->strings.intern_string(vtr::string_view(metadata_));
+            vtr::interned_string name_(device_ctx_.arch->strings.intern_string(vtr::string_view("FPGAInterchange")));
+            vtr::interned_string value_(device_ctx_.arch->strings.intern_string(vtr::string_view(metadata_)));
+
             vpr::add_rr_edge_metadata(src, sink, sw_id, name_, value_);
         }
     }
