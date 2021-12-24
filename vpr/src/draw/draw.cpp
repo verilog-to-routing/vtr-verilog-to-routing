@@ -2720,10 +2720,10 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         }
 
         /* Highlight the nodes that can fanin to this node in blue. */
-        for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-            for (t_edge_size iedge = 0, l = rr_graph.num_edges(RRNodeId(inode)); iedge < l;
+        for (const RRNodeId& inode : rr_graph.nodes()) {
+            for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l;
                  iedge++) {
-                int fanout_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
+                int fanout_node = size_t(rr_graph.edge_sink_node(node, iedge));
                 if (fanout_node == node) {
                     if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA
                         && draw_state->draw_rr_node[inode].color
