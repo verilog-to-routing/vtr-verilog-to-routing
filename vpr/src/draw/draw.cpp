@@ -2723,19 +2723,19 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         for (const RRNodeId& inode : rr_graph.nodes()) {
             for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l;
                  iedge++) {
-                int fanout_node = size_t(rr_graph.edge_sink_node(node, iedge));
+                int fanout_node = size_t(rr_graph.edge_sink_node(inode, iedge));
                 if (fanout_node == node) {
                     if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA
-                        && draw_state->draw_rr_node[inode].color
+                        && draw_state->draw_rr_node[size_t(inode)].color
                                != ezgl::MAGENTA) {
                         // If node is highlighted, highlight its fanin
-                        draw_state->draw_rr_node[inode].color = ezgl::BLUE;
-                        draw_state->draw_rr_node[inode].node_highlighted = true;
+                        draw_state->draw_rr_node[size_t(inode)].color = ezgl::BLUE;
+                        draw_state->draw_rr_node[size_t(inode)].node_highlighted = true;
                     } else if (draw_state->draw_rr_node[node].color
                                == ezgl::WHITE) {
                         // If node is de-highlighted, de-highlight its fanin
-                        draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-                        draw_state->draw_rr_node[inode].node_highlighted = false;
+                        draw_state->draw_rr_node[size_t(inode)].color = DEFAULT_RR_NODE_COLOR;
+                        draw_state->draw_rr_node[size_t(inode)].node_highlighted = false;
                     }
                 }
             }

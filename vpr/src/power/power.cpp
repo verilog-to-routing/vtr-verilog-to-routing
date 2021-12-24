@@ -1206,7 +1206,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
         t_edge_size fanout_to_IPIN = 0;
         t_edge_size fanout_to_seg = 0;
-        t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
+        t_rr_node_power* node_power = &rr_node_power[size_t(rr_node_idx)];
         const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_node_idx);
 
         switch (rr_graph.node_type(rr_node_idx)) {
