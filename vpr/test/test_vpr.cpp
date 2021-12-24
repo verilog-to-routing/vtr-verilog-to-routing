@@ -135,16 +135,16 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         const auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;
 
-        for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-            if ((rr_graph.node_type(id) == CHANX || rr_graph.node_type(id) == CHANY) && device_ctx.rr_nodes[(size_t)id].num_edges() > 0) {
-                src_inode = (size_t)id;
+        for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
+            if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) && rr_graph.num_edges(inode) > 0) {
+                src_inode = inode;
                 break;
             }
         }
 
         REQUIRE(src_inode >= 0);
-        sink_inode = device_ctx.rr_nodes[src_inode].edge_sink_node(0);
-        switch_id = device_ctx.rr_nodes[src_inode].edge_switch(0);
+        sink_inode = size_t(rr_graph.edge_sink_node(RRNodeId(src_inode), 0));
+        switch_id = rr_graph.edge_switch(RRNodeId(src_inode), 0);
 
         vpr::add_rr_node_metadata(src_inode, vtr::string_view("node"), vtr::string_view("test node"));
         vpr::add_rr_edge_metadata(src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"));

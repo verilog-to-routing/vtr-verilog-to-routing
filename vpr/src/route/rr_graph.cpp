@@ -375,9 +375,11 @@ void create_rr_graph(const t_graph_type graph_type,
 void print_rr_graph_stats() {
     auto& device_ctx = g_vpr_ctx.device();
 
+    const auto& rr_graph = device_ctx.rr_graph;
+
     size_t num_rr_edges = 0;
     for (auto& rr_node : device_ctx.rr_nodes) {
-        num_rr_edges += rr_node.edges().size();
+        num_rr_edges += rr_graph.edges(rr_node.id()).size();
     }
 
     VTR_LOG("  RR Graph Nodes: %zu\n", device_ctx.rr_nodes.size());
@@ -2466,7 +2468,7 @@ std::string describe_rr_node(int inode) {
 
     msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
     msg += vtr::string_fmt(" fan-in: %d", rr_graph.node_fan_in(RRNodeId(inode)));
-    msg += vtr::string_fmt(" fan-out: %d", rr_node.num_edges());
+    msg += vtr::string_fmt(" fan-out: %d", rr_graph.num_edges(RRNodeId(inode)));
 
     msg += " " + rr_graph.node_coordinate_to_string(RRNodeId(inode));
 

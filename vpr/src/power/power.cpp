@@ -814,16 +814,15 @@ static void power_usage_routing(t_power_usage* power_usage,
         t_trace* trace;
 
         for (trace = route_ctx.trace[net_id].head; trace != nullptr; trace = trace->next) {
-            auto node = device_ctx.rr_nodes[trace->index];
             t_rr_node_power* node_power = &rr_node_power[trace->index];
 
             if (node_power->visited) {
                 continue;
             }
 
-            for (t_edge_size edge_idx = 0; edge_idx < node.num_edges(); edge_idx++) {
-                const auto& next_node_id = node.edge_sink_node(edge_idx);
-                if (next_node_id != OPEN) {
+            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(RRNodeId(trace->index)); edge_idx++) {
+                const auto& next_node_id = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), edge_idx));
+                if (next_node_id != size_t(OPEN)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
@@ -857,7 +856,6 @@ static void power_usage_routing(t_power_usage* power_usage,
     /* Calculate power of all routing entities */
     for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
         t_power_usage sub_power_usage;
-        auto node = device_ctx.rr_nodes[(size_t)id];
         t_rr_node_power* node_power = &rr_node_power[(size_t)id];
         float C_wire;
         float buffer_size;
@@ -980,10 +978,10 @@ static void power_usage_routing(t_power_usage* power_usage,
                 /* Determine types of switches that this wire drives */
                 connectionbox_fanout = 0;
                 switchbox_fanout = 0;
-                for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
-                    if (node.edge_switch(iedge) == routing_arch->wire_to_rr_ipin_switch) {
+                for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(id); iedge++) {
+                    if (rr_graph.edge_switch(id, iedge) == routing_arch->wire_to_rr_ipin_switch) {
                         connectionbox_fanout++;
-                    } else if (node.edge_switch(iedge) == routing_arch->delayless_switch) {
+                    } else if (rr_graph.edge_switch(id, iedge) == routing_arch->delayless_switch) {
                         /* Do nothing */
                     } else {
                         switchbox_fanout++;
@@ -1205,14 +1203,13 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     max_IPIN_fanin = 0;
     max_seg_to_seg_fanout = 0;
     max_seg_to_IPIN_fanout = 0;
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
         t_edge_size fanout_to_IPIN = 0;
         t_edge_size fanout_to_seg = 0;
-        auto node = device_ctx.rr_nodes[(size_t)id];
-        t_rr_node_power* node_power = &rr_node_power[(size_t)id];
-        const t_edge_size node_fan_in = rr_graph.node_fan_in(id);
+        t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
+        const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_node_idx);
 
-        switch (rr_graph.node_type(id)) {
+        switch (rr_graph.node_type(rr_node_idx)) {
             case IPIN:
                 max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
                 max_fanin = std::max(max_fanin, node_fan_in);
@@ -1224,10 +1221,10 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 break;
             case CHANX:
             case CHANY:
-                for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
-                    if (node.edge_switch(iedge) == routing_arch->wire_to_rr_ipin_switch) {
+                for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_node_idx); iedge++) {
+                    if (rr_graph.edge_switch(rr_node_idx, iedge) == routing_arch->wire_to_rr_ipin_switch) {
                         fanout_to_IPIN++;
-                    } else if (node.edge_switch(iedge) != routing_arch->delayless_switch) {
+                    } else if (rr_graph.edge_switch(rr_node_idx, iedge) != routing_arch->delayless_switch) {
                         fanout_to_seg++;
                     }
                 }
@@ -1256,15 +1253,13 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
 #endif
 
     /* Populate driver switch type */
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-        auto node = device_ctx.rr_nodes[(size_t)id];
-
-        for (t_edge_size edge_idx = 0; edge_idx < node.num_edges(); edge_idx++) {
-            if (node.edge_sink_node(edge_idx) != OPEN) {
-                if (rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == OPEN) {
-                    rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type = node.edge_switch(edge_idx);
+    for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
+        for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rr_node_idx); edge_idx++) {
+            if (size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))) {
+                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == OPEN) {
+                    rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type = rr_graph.edge_switch(rr_node_idx, edge_idx);
                 } else {
-                    VTR_ASSERT(rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == node.edge_switch(edge_idx));
+                    VTR_ASSERT(rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == rr_graph.edge_switch(rr_node_idx, edge_idx));
                 }
             }
         }
@@ -1272,14 +1267,13 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
 
     /* Find Max Fanout of Routing Buffer	 */
     t_edge_size max_seg_fanout = 0;
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-        auto node = device_ctx.rr_nodes[(size_t)id];
 
-        switch (rr_graph.node_type(id)) {
+    for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
+        switch (rr_graph.node_type(rr_node_idx)) {
             case CHANX:
             case CHANY:
-                if (node.num_edges() > max_seg_fanout) {
-                    max_seg_fanout = node.num_edges();
+                if (rr_graph.num_edges(rr_node_idx) > max_seg_fanout) {
+                    max_seg_fanout = rr_graph.num_edges(rr_node_idx);
                 }
                 break;
             default:

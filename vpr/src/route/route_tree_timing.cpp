@@ -418,17 +418,16 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 VTR_ASSERT(rt_node->inode == rr_node);
             }
         }
-        for (int iedge : device_ctx.rr_nodes[rr_node].non_configurable_edges()) {
+        for (int iedge : rr_graph.non_configurable_edges(RRNodeId(rr_node))) {
             //Recursive case: expand children
             VTR_ASSERT(!device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge));
-
-            int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
+            int to_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(rr_node), iedge));
 
             //Recurse
             t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
 
             if (!child_rt_node) continue;
-            int iswitch = device_ctx.rr_nodes[rr_node].edge_switch(iedge);
+            int iswitch = rr_graph.edge_switch(RRNodeId(rr_node), iedge);
 
             //Create the edge
             t_linked_rt_edge* linked_rt_edge = alloc_linked_rt_edge();

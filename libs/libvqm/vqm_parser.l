@@ -38,7 +38,9 @@
 
 %%
 ^[ \t]*\/\/[^\n\r]*(\n|\r\n)                /* skip one-line comments */
+^[ \t]*\(\*[^\n\r]*\*\)                     /* skip synthesis attributes and directives */
 [ \t]+                                      /* skip white spaces */
+!					    /* skip the logical operator ! applied on the input ports of the lut - this results in lut mask not being valid anoymore */
 (\n|\r\n)                                   /* skip empty lines */
 module                                      return TOKEN_MODULE;
 endmodule                                   return TOKEN_ENDMODULE;
@@ -60,7 +62,7 @@ assign                                      return TOKEN_ASSIGN;
                                                 yylval.value = atoi(yytext); 
                                                 return TOKEN_INTCONSTANT;
                                             }
-\\[^ ^\t]+                                  {
+\\[^ ^\t^;]+                                {
                                                 yylval.string = (char *)malloc(yyleng);
                                                 strcpy(yylval.string, yytext+1);
                                                 return TOKEN_ESCAPEDID;
@@ -71,7 +73,7 @@ assign                                      return TOKEN_ASSIGN;
                                                 yylval.string[yyleng-2] = 0;
                                                 return TOKEN_STRING;
                                             }
-[1-9][0-9]*'b[0-9]+                         {
+[1-9][0-9]*'[b|h][0-9|A-F]+                 { /* bit strings can be in binary or hexadecimal format */ 
                                                 yylval.string = (char *)malloc(yyleng+1);
                                                 strcpy(yylval.string, yytext);
                                                 return TOKEN_BITSTRING;
