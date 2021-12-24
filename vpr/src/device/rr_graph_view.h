@@ -65,7 +65,7 @@ class RRGraphView {
      *        // Do something with each node 
      *      } 
      */
-    inline vtr::StrongIdRange<RRNodeId> nodes() const {
+    vtr::StrongIdRange<RRNodeId> nodes() const {
         return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(size()));
     }
 
@@ -318,9 +318,17 @@ class RRGraphView {
         return node_storage_.non_configurable_edges(node);
     }
 
-    /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
-    inline edge_idx_range edges(RRNodeId node) const {
-        return node_storage_.edges(node);
+    /** @brief Get outgoing edges for a node.
+     * This API is designed to enable range-based loop to walk through the outgoing edges of a node
+     * Example:
+     *   RRGraphView rr_graph; // A dummny rr_graph for a short example
+     *   RRNodeId node; // A dummy node for a short example
+     *   for (RREdgeId edge : rr_graph.edges(node)) {
+     *     // Do something with the edge
+     *   }
+     */
+    edge_idx_range edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
     /** @brief Get the number of edges. This function is inlined for runtime optimization. */
