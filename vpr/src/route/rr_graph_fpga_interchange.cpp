@@ -55,6 +55,7 @@ struct intermediate_node {
         visited = nullptr;
         on_route = false;
         has_pins = false;
+        segment_id = -1;
     }
 };
 
@@ -81,14 +82,6 @@ struct RR_Graph_Builder {
 
         for (size_t i = 0; i < segment_inf.size(); ++i) {
             wire_name_to_seg_idx_[segment_inf_[RRSegmentId(i)].name] = i;
-        }
-
-        for (size_t i = 1; i < grid.width() - 1; ++i) {
-            for (size_t j = 1; j < grid.height() - 1; ++j) {
-                location loc(i, j);
-                if (grid[i][j].type->index == 0)
-                    empty_tiles.insert(loc);
-            }
         }
 
         auto primLib = ar_.getPrimLibs();
@@ -158,15 +151,13 @@ struct RR_Graph_Builder {
 
     std::unordered_map<std::string, int> wire_name_to_seg_idx_;
 
-    std::set<location> empty_tiles;
-
     std::set<uint32_t> bel_cell_mappings_;
 
     std::unordered_map<int /*tile_id(name)*/, location> tile_to_loc_;
-    std::map<location, int /*tile_id(name)*/> loc_to_tile_;
+    std::unordered_map<location, int /*tile_id(name)*/, hash_tuple::hash<location>> loc_to_tile_;
 
-    std::map<std::tuple<int /*timing_model*/, bool /*buffered*/>, int /*idx*/> pips_models_;
-    std::map<std::tuple<int /*node_id*/, int /*node_id*/>, std::tuple<int /*switch_id*/, int /* tile_id */, std::tuple<int /*name*/, int /*wire0*/, int /*wire1*/, bool /*forward*/>>> pips_;
+    std::unordered_map<std::tuple<int /*timing_model*/, bool /*buffered*/>, int /*idx*/, hash_tuple::hash<std::tuple<int, bool>>> pips_models_;
+    std::unordered_map<std::tuple<int /*node_id*/, int /*node_id*/>, std::tuple<int /*switch_id*/, int /* tile_id */, std::tuple<int /*name*/, int /*wire0*/, int /*wire1*/, bool /*forward*/>>, hash_tuple::hash<std::tuple<int, int>>> pips_;
 
     std::map<std::tuple<int, int>, int> wire_to_node_;
     std::unordered_map<int, std::set<location>> node_to_locs_;
@@ -192,9 +183,9 @@ struct RR_Graph_Builder {
      * Sets contain tuples of node ids and location.
      * Each value <n,l> correspondence to node id n being used by either pip or pin at location l.
      */
-    std::set<std::tuple<int /*node_id*/, location>> used_by_pip_;
-    std::set<std::tuple<int /*node_id*/, location>> used_by_pin_;
-    std::set<int /* node_id*/> usefull_node_;
+    std::unordered_set<std::tuple<int /*node_id*/, location>, hash_tuple::hash<std::tuple<int, location>>> used_by_pip_;
+    std::unordered_set<std::tuple<int /*node_id*/, location>, hash_tuple::hash<std::tuple<int, location>>> used_by_pin_;
+    std::unordered_set<int /* node_id*/> usefull_node_;
 
     /* Sink_source_loc_map is used to create ink/source and ipin/opin rr_nodes,
      * rr_edges from sink/source to ipin/opin and from ipin/opin to their coresponding segments
@@ -423,6 +414,10 @@ struct RR_Graph_Builder {
                 const auto& wire = ar_.getWires()[wire_id_];
                 int tile_id = wire.getTile();
                 int wire_id = wire.getWire();
+                if (tile_id == 6038 && wire_id == 5471) {
+                    VTR_LOG("id:%d, wire_id_:%d\n", id, (int)wire_id_);
+                    VTR_LOG("tile:%s wire:%s\n", str(tile_id).c_str(), str(wire_id).c_str());
+                }
                 wire_to_node_[std::make_tuple(tile_id, wire_id)] = id;
                 node_to_locs_[id].insert(tile_to_loc_[tile_id]);
                 if (wire_name_to_seg_idx_.find(str(wire_id)) == wire_name_to_seg_idx_.end())
@@ -494,7 +489,9 @@ struct RR_Graph_Builder {
      * Build graph of FPGA Interchange node for further computations
      */
     std::set<intermediate_node*> build_node_graph(int node_id,
-                                                  std::set<location> nodes) {
+                                                  std::set<location> nodes,
+                                                  int& seg_id) {
+
         std::set<intermediate_node*> roots;
         std::map<location, intermediate_node*> existing_nodes;
         do {
@@ -502,7 +499,9 @@ struct RR_Graph_Builder {
                                                                  (*nodes.begin()).second);
             location key = *nodes.begin();
 
-            root_node->segment_id = node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[key])];
+            if (node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[key])] != -1)
+                seg_id = node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[key])];
+
             nodes.erase(key);
 
             existing_nodes.emplace(key, root_node);
@@ -523,7 +522,8 @@ struct RR_Graph_Builder {
                         temp = existing_nodes[other_loc];
                     } else if (nodes.find(other_loc) != nodes.end()) {
                         temp = new intermediate_node(other_loc.first, other_loc.second);
-                        temp->segment_id = node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[other_loc])];
+                        if (node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[other_loc])] != -1)
+                            seg_id = node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[other_loc])];
                         nodes.erase(other_loc);
                         existing_nodes.emplace(other_loc, temp);
                         builder.push(temp);
@@ -550,7 +550,7 @@ struct RR_Graph_Builder {
      * Removes dangling nodes from a graph represented by the root node.
      * Dangling nodes are nodes that do not connect to a pin, a pip or other non-dangling node.
      */
-    int reduce_graph_and_count_nodes_left(std::set<intermediate_node*>& roots) {
+    int reduce_graph_and_count_nodes_left(std::set<intermediate_node*>& roots, int seg_id) {
         int cnt = 0;
         std::queue<intermediate_node*> walker;
         std::stack<intermediate_node*> back_walker;
@@ -564,6 +564,7 @@ struct RR_Graph_Builder {
             intermediate_node* vertex = walker.front();
             walker.pop();
             back_walker.push(vertex);
+            vertex->segment_id = seg_id;
             for (auto i : NODESIDES) {
                 if (vertex->links[i] != nullptr) {
                     all_nulls = false;
@@ -581,9 +582,6 @@ struct RR_Graph_Builder {
             intermediate_node* vertex = back_walker.top();
             back_walker.pop();
             if (!vertex->has_pins && !vertex->on_route) {
-                if (vertex->visited->segment_id == -1) {
-                    vertex->visited->segment_id = vertex->segment_id;
-                }
                 for (auto i : NODESIDES) {
                     intermediate_node* temp = nullptr;
                     if (vertex->links[i] != nullptr) {
@@ -598,8 +596,6 @@ struct RR_Graph_Builder {
                 delete vertex;
             } else if (vertex->on_route) {
                 vertex->visited->on_route = true;
-                if (vertex->visited->segment_id == -1)
-                    vertex->visited->segment_id = vertex->segment_id;
             }
         }
         return cnt;
@@ -642,7 +638,10 @@ struct RR_Graph_Builder {
             std::tuple<location, e_rr_type> key1(vertex->loc, e_rr_type::CHANY);
             std::tuple<location, e_rr_type> key2(location(vertex->loc.first, vertex->loc.second - 1), e_rr_type::CHANX);
 
-            VTR_ASSERT(vertex->segment_id != -1);
+            if (vertex->segment_id == -1) {
+                VTR_LOG("node_id:%d X:%d Y:%d\n", node_id, vertex->loc.first, vertex->loc.second);
+                VTR_ASSERT(false);
+            }
 
             if (is_chany) {
                 loc_chan_idx[key1] = chan_loc_map_[key1].size();
@@ -818,13 +817,14 @@ struct RR_Graph_Builder {
         for (auto const& node : ar_.getNodes()) {
             std::tuple<int, int> base_wire_(wires[node.getWires()[0]].getTile(), wires[node.getWires()[0]].getWire());
             int node_id = wire_to_node_[base_wire_];
+            int seg_id;
             if (usefull_node_.find(node_id) == usefull_node_.end()) {
                 continue;
             }
             std::set<location> all_possible_tiles = node_to_locs_[node_id];
 
-            std::set<intermediate_node*> roots = build_node_graph(node_id, all_possible_tiles);
-            int div = reduce_graph_and_count_nodes_left(roots);
+            std::set<intermediate_node*> roots = build_node_graph(node_id, all_possible_tiles, seg_id);
+            int div = reduce_graph_and_count_nodes_left(roots, seg_id);
             if (roots.empty()) {
                 continue;
             }
@@ -900,8 +900,11 @@ struct RR_Graph_Builder {
                     int pin_id = sub_tile.sub_tile_to_tile_pin_indices[port.index];
                     std::tuple<int, int, std::string> key{tile_type_id, it, std::string(port.name)};
                     std::tie<float, int>(value, wire_id) = tile_type_site_num_pin_name_model[key];
-                    VTR_ASSERT(wire_to_node_.find(std::make_tuple(tile_id, wire_id)) != wire_to_node_.end());
-                    node_id = wire_to_node_[std::make_tuple(tile_id, wire_id)];
+                    if (wire_to_node_.find(std::make_tuple(tile_id, wire_id)) == wire_to_node_.end()) {
+                        node_id = -1;
+                    } else {
+                        node_id = wire_to_node_[std::make_tuple(tile_id, wire_id)];
+                    }
 
                     location loc = tile_to_loc_[tile_id];
 
@@ -965,18 +968,23 @@ struct RR_Graph_Builder {
                 float R, C;
                 std::tie(R, C) = input ? std::tuple<float, float>(0, RC) : std::tuple<float, float>(RC, 0);
 
-                location track_loc;
-                e_rr_type track_type;
-                int track_idx;
-                VTR_ASSERT(redirect_.find(std::make_tuple(FPGA_Interchange_node_id, loc)) != redirect_.end());
-                std::tie(track_loc, track_type, track_idx) = redirect_[std::make_tuple(FPGA_Interchange_node_id, loc)];
-                auto val = chan_loc_map_[std::make_tuple(track_loc, track_type)][track_idx];
-                int track_seg;
-                float track_R, track_C;
-                std::tie(track_seg, track_R, track_C) = val;
-                track_R += R;
-                track_C += C;
-                chan_loc_map_[std::make_tuple(track_loc, track_type)][track_idx] = std::make_tuple(track_seg, track_R, track_C);
+                if(FPGA_Interchange_node_id != -1) {
+                    location track_loc;
+                    e_rr_type track_type;
+                    int track_idx;
+                    if (redirect_.find(std::make_tuple(FPGA_Interchange_node_id, loc)) == redirect_.end()) {
+                        VTR_LOG("node_id:%d, loc->X:%d Y:%d\n", FPGA_Interchange_node_id, loc.first, loc.second);
+                        VTR_ASSERT(false);
+                    }
+                    std::tie(track_loc, track_type, track_idx) = redirect_[std::make_tuple(FPGA_Interchange_node_id, loc)];
+                    auto val = chan_loc_map_[std::make_tuple(track_loc, track_type)][track_idx];
+                    int track_seg;
+                    float track_R, track_C;
+                    std::tie(track_seg, track_R, track_C) = val;
+                    track_R += R;
+                    track_C += C;
+                    chan_loc_map_[std::make_tuple(track_loc, track_type)][track_idx] = std::make_tuple(track_seg, track_R, track_C);
+                }
 
                 device_ctx_.rr_nodes.make_room_for_node(RRNodeId(rr_idx));
                 loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, j)] = rr_idx;
@@ -996,7 +1004,10 @@ struct RR_Graph_Builder {
             }
             for (size_t j = 0; j < pin_vec.size(); ++j) {
                 bool input;
-                std::tie(input, std::ignore, std::ignore) = pin_vec[j];
+                int FPGA_Interchange_node_id;
+                std::tie(input, std::ignore, FPGA_Interchange_node_id) = pin_vec[j];
+                if (FPGA_Interchange_node_id == -1)
+                    continue;
                 e_rr_type pin = input ? e_rr_type::IPIN : e_rr_type::OPIN;
 
                 device_ctx_.rr_nodes.make_room_for_node(RRNodeId(rr_idx));
@@ -1076,6 +1087,8 @@ struct RR_Graph_Builder {
                 bool input;
                 int node_id;
                 std::tie(input, std::ignore, node_id) = pin_vec[j];
+                if (node_id == -1)
+                    continue;
                 VTR_ASSERT(redirect_.find(std::make_tuple(node_id, loc)) != redirect_.end());
                 auto chan_key = redirect_[std::make_tuple(node_id, loc)];
                 e_rr_type pin = input ? e_rr_type::SINK : e_rr_type::SOURCE;
@@ -1162,10 +1175,7 @@ struct RR_Graph_Builder {
             temp = int_to_string(temp, forward ? 1 : 0);
             *temp++ = 0;
 
-            vtr::interned_string name_(device_ctx_.arch->strings.intern_string(vtr::string_view("FPGAInterchange")));
-            vtr::interned_string value_(device_ctx_.arch->strings.intern_string(vtr::string_view(metadata_)));
-
-            vpr::add_rr_edge_metadata(src, sink, sw_id, name_, value_);
+            vpr::add_rr_edge_metadata(src, sink, sw_id, vtr::string_view("FPGAInterchange"), vtr::string_view(metadata_));
         }
     }
 
