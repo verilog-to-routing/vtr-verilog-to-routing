@@ -59,6 +59,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     int iseg, length, i, index;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    const auto& rr_graph=device_ctx.rr_graph;
     int num_segment = segment_inf.size();
     int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment); //2x for CHANX & CHANY
     device_ctx.rr_indexed_data.resize(num_rr_indexed_data);
@@ -77,7 +78,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[RRIndexedDataId(i)].T_quadratic = 0.;
         device_ctx.rr_indexed_data[RRIndexedDataId(i)].C_load = 0.;
     }
-    device_ctx.rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
+    device_ctx.rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
     /* X-directed segments. */
     for (iseg = 0; iseg < num_segment; iseg++) {
@@ -465,19 +466,19 @@ static void calculate_average_switch(int inode, double& avg_switch_R, double& av
         if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
             int switch_index = rr_nodes.edge_switch(edge);
 
-            if (device_ctx.rr_switch_inf[switch_index].type() == SwitchType::SHORT) continue;
+            if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) continue;
 
-            avg_switch_R += device_ctx.rr_switch_inf[switch_index].R;
-            avg_switch_T += device_ctx.rr_switch_inf[switch_index].Tdel;
-            avg_switch_Cinternal += device_ctx.rr_switch_inf[switch_index].Cinternal;
+            avg_switch_R += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).R;
+            avg_switch_T += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
+            avg_switch_Cinternal += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cinternal;
 
             if (buffered == UNDEFINED) {
-                if (device_ctx.rr_switch_inf[switch_index].buffered()) {
+                if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered()) {
                     buffered = 1;
                 } else {
                     buffered = 0;
                 }
-            } else if (buffered != device_ctx.rr_switch_inf[switch_index].buffered()) {
+            } else if (buffered != rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered()) {
                 // If a previous buffering state is inconsistent with the current one,
                 // the node should be treated as buffered, as there are only two possible
                 // values for the buffering state (except for the UNDEFINED case).

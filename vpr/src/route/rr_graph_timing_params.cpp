@@ -60,9 +60,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
                 if (to_rr_type == CHANX || to_rr_type == CHANY) {
                     switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
-                    Cin = device_ctx.rr_switch_inf[switch_index].Cin;
-                    Cout = device_ctx.rr_switch_inf[switch_index].Cout;
-                    buffered = device_ctx.rr_switch_inf[switch_index].buffered();
+                    Cin = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cin;
+                    Cout =  rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
+                    buffered =  rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered();
 
                     /* If both the switch from inode to to_node and the switch from *
                      * to_node back to inode use bidirectional switches (i.e. pass  *
@@ -158,7 +158,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                     continue;
 
                 if (rr_graph.node_direction(RRNodeId(to_node)) == Direction::BIDIR) {
-                    Cout = device_ctx.rr_switch_inf[switch_index].Cout;
+                    Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
                     to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge)); /* Will be CHANX or CHANY */
                     rr_node_C[to_node] += Cout;
                 }
@@ -180,7 +180,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             if (to_rr_type == CHANX || to_rr_type == CHANY) {
                 if (rr_graph.node_direction(RRNodeId(to_node)) != Direction::BIDIR) {
                     /* Cout was not added in these cases */
-                    Couts_to_add[to_node] = std::max(Couts_to_add[to_node], device_ctx.rr_switch_inf[switch_index].Cout);
+                    Couts_to_add[to_node] = std::max(Couts_to_add[to_node], rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout);
                 }
             }
         }
