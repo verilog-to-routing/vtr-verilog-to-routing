@@ -1819,7 +1819,7 @@ void print_switch_usage() {
         for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
             int switch_index = itr->first;
             int fanin = itr->second;
-            float Tdel = device_ctx.rr_switch_inf[switch_index].Tdel;
+            float Tdel = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
             int status = convert_switch_index(&switch_index, &fanin);
             if (status == -1) {
                 delete[] switch_fanin_count;

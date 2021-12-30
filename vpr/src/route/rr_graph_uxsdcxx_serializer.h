@@ -263,7 +263,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         t_rr_graph_storage* rr_nodes,
         RRGraphBuilder* rr_graph_builder,
         RRGraphView* rr_graph,
-        std::vector<t_rr_switch_inf>* rr_switch_inf,
+        vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
@@ -1872,7 +1872,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     t_rr_graph_storage* rr_nodes_;
     RRGraphBuilder* rr_graph_builder_;
     RRGraphView* rr_graph_;
-    std::vector<t_rr_switch_inf>* rr_switch_inf_;
+    vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;

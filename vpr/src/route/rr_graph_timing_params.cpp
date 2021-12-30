@@ -61,8 +61,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                 if (to_rr_type == CHANX || to_rr_type == CHANY) {
                     switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
                     Cin = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cin;
-                    Cout =  rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
-                    buffered =  rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered();
+                    Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
+                    buffered = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered();
 
                     /* If both the switch from inode to to_node and the switch from *
                      * to_node back to inode use bidirectional switches (i.e. pass  *

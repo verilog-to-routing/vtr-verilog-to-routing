@@ -39,7 +39,7 @@ class RRGraphView {
                 const RRSpatialLookup& node_lookup,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
-				const vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf);
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -356,7 +356,6 @@ class RRGraphView {
         return rr_switch_inf_[switch_id];
     }
 
-
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
@@ -375,8 +374,8 @@ class RRGraphView {
 
     /* Segment info for rr nodes */
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
-     /* switch info for rr nodes */
-    const vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
+    /* switch info for rr nodes */
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 };
 
 #endif

@@ -1982,12 +1982,12 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_
         || draw_state->draw_rr_node[chanx_node].node_highlighted) {
         if (edge_dir == FROM_X_TO_Y) {
             draw_rr_switch(x1, y1, x2, y2,
-                           device_ctx.rr_switch_inf[switch_type].buffered(),
-                           device_ctx.rr_switch_inf[switch_type].configurable(), g);
+                           rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                           rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
         } else {
             draw_rr_switch(x2, y2, x1, y1,
-                           device_ctx.rr_switch_inf[switch_type].buffered(),
-                           device_ctx.rr_switch_inf[switch_type].configurable(), g);
+                           rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                           rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
         }
     }
 }
@@ -2079,8 +2079,8 @@ static void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, int t
     if (draw_state->draw_rr_toggle == DRAW_ALL_RR
         || draw_state->draw_rr_node[size_t(from_node)].node_highlighted) {
         draw_rr_switch(x1, y1, x2, y2,
-                       device_ctx.rr_switch_inf[switch_type].buffered(),
-                       device_ctx.rr_switch_inf[switch_type].configurable(), g);
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
     }
 }
 
@@ -2169,8 +2169,8 @@ static void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, int t
     if (draw_state->draw_rr_toggle == DRAW_ALL_RR
         || draw_state->draw_rr_node[size_t(from_node)].node_highlighted) {
         draw_rr_switch(x1, y1, x2, y2,
-                       device_ctx.rr_switch_inf[switch_type].buffered(),
-                       device_ctx.rr_switch_inf[switch_type].configurable(), g);
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
     }
 }
 

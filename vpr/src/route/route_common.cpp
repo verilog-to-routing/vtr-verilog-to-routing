@@ -1518,7 +1518,7 @@ void print_traceback(const t_trace* trace) {
             VTR_LOG(" !"); //End of branch
         }
 
-        if (prev && prev->iswitch != OPEN && !device_ctx.rr_switch_inf[prev->iswitch].configurable()) {
+        if (prev && prev->iswitch != OPEN && !rr_graph.rr_switch_inf(RRSwitchId(prev->iswitch)).configurable()) {
             VTR_LOG("*"); //Reached non-configurably
         }
 
@@ -1631,6 +1631,7 @@ void print_invalid_routing_info() {
 void print_rr_node_route_inf() {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
@@ -1639,7 +1640,7 @@ void print_rr_node_route_inf() {
             VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
                     inode, prev_node, (size_t)prev_edge);
 
-            if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
+            if (prev_node != OPEN && bool(prev_edge) && !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
                 VTR_LOG("*");
             }
 
@@ -1673,7 +1674,7 @@ void print_rr_node_route_inf_dot() {
 
             if (prev_node != OPEN && bool(prev_edge)) {
                 VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
-                if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
+                if (prev_node != OPEN && bool(prev_edge) && !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
                     VTR_LOG("label=\"*\"");
                 }
 

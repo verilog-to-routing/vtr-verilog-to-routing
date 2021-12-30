@@ -59,7 +59,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     int iseg, length, i, index;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    const auto& rr_graph=device_ctx.rr_graph;
+    const auto& rr_graph = device_ctx.rr_graph;
     int num_segment = segment_inf.size();
     int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment); //2x for CHANX & CHANY
     device_ctx.rr_indexed_data.resize(num_rr_indexed_data);

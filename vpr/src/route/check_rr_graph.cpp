@@ -172,7 +172,7 @@ void check_rr_graph(const t_graph_type graph_type,
                  */
                 if ((to_rr_type == CHANX || to_rr_type == CHANY)
                     && (rr_type == CHANX || rr_type == CHANY)) {
-                    auto switch_type = device_ctx.rr_switch_inf[kv.first].type();
+                    auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
 
                     VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
                               inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
@@ -555,7 +555,7 @@ static void check_unbuffered_edges(int from_node) {
 
         from_switch_type = rr_graph.edge_switch(RRNodeId(from_node), from_edge);
 
-        if (device_ctx.rr_switch_inf[from_switch_type].buffered())
+        if (rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).buffered())
             continue;
 
         /* We know that we have a pass transistor from from_node to to_node. Now *
@@ -578,7 +578,7 @@ static void check_unbuffered_edges(int from_node) {
                       "in check_unbuffered_edges:\n"
                       "connection from node %d to node %d uses an unbuffered switch (switch type %d '%s')\n"
                       "but there is no corresponding unbuffered switch edge in the other direction.\n",
-                      from_node, to_node, from_switch_type, device_ctx.rr_switch_inf[from_switch_type].name);
+                      from_node, to_node, from_switch_type, rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).name);
         }
 
     } /* End for all from_node edges */
@@ -607,7 +607,7 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
 
     //Check that to to_node's fan-in is correct, given the switch type
     int iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
-    auto switch_type = device_ctx.rr_switch_inf[iswitch].type();
+    auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).type();
 
     int to_fanin = rr_graph.node_fan_in(RRNodeId(to_node));
     switch (switch_type) {

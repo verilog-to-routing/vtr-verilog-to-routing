@@ -518,11 +518,12 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const
     VTR_ASSERT(!node_first_edge_.empty() && remapped_edges_);
 
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     auto first_id = size_t(node_first_edge_[id]);
     auto last_id = size_t((&node_first_edge_[id])[1]);
     for (size_t idx = first_id; idx < last_id; ++idx) {
         auto switch_idx = edge_switch_[RREdgeId(idx)];
-        if (!device_ctx.rr_switch_inf[switch_idx].configurable()) {
+        if (!rr_graph.rr_switch_inf(RRSwitchId(switch_idx)).configurable()) {
             return idx - first_id;
         }
     }
