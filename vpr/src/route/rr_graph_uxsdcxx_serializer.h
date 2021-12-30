@@ -507,24 +507,24 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // amoritized O(1).
         make_room_in_vector(rr_switch_inf_, id);
 
-        (*rr_switch_inf_)[id].R = 0;
-        (*rr_switch_inf_)[id].Cin = 0;
-        (*rr_switch_inf_)[id].Cout = 0;
-        (*rr_switch_inf_)[id].Cinternal = 0;
-        (*rr_switch_inf_)[id].Tdel = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].R = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Cin = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Cout = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Cinternal = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Tdel = 0;
 
-        return &(*rr_switch_inf_)[id];
+        return &(*rr_switch_inf_)[RRSwitchId(id)];
     }
     inline void finish_switches_switch(t_rr_switch_inf*& /*ctx*/) final {}
     inline size_t num_switches_switch(void*& /*ctx*/) final {
         return rr_switch_inf_->size();
     }
     inline const t_rr_switch_inf* get_switches_switch(int n, void*& /*ctx*/) final {
-        return &(*rr_switch_inf_)[n];
+        return &(*rr_switch_inf_)[RRSwitchId(n)];
     }
 
     inline int get_switch_id(const t_rr_switch_inf*& sw) final {
-        return sw - &(*rr_switch_inf_)[0];
+        return sw - &(*rr_switch_inf_)[RRSwitchId(0)];
     }
 
     inline void* init_rr_graph_switches(void*& /*ctx*/) final {

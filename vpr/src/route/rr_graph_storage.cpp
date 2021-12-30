@@ -222,18 +222,18 @@ class edge_sort_iterator {
 
 class edge_compare_src_node_and_configurable_first {
   public:
-    edge_compare_src_node_and_configurable_first(const std::vector<t_rr_switch_inf>& rr_switch_inf)
+    edge_compare_src_node_and_configurable_first(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf)
         : rr_switch_inf_(rr_switch_inf) {}
 
     bool operator()(const t_rr_edge_info& lhs, const edge_swapper& rhs) {
         auto lhs_src_node = RRNodeId(lhs.from_node);
         auto lhs_dest_node = RRNodeId(lhs.to_node);
-        auto lhs_is_configurable = rr_switch_inf_[lhs.switch_type].configurable();
+        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.switch_type)].configurable();
 
         auto rhs_edge = RREdgeId(rhs.idx_);
         auto rhs_src_node = rhs.storage_->edge_src_node_[rhs_edge];
         auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
-        auto rhs_is_configurable = rr_switch_inf_[rhs.storage_->edge_switch_[rhs_edge]].configurable();
+        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.storage_->edge_switch_[rhs_edge])].configurable();
 
         return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.storage_->edge_switch_[rhs_edge]);
     }
@@ -241,11 +241,11 @@ class edge_compare_src_node_and_configurable_first {
     bool operator()(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
         auto lhs_src_node = lhs.from_node;
         auto lhs_dest_node = lhs.to_node;
-        auto lhs_is_configurable = rr_switch_inf_[lhs.switch_type].configurable();
+        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.switch_type)].configurable();
 
         auto rhs_src_node = rhs.from_node;
         auto rhs_dest_node = rhs.to_node;
-        auto rhs_is_configurable = rr_switch_inf_[rhs.switch_type].configurable();
+        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.switch_type)].configurable();
 
         return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.switch_type);
     }
@@ -253,11 +253,11 @@ class edge_compare_src_node_and_configurable_first {
         auto lhs_edge = RREdgeId(lhs.idx_);
         auto lhs_src_node = lhs.storage_->edge_src_node_[lhs_edge];
         auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
-        auto lhs_is_configurable = rr_switch_inf_[lhs.storage_->edge_switch_[lhs_edge]].configurable();
+        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.storage_->edge_switch_[lhs_edge])].configurable();
 
         auto rhs_src_node = RRNodeId(rhs.from_node);
         auto rhs_dest_node = RRNodeId(rhs.to_node);
-        auto rhs_is_configurable = rr_switch_inf_[rhs.switch_type].configurable();
+        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.switch_type)].configurable();
 
         return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.storage_->edge_switch_[lhs_edge]) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.switch_type);
     }
@@ -265,18 +265,18 @@ class edge_compare_src_node_and_configurable_first {
         auto lhs_edge = RREdgeId(lhs.idx_);
         auto lhs_src_node = lhs.storage_->edge_src_node_[lhs_edge];
         auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
-        auto lhs_is_configurable = rr_switch_inf_[lhs.storage_->edge_switch_[lhs_edge]].configurable();
+        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.storage_->edge_switch_[lhs_edge])].configurable();
 
         auto rhs_edge = RREdgeId(rhs.idx_);
         auto rhs_src_node = rhs.storage_->edge_src_node_[rhs_edge];
         auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
-        auto rhs_is_configurable = rr_switch_inf_[rhs.storage_->edge_switch_[rhs_edge]].configurable();
+        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.storage_->edge_switch_[rhs_edge])].configurable();
 
         return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.storage_->edge_switch_[lhs_edge]) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.storage_->edge_switch_[rhs_edge]);
     }
 
   private:
-    const std::vector<t_rr_switch_inf>& rr_switch_inf_;
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 };
 
 class edge_compare_dest_node {
