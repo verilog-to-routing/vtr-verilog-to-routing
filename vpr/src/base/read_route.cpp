@@ -506,7 +506,6 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_nodes;
-    // const auto& switch_info = device_ctx.rr_switch_inf;
     /*TODO We need to remove temp_rr_graph once rr_graph is resolved*/
     const auto& temp_rr_graph = device_ctx.rr_graph;
     // If it's starting a new sub branch this is ok

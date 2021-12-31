@@ -234,6 +234,8 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
     if (subtree_parent_rt_node != nullptr) { /* Parent exists. */
         Tdel_start = subtree_parent_rt_node->Tdel;
         iswitch = unbuffered_subtree_rt_root->parent_switch;
+        /*TODO Just a note (no action needed for this PR):In future, we need to consider APIs that returns
+         * the Tdel for a routing trace in RRGraphView.*/
         Tdel_start += rr_graph.rr_switch_inf(RRSwitchId(iswitch)).R * unbuffered_subtree_rt_root->C_downstream;
         Tdel_start += rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
     } else { /* Subtree starts at SOURCE */
