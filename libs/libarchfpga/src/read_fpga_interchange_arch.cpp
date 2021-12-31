@@ -259,7 +259,6 @@ struct ArchReader {
 
     // Bel Cell mappings
     std::unordered_map<uint32_t, std::set<t_bel_cell_mapping>> bel_cell_mappings_;
-    std::unordered_map<std::string, int> segment_name_to_segment_idx;
 
     // Utils
 
@@ -2370,6 +2369,29 @@ struct ArchReader {
         }
     }
 
+    void add_segment_with_default_values(t_segment_inf& seg, std::string name) {
+        // Use default values as we will populate rr_graph with correct values
+        // This segments are just declaration of future use
+        seg.name = name;
+        seg.length = 1;
+        seg.frequency = 1;
+        seg.Rmetal = 1e-12;
+        seg.Cmetal = 1e-12;
+        seg.parallel_axis = BOTH_AXIS;
+
+        // TODO: Only bi-directional segments are created, but it the interchange format
+        //       has directionality information on PIPs, which may be used to infer the
+        //       segments' directonality.
+        seg.directionality = BI_DIRECTIONAL;
+        seg.arch_wire_switch = 1;
+        seg.arch_opin_switch = 1;
+        seg.cb.resize(1);
+        seg.cb[0] = true;
+        seg.sb.resize(2);
+        seg.sb[0] = true;
+        seg.sb[1] = true;
+    }
+
     void process_segments() {
         // Segment names will be taken from wires connected to pips
         // They are good representation for nodes
@@ -2382,32 +2404,14 @@ struct ArchReader {
             }
         }
 
-        int num_seg = wire_names.size();
+        int num_seg = wire_names.size() + 1;
 
         arch_->Segments.resize(num_seg);
-        size_t index = 0;
-        for (auto i : wire_names) {
-            // Use default values as we will populate rr_graph with correct values
-            // This segments are just declaration of future use
-            arch_->Segments[index].name = str(i);
-            arch_->Segments[index].length = 1;
-            arch_->Segments[index].frequency = 1;
-            arch_->Segments[index].Rmetal = 1e-12;
-            arch_->Segments[index].Cmetal = 1e-12;
-            arch_->Segments[index].parallel_axis = BOTH_AXIS;
 
-            // TODO: Only bi-directional segments are created, but it the interchange format
-            //       has directionality information on PIPs, which may be used to infer the
-            //       segments' directonality.
-            arch_->Segments[index].directionality = BI_DIRECTIONAL;
-            arch_->Segments[index].arch_wire_switch = 1;
-            arch_->Segments[index].arch_opin_switch = 1;
-            arch_->Segments[index].cb.resize(1);
-            arch_->Segments[index].cb[0] = true;
-            arch_->Segments[index].sb.resize(2);
-            arch_->Segments[index].sb[0] = true;
-            arch_->Segments[index].sb[1] = true;
-            segment_name_to_segment_idx[str(i)] = index;
+        size_t index = 1;
+        add_segment_with_default_values(arch_->Segments[0], std::string("__generic__"));
+        for (auto i : wire_names) {
+            add_segment_with_default_values(arch_->Segments[index], str(i));
             ++index;
         }
     }
