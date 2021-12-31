@@ -191,26 +191,76 @@ std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo&
     return histogram;
 }
 
-void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, std::string prefix) {
+void write_setup_timing_summary(std::string timing_summary_filename,
+                                double least_slack_cpd,
+                                double fmax,
+                                double setup_worst_neg_slack,
+                                double setup_total_neg_slack) {
+    if (vtr::check_file_name_extension(timing_summary_filename.c_str(), ".json")) {
+        // write report in JSON format
+        std::fstream fp;
+        fp.open(timing_summary_filename, std::fstream::out | std::fstream::trunc);
+        fp << "{\n";
+
+        fp << "  \"cpd\": " << least_slack_cpd << ",\n";
+        fp << "  \"fmax\": " << fmax << ",\n";
+
+        fp << "  \"swns\": " << setup_worst_neg_slack << ",\n";
+        fp << "  \"stns\": " << setup_total_neg_slack << "\n";
+        fp << "}\n";
+    } else if (vtr::check_file_name_extension(timing_summary_filename.c_str(), ".xml")) {
+        // write report in XML format
+        std::fstream fp;
+        fp.open(timing_summary_filename, std::fstream::out | std::fstream::trunc);
+        fp << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        fp << "<timing_summary_report>\n";
+
+        fp << "  <cpd value=\"" << least_slack_cpd << "\" unit=\"ns\" description=\"Final critical path delay\"></nets>\n";
+        fp << "  <fmax value=\"" << fmax << "\" unit=\"MHz\" description=\"Max circuit frequency\"></fmax>\n";
+        fp << "  <swns value=\"" << setup_worst_neg_slack << "\" unit=\"ns\" description=\"setup Worst Negative Slack (sWNS)\"></swns>\n";
+        fp << "  <stns value=\"" << setup_total_neg_slack << "\" unit=\"ns\" description=\"setup Total Negative Slack (sTNS)\"></stns>\n";
+
+        fp << "</block_usage_report>\n";
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Unknown extension on output %s",
+                        timing_summary_filename.c_str());
+    }
+}
+
+void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
+                                const tatum::SetupTimingAnalyzer& setup_analyzer,
+                                std::string prefix,
+                                std::string timing_summary_filename) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     auto crit_paths = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
     auto least_slack_cpd = find_least_slack_critical_path_delay(constraints, setup_analyzer);
-    VTR_LOG("%scritical path delay (least slack): %g ns", prefix.c_str(), sec_to_nanosec(least_slack_cpd.delay()));
+
+    double least_slack_cpd_delay = sec_to_nanosec(least_slack_cpd.delay());
+    double fmax = sec_to_mhz(least_slack_cpd.delay());
+    double setup_worst_neg_slack = sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer));
+    double setup_total_neg_slack = sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer));
+
+    VTR_LOG("%scritical path delay (least slack): %g ns", prefix.c_str(), least_slack_cpd_delay);
 
     if (crit_paths.size() == 1) {
         //Fmax is only meaningful for a single-clock circuit
-        VTR_LOG(", Fmax: %g MHz", sec_to_mhz(least_slack_cpd.delay()));
+        VTR_LOG(", Fmax: %g MHz", fmax);
     }
     VTR_LOG("\n");
 
-    VTR_LOG("%ssetup Worst Negative Slack (sWNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
-    VTR_LOG("%ssetup Total Negative Slack (sTNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
+    VTR_LOG("%ssetup Worst Negative Slack (sWNS): %g ns\n", prefix.c_str(), setup_worst_neg_slack);
+    VTR_LOG("%ssetup Total Negative Slack (sTNS): %g ns\n", prefix.c_str(), setup_total_neg_slack);
     VTR_LOG("\n");
 
     VTR_LOG("%ssetup slack histogram:\n", prefix.c_str());
     print_histogram(create_setup_slack_histogram(setup_analyzer));
+
+    if (!timing_summary_filename.empty())
+        write_setup_timing_summary(timing_summary_filename, least_slack_cpd_delay,
+                                   fmax, setup_worst_neg_slack, setup_total_neg_slack);
 
     if (crit_paths.size() > 1) {
         //Multi-clock

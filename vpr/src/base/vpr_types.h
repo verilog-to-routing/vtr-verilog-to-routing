@@ -1299,6 +1299,7 @@ struct t_analysis_opts {
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
+    std::string write_timing_summary;
 
     e_timing_update_type timing_update_type;
 };

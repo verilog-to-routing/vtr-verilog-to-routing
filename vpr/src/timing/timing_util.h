@@ -48,8 +48,14 @@ std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo&
                                                           size_t num_bins = 10);
 
 //Print a useful summary of timing information
-void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, std::string prefix);
+void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, std::string prefix, std::string timing_summary_filename);
 
+//Write a useful summary of timing information to JSON file
+void write_setup_timing_summary(std::string timing_summary_filename,
+                                double least_slack_cpd,
+                                double fmax,
+                                double setup_worst_neg_slack,
+                                double setup_total_neg_slack);
 /*
  * Hold-time related statistics
  */
