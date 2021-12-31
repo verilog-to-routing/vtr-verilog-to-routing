@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
@@ -61,16 +63,18 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
 }
 
-void printClusteredNetlistStats() {
+void printClusteredNetlistStats(std::string block_usage_filename) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int j, L_num_p_inputs, L_num_p_outputs;
+    int j, L_num_p_inputs, L_num_p_outputs, num_nets, num_blocks;
     std::vector<int> num_blocks_type(device_ctx.logical_block_types.size(), 0);
+    num_nets = (int)cluster_ctx.clb_nlist.nets().size();
+    num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
 
     VTR_LOG("\n");
-    VTR_LOG("Netlist num_nets: %d\n", (int)cluster_ctx.clb_nlist.nets().size());
-    VTR_LOG("Netlist num_blocks: %d\n", (int)cluster_ctx.clb_nlist.blocks().size());
+    VTR_LOG("Netlist num_nets: %d\n", num_nets);
+    VTR_LOG("Netlist num_blocks: %d\n", num_blocks);
 
     /* Count I/O input and output pads */
     L_num_p_inputs = 0;
@@ -106,7 +110,69 @@ void printClusteredNetlistStats() {
     VTR_LOG("Netlist inputs pins: %d\n", L_num_p_inputs);
     VTR_LOG("Netlist output pins: %d\n", L_num_p_outputs);
     VTR_LOG("\n");
+    if (!block_usage_filename.empty())
+        writeClusteredNetlistStats(block_usage_filename, num_nets, num_blocks,
+                                   L_num_p_inputs, L_num_p_outputs,
+                                   num_blocks_type,
+                                   device_ctx.logical_block_types);
+
     num_blocks_type.clear();
+}
+
+void writeClusteredNetlistStats(std::string block_usage_filename,
+                                int num_nets,
+                                int num_blocks,
+                                int L_num_p_inputs,
+                                int L_num_p_outputs,
+                                std::vector<int> num_blocks_type,
+                                std::vector<t_logical_block_type> logical_block_types) {
+    if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".json")) {
+        // write report in JSON format
+        std::fstream fp;
+        fp.open(block_usage_filename, std::fstream::out | std::fstream::trunc);
+        fp << "{\n";
+
+        fp << "  \"num_nets\": \"" << num_nets << "\",\n";
+        fp << "  \"num_blocks\": \"" << num_blocks << "\",\n";
+
+        fp << "  \"input_pins\": \"" << L_num_p_inputs << "\",\n";
+        fp << "  \"output_pins\": \"" << L_num_p_outputs << "\",\n";
+
+        fp << "  \"blocks\": {\n";
+
+        for (const auto& type : logical_block_types) {
+            fp << "    \"" << type.name << "\": " << num_blocks_type[type.index];
+            if ((int)type.index < (int)logical_block_types.size() - 1)
+                fp << ",\n";
+            else
+                fp << "\n";
+        }
+        fp << "  }\n";
+        fp << "}\n";
+    } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".xml")) {
+        // write report in XML format
+        std::fstream fp;
+        fp.open(block_usage_filename, std::fstream::out | std::fstream::trunc);
+        fp << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        fp << "<block_usage_report>\n";
+
+        fp << "  <nets num=\"" << num_nets << "\"></nets>\n";
+        fp << "  <blocks num=\"" << num_blocks << "\">\n";
+
+        for (const auto& type : logical_block_types) {
+            fp << "    <block type=\"" << type.name << "\" usage=\"" << num_blocks_type[type.index] << "\"></block>\n";
+        }
+        fp << "  </blocks>\n";
+
+        fp << "  <input_pins num=\"" << L_num_p_inputs << "\"></input_pins>\n";
+        fp << "  <output_pins num=\"" << L_num_p_outputs << "\"></output_pins>\n";
+
+        fp << "</block_usage_report>\n";
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                        "Unknown extension on output %s",
+                        block_usage_filename.c_str());
+    }
 }
 
 static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {

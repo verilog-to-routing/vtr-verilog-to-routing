@@ -98,6 +98,7 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->out_file_prefix = Options->out_file_prefix;
     FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
     FileNameOpts->write_vpr_constraints_file = Options->write_vpr_constraints_file;
+    FileNameOpts->write_block_usage = Options->write_block_usage;
 
     FileNameOpts->verify_file_digests = Options->verify_file_digests;
 

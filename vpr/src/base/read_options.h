@@ -36,6 +36,8 @@ struct t_options {
     argparse::ArgValue<std::string> write_router_lookahead;
     argparse::ArgValue<std::string> read_router_lookahead;
 
+    argparse::ArgValue<std::string> write_block_usage;
+
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
     argparse::ArgValue<bool> do_placement;
