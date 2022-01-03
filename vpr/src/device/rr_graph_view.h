@@ -65,7 +65,7 @@ class RRGraphView {
      *        // Do something with each node 
      *      } 
      */
-    vtr::StrongIdRange<RRNodeId> nodes() const {
+    inline vtr::StrongIdRange<RRNodeId> nodes() const {
         return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(size()));
     }
 
@@ -327,7 +327,7 @@ class RRGraphView {
      *     // Do something with the edge
      *   }
      */
-    edge_idx_range edges(const RRNodeId& id) const {
+    inline edge_idx_range edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
@@ -391,7 +391,6 @@ class RRGraphView {
     const t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     const RRSpatialLookup& node_lookup_;
-    vtr::vector<RRNodeId, t_rr_node_data> node_ids_; /* Unique identifiers for the nodes */
 
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
