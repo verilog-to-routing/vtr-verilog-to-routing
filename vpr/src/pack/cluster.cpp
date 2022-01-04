@@ -1030,7 +1030,7 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
     if (attraction_groups.num_attraction_groups() == 0) {
         for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
             if (pb->pb_stats->feasible_blocks[i] == molecule) {
-                return; /* already in queue, do nothing */
+                return; // already in queue, do nothing
             }
         }
     }
@@ -1046,6 +1046,7 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 
         if (num_molecule_failures > 0) {
             remove_molecule_from_pb_stats_candidates(molecule, pb);
+            return;
         }
     }
 
@@ -2578,12 +2579,6 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                                                        cluster_index, transitive_fanout_threshold, feasible_block_array_size, attraction_groups);
         }
     }
-
-    // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
-    /*if (cur_pb->pb_stats->num_feasible_blocks < 5 && cur_pb->pb_stats->pulled_from_atom_groups <= 5) {
-     * cur_pb->pb_stats->pulled_from_atom_groups++;
-     * add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups, feasible_block_array_size);
-     * }*/
 
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
