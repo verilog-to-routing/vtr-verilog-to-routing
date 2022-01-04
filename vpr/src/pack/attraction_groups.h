@@ -61,7 +61,7 @@ class AttractionInfo {
     //Setters and getters for the class
     AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
 
-    const AttractionGroup& get_attraction_group_info(const AttractGroupId group_id);
+    AttractionGroup& get_attraction_group_info(const AttractGroupId group_id);
 
     void set_atom_attraction_group(const AtomBlockId atom_id, const AttractGroupId group_id);
 

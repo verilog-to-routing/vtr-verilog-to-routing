@@ -16,9 +16,10 @@ void GridTileLookup::fill_type_matrix(t_logical_block_type_ptr block_type, vtr::
     for (int i_col = type_count.dim_size(0) - 1; i_col >= 0; i_col--) {
         for (int j_row = type_count.dim_size(1) - 1; j_row >= 0; j_row--) {
             auto& tile = device_ctx.grid[i_col][j_row].type;
+            const t_grid_tile& grid_tile = device_ctx.grid[i_col][j_row];
             type_count[i_col][j_row] = 0;
 
-            if (is_tile_compatible(tile, block_type)) {
+            if (is_tile_compatible(tile, block_type) && grid_tile.height_offset == 0 && grid_tile.width_offset == 0) {
                 for (const auto& sub_tile : tile->sub_tiles) {
                     if (is_sub_tile_compatible(tile, block_type, sub_tile.capacity.low)) {
                         type_count[i_col][j_row] = sub_tile.capacity.total();

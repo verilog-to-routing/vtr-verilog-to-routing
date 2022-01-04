@@ -18,7 +18,6 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     if (attraction_groups_on) {
         for (int ipart = 0; ipart < num_parts; ipart++) {
             PartitionId partid(ipart);
-            Partition part = floorplanning_ctx.constraints.get_partition(partid);
 
             AttractionGroup group_info;
             group_info.group_atoms = floorplanning_ctx.constraints.get_part_atoms(partid);
@@ -41,7 +40,7 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     }
 }
 
-const AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
+AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
     return attraction_groups[group_id];
 }
 
