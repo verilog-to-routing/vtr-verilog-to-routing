@@ -53,6 +53,8 @@ The flow is depicted in the figure below.
 	# resolve asynchronous dffs
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
+    # To resolve Yosys internal indexed part-select circuitry
+    techmap */t:$shift */t:$shiftx;
 
 	## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
 	## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
@@ -67,8 +69,13 @@ The flow is depicted in the figure below.
 	flatten;
 	# Transforms pmux into trees of regular multiplexers
 	pmuxtree;
-	# undirven to ensure there is no wire without drive
-	opt -undriven -full; # -noff #potential option to remove all sdff and etc. Only dff will remain
+    # To possibly reduce words size
+    wreduce;
+	# "undirven" to ensure there is no wire without drive
+    # "opt_muxtree" removes dead branches, "opt_expr" performs constant folding,
+    # removes "undef" inputs from mux cells, and replaces muxes with buffers and inverters.
+    # "-noff" a potential option to remove all sdff and etc. Only dff will remain
+	opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;
 	# Make name convention more readable
 	autoname;
 	# Print statistics
@@ -97,14 +104,18 @@ The generic coarse-grained synthesis commands includes:
 
 After performing basic synthesis steps, the ``techmap`` command with the input ``adff2dff`` transforms DFFs with asynchronous reset to the synchronous form using the design provided by Yosys.
 The next command follows the same approach but with a modified version of the provided design file for DFFs with asynchronous reset and synchronous data enable signals.
+The last techmap command is in place to resolve the Yosys internal circuitries designed specifically for indexed part-select Verilog code.
+Since this step is mainly related to the Verilog elaboration, we ask Yosys to transform the ``$shift`` and ``$shiftx`` sub-circuits into a more straightforward representation.
 
 The ``flatten`` command generates an output netlist with only one module, representing the HDL circuit design's top module.
 The ``pmuxtree`` pass is used to transforms `pmux`, a sub-circuit representing parallel cases, into trees of regular multiplexers.
+The option ``wreduce`` performs possible word size reduction for operations to avoid propagating additional signals to the subsequent phases.
 In the ``autoname`` passes, Yosys generates an easy-to-read BLIF file by transforming signal names into a shorter format.
 This command removes some debugging information, such as the path to the source file, that Yosys inserts in names by default and generally gives easier-to-interpret names.
 
 Then, the optimization pass is called to make the netlist ready for output.
 The option ``undriven`` ensures that all nets without a driver are removed, while the ``full`` optimization option is used to remove duplicated inputs in `AND`, `OR` and `MUX` gates.
+The ``opt_muxtree`` removes dead branches, ``opt_expr`` performs possible constant folding, in addition to removing ``undef`` inputs from mux cells and transforming muxes into buffers and inverters.
 Ultimately, we use the ``write_blif`` command to output the coarse-grained BLIF file.
 The option ``param`` prints some additional information about logic cells into the BLIF file, and the ``impltf`` option conceals the definition of primary netlist ports, i.e., VCC, GND and PAD, in the output.
 

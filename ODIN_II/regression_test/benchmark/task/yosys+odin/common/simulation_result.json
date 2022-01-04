@@ -532,13 +532,13 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 7,
-        "logic element": 1031,
-        "Adder": 1055,
+        "logic element": 16,
+        "Adder": 11,
         "generic logic size": 4,
-        "Longest Path": 1090,
-        "Average Path": 9,
-        "Estimated LUTs": 1031,
-        "Total Node": 2086
+        "Longest Path": 17,
+        "Average Path": 4,
+        "Estimated LUTs": 16,
+        "Total Node": 27
     },
     "common/div_by_const/no_arch": {
         "test_name": "common/div_by_const/no_arch",
@@ -547,12 +547,13 @@
         "exec_time(ms)": 7290.3,
         "simulation_time(ms)": 1742.3,
         "test_coverage(%)": 100,
+        "Pi": 3,
         "Po": 7,
-        "logic element": 5538,
-        "Longest Path": 255,
-        "Average Path": 19,
-        "Estimated LUTs": 5538,
-        "Total Node": 5538
+        "logic element": 65,
+        "Longest Path": 23,
+        "Average Path": 6,
+        "Estimated LUTs": 65,
+        "Total Node": 65
     },
     "common/div/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/div/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -793,12 +794,12 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 4,
-        "logic element": 8,
+        "logic element": 5,
         "generic logic size": 4,
         "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Average Path": 3,
+        "Estimated LUTs": 5,
+        "Total Node": 5
     },
     "common/logical_not/no_arch": {
         "test_name": "common/logical_not/no_arch",
@@ -809,11 +810,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 4,
-        "logic element": 8,
+        "logic element": 5,
         "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Average Path": 3,
+        "Estimated LUTs": 5,
+        "Total Node": 5
     },
     "common/lt/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/lt/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1226,12 +1227,12 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 5,
         "generic logic size": 4,
         "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Average Path": 4,
+        "Estimated LUTs": 5,
+        "Total Node": 5
     },
     "common/reduce_and/no_arch": {
         "test_name": "common/reduce_and/no_arch",
@@ -1242,11 +1243,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 8,
+        "logic element": 5,
         "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Average Path": 4,
+        "Estimated LUTs": 5,
+        "Total Node": 5
     },
     "common/reduce_bool/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/reduce_bool/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1558,6 +1559,38 @@
         "Average Path": 5,
         "Estimated LUTs": 7,
         "Total Node": 7
+    },
+    "common/shiftx/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "common/shiftx/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "generated_blif": "shiftx_generated.blif",
+        "max_rss(MiB)": 81.9,
+        "exec_time(ms)": 105,
+        "simulation_time(ms)": 5.7,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 4,
+        "logic element": 9,
+        "generic logic size": 4,
+        "Longest Path": 4,
+        "Average Path": 3,
+        "Estimated LUTs": 9,
+        "Total Node": 9
+    },
+    "common/shiftx/no_arch": {
+        "test_name": "common/shiftx/no_arch",
+        "generated_blif": "shiftx_generated.blif",
+        "max_rss(MiB)": 61.8,
+        "exec_time(ms)": 24.1,
+        "simulation_time(ms)": 6,
+        "test_coverage(%)": 100,
+        "Pi": 6,
+        "Po": 4,
+        "logic element": 9,
+        "Longest Path": 4,
+        "Average Path": 3,
+        "Estimated LUTs": 9,
+        "Total Node": 9
     },
     "DEFAULT": {
         "test_name": "n/a",

@@ -117,7 +117,7 @@ ifeq ($(_ELABORATOR), ODIN)
 	$(MAKE) sanitize \
 	&& ./verify_odin.sh --no_report -j $(NB_OF_PROCESS) \
 			-t regression_test/benchmark/suite/light_suite \
-			-t regression_test/benchmark/suite/vtr_light_suite \
+			-t regression_test/benchmark/suite/vtr_light_suite; \
 	&& $(MAKE) build \
 	&& ./verify_odin.sh --no_report --continue -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/heavy_suite; \
@@ -125,7 +125,7 @@ ifeq ($(_ELABORATOR), ODIN)
 else ifeq ($(_ELABORATOR), YOSYS)
 	$(MAKE) sanitize ELABORATOR=YOSYS \
 	&& ./verify_odin.sh --no_report -j $(NB_OF_PROCESS) \
-			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite \
+			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite; \
 	&& $(MAKE) build ELABORATOR=YOSYS \
 	&& ./verify_odin.sh --no_report --continue -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/yosys+odin/techmap_heavysuite; \
@@ -145,7 +145,7 @@ ifeq ($(_ELABORATOR), ODIN)
 else ifeq ($(_ELABORATOR), YOSYS)
 	$(MAKE) sanitize ELABORATOR=YOSYS \
 	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
-			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite \
+			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite; \
 	$(MAKE) build ELABORATOR=YOSYS \
 	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/yosys+odin/techmap_heavysuite; \
@@ -165,7 +165,7 @@ ifeq ($(_ELABORATOR), ODIN)
 else ifeq ($(_ELABORATOR), YOSYS)
 	$(MAKE) sanitize ELABORATOR=YOSYS \
 	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
-			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite \
+			-t regression_test/benchmark/suite/yosys+odin/techmap_lightsuite; \
 	$(MAKE) build ELABORATOR=YOSYS \
 	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/yosys+odin/techmap_heavysuite; \
