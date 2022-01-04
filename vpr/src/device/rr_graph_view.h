@@ -38,7 +38,8 @@ class RRGraphView {
     RRGraphView(const t_rr_graph_storage& node_storage,
                 const RRSpatialLookup& node_lookup,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments);
+                const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -350,6 +351,24 @@ class RRGraphView {
     inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
         return rr_segments_[seg_id];
     }
+    /** @brief  Return the switch information that is categorized in the rr_switch_inf with a given id
+     * rr_switch_inf is created to minimize memory footprint of RRGraph classs
+     * While the RRG could contain millions (even much larger) of edges, there are only
+     * a limited number of types of switches.
+     * Hence, we use a flyweight pattern to store switch-related information that differs
+     * only for types of switches (switch type, drive strength, R, C, etc.).
+     * Each edge stores the ids of the switch that implements it so this additional information
+     * can be easily looked up.
+     *
+     * @note All the switch-related information, such as R, C, should be placed in rr_switch_inf
+     * but NOT directly in the edge-related data of RRGraph.
+     * If you wish to create a new data structure to represent switches between routing resources,
+     * please follow the flyweight pattern by linking your switch ids to edges only!
+     */
+
+    inline const t_rr_switch_inf& rr_switch_inf(RRSwitchId switch_id) const {
+        return rr_switch_inf_[switch_id];
+    }
 
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
@@ -369,6 +388,8 @@ class RRGraphView {
 
     /* Segment info for rr nodes */
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
+    /* switch info for rr nodes */
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 };
 
 #endif

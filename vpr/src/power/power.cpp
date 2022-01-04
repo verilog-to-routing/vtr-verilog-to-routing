@@ -925,7 +925,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                                           POWER_COMPONENT_ROUTE_SB);
 
                 /* Buffer Size */
-                switch (device_ctx.rr_switch_inf[node_power->driver_switch_type].power_buffer_type) {
+                switch (rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).power_buffer_type) {
                     case POWER_BUFFER_TYPE_AUTO:
                         /*
                          * C_per_seg_split = ((float) node->num_edges
@@ -935,10 +935,10 @@ static void power_usage_routing(t_power_usage* power_usage,
                          * C_per_seg_split);
                          * buffer_size = std::max(buffer_size, 1.0F);
                          */
-                        buffer_size = power_calc_buffer_size_from_Cout(device_ctx.rr_switch_inf[node_power->driver_switch_type].Cout);
+                        buffer_size = power_calc_buffer_size_from_Cout(rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).Cout);
                         break;
                     case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
-                        buffer_size = device_ctx.rr_switch_inf[node_power->driver_switch_type].power_buffer_size;
+                        buffer_size = rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).power_buffer_size;
                         buffer_size = std::max(buffer_size, 1.0F);
                         break;
                     case POWER_BUFFER_TYPE_NONE:
