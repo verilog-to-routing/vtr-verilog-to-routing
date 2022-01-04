@@ -743,6 +743,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                              clb_inter_blk_nets,
                                                              clb_index, packer_opts.pack_verbosity,
                                                              primitive_candidate_block_types);
+                    if (prev_molecule == next_molecule) {
+                        num_same_molecules++;
+                    }
                     continue;
                 }
 
