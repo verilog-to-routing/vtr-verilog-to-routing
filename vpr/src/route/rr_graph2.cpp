@@ -220,23 +220,20 @@ std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& s
     return result;
 }
 
-int get_parallel_seg_index (const int abs_index, 
-                            const t_unified_to_parallel_seg_index& index_map,
-                            const e_parallel_axis parallel_axis) {
+int get_parallel_seg_index(const int abs_index,
+                           const t_unified_to_parallel_seg_index& index_map,
+                           const e_parallel_axis parallel_axis) {
+    int index = -1;
+    auto itr_pair = index_map.equal_range(abs_index);
 
-    int index=-1; 
-    auto itr_pair= index_map.equal_range(abs_index); 
-    
-    for (auto itr=itr_pair.first; itr != itr_pair.second; ++itr){
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == parallel_axis) {
-            index = itr->second.first; 
+            index = itr->second.first;
         }
     }
 
-    return index; 
-
+    return index;
 }
-
 
 /*  Returns an array of tracks per segment, with matching indices to segment_inf by combining               *
  * sets per segment for each direction. This is a helper function to avoid having to refactor              *

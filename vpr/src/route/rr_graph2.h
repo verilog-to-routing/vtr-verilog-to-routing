@@ -188,9 +188,9 @@ std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& s
                                              t_unified_to_parallel_seg_index& seg_index_map,
                                              enum e_parallel_axis parallel_axis);
 
-int get_parallel_seg_index  (const int abs, 
-                             const t_unified_to_parallel_seg_index& index_map,
-                             const e_parallel_axis parallel_axis); 
+int get_parallel_seg_index(const int abs,
+                           const t_unified_to_parallel_seg_index& index_map,
+                           const e_parallel_axis parallel_axis);
 
 std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
                                                     const std::vector<t_segment_inf>& segment_inf_y,
