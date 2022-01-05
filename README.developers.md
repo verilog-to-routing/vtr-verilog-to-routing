@@ -923,6 +923,80 @@ This describes adding a test to `vtr_reg_strong`, but the process is similar for
     $ git commit
     ```
 
+## Adding Unit Tests
+This describes the necessary steps to create unit tests.
+
+VTR uses [Catch2](https://github.com/catchorg/Catch2) as its unit testing
+framework.
+
+Suppose a given project has the following directory structure:
+
+```shell
+example_project
+|
+|   CMakeLists.txt
+└───src
+│   │   example_file_1.h
+│   │   example_file_1.cpp
+|   |   example_file_2.h
+|   |   example_file_2.cpp
+|   |   example_file_3.h
+|   |   example_file_3.cpp
+|   |   ...
+└───folder_1
+|   |   ...
+└───folder_2
+|   |   ...
+└───...
+```
+
+Now, taking the above project, to add a new unit test for a function in 'example_file_1.cpp' the following steps need to be performed:
+
+1. Create a folder within the project called 'test' (if it did not already exist). This folder will contain all unit tests relevant to the project. The project directory should look as follows:
+    
+    ```shell
+    example_project
+    |
+    |   CMakeLists.txt
+    └───src
+    │   │   example_file_1.h
+    │   │   example_file_1.cpp
+    |   |   example_file_2.h
+    |   |   example_file_2.cpp
+    |   |   example_file_3.h
+    |   |   example_file_3.cpp
+    |   |   ...
+    └───test
+    └───folder_1
+    |   |   ...
+    └───folder_2
+    |   |   ...
+    └───...
+    ```
+
+2. Create a file that will contain the unit tests to verify 'example_file_1.cpp' and add it to the test folder shown above (an example unit test file could be 'test_example_file_1.cpp'). Then refer to [Catch2](https://github.com/catchorg/Catch2) for more information about how to create unit tests.
+
+3. If unit tests are being added to the project for the first time, then modify the projects 'CMakeLists.txt' file to include the following lines.
+    
+    ```shell
+    file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+    add_executable(<unit_test_target_name> ${TEST_SOURCES})
+    target_link_libraries(<unit_test_target_name>
+                            Catch2::Catch2WithMain
+                            <additional_required_libraries>)
+    ```
+
+    The above lines ensure that the unit tests are compiled into an executable with the provided target name (as shown in the code snippet above). 
+
+    The generated unit test program can then be run to execute all unit tests. Refer to [Catch2](https://github.com/catchorg/Catch2) to for all the various command line options that can be used with the unit test program. 
+
+4. The Catch2 unit testing framework generates warnings when it is compiled. These warnings are not related to VTR and are due to the unit test frameworks source code. To remove these warnings during compilation, the following should be added to the projects 'CMakeLists.txt' file. This should be added after the code snippet in step 3 above.
+    
+    ```shell
+    target_compile_options(<unit_test_target_name> PRIVATE "-w")
+    ```
+    The above line ensures that any warnings that come up during the compilation of the unit test files will be ignored. It is recommended that any warnings related to the unit test framework should be ignored during compilation.
+
 # Debugging Aids
 VTR has support for several additional tools/features to aid debugging.
 
