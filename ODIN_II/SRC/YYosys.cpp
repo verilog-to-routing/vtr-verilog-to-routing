@@ -236,6 +236,8 @@ void YYosys::execute() {
         // Transform asynchronous dffs to synchronous dffs using techlib files provided by Yosys
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
+        // To resolve Yosys internal indexed part-select circuitries
+        run_pass(std::string("techmap */t:$shift */t:$shiftx"));
 
         /**
          * convert yosys mem blocks to BRAMs / ROMs
@@ -254,8 +256,13 @@ void YYosys::execute() {
         run_pass(std::string("flatten"));
         // Transforms PMUXes into trees of regular multiplexers
         run_pass(std::string("pmuxtree"));
+        // To possibly reduce word sizes by Yosys
+        run_pass(std::string("wreduce"));
         // "-undirven" to ensure there is no wire without drive
-        run_pass(std::string("opt -undriven -full")); // -noff #potential option to remove all sdffXX and etc. Only dff will remain
+        // -noff #potential option to remove all sdffXX and etc. Only dff will remain
+        // "opt_muxtree" removes dead branches, "opt_expr" performs const folding and
+        // removes "undef" from mux inputs and replace muxes with buffers and inverters
+        run_pass(std::string("opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;"));
         // Use a readable name convention
         run_pass(std::string("autoname"));
         // Print statistics

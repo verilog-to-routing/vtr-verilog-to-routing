@@ -832,7 +832,7 @@ bool StubFinder::RecurseTree(t_rt_node* rt_root) {
     } else {
         bool is_stub = true;
         for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
-            bool driver_switch_configurable = device_ctx.rr_switch_inf[edge->iswitch].configurable();
+            bool driver_switch_configurable = rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).configurable();
 
             bool child_is_stub = RecurseTree(edge->child);
             if (!child_is_stub) {

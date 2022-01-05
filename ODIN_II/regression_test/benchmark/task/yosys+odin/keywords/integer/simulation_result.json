@@ -21,11 +21,11 @@
         "test_coverage(%)": 98.2,
         "Pi": 32,
         "Po": 32,
-        "logic element": 95,
-        "Longest Path": 35,
+        "logic element": 65,
+        "Longest Path": 20,
         "Average Path": 4,
-        "Estimated LUTs": 95,
-        "Total Node": 95
+        "Estimated LUTs": 65,
+        "Total Node": 65
     },
     "DEFAULT": {
         "test_name": "n/a",

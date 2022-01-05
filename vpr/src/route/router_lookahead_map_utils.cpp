@@ -75,22 +75,22 @@ PQ_Entry::PQ_Entry(
     this->congestion_upstream = parent_congestion_upstream;
     this->R_upstream = parent_R_upstream;
     if (!starting_node) {
-        float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
+        float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel;
         Tsw += Tsw_adjust;
         VTR_ASSERT(Tsw >= 0.f);
-        float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
+        float Rsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).R;
         float Cnode = rr_graph.node_C(set_rr_node);
         float Rnode = rr_graph.node_R(set_rr_node);
 
         float T_linear = 0.f;
-        if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
+        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
         } else { /* Pass transistor */
             T_linear = Tsw + 0.5 * Rsw * Cnode;
         }
 
         float base_cost = 0.f;
-        if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
+        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
             base_cost = get_single_rr_cong_base_cost(size_t(set_rr_node));
         }
 
@@ -114,13 +114,13 @@ util::PQ_Entry_Delay::PQ_Entry_Delay(
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;
-        float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
-        float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
+        float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel;
+        float Rsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).R;
         float Cnode = rr_graph.node_C(set_rr_node);
         float Rnode = rr_graph.node_R(set_rr_node);
 
         float T_linear = 0.f;
-        if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
+        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
         } else { /* Pass transistor */
             T_linear = Tsw + 0.5 * Rsw * Cnode;
@@ -141,7 +141,8 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
-        if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
+        const auto& rr_graph = device_ctx.rr_graph;
+        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
             this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(size_t(set_rr_node));
         } else {
             this->base_cost = parent->base_cost;
@@ -496,7 +497,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 int iswitch = rr_graph.edge_switch(edge);
-                float incr_delay = device_ctx.rr_switch_inf[iswitch].Tdel;
+                float incr_delay = temp_rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
 
                 RRNodeId next_node = rr_graph.edge_sink_node(edge);
 
@@ -591,7 +592,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 int iswitch = rr_graph.edge_switch(edge);
-                float new_delay = device_ctx.rr_switch_inf[iswitch].Tdel;
+                float new_delay = temp_rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
 
                 RRNodeId next_node = rr_graph.edge_sink_node(edge);
 
