@@ -236,26 +236,26 @@ void check_rr_graph(const t_graph_type graph_type,
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
                         if (has_adjacent_channel(node, device_ctx.grid)) {
-                            auto block_type = device_ctx.grid[rr_graph.node_xlow(node.id())][rr_graph.node_ylow(node.id())].type;
-                            std::string pin_name = block_type_pin_index_to_name(block_type, node.pin_num());
+                            auto block_type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
+                            std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node));
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : SIDES) {
-                                if (!rr_graph.is_node_on_specific_side(RRNodeId(rr_node), node_side)) {
+                                if (!rr_graph.is_node_on_specific_side(rr_node, node_side)) {
                                     continue;
                                 }
                                 VTR_LOG_ERROR("in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s pin=%s has no fanin.\n",
-                                              inode, node.type_string(), rr_graph.node_xlow(node.id()), rr_graph.node_ylow(node.id()), block_type->name, SIDE_STRING[node_side], pin_name.c_str());
+                                              inode, rr_graph.node_type_string(rr_node), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), block_type->name, SIDE_STRING[node_side], pin_name.c_str());
                             }
                         }
                     } else {
                         VTR_LOG_ERROR("in check_rr_graph: node %d (%s) has no fanin.\n",
-                                      inode, device_ctx.rr_nodes[inode].type_string());
+                                      inode, rr_graph.node_type_string(rr_node));
                     }
                 } else if (!is_chain && !is_fringe_warning_sent) {
                     VTR_LOG_WARN(
                         "in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
                         "\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
-                        inode, device_ctx.rr_nodes[inode].type_string(), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
+                        inode, rr_graph.node_type_string(rr_node), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node));
                     is_fringe_warning_sent = true;
                 }
             }
@@ -282,7 +282,7 @@ static bool rr_node_is_global_clb_ipin(RRNodeId inode) {
     if (rr_graph.node_type(inode) != IPIN)
         return (false);
 
-    ipin = device_ctx.rr_nodes[size_t(inode)].ptc_num();
+    ipin = rr_graph.node_pin_num(inode);
 
     return type->is_ignored_pin[ipin];
 }
@@ -306,7 +306,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     xhigh = rr_graph.node_xhigh(rr_node);
     ylow = rr_graph.node_ylow(rr_node);
     yhigh = rr_graph.node_yhigh(rr_node);
-    ptc_num = device_ctx.rr_nodes[inode].ptc_num();
+    ptc_num = rr_graph.node_ptc_num(rr_node);
     capacity = rr_graph.node_capacity(rr_node);
     cost_index = rr_graph.node_cost_index(rr_node);
     type = nullptr;

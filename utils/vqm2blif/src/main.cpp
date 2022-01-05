@@ -81,6 +81,7 @@
 #include "lut_stats.h"
 #include "vtr_error.h"
 #include "physical_types.h"
+#include "hard_block_recog.h"
 
 #include <sys/stat.h>
 
@@ -140,13 +141,18 @@ t_boolean print_unused_subckt_pins; //user-set flag which controls whether subck
                                     //this option to be true.
 t_boolean eblif_format;             //If true, writes circuit in extended BLIF (.eblif) format (supported by YOSYS & VPR)
 
+t_boolean insert_custom_hard_blocks; // user-set flag. Which if true, helps find and filter user-defined hard blocks within the netlist (based on the supplied hard block names) and then instantiates the hard blocks within the blif file. 
+									// or if false, then the netlist is processed without identifying any hard blocks.
+									// this option should only be used if the original user-design contained custom hard-blocks.
+									// The user-defined hard block names need to be provided
+
 //============================================================================================
 //			FUNCTION DECLARATIONS
 //============================================================================================
 
 //Setup Functions
-void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
-			   string* outfile);
+void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, string* outfile,
+			   string* device, std::vector<std::string>* hard_block_list);
 	void setup_tokens (tokmap* tokens);
 
 //Execution Functions
@@ -263,6 +269,13 @@ int main(int argc, char* argv[])
 	//used to construct output filenames from project name 
 	//char* filename necessitated by vqm_parse_file()
 
+	// a list which stores all the user supplied custom hard block type names
+	std::vector<std::string> hard_block_type_name_list;
+
+	// indicates the type of device the circuit is targetting
+	// we set the default value to the stratix 4 device
+	string device = "stratixiv";
+
 //*************************************************************************************************
 //	Begin Conversion
 //*************************************************************************************************
@@ -271,7 +284,7 @@ int main(int argc, char* argv[])
 	cout << "This parser reads a .vqm file and converts it to .blif format.\n\n" ;
 	
 	//verify command-line is correct, populate input variables and global mode flags.
-	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file);
+	cmd_line_parse(argc, argv, &source_file, &arch_file, &out_file, &device,&hard_block_type_name_list);
 
 	setup_lut_support_map ();	//initialize LUT support for cleanup and elaborate functions
 
@@ -369,8 +382,29 @@ int main(int argc, char* argv[])
 			//file contains cleaned data read from the .vqm structures.
 		}
 	}
+
+	// only process the netlist for any custom hard blocks if the user provided valid hard block names
+	if (insert_custom_hard_blocks)
+	{	
+		cout << "\n>> Identifying and instantiating custom hard blocks within the netlist.\n";
 		
+		processStart = clock();
 		
+		try
+		{
+			add_hard_blocks_to_netlist(my_module,&arch,&hard_block_type_name_list, arch_file, source_file, device);
+		}
+		catch(const vtr::VtrError& error)
+		{
+			VTR_LOG_ERROR("%s\n", ((std::string)error.what()).c_str());
+			exit(1);
+		}
+
+		processEnd = clock();
+
+		cout << "\n>> Custom hard block instantiations took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
+	}
+	
 	//Reorganize netlist data into structures conducive to .blif writing.
 	if (verbose_mode){
 		cout << "\n>> Initializing BLIF model\n" ;
@@ -428,8 +462,8 @@ int main(int argc, char* argv[])
 //			SETUP FUNCTIONS
 //============================================================================================
 
-void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, 
-			   string* outfile){
+void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile, string* outfile,
+			   string* device, std::vector<std::string>* hard_block_type_name_list){
 /*  Interpret the command-line arguments, accepting the input files, output file, and various
  *  mode settings from the user. 
  *
@@ -471,6 +505,10 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
     remove_const_nets = T_FALSE;
     print_unused_subckt_pins = T_FALSE;
     eblif_format = T_FALSE;
+	insert_custom_hard_blocks = T_FALSE;
+
+	// temporary storage to hold hard block names from the argument list
+	std::string curr_hard_block_name; 
 
 	//Now read the command line to configure input variables.
 	for (int i = 1; i < argc; i++){
@@ -591,6 +629,86 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_EBLIF_FORMAT:
                     eblif_format = T_TRUE;
                     break;
+				case OT_INSERT_CUSTOM_HARD_BLOCKS:
+					// first check whether an accompanying hard block type name was supplied (user provides the names of all the various types of custom hard blocks within the design, essentially this is the module names in their HDL design)
+					if ( i+1 == argc ){
+						// no hard block type name was supplied so throw an error
+						cout << "ERROR: Missing Hard Block Module Names.\n" ;
+						print_usage (T_TRUE);
+					}
+
+					// now we loop through and process the following arguments
+					while (T_TRUE)
+					{
+						// first check whether the next argument is a new option or a supplied hard block type name
+						it = CmdTokens.find(argv[i+1]);
+
+						// case where the next argument is a command line option
+						if (it != CmdTokens.end())
+						{
+							// When we come here, we need to finish processing further command line arguments for hard block type names. Since we have a different command-line option.
+
+							// case one below is when the user didnt provide any hard block type names and just provided the next command-line option
+							if (!insert_custom_hard_blocks)
+							{
+								// since no hard block type names were supplied, we throw an error
+								cout << "ERROR: Missing Hard Block Module Names.\n"; 
+								print_usage (T_TRUE);
+							}
+							else
+							{
+								// the user already provided a legal hard block type name, so if we come here then the user simply just wanted to use another command line option, so we just leave this case statement.
+								break;
+							}
+						}
+						else
+						{
+							// when we are here, the user provided an argument which is potentially a valid hard block type name
+							curr_hard_block_name.assign(argv[i+1]);
+
+							// check if the provided name is valid
+							verify_hard_block_type_name(curr_hard_block_name);
+
+							// if the hard block type name was escaped by '\', then we need to remove the '\' character from the string (look at 'verify_hard_block_type_name' function for more info)
+							cleanup_hard_block_type_name(&curr_hard_block_name);
+
+							// if we are here then the provided name was valid.
+							insert_custom_hard_blocks = T_TRUE;
+							
+							// check to see whether the user repeated a hard block type name
+							if ((std::find(hard_block_type_name_list->begin(), hard_block_type_name_list->end(), curr_hard_block_name)) == hard_block_type_name_list->end())
+							{
+								hard_block_type_name_list->push_back(curr_hard_block_name); // add the hard block type name to the list
+							}
+							else
+							{
+								cout << "ERROR: Hard Block Module name '" << curr_hard_block_name << "' was repeated.\n";
+								print_usage (T_TRUE);
+							}
+
+							// update argument index to show that we have processed the current hard block type name successfully
+							i++;
+						}
+
+						// we handle the case where the next argument is empty (if we continued then an exception will be thrown in the find function above)
+						if (i+1 == argc)
+						{
+							// at this point we would have read a vlid input.
+							// Safe to assume that the user just finished providing hard block names
+							break;
+						}
+					}
+					break;
+				case OT_DEVICE:
+					if ( i+1 == argc ){
+						cout << "\nERROR: Missing device type.\n" ;
+						print_usage(T_TRUE);
+					}
+					//Store the next argument as the device type
+					device->assign((string)argv[i+1]);
+					verify_device(*device); // make sure we can support the provided device
+					i++; //Increment past the next argument
+					break;
 				default:
 					//Should never get here; unknown tokens aren't mapped.
 					cout << "\nERROR: Token " << argv[i] << " mishandled.\n" ;
@@ -643,6 +761,8 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-remove_const_nets", OT_REMOVE_CONST_NETS));
 	tokens->insert(tokpair("-include_unused_subckt_pins", OT_INCLUDE_UNUSED_SUBCKT_PINS));
 	tokens->insert(tokpair("-eblif_format", OT_EBLIF_FORMAT));
+	tokens->insert(tokpair("-insert_custom_hard_blocks", OT_INSERT_CUSTOM_HARD_BLOCKS));
+	tokens->insert(tokpair("-device", OT_DEVICE));
 }
 
 //============================================================================================

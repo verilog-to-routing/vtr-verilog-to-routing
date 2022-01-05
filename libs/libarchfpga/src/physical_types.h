@@ -1428,7 +1428,8 @@ enum e_Fc_type {
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?                                          *
+ *                       the track?  
+ * seg_index: The index of the segment as stored in the appropriate Segs list*
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
@@ -1445,6 +1446,7 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
+    int seg_index; 
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 
 };

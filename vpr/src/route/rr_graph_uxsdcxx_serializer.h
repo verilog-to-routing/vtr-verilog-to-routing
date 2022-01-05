@@ -613,7 +613,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline int get_node_loc_ptc(const t_rr_node& node) final {
-        return node.ptc_num();
+        return rr_graph_->node_ptc_num(node.id());
     }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
         return rr_graph_->node_xhigh(node.id());
@@ -630,6 +630,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
         auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
         const auto& rr_graph = (*rr_graph_);
 
         if (uxsd::enum_loc_side::UXSD_INVALID == side) {
@@ -643,7 +644,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             std::bitset<NUM_SIDES> sides_to_add = from_uxsd_loc_side(side);
             for (const e_side& side_to_add : SIDES) {
                 if (sides_to_add[side_to_add]) {
-                    node.add_side(side_to_add);
+                    rr_graph_builder_->add_node_side(node_id, side_to_add);
                 }
             }
         }
@@ -671,7 +672,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline int init_node_timing(int& inode, float C, float R) final {
         auto node = (*rr_nodes_)[inode];
-        node.set_rc_index(find_create_rr_rc_data(R, C));
+        RRNodeId node_id = node.id();
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C)));
         return inode;
     }
     inline void finish_node_timing(int& /*inode*/) final {}
@@ -703,13 +705,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
 
         auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+
         if (GRAPH_GLOBAL == graph_type_) {
-            node.set_cost_index(RRIndexedDataId(0));
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(0));
         } else if (rr_graph.node_type(node.id()) == CHANX) {
-            node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + segment_id));
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_id));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == CHANY) {
-            node.set_cost_index(RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id));
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_.size() + segment_id));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
         return inode;
@@ -751,7 +755,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline void preallocate_rr_nodes_node(void*& /*ctx*/, size_t size) final {
-        rr_nodes_->reserve(size);
+        rr_graph_builder_->reserve_nodes(size);
     }
     inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type) final {
         // make_room_in_vector will not allocate if preallocate_rr_nodes_node
@@ -772,16 +776,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case CHANY:
                 break;
             case SOURCE:
-                node.set_cost_index(RRIndexedDataId(SOURCE_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(SOURCE_COST_INDEX));
                 break;
             case SINK:
-                node.set_cost_index(RRIndexedDataId(SINK_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(SINK_COST_INDEX));
                 break;
             case OPIN:
-                node.set_cost_index(RRIndexedDataId(OPIN_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
                 break;
             case IPIN:
-                node.set_cost_index(RRIndexedDataId(IPIN_COST_INDEX));
+                rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
                 break;
             default:
                 report_error(
@@ -789,7 +793,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     type);
         }
 
-        node.set_rc_index(find_create_rr_rc_data(0, 0));
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0)));
 
         return id;
     }
@@ -868,7 +872,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
-        rr_nodes_->reserve_edges(size);
+        rr_graph_builder_->reserve_edges(size);
         if (read_edge_metadata_) {
             rr_edge_metadata_->reserve(size);
         }
@@ -887,7 +891,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             bind.set_ignore();
         }
 
-        rr_nodes_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
+        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
         return bind;
     }
     inline void finish_rr_edges_edge(MetadataBind& bind) final {
@@ -954,8 +958,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // Partition the rr graph edges for efficient access to
         // configurable/non-configurable edge subsets. Must be done after RR
         // switches have been allocated.
-        rr_nodes_->mark_edges_as_rr_switch_ids();
-        rr_nodes_->partition_edges();
+        rr_graph_builder_->mark_edges_as_rr_switch_ids();
+        rr_graph_builder_->partition_edges();
 
         for (int source_node = 0; source_node < (ssize_t)rr_nodes_->size(); ++source_node) {
             int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
@@ -1545,10 +1549,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     void finish_load() final {
         process_rr_node_indices();
 
-        rr_nodes_->init_fan_in();
+        rr_graph_builder_->init_fan_in();
 
+        t_unified_to_parallel_seg_index seg_index_map;
+        auto segment_inf_x_=get_parallel_segs(segment_inf_,seg_index_map,X_AXIS);
+        auto segment_inf_y_=get_parallel_segs(segment_inf_,seg_index_map,Y_AXIS);
         alloc_and_load_rr_indexed_data(
             segment_inf_,
+            segment_inf_x_,
+            segment_inf_y_,
             *wire_to_rr_ipin_switch_,
             base_cost_type_);
 
@@ -1869,6 +1878,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
+
+    /*AA: The serializer does not support non-uniform Y & X directed channels yet. Will need to modify
+     * the methods following routines:rr_graph_rr_nodes and init_node_segment according to the changes in 
+     * rr_graph_index_data.cpp */
     const std::vector<t_segment_inf>& segment_inf_;
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;

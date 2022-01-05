@@ -69,15 +69,16 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
-    /** @brief Set the node_ptc_num; The ptc (pin, track, or class) number is an integer
-     * that allows you to differentiate between wires, pins or sources/sinks with overlapping x,y coordinates or extent.
-     * This is useful for drawing rr-graphs nicely.
-     *
-     * The ptc_num carries different meanings for different node types
+    /** @brief The ptc_num carries different meanings for different node types
      * (true in VPR RRG that is currently supported, may not be true in customized RRG)
      * CHANX or CHANY: the track id in routing channels
      * OPIN or IPIN: the index of pins in the logic block data structure
-     * SOURCE and SINK: the class id of a pin (indicating logic equivalence of pins) in the logic block data structure */
+     * SOURCE and SINK: the class id of a pin (indicating logic equivalence of pins) in the logic block data structure 
+     * @note 
+     * This API is very powerful and developers should not use it unless it is necessary,
+     * e.g the node type is unknown. If the node type is known, the more specific routines, `set_node_pin_num()`,
+     * `set_node_track_num()`and `set_node_class_num()`, for different types of nodes should be used.*/
+
     inline void set_node_ptc_num(RRNodeId id, short new_ptc_num) {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
@@ -100,6 +101,96 @@ class RRGraphBuilder {
     /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
     inline void set_node_direction(RRNodeId id, Direction new_direction) {
         node_storage_.set_node_direction(id, new_direction);
+    }
+
+    /** @brief Reserve the lists of edges to be memory efficient.
+     * This function is mainly used to reserve memory space inside RRGraph,
+     * when adding a large number of edges in order to avoid memory fragements */
+    inline void reserve_edges(size_t num_edges) {
+        node_storage_.reserve_edges(num_edges);
+    }
+
+    /** @brief emplace_back_edge; It add one edge. This method is efficient if reserve_edges was called with
+     * the number of edges present in the graph. */
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch);
+    }
+
+    /** @brief alloc_and_load_edges; It adds a batch of edges.  */
+    inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
+        node_storage_.alloc_and_load_edges(rr_edges_to_create);
+    }
+
+    /** @brief set_node_cost_index gets the index of cost data in the list of cost_indexed_data data structure
+     * It contains the routing cost for different nodes in the RRGraph
+     * when used in evaluate different routing paths
+     */
+    inline void set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
+        node_storage_.set_node_cost_index(id, new_cost_index);
+    }
+
+    /** @brief Set the rc_index of routing resource node. */
+    inline void set_node_rc_index(RRNodeId id, NodeRCIndex new_rc_index) {
+        node_storage_.set_node_rc_index(id, new_rc_index);
+    }
+
+    /** @brief Add the side where the node physically locates on a logic block.
+     * Mainly applicable to IPIN and OPIN nodes.*/
+    inline void add_node_side(RRNodeId id, e_side new_side) {
+        node_storage_.add_node_side(id, new_side);
+    }
+
+    /** @brief It maps arch_switch_inf indicies to rr_switch_inf indicies. */
+    inline void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
+        node_storage_.remap_rr_node_switch_indices(switch_fanin);
+    }
+
+    /** @brief Marks that edge switch values are rr switch indicies*/
+    inline void mark_edges_as_rr_switch_ids() {
+        node_storage_.mark_edges_as_rr_switch_ids();
+    }
+
+    /** @brief Counts the number of rr switches needed based on fan in to support mux
+     * size dependent switch delays. */
+    inline size_t count_rr_switches(
+        size_t num_arch_switches,
+        t_arch_switch_inf* arch_switch_inf,
+        t_arch_switch_fanin& arch_switch_fanins) {
+        return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+    }
+
+    /** @brief This function reserve storage for RR nodes. */
+    inline void reserve_nodes(size_t size) {
+        node_storage_.reserve(size);
+    }
+
+    /** @brief This function resize node storage to accomidate size RR nodes. */
+    inline void resize_nodes(size_t size) {
+        node_storage_.resize(size);
+    }
+
+    /** brief Validate that edge data is partitioned correctly
+     * @note This function is used to validate the correctness of the routing resource graph in terms
+     * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
+     * graph. If you need more advance checks, which are related to architecture features, you should
+     * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
+    inline bool validate() const {
+        return node_storage_.validate();
+    }
+
+    /** @brief Sorts edge data such that configurable edges appears before
+     *  non-configurable edges. */
+    inline void partition_edges() {
+        node_storage_.partition_edges();
+    }
+
+    /** @brief Init per node fan-in data.  Should only be called after all edges have
+     * been allocated.
+     * @note
+     * This is an expensive, O(N), operation so it should be called once you
+     * have a complete rr-graph and not called often. */
+    inline void init_fan_in() {
+        node_storage_.init_fan_in();
     }
 
     /* -- Internal data storage -- */

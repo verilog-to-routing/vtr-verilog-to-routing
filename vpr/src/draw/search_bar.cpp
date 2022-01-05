@@ -192,7 +192,7 @@ void auto_zoom_rr_node(int rr_node_id) {
             t_physical_tile_type_ptr type = device_ctx.grid[i][j].type;
             int width_offset = device_ctx.grid[i][j].width_offset;
             int height_offset = device_ctx.grid[i][j].height_offset;
-            int ipin = device_ctx.rr_nodes[rr_node_id].ptc_num();
+            int ipin = rr_graph.node_ptc_num(RRNodeId(rr_node_id));
             float xcen, ycen;
 
             for (const e_side& iside : SIDES) {

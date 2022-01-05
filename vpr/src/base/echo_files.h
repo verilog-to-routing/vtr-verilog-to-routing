@@ -3,8 +3,6 @@
 
 enum e_echo_files {
 
-    //Test
-    ECHO_SETS_INFO,
     //Input netlist
     E_ECHO_ATOM_NETLIST_ORIG,
     E_ECHO_ATOM_NETLIST_CLEANED,

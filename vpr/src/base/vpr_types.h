@@ -744,10 +744,11 @@ struct t_grid_blocks {
 struct t_file_name_opts {
     std::string ArchFile;
     std::string CircuitName;
-    std::string BlifFile;
+    std::string CircuitFile;
     std::string NetFile;
     std::string PlaceFile;
     std::string RouteFile;
+    std::string FPGAInterchangePhysicalFile;
     std::string ActFile;
     std::string PowerFile;
     std::string CmosTechFile;
@@ -788,7 +789,7 @@ enum e_packer_algorithm {
 };
 
 struct t_packer_opts {
-    std::string blif_file_name;
+    std::string circuit_file_name;
     std::string sdc_file_name;
     std::string output_file;
     bool global_clocks;
@@ -1387,6 +1388,14 @@ const std::array<std::string, static_cast<int>(Direction::NUM_DIRECTIONS)> CONST
  *   @param Rmetal     Resistance of a routing track, per unit logic block length.
  *   @param direction  The direction of a routing track.
  *   @param index      index of the segment type used for this track.
+ *                     Note that this index will stored the index of the segment
+ *                     relative to its **parallel** segment types, not all segments
+ *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
+ *                     for details. 
+ *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx. 
+ *                     Note that the above vector is **unifies** both x-parallel and 
+ *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp 
+ * 
  *   @param type_name_ptr  pointer to name of the segment type this track belongs
  *                     to. points to the appropriate name in s_segment_inf
  */
@@ -1407,6 +1416,7 @@ struct t_seg_details {
     int seg_start = 0;
     int seg_end = 0;
     int index = 0;
+    int abs_index=0; 
     float Cmetal_per_m = 0; ///<Used for power
     std::string type_name;
 };
@@ -1417,7 +1427,6 @@ class t_chan_seg_details {
     t_chan_seg_details(const t_seg_details* init_seg_details)
         : length_(init_seg_details->length)
         , seg_detail_(init_seg_details) {}
-
   public:
     int length() const { return length_; }
     int seg_start() const { return seg_start_; }
@@ -1442,6 +1451,7 @@ class t_chan_seg_details {
     Direction direction() const { return seg_detail_->direction; }
 
     int index() const { return seg_detail_->index; }
+    int abs_index () const {return seg_detail_->abs_index; }
 
     const vtr::string_view type_name() const {
         return vtr::string_view(
@@ -1466,6 +1476,7 @@ class t_chan_seg_details {
     int seg_start_ = -1;
     int seg_end_ = -1;
     const t_seg_details* seg_detail_ = nullptr;
+    
 };
 
 /* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and verticalchannel)   

@@ -12,7 +12,15 @@
 
 /******************* Types shared by rr_graph2 functions *********************/
 
+/* [0..grid.width()-1][0..grid.width()][0..3 (From side)] \
+ * [0..3 (To side)][0...max_chan_width][0..3 (to_mux,to_trac,alt_mux,alt_track)] 
+ * originally initialized to UN_SET until alloc_and_load_sb is called */ 
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
+
+/* This map is used to get indeces w.r.t segment_inf_x or segment_inf_y based on parallel_axis of a segment, 
+ * from indeces w.r.t the **unified** segment vector, segment_inf in devices context which stores all segments 
+ * regardless of their axis. (see get_parallel_segs for more details)*/
+typedef std::unordered_multimap<size_t,std::pair<size_t,e_parallel_axis>> t_unified_to_parallel_seg_index; 
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
@@ -125,7 +133,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 t_rr_edge_info_set& rr_edges_to_create,
                                 vtr::NdMatrix<int, 3>& Fc_ofs,
                                 const int max_len,
-                                const int max_chan_width,
+                                const t_chan_width& nodes_per_chan,
                                 bool* Fc_clipped);
 
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
@@ -164,7 +172,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         t_sb_connection_map* sb_conn_map);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
-                                             const int max_chan_width);
+                                             t_chan_width* nodes_per_chan);
 
 void load_sblock_pattern_lookup(const int i,
                                 const int j,
@@ -176,7 +184,9 @@ void load_sblock_pattern_lookup(const int i,
                                 const enum e_switch_block_type switch_block_type,
                                 t_sblock_pattern& sblock_pattern);
 
-std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& segment_inf, const enum e_parallel_axis parallel_axis); 
+std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& segment_inf, 
+                                             t_unified_to_parallel_seg_index& seg_index_map, 
+                                             enum e_parallel_axis parallel_axis); 
 
 std::unique_ptr<int[]> get_ordered_seg_track_counts  (const std::vector<t_segment_inf>& segment_inf_x, 
                                                       const std::vector<t_segment_inf>& segment_inf_y,
@@ -205,5 +215,8 @@ void dump_sblock_pattern(const t_sblock_pattern& sblock_pattern,
                          const char* fname);
 
 void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes, int inode);
+
 void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode);
+
+inline int get_chan_width (enum e_side side, const t_chan_width* nodes_per_channel);
 #endif

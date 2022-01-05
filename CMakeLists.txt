@@ -40,6 +40,7 @@ option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VP
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
 option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
+option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
@@ -52,6 +53,7 @@ option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
+option(WITH_YOSYS "Enable building Yosys" OFF)
 option(ODIN_USE_YOSYS "Enable building Yosys" OFF)
 
 set(VTR_VERSION_MAJOR 8)
@@ -119,6 +121,11 @@ endif()
 #
 # Build type flags
 #
+
+set(EXTRA_FLAGS "")
+if(VPR_ENABLE_INTERCHANGE)
+    set(EXTRA_FLAGS "-lz")
+endif()
 
 if(NOT MSVC)
     # for GCC and Clang
@@ -294,7 +301,7 @@ endif()
 # Set final flags
 #
 separate_arguments(
-    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE} ${EXTRA_FLAGS}"
     )
 separate_arguments(
     WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
@@ -365,7 +372,6 @@ if (VPR_USE_EZGL STREQUAL "auto")
     endif()
 endif()
 
-
 #Add the various sub-projects
 if(${WITH_ABC})
     add_subdirectory(abc)
@@ -381,7 +387,10 @@ if(${WITH_ABC})
     add_subdirectory(ace2)
 endif()
 add_subdirectory(utils)
-if(${WITH_ODIN})
+# define cmake params to compile Yosys
+if(${WITH_YOSYS})
+    add_definitions("-D_YOSYS_")
+elseif(${WITH_ODIN})
     add_subdirectory(ODIN_II)
     # blifexplorer depends on odin
     if(${WITH_BLIFEXPLORER})

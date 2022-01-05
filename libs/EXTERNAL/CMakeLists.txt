@@ -1,22 +1,22 @@
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
-add_subdirectory(libcatch)
 
 #External libraries synchronized with 'git subtree'
 add_subdirectory(libargparse)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
+add_subdirectory(libcatch2)
 
-#VPR_USE_EZGL is initialized in the root CMakeLists. 
+#VPR_USE_EZGL is initialized in the root CMakeLists.
 #compile libezgl only if the user asks for or has its dependencies installed.
 if(VPR_USE_EZGL STREQUAL "on")
     add_subdirectory(libezgl)
 endif()
 
-# The VTR root CMakeFile initializes the ODIN_USE_YOSYS
+# The VTR root CMakeFile initializes the ODIN_USE_YOSYS or WITH_YOSYS
 # Yosys is compiled only if the user ask for it
-if(${ODIN_USE_YOSYS})
+if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
     add_subdirectory(libyosys)
 endif()
 

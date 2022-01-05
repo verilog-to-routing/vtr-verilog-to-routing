@@ -325,141 +325,154 @@ This set of regression test includes benchmarks targetting compiler directives a
 
 ```bash
 benchmark
-      ├── suite
-      │     ├── complex_synthesis_suite
-      │     │   └── task_list.conf
-      │     ├── full_suite
-      │     │   └── task_list.conf
-      │     ├── heavy_suite
-      │     │   └── task_list.conf
-      │     └── light_suite
-      │         └── task_list.conf
-      ├── task
-      │     ├── arch_sweep
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── binary
-      │     │   ├── simulation_result.json
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── cmd_line_args
-      │     │   ├── batch_simulation
-      │     │   │   ├── simulation_result.json
-      │     │   │   ├── synthesis_result.json
-      │     │   │   └── task.conf
-      │     │   ├── best_coverage
-      │     │   │   ├── simulation_result.json
-      │     │   │   ├── synthesis_result.json
-      │     │   │   └── task.conf
-      │     │   ├── coverage
-      │     │   │   ├── simulation_result.json
-      │     │   │   ├── synthesis_result.json
-      │     │   │   └── task.conf
-      │     │   ├── graphviz_ast
-      │     │   │   ├── synthesis_result.json
-      │     │   │   └── task.conf
-      │     │   ├── graphviz_netlist
-      │     │   │   ├── synthesis_result.json
-      │     │   │   └── task.conf
-      │     │   └── parallel_simulation
-      │     │       ├── simulation_result.json
-      │     │       ├── synthesis_result.json
-      │     │       └── task.conf
-      │     ├── FIR
-      │     │   ├── simulation_result.json
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── full
-      │     │   ├── simulation_result.json
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── keywords
-      |     |   ├── always
-      │     │   ├── and
-      |     |   ├── assign
-      |     |   ├── at_parenthathese
-      |     |   ├── automatic
-      |     |   ├── begin_end
-      |     |   ├── buf
-      |     |   ├── case_endcase
-      |     |   ├── default
-      |     |   ├── defparam
-      |     |   ├── else
-      |     |   ├── for
-      |     |   ├── function_endfunction
-      |     |   ├── generate
-      |     |   ├── genvar
-      |     |   ├── if
-      |     |   ├── initial
-      |     |   ├── inout
-      |     |   ├── input_output
-      |     |   ├── integer
-      |     |   ├── localparam
-      |     |   ├── macromodule
-      |     |   ├── nand
-      |     |   ├── negedge
-      |     |   ├── nor
-      |     |   ├── not
-      |     |   ├── or
-      |     |   ├── parameter
-      |     |   ├── posedge
-      |     |   ├── reg
-      |     |   ├── signed_unsigned
-      |     |   ├── specify_endspecify
-      |     |   ├── specparam
-      |     |   ├── star
-      |     |   ├── task_endtask
-      |     |   ├── while
-      |     |   ├── wire
-      |     |   ├── xnor
-      │     │   └── xor
-      │     ├── large
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── micro
-      │     │   ├── simulation_result.json
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── mixing_optimization
-      |     |   ├── mults_auto_full
-      │     │   |   ├── simulation_result.json
-      │     │   |   |── synthesis_result.json
-      │     │   |   └── task.conf
-      |     |   ├── mults_auto_half
-      │     │   |   ├── simulation_result.json
-      │     │   |   |── synthesis_result.json
-      │     │   |   └── task.conf
-      |     |   ├── mults_auto_none
-      │     │   |   ├── simulation_result.json
-      │     │   |   |── synthesis_result.json
-      │     │   |   └── task.conf
-      |     |   ├── config_file_half
-      │     │   |   ├── config_file_half.xml
-      │     │   |   ├── simulation_result.json
-      │     │   |   |── synthesis_result.json
-      │     │   |   └── task.conf
-      │     ├── operators
-      │     │   ├── simulation_result.json
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── preprocessor
-      │     │   ├── simulation_result.json
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     ├── syntax
-      │     │   ├── simulation_result.json
-      │     │   ├── synthesis_result.json
-      │     │   └── task.conf
-      │     └── vtr
-      │       └── task.conf
-      ├── third_party
-      │     └── SymbiFlow
-      │         ├── build.sh
-      │         └── task.mk
-      └── verilog
-            ├── binary
-            ├── ex1BT16_fir_20_input
+    ├── suite
+    │     ├── complex_synthesis_suite
+    │     │   └── task_list.conf
+    │     ├── full_suite
+    │     │   └── task_list.conf
+    │     ├── heavy_suite
+    │     │   └── task_list.conf
+    │     ├── light_suite
+    │     │    └── task_list.conf
+    │     └── yosys+odin
+    ├── task
+    │     ├── arch_sweep
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── c_functions
+    │     │   └── clog2
+    │     │       ├── simulation_result.json
+    │     │       ├── synthesis_result.json
+    │     │       └── task.conf
+    │     ├── cmd_line_args
+    │     │   ├── batch_simulation
+    │     │   │   ├── simulation_result.json
+    │     │   │   ├── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   ├── best_coverage
+    │     │   │   ├── simulation_result.json
+    │     │   │   ├── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   ├── coverage
+    │     │   │   ├── simulation_result.json
+    │     │   │   ├── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   ├── graphviz_ast
+    │     │   │   ├── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   ├── graphviz_netlist
+    │     │   │   ├── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   └── parallel_simulation
+    │     │       ├── simulation_result.json
+    │     │       ├── synthesis_result.json
+    │     │       └── task.conf
+    │     ├── FIR
+    │     │   ├── simulation_result.json
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── fpu
+    │     │   └── hardlogic
+    │     │       ├── simulation_result.json
+    │     │       ├── synthesis_result.json
+    │     │       └── task.conf
+    │     ├── full
+    │     │   ├── simulation_result.json
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── keywords
+    │     │   ├── always
+    │     │   ├── and
+    │     │   ├── assign
+    │     │   ├── at_parenthathese
+    │     │   ├── automatic
+    │     │   ├── begin_end
+    │     │   ├── buf
+    │     │   ├── case_endcase
+    │     │   ├── default
+    │     │   ├── defparam
+    │     │   ├── else
+    │     │   ├── for
+    │     │   ├── function_endfunction
+    │     │   ├── generate
+    │     │   ├── genvar
+    │     │   ├── if
+    │     │   ├── initial
+    │     │   ├── inout
+    │     │   ├── input_output
+    │     │   ├── integer
+    │     │   ├── localparam
+    │     │   ├── macromodule
+    │     │   ├── nand
+    │     │   ├── negedge
+    │     │   ├── nor
+    │     │   ├── not
+    │     │   ├── or
+    │     │   ├── parameter
+    │     │   ├── posedge
+    │     │   ├── reg
+    │     │   ├── signed_unsigned
+    │     │   ├── specify_endspecify
+    │     │   ├── specparam
+    │     │   ├── star
+    │     │   ├── task_endtask
+    │     │   ├── while
+    │     │   ├── wire
+    │     │   ├── xnor
+    │     │   └── xor
+    │     ├── koios
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── large
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── micro
+    │     │   ├── simulation_result.json
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── mixing_optimization
+    │     │   ├── mults_auto_full
+    │     │   │   ├── simulation_result.json
+    │     │   │   │── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   ├── mults_auto_half
+    │     │   │   ├── simulation_result.json
+    │     │   │   │── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   ├── mults_auto_none
+    │     │   │   ├── simulation_result.json
+    │     │   │   │── synthesis_result.json
+    │     │   │   └── task.conf
+    │     │   ├── config_file_half
+    │     │   │   ├── config_file_half.xml
+    │     │   │   ├── simulation_result.json
+    │     │   │   │── synthesis_result.json
+    │     │   │   └── task.conf
+    │     ├── operators
+    │     │   ├── simulation_result.json
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── preprocessor
+    │     │   ├── simulation_result.json
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── syntax
+    │     │   ├── simulation_result.json
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     ├── vtr
+    │     │   ├── synthesis_result.json
+    │     │   └── task.conf
+    │     └── yosys+odin
+    │             
+    ├── third_party
+    │     └── SymbiFlow
+    │         ├── build.sh
+    │         └── task.mk
+    └── verilog
             ├── FIR
+            ├── c_functions
+            ├── common
             ├── full
             ├── keywords
             ├── large

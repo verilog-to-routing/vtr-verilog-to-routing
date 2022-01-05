@@ -26,4 +26,10 @@ constexpr const char* MODEL_NAMES = ".names";
 constexpr const char* MODEL_LATCH = ".latch";
 constexpr const char* MODEL_INPUT = ".input";
 constexpr const char* MODEL_OUTPUT = ".output";
+
+enum class e_arch_format {
+    VTR,            ///<VTR-specific device XML format
+    FPGAInterchange ///<FPGA Interchange device format
+};
+
 #endif
