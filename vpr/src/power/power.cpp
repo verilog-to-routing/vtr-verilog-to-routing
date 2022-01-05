@@ -903,9 +903,9 @@ static void power_usage_routing(t_power_usage* power_usage,
                 VTR_ASSERT(node_power->in_prob);
 
                 wire_length = 0;
-                if (rr_graph.node_type(id) == CHANX) {
+                if (rr_graph.node_type(rr_id) == CHANX) {
                     wire_length = rr_graph.node_xhigh(rr_id) - rr_graph.node_xlow(rr_id) + 1;
-                } else if (rr_graph.node_type(id) == CHANY) {
+                } else if (rr_graph.node_type(rr_id) == CHANY) {
                     wire_length = rr_graph.node_yhigh(rr_id) - rr_graph.node_ylow(rr_id) + 1;
                 }
                 int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_id)].seg_index;

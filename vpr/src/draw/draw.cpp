@@ -2759,7 +2759,7 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
-        switch (rr_graph.node_type(id)) {
+        switch (rr_graph.node_type(rr_id)) {
             case IPIN:
             case OPIN: {
                 int i = rr_graph.node_xlow(rr_id);

@@ -1617,7 +1617,7 @@ void print_invalid_routing_info() {
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
         int occ = route_ctx.rr_node_route_inf[inode].occ();
-        int cap = rr_graph.node_capacity(id);
+        int cap = rr_graph.node_capacity(rr_id);
         if (occ > cap) {
             VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
 

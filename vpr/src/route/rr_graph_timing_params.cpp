@@ -131,11 +131,11 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
              * }     */
 
             if (from_rr_type == CHANX) {
-                iseg_low = rr_graph.node_xlow(id);
-                iseg_high = rr_graph.node_xhigh(id);
+                iseg_low = rr_graph.node_xlow(rr_id);
+                iseg_high = rr_graph.node_xhigh(rr_id);
             } else { /* CHANY */
-                iseg_low = rr_graph.node_ylow(id);
-                iseg_high = rr_graph.node_yhigh(id);
+                iseg_low = rr_graph.node_ylow(rr_id);
+                iseg_high = rr_graph.node_yhigh(rr_id);
             }
 
             for (icblock = iseg_low; icblock <= iseg_high; icblock++) {
@@ -150,9 +150,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         }
         /* End node is CHANX or CHANY */
         else if (from_rr_type == OPIN) {
-            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(inode)); iedge++) {
-                switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
-                to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
+            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
+                switch_index = rr_graph.edge_switch(rr_id, iedge);
+                to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                 if (to_rr_type != CHANX && to_rr_type != CHANY)
@@ -160,7 +160,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
                 if (rr_graph.node_direction(RRNodeId(to_node)) == Direction::BIDIR) {
                     Cout = device_ctx.rr_switch_inf[switch_index].Cout;
-                    to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge)); /* Will be CHANX or CHANY */
+                    to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge)); /* Will be CHANX or CHANY */
                     rr_node_C[to_node] += Cout;
                 }
             }
