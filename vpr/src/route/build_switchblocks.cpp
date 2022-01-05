@@ -331,11 +331,11 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
     /* We assume that x & y channels have the same ratios of wire types. i.e., looking at a single
      * channel is representative of all channels in the FPGA -- as of 3/9/2013 this is true in VPR */
     t_wire_type_sizes wire_type_sizes;
-    t_wire_type_sizes wire_type_sizes_x; 
-    t_wire_type_sizes wire_type_sizes_y; 
+    t_wire_type_sizes wire_type_sizes_x;
+    t_wire_type_sizes wire_type_sizes_y;
 
-    count_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan->y_max, &wire_type_sizes_y); 
-    count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan->x_max, &wire_type_sizes_x); 
+    count_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan->y_max, &wire_type_sizes_y);
+    count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan->x_max, &wire_type_sizes_x);
     count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan->max, &wire_type_sizes);
 
 #ifdef FAST_SB_COMPUTATION
@@ -380,7 +380,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                          * the current wire will connect to */
                         compute_wire_connections(x_coord, y_coord, from_side, to_side,
                                                  chan_details_x, chan_details_y, &sb, grid,
-                                                 &wire_type_sizes_x,&wire_type_sizes_y, directionality, sb_conns, rand_state, &scratchpad);
+                                                 &wire_type_sizes_x, &wire_type_sizes_y, directionality, sb_conns, rand_state, &scratchpad);
                     }
                 }
             }
@@ -800,13 +800,13 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
         return;
     }
 
-    const t_wire_type_sizes* wire_type_sizes_from = wire_type_sizes_x; 
-    const t_wire_type_sizes* wire_type_sizes_to = wire_type_sizes_x; 
-    if (from_chan_type == CHANY){
-        wire_type_sizes_from = wire_type_sizes_y; 
+    const t_wire_type_sizes* wire_type_sizes_from = wire_type_sizes_x;
+    const t_wire_type_sizes* wire_type_sizes_to = wire_type_sizes_x;
+    if (from_chan_type == CHANY) {
+        wire_type_sizes_from = wire_type_sizes_y;
     }
-    if (to_chan_type == CHANY){
-        wire_type_sizes_to=wire_type_sizes_y; 
+    if (to_chan_type == CHANY) {
+        wire_type_sizes_to = wire_type_sizes_y;
     }
     /* iterate over all the wire connections specified for this switch block */
     for (int iconn = 0; iconn < (int)sb->wireconns.size(); iconn++) {
@@ -817,7 +817,7 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
          * current wireconn */
         compute_wireconn_connections(grid, directionality, from_chan_details, to_chan_details,
                                      sb_conn, from_x, from_y, to_x, to_y, from_chan_type, to_chan_type, wire_type_sizes_from,
-                                     wire_type_sizes_to,sb, wireconn_ptr, sb_conns, rand_state, scratchpad);
+                                     wire_type_sizes_to, sb, wireconn_ptr, sb_conns, rand_state, scratchpad);
     }
 
     return;

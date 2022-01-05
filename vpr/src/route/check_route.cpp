@@ -309,8 +309,8 @@ static bool check_adjacent(int from_node, int to_node) {
 
     reached = false;
 
-    for (t_edge_size iconn = 0; iconn < device_ctx.rr_nodes[from_node].num_edges(); iconn++) {
-        if (device_ctx.rr_nodes[from_node].edge_sink_node(iconn) == to_node) {
+    for (t_edge_size iconn = 0; iconn < rr_graph.num_edges(RRNodeId(from_node)); iconn++) {
+        if (size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn)) == size_t(to_node)) {
             reached = true;
             break;
         }
@@ -832,7 +832,7 @@ bool StubFinder::RecurseTree(t_rt_node* rt_root) {
     } else {
         bool is_stub = true;
         for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
-            bool driver_switch_configurable = device_ctx.rr_switch_inf[edge->iswitch].configurable();
+            bool driver_switch_configurable = rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).configurable();
 
             bool child_is_stub = RecurseTree(edge->child);
             if (!child_is_stub) {

@@ -67,10 +67,7 @@ void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * IN1: Dividend (m bits) 
      * IN2: Divisor  (n bits) 
      * OUT: Quotient (k bits)
-     */
-    int divisor_width = node->input_port_sizes[1];
-
-    /** 
+     * 
      * checking the division restrictions 
      * 
      * 1. m == 2*n - 1
@@ -84,11 +81,6 @@ void resolve_divide_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_
      * [1]: Modified Divisor
      */
     signal_list_t** modified_input_signals = modify_div_signal_sizes(node, netlist);
-    /* keep the record of the extesnsion size for divisor for future transformation */
-    int new_divisor_width = modified_input_signals[1]->count; // modified_input_signals[1] == new divisor signals
-
-    /* validate new sizes */
-    oassert(divisor_width == new_divisor_width);
 
     /* implementation of the divison circuitry using cellular architecture */
     signal_list_t** div_output_lists = implement_division(node, modified_input_signals, netlist);
@@ -120,12 +112,14 @@ static signal_list_t** modify_div_signal_sizes(nnode_t* node, netlist_t* netlist
 
     /* new widths which will be adjusted in the following */
     int new_dividend_width = dividend_width;
+    int new_divisor_width = divisor_width;
     /* m = 2*n -1 */
-    if (dividend_width < 2 * divisor_width - 1) {
-        /* need for padding dividend with GND */
-        while (new_dividend_width < 2 * divisor_width - 1)
-            new_dividend_width++;
+    while (dividend_width > 2 * new_divisor_width - 1) {
+        new_divisor_width++;
     }
+    /* need for padding dividend with GND */
+    while (new_dividend_width < 2 * new_divisor_width - 1)
+        new_dividend_width++;
 
     signal_list_t* dividend_signal_list = init_signal_list();
     signal_list_t* divisor_signal_list = init_signal_list();
@@ -139,10 +133,15 @@ static signal_list_t** modify_div_signal_sizes(nnode_t* node, netlist_t* netlist
             add_pin_to_signal_list(dividend_signal_list, get_zero_pin(netlist));
         }
     }
-    /* Dividend will be padded by adding zero as LSB (right side) */
+
+    /* Divisor will be padded from the MSB (left side) */
     /* hook divisor pins into new node (literally, shift left if needed) */
-    for (i = 0; i < divisor_width; i++) {
-        add_pin_to_signal_list(divisor_signal_list, node->input_pins[dividend_width + i]);
+    for (i = 0; i < new_divisor_width; i++) {
+        if (i < divisor_width) {
+            add_pin_to_signal_list(divisor_signal_list, node->input_pins[dividend_width + i]);
+        } else {
+            add_pin_to_signal_list(divisor_signal_list, get_zero_pin(netlist));
+        }
     }
 
     /* creating the return list of signal lists */
@@ -388,7 +387,6 @@ static void connect_div_output_pins(nnode_t* node, signal_list_t** output_signal
     oassert(output_signals);
 
     int i;
-    int divisor_width = node->input_port_sizes[1];
     int actual_width = node->output_port_sizes[0];
 
     /* quotient and remainder signal lists returned by implement_division function */
@@ -397,10 +395,6 @@ static void connect_div_output_pins(nnode_t* node, signal_list_t** output_signal
 
     int new_quotient_width = quotient_signal_list->count;
     int new_remainder_width = remainder_signal_list->count;
-
-    /* validate new sizes */
-    oassert(new_quotient_width == divisor_width);
-    oassert(new_quotient_width == new_remainder_width);
 
     switch (node->type) {
         case DIVIDE: {

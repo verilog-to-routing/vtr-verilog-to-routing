@@ -92,7 +92,7 @@ The overall approach is similar, but we call out the differences below.
 
 ## Commit Messages
 
-Commit messages are an important part of understanding the code base and it's history.
+Commit messages are an important part of understanding the code base and its history.
 It is therefore *extremely* important to provide the following information in the commit message:
 
 * What is being changed?

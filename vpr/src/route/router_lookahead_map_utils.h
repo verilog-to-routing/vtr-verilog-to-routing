@@ -23,6 +23,7 @@
 #include "vpr_types.h"
 #include "vtr_geometry.h"
 #include "rr_node.h"
+#include "rr_graph_view.h"
 
 namespace util {
 
@@ -238,7 +239,7 @@ struct Search_Path {
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 template<typename Entry>
-void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
+void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                 const Entry& parent_entry,
                                 std::vector<Search_Path>* paths,
                                 std::vector<bool>* node_expanded,

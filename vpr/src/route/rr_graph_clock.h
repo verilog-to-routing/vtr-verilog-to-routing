@@ -116,7 +116,7 @@ class ClockRRGraphBuilder {
     /* AA: map the segment indeces in all networks to corresponding indeces in axis based segment vectors as defined in build_rr_graph
      * Reffer to clock_network_builders.h: map_relative_seg_indeces*/
 
-    static void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map); 
+    static void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map);
 
     void add_edge(t_rr_edge_info_set* rr_edges_to_create,
                   RRNodeId src_node,

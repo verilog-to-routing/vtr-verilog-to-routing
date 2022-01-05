@@ -180,13 +180,11 @@ size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {
     return num_additional_nodes;
 }
 
-void ClockRRGraphBuilder::map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map){
-    const auto& device_ctx = g_vpr_ctx.device() ;
+void ClockRRGraphBuilder::map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map) {
+    const auto& device_ctx = g_vpr_ctx.device();
 
-    for (auto& clock_network:device_ctx.clock_networks)
-        clock_network->map_relative_seg_indeces(indeces_map); 
-
-
+    for (auto& clock_network : device_ctx.clock_networks)
+        clock_network->map_relative_seg_indeces(indeces_map);
 }
 
 void ClockRRGraphBuilder::add_edge(t_rr_edge_info_set* rr_edges_to_create,

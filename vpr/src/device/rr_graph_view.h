@@ -38,7 +38,8 @@ class RRGraphView {
     RRGraphView(const t_rr_graph_storage& node_storage,
                 const RRSpatialLookup& node_lookup,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                const std::vector<t_segment_inf>& rr_segments);
+                const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -122,6 +123,16 @@ class RRGraphView {
     /** @brief Get the maximum y-coordinate of a routing resource node. This function is inlined for runtime optimization. */
     inline short node_yhigh(RRNodeId node) const {
         return node_storage_.node_yhigh(node);
+    }
+
+    /** @brief Get the first out coming edge of resource node. This function is inlined for runtime optimization. */
+    inline RREdgeId node_first_edge(RRNodeId node) const {
+        return node_storage_.first_edge(node);
+    }
+
+    /** @brief Get the last out coming edge of resource node. This function is inlined for runtime optimization. */
+    inline RREdgeId node_last_edge(RRNodeId node) const {
+        return node_storage_.last_edge(node);
     }
 
     /** @brief Get the length (number of grid tile units spanned by the wire, including the endpoints) of a routing resource node.
@@ -209,7 +220,7 @@ class RRGraphView {
         } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
-            coordinate_string += rr_segments_[seg_index].name;                   //Write the segment name
+            coordinate_string += rr_segments(RRSegmentId(seg_index)).name;       //Write the segment name
             coordinate_string += " length:" + std::to_string(node_length(node)); //add the length of the segment
             //Figure out the starting and ending coordinate of the segment depending on the direction
 
@@ -248,6 +259,55 @@ class RRGraphView {
     inline const char* node_side_string(RRNodeId node) const {
         return node_storage_.node_side_string(node);
     }
+    /** @brief Get the switch id that represents the iedge'th outgoing edge from a specific node
+     * TODO: We may need to revisit this API and think about higher level APIs, like ``switch_delay()``
+     **/
+    inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_switch(id, iedge);
+    }
+    /** @brief Get the destination node for the iedge'th edge from specified RRNodeId.
+     *  This method should generally not be used, and instead first_edge and
+     *  last_edge should be used.*/
+    inline RRNodeId edge_sink_node(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_sink_node(id, iedge);
+    }
+
+    /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
+    inline t_edge_size num_configurable_edges(RRNodeId node) const {
+        return node_storage_.num_configurable_edges(node);
+    }
+
+    /** @brief Get the number of non-configurable edges. This function is inlined for runtime optimization. */
+    inline t_edge_size num_non_configurable_edges(RRNodeId node) const {
+        return node_storage_.num_non_configurable_edges(node);
+    }
+
+    /** @brief A configurable edge represents a programmable switch between routing resources, which could be 
+     * a multiplexer
+     * a tri-state buffer
+     * a pass gate 
+     * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range configurable_edges(RRNodeId node) const {
+        return node_storage_.configurable_edges(node);
+    }
+
+    /** @brief A non-configurable edge represents a hard-wired connection between routing resources, which could be 
+     * a non-configurable buffer that can not be turned off
+     * a short metal connection that can not be turned off
+     * This API gets ID range for non-configurable edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range non_configurable_edges(RRNodeId node) const {
+        return node_storage_.non_configurable_edges(node);
+    }
+
+    /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
+    inline edge_idx_range edges(RRNodeId node) const {
+        return node_storage_.edges(node);
+    }
+
+    /** @brief Get the number of edges. This function is inlined for runtime optimization. */
+    inline t_edge_size num_edges(RRNodeId node) const {
+        return node_storage_.num_edges(node);
+    }
 
     /** @brief The ptc_num carries different meanings for different node types 
      * (true in VPR RRG that is currently supported, may not be true in customized RRG) 
@@ -258,7 +318,6 @@ class RRGraphView {
      * This API is very powerful and developers should not use it unless it is necessary, 
      * e.g the node type is unknown. If the node type is known, the more specific routines, `node_pin_num()`, 
      * `node_track_num()`and `node_class_num()`, for different types of nodes should be used.*/
-
     inline short node_ptc_num(RRNodeId node) const {
         return node_storage_.node_ptc_num(node);
     }
@@ -285,6 +344,31 @@ class RRGraphView {
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
     }
+    /** @brief Return detailed routing segment information with a given id* @note The routing segments here may not be exactly same as those defined in architecture file. They have been
+     * adapted to fit the context of routing resource graphs.
+     */
+
+    inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
+        return rr_segments_[seg_id];
+    }
+    /** @brief  Return the switch information that is categorized in the rr_switch_inf with a given id
+     * rr_switch_inf is created to minimize memory footprint of RRGraph classs
+     * While the RRG could contain millions (even much larger) of edges, there are only
+     * a limited number of types of switches.
+     * Hence, we use a flyweight pattern to store switch-related information that differs
+     * only for types of switches (switch type, drive strength, R, C, etc.).
+     * Each edge stores the ids of the switch that implements it so this additional information
+     * can be easily looked up.
+     *
+     * @note All the switch-related information, such as R, C, should be placed in rr_switch_inf
+     * but NOT directly in the edge-related data of RRGraph.
+     * If you wish to create a new data structure to represent switches between routing resources,
+     * please follow the flyweight pattern by linking your switch ids to edges only!
+     */
+
+    inline const t_rr_switch_inf& rr_switch_inf(RRSwitchId switch_id) const {
+        return rr_switch_inf_[switch_id];
+    }
 
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
@@ -303,7 +387,9 @@ class RRGraphView {
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
     /* Segment info for rr nodes */
-    const std::vector<t_segment_inf>& rr_segments_;
+    const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
+    /* switch info for rr nodes */
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 };
 
 #endif

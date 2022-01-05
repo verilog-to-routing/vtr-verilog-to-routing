@@ -442,16 +442,15 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
         //First try to pick good representative sample locations for each type
         std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
-        std::vector <e_rr_type> chan_types;
+        std::vector<e_rr_type> chan_types;
         if (segment_inf[iseg].parallel_axis == X_AXIS)
-            chan_types.push_back(CHANX);  
+            chan_types.push_back(CHANX);
         else if (segment_inf[iseg].parallel_axis == Y_AXIS)
             chan_types.push_back(CHANY);
-        else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions. 
-            chan_types.insert (chan_types.end(),{CHANX,CHANY}); 
+        else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
+            chan_types.insert(chan_types.end(), {CHANX, CHANY});
 
-        for (e_rr_type chan_type :chan_types) { 
- 
+        for (e_rr_type chan_type : chan_types) {
             for (int ref_inc : ref_increments) {
                 int sample_x = ref_x + ref_inc;
                 int sample_y = ref_y + ref_inc;

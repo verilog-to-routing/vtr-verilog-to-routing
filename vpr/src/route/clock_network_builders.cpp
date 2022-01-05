@@ -26,9 +26,9 @@ void populate_segment_values(int seg_index,
     segment_inf[seg_index].Cmetal = layer.c_metal;
     segment_inf[seg_index].directionality = UNI_DIRECTIONAL;
     segment_inf[seg_index].longline = false;
-    segment_inf[seg_index].parallel_axis=parallel_axis;
+    segment_inf[seg_index].parallel_axis = parallel_axis;
 
-    segment_inf[seg_index].seg_index= seg_index; 
+    segment_inf[seg_index].seg_index = seg_index;
 
     // unused values tagged with -1 (only used RR graph creation)
     segment_inf[seg_index].arch_wire_switch = -1;
@@ -79,7 +79,7 @@ void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraphBuilder& 
  *********************************************************************************
  *********************** ClockRib Function Implementations ***********************
  *********************************************************************************
- *********************************************************************************/ 
+ *********************************************************************************/
 
 /*
  * ClockRib (getters)
@@ -163,7 +163,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     index = drive_seg_idx;
     name = clock_name_ + "_drive";
     length = 1; // Since drive segment has one length, the left and right segments have length - 1
-    
+
     /* AA: ClockRib has horizontal segments*/
     populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf, X_AXIS);
 
@@ -385,37 +385,36 @@ void ClockRib::record_tap_locations(unsigned x_start,
 }
 
 /* AA: Map drive_seg_idx, left_seg_idx, and right_seg_idx to equivalent index in segment_inf_x as produced in rr_graph.cpp:build_rr_graph */
-void ClockRib::map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map){
+void ClockRib::map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map) {
     /*We have horizontal segments in clock-ribs so we search for X_AXIS*/
 
-    auto itr_pair= indeces_map.equal_range(drive_seg_idx); 
+    auto itr_pair = indeces_map.equal_range(drive_seg_idx);
 
-    for (auto itr=itr_pair.first; itr!=itr_pair.second; ++itr){
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == X_AXIS)
-            drive_seg_idx = itr->second.first; 
+            drive_seg_idx = itr->second.first;
     }
 
-    itr_pair=indeces_map.equal_range(left_seg_idx); 
+    itr_pair = indeces_map.equal_range(left_seg_idx);
 
-    for (auto itr=itr_pair.first; itr!=itr_pair.second; ++itr){
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == X_AXIS)
-            left_seg_idx = itr->second.first; 
+            left_seg_idx = itr->second.first;
     }
 
-    itr_pair=indeces_map.equal_range(right_seg_idx); 
-    
-    for (auto itr=itr_pair.first; itr!=itr_pair.second; ++itr){
+    itr_pair = indeces_map.equal_range(right_seg_idx);
+
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == X_AXIS)
-            right_seg_idx = itr->second.first; 
+            right_seg_idx = itr->second.first;
     }
 }
-
 
 /*********************************************************************************
  *********************************************************************************
  ********************** ClockSpine Function Implementations **********************
  *********************************************************************************
- *********************************************************************************/ 
+ *********************************************************************************/
 
 /*
  * ClockSpine (getters)
@@ -501,7 +500,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     length = 1; // Since drive segment has one length, the left and right segments have length - 1
 
     /* AA: ClockSpines runs vertically */
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf,Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, Y_AXIS);
 
     // Segment to the right of the drive point
     segment_inf.emplace_back();
@@ -511,7 +510,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     name = clock_name_ + "_right";
     length = (y_chan_wire.length - drive.offset) - 1;
 
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf,Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, Y_AXIS);
 
     // Segment to the left of the drive point
     segment_inf.emplace_back();
@@ -521,7 +520,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     name = clock_name_ + "_left";
     length = drive.offset - 1;
 
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf,Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, Y_AXIS);
 }
 
 size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
@@ -724,28 +723,28 @@ void ClockSpine::record_tap_locations(unsigned y_start,
 }
 
 /* AA: Map drive_seg_idx, left_seg_idx, and right_seg_idx to equivalent index in segment_inf_y as produced in rr_graph.cpp:build_rr_graph */
-void ClockSpine::map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map){
+void ClockSpine::map_relative_seg_indeces(const t_unified_to_parallel_seg_index& indeces_map) {
     /*We have vertical segments in clock-spines so we search for Y_AXIS*/
 
-    auto itr_pair= indeces_map.equal_range(drive_seg_idx); 
+    auto itr_pair = indeces_map.equal_range(drive_seg_idx);
 
-    for (auto itr=itr_pair.first; itr!=itr_pair.second; ++itr){
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == Y_AXIS)
-            drive_seg_idx = itr->second.first; 
+            drive_seg_idx = itr->second.first;
     }
 
-    itr_pair=indeces_map.equal_range(left_seg_idx); 
+    itr_pair = indeces_map.equal_range(left_seg_idx);
 
-    for (auto itr=itr_pair.first; itr!=itr_pair.second; ++itr){
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == Y_AXIS)
-            left_seg_idx = itr->second.first; 
+            left_seg_idx = itr->second.first;
     }
 
-    itr_pair=indeces_map.equal_range(right_seg_idx); 
-    
-    for (auto itr=itr_pair.first; itr!=itr_pair.second; ++itr){
+    itr_pair = indeces_map.equal_range(right_seg_idx);
+
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == Y_AXIS)
-            right_seg_idx = itr->second.first; 
+            right_seg_idx = itr->second.first;
     }
 }
 
@@ -754,7 +753,6 @@ void ClockSpine::map_relative_seg_indeces(const t_unified_to_parallel_seg_index&
  ********************** ClockHTree Function Implementations **********************
  *********************************************************************************
  *********************************************************************************/
-
 
 /*
  * ClockHtree (member funtions)

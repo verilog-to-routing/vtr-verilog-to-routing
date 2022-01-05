@@ -16,7 +16,6 @@
 #include "check_rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
-
 class MetadataBind {
   public:
     MetadataBind(vtr::string_internment* strings, vtr::interned_string empty)
@@ -145,15 +144,17 @@ class t_metadata_dict_iterator {
 
 class EdgeWalker {
   public:
-    void initialize(const t_rr_graph_storage* nodes) {
+    void initialize(const t_rr_graph_storage* nodes, const RRGraphView* rr_graph) {
         nodes_ = nodes;
+        rr_graph_ = rr_graph;
         num_edges_ = 0;
         current_src_inode_ = 0;
         current_edge_ = 0;
         current_idx_ = 0;
 
+        // TODO: Once rr_graph_storage is fully shadowed by RRGraphView, the cached nodes_ will be removed.
         for (const auto& node : *nodes) {
-            num_edges_ += node.num_edges();
+            num_edges_ += rr_graph_->num_edges(node.id());
         }
     }
 
@@ -166,11 +167,11 @@ class EdgeWalker {
     }
     int current_sink_node() const {
         VTR_ASSERT(current_src_inode_ < nodes_->size());
-        return (*nodes_)[current_src_inode_].edge_sink_node(current_edge_);
+        return size_t(rr_graph_->edge_sink_node(RRNodeId(current_src_inode_), current_edge_));
     }
     int current_switch_id_node() const {
         VTR_ASSERT(current_src_inode_ < nodes_->size());
-        return (*nodes_)[current_src_inode_].edge_switch(current_edge_);
+        return rr_graph_->edge_switch(RRNodeId(current_src_inode_), current_edge_);
     }
 
     size_t advance(int n) {
@@ -181,7 +182,7 @@ class EdgeWalker {
             current_edge_ += 1;
         }
 
-        if (current_edge_ >= (*nodes_)[current_src_inode_].num_edges()) {
+        if (current_edge_ >= rr_graph_->num_edges(RRNodeId(current_src_inode_))) {
             // Done with current_src_inode_, advance to the end of the
             // node list, or the next node with at least 1 edge.
             current_edge_ = 0;
@@ -194,7 +195,7 @@ class EdgeWalker {
                     VTR_ASSERT(current_idx_ + 1 == num_edges_);
                     return current_idx_++;
                 }
-            } while ((*nodes_)[current_src_inode_].num_edges() < 1);
+            } while (rr_graph_->num_edges(RRNodeId(current_src_inode_)) < 1);
         }
 
         VTR_ASSERT(current_src_inode_ < nodes_->size());
@@ -204,6 +205,7 @@ class EdgeWalker {
 
   private:
     const t_rr_graph_storage* nodes_;
+    const RRGraphView* rr_graph_;
     size_t num_edges_;
     size_t current_src_inode_;
     size_t current_edge_;
@@ -261,11 +263,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         t_rr_graph_storage* rr_nodes,
         RRGraphBuilder* rr_graph_builder,
         RRGraphView* rr_graph,
-        std::vector<t_rr_switch_inf>* rr_switch_inf,
+        vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
-        const std::vector<t_segment_inf>& segment_inf,
+        const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
         const DeviceGrid& grid,
         MetadataStorage<int>* rr_node_metadata,
@@ -505,24 +507,24 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // amoritized O(1).
         make_room_in_vector(rr_switch_inf_, id);
 
-        (*rr_switch_inf_)[id].R = 0;
-        (*rr_switch_inf_)[id].Cin = 0;
-        (*rr_switch_inf_)[id].Cout = 0;
-        (*rr_switch_inf_)[id].Cinternal = 0;
-        (*rr_switch_inf_)[id].Tdel = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].R = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Cin = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Cout = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Cinternal = 0;
+        (*rr_switch_inf_)[RRSwitchId(id)].Tdel = 0;
 
-        return &(*rr_switch_inf_)[id];
+        return &(*rr_switch_inf_)[RRSwitchId(id)];
     }
     inline void finish_switches_switch(t_rr_switch_inf*& /*ctx*/) final {}
     inline size_t num_switches_switch(void*& /*ctx*/) final {
         return rr_switch_inf_->size();
     }
     inline const t_rr_switch_inf* get_switches_switch(int n, void*& /*ctx*/) final {
-        return &(*rr_switch_inf_)[n];
+        return &(*rr_switch_inf_)[RRSwitchId(n)];
     }
 
     inline int get_switch_id(const t_rr_switch_inf*& sw) final {
-        return sw - &(*rr_switch_inf_)[0];
+        return sw - &(*rr_switch_inf_)[RRSwitchId(0)];
     }
 
     inline void* init_rr_graph_switches(void*& /*ctx*/) final {
@@ -999,7 +1001,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
         EdgeWalker walker;
-        walker.initialize(rr_nodes_);
+        walker.initialize(rr_nodes_, rr_graph_);
         return walker;
     }
 
@@ -1152,7 +1154,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline int get_segment_id(const t_segment_inf*& segment) final {
-        return segment - &segment_inf_.at(0);
+        return segment - &segment_inf_.at(RRSegmentId(0));
     }
     inline const char* get_segment_name(const t_segment_inf*& segment) final {
         return segment->name.c_str();
@@ -1180,14 +1182,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
     inline const t_segment_inf* add_segments_segment(void*& /*ctx*/, int id) final {
-        return &segment_inf_.at(id);
+        return &segment_inf_.at(RRSegmentId(id));
     }
     inline void finish_segments_segment(const t_segment_inf*& /*iter*/) final {}
     inline size_t num_segments_segment(void*& /*iter*/) final {
         return segment_inf_.size();
     }
     inline const t_segment_inf* get_segments_segment(int n, void*& /*ctx*/) final {
-        return &segment_inf_.at(n);
+        return &segment_inf_.at(RRSegmentId(n));
     }
 
     inline void* init_rr_graph_segments(void*& /*ctx*/) final {
@@ -1550,12 +1552,23 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         process_rr_node_indices();
 
         rr_graph_builder_->init_fan_in();
+        /* Create a temp copy to convert from vtr::vector to std::vector
+         * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
+         * type for ``rr_segments``
+         * Note that this is a dirty fix (to avoid massive code changes)
+         * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
+         */
+        std::vector<t_segment_inf> temp_rr_segs;
+        temp_rr_segs.reserve(segment_inf_.size());
+        for (auto& rr_seg : segment_inf_) {
+            temp_rr_segs.push_back(rr_seg);
+        }
 
         t_unified_to_parallel_seg_index seg_index_map;
-        auto segment_inf_x_=get_parallel_segs(segment_inf_,seg_index_map,X_AXIS);
-        auto segment_inf_y_=get_parallel_segs(segment_inf_,seg_index_map,Y_AXIS);
+        auto segment_inf_x_ = get_parallel_segs(temp_rr_segs, seg_index_map, X_AXIS);
+        auto segment_inf_y_ = get_parallel_segs(temp_rr_segs, seg_index_map, Y_AXIS);
         alloc_and_load_rr_indexed_data(
-            segment_inf_,
+            temp_rr_segs,
             segment_inf_x_,
             segment_inf_y_,
             *wire_to_rr_ipin_switch_,
@@ -1864,7 +1877,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     t_rr_graph_storage* rr_nodes_;
     RRGraphBuilder* rr_graph_builder_;
     RRGraphView* rr_graph_;
-    std::vector<t_rr_switch_inf>* rr_switch_inf_;
+    vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
@@ -1878,11 +1891,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
-
     /*AA: The serializer does not support non-uniform Y & X directed channels yet. Will need to modify
      * the methods following routines:rr_graph_rr_nodes and init_node_segment according to the changes in 
      * rr_graph_index_data.cpp */
-    const std::vector<t_segment_inf>& segment_inf_;
+    const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
     MetadataStorage<int>* rr_node_metadata_;

@@ -197,7 +197,9 @@ extern t_boolean buffd_outs;	//user-set flag that regulates whether to keep buff
 */
 const map<std::string, DeviceInfo> device_parameter_database {
     // stratix 4 device
-    {"stratixiv", {"stratixiv_lcell_comb", "combout", 1, "dffeas", "q" }}
+    {"stratixiv", {"stratixiv_lcell_comb", "combout", 1, "dffeas", "q" }},
+    {"stratix10", {"fourteennm_lcell_comb", "combout", 1, "fourteennm_ff", "q" }},
+    {"agilex", {"tennm_lcell_comb", "combout", 1, "tennm_ff", "q" }}
 };
 
 #endif

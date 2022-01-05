@@ -1416,7 +1416,7 @@ struct t_seg_details {
     int seg_start = 0;
     int seg_end = 0;
     int index = 0;
-    int abs_index=0; 
+    int abs_index = 0;
     float Cmetal_per_m = 0; ///<Used for power
     std::string type_name;
 };
@@ -1427,6 +1427,7 @@ class t_chan_seg_details {
     t_chan_seg_details(const t_seg_details* init_seg_details)
         : length_(init_seg_details->length)
         , seg_detail_(init_seg_details) {}
+
   public:
     int length() const { return length_; }
     int seg_start() const { return seg_start_; }
@@ -1451,7 +1452,7 @@ class t_chan_seg_details {
     Direction direction() const { return seg_detail_->direction; }
 
     int index() const { return seg_detail_->index; }
-    int abs_index () const {return seg_detail_->abs_index; }
+    int abs_index() const { return seg_detail_->abs_index; }
 
     const vtr::string_view type_name() const {
         return vtr::string_view(
@@ -1476,12 +1477,11 @@ class t_chan_seg_details {
     int seg_start_ = -1;
     int seg_end_ = -1;
     const t_seg_details* seg_detail_ = nullptr;
-    
 };
 
 /* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and verticalchannel)   
-   once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_segments-1]
-    */
+ * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_segments-1]
+ */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
 
 /**
@@ -1667,16 +1667,16 @@ struct t_power_opts {
 };
 
 /** @brief Channel width data
-* @param max= Maximum channel width between x_max and y_max. 
-* @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
-* @param y_min= Same as above but for vertical channels. 
-* @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
-* @param y_max= Same as above but for vertical channels. 
-* @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()] 
-* (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
-* @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
-* (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
-*/
+ * @param max= Maximum channel width between x_max and y_max. 
+ * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
+ * @param y_min= Same as above but for vertical channels. 
+ * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
+ * @param y_max= Same as above but for vertical channels. 
+ * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()] 
+ * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
+ * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
+ * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
+ */
 struct t_chan_width {
     int max = 0;
     int x_max = 0;

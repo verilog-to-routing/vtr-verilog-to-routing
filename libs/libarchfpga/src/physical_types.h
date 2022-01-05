@@ -1446,25 +1446,21 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
-    int seg_index; 
+    int seg_index;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
-
 };
-    
-
-
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
     return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
 }
 
-struct t_hash_segment_inf{
-    size_t operator()(const t_segment_inf& seg_inf) const noexcept{
+struct t_hash_segment_inf {
+    size_t operator()(const t_segment_inf& seg_inf) const noexcept {
         size_t result;
         result = ((((std::hash<std::string>()(seg_inf.name)
                      ^ std::hash<int>()(seg_inf.frequency) << 10)
-                     ^ std::hash<int>()(seg_inf.length) << 20)
-                     ^ std::hash<int>()((int)seg_inf.arch_opin_switch) << 30));
+                    ^ std::hash<int>()(seg_inf.length) << 20)
+                   ^ std::hash<int>()((int)seg_inf.arch_opin_switch) << 30));
         return result;
     }
 };
@@ -1747,6 +1743,12 @@ struct t_clock_arch_spec {
     std::vector<t_clock_connection_arch> clock_connections_arch;
 };
 
+struct t_lut_cell {
+    std::string name;
+    std::string init_param;
+    std::vector<std::string> inputs;
+};
+
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
@@ -1765,10 +1767,37 @@ struct t_arch {
     int num_switches;
     t_direct_inf* Directs = nullptr;
     int num_directs = 0;
+
     t_model* models = nullptr;
     t_model* model_library = nullptr;
+
     t_power_arch* power = nullptr;
     t_clock_arch* clocks = nullptr;
+
+    // Constants
+    // VCC and GND cells are special virtual cells that are
+    // used to handle the constant network of the device.
+    //
+    // Similarly, the constant nets are defined to identify
+    // the generic name for the constant network.
+    //
+    // Given that usually, the constants have a dedicated network in
+    // real FPGAs, this information becomes relevant to identify which
+    // nets from the circuit netlist are belonging to the constant network,
+    // and assigned to it accordingly.
+    //
+    // NOTE: At the moment, the constant cells and nets are primarly used
+    // for the interchange netlist format, to determine which are the constants
+    // net names and which virtual cell is responsible to generate them.
+    // The information is present in the device database.
+    std::string gnd_cell;
+    std::string vcc_cell;
+
+    std::string gnd_net = "$__gnd_net";
+    std::string vcc_net = "$__vcc_net";
+
+    // Luts
+    std::vector<t_lut_cell> lut_cells;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).

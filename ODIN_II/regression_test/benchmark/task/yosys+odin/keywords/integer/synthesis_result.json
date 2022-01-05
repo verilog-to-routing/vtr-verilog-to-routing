@@ -35,11 +35,11 @@
         "synthesis_time(ms)": 34.1,
         "Pi": 32,
         "Po": 32,
-        "logic element": 63,
-        "Longest Path": 34,
+        "logic element": 33,
+        "Longest Path": 19,
         "Average Path": 3,
-        "Estimated LUTs": 63,
-        "Total Node": 63
+        "Estimated LUTs": 33,
+        "Total Node": 33
     },
     "DEFAULT": {
         "test_name": "n/a",

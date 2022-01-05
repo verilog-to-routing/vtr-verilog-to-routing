@@ -116,8 +116,7 @@ class ClockNetwork {
                                                                      int num_segments_x)
         = 0;
     virtual size_t estimate_additional_nodes(const DeviceGrid& grid) = 0;
-    virtual void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& index_map) = 0; 
-
+    virtual void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& index_map) = 0;
 };
 
 class ClockRib : public ClockNetwork {
@@ -174,7 +173,7 @@ class ClockRib : public ClockNetwork {
                                                              int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
 
-    void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& index_map) override; 
+    void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& index_map) override;
 
     int create_chanx_wire(int x_start,
                           int x_end,
@@ -242,7 +241,7 @@ class ClockSpine : public ClockNetwork {
                                                              t_rr_edge_info_set* rr_edges_to_create,
                                                              int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
-    void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& index_map) override; 
+    void map_relative_seg_indeces(const t_unified_to_parallel_seg_index& index_map) override;
     int create_chany_wire(int y_start,
                           int y_end,
                           int x,

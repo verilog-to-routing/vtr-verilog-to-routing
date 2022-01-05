@@ -3806,15 +3806,15 @@ static void ProcessSegments(pugi::xml_node Parent,
         }
 
         /*Store the index of this segment in Segs vector*/
-        Segs[i].seg_index=i;
+        Segs[i].seg_index = i;
         /* Get next Node */
         Node = Node.next_sibling(Node.name());
     }
     /*We need at least one type of segment that applies to each of x- and y-directed wiring.*/
 
-    if (!x_axis_seg_found || !y_axis_seg_found){
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), 
-        "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.");
+    if (!x_axis_seg_found || !y_axis_seg_found) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       "Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.");
     }
 }
 /* Processes the switchblocklist section from the xml architecture file.

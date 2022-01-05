@@ -38,12 +38,12 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
     /* Currently Fs must be 3 since each track maps once to each other side */
     VTR_ASSERT(3 == Fs);
 
-    vtr::NdMatrix<std::vector<int>, 3> switch_block_conn({4, 4, (size_t) nodes_per_chan->max});
+    vtr::NdMatrix<std::vector<int>, 3> switch_block_conn({4, 4, (size_t)nodes_per_chan->max});
 
     for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
         for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-            int from_chan_width= (from_side==TOP || from_side== BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max; 
-            int to_chan_width= (to_side==TOP || to_side== BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+            int from_chan_width = (from_side == TOP || from_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+            int to_chan_width = (to_side == TOP || to_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
             for (int from_track = 0; from_track < from_chan_width; from_track++) {
                 if (from_side != to_side) {
                     switch_block_conn[from_side][to_side][from_track].resize(1);
@@ -60,13 +60,13 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
 
     if (getEchoEnabled()) {
         FILE* out = vtr::fopen("switch_block_conn.echo", "w");
-        fprintf(out,"Y-CHANNEL WIDTH: %d \n X-CHANNEL WIDTH: %d", nodes_per_chan->y_max, \
-        nodes_per_chan->x_max); 
+        fprintf(out, "Y-CHANNEL WIDTH: %d \n X-CHANNEL WIDTH: %d", nodes_per_chan->y_max,
+                nodes_per_chan->x_max);
         for (int l = 0; l < 4; ++l) {
             for (int k = 0; k < 4; ++k) {
                 fprintf(out, "Side %d to %d\n", l, k);
-                int chan_width= (k==0 || k==3) ? nodes_per_chan->y_max:nodes_per_chan->x_max; 
-                for (int  j = 0; j < chan_width; ++j) {    
+                int chan_width = (k == 0 || k == 3) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+                for (int j = 0; j < chan_width; ++j) {
                     fprintf(out, "%d: ", j);
                     for (unsigned i = 0; i < switch_block_conn[l][k][j].size(); ++i) {
                         fprintf(out, "%d ", switch_block_conn[l][k][j][i]);
@@ -156,7 +156,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == RIGHT) { /* CHANX to CHANX */
                 to_track = from_track;
             } else if (to_side == TOP) { /* from CHANX to CHANY */
-                to_track = to_chan_width - 1 - from_track%to_chan_width;
+                to_track = to_chan_width - 1 - from_track % to_chan_width;
             } else if (to_side == BOTTOM) {
                 to_track = from_track;
             }
@@ -168,7 +168,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             } else if (to_side == TOP) { /* from CHANX to CHANY */
                 to_track = from_track;
             } else if (to_side == BOTTOM) {
-                to_track = to_chan_width - 1 - from_track%to_chan_width;
+                to_track = to_chan_width - 1 - from_track % to_chan_width;
             }
         }
 
@@ -178,7 +178,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
                 to_track = from_track;
             } else if (to_side == RIGHT) {
-                to_track = to_chan_width - 1 - from_track%to_chan_width;
+                to_track = to_chan_width - 1 - from_track % to_chan_width;
             }
         }
 
@@ -186,7 +186,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == BOTTOM) { /* CHANY to CHANY */
                 to_track = from_track;
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
-                to_track = to_chan_width - 1 - from_track%to_chan_width;
+                to_track = to_chan_width - 1 - from_track % to_chan_width;
             } else if (to_side == RIGHT) {
                 to_track = from_track;
             }

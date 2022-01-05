@@ -2,6 +2,7 @@
 #include "rr_graph_storage.h"
 #include "globals.h"
 #include "vpr_error.h"
+#include "rr_graph.h"
 
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
@@ -9,17 +10,17 @@ short t_rr_node::length() const {
         storage_->node_yhigh(id_) - storage_->node_ylow(id_),
         storage_->node_xhigh(id_) - storage_->node_xlow(id_));
 }
-
+/* TODO: This API should be reworked once rr_switch APIs are in RRGraphView. */
 bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
-    auto iswitch = edge_switch(iedge);
-
     auto& device_ctx = g_vpr_ctx.device();
-
-    return device_ctx.rr_switch_inf[iswitch].configurable();
+    const auto& rr_graph = device_ctx.rr_graph;
+    auto iswitch = rr_graph.edge_switch(id_, iedge);
+    return rr_graph.rr_switch_inf(RRSwitchId(iswitch)).configurable();
 }
 
 bool t_rr_node::validate() const {
     //Check internal assumptions about RR node are valid
+
     t_edge_size iedge = 0;
     for (auto edge : edges()) {
         if (edge < num_configurable_edges()) {
