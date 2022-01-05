@@ -84,7 +84,6 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
                                                                           const int* sets_per_seg_type);
 
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
-                                                            const e_parallel_axis seg_axis,
                                                             const int seg_type_tracks,
                                                             const int Fc,
                                                             const t_physical_tile_type_ptr Type,
@@ -99,7 +98,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
                                                                              const int height,
                                                                              const int num_pins,
                                                                              const int max_chan_width,
-                                                                             const int num_seg_types);
+                                                                             const std::vector<t_segment_inf>& seg_inf);
 
 static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const RRGraphView& rr_graph,
@@ -157,7 +156,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
-                                                                  const t_track_to_pin_lookup& track_to_pin_lookup,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup_x,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                                                                   t_sb_connection_map* sb_conn_map,
@@ -566,9 +566,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
     auto sets_per_seg_type_x = get_seg_track_counts(total_sets_x, segment_inf_x, use_full_seg_groups);
     auto sets_per_seg_type_y = get_seg_track_counts(total_sets_y, segment_inf_y, use_full_seg_groups);
-    auto sets_test = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
+    auto sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
 
-    auto sets_per_seg_type = get_ordered_seg_track_counts(segment_inf_x, segment_inf_y, segment_inf, sets_per_seg_type_x, sets_per_seg_type_y);
+    auto sets_test = get_ordered_seg_track_counts(segment_inf_x, segment_inf_y, segment_inf, sets_per_seg_type_x, sets_per_seg_type_y);
 
     //VTR_ASSERT_MSG(sets_test==sets_per_seg_type,
     //                "Not equal combined output after combining segs " );
@@ -707,29 +707,32 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* START IPIN MAP */
     /* Create ipin map lookups */
 
-    t_pin_to_track_lookup ipin_to_track_map(types.size());   /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-    t_track_to_pin_lookup track_to_pin_lookup(types.size()); /* [0..device_ctx.physical_tile_types.size()-1][0..max_chan_width-1][0..width][0..height][0..3] */
-                                                             /*
-                                                              * std::vector<t_pin_to_track_lookup> ipin_to_track_map_x; 
-                                                              * std::vector<t_pin_to_track_lookup> ipin_to_track_map_y;
-                                                              *
-                                                              * std::vector<t_track_to_pin_lookup> track_to_pin_lookup_x;
-                                                              * std::vector<t_track_to_pin_lookup> track_to_pin_lookup_y;
-                                                              *
-                                                              * for (int i=0; width < device_ctx.grid.width(); i++){
-                                                              * ipin_to_track_map_x[i]=alloc_and_load_pin_to_track_map (RECEIVER,
-                                                              * Fc_)
-                                                              *
-                                                              *
-                                                              * }
-                                                              */
-    for (unsigned int itype = 0; itype < types.size(); ++itype) {
-        ipin_to_track_map[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
-                                                                   Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
-                                                                   segment_inf, sets_per_seg_type.get());
 
-        track_to_pin_lookup[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map[itype], Fc_in[itype], types[itype].width, types[itype].height,
-                                                                        types[itype].num_pins, max_chan_width, segment_inf.size());
+                                    
+    t_pin_to_track_lookup ipin_to_track_map_x(types.size());        /* [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+    t_pin_to_track_lookup ipin_to_track_map_y(types.size());        /* [0..device_ctx.physical_tile_types.size()-1][0..max_chan_width-1][0..width][0..height][0..3] */
+
+    t_track_to_pin_lookup track_to_pin_lookup_x(types.size());
+    t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
+
+
+
+    for (unsigned int itype = 0; itype < types.size(); ++itype) {
+        ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
+                                                                   Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
+                                                                   segment_inf_x, sets_per_seg_type_x.get());
+
+        ipin_to_track_map_y[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
+                                                                   Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
+                                                                   segment_inf_y, sets_per_seg_type_y.get());
+
+        track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype], types[itype].width, types[itype].height,
+                                                                        types[itype].num_pins, nodes_per_chan.x_max, segment_inf_x);
+        
+        track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype], types[itype].width, types[itype].height,
+                                                                        types[itype].num_pins, nodes_per_chan.y_max, segment_inf_y);
+
+                            
     }
     /* END IPIN MAP */
 
@@ -755,7 +758,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         segment_inf_x.size(),
         segment_index_map,
         chan_details_x, chan_details_y,
-        track_to_pin_lookup, opin_to_track_map,
+        track_to_pin_lookup_x, track_to_pin_lookup_y,
+        opin_to_track_map,
         switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
         Fc_out, Fc_xofs, Fc_yofs,
         nodes_per_chan,
@@ -810,7 +814,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* Free all temp structs */
     if (seg_details) {
         delete[] seg_details;
+        delete[] seg_details_x;
+        delete[] seg_details_y;
         seg_details = nullptr;
+        seg_details_x = nullptr;
+        seg_details_y = nullptr; 
     }
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
         free_chan_details(chan_details_x, chan_details_y);
@@ -820,7 +828,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         sb_conn_map = nullptr;
     }
 
-    free_type_track_to_pin_map(track_to_pin_lookup, types, max_chan_width);
+    free_type_track_to_pin_map(track_to_pin_lookup_x, types, nodes_per_chan.x_max);
+    free_type_track_to_pin_map(track_to_pin_lookup_y, types, nodes_per_chan.y_max);
     if (clb_to_clb_directs != nullptr) {
         free(clb_to_clb_directs);
     }
@@ -1209,7 +1218,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
-                                                                  const t_track_to_pin_lookup& track_to_pin_lookup,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup_x,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                                                                   t_sb_connection_map* sb_conn_map,
@@ -1295,7 +1305,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         for (size_t j = 0; j < grid.height() - 1; ++j) {
             if (i > 0) {
                 int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
-                build_rr_chan(rr_graph_builder, i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
+                build_rr_chan(rr_graph_builder, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map, switch_block_conn,
                               CHANX_COST_INDEX_START,
                               chan_width, grid, tracks_per_chan,
                               sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
@@ -1310,7 +1320,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
             if (j > 0) {
                 int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.y_list[i]);
-                build_rr_chan(rr_graph_builder, i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
+                build_rr_chan(rr_graph_builder, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map, switch_block_conn,
                               CHANX_COST_INDEX_START + num_seg_types_x,
                               chan_width, grid, tracks_per_chan,
                               sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
@@ -1794,14 +1804,14 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
     /* get the maximum number of tracks that any pin can connect to */
     size_t max_pin_tracks = 0;
 
-    int num_seg_types = seg_inf.size();
+    int num_parallel_seg_types = seg_inf.size();
 
-    for (int iseg = 0; iseg < num_seg_types; iseg++) {
+    for (int iseg = 0; iseg < num_parallel_seg_types; iseg++) {
         /* determine the maximum Fc to this segment type across all pins */
         int max_Fc = 0;
         for (int pin_index = 0; pin_index < Type->num_pins; ++pin_index) {
             int pin_class = Type->pin_class[pin_index];
-            if (Fc[pin_index][iseg] > max_Fc && Type->class_inf[pin_class].type == pin_type) {
+            if (Fc[pin_index][seg_inf[iseg].seg_index] > max_Fc && Type->class_inf[pin_class].type == pin_type) {
                 max_Fc = Fc[pin_index][iseg];
             }
         }
@@ -1827,7 +1837,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
 
     /* load the pin to track matrix by looking at each segment type in turn */
     int seg_type_start_track = 0;
-    for (int iseg = 0; iseg < num_seg_types; iseg++) {
+    for (int iseg = 0; iseg < num_parallel_seg_types; iseg++) {
         int num_seg_type_tracks = fac * sets_per_seg_type[iseg];
 
         /* determine the maximum Fc to this segment type across all pins */
@@ -1839,13 +1849,8 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
             }
         }
 
-        /* get the axis of the segment which determines the sides of 
-         * the block on which we need to allocate connection blocks for this segment*/
-        e_parallel_axis wanted_axis = seg_inf[iseg].parallel_axis;
-
         /* get pin connections to tracks of the current segment type */
-        auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type, wanted_axis,
-                                                                  num_seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality);
+        auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type, num_seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality);
 
         /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
          * now load up 'result' array with these connections, but offset them so they are relative to the channel
@@ -1859,7 +1864,9 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
 
                             if (relative_track_ind == OPEN) continue;
 
+                            VTR_ASSERT (relative_track_ind <= num_seg_type_tracks);
                             int absolute_track_ind = relative_track_ind + seg_type_start_track;
+
 
                             VTR_ASSERT(absolute_track_ind >= 0);
                             result[ipin][iwidth][iheight][iside].push_back(absolute_track_ind);
@@ -1877,7 +1884,6 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
 }
 
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
-                                                            const e_parallel_axis seg_axis,
                                                             const int num_seg_type_tracks,
                                                             const int Fc,
                                                             const t_physical_tile_type_ptr Type,
@@ -1900,7 +1906,6 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
      * allowing different specification of the segment parallel_axis.
      */
 
-    (void)seg_axis;
     if (Type->num_pins < 1) {
         return vtr::NdMatrix<int, 5>();
     }
@@ -2495,7 +2500,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
                                                                              const int type_height,
                                                                              const int num_pins,
                                                                              const int max_chan_width,
-                                                                             const int num_seg_types) {
+                                                                             const std::vector<t_segment_inf>& seg_inf) {
     /* [0..max_chan_width-1][0..width][0..height][0..3].  For each track number
      * it stores a vector for each of the four sides.  x-directed channels will
      * use the TOP and   BOTTOM vectors to figure out what clb input pins they
@@ -2512,6 +2517,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
         return vtr::NdMatrix<std::vector<int>, 4>();
     }
 
+    const int num_seg_types= seg_inf.size();
     /* Alloc and zero the the lookup table */
     auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 4>({size_t(max_chan_width), size_t(type_width), size_t(type_height), 4});
 
@@ -2526,11 +2532,14 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
                     /* get number of tracks to which this pin connects */
                     int num_tracks = 0;
                     for (int iseg = 0; iseg < num_seg_types; iseg++) {
-                        num_tracks += Fc[pin][iseg];
+                        num_tracks += Fc[pin][seg_inf[iseg].seg_index]; // AA: Fc_in and Fc_out matrices are unified for all segments so need to map index. 
                     }
 
+                    num_tracks = std::min (num_tracks, (int) pin_to_track_map[pin][width][height][side].size());
                     for (int conn = 0; conn < num_tracks; ++conn) {
                         int track = pin_to_track_map[pin][width][height][side][conn];
+                        if (track < max_chan_width)
+                            (void) 1; 
                         VTR_ASSERT(track < max_chan_width);
                         VTR_ASSERT(track >= 0);
                         track_to_pin_lookup[track][width][height][side].push_back(pin);
@@ -2667,6 +2676,14 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             int chan = (vert ? (j) : (i));
             int seg = (vert ? (i) : (j));
             int max_len = (vert ? grid.width() : grid.height());
+            e_parallel_axis wanted_axis = chan_type == CHANX ? X_AXIS : Y_AXIS;
+            int seg_index = get_parallel_seg_index(iseg, seg_index_map, wanted_axis); 
+
+            /*The segment at index iseg doesn't have the proper adjacency so skip building Fc_out conenctions for it*/
+            if (seg_index < 0)
+                continue;
+
+
             vtr::NdMatrix<int, 3>& Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
             if (false == pos_dir) {
                 --chan;
@@ -2687,23 +2704,13 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             }
 
             const t_chan_seg_details* seg_details = (chan_type == CHANX ? chan_details_x[seg][chan] : chan_details_y[chan][seg]).data();
-            const e_parallel_axis wanted_axis = chan_type == CHANX ? X_AXIS : Y_AXIS;
 
             if (seg_details[0].length() == 0)
                 continue;
 
             /* Get the list of opin to mux connections for that chan seg. */
             bool clipped;
-            int seg_index = -1;
-            auto index_pair = seg_index_map.equal_range(iseg);
-            for (; index_pair.first != index_pair.second; ++index_pair.first) {
-                if (index_pair.first->second.second == wanted_axis)
-                    seg_index = index_pair.first->second.first;
-            }
 
-            /*The segment at index iseg doesn't have the proper adjacency so skip building Fc_out conenctions for it*/
-            if (seg_index < 0)
-                continue;
 
             //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
