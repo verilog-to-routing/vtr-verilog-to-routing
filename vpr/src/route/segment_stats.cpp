@@ -49,17 +49,17 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     seg_occ_by_type = (int*)vtr::calloc(segment_inf.size(), sizeof(int));
     seg_cap_by_type = (int*)vtr::calloc(segment_inf.size(), sizeof(int));
 
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-        size_t inode = (size_t)id;
-        if (rr_graph.node_type(id) == CHANX || rr_graph.node_type(id) == CHANY) {
-            cost_index = rr_graph.node_cost_index(id);
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_id;
+        if (rr_graph.node_type(rr_id) == CHANX || rr_graph.node_type(rr_id) == CHANY) {
+            cost_index = rr_graph.node_cost_index(rr_id);
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
 
             if (!segment_inf[seg_type].longline)
                 length = segment_inf[seg_type].length;
             else
                 length = LONGLINE;
-            const short& inode_capacity = rr_graph.node_capacity(id);
+            const short& inode_capacity = rr_graph.node_capacity(rr_id);
             seg_occ_by_length[length] += route_ctx.rr_node_route_inf[inode].occ();
             seg_cap_by_length[length] += inode_capacity;
             seg_occ_by_type[seg_type] += route_ctx.rr_node_route_inf[inode].occ();

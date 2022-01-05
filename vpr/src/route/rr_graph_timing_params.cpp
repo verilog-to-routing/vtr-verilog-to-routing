@@ -47,20 +47,20 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
     std::vector<float> rr_node_C(device_ctx.rr_nodes.size(), 0.); //Stores the final C
 
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-        size_t inode = (size_t)id;
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_id;
         //The C may have already been partly initialized (e.g. with metal capacitance)
-        rr_node_C[inode] += rr_graph.node_C(id);
+        rr_node_C[inode] += rr_graph.node_C(rr_id);
 
-        from_rr_type = rr_graph.node_type(id);
+        from_rr_type = rr_graph.node_type(rr_id);
 
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
-            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(inode)); iedge++) {
-                to_node = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
+            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
+                to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                 if (to_rr_type == CHANX || to_rr_type == CHANY) {
-                    switch_index = rr_graph.edge_switch(RRNodeId(inode), iedge);
+                    switch_index = rr_graph.edge_switch(rr_id, iedge);
                     Cin = device_ctx.rr_switch_inf[switch_index].Cin;
                     Cout = device_ctx.rr_switch_inf[switch_index].Cout;
                     buffered = device_ctx.rr_switch_inf[switch_index].buffered();
@@ -186,13 +186,13 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             }
         }
     }
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-        rr_node_C[(size_t)id] += Couts_to_add[(size_t)id];
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        rr_node_C[(size_t)rr_id] += Couts_to_add[(size_t)rr_id];
     }
 
     //Create the final flywieghted t_rr_rc_data
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-        mutable_device_ctx.rr_graph_builder.set_node_rc_index(id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(id), rr_node_C[(size_t)id])));
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id])));
     }
 
     free(Couts_to_add);

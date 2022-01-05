@@ -500,8 +500,8 @@ void recompute_occupancy_from_scratch() {
 
     /* First set the occupancy of everything to zero. */
     /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes())
-        route_ctx.rr_node_route_inf[(size_t)id].set_occ(0);
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes())
+        route_ctx.rr_node_route_inf[(size_t)rr_id].set_occ(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
 

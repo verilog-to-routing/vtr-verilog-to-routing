@@ -506,8 +506,8 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
 
     trans_count = 0.;
 
-    for (const RRNodeId& id : device_ctx.rr_graph.nodes()) {
-        num_inputs = num_inputs_to_cblock[(size_t)id];
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        num_inputs = num_inputs_to_cblock[(size_t)rr_id];
         trans_count += trans_per_cblock[num_inputs];
     }
 

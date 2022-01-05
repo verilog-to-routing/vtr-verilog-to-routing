@@ -472,12 +472,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
             if (!sample_nodes[chan_type].empty()) continue;
 
             //Try an exhaustive search to find a suitable sample point
-            //for (int inode = 0; inode < int(device_ctx.rr_nodes.size()); ++inode) {
-            for (RRNodeId inode : rr_graph.nodes()) {
-                // `for (RREdgeId edge : rr_graph.edge_range(parent))` on line 659 already defines the
-                // vtr::StrongIdRange template, so `for (RRNodeId& rr_node : rr_graph.nodes())`
-                // can't be used here
-                auto rr_node = RRNodeId(inode);
+            for (RRNodeId rr_node : rr_graph.nodes()) {
                 auto rr_type = rr_graph.node_type(rr_node);
                 if (rr_type != chan_type) continue;
 
@@ -487,7 +482,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
                 if (seg_index == iseg) {
-                    sample_nodes[chan_type].push_back(RRNodeId(inode));
+                    sample_nodes[chan_type].push_back(rr_node);
                 }
 
                 if (sample_nodes[chan_type].size() >= ref_increments.size()) {

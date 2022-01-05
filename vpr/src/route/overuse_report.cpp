@@ -36,11 +36,11 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
 
     //Print overuse info body
     int overuse_index = 0;
-    for (const RRNodeId& id : rr_graph.nodes()) {
-        int overuse = route_ctx.rr_node_route_inf[(size_t)id].occ() - rr_graph.node_capacity(id);
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+        int overuse = route_ctx.rr_node_route_inf[(size_t)rr_id].occ() - rr_graph.node_capacity(rr_id);
 
         if (overuse > 0) {
-            log_single_overused_node_status(overuse_index, id);
+            log_single_overused_node_status(overuse_index, rr_id);
             ++overuse_index;
 
             //Reached the logging limit
