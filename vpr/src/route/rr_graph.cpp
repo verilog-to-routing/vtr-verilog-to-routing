@@ -464,7 +464,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     int num_seg_details_x = 0;
     int num_seg_details_y = 0;
 
-    t_seg_details* seg_details = nullptr;
     t_seg_details* seg_details_x = nullptr;
     t_seg_details* seg_details_y = nullptr;
 
@@ -741,6 +740,7 @@ static void build_rr_graph(const t_graph_type graph_type,
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
                                                                        Fc_out[itype], &types[itype], perturb_opins, directionality,
                                                                        segment_inf, sets_per_seg_type.get());
+
         }
     }
     /* END OPIN MAP */
@@ -806,14 +806,11 @@ static void build_rr_graph(const t_graph_type graph_type,
     check_rr_graph(graph_type, grid, types);
 
     /* Free all temp structs */
-    if (seg_details) {
-        delete[] seg_details;
-        delete[] seg_details_x;
-        delete[] seg_details_y;
-        seg_details = nullptr;
-        seg_details_x = nullptr;
-        seg_details_y = nullptr;
-    }
+    delete[] seg_details_x;
+    delete[] seg_details_y;
+
+    seg_details_x = nullptr;
+    seg_details_y = nullptr;
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
         free_chan_details(chan_details_x, chan_details_y);
     }
@@ -1806,7 +1803,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
         for (int pin_index = 0; pin_index < Type->num_pins; ++pin_index) {
             int pin_class = Type->pin_class[pin_index];
             if (Fc[pin_index][seg_inf[iseg].seg_index] > max_Fc && Type->class_inf[pin_class].type == pin_type) {
-                max_Fc = Fc[pin_index][iseg];
+                max_Fc = Fc[pin_index][seg_inf[iseg].seg_index];
             }
         }
 
@@ -1838,13 +1835,13 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
         int max_Fc = 0;
         for (int pin_index = 0; pin_index < Type->num_pins; ++pin_index) {
             int pin_class = Type->pin_class[pin_index];
-            if (Fc[pin_index][iseg] > max_Fc && Type->class_inf[pin_class].type == pin_type) {
-                max_Fc = Fc[pin_index][iseg];
+            if (Fc[pin_index][seg_inf[iseg].seg_index] > max_Fc && Type->class_inf[pin_class].type == pin_type) {
+                max_Fc = Fc[pin_index][seg_inf[iseg].seg_index];
             }
         }
 
         /* get pin connections to tracks of the current segment type */
-        auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type, num_seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality);
+        auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type, num_seg_type_tracks, max_Fc, Type, perturb_switch_pattern[seg_inf[iseg].seg_index], directionality);
 
         /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
          * now load up 'result' array with these connections, but offset them so they are relative to the channel
