@@ -163,7 +163,7 @@ struct DeviceContext : public Context {
     /* A writeable view of routing resource graph to be the ONLY database 
      * for routing resource graph builder functions.
      */
-    RRGraphBuilder rr_graph_builder{&rr_nodes};
+    RRGraphBuilder rr_graph_builder{&rr_nodes, &rr_node_metadata, &rr_edge_metadata};
 
     /* A read-only view of routing resource graph to be the ONLY database 
      * for client functions: GUI, placer, router, timing analyzer etc.

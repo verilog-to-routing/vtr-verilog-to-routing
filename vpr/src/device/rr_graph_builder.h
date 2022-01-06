@@ -15,12 +15,15 @@
  */
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
+#include "metadata_storage.h"
 
 class RRGraphBuilder {
     /* -- Constructors -- */
   public:
     /* See detailed comments about the data structures in the internal data storage section of this file */
-    RRGraphBuilder(t_rr_graph_storage* node_storage);
+    RRGraphBuilder(t_rr_graph_storage* node_storage,
+                   MetadataStorage<int>* rr_node_metadata,
+                   MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -58,6 +61,29 @@ class RRGraphBuilder {
 
     /** @brief Clear all the underlying data storage */
     void clear();
+    /** @brief reorder all the nodes
+     * Reordering the rr-graph nodes may be helpful in
+     *   - Increasing cache locality during routing
+     *   - Improving compile time
+     * Reorder RRNodeId's using one of these algorithms:
+     *   - DEGREE_BFS: Order by degree primarily, and BFS traversal order secondarily.
+     *   - RANDOM_SHUFFLE: Shuffle using the specified seed. Great for testing.
+     * The DEGREE_BFS algorithm was selected because it had the best performance of seven
+     * existing algorithms here: https://github.com/SymbiFlow/vtr-rrgraph-reordering-tool
+     * It might be worth further research, as the DEGREE_BFS algorithm is simple and
+     * makes some arbitrary choices, such as the starting node.
+     * The re-ordering algorithm (DEGREE_BFS) does not speed up the router on most architectures
+     * vs. using the node ordering created by the rr-graph builder in VPR, so it is off by default.
+     * The other use of this algorithm is for some unit tests; by changing the order of the nodes
+     * in the rr-graph before routing we check that no code depends on the rr-graph node order
+     * Nonetheless, it does improve performance ~7% for the SymbiFlow Xilinx Artix 7 graph.
+     *
+     * NOTE: Re-ordering will invalidate any references to rr_graph nodes, so this
+     *       should generally be called before creating such references.
+     */
+    void reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
+                       int reorder_rr_graph_nodes_threshold,
+                       int reorder_rr_graph_nodes_seed);
 
     /** @brief Set capacity of this node (number of routes that can use it). */
     inline void set_node_capacity(RRNodeId id, short new_capacity) {
@@ -208,6 +234,14 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     RRSpatialLookup node_lookup_;
+
+    /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
+     * but simply passed through the flow so that it can be used by downstream tools.
+     * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
+     * which needs extra metadata on which programming bits control which switch in order to produce a bitstream.*/
+
+    MetadataStorage<int>& rr_node_metadata_;
+    MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
 };
 
 #endif
