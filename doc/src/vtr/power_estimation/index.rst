@@ -399,7 +399,7 @@ The user may override this method by providing the buffer size as shown below:
 The size is the drive strength of the buffer, relative to a minimum-sized inverter.
 
 Input Connection Boxes
-""""""""""""""""
+""""""""""""""""""""""
 
 Input connection boxes are modelled as the following components (:numref:`fig_power_cb`):
 

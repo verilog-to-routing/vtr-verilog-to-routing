@@ -14,6 +14,24 @@ The first step is to `download VTR <https://verilogtorouting.org/download/>`_ an
 
 .. note:: Developers planning to modify VTR should clone the `VTR git repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing/>`_.
 
+
+Environment Setup
+-----------------
+VTR requires several system packages and Python packages to build and run the flow.  You can install the required system packages using the following command (this works on Ubuntu 18.04 and 20.04, but you may require different packages on other Linux distributions):
+
+.. code-block:: bash
+
+    > ./install_apt_packages.sh
+
+Then, to install the required Python packages within a new virtual environment:
+
+.. code-block:: bash
+
+    > make env
+    > source .venv/bin/activate
+    > pip install -r requirements.txt
+
+
 Build VTR
 ---------
 
@@ -36,11 +54,9 @@ from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to buil
     To run the examples in this guide on your machine, either:
 
     * define VTR_ROOT as a variable in your shell (e.g. if ``~/trees/vtr`` is the path to the VTR source tree on your machine, run the equivalent of ``VTR_ROOT=~/trees/vtr`` in BASH) which will allow you to run the commands as written in this guide, or
-    * manually replace `$VTR_ROOT` in the example commandss below with your path to the VTR source tree.
+    * manually replace `$VTR_ROOT` in the example commands below with your path to the VTR source tree.
 
-.. note:: If VTR fails to build you may need to install the :ref:`required dependencies <building_vtr>`.
-
-For more details on building VTR on various operating systems/platforms see :ref:`Building VTR<building_vtr>`.
+For more details on building VTR on various operating systems/platforms see :doc:`Building VTR</BUILDING>`.
 
 
 Running VPR
@@ -368,7 +384,13 @@ Automatically Running the VTR Flow
 Running each stage of the flow manually is time consuming (and potentially error prone).
 For convenience, VTR provides a script (:ref:`run_vtr_flow`) which automates this process.
 
-Lets make a new directory to work in named ``blink_run_flow``:
+First, make sure you sure you have activated the Python virtual environment created at the beginning of this tutorial:
+
+.. code-block:: bash
+
+    > source $VTR_ROOT/.venv/bin/activate
+
+Next, make a new directory to work in named ``blink_run_flow``:
 
 .. code-block:: bash
 
@@ -463,7 +485,7 @@ Here are some possible next steps for users wishing to use VTR:
 
  * Discover how to :ref:`generate FASM <genfasm>` for bitstream creation.
 
- * :ref:`Suggest or make enhancements to VTR's documentation <contribution_guidelines>`.
+ * :doc:`Suggest or make enhancements to VTR's documentation </CONTRIBUTING>`.
 
 Here are some possible next steps for developers wishing to modify and improve VTR:
 
@@ -473,6 +495,6 @@ Here are some possible next steps for developers wishing to modify and improve V
 
  * Read through the :ref:`developer guide <developer_guide>`.
 
- * Look for :ref:`open issues to which you can contribute <contribution_guidelines>`.
+ * Look for :doc:`open issues to which you can contribute </CONTRIBUTING>`.
 
  * Begin exploring the source code for the main tools in VTR (e.g. VPR in ``$VTR_ROOT/vpr/src``).

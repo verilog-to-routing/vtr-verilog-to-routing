@@ -18,8 +18,6 @@ import shlex
 import shutil
 import subprocess
 
-# Markdown support
-import recommonmark
 
 sys.path.append(".")
 sys.path.insert(0, os.path.abspath("../../vtr_flow/scripts/python_libs"))
@@ -67,7 +65,7 @@ extensions = [
     "sdcdomain",
     "archdomain",
     "rrgraphdomain",
-    "recommonmark",
+    "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
 ]
@@ -373,41 +371,10 @@ if shutil.which("doxygen"):
         for prjname, prjdir in breathe_projects.items():
             assert os.path.exists(prjdir) == True, "Regenerate doxygen XML for {}".format(prjname)
 
-
-def recommonmark_setup(app):
-    """Initialize Sphinx extension."""
-    import sphinx
-
-    if sphinx.version_info >= (1, 8):
-        app.add_source_suffix(".md", "markdown")
-        app.add_source_parser(LinkParser)
-
-    return {"version": recommonmark.__version__, "parallel_read_safe": True}
-
-
-# Override recommonmark setup
-recommonmark.setup = recommonmark_setup
+# Add page anchors for myst parser
+myst_heading_anchors = 4
 
 
 def setup(app):
-    github_code_repo = "https://github.com/verilog-to-routing/vtr-verilog-to-routing/"
-    github_code_branch = "blob/master/"
 
-    docs_root_dir = os.path.realpath(os.path.dirname(__file__))
-    code_root_dir = os.path.realpath(os.path.join(docs_root_dir, "..", ".."))
-
-    MarkdownSymlinksDomain.init_domain(
-        github_code_repo, github_code_branch, docs_root_dir, code_root_dir
-    )
-    MarkdownSymlinksDomain.find_links()
-    app.add_domain(MarkdownSymlinksDomain)
-    app.add_config_value(
-        "recommonmark_config",
-        {
-            "github_code_repo": github_code_repo,
-            "enable_math": True,
-            "enable_inline_math": True,
-        },
-        True,
-    )
     app.add_stylesheet("css/vtr.css")
