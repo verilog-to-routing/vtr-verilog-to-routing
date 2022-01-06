@@ -254,12 +254,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         auto &device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
-        for(size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-            for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(inode)); ++iedge) {
-                auto sink_inode = size_t(rr_graph.edge_sink_node(RRNodeId(inode), iedge));
-                auto switch_id = rr_graph.edge_switch(RRNodeId(inode), iedge);
+        for (const RRNodeId& inode : rr_graph.nodes()){
+            for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); ++iedge) {
+                auto sink_inode = size_t(rr_graph.edge_sink_node(inode, iedge));
+                auto switch_id = rr_graph.edge_switch(inode, iedge);
                 auto value = vtr::string_fmt("%d_%d_%zu",
-                            inode, sink_inode, switch_id);
+                            (size_t)inode, sink_inode, switch_id);
 
                 // Add additional features to edges that go to CLB.I[11:0] pins
                 // to correlate them with features of CLB input mux later.
@@ -269,7 +269,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                     value = value + "\n" + pin_feature;
                 }
 
-                vpr::add_rr_edge_metadata(inode, sink_inode, switch_id,
+                vpr::add_rr_edge_metadata((size_t)inode, sink_inode, switch_id,
                         vtr::string_view("fasm_features"), vtr::string_view(value.data(), value.size()));
             }
         }

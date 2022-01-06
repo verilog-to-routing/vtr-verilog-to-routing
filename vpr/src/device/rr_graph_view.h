@@ -55,6 +55,26 @@ class RRGraphView {
      * kind of accessors
      */
   public:
+    /* Aggregates: create range-based loops for nodes
+     * To iterate over the nodes in a RRGraph,  
+     *    using a range-based loop is suggested. 
+     *  ----------------------------------------------------------------- 
+     *    Example: iterate over all the nodes 
+     *      // Strongly suggest to use a read-only rr_graph object 
+     *      const RRGraph& rr_graph; 
+     *      for (const RRNodeId& node : rr_graph.nodes()) { 
+     *        // Do something with each node 
+     *      } 
+     */
+    inline vtr::StrongIdRange<RRNodeId> nodes() const {
+        return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(size()));
+    }
+
+    /** @brief Return number of nodes. This function is inlined for runtime optimization. */
+    inline size_t size() const {
+        return node_storage_.size();
+    }
+
     /** @brief Get the type of a routing resource node. This function is inlined for runtime optimization. */
     inline t_rr_type node_type(RRNodeId node) const {
         return node_storage_.node_type(node);
@@ -299,9 +319,17 @@ class RRGraphView {
         return node_storage_.non_configurable_edges(node);
     }
 
-    /** @brief Get ID range for edges. This function is inlined for runtime optimization. */
-    inline edge_idx_range edges(RRNodeId node) const {
-        return node_storage_.edges(node);
+    /** @brief Get outgoing edges for a node.
+     * This API is designed to enable range-based loop to walk through the outgoing edges of a node
+     * Example:
+     *   RRGraphView rr_graph; // A dummny rr_graph for a short example
+     *   RRNodeId node; // A dummy node for a short example
+     *   for (RREdgeId edge : rr_graph.edges(node)) {
+     *     // Do something with the edge
+     *   }
+     */
+    inline edge_idx_range edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
     /** @brief Get the number of edges. This function is inlined for runtime optimization. */

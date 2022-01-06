@@ -243,10 +243,10 @@ static std::vector<size_t> count_rr_segment_types() {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        if (rr_graph.node_type(RRNodeId(inode)) != CHANX && rr_graph.node_type(RRNodeId(inode)) != CHANY) continue;
+    for (const RRNodeId& id : rr_graph.nodes()) {
+        if (rr_graph.node_type(id) != CHANX && rr_graph.node_type(id) != CHANY) continue;
 
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+        auto cost_index = rr_graph.node_cost_index(id);
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
@@ -316,7 +316,6 @@ static float get_delay_normalization_fac() {
 static void load_rr_indexed_data_T_values() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& rr_nodes = device_ctx.rr_nodes;
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
     auto fan_in_list = get_fan_in_list();
@@ -344,14 +343,14 @@ static void load_rr_indexed_data_T_values() {
      * The median of R and C values for each cost index is assigned to the indexed
      * data.
      */
-    for (size_t inode = 0; inode < rr_nodes.size(); inode++) {
-        t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        t_rr_type rr_type = rr_graph.node_type(rr_id);
 
         if (rr_type != CHANX && rr_type != CHANY) {
             continue;
         }
 
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+        auto cost_index = rr_graph.node_cost_index(rr_id);
 
         /* get average switch parameters */
         double avg_switch_R = 0;
@@ -359,17 +358,17 @@ static void load_rr_indexed_data_T_values() {
         double avg_switch_Cinternal = 0;
         int num_switches = 0;
         short buffered = UNDEFINED;
-        calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
+        calculate_average_switch((size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
 
         if (num_switches == 0) {
-            VTR_LOG_WARN("Node %d had no out-going switches\n", inode);
+            VTR_LOG_WARN("Node %d had no out-going switches\n", (size_t)rr_id);
             continue;
         }
         VTR_ASSERT(num_switches > 0);
 
         num_nodes_of_index[cost_index]++;
-        C_total[cost_index].push_back(rr_graph.node_C(RRNodeId(inode)));
-        R_total[cost_index].push_back(rr_graph.node_R(RRNodeId(inode)));
+        C_total[cost_index].push_back(rr_graph.node_C(rr_id));
+        R_total[cost_index].push_back(rr_graph.node_R(rr_id));
 
         switch_R_total[cost_index].push_back(avg_switch_R);
         switch_T_total[cost_index].push_back(avg_switch_T);

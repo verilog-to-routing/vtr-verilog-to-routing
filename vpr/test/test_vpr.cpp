@@ -113,6 +113,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
 }
 
 TEST_CASE("read_rr_graph_metadata", "[vpr]") {
+    /* TODO: All the inode should use RRNodeId */
     int src_inode = -1;
     int sink_inode = -1;
     short switch_id = -1;
@@ -135,9 +136,9 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         const auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;
 
-        for (int inode = 0; inode < (int)device_ctx.rr_nodes.size(); ++inode) {
-            if ((rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) && rr_graph.num_edges(RRNodeId(inode)) > 0) {
-                src_inode = inode;
+        for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
+            if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) && rr_graph.num_edges(inode) > 0) {
+                src_inode = size_t(inode);
                 break;
             }
         }

@@ -56,9 +56,9 @@ void check_rr_graph(const t_graph_type graph_type,
 
     std::vector<std::pair<int, int>> edges;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    for (const RRNodeId& rr_node : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_node;
         device_ctx.rr_nodes[inode].validate();
-        RRNodeId rr_node = RRNodeId(inode);
 
         /* Ignore any uninitialized rr_graph nodes */
         if (!rr_graph.node_is_initialized(rr_node)) {
@@ -204,8 +204,8 @@ void check_rr_graph(const t_graph_type graph_type,
      * now I check that everything is reachable.                                */
     bool is_fringe_warning_sent = false;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        RRNodeId rr_node = RRNodeId(inode);
+    for (const RRNodeId& rr_node : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
 
         if (rr_type != SOURCE) {
