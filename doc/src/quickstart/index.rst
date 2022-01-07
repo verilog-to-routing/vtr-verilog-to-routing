@@ -23,13 +23,13 @@ VTR requires several system packages and Python packages to build and run the fl
 
     > ./install_apt_packages.sh
 
-Then, to install the required Python packages within a new virtual environment:
+Then, to install the required Python packages (optionally within a new Python virtual environment):
 
 .. code-block:: bash
 
-    > make env
-    > source .venv/bin/activate
-    > pip install -r requirements.txt
+    > make env                          # optional: install python virtual environment
+    > source .venv/bin/activate         # optional: activate python virtual environment
+    > pip install -r requirements.txt   # install python packages (in virtual environment if prior commands run, system wide otherwise)
 
 
 Build VTR

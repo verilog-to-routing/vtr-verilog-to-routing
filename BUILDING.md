@@ -18,7 +18,7 @@ Then to install the Python packages:
 
     pip install -r requirements.txt
 
-**Note:** If you chose to install the Python virtual environment, you will need to remember to activate it on any new terminal window you use, before you can run the VTR flow or regressions tests.
+**Note:** If you chose to install the Python virtual environment, you will need to remember to activate it on any new terminal window you use, before you can run the VTR flow or regressions tests (`source .venv/bin/activate`).
 
 ## Building
 
