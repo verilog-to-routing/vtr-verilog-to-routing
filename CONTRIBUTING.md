@@ -154,7 +154,7 @@ The following are general tips for making your pull requests easy to review (and
 * Keep changes small
 
     Large change sets are difficult and time-consuming to review.
-    If a change set is becoming too large, consider splitting it into smaller pieces; you'll probably want to [file an issue](#filling-feature-requests) to discuss things first.
+    If a change set is becoming too large, consider splitting it into smaller pieces; you'll probably want to [file an issue](#filling-enhancement-requests) to discuss things first.
 
 * Do one thing only
 

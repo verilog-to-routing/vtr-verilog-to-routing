@@ -451,3 +451,9 @@ list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/vpr")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/vtr_flow")
 
 include(AutoPyFormat)
+
+
+#
+# Python Environment setup
+#
+include(PyEnv)
