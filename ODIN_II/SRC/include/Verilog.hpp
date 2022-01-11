@@ -35,6 +35,29 @@
 
 #include "ast_util.h"
 
+/* Yosys models attributes to be printed in a Verilog file */
+#define BLACKBOX_ATTR "(* blackbox *)"
+#define KEEP_HIERARCHY_ATTR "(* keep_hierarchy *)"
+/* useful aliases and fixed comment messages */
+#define TAB "\t"
+#define NEWLINE "\n"
+#define HARD_BLOCK_COMMENT "/* the body of the hardblock model is empty since it should be seen as a blackbox */"
+/* some fix keywords in the Verilog standard */
+#define MODULE "module"
+#define OPEN_PARENTHESIS "("
+#define CLOSE_PARENTHESIS ")"
+#define OPEN_SQUARE_BRACKET "["
+#define CLOSE_SQUARE_BRACKET "]"
+#define SEMICOLON ";"
+#define COLON ":"
+#define COMMA ","
+#define SPACE " "
+#define INPUT_PORT "input"
+#define OUTPUT_PORT "output"
+#define WIRE_PORT "wire"
+#define REG_PORT "reg"
+#define END_MODULE "endmodule"
+
 /**
  * @brief A class to provide the general object of an input Verilog file reader
  */
@@ -95,9 +118,56 @@ class Verilog {
         }
 
         void _write(const netlist_t* netlist);
-        void _create_file(const file_type_e file_type);
+        void _create_file(const char* file_name, const file_type_e file_type = _VERILOG);
+
+
+
+        /**
+         *-------------------------------------------------------------------------------------------
+         * (function: declare_blackbox)
+         * 
+         * @brief find the corresponding blackbox with the given 
+         * name in the given target arhitecture, then add its 
+         * Verilog declartion to this->models string cache.
+         * 
+         * @param bb_name the blackbox(DSP) name
+         * 
+         * @return a long value, which is representing the index of 
+         * the declartion in models string cache. Will return -1 if 
+         * a DSP with the given name does not exist in the architecture.
+         *-------------------------------------------------------------------------------------------
+         */
+        long declare_blackbox(const char* bb_name);
 
       protected:
+        STRING_CACHE* models_declaration;
+
+        /**
+         *-------------------------------------------------------------------------------------------
+         * (function: create_verilog)
+         * 
+         * @brief initiate a new output file stream
+         * 
+         * @param file_name the path to the verilog file
+         * 
+         * @return a FILE pointer to the verilog file
+         *-------------------------------------------------------------------------------------------
+         */
+        FILE* create_verilog(const char* file_name);
+        /**
+         *-------------------------------------------------------------------------------------------
+         * (function: declare_ports)
+         * 
+         * @brief generate a string that includes the declaration 
+         * of input/output ports of a given t_model
+         * 
+         * @param model the DSP t_model pointer
+         * 
+         * @return a string value including the declaration of all 
+         * input/output ports related to the given DSP model
+         *-------------------------------------------------------------------------------------------
+         */
+        std::string declare_ports(t_model* model);
     };
 };
 

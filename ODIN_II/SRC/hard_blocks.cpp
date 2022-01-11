@@ -59,7 +59,8 @@ void cache_hard_block_names() {
     hard_blocks = Arch.models;
     hard_block_names = sc_new_string_cache();
     while (hard_blocks) {
-        sc_add_string(hard_block_names, hard_blocks->name);
+        int sc_spot = sc_add_string(hard_block_names, hard_blocks->name);
+        hard_block_names->data[sc_spot] = (void*)hard_blocks;
         hard_blocks = hard_blocks->next;
     }
 }
