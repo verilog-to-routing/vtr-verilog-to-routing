@@ -78,7 +78,7 @@ inline void BLIF::Writer::_create_file(const char* file_name, const file_type_e 
     // validate the file_name pionter
     oassert(file_name);
     // validate the file type
-    if (file_type != _BLIF) 
+    if (file_type != _BLIF)
         error_message(UTIL, unknown_location,
                       "BLIF back-end entity cannot create file types(%d) other than BLIF", file_type);
     // create the BLIF file and set it as the output file

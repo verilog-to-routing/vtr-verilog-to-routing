@@ -120,8 +120,6 @@ class Verilog {
         void _write(const netlist_t* netlist);
         void _create_file(const char* file_name, const file_type_e file_type = _VERILOG);
 
-
-
         /**
          *-------------------------------------------------------------------------------------------
          * (function: declare_blackbox)

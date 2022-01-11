@@ -43,10 +43,10 @@
 
 #include "YYosys.hpp"
 #include "Verilog.hpp"
-#include "config_t.h"     // configuration
-#include "odin_util.h"    // get_directory
-#include "odin_error.h"   // error_message
-#include "hard_blocks.h"  // hard_block_names
+#include "config_t.h"    // configuration
+#include "odin_util.h"   // get_directory
+#include "odin_error.h"  // error_message
+#include "hard_blocks.h" // hard_block_names
 
 #ifdef ODIN_USE_YOSYS
 #    include "kernel/yosys.h" // Yosys
@@ -164,14 +164,11 @@ void YYosys::load_target_dsp_blocks() {
     vw._create_file(configuration.dsp_verilog.c_str());
 
     t_model* hb = Arch.models;
-    while(hb) {
+    while (hb) {
         // declare hardblocks in a verilog file
-        if (strcmp(hb->name, SINGLE_PORT_RAM_string) && 
-            strcmp(hb->name, DUAL_PORT_RAM_string) &&
-            strcmp(hb->name, "multiply") && 
-            strcmp(hb->name, "adder"))
+        if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") && strcmp(hb->name, "adder"))
             vw.declare_blackbox(hb->name);
-        
+
         hb = hb->next;
     }
 

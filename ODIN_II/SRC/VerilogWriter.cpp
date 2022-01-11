@@ -28,17 +28,17 @@
  * With that said, only the DSPs' declaration are printed.
  */
 
-#include <sstream>  //std::stringstream
+#include <sstream> //std::stringstream
 
 #include "Verilog.hpp"
 #include "odin_globals.h"
 #include "hard_blocks.h"
-#include "vtr_util.cpp"
+#include "vtr_util.h"
 
 Verilog::Writer::Writer()
     : GenericWriter() {
-        this->models_declaration = sc_new_string_cache();
-    }
+    this->models_declaration = sc_new_string_cache();
+}
 
 Verilog::Writer::~Writer() {
     if (this->models_declaration)
@@ -56,9 +56,7 @@ inline void Verilog::Writer::_create_file(const char* file_name, const file_type
     this->output_file = create_verilog(file_name);
 }
 
-
 void Verilog::Writer::_write(const netlist_t* netlist) {
-    
     // to write the top module and netlist components
     if (netlist) {
         /* [TODO] */
@@ -67,9 +65,9 @@ void Verilog::Writer::_write(const netlist_t* netlist) {
     // print out the rest od models, including DSPs in the target architecture
     t_model* model = Arch.models;
 
-    while(model) {
+    while (model) {
         int sc_spot;
-        if ((sc_spot = sc_lookup_string(this->models_declaration, model->name)) != -1){
+        if ((sc_spot = sc_lookup_string(this->models_declaration, model->name)) != -1) {
             fprintf(this->output_file, "%s", (char*)this->models_declaration->data[sc_spot]);
             fflush(this->output_file);
         }
@@ -100,7 +98,6 @@ FILE* Verilog::Writer::create_verilog(const char* file_name) {
     return (out);
 }
 
-
 /**
  *-------------------------------------------------------------------------------------------
  * (function: declare_blackbox)
@@ -122,13 +119,13 @@ long Verilog::Writer::declare_blackbox(const char* bb_name) {
 
     t_model* bb = find_hard_block(bb_name);
     if (bb == NULL) {
-        error_message(UTIL, unknown_location, 
-                     "Odin-II failed to find DSP module \"%s\" in the target device.", bb_name);
+        error_message(UTIL, unknown_location,
+                      "Odin-II failed to find DSP module \"%s\" in the target device.", bb_name);
     }
 
     std::stringstream bb_declaration;
 
-    // need to specify "(* blackbox *)" tag if Yosys 
+    // need to specify "(* blackbox *)" tag if Yosys
     // is going to elaborate the Verilog file
     if (elaborator_e::_YOSYS) {
         bb_declaration << BLACKBOX_ATTR << NEWLINE;
@@ -141,8 +138,8 @@ long Verilog::Writer::declare_blackbox(const char* bb_name) {
     bb_declaration << END_MODULE << NEWLINE << std::endl;
 
     int sc_spot;
-    if ((sc_spot = sc_add_string(this->models_declaration, bb->name)) != -1 ) {
-        this->models_declaration->data[sc_spot] = (void*) vtr::strdup(bb_declaration.str().c_str());
+    if ((sc_spot = sc_add_string(this->models_declaration, bb->name)) != -1) {
+        this->models_declaration->data[sc_spot] = (void*)vtr::strdup(bb_declaration.str().c_str());
         return (sc_spot);
     }
 
@@ -168,12 +165,12 @@ std::string Verilog::Writer::declare_ports(t_model* model) {
 
     std::stringstream input_stream;
     t_model_ports* input_port = model->inputs;
-    while(input_port) {
+    while (input_port) {
         input_stream << TAB
                      << INPUT_PORT << TAB
-                         << OPEN_SQUARE_BRACKET 
-                             << input_port->size << COLON << "0" 
-                         << CLOSE_SQUARE_BRACKET
+                     << OPEN_SQUARE_BRACKET
+                     << input_port->size << COLON << "0"
+                     << CLOSE_SQUARE_BRACKET
                      << TAB << input_port->name
                      << COMMA << std::endl;
 
@@ -183,12 +180,12 @@ std::string Verilog::Writer::declare_ports(t_model* model) {
 
     std::stringstream output_stream;
     t_model_ports* output_port = model->outputs;
-    while(output_port) {
-        output_stream << TAB 
+    while (output_port) {
+        output_stream << TAB
                       << OUTPUT_PORT << TAB
-                          << OPEN_SQUARE_BRACKET 
-                              << output_port->size << COLON << "0" 
-                          << CLOSE_SQUARE_BRACKET
+                      << OPEN_SQUARE_BRACKET
+                      << output_port->size << COLON << "0"
+                      << CLOSE_SQUARE_BRACKET
                       << TAB << output_port->name
                       << COMMA << std::endl;
 
@@ -199,17 +196,17 @@ std::string Verilog::Writer::declare_ports(t_model* model) {
     std::string input_str = input_stream.str();
     std::string output_str = output_stream.str();
 
-    // check the value of input/output ports declaration 
+    // check the value of input/output ports declaration
     // to trim extra last semicolon if required
     std::stringstream ports_declaration;
     if (!input_stream.str().empty() && output_stream.str().empty()) {
-        input_str[input_str.find_last_not_of(COMMA)-1] = '\0';
+        input_str[input_str.find_last_not_of(COMMA) - 1] = '\0';
         ports_declaration << input_str;
     } else if (!output_stream.str().empty()) {
         if (!input_stream.str().empty())
             ports_declaration << input_str;
 
-        ports_declaration << output_str.substr(0, output_str.find_last_not_of(COMMA)-1);
+        ports_declaration << output_str.substr(0, output_str.find_last_not_of(COMMA) - 1);
     }
 
     // return the string value
