@@ -358,22 +358,27 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                 char new_name[READ_BLIF_BUFFER];
                 vtr::free(new_node->name);
                 /* in case of weird names, need to add memories manually */
-                if (ports->count == 5) {
+                int sc_spot = -1;
+                if (std::string(subcircuit_stripped_name).find(SINGLE_PORT_RAM_string, 0) != std::string::npos) {
                     /* specify node type */
                     new_node->type = yosys_subckt_strmap[SINGLE_PORT_RAM_string];
                     /* specify node name */
                     odin_sprintf(new_name, "\\%s~%ld", SINGLE_PORT_RAM_string, hard_block_number - 1);
-                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
-                } else if (ports->count == 9) {
+                } else if (std::string(subcircuit_stripped_name).find(DUAL_PORT_RAM_string, 0) != std::string::npos) {
                     /* specify node type */
                     new_node->type = yosys_subckt_strmap[DUAL_PORT_RAM_string];
                     /* specify node name */
                     odin_sprintf(new_name, "\\%s~%ld", DUAL_PORT_RAM_string, hard_block_number - 1);
-                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
+                } else if ((sc_spot = sc_lookup_string(hard_block_names, subcircuit_stripped_name)) != -1) {
+                    /* specify node type */
+                    new_node->type = HARD_IP;
+                    /* specify node name */
+                    odin_sprintf(new_name, "\\%s~%ld", subcircuit_stripped_name, hard_block_number - 1);
                 } else {
                     error_message(PARSE_BLIF, unknown_location,
-                                  "Unsupported sub-circuit type (%s) in BLIF file.\n", subcircuit_name);
+                                  "Unsupported subcircuit type (%s) in BLIF file.\n", subcircuit_name);
                 }
+                new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
             }
 
             if (new_node->type == BRAM) {
@@ -410,7 +415,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
 
     if (!model)
         error_message(PARSE_BLIF, unknown_location,
-                      "Failed to retrieve sub-circuit model (%s)\n", subcircuit_name);
+                      "Failed to retrieve subcircuit model (%s)\n", subcircuit_name);
 
     /* Add input and output ports to the new node. */
     else {
@@ -481,7 +486,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         }
 
         // Create a fake ast node.
-        if (!configuration.coarsen) {
+        if (!configuration.coarsen || new_node->type == HARD_IP) {
             new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
             new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
             new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);

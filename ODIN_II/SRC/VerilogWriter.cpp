@@ -40,7 +40,10 @@ Verilog::Writer::Writer()
         this->models_declaration = sc_new_string_cache();
     }
 
-Verilog::Writer::~Writer() = default;
+Verilog::Writer::~Writer() {
+    if (this->models_declaration)
+        sc_free_string_cache(this->models_declaration);
+}
 
 inline void Verilog::Writer::_create_file(const char* file_name, const file_type_e file_type) {
     // validate the file_name pointer
