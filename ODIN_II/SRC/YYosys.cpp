@@ -256,7 +256,7 @@ void YYosys::execute() {
             run_pass(std::string("read_verilog -nomem2reg -nolatches " + verilog_circuit));
 
         // Check whether cells match libraries and find top module
-        run_pass(std::string("hierarchy -check -auto-top"));
+        run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
 
         // Use a readable name convention
         run_pass(std::string("autoname"));
@@ -343,7 +343,7 @@ void YYosys::output_blif() {
 
     // "-param" is to print non-standard cells parameters
     // "-impltf" is to not show the definition of primary netlist ports, i.e., VCC, GND and PAD, in the output.
-    run_pass(std::string("write_blif -param -impltf " + this->coarse_grain_blif));
+    run_pass(std::string("write_blif -blackbox -param -impltf " + this->coarse_grain_blif));
 #endif
 }
 
