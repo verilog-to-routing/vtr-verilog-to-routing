@@ -57,6 +57,9 @@ struct t_pb_stats {
     //key: root block id of the molecule, value: number of times the molecule has failed try_pack_molecule for the cluster
 
     int pulled_from_atom_groups;
+    int num_att_group_atoms_used;
+
+    std::vector<AtomBlockId> available_att_group_atoms;
 
     std::vector<AtomNetId> marked_nets;     //List of nets with the num_pins_of_net_in_pb and gain entries altered
     std::vector<AtomBlockId> marked_blocks; //List of blocks with the num_pins_of_net_in_pb and gain entries altered

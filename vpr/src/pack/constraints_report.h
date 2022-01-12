@@ -19,6 +19,6 @@
  * If the region is overfull, a message is printed saying which
  * region is overfull, and by how many clusters.
  */
-void check_constraints_filling();
+bool check_constraints_filling();
 
 #endif /* VPR_SRC_PACK_CONSTRAINTS_REPORT_H_ */

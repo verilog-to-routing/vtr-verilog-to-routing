@@ -62,6 +62,7 @@ bool try_pack(t_packer_opts* packer_opts,
         num_models++;
         cur_model = cur_model->next;
     }
+    VTR_LOG("Number of models is %d \n", num_models);
 
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 
@@ -130,6 +131,7 @@ bool try_pack(t_packer_opts* packer_opts,
     }
 
     int pack_iteration = 1;
+    bool floorplan_regions_overfull = false;
 
     while (true) {
         //Cluster the netlist
@@ -145,14 +147,15 @@ bool try_pack(t_packer_opts* packer_opts,
             lb_type_rr_graphs,
             target_external_pin_util,
             high_fanout_thresholds,
-            attraction_groups);
+            attraction_groups,
+            floorplan_regions_overfull);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
 
-        if (fits_on_device) {
+        if (fits_on_device && !floorplan_regions_overfull) {
             break; //Done
-        } else if (pack_iteration == 1) {
+        } else if (pack_iteration == 1 && !floorplan_regions_overfull) {
             //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
@@ -167,6 +170,12 @@ bool try_pack(t_packer_opts* packer_opts,
             VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
                     (allow_unrelated_clustering ? "true" : "false"),
                     (balance_block_type_util ? "true" : "false"));
+        } else if (pack_iteration == 1 && floorplan_regions_overfull) {
+            VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
+            attraction_groups.set_att_group_pulls(4);
+            t_ext_pin_util pin_util(1.0, 1.0);
+            target_external_pin_util.set_block_pin_util("clb", pin_util);
+
         } else {
             //Unable to pack densely enough: Give Up
 
@@ -201,6 +210,8 @@ bool try_pack(t_packer_opts* packer_opts,
         for (auto net : g_vpr_ctx.atom().nlist.nets()) {
             g_vpr_ctx.mutable_atom().lookup.set_atom_clb_net(net, ClusterNetId::INVALID());
         }
+        g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
+        attraction_groups.reset_attraction_groups();
 
         ++pack_iteration;
     }

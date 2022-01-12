@@ -7,7 +7,7 @@
 
 #include "constraints_report.h"
 
-void check_constraints_filling() {
+bool check_constraints_filling() {
     GridTileLookup grid_tiles;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -45,6 +45,8 @@ void check_constraints_filling() {
         }
     }
 
+    bool floorplan_regions_overfull = false;
+
     for (auto& region_info : regions_count_info) {
         vtr::Rect<int> rect = region_info.first.get_region_rect();
         for (unsigned int j = 0; j < block_types.size(); j++) {
@@ -52,9 +54,12 @@ void check_constraints_filling() {
             int num_tiles = 0;
             num_tiles = grid_tiles.region_tile_count(region_info.first, &block_types[j]);
             if (num_assigned_blocks > num_tiles) {
+                floorplan_regions_overfull = true;
                 VTR_LOG("\n \nRegion (%d, %d) to (%d, %d) st %d \n", rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax(), region_info.first.get_sub_tile());
                 VTR_LOG("Assigned %d blocks of type %s, but only has %d tiles of that type\n", num_assigned_blocks, block_types[j].name, num_tiles);
             }
         }
     }
+
+    return floorplan_regions_overfull;
 }

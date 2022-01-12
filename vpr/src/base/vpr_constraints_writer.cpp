@@ -121,7 +121,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 
         VprConstraintsSerializer writer_six(constraints_six);
 
-        const char* file_name_six = "sixteenth.xml";
+        const char* file_name_six = "new_sixteenth.xml";
 
         if (vtr::check_file_name_extension(file_name_six, ".xml")) {
             std::fstream fp;
@@ -167,7 +167,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 
         VprConstraintsSerializer writer_fixed(constraints_fixed);
 
-        const char* file_name_fixed = "fixed.xml";
+        const char* file_name_fixed = "new_fixed.xml";
 
         if (vtr::check_file_name_extension(file_name_fixed, ".xml")) {
             std::fstream fp;
@@ -640,6 +640,13 @@ void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints) {
     int width = device_ctx.grid.width();
     int height = device_ctx.grid.height();
 
+    std::map<int, std::vector<ClusterBlockId>> partition_clusters;
+    std::vector<ClusterBlockId> clusters;
+
+    for (int j = 0; j < 16; j++) {
+        partition_clusters.insert({j, clusters});
+    }
+
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
         int num_atoms = atoms.size();
@@ -651,21 +658,25 @@ void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_0);
+                partition_clusters[0].push_back(blk_id);
             }
         } else if (x >= pre_x && x < mid_x && y < pre_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_1);
+                partition_clusters[1].push_back(blk_id);
             }
         } else if (x >= mid_x && x < post_x && y < pre_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_2);
+                partition_clusters[2].push_back(blk_id);
             }
         } else if (x >= post_x && x < width && y < pre_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_3);
+                partition_clusters[3].push_back(blk_id);
             }
         }
 
@@ -674,21 +685,25 @@ void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_4);
+                partition_clusters[4].push_back(blk_id);
             }
         } else if (x >= pre_x && x < mid_x && y >= pre_y && y < mid_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_5);
+                partition_clusters[5].push_back(blk_id);
             }
         } else if (x >= mid_x && x < post_x && y >= pre_y && y < mid_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_6);
+                partition_clusters[6].push_back(blk_id);
             }
         } else if (x >= post_x && x < width && y >= pre_y && y < mid_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_7);
+                partition_clusters[7].push_back(blk_id);
             }
         }
 
@@ -697,21 +712,25 @@ void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_8);
+                partition_clusters[8].push_back(blk_id);
             }
         } else if (x >= pre_x && x < mid_x && y >= mid_y && y < post_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_9);
+                partition_clusters[9].push_back(blk_id);
             }
         } else if (x >= mid_x && x < post_x && y >= mid_y && y < post_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_10);
+                partition_clusters[10].push_back(blk_id);
             }
         } else if (x >= post_x && x < width && y >= mid_y && y < post_y) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_11);
+                partition_clusters[11].push_back(blk_id);
             }
         }
 
@@ -720,21 +739,25 @@ void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_12);
+                partition_clusters[12].push_back(blk_id);
             }
         } else if (x >= pre_x && x < mid_x && y >= post_y && y < height) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_13);
+                partition_clusters[13].push_back(blk_id);
             }
         } else if (x >= mid_x && x < post_x && y >= post_y && y < height) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_14);
+                partition_clusters[14].push_back(blk_id);
             }
         } else if (x >= post_x && x < width && y >= post_y && y < height) {
             for (auto atm = 0; atm < num_atoms; atm++) {
                 AtomBlockId atom_id = atoms[atm];
                 constraints.add_constrained_atom(atom_id, partid_15);
+                partition_clusters[15].push_back(blk_id);
             }
         }
     }
@@ -758,6 +781,24 @@ void setup_vpr_floorplan_constraints_sixteenths(VprConstraints& constraints) {
     constraints.add_partition(part13);
     constraints.add_partition(part14);
     constraints.add_partition(part15);
+
+    //print constraints
+    for (auto it = partition_clusters.begin(); it != partition_clusters.end(); it++) {
+        PartitionId part_id(it->first);
+        Partition part = constraints.get_partition(part_id);
+        PartitionRegion pr = part.get_part_region();
+        std::vector<Region> regions = pr.get_partition_region();
+        Region reg = regions[0];
+
+        vtr::Rect<int> rect = reg.get_region_rect();
+
+        VTR_LOG("For partition %d, the region is ( %d, %d ) to ( %d, %d ) \n", it->first, rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax());
+
+        for (int j = 0; j < it->second.size(); j++) {
+            VTR_LOG(" %d: %s \n", it->second[j], cluster_ctx.clb_nlist.block_type(it->second[j])->name);
+        }
+        VTR_LOG("\n\n");
+    }
 }
 
 void setup_vpr_floorplan_constraints_sixteenths_half(VprConstraints& constraints) {

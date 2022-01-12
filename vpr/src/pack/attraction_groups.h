@@ -58,6 +58,8 @@ class AttractionInfo {
     //If no constraints were specified, then no attraction groups will be created.
     AttractionInfo(bool attraction_groups_on);
 
+    void reset_attraction_groups();
+
     //Setters and getters for the class
     AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
 
@@ -75,6 +77,10 @@ class AttractionInfo {
 
     int num_attraction_groups();
 
+    int get_att_group_pulls();
+
+    void set_att_group_pulls(int num_pulls);
+
   private:
     //Store each atom's attraction group assuming each atom is in at most one attraction group
     //Atoms with no attraction group will have AttractGroupId::INVALID
@@ -82,7 +88,18 @@ class AttractionInfo {
 
     //Store atoms and gain value that belong to each attraction group
     vtr::vector<AttractGroupId, AttractionGroup> attraction_groups;
+
+    //The number of times we explore a cluster's attraction group molecules when packing a cluster
+    int att_group_pulls;
 };
+
+inline int AttractionInfo::get_att_group_pulls() {
+    return att_group_pulls;
+}
+
+inline void AttractionInfo::set_att_group_pulls(int num_pulls) {
+    att_group_pulls = num_pulls;
+}
 
 inline AttractGroupId AttractionInfo::get_atom_attraction_group(const AtomBlockId atom_id) {
     return atom_attraction_group[atom_id];
