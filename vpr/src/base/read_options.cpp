@@ -2569,7 +2569,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
-        .help("Writes implemented design final timing summary to the specified JSON or XML file.")
+        .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");

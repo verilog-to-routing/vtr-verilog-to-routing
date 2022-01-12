@@ -50,12 +50,6 @@ std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo&
 //Print a useful summary of timing information
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, std::string prefix, std::string timing_summary_filename);
 
-//Write a useful summary of timing information to JSON file
-void write_setup_timing_summary(std::string timing_summary_filename,
-                                double least_slack_cpd,
-                                double fmax,
-                                double setup_worst_neg_slack,
-                                double setup_total_neg_slack);
 /*
  * Hold-time related statistics
  */
@@ -218,5 +212,32 @@ tatum::NodeId pin_name_to_tnode(std::string name);
 
 void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
 void write_hold_timing_graph_dot(std::string filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
+
+struct TimingStats {
+  private:
+    void writeHuman(std::ostream& output) const;
+    void writeJSON(std::ostream& output) const;
+    void writeXML(std::ostream& output) const;
+
+  public:
+    TimingStats(std::string prefix, double least_slack_cpd_delay, double fmax, double setup_worst_neg_slack, double setup_total_neg_slack);
+
+    enum OutputFormat {
+        HumanReadable,
+        JSON,
+        XML
+    };
+
+    double least_slack_cpd_delay;
+    double fmax;
+    double setup_worst_neg_slack;
+    double setup_total_neg_slack;
+    std::string prefix;
+
+    void write(OutputFormat fmt, std::ostream& output) const;
+};
+
+//Write a useful summary of timing information to JSON file
+void write_setup_timing_summary(std::string timing_summary_filename, const TimingStats& stats);
 
 #endif
